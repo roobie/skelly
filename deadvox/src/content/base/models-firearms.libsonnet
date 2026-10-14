@@ -1,0 +1,2162 @@
+{
+  "items": [
+    {
+      "category": "weapon",
+      "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling.",
+      "firearm": {
+        "dispersionRadians": 0,
+        "pump": true,
+        "recoilKickRadians": 0.035000000000000003,
+        "skillZeroHandling": {
+          "automaticFollowup": {
+            "recoilKickScale": 20,
+            "recoilRecoveryScale": 0.17999999999999999,
+            "variance": 60
+          },
+          "singleShot": {
+            "recoilKickScale": 10,
+            "recoilRecoveryScale": 0.34999999999999998,
+            "variance": 30
+          }
+        }
+      },
+      "id": "pump_shotgun",
+      "model": "shotgun_pump",
+      "name": "Pump shotgun",
+      "size": [2, 8],
+      "twoHanded": true,
+      "weight": 3000
+    },
+    {
+      "category": "weapon",
+      "description": "Curated 12-gauge hunting-cabin pump from gungen, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
+      "id": "debug_shotgun_pump",
+      "model": "shotgun_pump",
+      "name": "Pump shotgun (debug)",
+      "size": [1, 5],
+      "twoHanded": true,
+      "weight": 3000
+    },
+    {
+      "category": "weapon",
+      "description": "A curated gungen AR in 5.56×45, fed from STANAG magazines. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "firearm": {
+        "dispersionRadians": 0.012,
+        "recoilKickRadians": 0.0060000000000000001,
+        "skillZeroHandling": {
+          "automaticFollowup": {
+            "recoilKickScale": 7,
+            "recoilRecoveryScale": 0.40000000000000002,
+            "variance": 25
+          },
+          "singleShot": {
+            "recoilKickScale": 3,
+            "recoilRecoveryScale": 0.75,
+            "variance": 15
+          }
+        }
+      },
+      "id": "rifle_assault",
+      "model": "rifle_assault",
+      "name": "AR-pattern rifle",
+      "size": [1, 5],
+      "twoHanded": true,
+      "weight": 3500
+    },
+    {
+      "category": "weapon",
+      "description": "A curated gungen AK in 7.62×39, fed from AKM magazines, with its handle on the carrier. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "firearm": {
+        "dispersionRadians": 0.017999999999999999,
+        "recoilKickRadians": 0.012,
+        "skillZeroHandling": {
+          "automaticFollowup": {
+            "recoilKickScale": 12,
+            "recoilRecoveryScale": 0.25,
+            "variance": 40
+          },
+          "singleShot": {
+            "recoilKickScale": 6,
+            "recoilRecoveryScale": 0.5,
+            "variance": 20
+          }
+        }
+      },
+      "id": "rifle_ak",
+      "model": "rifle_ak",
+      "name": "AK-pattern rifle",
+      "size": [1, 5],
+      "twoHanded": true,
+      "weight": 3500
+    }
+  ],
+  "models": [
+    {
+      "anchors": {
+        "muzzle": [0.1832, 0, 0.050099999999999999]
+      },
+      "file": "assets/models/pistol_compact.glb",
+      "grip": {
+        "at": [0.086599999999999996, 0, 0.026599999999999999],
+        "turn": [-90, 0, 0]
+      },
+      "id": "pistol_compact"
+    },
+    {
+      "anchors": {
+        "muzzle": [0.2107, 0, 0.061800000000000001]
+      },
+      "file": "assets/models/pistol_full.glb",
+      "grip": {
+        "at": [0.088499999999999995, 0, 0.031199999999999999],
+        "turn": [-90, 0, 0]
+      },
+      "id": "pistol_full"
+    },
+    {
+      "action": {
+        "ejectAt": 0.76000000000000001,
+        "ejectDirection": [-0.16063576942357702, 0.16063576942357702, 0.9738543521304357],
+        "fire": {
+          "durationSimSeconds": 0.074999999999999997,
+          "dwellSimSeconds": 0.0060000000000000001,
+          "forwardSimSeconds": 0.046165855773284283,
+          "rearwardSimSeconds": 0.019933333333333334
+        },
+        "hand": {
+          "durationSimSeconds": 1.6961658557732842,
+          "dwellSimSeconds": 0.29999999999999999,
+          "forwardSimSeconds": 0.046165855773284283,
+          "rearwardSimSeconds": 0.65000000000000002
+        },
+        "holdOpen": true,
+        "parts": {
+          "carrier": {
+            "axis": [-1, 0, -1.2246467991473532e-16],
+            "modes": ["fire", "hand"],
+            "node": "bolt-carrier:bolt-carrier",
+            "strokeMetres": 0.074749999999999997
+          },
+          "handle": {
+            "axis": [-1, 0, -1.2246467991473532e-16],
+            "modes": ["hand"],
+            "node": "charging-handle:ar-charging-handle",
+            "strokeMetres": 0.074749999999999997
+          }
+        },
+        "roundsPerSimMinute": 800
+      },
+      "anchors": {
+        "ejection": [-0.048875000000000002, 0.002875, 0.023],
+        "muzzle": [0.41399999999999998, 0, 0],
+        "support": [0.177675, -0.017250000000000001, 0]
+      },
+      "attachmentSlots": [
+        {
+          "direction": [0, 1, 0],
+          "id": "receiver.rail.0",
+          "mount": "rail-top",
+          "notchIndex": 0,
+          "position": [-0.13800000000000001, 0.028750000000000001, 0],
+          "railId": "receiver.rail",
+          "up": [1, 0, 0]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "receiver.rail.1",
+          "mount": "rail-top",
+          "notchIndex": 1,
+          "position": [-0.115, 0.028750000000000001, 0],
+          "railId": "receiver.rail",
+          "up": [1, 0, 0]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "receiver.rail.2",
+          "mount": "rail-top",
+          "notchIndex": 2,
+          "position": [-0.091999999999999998, 0.028750000000000001, 0],
+          "railId": "receiver.rail",
+          "up": [1, 0, 0]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "receiver.rail.3",
+          "mount": "rail-top",
+          "notchIndex": 3,
+          "position": [-0.069000000000000006, 0.028750000000000001, 0],
+          "railId": "receiver.rail",
+          "up": [1, 0, 0]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "receiver.rail.4",
+          "mount": "rail-top",
+          "notchIndex": 4,
+          "position": [-0.045999999999999999, 0.028750000000000001, 0],
+          "railId": "receiver.rail",
+          "up": [1, 0, 0]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "receiver.rail.5",
+          "mount": "rail-top",
+          "notchIndex": 5,
+          "position": [-0.023, 0.028750000000000001, 0],
+          "railId": "receiver.rail",
+          "up": [1, 0, 0]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "receiver.rail.6",
+          "mount": "rail-top",
+          "notchIndex": 6,
+          "position": [0, 0.028750000000000001, 0],
+          "railId": "receiver.rail",
+          "up": [1, 0, 0]
+        },
+        {
+          "direction": [1, 0, 1.2246467991473532e-16],
+          "id": "barrel.muzzle.0",
+          "mount": "muzzle",
+          "position": [0.41399999999999998, 0, 0],
+          "up": [0, 1, 0]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.0",
+          "mount": "rail-top",
+          "notchIndex": 0,
+          "position": [0.023, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.1",
+          "mount": "rail-top",
+          "notchIndex": 1,
+          "position": [0.045999999999999999, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.2",
+          "mount": "rail-top",
+          "notchIndex": 2,
+          "position": [0.069000000000000006, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.3",
+          "mount": "rail-top",
+          "notchIndex": 3,
+          "position": [0.091999999999999998, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.4",
+          "mount": "rail-top",
+          "notchIndex": 4,
+          "position": [0.115, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.5",
+          "mount": "rail-top",
+          "notchIndex": 5,
+          "position": [0.13800000000000001, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.6",
+          "mount": "rail-top",
+          "notchIndex": 6,
+          "position": [0.161, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.7",
+          "mount": "rail-top",
+          "notchIndex": 7,
+          "position": [0.184, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.8",
+          "mount": "rail-top",
+          "notchIndex": 8,
+          "position": [0.20699999999999999, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.9",
+          "mount": "rail-top",
+          "notchIndex": 9,
+          "position": [0.23000000000000001, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.10",
+          "mount": "rail-top",
+          "notchIndex": 10,
+          "position": [0.253, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.11",
+          "mount": "rail-top",
+          "notchIndex": 11,
+          "position": [0.27600000000000002, 0.020125000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.0",
+          "mount": "rail-bottom",
+          "notchIndex": 0,
+          "position": [0.023, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.1",
+          "mount": "rail-bottom",
+          "notchIndex": 1,
+          "position": [0.045999999999999999, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.2",
+          "mount": "rail-bottom",
+          "notchIndex": 2,
+          "position": [0.069000000000000006, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.3",
+          "mount": "rail-bottom",
+          "notchIndex": 3,
+          "position": [0.091999999999999998, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.4",
+          "mount": "rail-bottom",
+          "notchIndex": 4,
+          "position": [0.115, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.5",
+          "mount": "rail-bottom",
+          "notchIndex": 5,
+          "position": [0.13800000000000001, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.6",
+          "mount": "rail-bottom",
+          "notchIndex": 6,
+          "position": [0.161, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.7",
+          "mount": "rail-bottom",
+          "notchIndex": 7,
+          "position": [0.184, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.8",
+          "mount": "rail-bottom",
+          "notchIndex": 8,
+          "position": [0.20699999999999999, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.9",
+          "mount": "rail-bottom",
+          "notchIndex": 9,
+          "position": [0.23000000000000001, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.10",
+          "mount": "rail-bottom",
+          "notchIndex": 10,
+          "position": [0.253, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.11",
+          "mount": "rail-bottom",
+          "notchIndex": 11,
+          "position": [0.27600000000000002, -0.020125000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.0",
+          "mount": "rail-side",
+          "notchIndex": 0,
+          "position": [0.023, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.1",
+          "mount": "rail-side",
+          "notchIndex": 1,
+          "position": [0.045999999999999999, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.2",
+          "mount": "rail-side",
+          "notchIndex": 2,
+          "position": [0.069000000000000006, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.3",
+          "mount": "rail-side",
+          "notchIndex": 3,
+          "position": [0.091999999999999998, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.4",
+          "mount": "rail-side",
+          "notchIndex": 4,
+          "position": [0.115, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.5",
+          "mount": "rail-side",
+          "notchIndex": 5,
+          "position": [0.13800000000000001, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.6",
+          "mount": "rail-side",
+          "notchIndex": 6,
+          "position": [0.161, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.7",
+          "mount": "rail-side",
+          "notchIndex": 7,
+          "position": [0.184, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.8",
+          "mount": "rail-side",
+          "notchIndex": 8,
+          "position": [0.20699999999999999, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.9",
+          "mount": "rail-side",
+          "notchIndex": 9,
+          "position": [0.23000000000000001, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.10",
+          "mount": "rail-side",
+          "notchIndex": 10,
+          "position": [0.253, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.11",
+          "mount": "rail-side",
+          "notchIndex": 11,
+          "position": [0.27600000000000002, 0, 0.020125000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        }
+      ],
+      "attachments": [
+        {
+          "id": "optic-lpvo-1-6x",
+          "kind": "optic",
+          "massKg": 0.16156919783654183,
+          "mount": "rail-top",
+          "mountFrame": {
+            "normal": [0, -1, 0],
+            "up": [1, 0, 0]
+          },
+          "mountedAt": "receiver.rail.3",
+          "node": "sight:sight",
+          "properties": {
+            "magnification": {
+              "max": 6,
+              "min": 1
+            },
+            "railSpanNotches": {
+              "maxOffset": 3,
+              "minOffset": -3
+            },
+            "reticleKind": "crosshair"
+          },
+          "sight": {
+            "direction": [1, 0, 0],
+            "eye": [-0.11499999999999999, 0.034500000000000003, 0],
+            "eyeReliefMetres": 0.086249999999999993,
+            "kind": "optic",
+            "ocularDiameterMetres": 0.031625,
+            "up": [0, 1, 0]
+          }
+        }
+      ],
+      "calibre": "5.56x45",
+      "chargingHandleDegrees": 0,
+      "compatibility": {
+        "barrel.muzzle.0": ["real-suppressor", "improvised-suppressor"],
+        "handguard.rail-bottom.0": ["foregrip"],
+        "handguard.rail-bottom.1": ["foregrip"],
+        "handguard.rail-bottom.10": ["foregrip"],
+        "handguard.rail-bottom.11": ["foregrip"],
+        "handguard.rail-bottom.2": ["foregrip"],
+        "handguard.rail-bottom.3": ["foregrip"],
+        "handguard.rail-bottom.4": ["foregrip"],
+        "handguard.rail-bottom.5": ["foregrip"],
+        "handguard.rail-bottom.6": ["foregrip"],
+        "handguard.rail-bottom.7": ["foregrip"],
+        "handguard.rail-bottom.8": ["foregrip"],
+        "handguard.rail-bottom.9": ["foregrip"],
+        "handguard.rail-side.0": ["tactical-flashlight-mount"],
+        "handguard.rail-side.1": ["tactical-flashlight-mount"],
+        "handguard.rail-side.10": ["tactical-flashlight-mount"],
+        "handguard.rail-side.11": ["tactical-flashlight-mount"],
+        "handguard.rail-side.2": ["tactical-flashlight-mount"],
+        "handguard.rail-side.3": ["tactical-flashlight-mount"],
+        "handguard.rail-side.4": ["tactical-flashlight-mount"],
+        "handguard.rail-side.5": ["tactical-flashlight-mount"],
+        "handguard.rail-side.6": ["tactical-flashlight-mount"],
+        "handguard.rail-side.7": ["tactical-flashlight-mount"],
+        "handguard.rail-side.8": ["tactical-flashlight-mount"],
+        "handguard.rail-side.9": ["tactical-flashlight-mount"],
+        "handguard.rail.0": [],
+        "handguard.rail.1": [],
+        "handguard.rail.10": [],
+        "handguard.rail.11": [],
+        "handguard.rail.2": [],
+        "handguard.rail.3": [],
+        "handguard.rail.4": [],
+        "handguard.rail.5": [],
+        "handguard.rail.6": [],
+        "handguard.rail.7": [],
+        "handguard.rail.8": [],
+        "handguard.rail.9": [],
+        "receiver.rail.0": [],
+        "receiver.rail.1": ["optic-mini-reflex", "optic-tube-dot"],
+        "receiver.rail.2": ["optic-mini-reflex", "optic-tube-dot", "optic-holographic"],
+        "receiver.rail.3": [
+          "optic-mini-reflex",
+          "optic-tube-dot",
+          "optic-holographic",
+          "optic-fixed-prism-4x",
+          "optic-high-mag-5-25x",
+          "optic-digital-thermal"
+        ],
+        "receiver.rail.4": ["optic-mini-reflex", "optic-tube-dot", "optic-holographic"],
+        "receiver.rail.5": ["optic-mini-reflex", "optic-tube-dot"],
+        "receiver.rail.6": []
+      },
+      "compatibilityPairs": [
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.0", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.1", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.10", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.11", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.2", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.2", "optic-holographic"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-holographic"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.4", "optic-holographic"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.0", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.1", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.10", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.11", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.2", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.2", "optic-holographic"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-holographic"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.4", "optic-holographic"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.1", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.10", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.11", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.2", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.10", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.11", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.2", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-bottom.11", "foregrip"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-bottom.2", "foregrip"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.10", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-bottom.2", "foregrip"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.11", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-bottom.6", "foregrip"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-bottom.7", "foregrip"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.6", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-bottom.8", "foregrip"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.7", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-bottom.9", "foregrip"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.8", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.10", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.11", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.6", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.7", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.8", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["handguard.rail-side.9", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-bottom.9", "foregrip"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.1", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.10", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.11", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.2", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.3", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.6", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.7", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.0", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.10", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.11", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.2", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.3", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.6", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.7", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.1", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.10", "tactical-flashlight-mount"],
+          ["handguard.rail-side.11", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.10", "tactical-flashlight-mount"],
+          ["handguard.rail-side.2", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.10", "tactical-flashlight-mount"],
+          ["handguard.rail-side.3", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.10", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.10", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.10", "tactical-flashlight-mount"],
+          ["handguard.rail-side.6", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.10", "tactical-flashlight-mount"],
+          ["handguard.rail-side.7", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.10", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.10", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.10", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.11", "tactical-flashlight-mount"],
+          ["handguard.rail-side.2", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.11", "tactical-flashlight-mount"],
+          ["handguard.rail-side.3", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.11", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.11", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.11", "tactical-flashlight-mount"],
+          ["handguard.rail-side.6", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.11", "tactical-flashlight-mount"],
+          ["handguard.rail-side.7", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.11", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.11", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.11", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.3", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.6", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.7", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.2", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.3", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.3", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.3", "tactical-flashlight-mount"],
+          ["handguard.rail-side.6", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.3", "tactical-flashlight-mount"],
+          ["handguard.rail-side.7", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.3", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.3", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.3", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.4", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.4", "tactical-flashlight-mount"],
+          ["handguard.rail-side.6", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.4", "tactical-flashlight-mount"],
+          ["handguard.rail-side.7", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.4", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.4", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.5", "tactical-flashlight-mount"],
+          ["handguard.rail-side.6", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.5", "tactical-flashlight-mount"],
+          ["handguard.rail-side.7", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.5", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.5", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.5", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.6", "tactical-flashlight-mount"],
+          ["handguard.rail-side.7", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.6", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.6", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.6", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.7", "tactical-flashlight-mount"],
+          ["handguard.rail-side.8", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.7", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.7", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [
+          ["handguard.rail-side.8", "tactical-flashlight-mount"],
+          ["handguard.rail-side.9", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.8", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-mini-reflex"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.1", "optic-tube-dot"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-holographic"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-mini-reflex"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.2", "optic-tube-dot"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-digital-thermal"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-high-mag-5-25x"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-holographic"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-mini-reflex"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.3", "optic-tube-dot"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-holographic"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.4", "optic-tube-dot"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["handguard.rail-side.9", "tactical-flashlight-mount"], ["receiver.rail.5", "optic-tube-dot"]],
+        [["receiver.rail.1", "optic-mini-reflex"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["receiver.rail.1", "optic-mini-reflex"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["receiver.rail.1", "optic-tube-dot"], ["receiver.rail.4", "optic-mini-reflex"]],
+        [["receiver.rail.1", "optic-tube-dot"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["receiver.rail.2", "optic-mini-reflex"], ["receiver.rail.5", "optic-mini-reflex"]],
+        [["receiver.rail.2", "optic-tube-dot"], ["receiver.rail.5", "optic-mini-reflex"]]
+      ],
+      "file": "assets/models/rifle_assault.glb",
+      "grip": {
+        "at": [-0.15890599999999999, -0.084251999999999994, 0],
+        "turn": [0, 0, 0]
+      },
+      "id": "rifle_assault",
+      "muzzleDirection": [1, 0, 1.2246467991473532e-16],
+      "sight": {
+        "direction": [1, 0, 0],
+        "eye": [-0.184, 0.063250000000000001, 0],
+        "eyeReliefMetres": 0.086249999999999993,
+        "kind": "optic",
+        "ocularDiameterMetres": 0.031625,
+        "up": [0, 1, -1.2246467991473532e-16]
+      },
+      "slots": {
+        "magazine": {
+          "at": [-0.048875000000000002, -0.020125000000000001, 0],
+          "node": "magazine:magazine",
+          "turn": [0, 0, 0]
+        }
+      }
+    },
+    {
+      "action": {
+        "ejectAt": 0.71999999999999997,
+        "ejectDirection": [0.33966050915148482, 0.19980029950087341, 0.91908137770401777],
+        "fire": {
+          "durationSimSeconds": 0.10000000000000001,
+          "dwellSimSeconds": 0.0060000000000000001,
+          "forwardSimSeconds": 0.046165855773284283,
+          "rearwardSimSeconds": 0.019933333333333334
+        },
+        "hand": {
+          "durationSimSeconds": 1.6961658557732842,
+          "dwellSimSeconds": 0.29999999999999999,
+          "forwardSimSeconds": 0.046165855773284283,
+          "rearwardSimSeconds": 0.65000000000000002
+        },
+        "holdOpen": false,
+        "parts": {
+          "carrier": {
+            "axis": [-1, 0, -1.2246467991473532e-16],
+            "modes": ["fire", "hand"],
+            "node": "bolt-carrier:bolt-carrier",
+            "strokeMetres": 0.074749999999999997
+          }
+        },
+        "roundsPerSimMinute": 600
+      },
+      "anchors": {
+        "ejection": [-0.048875000000000002, 0.0115, 0.023],
+        "muzzle": [0.39100000000000001, 0, 0],
+        "support": [0.093149999999999997, -0.020125000000000001, 0]
+      },
+      "attachmentSlots": [
+        {
+          "direction": [1, 0, 1.2246467991473532e-16],
+          "id": "barrel.muzzle.0",
+          "mount": "muzzle",
+          "position": [0.36799999999999999, 0, 0],
+          "up": [0, 1, 0]
+        },
+        {
+          "direction": [1, 0, 2.4492935982947064e-16],
+          "id": "muzzle-device.muzzle.0",
+          "mount": "muzzle",
+          "position": [0.39100000000000001, 0, 0],
+          "up": [0, 1, 0]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.0",
+          "mount": "rail-top",
+          "notchIndex": 0,
+          "position": [0.023, 0.040250000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.1",
+          "mount": "rail-top",
+          "notchIndex": 1,
+          "position": [0.045999999999999999, 0.040250000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.2",
+          "mount": "rail-top",
+          "notchIndex": 2,
+          "position": [0.069000000000000006, 0.040250000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.3",
+          "mount": "rail-top",
+          "notchIndex": 3,
+          "position": [0.091999999999999998, 0.040250000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.4",
+          "mount": "rail-top",
+          "notchIndex": 4,
+          "position": [0.115, 0.040250000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, 1, 0],
+          "id": "handguard.rail.5",
+          "mount": "rail-top",
+          "notchIndex": 5,
+          "position": [0.13800000000000001, 0.040250000000000001, 0],
+          "railId": "handguard.rail",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.0",
+          "mount": "rail-bottom",
+          "notchIndex": 0,
+          "position": [0.023, -0.040250000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.1",
+          "mount": "rail-bottom",
+          "notchIndex": 1,
+          "position": [0.045999999999999999, -0.040250000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.2",
+          "mount": "rail-bottom",
+          "notchIndex": 2,
+          "position": [0.069000000000000006, -0.040250000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.3",
+          "mount": "rail-bottom",
+          "notchIndex": 3,
+          "position": [0.091999999999999998, -0.040250000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.4",
+          "mount": "rail-bottom",
+          "notchIndex": 4,
+          "position": [0.115, -0.040250000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [0, -1, 0],
+          "id": "handguard.rail-bottom.5",
+          "mount": "rail-bottom",
+          "notchIndex": 5,
+          "position": [0.13800000000000001, -0.040250000000000001, 0],
+          "railId": "handguard.rail-bottom",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.0",
+          "mount": "rail-side",
+          "notchIndex": 0,
+          "position": [0.023, 0, 0.017250000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.1",
+          "mount": "rail-side",
+          "notchIndex": 1,
+          "position": [0.045999999999999999, 0, 0.017250000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.2",
+          "mount": "rail-side",
+          "notchIndex": 2,
+          "position": [0.069000000000000006, 0, 0.017250000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.3",
+          "mount": "rail-side",
+          "notchIndex": 3,
+          "position": [0.091999999999999998, 0, 0.017250000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.4",
+          "mount": "rail-side",
+          "notchIndex": 4,
+          "position": [0.115, 0, 0.017250000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "id": "handguard.rail-side.5",
+          "mount": "rail-side",
+          "notchIndex": 5,
+          "position": [0.13800000000000001, 0, 0.017250000000000001],
+          "railId": "handguard.rail-side",
+          "up": [1, 0, 1.2246467991473532e-16]
+        }
+      ],
+      "attachments": [],
+      "calibre": "7.62x39",
+      "chargingHandleDegrees": 90,
+      "compatibility": {
+        "barrel.muzzle.0": [],
+        "handguard.rail-bottom.0": ["foregrip"],
+        "handguard.rail-bottom.1": ["foregrip"],
+        "handguard.rail-bottom.2": ["foregrip"],
+        "handguard.rail-bottom.3": ["foregrip"],
+        "handguard.rail-bottom.4": ["foregrip"],
+        "handguard.rail-bottom.5": ["foregrip"],
+        "handguard.rail-side.0": ["tactical-flashlight-mount"],
+        "handguard.rail-side.1": ["tactical-flashlight-mount"],
+        "handguard.rail-side.2": ["tactical-flashlight-mount"],
+        "handguard.rail-side.3": ["tactical-flashlight-mount"],
+        "handguard.rail-side.4": ["tactical-flashlight-mount"],
+        "handguard.rail-side.5": ["tactical-flashlight-mount"],
+        "handguard.rail.0": [],
+        "handguard.rail.1": [],
+        "handguard.rail.2": [],
+        "handguard.rail.3": [],
+        "handguard.rail.4": [],
+        "handguard.rail.5": [],
+        "muzzle-device.muzzle.0": []
+      },
+      "compatibilityPairs": [
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.1", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.2", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.0", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.2", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.3", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.2", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.3", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-bottom.5", "foregrip"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.4", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+        [["handguard.rail-bottom.5", "foregrip"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.1", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.2", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.3", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.0", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.2", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.3", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.1", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.3", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.2", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.3", "tactical-flashlight-mount"],
+          ["handguard.rail-side.4", "tactical-flashlight-mount"]
+        ],
+        [
+          ["handguard.rail-side.3", "tactical-flashlight-mount"],
+          ["handguard.rail-side.5", "tactical-flashlight-mount"]
+        ],
+        [["handguard.rail-side.4", "tactical-flashlight-mount"], ["handguard.rail-side.5", "tactical-flashlight-mount"]]
+      ],
+      "file": "assets/models/rifle_ak.glb",
+      "grip": {
+        "at": [-0.22215599999999999, -0.067002000000000006, 0],
+        "turn": [0, 0, 0]
+      },
+      "id": "rifle_ak",
+      "muzzleDirection": [1, 0, 2.4492935982947064e-16],
+      "sight": {
+        "direction": [1, 0, 1.1498592083597285e-16],
+        "eye": [-0.028750000000000001, 0.048875000000000002, 0],
+        "eyeReliefMetres": 0.253,
+        "kind": "iron",
+        "up": [1.408171398987851e-32, 1, -1.2246467991473532e-16]
+      },
+      "slots": {
+        "magazine": {
+          "at": [-0.086249999999999993, -0.028750000000000001, 0],
+          "node": "magazine:magazine",
+          "turn": [0, 0, 0]
+        }
+      }
+    },
+    {
+      "calibre": "7.62x39",
+      "file": "assets/models/round-7_d_62x39.glb",
+      "id": "round_7_d_62x39"
+    },
+    {
+      "calibre": "7.62x39",
+      "file": "assets/models/case-7_d_62x39.glb",
+      "id": "case_7_d_62x39"
+    },
+    {
+      "calibre": "5.56x45",
+      "file": "assets/models/round-5_d_56x45.glb",
+      "id": "round_5_d_56x45"
+    },
+    {
+      "calibre": "5.56x45",
+      "file": "assets/models/case-5_d_56x45.glb",
+      "id": "case_5_d_56x45"
+    },
+    {
+      "calibre": "12-gauge-00-buck",
+      "file": "assets/models/round-12_h_gauge_h_00_h_buck.glb",
+      "id": "round_12_h_gauge_h_00_h_buck"
+    },
+    {
+      "calibre": "12-gauge-00-buck",
+      "file": "assets/models/case-12_h_gauge_h_00_h_buck.glb",
+      "id": "case_12_h_gauge_h_00_h_buck"
+    },
+    {
+      "anchors": {
+        "muzzle": [0.80049999999999999, 0.00040000000000000002, 0.039399999999999998]
+      },
+      "file": "assets/models/rifle_battle.glb",
+      "grip": {
+        "at": [0.31580000000000003, 0.00040000000000000002, -0.0138],
+        "turn": [-90, 0, 0]
+      },
+      "id": "rifle_battle"
+    },
+    {
+      "anchors": {
+        "muzzle": [0.75719999999999998, -0.00069999999999999999, 0.056599999999999998]
+      },
+      "file": "assets/models/shotgun_auto.glb",
+      "grip": {
+        "at": [0.2903, -0.00069999999999999999, 0.0123],
+        "turn": [-90, 0, 0]
+      },
+      "id": "shotgun_auto"
+    },
+    {
+      "action": {
+        "ejectAt": 0.76000000000000001,
+        "ejectDirection": [0.12038585308576918, 0.24077170617153837, 0.96308682468615348],
+        "hand": {
+          "durationSimSeconds": 1.5,
+          "dwellSimSeconds": 0.14999999999999999,
+          "forwardSimSeconds": 0.5,
+          "rearwardSimSeconds": 0.5
+        },
+        "holdOpen": false,
+        "parts": {
+          "carrier": {
+            "axis": [-1, 0, -1.2246467991473532e-16],
+            "modes": ["hand"],
+            "node": "bolt-carrier:bolt-carrier",
+            "strokeMetres": 0.063250000000000001
+          },
+          "forend": {
+            "axis": [-1, 0, -2.4492935982947064e-16],
+            "modes": ["hand"],
+            "node": "forend:forend",
+            "strokeMetres": 0.063250000000000001
+          }
+        }
+      },
+      "anchors": {
+        "ejection": [-0.033062000000000001, 0, 0.017250000000000001],
+        "loading_port": [-0.057500000000000002, -0.040250000000000001, 0],
+        "muzzle": [0.45424999999999999, 0, 0],
+        "support": [0.231438, -0.043050999999999999, 0.0276]
+      },
+      "attachmentSlots": [
+        {
+          "direction": [1, 0, 1.2246467991473532e-16],
+          "id": "barrel.muzzle.0",
+          "mount": "muzzle",
+          "position": [0.45424999999999999, 0, 0],
+          "up": [0, 1, 0]
+        }
+      ],
+      "attachments": [],
+      "calibre": "12-gauge-00-buck",
+      "compatibility": {
+        "barrel.muzzle.0": []
+      },
+      "compatibilityPairs": [],
+      "file": "assets/models/shotgun_pump.glb",
+      "grip": {
+        "at": [-0.21562500000000001, -0.037374999999999999, 0],
+        "turn": [0, 0, 0]
+      },
+      "id": "shotgun_pump",
+      "muzzleDirection": [1, 0, 1.2246467991473532e-16],
+      "sight": {
+        "direction": [1, 0, 9.2694260487948834e-17],
+        "eye": [0.44850000000000001, 0.028750000000000001, 0],
+        "eyeReliefMetres": 0.52037500000000003,
+        "kind": "iron",
+        "up": [1.1351772940589751e-32, 1, -1.2246467991473532e-16]
+      },
+      "tube": {
+        "capacity": 4
+      }
+    },
+    {
+      "anchors": {
+        "muzzle": [0.4214, 0.0001, 0.076600000000000001]
+      },
+      "file": "assets/models/smg_compact.glb",
+      "grip": {
+        "at": [0.2868, 0.0001, 0.057000000000000002],
+        "turn": [-90, 0, 0]
+      },
+      "id": "smg_compact"
+    },
+    {
+      "anchors": {
+        "muzzle": [0.52929999999999999, 0, 0.074200000000000002]
+      },
+      "file": "assets/models/smg_full.glb",
+      "grip": {
+        "at": [0.2944, 0, 0.036499999999999998],
+        "turn": [-90, 0, 0]
+      },
+      "id": "smg_full"
+    },
+    {
+      "anchors": {
+        "muzzle": [1.0624, 0.0111, 0.041799999999999997]
+      },
+      "file": "assets/models/sniper_material.glb",
+      "grip": {
+        "at": [0.31719999999999998, 0.0111, -0.018100000000000002],
+        "turn": [-90, 0, 0]
+      },
+      "id": "sniper_material"
+    },
+    {
+      "anchors": {
+        "muzzle": [0.91600000000000004, 0.0077999999999999996, 0.033700000000000001]
+      },
+      "file": "assets/models/sniper_rifle.glb",
+      "grip": {
+        "at": [0.29599999999999999, 0.0077999999999999996, -0.017899999999999999],
+        "turn": [-90, 0, 0]
+      },
+      "id": "sniper_rifle"
+    }
+  ]
+}

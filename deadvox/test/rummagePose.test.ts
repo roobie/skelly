@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CircleGeometry, Group, Mesh, PerspectiveCamera, Vector3 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import { compassBearing } from '../src/core/coords.ts';
 import { actionCycleSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -13,6 +13,7 @@ import { Unpacking } from '../src/game/unpacking.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 afterEach(() => vi.unstubAllGlobals());

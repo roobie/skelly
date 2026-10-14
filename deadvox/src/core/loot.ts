@@ -4,14 +4,14 @@
 // instances, so worldgen stays free of item uids.
 
 import { array, check, type InferOutput, picklist, pipe, strictObject } from 'valibot';
-import type { LootEntry, Registry } from './content.ts';
+import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
 import type { FixedLootItemDef } from './schema.ts';
 
 const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
 
-const UsageSchema = pipe(
+export const UsageSchema = pipe(
   array(picklist(['Residential', 'Industrial', 'Medical', 'Hunting', 'Military', 'Infected'])),
   check(distinct, 'usage tags must be unique'),
 );
@@ -34,7 +34,7 @@ export const militaryOnlyEconomy = (economy: ItemEconomy): boolean =>
 
 type LootSupply =
   | { readonly kind: 'table'; readonly table: string }
-  | { readonly kind: 'fixed'; readonly items: readonly FixedLootItemDef[] }
+  | { readonly kind: 'fixed'; readonly items: readonly FixedLootItemDef[]; readonly table?: string }
   | { readonly kind: 'empty' };
 
 export interface LootSpawnPoint {
@@ -94,6 +94,57 @@ export const lootPointsByColumn = (
     columns.set(key, points);
   }
   return columns;
+};
+
+const installedLootTypes = (
+  registry: Registry,
+  item: ItemDef,
+  overrides: Readonly<Record<string, string>>,
+): (string | undefined)[] => {
+  const attachments = registry.models.get(item.model ?? '')?.attachments ?? [];
+  const children = attachments
+    .filter((attachment) => overrides[attachment.mountedAt] === undefined)
+    .map(
+      (attachment) =>
+        [...registry.items.values()].find(
+          (entry) => registry.models.get(entry.model ?? '')?.attachment?.id === attachment.id,
+        )?.id,
+    );
+  if (item.light?.power && overrides.battery === undefined) {
+    children.push(item.light.power.battery);
+  }
+  return [...Object.values(overrides), ...children];
+};
+
+export const lootTypeIssue = (
+  registry: Registry,
+  type: string,
+  context: LootContext,
+  fitted: Readonly<Record<string, string>> = {},
+): string | undefined => {
+  const seen = new Set<string>();
+  const pending = [{ type, fitted }];
+  while (pending.length > 0) {
+    const candidate = pending.pop()!;
+    if (seen.has(candidate.type)) {
+      continue;
+    }
+    seen.add(candidate.type);
+    const item = registry.items.get(candidate.type);
+    if (!item) {
+      return `no item "${candidate.type}"`;
+    }
+    if (!economyEligible(item.economy, context)) {
+      return `"${candidate.type}" is outside the source loot context`;
+    }
+    for (const child of installedLootTypes(registry, item, candidate.fitted)) {
+      if (child === undefined) {
+        return 'no item for a default attachment';
+      }
+      pending.push({ type: child, fitted: {} });
+    }
+  }
+  return undefined;
 };
 
 export interface Rolled {

@@ -2,12 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { doorOptions } from '../src/core/options.ts';
 import { pryPlan } from '../src/core/prying.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import {
   advance,
   capture,

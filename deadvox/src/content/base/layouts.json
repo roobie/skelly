@@ -1,51 +1,63 @@
 {
   "layouts": [
     {
-      "id": "lone_house",
       "bounds": {
         "x0": 0,
-        "z0": 0,
         "x1": 128,
+        "z0": 0,
         "z1": 128
       },
-      "ground": 21,
-      "terrain": [],
       "buildings": [
         {
-          "template": "small_house",
+          "lootContext": {
+            "tier": "Tier1",
+            "usage": ["Residential"]
+          },
           "position": [55, 21, 55],
           "rotation": 180,
-          "storeys": 2
+          "storeys": 2,
+          "template": "small_house"
         },
         {
-          "template": "shed",
+          "lootContext": {
+            "tier": "Tier1",
+            "usage": ["Industrial"]
+          },
           "position": [49, 21, 57],
           "rotation": 90,
-          "storeys": 1
+          "storeys": 1,
+          "template": "shed"
         }
       ],
+      "ground": 21,
+      "id": "lone_house",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
       "player": {
-        "position": [72, 21.5, 65],
-        "bearing": 300
+        "bearing": 300,
+        "position": [72, 21.5, 65]
       },
       "shamblers": [
         {
-          "type": "shambler",
+          "chance": 1,
           "position": [58, 25, 59.5],
-          "chance": 1
+          "type": "shambler"
+        }
+      ],
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[72, 22], [72, 96]],
+          "surface": "dirt",
+          "width": 3
         }
       ],
       "woodlands": [
         {
-          "polygon": [[35, 25], [80, 25], [80, 48], [35, 48]],
-          "density": 1
-        }
-      ],
-      "tracks": [
-        {
-          "points": [[72, 22], [72, 96]],
-          "width": 3,
-          "surface": "dirt"
+          "density": 1,
+          "polygon": [[35, 25], [80, 25], [80, 48], [35, 48]]
         }
       ]
     }

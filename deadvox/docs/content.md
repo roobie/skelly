@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
+  - you change item economy metadata, source contexts or loot-point descriptions
   - you change skill content tuning or training rules
   - you're authoring or changing base template geometry or palettes
   - you change content references, static reachability, or disassembly-output contracts
@@ -36,7 +37,7 @@ Weathering is a render-only content choice, not saved world state. Named profile
 
 ## Content test registries
 
-Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`.
+Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`. Unrelated contract fixtures may author common-supply metadata through `test/economyFixtures.ts`, `buildFixtureRegistry`; admission tests must use raw sources so the fixture builder cannot conceal missing metadata.
 
 ## Authored structures and sites
 
@@ -69,6 +70,8 @@ Debug fixtures, runtime escrow, spent cases, and body-part policy stay out of ac
 ## Loot economy descriptions
 
 Separate item admission from table weights and world placement. Exact tier membership and intersecting usage keep a shared supply eligible without making every military-usable item military-only. Explicit empty metadata means no random admission, rather than a wildcard. See `src/core/loot.ts`, `ItemEconomySchema`, `economyEligible`, and `militaryOnlyEconomy`.
+
+Templates own procedural defaults. Authored building contexts override them; when that override is absent, the site's tier combines with template usage. Anchor overrides narrow usage without changing the resolved tier. See `src/core/authoredPlacement.ts`, `placementOf`, and `src/core/site.ts`, `lootSourcesOf`. Native content metadata is an explicit authoring choice with unknown-row assertions, not a runtime default; see `src/content/base/economy.libsonnet`, `authorItem` and `context`.
 
 Keep empty source descriptions so future refill work need not regenerate geometry. Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
 

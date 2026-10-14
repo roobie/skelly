@@ -34,6 +34,7 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
+import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import {
@@ -491,6 +492,7 @@ const TreatmentSchema = pipe(
 
 const ItemSchema = strictObject({
   id: Id,
+  economy: ItemEconomySchema,
   name: Name,
   category: picklist(ITEM_CATEGORIES),
   weight: NonNegative,
@@ -946,8 +948,6 @@ const LootEntrySchema = pipe(
 
 const LootTableSchema = strictObject({
   id: Id,
-  /** Military supply: the only tables that may hold military-only items or nest another military table. */
-  military: optional(vBoolean()),
   /** How many times to roll, inclusive. */
   rolls: range(Count),
   entries: pipe(array(LootEntrySchema), nonEmpty('needs at least one entry')),
@@ -977,6 +977,7 @@ const PaletteThingSchema = pipe(
     furniture: optional(Id),
     /** Overrides the furniture's own loot table. */
     loot: optional(Id),
+    lootUsage: optional(UsageSchema),
     facing: optional(picklist(['n', 'e', 's', 'w'])),
     /** Initial lock state, only on a door; ids are unique within an authored site. */
     lock: optional(DoorLockSchema),
@@ -1018,8 +1019,7 @@ const TemplateAccessSchema = strictObject({
 
 const TemplateSchema = strictObject({
   id: Id,
-  /** Military supply may be rolled only inside a military site. */
-  military: optional(vBoolean()),
+  lootContext: LootContextSchema,
   /** Blocks: [x, y, z]. */
   size: Size,
   /** What each character means: a block id ("air" for empty), or furniture or a spawn point. */
@@ -1089,11 +1089,13 @@ const FixedLootItem = strictObject({
   fitted: optional(record(Id, Id)),
 });
 const FixedLootOverride = strictObject({
+  lootUsage: optional(UsageSchema),
   /** Template-local furniture anchor in half-metre block cells. */
   at: tuple([Count, Count, Count]),
   items: pipe(array(FixedLootItem), nonEmpty('needs at least one fixed item')),
 });
 const LayoutBuilding = strictObject({
+  lootContext: optional(LootContextSchema),
   template: Id,
   position: tuple([HalfMetres, HalfMetres, HalfMetres]),
   rotation: picklist([0, 90, 180, 270], 'rotation must be a quarter turn'),
@@ -1107,6 +1109,7 @@ const LayoutRect = pipe(
 
 const SiteLayoutSchema = strictObject({
   id: Id,
+  lootContext: LootContextSchema,
   /** Fixture and showcase layouts are not world sources; unmarked authored layouts contribute building containers and fixed loot. */
   demo: optional(vBoolean()),
   /** The render-only weathering profile for this site; absent layouts use the default profile. */

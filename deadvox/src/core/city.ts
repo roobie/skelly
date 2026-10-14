@@ -11,7 +11,7 @@ import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES } from './hamlet.ts';
 import { hash3 } from './random.ts';
 import type { Scale } from './scale.ts';
-import { type FurnitureSpawn, furnitureOf, type Rect, rectDistance, type Site } from './site.ts';
+import { type FurnitureSpawn, furnitureOf, lootPointsOf, type Rect, rectDistance, type Site } from './site.ts';
 import {
   type CompiledTemplate,
   compileTemplate,
@@ -123,6 +123,12 @@ export class StressCity implements Site {
         stampPlacement(chunk, p);
       }
     }
+  }
+
+  lootPointsIn(cx: number, cz: number) {
+    return (this.byColumn.get(`${cx},${cz}`) ?? []).flatMap((p) => [
+      ...lootPointsOf(this.registry, 'city', p, [cx, cz]),
+    ]);
   }
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {

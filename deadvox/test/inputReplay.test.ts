@@ -830,6 +830,7 @@ describe('input replay', () => {
       surface: fixtureHamlet.surface,
       spawn: fixtureHamlet.spawn,
       stamp: (chunk) => fixtureHamlet.stamp(chunk),
+      lootPointsIn: (columnX, columnZ) => fixtureHamlet.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureHamlet.furnitureIn(columnX, columnZ),
       zombiesIn: (columnX, columnZ) =>
         columnX === cx && columnZ === cz ? [marker] : fixtureHamlet.zombiesIn(columnX, columnZ),
@@ -1106,6 +1107,7 @@ describe('input replay', () => {
       surface: fixtureHamlet.surface,
       spawn: fixtureHamlet.spawn,
       stamp: (chunk) => fixtureHamlet.stamp(chunk),
+      lootPointsIn: (columnX, columnZ) => fixtureHamlet.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureHamlet.furnitureIn(columnX, columnZ),
       zombiesIn: (columnX, columnZ) =>
         columnX === cx && columnZ === cz

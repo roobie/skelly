@@ -169,7 +169,11 @@ function addBuilding(object, info, context) {
     throw new Error(`${name}: buildings overlap`);
   }
   footprints.push(rect);
-  const building = { template, position, rotation, storeys };
+  const building = { template, position, rotation, storeys, lootContext: definition.lootContext };
+  const lootContext = optionalString(object, 'loot_context');
+  if (lootContext !== undefined) {
+    building.lootContext = JSON.parse(lootContext);
+  }
   if (fixedLoot.length > 0) {
     building.fixedLoot = fixedLoot;
   }
@@ -342,6 +346,7 @@ export function exportLayout(map) {
   }
   const layout = {
     id,
+    lootContext: JSON.parse(scalar(map, 'loot_context')),
     bounds: { x0: 0, z0: 0, x1: map.width, z1: map.height },
     ground,
     terrain: [],

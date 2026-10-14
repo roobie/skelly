@@ -13,6 +13,11 @@
   "nextobjectid": 133,
   "properties": [
     {
+      "name": "loot_context",
+      "type": "string",
+      "value": "{\"usage\":[\"Residential\"],\"tier\":\"Tier1\"}"
+    },
+    {
       "name": "id",
       "type": "string",
       "value": "playtest"

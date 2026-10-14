@@ -19,6 +19,7 @@ const ORTHOGONAL = 'Orthogonal';
 const READ_ONLY = 'ReadOnly';
 const WINDOW_FROM = 'window_from';
 const WINDOW_TO = 'window_to';
+const LOOT_CONTEXT = 'loot_context';
 const TiledTextFile = class {
   private readonly path: string;
   constructor(path: string) {
@@ -107,7 +108,10 @@ describe('Tiled spawn-window export', () => {
       height: 20,
       layerCount: 1,
       layerAt: () => layer,
-      property: (name: string) => ({ id: 'timed_fixture', ground: 0 })[name as 'id' | 'ground'],
+      property: (name: string) =>
+        ({ id: 'timed_fixture', ground: 0, [LOOT_CONTEXT]: '{"usage":["Residential"],"tier":"Tier1"}' })[
+          name as 'id' | 'ground' | 'loot_context'
+        ],
     };
     const {
       layouts: [layout],
@@ -211,7 +215,10 @@ describe('Tiled spawn-window export', () => {
       height: 20,
       layerCount: 1,
       layerAt: () => layer,
-      property: (name: string) => ({ id: 'timed_fixture', ground: 0 })[name as 'id' | 'ground'],
+      property: (name: string) =>
+        ({ id: 'timed_fixture', ground: 0, [LOOT_CONTEXT]: '{"usage":["Residential"],"tier":"Tier1"}' })[
+          name as 'id' | 'ground' | 'loot_context'
+        ],
     };
     expect(() => exportLayout(map)).toThrow('window_to requires window_from');
   });

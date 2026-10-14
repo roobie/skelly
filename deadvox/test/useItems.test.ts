@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
-import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
+import type { ContentSource, Registry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
@@ -11,6 +11,7 @@ import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { EAT_TIME, TAKE_TIME } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 

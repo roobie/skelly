@@ -158,6 +158,10 @@ export class DebugTestHouseSite implements Site {
     this.range.stamp(chunk);
   }
 
+  lootPointsIn() {
+    return [];
+  }
+
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
     const spawns = this.range.furnitureIn(cx, cz);
     if (toChunk(this.rack.pos[0]) === cx && toChunk(this.rack.pos[2]) === cz) {

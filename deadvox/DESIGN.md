@@ -32,6 +32,7 @@ read_if:
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
+  - you're changing military progression or loot economy admission
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
   - you're changing when a running game warns before page exit relative to its last save
@@ -699,7 +700,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
   Gungen's geometry and material export is the single source for attachment mass; `weightOf` uses `massKg` for attachment items, so their required content `weight` is not authoritative. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear; foregrips affect aim and stance; a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
-- **Military loot (3.2):** Restricting magazine-fed firearms and their compatible ammunition to military sources keeps ordinary scavenging from supplying a rifle. Recursive validation covers military items acquired through nesting, repackaging, crafting, salvage and fixed loot. Exported attachments use military loot in playtest 1 without being validation-locked to it, allowing later sites to carry optics. Reachability checks keep authored military sites part of the progression. See `src/core/magazine.ts`, `militaryLootItems`, `src/core/content.ts`, `checkMilitaryLoot`, and `src/core/reachability.ts`, `worldSources`.
+- **Military loot (3.2):** Authored Military-only usage protects military progression without inferring admission from calibre or furniture type. Shared supplies remain craftable even when military sources can carry them; ordinary crafting, salvage and unpacking cannot manufacture Military-only supplies. Fixed stock and its installed descendants must match their resolved source context. Tables supply weights, not a second geography authority. See `src/core/loot.ts`, `economyEligible` and `lootTypeIssue`, `src/core/magazine.ts`, `militaryLootItems`, and `src/core/content.ts`, `checkMilitaryLoot`.
 - **Spent cases per block:** Cases must never end inside terrain; use only clear,
   supported landing cells, including spill destinations. If none is available,
   discard the case rather than jam the firearm for a cosmetic item. When an

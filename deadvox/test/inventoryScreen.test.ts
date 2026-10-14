@@ -214,6 +214,7 @@ describe('inventory screen Lit rendering', () => {
     const items = new Map(registry.items);
     items.set('fixture_floor_stack', {
       id: 'fixture_floor_stack',
+      economy: { usage: [], tiers: [] },
       name: 'Fixture floor stack',
       category: 'material',
       weight: 1,
@@ -251,6 +252,7 @@ describe('inventory screen Lit rendering', () => {
     const items = new Map(registry.items);
     items.set('fixture_floor_dragged', {
       id: 'fixture_floor_dragged',
+      economy: { usage: [], tiers: [] },
       name: 'Fixture dragged item',
       category: 'material',
       weight: 1,
@@ -258,6 +260,7 @@ describe('inventory screen Lit rendering', () => {
     });
     items.set('fixture_floor_target', {
       id: 'fixture_floor_target',
+      economy: { usage: [], tiers: [] },
       name: 'Fixture target item',
       category: 'material',
       weight: 1,
@@ -292,6 +295,7 @@ describe('inventory screen Lit rendering', () => {
     const betaName = 'Box of matches';
     items.set('fixture_inventory_alpha', {
       id: 'fixture_inventory_alpha',
+      economy: { usage: [], tiers: [] },
       name: alphaName,
       category: 'medical',
       weight: 1,
@@ -299,6 +303,7 @@ describe('inventory screen Lit rendering', () => {
     });
     items.set('fixture_inventory_beta', {
       id: 'fixture_inventory_beta',
+      economy: { usage: [], tiers: [] },
       name: betaName,
       category: 'medical',
       weight: 1,
@@ -356,6 +361,7 @@ describe('inventory screen Lit rendering', () => {
     for (const fixture of fixtures) {
       items.set(fixture.id, {
         id: fixture.id,
+        economy: { usage: [], tiers: [] },
         name: fixture.name,
         category: 'misc',
         weight: 1,
