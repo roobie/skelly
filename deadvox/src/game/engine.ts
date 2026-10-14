@@ -46,9 +46,15 @@ export interface RenderedEngine extends Engine {
 export interface EngineOptions {
   /** Skip all WebGL initialization while retaining simulation, collision and CPU mesh streaming. */
   render?: boolean;
+  graphicsSource?: 'player' | 'mod';
 }
 
-export function createEngine(config: GameConfig, view: HTMLElement, stats?: StreamerStats): RenderedEngine;
+export function createEngine(
+  config: GameConfig,
+  view: HTMLElement,
+  stats?: StreamerStats,
+  options?: EngineOptions & { render?: true },
+): RenderedEngine;
 export function createEngine(
   config: GameConfig,
   view: HTMLElement,
@@ -59,7 +65,7 @@ export function createEngine(
   config: GameConfig,
   view: HTMLElement,
   stats?: StreamerStats,
-  { render = true }: EngineOptions = {},
+  { render = true, graphicsSource = 'player' }: EngineOptions = {},
 ): Engine {
   const { scale, radiusM } = config;
   const renderer = render ? new WebGLRenderer({ antialias: true }) : undefined;
@@ -134,7 +140,7 @@ export function createEngine(
   const graphics = new GraphicsControls(
     graphicsTuning,
     { meshes, ...(mood ? { mood } : {}), ...(shadows ? { shadows } : {}) },
-    { debug: config.debug, params: new URLSearchParams(globalThis.location?.search ?? '') },
+    { source: graphicsSource, debug: config.debug, params: new URLSearchParams(globalThis.location?.search ?? '') },
   );
 
   const resize = () => {

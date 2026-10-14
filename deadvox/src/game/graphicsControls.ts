@@ -26,17 +26,18 @@ export class GraphicsControls {
     tuning: GraphicsOptions,
     targets: GraphicsTargets,
     options: {
+      source?: 'player' | 'mod';
       debug: boolean;
       params: URLSearchParams;
       storage?: Pick<Storage, 'getItem' | 'setItem'>;
     },
   ) {
-    const { debug, params, storage } = options;
+    const { source = 'player', debug, params, storage } = options;
     this.tuning = tuning;
     this.targets = targets;
     this.storage = storage;
-    this.settings = readGraphicsSettings(tuning, storage);
-    this.overrides = Object.freeze(debug ? readGraphicsParams(params, tuning) : {});
+    this.settings = source === 'player' ? readGraphicsSettings(tuning, storage) : {};
+    this.overrides = Object.freeze(source === 'player' && debug ? readGraphicsParams(params, tuning) : {});
     this.apply();
   }
 

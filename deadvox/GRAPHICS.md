@@ -3,8 +3,7 @@ read_if:
   - you're changing procedural surface weathering or building appearance
   - you're changing the solar-phase look, flashlight daylight adaptation, or evaluating renderer performance
   - you're changing wide ambient occlusion or its interaction with skylight
-  - you're changing content-defined graphics policy or per-machine graphics settings
-  - you're adding or evaluating opt-in GPU quality trials
+  - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
 ---
 
 # Deadvox graphics
@@ -30,6 +29,10 @@ Coarser surface detail can retain weathering and camouflage while changing their
 Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `src/core/occlusion.ts` and `src/render/chunks.ts`, `chunkMaterial`.
 
 ## Graphics policy
+
+Benchmarks use only effective mod defaults, ignoring machine preferences and debug graphics
+URL overrides, because saved choices must not silently change the comparison workload.
+See `src/game/engine.ts`, `createEngine`, and `src/main.ts`.
 
 Keep graphics defaults and permitted choices in the core mod, while the player owns the
 choice for their machine: a content pack cannot know their GPU. Debug URL overrides must

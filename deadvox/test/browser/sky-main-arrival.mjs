@@ -12,6 +12,8 @@ export const mainSourceOverlays = [
   'game/worldLoading.ts',
   'ui/worldLoading.ts',
   'render/skylight.ts',
+  'render/mood.ts',
+  'render/moodQuality.ts',
   'game/streamer.ts',
   'worker/mesh.worker.ts',
   'worker/protocol.ts',
