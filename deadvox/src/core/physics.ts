@@ -312,8 +312,8 @@ const moveHorizontal = (ctx: MoveContext, axis: Axis, delta: number): void => {
 const groundProbe = (body: Body, isSolid: SolidAt, shape: BodyShape | undefined): boolean =>
   shape ? shapeSupported(body, shape) : moveAxis(body, 1, -2 * CONTACT_SKIN, { isSolid });
 
-/** Applies gravity and velocity for dt seconds, resolving collisions axis by axis (y first). */
-export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: PhysicsParams): void => {
+/** Applies gravity and velocity, returning downward terrain impact speed in blocks per second (zero without impact). */
+export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: PhysicsParams): number => {
   const obstacles = params.obstacles ?? [];
   const { shapeOf } = params;
   const shape = shapeOf?.(body);
@@ -323,13 +323,16 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
   const substeps = Math.max(1, Math.ceil(largest / MAX_STEP));
   const h = dt / substeps;
   body.onGround = false;
+  let landingSpeed = 0;
   for (let i = 0; i < substeps; i++) {
-    const falling = body.vel[1] < 0;
+    const downwardSpeed = -body.vel[1];
+    const falling = downwardSpeed > 0;
     if (shape && falling && (wasGrounded || body.onGround) && shapeSupported(body, shape)) {
       // Resting on terrain: gravity's pull would only start a contact search back to here.
       body.vel[1] = 0;
       body.onGround = true;
     } else if (moveAxis(body, 1, body.vel[1] * h, { isSolid, shapeOf }) && falling) {
+      landingSpeed = Math.max(landingSpeed, downwardSpeed);
       body.onGround = true;
     }
     const ctx: MoveContext = {
@@ -346,6 +349,7 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
       body.onGround = groundProbe(body, isSolid, shape);
     }
   }
+  return landingSpeed;
 };
 
 /** Moves a grounded actor horizontally in collision-bounded substeps without running gravity. */
