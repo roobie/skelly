@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import { buildCityPlan, scenarioPlanIssues } from '../src/core/cityPlan.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -44,52 +44,54 @@ it('resolves one repeatable variant per slot and varies city assemblies across b
   expect(selections.some((selected) => new Set(selected).size > 1)).toBe(true);
 });
 
-it('aligns the authored ground course with the city surface while keeping cellar floors below it', () => {
-  const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
-  const building = data.mapAssemblies![0]!;
-  building.size[1] *= 2;
-  data.mapPieces!.push({ ...data.mapPieces![0]!, id: 'street_room', ports: [] });
-  building.slots.push({
-    ...building.slots[0]!,
-    id: 'street_room',
-    at: [0, 5, 0],
-    choices: [{ ref: { kind: 'piece', id: 'street_room' }, weight: 1 }],
+describe('authored city grounding', () => {
+  it('aligns the authored ground course with the city surface while keeping cellar floors below it', () => {
+    const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
+    const building = data.mapAssemblies![0]!;
+    building.size[1] *= 2;
+    data.mapPieces!.push({ ...data.mapPieces![0]!, id: 'street_room', ports: [] });
+    building.slots.push({
+      ...building.slots[0]!,
+      id: 'street_room',
+      at: [0, 5, 0],
+      choices: [{ ref: { kind: 'piece', id: 'street_room' }, weight: 1 }],
+    });
+    building.access = {
+      ground: 'street',
+      entrance: [1, 6, 2],
+      storeys: [
+        { id: 'cellar', floor: 1 },
+        { id: 'street', floor: 6 },
+      ],
+      stairs: [],
+    };
+    data.mapSites = [];
+    const { registry, issues } = buildRegistry([{ source: 'fixture-city-cellar.json', data }]);
+    expect(issues).toEqual([]);
+    const floor = 20;
+    const plan = buildCityPlan({
+      seed: 1,
+      registry,
+      floor,
+      grid: {
+        street: 4,
+        blockX: 14,
+        blockZ: 12,
+        pad: 2,
+        gap: 2,
+        blend: 2,
+        blocksX: 1,
+        blocksZ: 1,
+        templates: [building.id],
+      },
+    });
+    expect(plan.placements.length).toBeGreaterThan(0);
+    for (const placement of plan.placements) {
+      expect(placedPoint(placement, placement.template.access!.entrance)[1]).toBe(floor + 1);
+      const cellar = placement.template.access!.storeys.find((storey) => storey.id === 'cellar')!;
+      expect(placedPoint(placement, [1, cellar.floor, 2])[1]).toBeLessThan(floor);
+    }
   });
-  building.access = {
-    ground: 'street',
-    entrance: [1, 6, 2],
-    storeys: [
-      { id: 'cellar', floor: 1 },
-      { id: 'street', floor: 6 },
-    ],
-    stairs: [],
-  };
-  data.mapSites = [];
-  const { registry, issues } = buildRegistry([{ source: 'fixture-city-cellar.json', data }]);
-  expect(issues).toEqual([]);
-  const floor = 20;
-  const plan = buildCityPlan({
-    seed: 1,
-    registry,
-    floor,
-    grid: {
-      street: 4,
-      blockX: 14,
-      blockZ: 12,
-      pad: 2,
-      gap: 2,
-      blend: 2,
-      blocksX: 1,
-      blocksZ: 1,
-      templates: [building.id],
-    },
-  });
-  expect(plan.placements.length).toBeGreaterThan(0);
-  for (const placement of plan.placements) {
-    expect(placedPoint(placement, placement.template.access!.entrance)[1]).toBe(floor + 1);
-    const cellar = placement.template.access!.storeys.find((storey) => storey.id === 'cellar')!;
-    expect(placedPoint(placement, [1, cellar.floor, 2])[1]).toBeLessThan(floor);
-  }
 });
 
 it('rejects ambiguous city pool identities instead of choosing a template or assembly namespace', () => {
