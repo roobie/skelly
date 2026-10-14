@@ -20,12 +20,21 @@ const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
   transform(code, id) {
+    if (id.endsWith('/src/ui/saveController.ts')) {
+      return code.replace(
+        '    this.environmentProblem = saveEnvironmentProblem();',
+        '    globalThis.saveControllerConstructed = true;\n    this.environmentProblem = saveEnvironmentProblem();',
+      );
+    }
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
     const marker = '  startRealFrames(frame);';
     assert(code.includes(marker), 'game-ready observation point exists');
-    return code.replace(marker, `  Object.assign(globalThis, { saveControllerPlayStarted: true });\n${marker}`);
+    return code.replace(
+      marker,
+      `  Object.assign(globalThis, { saveControllerPlayStarted: true, tutorialSession: options.tutorial ? session : undefined });\n${marker}`,
+    );
   },
 };
 const server = await createServer({
@@ -51,6 +60,77 @@ const BASE_MISMATCH = /Generated base mismatch/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 
 try {
+  await test('practice launch, lifecycle and death leave the normal save untouched and exit returns to start', async () => {
+    const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+    try {
+      const page = await context.newPage();
+      await page.goto(url);
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+      await page.click('#go');
+      await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+      await page.waitForFunction(() => !(deadvoxSaveTest.controller.writing || deadvoxSaveTest.controller.queued));
+      const saved = await page.evaluate(async () => {
+        const { controller, storage, namespace } = deadvoxSaveTest;
+        controller.halt();
+        await storage.save(namespace, (generation) =>
+          storage.encodeSnapshot(controller.snapshot(), generation, {
+            worldOptions: controller.worldOptions,
+            version: controller.identityValue.components,
+            buildRevision: controller.identityValue.buildRevision,
+          }),
+        );
+        const record = await storage.load(namespace);
+        return { namespace, generation: record.generation, payload: Array.from(record.payload) };
+      });
+      await page.reload();
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await page.click('#tutorial-start');
+      await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      assert.equal(
+        await page.evaluate(() => Boolean(globalThis.saveControllerConstructed)),
+        false,
+        'practice never creates a persistence owner',
+      );
+      await page.locator('#go').waitFor({ state: 'visible' });
+      await page.click('#go');
+      await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
+      await page.evaluate(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+        globalThis.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));
+        tutorialSession.sim.body.damageHealth(tutorialSession.sim.body.health);
+      });
+      await page.waitForFunction(() => !document.querySelector('#death').hidden);
+      const after = await page.evaluate(async (namespace) => {
+        // biome-ignore lint/correctness/noUnresolvedImports: this module is resolved by the page's Vite server.
+        const { SaveStorage } = await import('/src/game/saveStorage.ts');
+        const storage = new SaveStorage({ backend: 'indexeddb' });
+        const record = await storage.load(namespace);
+        return { namespace, generation: record.generation, payload: Array.from(record.payload) };
+      }, saved.namespace);
+      assert.deepEqual(after, saved, 'no checkpoint or death marker replaces the normal generation');
+      assert.equal(
+        await page.evaluate((namespace) => sessionStorage.getItem(`deadvox.dead-world:${namespace}`), saved.namespace),
+        null,
+      );
+      await page.locator('#death button').click();
+      await page.waitForURL((target) => !target.searchParams.has('tutorial'));
+      await page.waitForFunction(
+        () => document.querySelector('#tutorial-start') && document.querySelector('#startup-screen').hidden,
+      );
+      assert.equal(await page.locator('#tutorial-start').isVisible(), true);
+      assert.equal(await page.locator('#continue').isEnabled(), true);
+      await page.click('#tutorial-start');
+      await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      await page.getByRole('button', { name: 'Exit practice', exact: true }).click();
+      await page.waitForURL((target) => !target.searchParams.has('tutorial'));
+      await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
+      assert.equal(await page.locator('#continue').isEnabled(), true);
+    } finally {
+      await context.close();
+    }
+  });
+
   await test('rejected pending replay reveals its error instead of leaving the loading screen up', async () => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     try {
