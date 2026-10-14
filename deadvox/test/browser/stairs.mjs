@@ -226,6 +226,25 @@ try {
       undefined,
       { timeout: 60_000 },
     );
+    if (mode === 'lighting-cellar') {
+      const markerLighting = await page.evaluate(async () => {
+        // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
+        const { interactionMarkerLightingProof } = await import('/test/browser/interaction-marker-lighting.ts');
+        return interactionMarkerLightingProof();
+      });
+      process.stdout.write(`MARKER_LIGHTING ${JSON.stringify(markerLighting)}\n`);
+      assert.equal(markerLighting.dark.marker, markerLighting.dark.surface, 'no self-lit outline in full darkness');
+      assert.ok(markerLighting.night.surface > markerLighting.dark.surface, 'night surface sample is nonempty');
+      assert.ok(
+        markerLighting.night.marker <= markerLighting.night.surface * 2,
+        'night outline stays near its surface light',
+      );
+      for (const lit of [markerLighting.lampLit, markerLighting.flashlightLit]) {
+        assert.ok(lit.changed > 0, 'lit outline contributes visible pixels');
+        assert.ok(lit.marker > markerLighting.night.marker, 'lamp and flashlight illuminate the outline');
+        assert.ok(lit.surface > markerLighting.night.surface, 'the light also illuminates the surface');
+      }
+    }
     if (mode === 'lighting-outdoor') {
       // The owned GL proof must not contend with an unrelated full-size game render loop.
       selectionEvidence = await timePhase('owned-sky-selection', () => skySelectionProof(page));

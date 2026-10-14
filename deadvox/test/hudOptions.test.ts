@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { InteractionTarget } from '../src/core/interactionPick.ts';
+import { FurnitureMeshes } from '../src/render/furniture.ts';
+import { markInteractionTarget } from '../src/render/interactionMarker.ts';
+import { PileMeshes } from '../src/render/piles.ts';
 import {
   DEFAULT_HUD_OPTIONS,
   HUD_OPTION_KEYS,
@@ -27,8 +31,34 @@ describe('HUD options', () => {
     vi.unstubAllGlobals();
   });
 
-  it('enables every HUD element by default', () => {
-    expect(Object.values(DEFAULT_HUD_OPTIONS).every((enabled) => enabled)).toBe(true);
+  it('reads the declared defaults when there are no saved settings', () => {
+    vi.stubGlobal('localStorage', storage());
+    expect(readHudOptions()).toEqual({ ...DEFAULT_HUD_OPTIONS, shown: true });
+  });
+
+  it('saves the outline option independently and hides an already shown marker when it is off', () => {
+    vi.stubGlobal('localStorage', storage());
+    const furniture = new FurnitureMeshes(0.5);
+    const piles = new PileMeshes(0.5);
+    const target: InteractionTarget = { kind: 'body', id: 1, distanceBlocks: 1 };
+    const services = {
+      furniture,
+      piles,
+      blockSize: 0.5,
+      definition: () => {
+        throw new Error('Not a furniture target');
+      },
+      body: () => ({ pos: [3, 0, 4] as [number, number, number], halfWidth: 0.4, height: 0.5 }),
+    };
+    markInteractionTarget(target, true, services);
+    const marker = furniture.group.children[0]!;
+    expect(marker.visible).toBe(true);
+    writeHudOptions({ ...DEFAULT_HUD_OPTIONS, shown: true, interaction: true, interactionOutline: false });
+    const visible = hudVisibility(readHudOptions());
+    expect(visible.interaction).toBe(true);
+    markInteractionTarget(target, visible.interactionOutline, services);
+    expect(marker.visible).toBe(false);
+    piles.dispose();
   });
 
   it.each(HUD_OPTION_KEYS)('enables only the %s element when its toggle is on', (key) => {
