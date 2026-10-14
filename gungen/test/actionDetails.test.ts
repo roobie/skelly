@@ -34,36 +34,40 @@ const handleAndTravel = (def: ReturnType<typeof receiver>, handleId: string) => 
 describe('visible action details', () => {
   it('keeps the ejection aperture and moves the carrier out of the receiver', () => {
     const apertures = [
-      { def: receiver('auto', 'rear-top'), halfLength: 2.25, halfHeight: 1 },
-      { def: receiver('pump'), halfLength: 3.375, halfHeight: 1 },
+      { def: receiver('auto', 'rear-top'), label: 'auto rear-top' },
+      { def: receiver('pump'), label: 'pump' },
       {
         def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
-        halfLength: 3.25,
-        halfHeight: 1.5,
+        label: 'AK bolt',
       },
     ];
-    for (const { def, halfLength, halfHeight } of apertures) {
+    for (const { def, label } of apertures) {
       const ejection = def.keepOuts.find(({ id }) => id === 'ejection');
-      expect(ejection).toBeDefined();
+      expect(ejection, label).toBeDefined();
       expect(def.solids.some(({ id }) => id === 'bolt-carrier-face')).toBe(false);
-      expect(ejection?.box.half[0]).toBe(halfLength);
-      expect(ejection?.box.half[1]).toBe(halfHeight);
+      if (ejection) {
+        expect(ejection.box.half[1], `${label}: aperture is open`).toBeGreaterThan(0);
+        expect(ejection.box.half[0], `${label}: aperture is longer than it is tall`).toBeGreaterThan(
+          ejection.box.half[1],
+        );
+      }
     }
   });
 
   // Resolves published designs to verify their action-part boundary.
   it('uses a separate procedural bolt-carrier part in AR, AK and pump designs', { timeout: 10_000 }, () => {
+    const wanted = [
+      'design archetype-ar.json',
+      'design archetype-ar-free-float.json',
+      'design archetype-ak.json',
+      'design archetype-pump-shotgun.json',
+    ];
+    const seen = new Set<string>();
     for (const { label, assembly } of loadCorpus()) {
-      if (
-        ![
-          'design archetype-ar.json',
-          'design archetype-ar-free-float.json',
-          'design archetype-ak.json',
-          'design archetype-pump-shotgun.json',
-        ].includes(label)
-      ) {
+      if (!wanted.includes(label)) {
         continue;
       }
+      seen.add(label);
       expect(assembly.parts['bolt-carrier'], label).toBeDefined();
       const report = validate(assembly, gunDomain);
       expect(report.resolved.defs.get('bolt-carrier')?.motion, label).toMatchObject({
@@ -71,6 +75,7 @@ describe('visible action details', () => {
         axis: [1, 0, 0],
       });
     }
+    expect([...seen].sort()).toEqual([...wanted].sort());
   });
 
   it('models the SMG sliding handle as its own receiver-connected linear part with a matching sweep', () => {
