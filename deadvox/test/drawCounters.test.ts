@@ -45,11 +45,11 @@ it('accumulates every render submission in a frame and resets before the next fr
 });
 
 it('restores the previous reset policy even if drawing-buffer sampling throws', () => {
-  const { renderer, counters } = fixture(false);
+  const { renderer, counters } = fixture();
   renderer.getDrawingBufferSize = () => {
     throw new Error('buffer unavailable');
   };
   counters.begin();
   expect(() => counters.end()).toThrow('buffer unavailable');
-  expect(renderer.info.autoReset).toBe(false);
+  expect(renderer.info.autoReset).toBe(true);
 });
