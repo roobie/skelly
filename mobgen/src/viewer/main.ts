@@ -171,7 +171,10 @@ interface Loaded {
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
 let crawlerPhase = 0;
-let quadrupedPhase = 0;
+// Ground distance the quadruped has advanced; drives its walk directly, so a planted paw stays
+// planted at any speed (see mob/quadrupedPose.ts, quadrupedGaitPose). Reset on load like the other
+// walk clocks.
+let quadrupedDistance = 0;
 // Ground distance the dog has advanced; drives the walk directly, so its planted paws stay planted at any
 // speed (see mob/dog.ts, dogGaitPose). Reset on load like the other walk clocks.
 let dogDistance = 0;
@@ -434,7 +437,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   current = loaded;
   clock = INITIAL_CLOCK;
   crawlerPhase = 0;
-  quadrupedPhase = 0;
+  quadrupedDistance = 0;
   dogDistance = 0;
   gridZ = 0;
   attackTime = undefined;
@@ -645,7 +648,9 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     return;
   }
   if (current.template.bodyPlan === 'quadruped') {
-    quadrupedPhase += speed * dt * Math.PI;
+    // Ground distance the dog has advanced; drives the walk directly (see mob/quadrupedPose.ts,
+    // quadrupedGaitPose).
+    quadrupedDistance += speed * dt;
     gridZ = (gridZ + speed * dt) % 0.5;
     groundGroup.position.z = gridZ;
     return;
@@ -748,7 +753,7 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
     advanceWalk(dt, walking, speed);
     advanceHit(dt);
     const style = quadrupedStyle(loaded.genome.params);
-    const basePose = quadrupedGaitPose(loaded.realized, quadrupedPhase, speed, style);
+    const basePose = quadrupedGaitPose(loaded.realized, quadrupedDistance, speed, style);
     const pose = hitTime === undefined ? basePose : quadrupedHitPose(loaded.realized, basePose, hitTime, hitSide);
     applyLookAt(loaded, pose, dt);
     return;
