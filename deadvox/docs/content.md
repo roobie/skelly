@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you author browser mods or change their identity contract
   - you change content schemas, validation, registry merging, or recipe/workstation data
   - you change item economy metadata, source contexts, loot selection or loot-point descriptions
   - you change skill content tuning or training rules
@@ -29,6 +30,16 @@ read_if:
 ## Authoring source
 
 Use the repository-wide authoring and conversion rule in `../../docs/jsonnet.md`. The shared compiler produces the JSON consumed by `buildRegistry` in `src/core/content.ts`; validation and runtime references therefore meet at one boundary.
+
+## Browser mod identity
+
+Give each browser mod a required top-level `id`, independent of its delivery URL
+or filename. Missing identities and repeat selections are refused so a renamed
+upload or mirrored URL cannot silently admit the same mod twice. Different mods
+may override the same definitions; identity is not a definition-id collision rule.
+The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
+and `evaluateMods`. Bundled core-pack fragments remain content files rather than
+independent mods; see `src/game/bundledContent.ts`, `buildBundledContent`.
 
 ## Core-pack integrity
 
@@ -106,10 +117,6 @@ Use the same physical certificate for composed scenarios and kit publication so 
 boundaries cannot disagree about a usable climb. See `src/core/mapKit.ts`, `compileMapSite`,
 `src/core/templateSpatial.ts`, `templateClimbCertificate` and `templateStandingRoute`,
 and `src/core/climbCertificate.ts`, `climbCertificate`.
-
-## Curated kits
-
-Kit roles and delegated ownership keep authored structure separate from material choices and seeded assembly. Every alternative must preserve the slot's circulation and support contract so a visual or furnishing change cannot invalidate its route. See `src/core/templates.ts`, `resolveSlot`, and `src/core/mapKit.ts`, `mapKitIssues`.
 
 ### City building types
 
