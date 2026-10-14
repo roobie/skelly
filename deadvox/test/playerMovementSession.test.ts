@@ -164,6 +164,19 @@ describe('landing injuries', () => {
     expect(drop(speed).runtime.session.sim.dead).toBeUndefined();
   });
 
+  it('rolls different survivable landing health losses for different seeds', () => {
+    const gravity = physicsFor(scale).gravity * scale.blockSize;
+    const speed = Math.sqrt(2 * gravity * 4);
+    const losses = [73, 74].map((seed) => {
+      const { runtime, before, after } = drop(speed, seed);
+      expect(runtime.session.sim.dead).toBeUndefined();
+      const loss = before.health - after.health;
+      expect(loss).toBeGreaterThan(0);
+      return loss;
+    });
+    expect(losses[0]).not.toBe(losses[1]);
+  });
+
   it('allows high fixture drops to kill or spare full health across the content damage spread', () => {
     const gravity = physicsFor(scale).gravity * scale.blockSize;
     const speed = Math.sqrt(2 * gravity * 12);
