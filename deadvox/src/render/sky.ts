@@ -26,12 +26,12 @@ const set = (color: Color, [r, g, b]: Rgb): Color => color.setRGB(r, g, b, SRGBC
  * Applies a sky (core/sky.ts) to the scene's background, fog and lights, and moves the
  * camera's far plane to where the fog ends.
  */
-export const applySky = ({ scene, light, ambient, camera, radiusM }: SkyTargets, sky: Sky): void => {
+export const applySky = ({ scene, light, ambient, camera, radiusM }: SkyTargets, sky: Sky, skyVisibility = 1): void => {
   if (!(scene.fog instanceof Fog)) {
     scene.fog = new Fog(0);
   }
   const fog = scene.fog as Fog;
-  set(fog.color, sky.sky);
+  set(fog.color, sky.sky).multiplyScalar(skyVisibility);
   fog.near = radiusM * sky.fogNear;
   fog.far = radiusM * sky.fogFar;
   scene.background = fog.color;
