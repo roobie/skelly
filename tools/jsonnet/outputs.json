@@ -61,6 +61,10 @@
       "output": "deadvox/src/content/base/senses.json"
     },
     {
+      "source": "deadvox/src/content/base/tutorial.jsonnet",
+      "output": "deadvox/src/content/base/tutorial.json"
+    },
+    {
       "source": "deadvox/src/content/base/ui.jsonnet",
       "output": "deadvox/src/content/base/ui.json"
     },
