@@ -1821,9 +1821,8 @@ try {
     return {
       value: Number(root.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')),
       marker:
-        Number.parseFloat(
-          root.querySelector('.activity-progress-minimum').style.getPropertyValue('--minimum-angle'),
-        ) / 3.6,
+        Number.parseFloat(root.querySelector('.activity-progress-minimum').style.getPropertyValue('--minimum-angle')) /
+        3.6,
       minimumLabel: root.querySelector('.activity-progress-copy')?.textContent,
     };
   });
@@ -2695,7 +2694,10 @@ try {
     const root = document.querySelector('#handling');
     const gauge = root.querySelector('.activity-progress-gauge');
     const bounds = gauge?.getBoundingClientRect();
-    const centered = bounds && Math.abs(bounds.left + bounds.width / 2 - innerWidth / 2) < 2 && Math.abs(bounds.top + bounds.height / 2 - innerHeight / 2) < 2;
+    const centered =
+      bounds &&
+      Math.abs(bounds.left + bounds.width / 2 - innerWidth / 2) < 2 &&
+      Math.abs(bounds.top + bounds.height / 2 - innerHeight / 2) < 2;
     return (
       r.session.sim.actions.job?.jobType === 'pry' &&
       !root.hidden &&
