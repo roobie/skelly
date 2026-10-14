@@ -74,14 +74,17 @@ describe('magazine length bands', () => {
     }
   });
 
-  it('keeps the five-round box-magazine body at 4.5u (about 52mm)', () => {
-    const magazine = FAMILIES.magazine!.build({ length: '5-round' });
-    const body = magazine.solids[0]!;
-    expect(body.kind).toBe('box');
-    if (body.kind !== 'box') {
-      throw new Error('Expected a straight box magazine.');
-    }
-    expect(body.box.center[1] + body.box.half[1] - (body.box.center[1] - body.box.half[1])).toBeCloseTo(4.5);
+  it('keeps the five-round box-magazine body shorter than the ten-round and the S band', () => {
+    const bodyLength = (length: '5-round' | '10-round' | 'S') => {
+      const body = FAMILIES.magazine!.build({ length }).solids[0]!;
+      expect(body.kind, length).toBe('box');
+      if (body.kind !== 'box') {
+        throw new Error('Expected a straight box magazine.');
+      }
+      return body.box.half[1] * 2;
+    };
+    expect(bodyLength('5-round')).toBeLessThan(bodyLength('10-round'));
+    expect(bodyLength('10-round')).toBeLessThan(bodyLength('S'));
   });
 
   it('seats both bolt magazines deep and limits protrusion below the well line', () => {

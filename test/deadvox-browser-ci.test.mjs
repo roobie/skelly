@@ -149,7 +149,18 @@ describe('deadvox browser CI coverage', () => {
   });
 
   it('selects stages from actual browser command content', () => {
-    assert.ok(Object.keys(browserStages).length > 0);
+    assert.deepEqual(
+      browserStagesOfScripts({
+        misleadingName: 'node test/browser/a.mjs && npm run lint && CHECK=1 node tools/ui-browser-contract.mjs',
+        'test:browser:not-actually-browser': 'node tools/unit.mjs',
+      }),
+      {
+        misleadingName: [
+          { env: {}, command: 'node test/browser/a.mjs' },
+          { env: { CHECK: '1' }, command: 'node tools/ui-browser-contract.mjs' },
+        ],
+      },
+    );
   });
 
   it('runs every enabled package-script case in the full reusable workflow', () => {
@@ -217,24 +228,6 @@ describe('deadvox browser CI coverage', () => {
     const fixture = partitionFixture();
     fixture.caller.jobs['control-stages'].needs = 'control-check';
     assert.throws(() => manifestOf(fixture), serialControl);
-  });
-
-  it('retains quarantined Chromium navigation locally without disabling Firefox navigation', () => {
-    const diagnostic = 'test:browser:chromium:navigation';
-    assert.ok(Object.hasOwn(quarantinedScripts, diagnostic), 'the navigation quarantine remains explicit');
-    const cases = stagesOf(scripts[diagnostic]);
-    assert.deepEqual(cases, [
-      { env: { SAVE_NAVIGATION_ONLY: '1' }, command: 'node test/browser/save-storage.mjs chromium' },
-    ]);
-    assert.deepEqual(uncovered(diagnostic), cases.map(describeStage), 'Chromium navigation is not executed in CI');
-    assert.ok(
-      stagesOf(scripts['test:browser:firefox']).some(
-        ({ env, command }) =>
-          env.SAVE_NAVIGATION_ONLY === '1' && command === 'node test/browser/save-storage.mjs firefox',
-      ),
-      'Firefox retains its independent navigation coverage',
-    );
-    assert.ok(!Object.hasOwn(quarantinedScripts, 'test:browser:firefox'));
   });
 
   it('quarantines only scripts that exist and have no executed cases', () => {

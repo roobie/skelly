@@ -164,18 +164,24 @@ describe('front-sight families', () => {
   });
 
   it('offers the rail-mounted front sight only for free-floating AR generation', () => {
-    for (let seed = 0; seed < 300; seed++) {
+    let clampedSeen = false;
+    let floatingSeen = false;
+    for (let seed = 0; seed < 20 && !(clampedSeen && floatingSeen); seed++) {
       const assembly = generate(ar, gunDomain, seed);
       const mount = assembly.parts.handguard?.params?.mount;
       if (mount === 'clamped') {
         expect(assembly.parts['front-sight']?.params?.style).toBe('ar');
         expect(assembly.parts['rail-front-sight']).toBeUndefined();
-      } else {
+        clampedSeen = true;
+      } else if (mount === 'free-float') {
         expect(assembly.parts['front-sight']).toBeUndefined();
         if (assembly.parts['rail-front-sight']) {
-          expect(assembly.parts['rail-front-sight']?.family).toBe('rail-front-sight');
+          expect(assembly.parts['rail-front-sight'].family).toBe('rail-front-sight');
+          floatingSeen = true;
         }
       }
     }
+    expect(clampedSeen).toBe(true);
+    expect(floatingSeen).toBe(true);
   });
 });

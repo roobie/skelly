@@ -53,10 +53,14 @@ describe('generate', () => {
       ],
       connections: [],
     };
+    const layouts = new Set<string>();
     for (let seed = 0; seed < 100; seed++) {
       const assembly = generate(t, gunDomain, seed);
-      expect('grip' in assembly.parts, `seed ${seed}`).toBe(assembly.parts.lower?.params?.layout === 'trigger');
+      const layout = assembly.parts.lower?.params?.layout;
+      layouts.add(layout!);
+      expect('grip' in assembly.parts, `seed ${seed}`).toBe(layout === 'trigger');
     }
+    expect([...layouts].sort()).toEqual(['pump', 'trigger']);
   });
 
   it('honours chance 0 and chance 1', () => {
@@ -70,14 +74,16 @@ describe('generate', () => {
         { id: 'always', family: 'sight', chance: 1 },
       ],
       connections: [
-        { from: 'receiver.rail', to: 'never.base', slot: 0 },
+        { from: 'receiver.rail', to: 'never.base', slot: 0, chance: 0 },
+        // A chance-1 sibling proves the connection step runs at all, so the dropped chance-0 one is not a vacuous gap.
         { from: 'receiver.rail', to: 'always.base', slot: 1, chance: 0 },
+        { from: 'receiver.rail', to: 'always.base', slot: 2 },
       ],
     };
     for (let seed = 0; seed < 20; seed++) {
       const a = generate(t, gunDomain, seed);
       expect(Object.keys(a.parts).sort()).toEqual(['always', 'receiver']);
-      expect(a.connections).toEqual([]);
+      expect(a.connections.filter(({ to }) => to === 'always.base')).toHaveLength(1);
     }
   });
 });

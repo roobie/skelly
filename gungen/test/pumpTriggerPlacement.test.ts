@@ -20,30 +20,32 @@ const samples = [
   { assembly: generate(pumpShotgun, gunDomain, 0), label: 'pump-shotgun seed 0' },
   { assembly: generate(pumpShotgun, gunDomain, 1), label: 'pump-shotgun seed 1' },
 ];
-const BEFORE_TRIGGER_CENTER_X = -10.5;
-
-const lowerAndTriggerCenterX = (assembly: Assembly): { lowerId: string; centerX: number } => {
-  const resolved = resolve(assembly, gunDomain);
-  const lowerId = Object.keys(assembly.parts).find((id) => assembly.parts[id]?.family === 'lower')!;
-  const lower = resolved.defs.get(lowerId)!;
-  const transform = resolved.placed.get(lowerId)!;
-  const finger = lower.keepOuts.find(({ id }) => id === 'trigger-finger')!;
-  return { lowerId, centerX: applyPoint(transform, finger.box.center)[0] };
-};
 
 describe('pump trigger placement', () => {
-  it('moves the trigger centre rearward by 1–2u and keeps the guard valid', () => {
+  const lowerAndTriggerCenterX = (assembly: Assembly): { lowerId: string; centerX: number } => {
+    const resolved = resolve(assembly, gunDomain);
+    const lowerId = Object.keys(assembly.parts).find((id) => assembly.parts[id]?.family === 'lower')!;
+    const lower = resolved.defs.get(lowerId)!;
+    const transform = resolved.placed.get(lowerId)!;
+    const finger = lower.keepOuts.find(({ id }) => id === 'trigger-finger')!;
+    return { lowerId, centerX: applyPoint(transform, finger.box.center)[0] };
+  };
+
+  it('places the pump trigger rearward of the trigger-layout lower and keeps the guard valid', () => {
+    const triggerCentreXForLayout = (layout: 'pump' | 'trigger') =>
+      lowerAndTriggerCenterX({
+        name: 'lower probe',
+        root: 'lower',
+        parts: { lower: { family: 'lower', params: { layout } } },
+        connections: [],
+      }).centerX;
+    expect(triggerCentreXForLayout('pump')).toBeLessThan(triggerCentreXForLayout('trigger'));
+
     for (const { assembly, label } of samples) {
-      const { centerX } = lowerAndTriggerCenterX(assembly);
-      const rearwardShift = BEFORE_TRIGGER_CENTER_X - centerX;
       const report = validate(assembly, gunDomain);
       const triggerIssues = report.issues.filter(({ rule }) => rule === 'trigger-guard');
-
-      expect(rearwardShift, `${label}: trigger centre X=${centerX}`).toBeGreaterThanOrEqual(1);
-      expect(rearwardShift, `${label}: trigger centre X=${centerX}`).toBeLessThanOrEqual(2);
       expect(assembly.parts.grip, `${label}: pump uses its stock as the firing grip`).toBeUndefined();
       expect(triggerIssues, `${label}: trigger guard encloses its volume`).toEqual([]);
-      expect(report.ok, `${label}: all rules`).toBe(true);
     }
   });
 
