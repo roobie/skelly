@@ -1,8 +1,10 @@
 // The dog shambler template: an infected quadruped. Its body plan and poses live in mob/dog.ts; this
 // module only names the template and its sampled ranges.
 //
-// It stays outside mob/templates.ts's TEMPLATES list so Deadvox does not spawn it yet (Deadvox consumes
-// TEMPLATES/HUMANOID_TEMPLATES); the viewer opts in explicitly, the same way the amalgam boss does.
+// It is `comparison-only`: kept for side-by-side checks against other quadrupeds, not for spawning, so a
+// consumer refuses it (core/template.ts's `consumableTemplate`) and the viewer labels it. It also stays
+// outside mob/templates.ts's TEMPLATES list, so Deadvox's enumerations never see it; the viewer opts in
+// explicitly, the same way the amalgam boss does.
 
 import { registerTemplate, type Template } from '../core/template.ts';
 // Imports for the side effect of registering the 'dog' body plan (mob/dog.ts's registerBodyPlan call).
@@ -34,5 +36,6 @@ export const dogTemplate: Template = {
     totalTriangles: { min: 400, max: 8500 },
     groups: { head: { bones: ['head', 'jaw'], min: 18, max: 140 } },
   },
+  status: 'comparison-only',
 };
 registerTemplate(dogTemplate);

@@ -9,6 +9,7 @@ import type { Realized } from '../core/generate.ts';
 import { type BodyPlanDef, registerBodyPlan, sampleParams } from '../core/generate.ts';
 import {
   add,
+  applyPoint,
   cross,
   dot,
   IDENTITY_M,
@@ -23,7 +24,7 @@ import {
   sub,
   type Vec3,
 } from '../core/math.ts';
-import type { Pose } from '../core/pose.ts';
+import { boneTransforms, type Pose } from '../core/pose.ts';
 import { pick, type Rng, range } from '../core/random.ts';
 import type { Genome, Template, Wound } from '../core/template.ts';
 import { posedVoxelSurfaceBoundsForBones } from '../core/voxelBounds.ts';
@@ -525,30 +526,88 @@ const ankleOffsetAt = (dy: number, dz: number, deg: number): number => {
   return Math.sin(t) * dy + (Math.cos(t) - 1) * dz;
 };
 
-/** The ankle's rest offset from the upper-leg head in the sagittal (Y, Z) plane. */
-const sagittaOf = (realized: Realized, leg: (typeof LEGS)[number]): readonly [number, number] => {
+/** The leg's rest segment vectors in the sagittal (Y, Z) plane: upper head → knee, knee → ankle. */
+const legSegmentsOf = (
+  realized: Realized,
+  leg: (typeof LEGS)[number],
+): { readonly u: readonly [number, number]; readonly v: readonly [number, number] } => {
   const upper = boneById(realized.body.bones, leg.key);
-  const ankle = boneById(realized.body.bones, leg.lower).tail;
-  return [ankle[1] - upper.head[1], ankle[2] - upper.head[2]];
+  const lower = boneById(realized.body.bones, leg.lower);
+  return {
+    u: [lower.head[1] - upper.head[1], lower.head[2] - upper.head[2]],
+    v: [lower.tail[1] - lower.head[1], lower.tail[2] - lower.head[2]],
+  };
 };
 
-/** The upper-leg swing (degrees) that plants the ankle `offset` metres behind its rest Z: the exact
- * single-link solve of `dy·sinθ + dz·cosθ = dz + offset`, taking the branch nearest straight down. The
- * ankle rides a shallow arc, so its height varies and grounding carries the body over it, but its
- * horizontal position is exact — a planted paw cannot creep forward or back. */
-const stanceSwingDeg = (dy: number, dz: number, offset: number): number => {
-  const r = Math.hypot(dy, dz);
-  const psi = Math.atan2(dy, dz);
-  const ratio = r === 0 ? 1 : Math.max(-1, Math.min(1, (dz + offset) / r));
+/** The single-link arc height (relative to the upper head) the ankle reaches at `offset`: the leg's
+ * rigid sweep. The two legs of one diagonal reach differently, so grounding the lower leaves the other
+ * hovering; the stance solves both to the pair's higher arc so neither rides above the ground alone. */
+const arcAnkleYRel = (u: readonly [number, number], v: readonly [number, number], offset: number): number => {
+  const restY = u[0] + v[0];
+  const restZ = u[1] + v[1];
+  const r = Math.hypot(restY, restZ);
+  const psi = Math.atan2(restY, restZ);
+  const ratio = r === 0 ? 1 : Math.max(-1, Math.min(1, (restZ + offset) / r));
   const spread = Math.acos(ratio);
   const a = psi + spread;
   const b = psi - spread;
-  return ((Math.abs(a) <= Math.abs(b) ? a : b) * 180) / Math.PI;
+  const theta = Math.abs(a) <= Math.abs(b) ? a : b;
+  return Math.cos(theta) * restY - Math.sin(theta) * restZ;
 };
 
-/** How far the lower leg folds at the swing peak. The rest leg is nearly straight, so folding the lower
- * leg is what lifts the paw clear of the ground; the stride does not depend on it. */
-const FOLD_DEG = 60;
+/** Fold `angle` (radians) into (-π, π], so joint differences never jump a full turn. */
+const wrapPi = (angle: number): number => {
+  let a = angle;
+  while (a > Math.PI) {
+    a -= 2 * Math.PI;
+  }
+  while (a <= -Math.PI) {
+    a += 2 * Math.PI;
+  }
+  return a;
+};
+
+/** Two-link solve of the upper-leg swing and lower-leg fold that put the ankle at `target` in the
+ * upper bone's parent frame. Pinning the height bends the knee instead of letting the ankle ride its
+ * arc, so a planted paw's sole stays on the ground across the whole stance half rather than rising to
+ * the midpoint of a single-link sweep. The knee takes the branch matching the rest bend, and the
+ * ankle's horizontal position is still exact, so a planted paw cannot creep forward or back. */
+const stanceLegAngles = (
+  u: readonly [number, number],
+  v: readonly [number, number],
+  targetY: number,
+  targetZ: number,
+): { readonly swingDeg: number; readonly foldDeg: number } => {
+  const l1 = Math.hypot(u[0], u[1]);
+  const l2 = Math.hypot(v[0], v[1]);
+  const restY = u[0] + v[0];
+  const restZ = u[1] + v[1];
+  const d = Math.hypot(targetY, targetZ);
+  const cosAlpha = Math.max(-1, Math.min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)));
+  const alpha = Math.acos(cosAlpha);
+  const thetaU = Math.atan2(u[1], u[0]);
+  const thetaD = Math.atan2(targetZ, targetY);
+  const restCross = u[0] * restZ - u[1] * restY;
+  const side = restCross >= 0 ? 1 : -1;
+  let phi = thetaD + alpha;
+  for (const candidate of [thetaD + alpha, thetaD - alpha]) {
+    const uy = Math.cos(candidate) * l1;
+    const uz = Math.sin(candidate) * l1;
+    if ((uy * targetZ - uz * targetY >= 0 ? 1 : -1) === side) {
+      phi = candidate;
+      break;
+    }
+  }
+  const swing = wrapPi(phi - thetaU);
+  const vx = targetY - Math.cos(phi) * l1;
+  const vz = targetZ - Math.sin(phi) * l1;
+  const fold = wrapPi(Math.atan2(vz, vx) - Math.atan2(v[1], v[0]) - swing);
+  return { swingDeg: (swing * 180) / Math.PI, foldDeg: (fold * 180) / Math.PI };
+};
+
+/** How high the swing paw lifts at the peak, in metres. The rest leg is nearly straight, so the swing
+ * solve raises the ankle instead of riding the low arc; the stride does not depend on it. */
+const LIFT_HEIGHT_M = 0.06;
 
 /** Opposite-corner diagonals: fore-left with hind-right, fore-right with hind-left. The first carries
  * the limp so the shamble's step timing is uneven. */
@@ -568,11 +627,13 @@ const DOG_PAIR_OF_LEG: Readonly<Record<string, number>> = {
  * each diagonal's step length is exactly the ground its stance sweeps. */
 const dogStepGeometry = (realized: Realized, limpScale: number) => {
   const legs = LEGS.map((leg) => {
-    const [dy, dz] = sagittaOf(realized, leg);
+    const { u, v } = legSegmentsOf(realized, leg);
+    const dy = u[0] + v[0];
+    const dz = u[1] + v[1];
     return {
       leg,
-      dy,
-      dz,
+      u,
+      v,
       frontOffset: ankleOffsetAt(dy, dz, FORWARD_SWING_DEG),
       backOffset: ankleOffsetAt(dy, dz, -BACK_SWING_DEG),
     };
@@ -583,6 +644,31 @@ const dogStepGeometry = (realized: Realized, limpScale: number) => {
   const fullStep = backOffset - frontOffset;
   const stepLengths = DOG_PAIRS.map((pair) => (pair.limp ? fullStep * (1 - LIMP_STEP_SHORTEN * limpScale) : fullStep));
   return { legs, frontOffset, stepLengths };
+};
+
+interface LegAnchors {
+  /** World Y of the upper-leg head in the base pose with a zero root, before grounding shifts it. */
+  readonly headWorldY: number;
+  /** World X rotation (degrees) of the upper leg's parent, so a world-frame swing can be written local. */
+  readonly parentAngleDeg: number;
+}
+
+/** Per-leg parent frame at a stance's base pose. Rotations are applied in rest-pose world axes, so a
+ * world-frame leg swing has to be written back through the parent's own rotation (`parentAngleDeg`), and
+ * a pair's shared height must compare the heads' posed world positions, not their rest ones. */
+const legAnchors = (realized: Realized, base: Pose): Readonly<Record<string, LegAnchors>> => {
+  const transforms = boneTransforms(realized.body.bones, { root: [0, 0, 0], rotations: base.rotations });
+  const anchors: Record<string, LegAnchors> = {};
+  for (const leg of LEGS) {
+    const upper = boneById(realized.body.bones, leg.key);
+    const parent = upper.parent === null ? null : transforms.get(upper.parent);
+    const parentAngleDeg = parent ? (Math.atan2(parent.r[7], parent.r[4]) * 180) / Math.PI : 0;
+    anchors[leg.key] = {
+      headWorldY: applyPoint(transforms.get(leg.key)!, upper.head)[1],
+      parentAngleDeg,
+    };
+  }
+  return anchors;
 };
 
 /** Ground distance (metres) the dog covers in one full stride (both diagonal pairs). Derived from the
@@ -604,6 +690,7 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
     return base;
   }
   const { legs, frontOffset, stepLengths } = dogStepGeometry(realized, limpScale);
+  const anchors = legAnchors(realized, base);
   const cycleLength = stepLengths[0]! + stepLengths[1]!;
   const cycle = ((distance % cycleLength) + cycleLength) % cycleLength;
   const pairIndex = cycle < stepLengths[0]! ? 0 : 1;
@@ -611,31 +698,44 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
   const stepDistance = pairIndex === 0 ? cycle : cycle - stepLengths[0]!;
   const progress = stepDistance / stepLength;
   const reach = Math.sin(progress * Math.PI);
-  const rotations: Record<string, Mat3> = { ...base.rotations };
-  for (const leg of legs) {
+  const liftHeight = LIFT_HEIGHT_M * reach;
+  const blend = progress * progress * (3 - 2 * progress);
+  const phase = legs.map((leg) => {
     const legPair = DOG_PAIR_OF_LEG[leg.leg.key]!;
-    let swingDeg: number;
-    let foldDeg = 0;
-    if (legPair === pairIndex) {
-      // Stance: both legs of the half sweep the same offset, so no planted paw can drift against the
-      // other; the solve places the ankle horizontally exactly.
-      swingDeg = stanceSwingDeg(leg.dy, leg.dz, frontOffset + stepLength * progress);
-    } else {
-      // Swing: return from the back of this leg's own step to its front, folding the lower leg so the paw
-      // clears the ground. The left side folds less, so the injured diagonal drags.
-      const sideScale = leg.leg.side === 'L' ? 1 - 0.5 * limpScale : 1;
-      const from = stanceSwingDeg(leg.dy, leg.dz, frontOffset + stepLengths[legPair]!);
-      const to = stanceSwingDeg(leg.dy, leg.dz, frontOffset);
-      swingDeg = from + (to - from) * (progress * progress * (3 - 2 * progress));
-      foldDeg = -FOLD_DEG * reach * sideScale;
-    }
+    const isStance = legPair === pairIndex;
+    const sideScale = leg.leg.side === 'L' ? 1 - 0.5 * limpScale : 1;
+    const fromOffset = frontOffset + stepLengths[legPair]!;
+    const offset = isStance ? frontOffset + stepLength * progress : fromOffset + (frontOffset - fromOffset) * blend;
+    const anchor = anchors[leg.leg.key]!;
+    const phi = (anchor.parentAngleDeg * Math.PI) / 180;
+    const restZ = leg.u[1] + leg.v[1] + offset;
+    const arcWorld = anchor.headWorldY + Math.cos(phi) * arcAnkleYRel(leg.u, leg.v, offset) - Math.sin(phi) * restZ;
+    return { leg, stance: isStance, offset, lift: isStance ? 0 : liftHeight * sideScale, arcWorld, anchor };
+  });
+  // One support height the planted legs share: the higher of the pair's rigid arcs at its current sweep,
+  // so both plant flat instead of one riding its own arc above the other. A swing leg solves to that same
+  // height plus its lift, so it leaves and rejoins the ground exactly as the pair swaps. The arc is
+  // measured through the parent's own rotation, in the world frame the solve targets.  const supportY = Math.max(...phase.filter((step) => step.stance).map((step) => step.arcWorld));
+  const rotations: Record<string, Mat3> = { ...base.rotations };
+  for (const { leg, offset, lift, anchor } of phase) {
+    // Rotations act in rest-pose world axes while the solve lives in the parent's frame, so rotate the
+    // world target back through the parent's own rotation before solving; the upper keeps its own angle.
+    const phi = (anchor.parentAngleDeg * Math.PI) / 180;
+    const wy = supportY + lift - anchor.headWorldY;
+    const wz = leg.u[1] + leg.v[1] + offset;
+    const { swingDeg, foldDeg } = stanceLegAngles(
+      leg.u,
+      leg.v,
+      Math.cos(phi) * wy + Math.sin(phi) * wz,
+      -Math.sin(phi) * wy + Math.cos(phi) * wz,
+    );
     rotations[leg.leg.key] = rotX(swingDeg);
     rotations[leg.leg.lower] = rotX(foldDeg);
     // Keep the foot level: cancel the leg's own swing at the paw, so the sole keeps one orientation and a
     // planted paw's horizontal position is exactly the ankle offset the solve placed.
     rotations[leg.leg.paw] = rotX(-(swingDeg + foldDeg));
   }
-  // The walk's lurch lives in the uneven step lengths and the swing fold, not a body sway: any root
+  // The walk's lurch lives in the uneven step lengths and the swing lift, not a body sway: any root
   // translation or spine roll would drag the planted forelegs off the ground with it. A head bob rides on
   // top so the body still reads as drunk, not mechanical.
   const addBodyRotation = (bone: string, delta: Mat3): void => {

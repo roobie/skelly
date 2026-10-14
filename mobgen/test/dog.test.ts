@@ -8,6 +8,7 @@ import { severedBoneSet } from '../src/mob/dismember.ts';
 import { dogGaitPose, dogHitPose, dogPawBones, dogPose, dogStrideLength } from '../src/mob/dog.ts';
 import { dogTemplate } from '../src/mob/dogTemplate.ts';
 import { HIT_FLINCH } from '../src/mob/reactions.ts';
+import { zombieFigure } from '../src/mob/shamblerFigure.ts';
 import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
@@ -87,6 +88,12 @@ describe('dog shambler', () => {
     expect(dogTemplate.bodyPlan).toBe('dog');
     expect(TEMPLATES.some((template) => template.name === 'dog')).toBe(false);
     expect(HUMANOID_TEMPLATES.some((template) => template.name === 'dog')).toBe(false);
+  });
+
+  it('is refused by the consumer that hands figures to deadvox', () => {
+    // The tag is what refuses it, not the model name: `zombieFigure` is deadvox's selection boundary.
+    expect(dogTemplate.status).toBe('comparison-only');
+    expect(() => zombieFigure('dog', 1)).toThrowError('comparison-only');
   });
 
   it.each(DOG_SEEDS)('validates as a connected, grounded, budgeted body for seed %i', (seed) => {
@@ -197,18 +204,21 @@ describe('dog shambler', () => {
     for (const paw of dogPawBones) {
       const poses = distance.map((d) => dogGaitPose(realized, d, 1, stance));
       // The dog walks forward (-Z), so its root drops by `d`; a planted paw's ground-frame Z
-      // (`local Z - d`) must stay put.
+      // (`local Z - d`) must stay put. A planted paw is fixed exactly, so a tenth-of-a-voxel run finds the
+      // true stance half and rejects the slow tail of the swing, whose Z creeps too much to qualify.
       const groundZ = poses.map((pose, i) => toeZ(paw, pose) - distance[i]!);
       const surfaces = poses.map((pose) => pawSurface(realized, pose, paw));
-      const [start, end] = longestStillRun(groundZ, tolerance);
+      const [start, end] = longestStillRun(groundZ, tolerance / 10);
 
       // Stance is about half a cycle, so the still interval must be substantial, not a momentary tie.
       expect(end - start).toBeGreaterThan(samples * 0.3);
       // The body genuinely advanced under that paw: its local Z swept the ground distance it covered.
       expect(distance[end]! - distance[start]!).toBeGreaterThan(tolerance);
       expect(Math.abs(toeZ(paw, poses[end]!) - toeZ(paw, poses[start]!))).toBeGreaterThan(tolerance);
-      // It was planted through the interval, and lifts during the swing (so the test is not vacuous).
-      expect(Math.min(...surfaces.slice(start, end + 1))).toBeLessThanOrEqual(tolerance);
+      // It was planted on the ground through the whole interval, and lifts during the swing (so the test
+      // is not vacuous). Contact is the absolute surface height, not the lowest sample: a paw that sinks
+      // or one that hovers above the ground must both fail.
+      expect(Math.max(...surfaces.slice(start, end + 1).map(Math.abs))).toBeLessThanOrEqual(tolerance);
       expect(Math.max(...surfaces)).toBeGreaterThan(tolerance);
     }
   });
