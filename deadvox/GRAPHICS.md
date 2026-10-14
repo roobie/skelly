@@ -30,15 +30,15 @@ Wide ambient occlusion darkens indirect light according to enclosure, while dire
 
 ## Graphics policy
 
-Benchmarks use only effective mod defaults, ignoring machine preferences and debug graphics
-URL overrides, because saved choices must not silently change the comparison workload.
-See `src/game/engine.ts`, `createEngine`, and `src/main.ts`.
-
 Keep graphics defaults and permitted choices in the core mod, while the player owns the
 choice for their machine: a content pack cannot know their GPU. Debug URL overrides must
 win over player choices, which must win over content defaults. Explicit false values are
 choices, not absence. See `src/content/base/graphics.jsonnet`,
 `src/core/graphics.ts`, `resolveGraphics`, and `src/game/graphicsSettings.ts`.
+
+Benchmarks use only effective mod defaults, ignoring machine preferences and debug graphics
+URL overrides, because saved choices must not silently change the comparison workload.
+See `src/game/engine.ts`, `createEngine`, and `src/main.ts`.
 
 Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's
 policy can change without stale defaults becoming machine preferences. Validate stored
