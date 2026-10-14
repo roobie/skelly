@@ -1,4 +1,14 @@
-import { BoxGeometry, type BufferGeometry, Color, Group, Mesh, MeshLambertMaterial } from 'three';
+import {
+  BoxGeometry,
+  type BufferGeometry,
+  Color,
+  EdgesGeometry,
+  Float32BufferAttribute,
+  Group,
+  LineSegments,
+  Mesh,
+  MeshLambertMaterial,
+} from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, panelFor } from '../core/blockEntities.ts';
 import type { FurnitureDef } from '../core/schema.ts';
@@ -14,16 +24,92 @@ const BODY_DOOR_HANDLE_COLOR = '#c6b98e';
 const BODY_DOOR_HANDLE_SIZE_M = { alongWidth: 0.1, acrossWidth: 0.06, height: 0.22 } as const;
 const BODY_DOOR_HANDLE_EDGE_OFFSET_M = 0.14;
 
+function markerEdges(): EdgesGeometry {
+  const box = new BoxGeometry(1, 1, 1);
+  const edges = new EdgesGeometry(box);
+  box.dispose();
+  const positions = edges.getAttribute('position');
+  const normals = new Float32Array(positions.count * 3);
+  for (let edge = 0; edge < positions.count; edge += 2) {
+    // The midpoint's two nonzero axes bisect the adjacent faces, not the endpoint's three faces.
+    const x = positions.getX(edge) + positions.getX(edge + 1);
+    const y = positions.getY(edge) + positions.getY(edge + 1);
+    const z = positions.getZ(edge) + positions.getZ(edge + 1);
+    const length = Math.hypot(x, y, z);
+    normals.set([x / length, y / length, z / length], edge * 3);
+    normals.set([x / length, y / length, z / length], (edge + 1) * 3);
+  }
+  edges.setAttribute('normal', new Float32BufferAttribute(normals, 3));
+  return edges;
+}
+
 export class FurnitureMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly materials = new Map<string, MeshLambertMaterial>();
   private readonly shapeGeometries = new Map<string, BufferGeometry>();
   private readonly blockSize: number;
+  private readonly marker = new LineSegments(
+    markerEdges(),
+    withHeightFog(new MeshLambertMaterial({ color: '#ffe36e', depthTest: true }), 'furniture'),
+  );
+  private markedUid: string | undefined;
+  private markedOpen: boolean | undefined;
   private drawn = -1;
 
   constructor(blockSize: number) {
     this.blockSize = blockSize;
+    this.marker.visible = false;
+    this.marker.receiveShadow = true;
+    this.group.add(this.marker);
+  }
+
+  /** Marks the selected furniture using its visible panel pose when it has a door. */
+  mark(entity: BlockEntity | undefined, definition?: FurnitureDef): void {
+    if (entity && `furniture:${entity.uid}` === this.markedUid && entity.open === this.markedOpen) {
+      return;
+    }
+    this.markedUid = entity ? `furniture:${entity.uid}` : undefined;
+    this.markedOpen = entity?.open;
+    if (!entity) {
+      this.marker.visible = false;
+      return;
+    }
+    const s = this.blockSize;
+    if (definition?.door) {
+      const panel = panelFor(entity, definition, s);
+      const sin = Math.sin(panel.rotationY);
+      const cos = Math.cos(panel.rotationY);
+      const centerX = panel.center[0] * cos + panel.center[2] * sin;
+      const centerZ = -panel.center[0] * sin + panel.center[2] * cos;
+      const width = Math.abs(panel.size[0] * cos) + Math.abs(panel.size[2] * sin);
+      const depth = Math.abs(panel.size[0] * sin) + Math.abs(panel.size[2] * cos);
+      this.marker.scale.set(width + 0.035, panel.size[1] + 0.035, depth + 0.035);
+      this.marker.position.set(panel.pivot[0] + centerX, panel.pivot[1] + panel.center[1], panel.pivot[2] + centerZ);
+    } else {
+      const [x, y, z] = entity.pos;
+      const [w, h, d] = entity.size;
+      this.marker.scale.set(w * s + 0.035, h * s + 0.035, d * s + 0.035);
+      this.marker.position.set((x + w / 2) * s, (y + h / 2) * s, (z + d / 2) * s);
+    }
+    this.marker.visible = true;
+  }
+
+  /** Marks another interaction owner using its display or pick bounds. */
+  markBounds(
+    uid: string | undefined,
+    position: readonly [number, number, number],
+    size: readonly [number, number, number],
+  ): void {
+    this.markedUid = uid;
+    this.markedOpen = undefined;
+    if (!uid) {
+      this.marker.visible = false;
+      return;
+    }
+    this.marker.scale.set(size[0] + 0.035, size[1] + 0.035, size[2] + 0.035);
+    this.marker.position.set(...position);
+    this.marker.visible = true;
   }
 
   /** Rebuilds the meshes when furniture was added, opened or closed. */
@@ -36,6 +122,7 @@ export class FurnitureMeshes {
     for (const entity of entities.all) {
       this.group.add(castsAndReceives(this.meshFor(entity, entities.defOf(entity))));
     }
+    this.group.add(this.marker);
   }
 
   private meshFor(entity: BlockEntity, def: FurnitureDef): Group | Mesh {

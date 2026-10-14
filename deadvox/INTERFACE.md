@@ -36,7 +36,9 @@ Short first-person refusals and observations name the world or the character's s
 
 ## HUD
 
-The HUD is meta information over the world; its options and master toggle govern only HUD-owned elements. World, bodily and held-item cues remain outside it. See `src/ui/hudOptions.ts`, `hudVisibility`.
+The HUD options and master toggle govern HUD-owned elements. World, bodily and held-item cues remain outside them. See `src/ui/hudOptions.ts`, `hudVisibility`.
+
+The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. The outline must not become a glowing substitute for seeing the object: it receives the scene's surface lighting, without emission or a minimum visibility floor. Its edge normals bisect the adjacent faces, so an edge cannot receive direct light when neither adjoining face faces the light. This keeps its yellow cue responsive to lamps and flashlights as well as the sky, rather than treating a sky-intensity estimate as surface brightness. See `src/render/interactionMarker.ts`, `markInteractionTarget`, and `src/render/furniture.ts`, `markerEdges`.
 
 The optional stats readout is a tuning surface for viewing felt pain and its components during play. It is a development-style meta readout, not a bodily cue; this exception keeps the scale available for tuning without putting an unbounded number in player-facing cues.
 
@@ -70,7 +72,6 @@ See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#over
 
 ## Open direction
 
-- Add a spatial outline for the one usable thing in reach.
 - Build the hint channel and its guard before expanding shipped instructions.
 - Add the playtest profile, then shape a diegetic first-run introduction from playtest findings.
 - Make the clock diegetic through a watch.

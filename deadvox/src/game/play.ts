@@ -15,6 +15,7 @@ import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
+import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -38,6 +39,7 @@ import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, real
 import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
+import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
@@ -79,6 +81,7 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
+import { mountTutorial } from '../ui/tutorial.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
@@ -172,6 +175,7 @@ import {
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
 import { TierNotice } from './tierNotice.ts';
+import { Tutorial, tutorialUrl } from './tutorial.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
@@ -560,6 +564,7 @@ const createPlayRefusalPresenter = (
 };
 
 export interface StartPlayOptions {
+  readonly tutorial?: boolean;
   readonly skyRoute?: SkyRouteAttachment;
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
@@ -596,11 +601,37 @@ const autosaveTuning = (registry: Engine['registry']) => {
   return autosave;
 };
 
+const assertPracticeIsolation = (options: StartPlayOptions): void => {
+  if (options.tutorial && (options.saveController || options.restore)) {
+    throw new Error('Practice cannot bind a save or restore a world');
+  }
+};
+
+const leaveTutorial = () => location.assign(tutorialUrl(location.href, false));
+const createPlayTutorial = (engine: Engine, enabled: boolean | undefined) => {
+  if (!enabled) {
+    return {};
+  }
+  const exitBeat = engine.site?.playtestMarks?.beats.find((beat) => beat.id === 'tutorial_exit');
+  if (!exitBeat) {
+    throw new Error('Practice requires an authored exit');
+  }
+  const tutorial = new Tutorial(
+    engine.spawn.pos.map((coordinate) => coordinate / engine.config.scale.blockSize) as Vec3,
+    engine.spawn.yaw,
+    exitBeat.area,
+    leaveTutorial,
+  );
+  const drawTutorial = mountTutorial(tutorial, leaveTutorial, () => location.reload());
+  return { tutorial, drawTutorial };
+};
+
 export const startPlay = (
   engine: Engine,
   debugModule?: DebugModule,
   options: StartPlayOptions = {},
 ): { enter: () => void } => {
+  assertPracticeIsolation(options);
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
@@ -610,6 +641,7 @@ export const startPlay = (
   configureReplayStreaming(streamer, options.replay);
   const { scale } = config;
   const s = scale.blockSize;
+  const { tutorial, drawTutorial } = createPlayTutorial(engine, options.tutorial);
 
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, options.restore !== undefined);
   let debugTools: DebugRuntime | undefined;
@@ -861,6 +893,7 @@ export const startPlay = (
       }
     },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
+    onConsumed: (type) => tutorial?.consumed(type),
     onFirearmEjection: (effect) =>
       caseEffects.spawn({ ...effect, landingPosition: caseLandingWorldPosition(effect.landingPosition, s) }),
     onFirearmCaseLanded: (seed, item, instanceIndex) => {
@@ -1185,6 +1218,9 @@ export const startPlay = (
   const metrics = new SessionMetrics(config.seed, storedMetrics);
   playtestObserver = new PlaytestObserver(metrics, engine.site?.playtestMarks);
   const saveMetrics = (): void => {
+    if (options.tutorial) {
+      return;
+    }
     try {
       persistMetrics(metrics, localStorage);
     } catch {
@@ -2884,8 +2920,11 @@ export const startPlay = (
       },
       visible,
     );
-  const promptText = (now: number, visible: Readonly<HudOptionsState>): string => {
-    const target = visible.interaction && input.locked && !debugTools?.buildOn ? interactionTargetAt() : undefined;
+  const promptText = (
+    now: number,
+    visible: Readonly<HudOptionsState>,
+    target: InteractionTarget | undefined,
+  ): string => {
     let interactionHint: string | undefined;
     if (target?.kind === 'item') {
       interactionHint = `${labelForAction('world.interact')}: pocket the ${inventory.name(target.item)}; hold to wield`;
@@ -3332,6 +3371,35 @@ export const startPlay = (
     });
   };
 
+  const updateTutorial = () => {
+    tutorial?.observe({
+      position: body.pos,
+      yaw: input.yaw,
+      crouching: session.crouching,
+      doorOpen: [...entities.all].some((entity) => entity.type === 'wood_door' && entity.open),
+      searched: [...entities.all].some((entity) => entity.type === 'tutorial_cabinet' && entity.searched),
+      looted: inventory.looted.size > 0,
+      wielded: Object.values(inventory.hands).some((item) => item?.type === 'canned_beans'),
+      lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
+      paused: mainMenuOpen && started,
+    });
+    drawTutorial?.();
+  };
+  const affordanceForFrame = (visible: Readonly<HudOptionsState>) =>
+    interactionAffordance(
+      interactionTargetAt,
+      visible.interaction || visible.interactionOutline,
+      input.locked,
+      Boolean(debugTools?.buildOn),
+    );
+  const markerServices = {
+    furniture: view.furniture,
+    piles: view.piles,
+    definition: (entity: BlockEntity) => entities.defOf(entity),
+    body: (id: EntityId) => zombieStore.get(id)?.body,
+    blockSize: s,
+  };
+
   const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
@@ -3358,6 +3426,7 @@ export const startPlay = (
     impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = realNow() - mark;
     options.saveController?.afterFrame();
+    updateTutorial();
     playtestObserver?.afterFrame(
       { realSeconds: elapsedReal, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
       queue,
@@ -3403,6 +3472,8 @@ export const startPlay = (
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     menuPointer.update();
 
+    const affordance = affordanceForFrame(visible);
+    markInteractionTarget(affordance.target, visible.interactionOutline, markerServices);
     const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
     debugTools?.setCrosshairVisible(visible.crosshair);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
@@ -3412,7 +3483,7 @@ export const startPlay = (
         hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '', visible),
         crosshairVisible: crosshair.visible,
         crosshairScreenPosition: crosshair.screenPosition,
-        prompt: promptText(now, visible),
+        prompt: promptText(now, visible, affordance.target),
       },
     );
     renderRestAndWait(visible.messages);
@@ -3491,7 +3562,12 @@ export const startPlay = (
       looted: inventory.looted,
       searched: [...entities.all].filter((e) => e.searched).length,
     };
-    showDeath($('death'), registry, summary, () => location.assign(newWorldQuery(location.search, config.seed)));
+    showDeath(
+      $('death'),
+      registry,
+      summary,
+      options.tutorial ? leaveTutorial : () => location.assign(newWorldQuery(location.search, config.seed)),
+    );
   };
   if (options.saveController) {
     snapshotIds = options.saveController.bindSession(

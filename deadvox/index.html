@@ -52,10 +52,12 @@
       </div>
     </section>
     <div id="death" hidden></div>
+    <aside id="tutorial-objective" hidden aria-live="polite"></aside>
     <div id="overlay">
       <div class="card-scroll-shell">
         <section class="card" aria-label="Game information">
         <div id="about">
+          <div id="tutorial-actions"></div>
           <h1>deadvox</h1>
           <p>Singleplayer voxel survival prototype.</p>
           <label for="controls-search">Search controls</label>
@@ -78,6 +80,7 @@
             </select>
           </fieldset>
           <button class="go" id="go" type="button"></button>
+          <button id="tutorial-start" type="button">Practice tutorial (unsaved)</button>
           </section>
           <p id="save-status" role="status">Checking saved worlds…</p>
           <p id="save-note" class="scale"></p>
