@@ -87,6 +87,8 @@ export const SIMULATION_EXCLUSIONS = [
   // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
   'src/game/audio.ts',
   'src/game/audioPresentation.ts',
+  // Machine graphics preferences affect rendering only and must not invalidate simulation saves.
+  'src/game/graphicsSettings.ts',
   'src/game/shamblerAudio.ts',
   'src/game/damageFeedback.ts',
   // The pain cue's pulse runs on frame time; felt pain itself stays fingerprinted in core/pain.ts.

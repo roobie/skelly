@@ -3,6 +3,7 @@ read_if:
   - you're changing procedural surface weathering or building appearance
   - you're changing the solar-phase look, flashlight daylight adaptation, or evaluating renderer performance
   - you're changing wide ambient occlusion or its interaction with skylight
+  - you're changing content-defined graphics policy or per-machine graphics settings
   - you're adding or evaluating opt-in GPU quality trials
 ---
 
@@ -27,6 +28,19 @@ GPU quality trials stay debug-only until the operator judges the paired images b
 Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `src/render/shadows.ts`, `Shadows.setSmallSunMap`.
 
 Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `src/core/occlusion.ts` and `src/render/chunks.ts`, `chunkMaterial`.
+
+## Graphics policy
+
+Keep graphics defaults and permitted choices in the core mod, while the player owns the
+choice for their machine: a content pack cannot know their GPU. Debug URL overrides must
+win over player choices, which must win over content defaults. Explicit false values are
+choices, not absence. See `src/content/base/graphics.jsonnet`,
+`src/core/graphics.ts`, `resolveGraphics`, and `src/game/graphicsSettings.ts`.
+
+Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's
+policy can change without stale defaults becoming machine preferences. Validate stored
+choices against the effective content policy before using them; unavailable storage must
+not prevent play. See `src/core/graphics.ts`, `validGraphicsSettings`.
 
 ## Unresolved constraints
 
