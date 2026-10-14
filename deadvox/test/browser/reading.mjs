@@ -396,7 +396,8 @@ try {
       return entity.uid;
     });
     await page.evaluate(async () => {
-      globalThis.readingWitness.restViewModel = (await import('/src/ui/rest.ts')).restViewModel;
+      const restUiModule = '/src/ui/rest.ts';
+      globalThis.readingWitness.restViewModel = (await import(restUiModule)).restViewModel;
     });
     const sleepRefusal = await page.evaluate((uid) => {
       const { session } = globalThis.readingWitness;
