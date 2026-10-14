@@ -64,6 +64,7 @@ class TemplateSpace {
       x >= sx ||
       y >= sy ||
       z >= sz ||
+      this.template.ownership?.[x + sx * (z + sz * y)] === 0 ||
       this.solids.has(this.template.blocks[x + sx * (z + sz * y)]!)
     );
   }
@@ -90,7 +91,18 @@ class TemplateSpace {
     }
     for (let bz = Math.floor(z - BODY_HALF_WIDTH); bz < Math.ceil(z + BODY_HALF_WIDTH); bz++) {
       for (let bx = Math.floor(x - BODY_HALF_WIDTH); bx < Math.ceil(x + BODY_HALF_WIDTH); bx++) {
-        if (this.occupied(bx, feet - 1, bz, true)) {
+        const [sx, sy, sz] = this.template.size;
+        const support = feet - 1;
+        if (
+          bx >= 0 &&
+          bx < sx &&
+          bz >= 0 &&
+          bz < sz &&
+          support >= 0 &&
+          support < sy &&
+          this.template.ownership?.[bx + sx * (bz + sz * support)] !== 0 &&
+          this.occupied(bx, support, bz, true)
+        ) {
           return true;
         }
       }
@@ -338,6 +350,27 @@ export const templateSpawnClearanceIssues = (registry: Registry, template: Compi
   });
 };
 
+export const templateStandingRoute = (
+  registry: Registry,
+  template: CompiledTemplate,
+  from: Vec3,
+  to: Vec3,
+): boolean => {
+  const space = new TemplateSpace(registry, template);
+  const reserved = (position: Vec3): boolean =>
+    !template.reserved ||
+    [...bodyCells(position)].every(
+      ([x, y, z]) => template.reserved![x + template.size[0] * (z + template.size[2] * y)] === 1,
+    );
+  return (
+    space.standing(from) &&
+    space.standing(to) &&
+    reserved(from) &&
+    reserved(to) &&
+    space.reached(from, reserved).has(key(to))
+  );
+};
+
 export const templateReachableStandingPositions = (
   registry: Registry,
   template: CompiledTemplate,
@@ -351,7 +384,7 @@ export const templateReachableStandingPositions = (
   ].map((position) => position.split(',').map(Number) as Vec3);
 };
 
-export const templateSpatialIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {
+export const templateStoreyIssues = (template: CompiledTemplate): SpatialIssue[] => {
   const { access } = template;
   if (!access) {
     return [];
@@ -365,6 +398,19 @@ export const templateSpatialIssues = (registry: Registry, template: CompiledTemp
   ) {
     return [['.access.storeys', 'storeys need unique ids/heights, a ground storey, and room for a standing body']];
   }
+  return [];
+};
+
+export const templateSpatialIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {
+  const { access } = template;
+  if (!access) {
+    return [];
+  }
+  const metadata = templateStoreyIssues(template);
+  if (metadata.length > 0) {
+    return metadata;
+  }
+  const floors = new Map(access.storeys.map((floor) => [floor.id, floor.floor]));
   const space = new TemplateSpace(registry, template);
   const issues = access.stairs.flatMap((stair, index) => space.flightIssues(stair, index));
   if (issues.length > 0) {

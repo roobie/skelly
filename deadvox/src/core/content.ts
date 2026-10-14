@@ -11,6 +11,7 @@ import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
+import { mapKitIssues } from './mapKit.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
   type BlockDef,
@@ -67,6 +68,7 @@ export interface Registry extends RegistryMaps {
   /** Where each sound event was defined; variant paths are relative to this content file's pack. */
   soundOrigins: Map<string, { source: string; path: string }>;
   dayCycle: DayCycleDef | undefined;
+  contentOrigins: Map<string, { source: string; path: string }>;
 }
 
 const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
@@ -112,7 +114,10 @@ const messageOf = (issue: Issue): string => {
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /** Checks inside one template: layer sizes, and that every character is in the palette. */
-const templateIssues = (template: TemplateDef, path: string): [string, string][] => {
+const templateIssues = (
+  template: Pick<TemplateDef, 'size' | 'layers' | 'ownership'> & { palette: Readonly<Record<string, unknown>> },
+  path: string,
+): [string, string][] => {
   const [sx, , sz] = template.size;
   const out: [string, string][] = ownershipShapeIssues(template).map(([at, message]) => [`${path}${at}`, message]);
   if (template.layers.length !== template.size[1]) {
@@ -156,6 +161,9 @@ const fileIssues = (file: ContentFile, source: string): [string, string][] => {
   });
   (file.templates ?? []).forEach((template, i) => {
     out.push(...templateIssues(template, `templates[${i}]`));
+  });
+  (file.mapPieces ?? []).forEach((piece, i) => {
+    out.push(...templateIssues(piece, `mapPieces[${i}]`));
   });
   (file.recipes ?? []).forEach((recipe, i) => {
     const combinations = recipe.components.reduce((count, group) => count * BigInt(group.length), 1n);
@@ -214,11 +222,12 @@ const emptyRegistry = (): Registry => ({
   modelOrigins: new Map(),
   soundOrigins: new Map(),
   dayCycle: undefined,
+  contentOrigins: new Map(),
 });
 
 const merge = (files: readonly { source: string; file: ContentFile }[]) => {
   const registry = emptyRegistry();
-  const origins = new Map<string, Origin>();
+  const origins = registry.contentOrigins;
   const note = (section: ContentSection, id: string, source: string, i: number) =>
     origins.set(`${section}:${id}`, { source, path: `${section}[${i}]` });
 
@@ -1047,6 +1056,9 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
+  for (const issue of mapKitIssues(registry)) {
+    report(issue.section, issue.id, issue.path, issue.message);
+  }
   checkKeys(registry, report);
   checkZombies(registry, report);
   checkRecipes(registry, report);

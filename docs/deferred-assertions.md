@@ -21,6 +21,7 @@ When you remove or skip a drifting assertion, add a row here in the same PR. Rem
 
 | What | Test or code owner | How to check by hand | Pin when |
 |---|---|---|---|
+| Base-pack section populations, recipe prerequisites, skill labels and player figure palette | `deadvox/test/content.test.ts` | Run `npm run validate` in `deadvox/` and inspect the authored pack and player appearance for the intended content. The fixture-based descriptor test retains native map allocation without requiring every optional section to be populated | content freeze, v1.0 beta |
 | deadvox validate counts (reachable / defined eligible, component closure, models) and the defined-but-unreachable list | `deadvox/test/validateCli.test.ts` | `npm run validate` in `deadvox`: 0 issues; every unreachable item is one that isn't placed yet on purpose | content freeze, v1.0 beta |
 | Inventory hint/search/refusal prose and shipped clothing pocket counts | `deadvox/test/inventoryScreen.test.ts` | Open inventory with the current loadout; check binding hints, search progress and duplicate-command feedback, then inspect each worn container’s pocket layout. Tests retain menu ownership, search redraw, refusal feedback and per-container containment properties | when an accessibility/copy contract is agreed; clothing counts at content freeze, v1.0 beta |
 | Starting known recipe IDs | `deadvox/test/snapshot.test.ts` and `deadvox/test/craftingUi.test.ts` | Inspect `STARTING_RECIPES` against the milestone's current starting-knowledge intent | content freeze, v1.0 beta |

@@ -85,6 +85,10 @@
       "output": "deadvox/src/content/base/loot.json"
     },
     {
+      "source": "deadvox/src/content/base/map-kits.jsonnet",
+      "output": "deadvox/src/content/base/map-kits.json"
+    },
+    {
       "source": "deadvox/src/content/base/models-firearms.jsonnet",
       "output": "deadvox/src/content/base/models-firearms.json"
     },

@@ -2,7 +2,7 @@ import type { TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { CompiledTemplate, VoxelProvenance } from './templates.ts';
 
-export const ownershipShapeIssues = (template: TemplateDef): [string, string][] => {
+export const ownershipShapeIssues = (template: Pick<TemplateDef, 'size' | 'ownership'>): [string, string][] => {
   if (!template.ownership) {
     return [];
   }
@@ -18,13 +18,10 @@ export const compileOwnership = (
   template: TemplateDef,
   blocks: Uint16Array,
   pieces: CompiledTemplate['pieces'],
+  source: string,
 ): Pick<CompiledTemplate, 'ownership' | 'reserved' | 'provenance'> => {
   if (!template.ownership) {
     return {};
-  }
-  const issues = ownershipShapeIssues(template);
-  if (issues.length > 0) {
-    throw new Error(`${template.id}${issues[0]![0]}: ${issues[0]![1]}`);
   }
   const [sx, , sz] = template.size;
   const ownership = new Uint8Array(blocks.length);
@@ -46,14 +43,16 @@ export const compileOwnership = (
         const index = x + sx * (z + sz * y);
         const solid = blocks[index] !== 0 || occupied.has(index);
         if ((mark === 'S') !== solid) {
-          throw new Error(`${template.id}: ownership ${mark} disagrees with occupancy at ${[x, y, z].join(',')}`);
+          throw new Error(
+            `${source}: ${template.id}: ownership ${mark} disagrees with occupancy at ${[x, y, z].join(',')}`,
+          );
         }
         ownership[index] = { S: 1, '.': 0, A: 2, R: 2 }[mark]!;
         reserved[index] = Number(mark === 'R');
         if (mark !== '.') {
           provenance[index] = {
             owner: template.id,
-            source: template.id,
+            source,
             variant: template.id,
             slotPath: template.id,
             turn: 0,

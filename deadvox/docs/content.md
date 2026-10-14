@@ -19,6 +19,7 @@ read_if:
   - you change site-generation tuning or its content schema
   - you're authoring or changing Deadvox content sources or their build pipeline
   - you add code that reads a content row by a fixed id
+  - you author or validate curated map kits, role styles or connector contracts
 ---
 
 # Content sections and recipes
@@ -50,6 +51,31 @@ Keep authored-site terrain and vegetation controls in base content rather than m
 Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
 Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, "Spawning"; see `PaletteThingSchema` in `src/core/schema.ts` and `SPAWN_TIMES` in `src/core/clock.ts`.
+
+### Curated kits
+
+A weighted alternative must preserve its consumer's spatial contract, not merely fit a
+bounding box. Exclusive ownership prevents write order from changing a facade; reserved
+mouths and walking space keep furnishing from changing a promised route. Structural
+material roles must agree with the style binding so interior flooring cannot silently
+become shell treatment. See `src/core/schema.ts`, `MapPieceSchema` and `MapAssemblySchema`,
+and `src/core/templates.ts`, `compileMapPiece` and `compileAssembly`.
+
+Bound authored volumes before allocating compilation buffers so a short metadata file
+cannot request unbounded memory. See `src/core/schema.ts`, `KitSize`.
+
+Whole-definition overrides revalidate retained consumers. Source provenance follows the
+winning definition through nested placement so a conflict identifies the authors of both
+claims rather than just the final block. See `src/core/content.ts`, `buildRegistry`, and
+`src/core/mapKit.ts`, `mapKitIssues`.
+
+A route graph is intent, not body reachability. Walking admission uses reserved volume and
+known support rather than assuming that unclaimed cells or terrain outside a piece are
+empty or load-bearing. Climbing recipes remain refused until #712 connects the final
+placed scenario certificate to their publication boundary; an abstract link or the
+presence of a ladder cannot prove a climb. See `src/core/mapKit.ts`, `compileMapSite`,
+`src/core/templateSpatial.ts`, `templateStandingRoute`, and `src/core/scenarioCertificate.ts`,
+`scenarioCertificate`.
 
 ## Recipes
 
