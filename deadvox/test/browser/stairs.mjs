@@ -778,7 +778,24 @@ try {
     let camoAo;
     try {
       await setShaderLook(true, true);
+      const captureState = () => page.evaluate(() => {
+        const { engine, session } = globalThis.stairsWitness;
+        return {
+          realMs: performance.now(),
+          frame: engine.renderer.info.render.frame,
+          camera: engine.camera.position.toArray(),
+          body: [...session.body.pos],
+          velocity: [...session.body.vel],
+          calendar: session.sim.calendar,
+          meshes: engine.meshes.group.children.length,
+          stats: {...engine.skylight.stats},
+          fields: engine.skylight.inspect().map(({volume, ...field}) => field),
+          jobs: globalThis.skyTiming.jobs.filter(job => !job.receivedAbsoluteRealMs).map(job => ({id:job.id,type:job.type,key:job.key})),
+        };
+      });
+      const captureStates = { patternedBefore: await captureState() };
       const patterned = await camoWallPixels(await shot('camo-ao-patterned'));
+      captureStates.patternedAfter = await captureState();
       const referenceFrame = await page.evaluate(() => {
         globalThis.skyProofControl.value = 1;
         return globalThis.stairsWitness.engine.renderer.info.render.frame;
@@ -787,7 +804,9 @@ try {
         (frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame,
         referenceFrame,
       );
+      captureStates.mainBefore = await captureState();
       const mainEstimate = await camoWallPixels(await shot('camo-ao-main-estimate'));
+      captureStates.mainAfter = await captureState();
       await page.evaluate(() => {
         globalThis.skyProofControl.value = 0;
       });
@@ -797,6 +816,7 @@ try {
       camoAo = {
         patterned,
         mainEstimate,
+        captureStates,
         plain,
         patternedRatio: ratio(patterned),
         plainRatio: ratio(plain),
