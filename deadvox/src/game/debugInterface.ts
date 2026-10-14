@@ -7,6 +7,7 @@ import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
 import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
+import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
@@ -88,6 +89,7 @@ export interface DebugNoclipStep {
 }
 
 export interface DebugReadout {
+  readonly drawSubmission: DrawSubmission | null;
   readonly fps: number;
   /** Time between frames, median and 95th percentile over the last couple of seconds. */
   readonly frame: FrameSummary;

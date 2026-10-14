@@ -132,6 +132,7 @@ export const shadowReadoutText = (
 
 const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult => html`
   <span>${readout.fps.toFixed(0)} fps · frame ${ms(readout.frame.p50)} / ${ms(readout.frame.p95)} ms (p50 / p95, 2 s) · cpu ${ms(readout.work.p50)} / ${ms(readout.work.p95)} ms</span>
+  ${readout.drawSubmission ? html`<span>CPU submission · ${readout.drawSubmission.calls} draw calls · ${readout.drawSubmission.triangles} triangles · drawing buffer ${readout.drawSubmission.drawingBufferWidth} × ${readout.drawSubmission.drawingBufferHeight} px</span>` : nothing}
   <span>simulation ${ms(readout.simulationMs)} ms · render ${ms(readout.renderMs)} ms incl. post passes · mesh queue ${ms(readout.meshingQueueMs)} ms</span>
   <span>${shadowText}</span>
   <span>seed ${readout.seed}</span>
@@ -534,6 +535,7 @@ const panelTemplate = ({
 };
 
 const emptyReadout: DebugReadout = {
+  drawSubmission: null,
   fps: 0,
   frame: { p50: Number.NaN, p95: Number.NaN },
   work: { p50: Number.NaN, p95: Number.NaN },
@@ -1621,7 +1623,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       fogginess: look.fogginess,
       torch: look.torch,
       shadows: look.shadowState,
-      performance: { fps: readout.fps, frame: readout.frame, work: readout.work },
+      performance: {
+        fps: readout.fps,
+        frame: readout.frame,
+        work: readout.work,
+        drawSubmission: readout.drawSubmission,
+      },
       gameTime: formatClock(hooks.sim.calendar),
       site: config.site,
       seed: config.seed,
