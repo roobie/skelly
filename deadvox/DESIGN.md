@@ -1424,8 +1424,8 @@ simulation fingerprint because it can change a world without changing a simulati
 call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
 
 Whole-definition overrides keep composition in the authoring language rather than
-creating a second patch language. Browser Jsonnet, mod persistence, save-pack identity
-and uploaded assets remain follow-up work in #633. The preview panel is opt-in while
+creating a second patch language. Browser Jsonnet, mod persistence and uploaded
+assets remain follow-up work in #633. The preview panel is opt-in while
 that save boundary is unfinished; see `src/ui/modsPanel.ts`, `chooseMods`.
 
 Remote intake shares local admission so a host cannot bypass the content contract.
@@ -1441,10 +1441,11 @@ bundled content fragments, which are parts of one core pack, not separate mods.
 This also gives later persistence and save-pack identity work an explicit owner;
 see `src/game/browserMods.ts`, `readMod` and `evaluateMods`.
 
-A save records each pack's id, version and canonical hash; a save whose content
-changed is refused rather than migrated until v1.0 beta
+A save records the base pack's identity, and a save made with different base content
+is refused rather than migrated until v1.0 beta
 (`../AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
-See `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
+Browser mods never enter the save's pack list; their save identity is #633. See
+`src/core/saveFormat.ts`, `versionDifferences`.
 
 Import voxel-editor work (MagicaVoxel, vengi) only when a building outgrows curated
 Jsonnet pieces (`../docs/jsonnet.md`, "Curated map features"); no importer contract
