@@ -57,6 +57,19 @@ Furnishing choices preserve the circulation contract but can still add obstacles
 loot outside it. Reachability witnesses must use the final furnished assembly in both
 directions; material ownership alone does not establish a usable flight.
 
+## Lab room boundaries
+
+Repeated room pieces reserve their thresholds and central circulation separately from
+furnishing bays. A room substitution may change equipment inside a bay without changing
+its supported routes or borrowing space from a connector. Mouth clearance should enclose
+the walking body, not adjacent equipment: declaring an unnecessarily deep mouth would
+turn a valid furnishing bay into a circulation conflict. See
+`deadvox/src/content/base/gauntlet-lab-rooms.libsonnet`, `room`.
+
+These pieces are admitted content, not yet the production lab. Issue #712 still requires
+storey circulation, exclusively owned descent openings and the objective room to replace
+the generated lab. Furnished room witnesses do not establish a final lab climb or return.
+
 ## Consequences
 
 Curated kits cost authoring and seam review effort, but substitutions remain understandable
