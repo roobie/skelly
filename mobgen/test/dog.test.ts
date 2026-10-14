@@ -5,7 +5,7 @@ import { boneTransforms } from '../src/core/pose.ts';
 import { posedVoxelSurfaceBoundsForBones } from '../src/core/voxelBounds.ts';
 import { crowdTextureLayout, isSeveredInMask, packSeveredMask } from '../src/mob/crowd.ts';
 import { severedBoneSet } from '../src/mob/dismember.ts';
-import { dogGaitPose, dogHitPose, dogPawBones, dogPose } from '../src/mob/dog.ts';
+import { dogGaitPose, dogHitPose, dogPawBones, dogPose, dogStrideLength } from '../src/mob/dog.ts';
 import { dogTemplate } from '../src/mob/dogTemplate.ts';
 import { HIT_FLINCH } from '../src/mob/reactions.ts';
 import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
@@ -60,6 +60,28 @@ const survivingSurface = (
 
 const ALL_LEG_CUTS = ['foreUpper.L', 'foreUpper.R', 'hindUpper.L', 'hindUpper.R'] as const;
 
+/** The longest run of samples whose values stay within `tolerance` of each other. */
+const longestStillRun = (values: readonly number[], tolerance: number): readonly [number, number] => {
+  let bestStart = 0;
+  let bestEnd = 0;
+  for (let start = 0; start < values.length; start++) {
+    let lo = values[start]!;
+    let hi = lo;
+    for (let end = start; end < values.length; end++) {
+      lo = Math.min(lo, values[end]!);
+      hi = Math.max(hi, values[end]!);
+      if (hi - lo > tolerance) {
+        break;
+      }
+      if (end - start > bestEnd - bestStart) {
+        bestStart = start;
+        bestEnd = end;
+      }
+    }
+  }
+  return [bestStart, bestEnd];
+};
+
 describe('dog shambler', () => {
   it('is its own body plan, outside the templates Deadvox spawns', () => {
     expect(dogTemplate.bodyPlan).toBe('dog');
@@ -90,18 +112,20 @@ describe('dog shambler', () => {
   it('keeps the gait and hit pose supported by the planted paws', () => {
     for (const seed of [DOG_SEEDS[0]!, DOG_SEEDS.at(-1)!]) {
       const realized = realizedFor(seed);
+      const stance = { limp: 0.3, headTilt: 4 };
       const tolerance = realized.voxels.size;
-      const rest = dogPose(realized, { limp: 0.3, headTilt: 4 });
-      expect(dogGaitPose(realized, 0.5, 0, { limp: 0.3, headTilt: 4 })).toEqual(rest);
+      const stride = dogStrideLength(realized, stance);
+      const rest = dogPose(realized, stance);
+      expect(dogGaitPose(realized, 0.5, 0, stance)).toEqual(rest);
 
-      for (const [phase, speed] of [
-        [0.5, 1],
-        [1.4, 1],
-        [Math.PI + 0.5, 1],
-        [4.8, 0.6],
-        [6, 1],
+      for (const [fraction, speed] of [
+        [0.1, 1],
+        [0.35, 1],
+        [0.6, 1],
+        [0.85, 0.6],
+        [0.99, 1],
       ] as const) {
-        const gait = dogGaitPose(realized, phase, speed, { limp: 0.3, headTilt: 4 });
+        const gait = dogGaitPose(realized, stride * fraction, speed, stance);
         const surfaces = dogPawBones.map((paw) => pawSurface(realized, gait, paw));
         expect(Math.min(...surfaces)).toBeGreaterThanOrEqual(-tolerance);
         // At least one paw is planted on the ground at every phase.
@@ -117,29 +141,75 @@ describe('dog shambler', () => {
     }
   });
 
-  it('walks with opposite-corner diagonal pairs, not same-side pacing', () => {
+  it('walks with opposite-corner diagonal pairs and a real stride', () => {
     const realized = realizedFor(1);
-    const rest = dogPose(realized);
-    const restTransforms = boneTransforms(realized.body.bones, rest);
+    const stride = dogStrideLength(realized);
+    const tolerance = realized.voxels.size;
+    const firstPair = ['forePaw.L', 'hindPaw.R'] as const;
+    const secondPair = ['forePaw.R', 'hindPaw.L'] as const;
+    const surfacesAt = (distance: number): Record<string, number> =>
+      Object.fromEntries(
+        dogPawBones.map((paw) => [paw, pawSurface(realized, dogGaitPose(realized, distance, 1), paw)]),
+      );
+
+    // Mid first step the fore-left/hind-right diagonal is planted while the other is lifted; mid second
+    // step the roles swap. Same-side legs are never planted (or lifted) together.
+    const first = surfacesAt(stride / 4);
+    for (const paw of firstPair) {
+      expect(Math.abs(first[paw]!)).toBeLessThanOrEqual(tolerance);
+    }
+    for (const paw of secondPair) {
+      expect(first[paw]!).toBeGreaterThan(tolerance);
+    }
+
+    const second = surfacesAt((3 * stride) / 4);
+    for (const paw of secondPair) {
+      expect(Math.abs(second[paw]!)).toBeLessThanOrEqual(tolerance);
+    }
+    for (const paw of firstPair) {
+      expect(second[paw]!).toBeGreaterThan(tolerance);
+    }
+
+    // The gait moves: at its stance end a planted paw sits a clear voxel behind its rest position.
+    const restTransforms = boneTransforms(realized.body.bones, dogPose(realized));
+    const stanceEnd = boneTransforms(realized.body.bones, dogGaitPose(realized, stride / 2 - tolerance, 1));
     const toeZ = (transforms: ReturnType<typeof boneTransforms>, paw: string): number => {
       const bone = realized.body.bones.find((candidate) => candidate.id === paw)!;
       return applyPoint(transforms.get(paw)!, bone.tail)[2];
     };
-    const motion = realized.voxels.size / 2; // a voxel of slack, so the sign is what matters
+    expect(Math.abs(toeZ(stanceEnd, 'forePaw.L') - toeZ(restTransforms, 'forePaw.L'))).toBeGreaterThan(tolerance);
+  });
 
-    // At each half's reach peak the documented diagonal swings forward (dog faces -Z) while the other
-    // pair plants; a static pose would leave every displacement zero.
-    for (const [phase, swinging, planted] of [
-      [Math.PI / 2, ['forePaw.L', 'hindPaw.R'], ['forePaw.R', 'hindPaw.L']],
-      [(3 * Math.PI) / 2, ['forePaw.R', 'hindPaw.L'], ['forePaw.L', 'hindPaw.R']],
-    ] as const) {
-      const gaitTransforms = boneTransforms(realized.body.bones, dogGaitPose(realized, phase, 1));
-      for (const paw of swinging) {
-        expect(toeZ(gaitTransforms, paw) - toeZ(restTransforms, paw)).toBeLessThan(-motion);
-      }
-      for (const paw of planted) {
-        expect(toeZ(gaitTransforms, paw) - toeZ(restTransforms, paw)).toBeGreaterThan(motion);
-      }
+  it('keeps each planted paw fixed in the ground frame while the body advances', () => {
+    const realized = realizedFor(1);
+    const stance = { limp: 0.4 };
+    const stride = dogStrideLength(realized, stance);
+    const tolerance = realized.voxels.size / 2;
+    // A stride that covers real ground, so a standing pose or a pinned phase cannot pass this test.
+    expect(stride).toBeGreaterThan(tolerance);
+    const samples = 120;
+    const distance = Array.from({ length: samples + 1 }, (_, i) => (stride * i) / samples);
+    const toeZ = (paw: string, pose: ReturnType<typeof dogPose>): number => {
+      const bone = realized.body.bones.find((candidate) => candidate.id === paw)!;
+      return applyPoint(boneTransforms(realized.body.bones, pose).get(paw)!, bone.tail)[2];
+    };
+
+    for (const paw of dogPawBones) {
+      const poses = distance.map((d) => dogGaitPose(realized, d, 1, stance));
+      // The dog walks forward (-Z), so its root drops by `d`; a planted paw's ground-frame Z
+      // (`local Z - d`) must stay put.
+      const groundZ = poses.map((pose, i) => toeZ(paw, pose) - distance[i]!);
+      const surfaces = poses.map((pose) => pawSurface(realized, pose, paw));
+      const [start, end] = longestStillRun(groundZ, tolerance);
+
+      // Stance is about half a cycle, so the still interval must be substantial, not a momentary tie.
+      expect(end - start).toBeGreaterThan(samples * 0.3);
+      // The body genuinely advanced under that paw: its local Z swept the ground distance it covered.
+      expect(distance[end]! - distance[start]!).toBeGreaterThan(tolerance);
+      expect(Math.abs(toeZ(paw, poses[end]!) - toeZ(paw, poses[start]!))).toBeGreaterThan(tolerance);
+      // It was planted through the interval, and lifts during the swing (so the test is not vacuous).
+      expect(Math.min(...surfaces.slice(start, end + 1))).toBeLessThanOrEqual(tolerance);
+      expect(Math.max(...surfaces)).toBeGreaterThan(tolerance);
     }
   });
 
@@ -163,12 +233,13 @@ describe('dog shambler', () => {
     const tolerance = realized.voxels.size;
 
     // One leg gone: the surviving three paws at least keep the body planted and nothing dips below ground.
+    const stride = dogStrideLength(realized);
     for (const cut of ALL_LEG_CUTS) {
       const hidden = severedBoneSet(realized.body.bones, [cut]);
       const remainingPaws = dogPawBones.filter((paw) => !hidden.has(paw));
       expect(remainingPaws.length).toBe(3);
-      for (const phase of [Math.PI / 2, Math.PI + 0.5]) {
-        const pose = dogGaitPose(realized, phase, 1, { severed: hidden });
+      for (const fraction of [0.25, 0.75]) {
+        const pose = dogGaitPose(realized, stride * fraction, 1, { severed: hidden });
         const surfaces = remainingPaws.map((paw) => pawSurface(realized, pose, paw));
         expect(Math.min(...surfaces)).toBeGreaterThanOrEqual(-tolerance);
         expect(surfaces.some((surface) => Math.abs(surface) <= tolerance)).toBe(true);
@@ -182,8 +253,8 @@ describe('dog shambler', () => {
     for (const paw of dogPawBones) {
       expect(allLegsHidden.has(paw)).toBe(true);
     }
-    for (const phase of [0.5, Math.PI + 0.5]) {
-      const pose = dogGaitPose(realized, phase, 1, { severed: allLegsHidden });
+    for (const fraction of [0.25, 0.75]) {
+      const pose = dogGaitPose(realized, stride * fraction, 1, { severed: allLegsHidden });
       expect(Math.abs(survivingSurface(realized, pose, allLegsHidden))).toBeLessThanOrEqual(tolerance);
     }
   });

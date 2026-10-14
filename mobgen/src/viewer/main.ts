@@ -160,7 +160,9 @@ interface Loaded {
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
 let crawlerPhase = 0;
-let dogPhase = 0;
+// Ground distance the dog has advanced; drives the walk directly, so its planted paws stay planted at any
+// speed (see dogGaitPose). Reset on load like the other walk clocks.
+let dogDistance = 0;
 let gridZ = 0;
 // Runs unconditionally (walking, standing, attacking...) so breathing/sway never stalls; only its phase
 // matters, so it's never reset on load/death — a fresh actor just joins the motion already in progress,
@@ -418,7 +420,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   current = loaded;
   clock = INITIAL_CLOCK;
   crawlerPhase = 0;
-  dogPhase = 0;
+  dogDistance = 0;
   gridZ = 0;
   attackTime = undefined;
   attackCooldown = 0;
@@ -620,7 +622,7 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     return;
   }
   if (current.template.bodyPlan === 'dog') {
-    dogPhase += speed * dt * Math.PI;
+    dogDistance += speed * dt;
     gridZ = (gridZ + speed * dt) % 0.5;
     groundGroup.position.z = gridZ;
     return;
@@ -697,7 +699,7 @@ const applyDogFrame = (loaded: Loaded, dt: number): void => {
   const speed = walkOn.checked ? Number(speedInput.value) : 0;
   advanceWalk(dt, walkOn.checked, speed);
   advanceHit(dt);
-  const basePose = dogGaitPose(loaded.realized, dogPhase, speed, dogStance(loaded.genome, severedBones));
+  const basePose = dogGaitPose(loaded.realized, dogDistance, speed, dogStance(loaded.genome, severedBones));
   const pose =
     hitTime === undefined
       ? basePose
