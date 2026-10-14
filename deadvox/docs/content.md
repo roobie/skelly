@@ -2,9 +2,10 @@
 read_if:
   - you author or change Deadvox content sources or their build pipeline
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
+  - you add code that reads a content row by a fixed id
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
-  - you're authoring or changing authored sites, template geometry, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
+  - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you're authoring or changing furniture appearance, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
@@ -71,7 +72,7 @@ combinations. Exclusive ownership prevents write order from changing a facade.
 Structural material roles must agree with the style binding so interior flooring cannot
 silently become shell treatment, and structural roles must bind solid blocks because
 standing anchors, port landings and climb certificates read support from block solidity.
-A non-solid shell would pass ownership yet fail every body proof later. See
+A non-solid shell would pass ownership yet fail the support-dependent proofs (standing, landings, climbs) later. See
 `src/core/schema.ts`, `MapPieceSchema` and `MapAssemblySchema`; `src/core/templates.ts`,
 `compileMapPiece`, `traversalContract` and `compileAssembly`; and `src/core/mapKit.ts`,
 `mapKitIssues` and `reservedStanding`.
