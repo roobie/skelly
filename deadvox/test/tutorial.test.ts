@@ -4,8 +4,8 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { Survival } from '../src/game/survival.ts';
-import { Simulation } from './simulationFixture.ts';
 import { Tutorial, type TutorialObservation, tutorialRequested, tutorialUrl } from '../src/game/tutorial.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({
   position: [0, 1, 0],
@@ -84,8 +84,8 @@ describe('practice objectives', () => {
     const survival = new Survival(new Simulation({ seed: 1 }), inventory, queue, {
       reach: bindReach({ inventory, position: state.position, blockSize: 1 }),
       feet: () => ({ kind: 'pile', pos: state.position }),
-      notice: () => {},
-      read: () => {},
+      notice: vi.fn(),
+      read: vi.fn(),
       consumed: (type) => tutorial.consumed(type),
     });
     const jeans = inventory.create('jeans');
