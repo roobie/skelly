@@ -1061,7 +1061,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       });
     }
   }
-  new KitOverlay(hooks.engine.site?.authoredPlacements ?? []);
+  const kitOverlay = new KitOverlay(hooks.engine.site?.authoredPlacements);
+  kitOverlay.mount();
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;
   let mouseText = formatMouseDiag(undefined);

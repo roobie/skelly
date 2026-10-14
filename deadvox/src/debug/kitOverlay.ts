@@ -13,7 +13,7 @@ export interface KitCell {
 
 export const kitSlice = (placement: Placement, y: number): KitCell[] => {
   const { template } = placement;
-  if (!template.ownership || !Number.isInteger(y) || y < 0 || y >= template.size[1]) {
+  if (!(template.ownership && Number.isInteger(y)) || y < 0 || y >= template.size[1]) {
     return [];
   }
   const cells: KitCell[] = [];
@@ -50,8 +50,11 @@ export class KitOverlay {
   private layer = 0;
   private readonly placements: readonly Placement[];
 
-  constructor(placements: readonly Placement[]) {
+  constructor(placements: readonly Placement[] = []) {
     this.placements = placements.filter(({ template }) => template.ownership !== undefined);
+  }
+
+  mount(): void {
     if (this.placements.length === 0) {
       return;
     }
