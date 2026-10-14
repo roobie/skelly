@@ -1,4 +1,6 @@
+import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
+import { registerHooks, stripTypeScriptTypes } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -8,9 +10,33 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
 import { makeScale } from '../core/scale.ts';
 import { testedBricks } from '../core/solidBricks.ts';
-import { ZombieSystem } from '../core/zombies.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
 
+const args = process.argv.slice(2);
+if (args.length > 0 && (args.length !== 2 || args[0] !== '--shape-ref' || !/^[0-9a-f]{7,40}$/.test(args[1]))) {
+  throw new Error('Usage: npm run bench:amalgam -- [--shape-ref commit-sha]');
+}
+const shapeUrl = new URL('../core/amalgamShape.ts', import.meta.url).href;
+let substituted = false;
+if (args.length > 0) {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+  const source = stripTypeScriptTypes(
+    execFileSync('git', ['-C', root, 'show', `${args[1]}:deadvox/src/core/amalgamShape.ts`], { encoding: 'utf8' }),
+  );
+  registerHooks({
+    load(url, context, nextLoad) {
+      if (url === shapeUrl) {
+        substituted = true;
+        return { format: 'module', source, shortCircuit: true };
+      }
+      return nextLoad(url, context);
+    },
+  });
+}
+const { ZombieSystem } = await import('../core/zombies.ts');
+if (args.length > 0 && !substituted) {
+  throw new Error('The baseline shape was not loaded');
+}
 const base = resolve(dirname(fileURLToPath(import.meta.url)), '../content/base');
 const { registry } = buildRegistry(
   readdirSync(base)
@@ -61,7 +87,9 @@ console.log(
       warmups,
       runs,
       clock: 'hrtime.bigint',
-      collision: 'stepZombieBody (turn settlement, physics, ground and wall lookahead); separate pass from whole tick',
+      collision:
+        'stepZombieBody plus openSide (turn, physics, ground, wall and slide probes); separate pass from whole tick',
+      shapeRef: args[1] ?? 'working tree',
       budget: 'collision p95',
       corridorWidth: 'realized facing -z body width plus one block, rounded up to whole blocks',
       wallLocomotion: 'forward to exercise turning push; corridor uses authored locomotion',
@@ -109,6 +137,7 @@ for (const { name, corridor } of scenarios) {
   sense.pos = corridor ? [right / 2, 1, 10] : [zombie.body.pos[0] + 3, 1, zombie.body.pos[2] + 10];
   const initial = system.snapshotState();
   const originalStep = system.stepZombieBody;
+  const originalSide = system.openSide;
   const originalPush = shape.pushOut;
   // Instrument the collision boundary in its own pass; whole-tick timings have no nested clocks.
   let collisionTime = 0;
@@ -130,10 +159,19 @@ for (const { name, corridor } of scenarios) {
         collisionTime += Number(process.hrtime.bigint() - start) / 1000;
         return result;
       };
+      trial.openSide = function (...parameters) {
+        if (!collectCollision) {
+          return originalSide.apply(this, parameters);
+        }
+        const start = process.hrtime.bigint();
+        const result = originalSide.apply(this, parameters);
+        collisionTime += Number(process.hrtime.bigint() - start) / 1000;
+        return result;
+      };
       const live = trial.store.get(id);
       const liveShape = trial.shapeOf(live.body);
-      liveShape.pushOut = function (...args) {
-        const push = originalPush.apply(this, args);
+      liveShape.pushOut = function (...parameters) {
+        const push = originalPush.apply(this, parameters);
         if (push) {
           pushes += 1;
         }
