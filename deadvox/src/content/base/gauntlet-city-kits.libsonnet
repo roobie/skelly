@@ -1,3 +1,4 @@
+local decor = import 'gauntlet-city-decor.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
 local palette = {
   '.': { role: 'opening', material: 'opening' },
@@ -154,7 +155,7 @@ local lowerSlots = [
   slot('floor_shell', 'gauntlet_city_floor_shell', [0, 8, 0], [18, 1, 16]),
   slot('floor_inside', 'gauntlet_city_floor_lower', [1, 8, 3], [14, 1, 12]),
 ];
-{
+local kit = {
   mapPieces: [
     {
       id: 'gauntlet_city_ground', size: [18, 1, 16], style: 'brick_townhouse',
@@ -306,4 +307,39 @@ local lowerSlots = [
     anchors: { entry: { kind: 'standing', at: [8, 1, 8] } },
     access: { ground: 'floor_0', entrance: [8, 1, 8], storeys: [{ id: 'floor_0', floor: 1 }], stairs: [] },
   }],
+};
+local facadePieces = ['gauntlet_city_shell', 'gauntlet_city_upper_shell', 'gauntlet_city_floor_shell', 'gauntlet_city_roof'];
+local dressed = function(building, concrete) building + {
+  id: building.id + (if concrete then '_concrete' else '_brick'),
+  size: [building.size[0], building.size[1] + 4, building.size[2]],
+  slots: [
+    if part.id == 'roof' then part + {
+      size: [18, 5, 16],
+      choices: [{ ref: { kind: 'assembly', id: 'gauntlet_city_roof_fitted' + (if concrete then '_concrete' else '') }, weight: 1 }],
+    } else if concrete then part + {
+      choices: [choice + {
+        ref: choice.ref + { id: choice.ref.id + (if std.member(facadePieces, choice.ref.id) then '_concrete' else '') },
+      } for choice in part.choices],
+    } else part
+    for part in building.slots
+  ],
+};
+{
+  furniture: decor.furniture,
+  mapPieces: kit.mapPieces + [
+    piece + { id: piece.id + '_concrete', style: 'concrete_townhouse' }
+    for piece in kit.mapPieces if std.member(facadePieces, piece.id)
+  ] + decor.mapPieces,
+  mapAssemblies: decor.mapAssemblies + [
+    dressed(building, concrete) for building in kit.mapAssemblies for concrete in [false, true]
+  ] + [
+    building + {
+      size: dressed(building, false).size,
+      slots: [{ id: 'style', at: [0, 0, 0], size: dressed(building, false).size, turn: 0,
+        choices: [
+          { ref: { kind: 'assembly', id: building.id + '_brick' }, weight: 3 },
+          { ref: { kind: 'assembly', id: building.id + '_concrete' }, weight: 1 },
+        ] }],
+    } for building in kit.mapAssemblies
+  ],
 }

@@ -84,6 +84,15 @@ stable building location before requesting chunks: caching one selected assembly
 whole pool would repeat the same furnishings across the city. See `src/core/cityPlan.ts`,
 `buildCityPlan` and `templateCompiler`.
 
+Choose a facade style for the whole building rather than independently for each
+course: shell, floor edges and roof edges must not become unrelated stripes.
+See `src/content/base/gauntlet-city-kits.libsonnet`, `dressed`.
+Roof equipment occupies a delegated bay outside reserved circulation, so changing
+its weight cannot close a ladder landing or a route around the roof. See
+`src/content/base/gauntlet-city-decor.libsonnet`, `rooftop`.
+The fixture mod in `test/fixtures/jsonnet/concrete-style-mod.jsonnet` demonstrates
+a whole-definition style override through the ordinary ordered-pack boundary.
+
 City placement honours the authored ground storey so a cellar stays underground
 rather than lifting the building above the street. Ordinary buildings and the service
 campus share this alignment rule; see `src/core/cityPlan.ts`, `groundedY`.
