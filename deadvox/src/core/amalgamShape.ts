@@ -502,14 +502,14 @@ export class AmalgamShape implements BodyShape {
     relative[5] = target[3]! * Math.abs(c) + target[5]! * Math.abs(s);
     relative[6] = target[3]! * Math.abs(s) + target[5]! * Math.abs(c);
     const root = nodeCount - 1;
-    if (!this.nodeOverlaps(root, pos)) {
-      return false;
-    }
     this.stack[0] = root;
     let top = 1;
     while (top > 0) {
       top -= 1;
       const node = this.stack[top]!;
+      if (!this.nodeOverlaps(node, pos)) {
+        continue;
+      }
       if (leafCell[node]! >= 0) {
         if (
           (!this.gathering &&
@@ -523,11 +523,8 @@ export class AmalgamShape implements BodyShape {
         continue;
       }
       for (let child = childStart[node]!; child < childStart[node]! + childCount[node]!; child++) {
-        const next = children[child]!;
-        if (this.nodeOverlaps(next, pos)) {
-          this.stack[top] = next;
-          top += 1;
-        }
+        this.stack[top] = children[child]!;
+        top += 1;
       }
     }
     return false;
@@ -685,7 +682,7 @@ export class AmalgamShape implements BodyShape {
     this.terrainHit(pos);
     this.gathering = false;
     const limit = Math.min(reach, PUSH_LIMIT);
-    const length = (push: number): number => needs[push]! * Math.hypot(...PUSHES[push]!);
+    const length = (push: number): number => needs[push]! ** 2 * (push < 4 ? 1 : 2);
     const order = PUSHES.map((_, push) => push)
       .filter((push) => needs[push]! <= limit)
       .sort((a, b) => length(a) - length(b));
