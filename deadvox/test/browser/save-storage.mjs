@@ -727,11 +727,9 @@ try {
         ]),
       );
       try {
-        await page.waitForFunction(
-          () => globalThis.deadvoxSaveTest?.controller.isEntered,
-          undefined,
-          { timeout: STAGE_TIMEOUT_MS },
-        );
+        await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+          timeout: STAGE_TIMEOUT_MS,
+        });
       } catch (error) {
         const status = await page.locator('#save-status').textContent();
         throw new Error(`${backend} Continue stalled at ${status}; errors: ${pageErrors.join('; ')}`, { cause: error });
