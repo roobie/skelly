@@ -15,6 +15,7 @@ import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
+import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -38,6 +39,7 @@ import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, real
 import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
+import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
@@ -2918,8 +2920,11 @@ export const startPlay = (
       },
       visible,
     );
-  const promptText = (now: number, visible: Readonly<HudOptionsState>): string => {
-    const target = visible.interaction && input.locked && !debugTools?.buildOn ? interactionTargetAt() : undefined;
+  const promptText = (
+    now: number,
+    visible: Readonly<HudOptionsState>,
+    target: InteractionTarget | undefined,
+  ): string => {
     let interactionHint: string | undefined;
     if (target?.kind === 'item') {
       interactionHint = `${labelForAction('world.interact')}: pocket the ${inventory.name(target.item)}; hold to wield`;
@@ -3380,6 +3385,21 @@ export const startPlay = (
     });
     drawTutorial?.();
   };
+  const affordanceForFrame = (visible: Readonly<HudOptionsState>) =>
+    interactionAffordance(
+      interactionTargetAt,
+      visible.interaction || visible.interactionOutline,
+      input.locked,
+      Boolean(debugTools?.buildOn),
+    );
+  const markerServices = {
+    furniture: view.furniture,
+    piles: view.piles,
+    definition: (entity: BlockEntity) => entities.defOf(entity),
+    body: (id: EntityId) => zombieStore.get(id)?.body,
+    blockSize: s,
+  };
+
   const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
@@ -3452,6 +3472,8 @@ export const startPlay = (
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     menuPointer.update();
 
+    const affordance = affordanceForFrame(visible);
+    markInteractionTarget(affordance.target, visible.interactionOutline, markerServices);
     const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
     debugTools?.setCrosshairVisible(visible.crosshair);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
@@ -3461,7 +3483,7 @@ export const startPlay = (
         hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '', visible),
         crosshairVisible: crosshair.visible,
         crosshairScreenPosition: crosshair.screenPosition,
-        prompt: promptText(now, visible),
+        prompt: promptText(now, visible, affordance.target),
       },
     );
     renderRestAndWait(visible.messages);

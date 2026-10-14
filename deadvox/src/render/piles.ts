@@ -3,6 +3,7 @@
 // taller the more it holds.
 
 import {
+  Box3,
   BoxGeometry,
   Color,
   Group,
@@ -12,6 +13,7 @@ import {
   MeshBasicMaterial,
   MeshLambertMaterial,
   Object3D,
+  Vector3,
 } from 'three';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Placed } from '../core/items.ts';
@@ -36,6 +38,7 @@ interface CasePlan {
   readonly modelId: string | undefined;
   readonly sources: { readonly itemType: string; count: number }[];
   readonly poses: CasePose[];
+  readonly itemUids: number[];
 }
 
 interface CaseVisual {
@@ -54,6 +57,17 @@ export class PileMeshes {
   private readonly models: ModelLibrary | undefined;
   private readonly seed: number;
   private drawn = '';
+  private readonly itemBounds = new Map<number, Box3>();
+
+  boundsFor(uid: number): { position: [number, number, number]; size: [number, number, number] } | undefined {
+    const bounds = this.itemBounds.get(uid);
+    return (
+      bounds && {
+        position: bounds.getCenter(new Vector3()).toArray(),
+        size: bounds.getSize(new Vector3()).toArray(),
+      }
+    );
+  }
   private readonly caseVisuals = new Map<string, CaseVisual>();
 
   constructor(blockSize: number, models?: ModelLibrary, seed = 1) {
@@ -72,6 +86,7 @@ export class PileMeshes {
       return;
     }
     this.drawn = version;
+    this.itemBounds.clear();
     disposeItemEmissiveMaterials(this.group);
     this.group.clear();
     const casePlans = new Map<string, CasePlan>();
@@ -107,6 +122,7 @@ export class PileMeshes {
       this.releaseCaseVisual(visual);
     }
     this.caseVisuals.clear();
+    this.itemBounds.clear();
     disposeItemEmissiveMaterials(this.group);
     this.group.clear();
     this.geometry.dispose();
@@ -144,6 +160,7 @@ export class PileMeshes {
       model.position.set(...at);
       model.rotation.y = yaw;
       this.group.add(castsAndReceives(model));
+      this.itemBounds.set(item.uid, new Box3().setFromObject(model));
     }
   }
 
@@ -158,7 +175,7 @@ export class PileMeshes {
       const key = `${pileKey}\u001f${modelId ?? ''}`;
       let plan = plans.get(key);
       if (!plan) {
-        plan = { key, modelId, sources: [], poses: [] };
+        plan = { key, modelId, sources: [], poses: [], itemUids: [] };
         plans.set(key, plan);
       }
       const source = plan.sources.find(({ itemType }) => itemType === item.type);
@@ -168,6 +185,7 @@ export class PileMeshes {
         plan.sources.push({ itemType: item.type, count: 1 });
       }
       plan.poses.push({ position, rotation });
+      plan.itemUids.push(item.uid);
     }
   }
 
@@ -192,6 +210,20 @@ export class PileMeshes {
     for (const mesh of visual.meshes) {
       mesh.visible = mesh.count > 0;
       this.group.add(castsAndReceives(mesh));
+      if (!mesh.geometry.boundingBox) {
+        mesh.geometry.computeBoundingBox();
+      }
+      const matrix = new Matrix4();
+      for (const [index, uid] of plan.itemUids.entries()) {
+        mesh.getMatrixAt(index, matrix);
+        const bounds = mesh.geometry.boundingBox!.clone().applyMatrix4(matrix);
+        const prior = this.itemBounds.get(uid);
+        if (prior) {
+          prior.union(bounds);
+        } else {
+          this.itemBounds.set(uid, bounds);
+        }
+      }
     }
   }
 
@@ -247,7 +279,7 @@ export class PileMeshes {
         const { light } = definition;
         const bundleVisible = definition.model === undefined || !this.models?.has(definition.model);
         return item.on && bundleVisible && light?.emissive !== undefined && light.burning?.drop === 'stay'
-          ? [{ pile, light }]
+          ? [{ pile, light, uid: item.uid }]
           : [];
       }),
     );
@@ -257,7 +289,7 @@ export class PileMeshes {
     }
     this.glowsticks.count = sources.length;
     const transform = new Object3D();
-    for (const [index, { pile, light }] of sources.entries()) {
+    for (const [index, { pile, light, uid }] of sources.entries()) {
       transform.position.set(
         (pile.pos[0] + 0.5) * this.blockSize,
         (pile.pos[1] + 0.15) * this.blockSize,
@@ -266,6 +298,16 @@ export class PileMeshes {
       transform.rotation.set(0, (index * Math.PI) / 4, 0);
       transform.updateMatrix();
       this.glowsticks.setMatrixAt(index, transform.matrix);
+      if (!this.glowstickGeometry.boundingBox) {
+        this.glowstickGeometry.computeBoundingBox();
+      }
+      const bounds = this.glowstickGeometry.boundingBox!.clone().applyMatrix4(transform.matrix);
+      const prior = this.itemBounds.get(uid);
+      if (prior) {
+        prior.union(bounds);
+      } else {
+        this.itemBounds.set(uid, bounds);
+      }
       const color = new Color(light.color).multiplyScalar(light.emissive!);
       this.glowsticks.setColorAt(index, color);
     }
@@ -283,5 +325,9 @@ export class PileMeshes {
     mesh.scale.set(this.blockSize * PILE_BUNDLE_WIDTH, height, this.blockSize * PILE_BUNDLE_WIDTH);
     mesh.position.set(...position);
     this.group.add(castsAndReceives(mesh));
+    const bounds = new Box3().setFromObject(mesh);
+    for (const { item } of bundle) {
+      this.itemBounds.set(item.uid, bounds);
+    }
   }
 }
