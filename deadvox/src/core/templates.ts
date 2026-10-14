@@ -38,8 +38,23 @@ export function* cellsOf([sx, sy, sz]: readonly [number, number, number]): Gener
 }
 
 /** The character at a template cell, or undefined outside the layers. */
-const charAt = (template: TemplateDef, x: number, y: number, z: number): string | undefined =>
-  [...(template.layers[y]?.[z] ?? '')][x];
+const charAt = (template: TemplateDef, x: number, y: number, z: number): string | undefined => {
+  const row = template.layers[y]?.[z] ?? '';
+  return row.length === template.size[0] ? row[x] : [...row][x];
+};
+
+function* markedCells(template: TemplateDef, char: string): Generator<Vec3> {
+  const [sx, sy, sz] = template.size;
+  for (let y = 0; y < sy; y++) {
+    for (let z = 0; z < sz; z++) {
+      const text = template.layers[y]?.[z] ?? '';
+      const row = text.length === sx ? text : [...text];
+      for (let x = row.indexOf(char); x >= 0 && x < sx; x = row.indexOf(char, x + 1)) {
+        yield [x, y, z];
+      }
+    }
+  }
+}
 
 /**
  * Splits the cells marked with a character into whole pieces of a size. Pieces are
@@ -64,8 +79,8 @@ export const findPieces = (
     return true;
   };
   const anchors: Vec3[] = [];
-  for (const [x, y, z] of cellsOf(template.size)) {
-    if (charAt(template, x, y, z) !== char || claimed.has(`${x},${y},${z}`)) {
+  for (const [x, y, z] of markedCells(template, char)) {
+    if (claimed.has(`${x},${y},${z}`)) {
       continue;
     }
     if (!claim(x, y, z)) {

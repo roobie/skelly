@@ -9,7 +9,8 @@ const BRANCH_REF_PREFIX = /^refs\/heads\//;
 export const mainSourceOverlays = [
   'game/engine.ts',
   'game/play.ts',
-  'game/startupHint.ts',
+  'game/worldLoading.ts',
+  'ui/worldLoading.ts',
   'render/skylight.ts',
   'game/streamer.ts',
   'worker/mesh.worker.ts',
@@ -36,6 +37,12 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     base = git(['rev-parse', 'FETCH_HEAD']);
   } else {
     base = git(['rev-parse', ref]);
+  }
+  const basePaths = new Set(git(['ls-tree', '-r', '--name-only', base, '--', 'deadvox/src']).split('\n'));
+  for (const path of mainSourceOverlays) {
+    if (!basePaths.has(`deadvox/src/${path}`)) {
+      throw new Error(`Main source overlay missing at ${base}: deadvox/src/${path}; update mainSourceOverlays`);
+    }
   }
   const overlays = new Map(mainSourceOverlays.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
   const mainHtml = git(['show', `${base}:deadvox/index.html`]);

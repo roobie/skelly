@@ -1,4 +1,5 @@
 import { parseTimeOfDay, SPAWN_TIME, SPAWN_TIMES } from '../core/clock.ts';
+import type { Registry } from '../core/content.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
@@ -145,9 +146,6 @@ const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
   return { x: x!, z: z!, ...(yawDegrees === undefined ? {} : { yawDegrees }) };
 };
 
-// URL parsing precedes world construction; only admitted files may contribute authored ids.
-const authoredIds = new Set(BUNDLED_CONTENT.registry.layouts.keys());
-
 const MAX_STOREYS = 20;
 
 /**
@@ -157,6 +155,7 @@ const MAX_STOREYS = 20;
 export const siteFromUrl = (
   params: URLSearchParams,
   fallback: SiteName,
+  registry: Pick<Registry, 'layouts' | 'scenarios'> = BUNDLED_CONTENT.registry,
 ): Pick<GameConfig, 'site' | 'storeys' | 'density'> => {
   const densityText = params.get('density');
   const density = densityText === null || densityText.trim() === '' ? null : Number(densityText);
@@ -170,7 +169,7 @@ export const siteFromUrl = (
       requested === 'forest' ||
       requested === 'hamlet' ||
       (debug && requested === 'weatheringTest') ||
-      (requested !== null && authoredIds.has(requested))
+      (requested !== null && (registry.layouts.has(requested) || registry.scenarios.has(requested)))
         ? requested
         : fallback,
     storeys: Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1,

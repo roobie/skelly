@@ -21,6 +21,11 @@ export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
     head: { yawDeg: 38, pitchDeg: 42 },
     turnRateDegPerSecond: 110,
   },
+  dog: {
+    neck: { yawDeg: 24, pitchDeg: 30 },
+    head: { yawDeg: 34, pitchDeg: 34 },
+    turnRateDegPerSecond: 130,
+  },
   brute: {
     neck: { yawDeg: 20, pitchDeg: 16 },
     head: { yawDeg: 30, pitchDeg: 22 },

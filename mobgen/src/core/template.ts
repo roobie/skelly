@@ -10,8 +10,12 @@ export type ParamSpec =
   | { readonly min: number; readonly max: number }
   | { readonly choices: readonly number[] };
 
-export type BodyPlan = 'humanoid' | 'crawler' | 'amalgam';
+export type BodyPlan = 'humanoid' | 'crawler' | 'dog' | 'amalgam';
 type SupportBones = readonly string[] | 'ground-contacts';
+
+/** Consumer readiness. A `'comparison-only'` template is kept to be compared against others and must
+ * never be spawned or exported; a missing status means ready. */
+type TemplateStatus = 'ready' | 'comparison-only';
 
 export interface Template {
   readonly name: string;
@@ -26,6 +30,8 @@ export interface Template {
   readonly budgets: Budgets;
   /** Fixed support-bone ids, or the generated voxels' actual ground contacts. */
   readonly supportBones: SupportBones;
+  /** Readiness for consumers; see `TemplateStatus`. Omitted means ready. */
+  readonly status?: TemplateStatus;
 }
 
 export interface Wound {
@@ -59,6 +65,21 @@ export const templateByName = (name: string): Template => {
   const t = registry.get(name);
   if (!t) {
     throw new Error(`unknown template "${name}" (has it been imported and registered?)`);
+  }
+  return t;
+};
+
+/** A template's readiness; an omitted status is ready. */
+const templateStatus = (t: Template): TemplateStatus => t.status ?? 'ready';
+
+/** Resolves a registered template for a path that hands a model to a consumer (the Deadvox spawn and
+ * amalgam boundaries, and the `generate` export CLI), refusing a comparison-only one so a model kept
+ * only for side-by-side checks cannot reach a player. */
+export const consumableTemplate = (name: string): Template => {
+  const t = templateByName(name);
+  const status = templateStatus(t);
+  if (status !== 'ready') {
+    throw new Error(`template "${name}" is ${status} and must not be spawned or exported`);
   }
   return t;
 };

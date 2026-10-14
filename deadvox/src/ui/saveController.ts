@@ -57,6 +57,8 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
       return registry.skills.has(id);
     case 'recipe':
       return registry.recipes.has(id);
+    case 'scenario':
+      return registry.scenarios.has(id);
     default:
       return false;
   }
@@ -131,6 +133,21 @@ export class SaveController {
   private requestingPersistence = false;
   private pageIsLeaving = false;
   private playHalted = false;
+  private acknowledgedWin = false;
+
+  get winCheckpointStatus(): 'saved' | 'pending' | 'failed' | 'unavailable' {
+    if (this.acknowledgedWin) {
+      return 'saved';
+    }
+    if (this.storageUnavailable || !this.namespace) {
+      return 'unavailable';
+    }
+    return this.failure ? 'failed' : 'pending';
+  }
+
+  finishWin(): void {
+    this.capture('scenario won');
+  }
 
   constructor(backend: SaveBackendPreference = 'auto') {
     this.environmentProblem = saveEnvironmentProblem();
@@ -349,6 +366,10 @@ export class SaveController {
         contentLookup: (kind, id) => contentLookup(registry, kind, id),
       });
       this.restored = decoded.snapshot;
+      this.acknowledgedWin = Boolean(
+        decoded.snapshot.character.scenarioRun &&
+          decoded.snapshot.character.scenarioRun.completedAtGameTimestamp !== null,
+      );
       if (candidate.corruptSlots.length > 0) {
         this.statusText = `A valid generation is available; corrupt inactive slot(s) ${candidate.corruptSlots.join(', ')} are retained.`;
       }
@@ -530,6 +551,14 @@ export class SaveController {
         }),
       );
       this.savedGeneration = result.generation;
+      if (
+        task.snapshot.world.id === this.worldId &&
+        task.snapshot.character.id === this.characterId &&
+        task.snapshot.character.scenarioRun &&
+        task.snapshot.character.scenarioRun.completedAtGameTimestamp !== null
+      ) {
+        this.acknowledgedWin = true;
+      }
       this.lastSaveCompletedAtRealTimestamp = realTimestamp(performance.now() / 1000);
       if (this.readDeadWorldId() && this.readDeadWorldId() !== task.snapshot.world.id) {
         this.clearDeadWorldMarker();
@@ -599,6 +628,7 @@ export class SaveController {
       return;
     }
     this.deadRecord = false;
+    this.acknowledgedWin = false;
     this.entered = true;
     $('save-confirmation').hidden = true;
     $('continue').hidden = true;
