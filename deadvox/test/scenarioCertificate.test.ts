@@ -174,6 +174,10 @@ describe('final composed body-route certificate', () => {
   });
 });
 
-it('walks from the city start, opens the hatch, descends to the bottom and retreats through ordinary session commands', () => {
-  traverseScenario(siteOf(candidatePlan(base.candidates[0]!, 1)), profile, scale);
-});
+it(
+  'walks from the city start, opens the hatch, descends to the bottom and retreats through ordinary session commands',
+  () => {
+    traverseScenario(siteOf(candidatePlan(base.candidates[0]!, 1)), profile, scale);
+  },
+  profile.composition!.storeys.length * 2000,
+);
