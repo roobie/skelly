@@ -11,6 +11,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     const page = await context.newPage();
     const url = new URL(baseUrl);
     url.searchParams.set('site', 'gauntlet');
+    url.searchParams.set('route-fixture', '1');
     url.searchParams.delete('actors');
     await page.goto(url.href);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);

@@ -242,7 +242,7 @@ export const buildDebugTestHouseSite = (
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
   const scenario = registry.scenarios.get(config.site);
   if (scenario) {
-    return new GauntletSite(config.seed, registry, config.scale, scenario);
+    return new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario });
   }
   const layout = registry.layouts.get(config.site);
   if (layout) {

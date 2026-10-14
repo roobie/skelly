@@ -21,6 +21,14 @@ const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
   transform(code, id) {
+    if (id.endsWith('/src/game/worldSetup.ts')) {
+      const marker = 'new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario })';
+      assert(code.includes(marker), 'scenario population fixture admission point exists');
+      return code.replace(
+        marker,
+        "new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario, settlementPressure: new URLSearchParams(location.search).get('route-fixture') !== '1' })",
+      );
+    }
     if (id.endsWith('/src/ui/saveController.ts')) {
       return code.replace(
         '    this.environmentProblem = saveEnvironmentProblem();',

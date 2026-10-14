@@ -78,9 +78,11 @@ describe('one finished city plan', () => {
       ...native,
       templates: new Map([...native.templates, [fixture.id, { ...fixture, palette: { '=': solid, C: solid } }]]),
     };
-    const site = new GauntletSite(73, cityRegistry, scale, {
-      ...scenario,
-      city: { ...scenario.city, templates: [fixture.id] },
+    const site = new GauntletSite({
+      seed: 73,
+      registry: cityRegistry,
+      scale,
+      scenario: { ...scenario, city: { ...scenario.city, templates: [fixture.id] } },
     });
     const spawns: ZombieSpawn[] = [];
     const hordes: HordeSpawn[] = [];

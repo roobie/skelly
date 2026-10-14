@@ -16,7 +16,19 @@ export class GauntletSite extends CitySite {
   private readonly population = new Map<string, ZombieSpawn[]>();
   private readonly hordes = new Map<string, HordeSpawn[]>();
 
-  constructor(seed: number, registry: Registry, scale: Scale, scenario: ScenarioDef) {
+  constructor({
+    seed,
+    registry,
+    scale,
+    scenario,
+    settlementPressure = true,
+  }: {
+    seed: number;
+    registry: Registry;
+    scale: Scale;
+    scenario: ScenarioDef;
+    settlementPressure?: boolean;
+  }) {
     const issues = scenarioPlanIssues(registry, scenario);
     if (issues.length > 0) {
       throw new Error(issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
@@ -32,7 +44,7 @@ export class GauntletSite extends CitySite {
       throw new Error(certificate.issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
     }
     this.scenario = scenario;
-    const population = gauntletPopulation(this, scenario.id);
+    const population = gauntletPopulation(this, scenario.id, settlementPressure);
     this.population = population.zombies;
     this.hordes = population.hordes;
   }
@@ -46,7 +58,7 @@ export class GauntletSite extends CitySite {
   }
 }
 
-const gauntletPopulation = (site: CitySite, scenarioId: string) => {
+const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressure: boolean) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
@@ -59,7 +71,7 @@ const gauntletPopulation = (site: CitySite, scenarioId: string) => {
     columns.set(key, column);
   };
   // Scale the ordinary settlement population by buildings, not by empty reserved-campus area.
-  for (let start = 0; start < ordinary.length; start += HAMLET_TEMPLATES.length) {
+  for (let start = 0; settlementPressure && start < ordinary.length; start += HAMLET_TEMPLATES.length) {
     const group = ordinary.slice(start, start + HAMLET_TEMPLATES.length);
     const first = group[0]!;
     const [, depth] = footprint(first);

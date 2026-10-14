@@ -97,7 +97,7 @@ describe('final composed body-route certificate', () => {
       obstruct(chunk, this.plan.portal!.lower);
     });
     try {
-      expect(() => new GauntletSite(9, registry, scale, profile)).toThrow(COMPOSED_LADDER);
+      expect(() => new GauntletSite({ seed: 9, registry, scale, scenario: profile })).toThrow(COMPOSED_LADDER);
     } finally {
       stamp.mockRestore();
     }
