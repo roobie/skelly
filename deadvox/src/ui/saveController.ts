@@ -775,7 +775,6 @@ export class SaveController {
     if (persist) {
       persist.hidden = !this.storage.canRequestPersistence || this.storageStatus?.persistent === true;
       (persist as HTMLButtonElement).disabled = this.requestingPersistence;
-      $('save-persist-note').hidden = persist.hidden;
     }
     const exportButton = $('save-export');
     if (exportButton) {

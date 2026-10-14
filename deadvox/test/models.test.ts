@@ -551,7 +551,7 @@ describe('base pack melee', () => {
   });
 });
 
-describe('base pack shotshells', () => {
+describe('base pack modeled ammunition and spent cases', () => {
   it('links modeled ammo to a stackable spent-case item of the same calibre', () => {
     const cartridges = [...registry.items.values()].filter((item) => item.ammo && item.model);
     expect(cartridges.length).toBeGreaterThan(0);

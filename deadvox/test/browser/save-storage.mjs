@@ -728,7 +728,7 @@ try {
       );
       try {
         await page.waitForFunction(
-          () => globalThis.deadvoxSaveTest?.controller.ready && globalThis.deadvoxSaveTest.controller.restored,
+          () => globalThis.deadvoxSaveTest?.controller.isEntered,
           undefined,
           { timeout: STAGE_TIMEOUT_MS },
         );

@@ -31,7 +31,7 @@ A screen is not a narrator. Before writing or changing text a player sees in the
 
 Hover and focus details use one or two sentences of plain fact. No wordplay, contrasts such as “fewer X, more Y”, reassurance or “you should”. World-authored notes, books and signs are characters speaking; short first-person refusals and observations name the world or the character's state, not procedures.
 
-The interface affords actions rather than writing procedures. Control labels come from bindings so rebinding cannot leave stale labels. Numbers stay available on surfaces the player opens rather than being pushed during play, keeping simulation facts accessible without undermining diegesis. The `?debug=1` development profile is exempt and may be instructional; gungen and mobgen viewers are development tools, outside this rule.
+The interface affords actions rather than writing procedures. Control labels come from bindings so rebinding cannot leave stale labels. Numbers stay available on surfaces the player opens rather than being pushed during play, keeping simulation facts accessible without undermining diegesis. Gungen and mobgen viewers are development tools, outside this rule.
 
 ## Class 3: the character's voice
 
@@ -75,6 +75,7 @@ See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#over
 
 ## Open direction
 
+- Build the hint channel and its guard, with bindings-sourced key labels and hints enabled by `?playtest=1`.
 - Add the playtest profile and shape a diegetic first-run introduction from playtest findings.
 - Make the clock diegetic through a watch.
 - Develop bodily cues one state at a time; retire a HUD line only after its replacement is judged in play.

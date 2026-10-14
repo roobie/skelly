@@ -53,6 +53,9 @@ body {
   display: inline-block;
   border-bottom: 1px dotted var(--muted);
 }
+.fact-detail[hidden] {
+  display: none;
+}
 .fact-detail-copy {
   position: absolute;
   top: 100%;

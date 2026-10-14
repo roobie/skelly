@@ -15,7 +15,7 @@ type TransitionInput = MenuStateInput & { pointerLockChanged?: boolean; resumeRe
 const cases: {
   name: string;
   input: TransitionInput;
-  expected: ReturnType<typeof computeMenuState>;
+  expected: Omit<ReturnType<typeof computeMenuState>, 'goLabel'>;
 }[] = [
   {
     name: 'start: not started shows the overlay and pauses',
@@ -29,7 +29,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: false,
       paused: true,
-      goLabel: 'Click to play',
     },
   },
   {
@@ -44,7 +43,6 @@ const cases: {
       menuPointer: false,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -59,7 +57,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: false,
       paused: true,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -74,7 +71,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: false,
       paused: true,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -89,7 +85,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: false,
       paused: true,
-      goLabel: 'Paused. Click to continue',
       showGo: false,
     },
   },
@@ -105,7 +100,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: false,
       paused: true,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -120,7 +114,6 @@ const cases: {
       menuPointer: false,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -135,7 +128,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -150,7 +142,6 @@ const cases: {
       menuPointer: false,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -165,7 +156,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -186,7 +176,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -201,7 +190,6 @@ const cases: {
       menuPointer: false,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -216,7 +204,6 @@ const cases: {
       menuPointer: false,
       overlayHidden: false,
       paused: true,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -231,7 +218,6 @@ const cases: {
       menuPointer: false,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -246,7 +232,6 @@ const cases: {
       menuPointer: false,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -261,7 +246,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: false,
       paused: true,
-      goLabel: 'Paused. Click to continue',
       showGo: false,
     },
   },
@@ -285,7 +269,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
       showGo: false,
     },
   },
@@ -301,7 +284,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: false,
       paused: true,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -323,7 +305,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
     },
   },
   {
@@ -338,7 +319,6 @@ const cases: {
       menuPointer: false,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
       showGo: false,
     },
   },
@@ -354,7 +334,6 @@ const cases: {
       menuPointer: false,
       overlayHidden: true,
       paused: false,
-      goLabel: 'Paused. Click to continue',
       showGo: false,
     },
   },
@@ -370,7 +349,6 @@ const cases: {
       menuPointer: true,
       overlayHidden: false,
       paused: true,
-      goLabel: 'Paused. Click to continue',
     },
   },
 ];

@@ -79,9 +79,7 @@
           <p id="save-status" role="status">Checking saved worlds…</p>
           <p id="save-note" class="scale"></p>
           <button id="save-rescan" type="button" hidden>Retry saved worlds</button>
-          <button id="save-persist" type="button" hidden>Request persistent storage</button>
-          <!-- biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard focus reveals the same fact as hover. -->
-          <span id="save-persist-note" class="fact-detail scale" tabindex="0" hidden>Persistent storage<span class="fact-detail-copy" role="tooltip">Persistent storage protects saves from automatic browser eviction. The browser may request permission.</span></span>
+          <button id="save-persist" class="fact-detail" type="button" hidden>Request persistent storage<span class="fact-detail-copy" role="tooltip">Persistent storage protects saves from automatic browser eviction. The browser may request permission.</span></button>
           <button id="save-export" type="button" hidden>Export raw save records</button>
           <a id="save-download" href="about:blank" aria-label="Download save record" hidden>Download save record</a>
           <div id="playtest-export" hidden>

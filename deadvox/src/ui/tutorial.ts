@@ -21,7 +21,7 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
       drink: 'Drink',
       light: 'Flashlight',
       escape: 'Escape path',
-      pause: 'Practice complete',
+      pause: 'Open the pause menu',
     };
     render(
       html`
