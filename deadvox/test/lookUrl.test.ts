@@ -13,6 +13,7 @@ import {
 } from '../src/debug/lookUrl.ts';
 import { setAutoToneWeight } from '../src/render/autoTone.ts';
 import { hotCheckUniform } from '../src/render/hotCheck.ts';
+import { bloomRenderScale, sceneRenderScale } from '../src/render/moodQuality.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 
@@ -73,8 +74,8 @@ describe('look URL parameters', () => {
       shadows: { sun: false, torch: false, distance: 64 },
       crackCheck: true,
       hotCheck: true,
-      renderScale: 0.8,
-      bloomScale: 0.6,
+      renderScale: sceneRenderScale(0),
+      bloomScale: bloomRenderScale(0),
       smallSunMap: true,
       fastCamo: true,
       coarseWeathering: true,
