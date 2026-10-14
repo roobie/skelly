@@ -762,6 +762,9 @@ describe('content', () => {
   it('rejects placement loot without a container and retains the same loot when a pocket exists', () => {
     const source = 'test/fixtures/content/loot-override-no-container.json';
     const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;
+    // Valid admission on both sides isolates the container-shape contract.
+    const { lootContext } = data.templates![0]!;
+    data.items![0]!.economy = { usage: lootContext.usage, tiers: [lootContext.tier] };
     const rejected = buildRegistry([{ source, data }]);
     expect
       .soft(rejected.issues)
