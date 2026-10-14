@@ -1,4 +1,14 @@
 {
   "models": [{ "id": "lamp", "file": "assets/models/lamp.glb" }],
-  "items": [{ "id": "lamp", "economy": { "usage": [], "tiers": [] }, "name": "Lamp", "category": "light", "weight": 400, "size": [3, 1], "model": "lamp" }]
+  "items": [
+    {
+      "id": "lamp",
+      "economy": { "usage": [], "tiers": [] },
+      "name": "Lamp",
+      "category": "light",
+      "weight": 400,
+      "size": [3, 1],
+      "model": "lamp"
+    }
+  ]
 }

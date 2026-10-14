@@ -27,7 +27,14 @@
         "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       }
     },
-    { "id": "rag", "economy": { "usage": [], "tiers": [] }, "name": "Rag", "category": "material", "weight": 1, "size": [1, 1] }
+    {
+      "id": "rag",
+      "economy": { "usage": [], "tiers": [] },
+      "name": "Rag",
+      "category": "material",
+      "weight": 1,
+      "size": [1, 1]
+    }
   ],
   "recipes": [
     {
