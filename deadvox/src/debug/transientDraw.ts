@@ -6,9 +6,25 @@ export type DebugPrimitive =
   | { kind: 'box'; min: Vec3; max: Vec3; color: number; expiresAt: number }
   | { kind: 'point'; at: Vec3; size: number; color: number; expiresAt: number };
 
+interface DebugDrawOptions {
+  durationMs?: number;
+  color?: number;
+}
+
 const SEGMENTS_PER_PRIMITIVE = 12;
 const BOX_EDGES = [
-  [0, 1], [0, 2], [0, 4], [1, 3], [1, 5], [2, 3], [2, 6], [3, 7], [4, 5], [4, 6], [5, 7], [6, 7],
+  [0, 1],
+  [0, 2],
+  [0, 4],
+  [1, 3],
+  [1, 5],
+  [2, 3],
+  [2, 6],
+  [3, 7],
+  [4, 5],
+  [4, 6],
+  [5, 7],
+  [6, 7],
 ] as const;
 
 /** Bounded, Real-time-lived world-space lines; boxes and points are batched as line segments too. */
@@ -23,7 +39,9 @@ export class TransientDebugDraw {
 
   constructor(scene: Scene, enabled: boolean, capacity = 256) {
     this.capacity = capacity;
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
     this.positions = new Float32Array(capacity * SEGMENTS_PER_PRIMITIVE * 6);
     this.colors = new Float32Array(capacity * SEGMENTS_PER_PRIMITIVE * 6);
     this.geometry = new BufferGeometry();
@@ -35,40 +53,66 @@ export class TransientDebugDraw {
     scene.add(this.mesh);
   }
 
-  get enabled(): boolean { return this.mesh !== undefined; }
+  get enabled(): boolean {
+    return this.mesh !== undefined;
+  }
 
-  meshVertexCount(): number { return this.geometry?.drawRange.count ?? 0; }
+  meshVertexCount(): number {
+    return this.geometry?.drawRange.count ?? 0;
+  }
 
-  line(start: Vec3, end: Vec3, nowMs: number, durationMs = 0, color = 0x66ddff): void {
+  line(start: Vec3, end: Vec3, nowMs: number, options: DebugDrawOptions = {}): void {
+    const { durationMs = 0, color = 0x66_dd_ff } = options;
     this.push({ kind: 'line', start, end, color, expiresAt: nowMs + Math.max(1, durationMs) });
   }
 
-  box(min: Vec3, max: Vec3, nowMs: number, durationMs = 0, color = 0x66ddff): void {
+  box(min: Vec3, max: Vec3, nowMs: number, options: DebugDrawOptions = {}): void {
+    const { durationMs = 0, color = 0x66_dd_ff } = options;
     this.push({ kind: 'box', min, max, color, expiresAt: nowMs + Math.max(1, durationMs) });
   }
 
-  point(at: Vec3, nowMs: number, durationMs = 0, size = 0.08, color = 0x66ddff): void {
+  point(at: Vec3, nowMs: number, options: DebugDrawOptions & { size?: number } = {}): void {
+    const { durationMs = 0, color = 0x66_dd_ff, size = 0.08 } = options;
     this.push({ kind: 'point', at, size, color, expiresAt: nowMs + Math.max(1, durationMs) });
   }
 
   /** Expire entries and rewrite the existing buffer before the scene render; no frame-time allocation. */
   update(nowMs: number): void {
-    if (!this.mesh || !this.geometry || !this.positions || !this.colors) return;
+    if (!(this.mesh && this.geometry && this.positions && this.colors)) {
+      return;
+    }
     let live = 0;
-    for (const entry of this.entries) if (entry.expiresAt > nowMs) this.entries[live++] = entry;
+    for (const entry of this.entries) {
+      if (entry.expiresAt > nowMs) {
+        this.entries[live] = entry;
+        live += 1;
+      }
+    }
     this.entries.length = live;
     let vertex = 0;
     for (const entry of this.entries) {
-      if (entry.kind === 'line') vertex = this.segment(entry.start, entry.end, entry.color, vertex);
-      else if (entry.kind === 'box') {
+      if (entry.kind === 'line') {
+        vertex = this.segment(entry.start, entry.end, entry.color, vertex);
+      } else if (entry.kind === 'box') {
         const { min, max } = entry;
         const corners: Vec3[] = [
-          [min[0], min[1], min[2]], [max[0], min[1], min[2]], [min[0], max[1], min[2]], [max[0], max[1], min[2]],
-          [min[0], min[1], max[2]], [max[0], min[1], max[2]], [min[0], max[1], max[2]], [max[0], max[1], max[2]],
+          [min[0], min[1], min[2]],
+          [max[0], min[1], min[2]],
+          [min[0], max[1], min[2]],
+          [max[0], max[1], min[2]],
+          [min[0], min[1], max[2]],
+          [max[0], min[1], max[2]],
+          [min[0], max[1], max[2]],
+          [max[0], max[1], max[2]],
         ];
-        for (const [a, b] of BOX_EDGES) vertex = this.segment(corners[a]!, corners[b]!, entry.color, vertex);
+        for (const [a, b] of BOX_EDGES) {
+          vertex = this.segment(corners[a]!, corners[b]!, entry.color, vertex);
+        }
       } else {
-        const { at: [x, y, z], size } = entry;
+        const {
+          at: [x, y, z],
+          size,
+        } = entry;
         vertex = this.segment([x - size, y, z], [x + size, y, z], entry.color, vertex);
         vertex = this.segment([x, y - size, z], [x, y + size, z], entry.color, vertex);
         vertex = this.segment([x, y, z - size], [x, y, z + size], entry.color, vertex);
@@ -80,10 +124,12 @@ export class TransientDebugDraw {
   }
 
   private push(entry: DebugPrimitive): void {
-    if (!this.mesh) return;
+    if (!this.mesh) {
+      return;
+    }
     if (this.entries.length === this.capacity) {
       this.entries.shift();
-      this.dropped.count++;
+      this.dropped.count += 1;
     }
     this.entries.push(entry);
   }

@@ -1258,7 +1258,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     impactLaser: hooks.impactLaser,
     interactionRay: {
       enabled: () => interactionRayEnabled,
-      toggle: () => { interactionRayEnabled = !interactionRayEnabled; },
+      toggle: () => {
+        interactionRayEnabled = !interactionRayEnabled;
+      },
     },
     exportInputReplay,
     chooseInputReplay,
@@ -1809,7 +1811,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     target: (eye, dir, active) => build.target(eye, dir, active),
     drawInteractionRay(origin, direction, nowMs) {
-      if (!transientDraw.enabled || !interactionRayEnabled) {
+      if (!(transientDraw.enabled && interactionRayEnabled)) {
         return;
       }
       const end: Vec3 = [origin[0] + direction[0] * 8, origin[1] + direction[1] * 8, origin[2] + direction[2] * 8];

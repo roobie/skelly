@@ -275,7 +275,9 @@ const makeActions = (
     },
     interactionRay: {
       enabled: () => interactionRayEnabled,
-      toggle: () => { interactionRayEnabled = !interactionRayEnabled; },
+      toggle: () => {
+        interactionRayEnabled = !interactionRayEnabled;
+      },
     },
     impactLaser: {
       enabled: () => laserEnabled,
