@@ -96,6 +96,10 @@ stable building location before requesting chunks: caching one selected assembly
 whole pool would repeat the same furnishings across the city. See `src/core/cityPlan.ts`,
 `buildCityPlan` and `templateCompiler`.
 
+City placement honours the authored ground storey so a cellar stays underground
+rather than lifting the building above the street. Ordinary buildings and the service
+campus share this alignment rule; see `src/core/cityPlan.ts`, `groundedY`.
+
 Bound authored volumes before allocating compilation buffers so a short metadata file
 cannot request unbounded memory. See `src/core/schema.ts`, `KitSize`.
 
