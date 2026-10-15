@@ -322,12 +322,26 @@ const quotaShortfalls = ({ grid, counts }: FillContext): string[] =>
     Array.from({ length: Math.max(0, (atLeast ?? 0) - (counts.get(id) ?? 0)) }, () => id),
   );
 
-/** One forced retry per unmet quota row: bounded, never a search, and loud when it still fails. */
+/**
+ * Retries force every row that has fallen short so far, so a retry never drops an earlier row. It stops once the
+ * quotas are met or a retry would force no new row, so it is bounded by the quota rows, never a search, and loud.
+ */
 const fillWithQuotas = (context: FillContext, fill: (forced: string[]) => Placement[], site: string): Placement[] => {
   let placements = fill([]);
-  const retries = new Set(quotaShortfalls(context)).size;
-  for (let retry = 0; retry < retries; retry++) {
-    placements = fill(quotaShortfalls(context));
+  const forcedRows = new Set<string>();
+  for (;;) {
+    const short = new Set(quotaShortfalls(context));
+    if (short.size === 0 || [...short].every((id) => forcedRows.has(id))) {
+      break;
+    }
+    for (const id of short) {
+      forcedRows.add(id);
+    }
+    placements = fill(
+      context.grid.templates.flatMap(({ id, atLeast }) =>
+        forcedRows.has(id) ? Array.from({ length: atLeast ?? 0 }, () => id) : [],
+      ),
+    );
   }
   const [unmet] = quotaShortfalls(context);
   if (unmet) {

@@ -24,10 +24,12 @@ Pieces own literal geometry, role palettes, anchors and typed connection contrac
 Assemblies delegate named spatial slots, select contract-equivalent alternatives and name
 curated transition pieces for joins. Site recipes own placement and intended routes.
 Keep arrangements fixed rather than introducing general grammars or search. The one
-exception is a pool quota (`atLeast`): when a fill ends short, it retries the site once per
-unmet row with that choice forced into the earliest slot where it fits, and aborts naming
-the pool, the choice and the site if it still cannot be placed. The retry is bounded and
-loud so a plan stays a deterministic function of its seed and a content error cannot hide.
+exception is a pool quota (`atLeast`): when a fill ends short, it retries the site forcing
+every short row, plus those forced before, into the earliest slots where they fit. It stops
+when the quotas are met or a retry would force no new row, so there is at most one retry per
+quota row, and it aborts naming the pool, the choice and the site if a quota is still unmet.
+The retry is bounded and loud so a plan stays a deterministic function of its seed and a
+content error cannot hide.
 See `deadvox/docs/content.md`, "Curated kits".
 
 Every cell is unclaimed, owned solid or owned air. Air excavates; unclaimed cells leave

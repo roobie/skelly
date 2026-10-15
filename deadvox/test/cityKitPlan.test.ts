@@ -161,6 +161,36 @@ describe('city pool quotas', () => {
     }
   });
 
+  it('meets two competing quota rows at once without dropping either on a retry', () => {
+    const { scenario, registry } = quotaSetup([
+      { id: 'fixture_house', weight: 1, atLeast: 1, atMost: 2 },
+      { id: 'fixture_small_house', weight: 1, atLeast: 1 },
+    ]);
+    const base = cityGridOf(registry, scenario.city);
+    const grid = { ...base, templates: base.templates.map((row) => ({ ...row, weight: 0 })) };
+    for (const seed of Seeds) {
+      const counts = countsOf(buildCityPlan({ seed, registry, floor: 0, grid, scenario }));
+      expect(counts.get('fixture_house') ?? 0).toBeGreaterThanOrEqual(1);
+      expect(counts.get('fixture_house') ?? 0).toBeLessThanOrEqual(2);
+      expect(counts.get('fixture_small_house') ?? 0).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('builds the bundled gauntlet city without a quota abort and meets its quotas for a covering set of seeds', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const scenario = registry.scenarios.get('gauntlet')!;
+    const grid = cityGridOf(registry, scenario.city);
+    const quotas = grid.templates.filter(({ atLeast }) => atLeast);
+    expect(quotas.length).toBeGreaterThan(0);
+    for (const seed of [2, 3, 9, 20, 22, 31]) {
+      const counts = countsOf(buildCityPlan({ seed, registry, floor: 0, grid, scenario }));
+      for (const { id, atLeast, atMost } of quotas) {
+        expect(counts.get(id) ?? 0).toBeGreaterThanOrEqual(atLeast!);
+        expect(counts.get(id) ?? 0).toBeLessThanOrEqual(atMost ?? Number.POSITIVE_INFINITY);
+      }
+    }
+  }, 20_000);
+
   it('resolves the same plan for the same seed', () => {
     const { scenario, registry } = quotaSetup([
       { id: 'fixture_house', weight: 3, atMost: 5 },
