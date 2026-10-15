@@ -447,7 +447,27 @@ export const gauntletFlow = async (browser, baseUrl) => {
     assert.ok(journey.resourceTypes.length > 0);
     assert.notEqual(journey.run.discovery.entranceTravel, null);
     await page.locator('#death').waitFor({ state: 'visible' });
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest.controller.winCheckpointStatus === 'saved');
+    try {
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest.controller.winCheckpointStatus === 'saved');
+    } catch (error) {
+      // #749: a bare timeout hides whether the win capture is queued behind a stalled write.
+      const state = await page
+        .evaluate(() => {
+          const c = globalThis.deadvoxSaveTest.controller;
+          return {
+            status: c.winCheckpointStatus,
+            writing: c.writing,
+            queued: c.queued?.reason ?? null,
+            failure: c.failure ?? null,
+            ids: [c.worldId, c.characterId],
+            run: globalThis.gauntletWitness.session.scenarioRun,
+          };
+        })
+        .catch((stateError) => `unreadable: ${stateError.message}`);
+      throw new Error(`win checkpoint wait timed out; save controller state: ${JSON.stringify(state)}`, {
+        cause: error,
+      });
+    }
     await page.reload();
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
     await page.click('#continue');
