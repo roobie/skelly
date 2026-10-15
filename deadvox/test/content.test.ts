@@ -1518,6 +1518,7 @@ describe('content references', () => {
               category: 'material',
               weight: 1,
               size: [1, 1],
+              salvageTimeGameMinutes: gameMinutes(1),
               salvage: [{ item, count: 1 }],
             },
             {
@@ -1586,6 +1587,7 @@ describe('content references', () => {
       weight: 1,
       size: [1, 1],
       economy: { usage: ['Residential'], tiers: ['Tier1'] },
+      salvageTimeGameMinutes: 1,
       salvage: [{ item: 'fixture_shared', count: 1 }],
     };
     const shared = {
@@ -1622,6 +1624,23 @@ describe('content references', () => {
     ]);
     expect(result.issues).toEqual([]);
     expect(result.registry.recipes.has('fixture_recipe')).toBe(true);
+  });
+
+  it('rejects a salvage list without an authored work time, and a work time without a salvage list', () => {
+    const base = { category: 'material', weight: 1, size: [1, 1] };
+    const { issues } = buildRegistry([
+      {
+        source: 'salvage-time-fixture',
+        data: {
+          items: [
+            { id: 'fixture_untimed', name: 'Untimed', ...base, salvage: [{ item: 'fixture_bare', count: 1 }] },
+            { id: 'fixture_orphan_time', name: 'Orphan', ...base, salvageTimeGameMinutes: 1 },
+            { id: 'fixture_bare', name: 'Bare', ...base },
+          ],
+        },
+      },
+    ]);
+    expect(issues.map(({ path }) => path)).toEqual(['items[0].salvageTimeGameMinutes', 'items[1].salvageTimeGameMinutes']);
   });
 
   it('allows tables to hold candidates without becoming a second geography authority', () => {

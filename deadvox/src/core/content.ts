@@ -315,6 +315,12 @@ const checkDisassembly = (item: ItemDef, registry: Registry, qualities: Readonly
       report('items', item.id, `.salvage[${index}].item`, `no item "${output.item}"`);
     }
   });
+  if (item.salvage && item.salvageTimeGameMinutes === undefined) {
+    report('items', item.id, '.salvageTimeGameMinutes', 'a salvage list needs an authored work time');
+  }
+  if (!item.salvage && item.salvageTimeGameMinutes !== undefined) {
+    report('items', item.id, '.salvageTimeGameMinutes', 'a salvage work time needs a salvage list');
+  }
   if (disassembly && item.salvage) {
     report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
   }

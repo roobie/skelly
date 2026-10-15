@@ -302,6 +302,7 @@
           "item": "aa_battery"
         }
       ],
+      "salvageTimeGameMinutes": 5,
       "size": [2, 2],
       "weight": 600
     },

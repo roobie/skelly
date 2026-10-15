@@ -213,6 +213,7 @@ local spentCase(id, name, weight, description, model) = {
       weight: 600,
       size: [2, 2],
       description: 'A battered handheld radio. Its battery and metal casing can be salvaged.',
+      salvageTimeGameMinutes: 5,
       salvage: [{ item: 'scrap_metal', count: 1 }, { item: 'aa_battery', count: 1 }],
     },
     {

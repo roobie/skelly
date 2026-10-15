@@ -533,6 +533,8 @@ const ItemSchema = strictObject({
   disassembly: optional(DisassemblySchema),
   /** Fixed outputs for found items with no recipe. */
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
+  /** Work time to salvage; required with `salvage`, forbidden without it. */
+  salvageTimeGameMinutes: optional(PositiveGameMinutes),
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),

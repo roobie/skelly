@@ -12,12 +12,13 @@ import { gameMinutes } from '../src/core/time.ts';
 const base = 'src/content/base';
 const itemSource = (file: string, ids: readonly string[]) => {
   const data = JSON.parse(readFileSync(join(base, file), 'utf8')) as {
-    items: { id: string; salvage?: unknown }[];
+    items: { id: string; salvage?: unknown; salvageTimeGameMinutes?: unknown }[];
   };
   data.items = data.items.filter(({ id }) => ids.includes(id));
   for (const item of data.items) {
     if (item.id === 'portable_radio') {
       item.salvage = undefined;
+      item.salvageTimeGameMinutes = undefined;
     }
   }
   return { source: file, data };
@@ -67,6 +68,7 @@ describe('authored disassembly yields', () => {
     testRegistry.items.set('portable_radio', {
       ...radio,
       salvage: undefined,
+      salvageTimeGameMinutes: undefined,
       disassembly: {
         timeGameMinutes: gameMinutes(1),
         skill: 'crafting',
