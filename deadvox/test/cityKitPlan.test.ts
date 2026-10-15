@@ -534,3 +534,50 @@ describe('gauntlet door openings', () => {
     expect(doors).toBeGreaterThan(0);
   });
 });
+
+describe('gauntlet shop fronts', () => {
+  // The street face and the yard in front of it: the rows a player sees from the road.
+  const STREET_ROWS = 4;
+  const streetBlocks = (assemblyId: string): Set<string> => {
+    const { registry } = BUNDLED_CONTENT;
+    const seen = new Set<string>();
+    for (const seed of [1, 2, 3]) {
+      const compiled = compileAssembly(registry, registry.mapAssemblies.get(assemblyId)!, {
+        seed,
+        siteId: `shop-front:${assemblyId}`,
+      });
+      const [sx, sy, sz] = compiled.size;
+      for (let y = 0; y < sy; y++) {
+        for (let z = 0; z < Math.min(STREET_ROWS, sz); z++) {
+          for (let x = 0; x < sx; x++) {
+            const block = registry.blocks[compiled.blocks[ownershipCell(compiled.size, [x, y, z])]!];
+            if (block && block.id !== 'air') {
+              seen.add(block.id);
+            }
+          }
+        }
+      }
+    }
+    return seen;
+  };
+
+  it('gives every shop a street face that carries blocks no house shows, and no two shops share them', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const houses = [...registry.mapAssemblies.keys()].filter((id) => /^gauntlet_city_\d+/.test(id));
+    expect(houses.length).toBeGreaterThan(0);
+    const houseBlocks = new Set(houses.flatMap((id) => [...streetBlocks(id)]));
+    const shops = [
+      'gauntlet_police_station',
+      'gauntlet_food_store',
+      'gauntlet_gun_store',
+      'gauntlet_hardware_store',
+      'gauntlet_medical_site',
+    ];
+    const marks = shops.map((id) => ({ id, marks: [...streetBlocks(id)].filter((block) => !houseBlocks.has(block)) }));
+    for (const { id, marks: own } of marks) {
+      expect(own.length, `${id} identifying blocks`).toBeGreaterThan(0);
+    }
+    const all = marks.flatMap(({ marks: own }) => own);
+    expect(new Set(all).size, 'a block identifies more than one shop type').toBe(all.length);
+  });
+});
