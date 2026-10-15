@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import type { Chunk } from '../src/core/chunk.ts';
-import { buildCityPlan, type CityPlan, servicePlacement } from '../src/core/cityPlan.ts';
+import { buildCityPlan, type CityPlan, cityGridOf, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
@@ -23,7 +23,8 @@ if (!profile) {
 }
 const COMPOSED_LADDER = /composed ladder/;
 const scale = makeScale(0.5);
-const base = buildCityPlan({ seed: 9, registry, floor: 64, grid: profile.city, scenario: profile });
+const grid = cityGridOf(registry, profile.city);
+const base = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
 const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.serviceTemplate)!, {
   seed: 9,
   siteId: `scenario:${profile.id}:service`,
@@ -92,7 +93,7 @@ const candidatePlan = (
   template = compiled,
   content = registry,
 ): CityPlan => {
-  const service = servicePlacement({ template, floor: base.floor, grid: profile.city, cell, turn });
+  const service = servicePlacement({ template, floor: base.floor, grid, cell, turn });
   const composition = composeScenario(content, profile, service, base.floor)!;
   const [width, depth] = footprint(service);
   const placements = base.placements.filter((placement) => {
@@ -261,7 +262,7 @@ describe('final composed body-route certificate', () => {
 
 it('resolves production service ownership, furnished loot and terrain stamps independently of chunk request order', () => {
   const first = siteOf();
-  const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid: profile.city, scenario: profile }));
+  const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile }));
   const composition = first.plan.composition!;
   const points = [
     first.plan.portal!.upper,
