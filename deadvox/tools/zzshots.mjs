@@ -19,7 +19,7 @@ try {
     });
     await page.click('#go');
     await page.waitForFunction(() => document.querySelector('#world-loading')?.checkVisibility?.() !== true, null, {
-      timeout: 180_000,
+      timeout: 600_000,
     });
     for (let t = 0; t < 1; t++) {
       await page.waitForTimeout(20_000);
