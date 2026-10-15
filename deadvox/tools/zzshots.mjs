@@ -21,7 +21,7 @@ try {
     await page.waitForFunction(() => document.querySelector('#world-loading')?.checkVisibility?.() !== true, null, {
       timeout: 180_000,
     });
-    for (let t = 0; t < 6; t++) {
+    for (let t = 0; t < 1; t++) {
       await page.waitForTimeout(20_000);
       const text = await page.evaluate(() => {
         const g = globalThis;
