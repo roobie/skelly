@@ -1117,6 +1117,13 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkKeys(registry, report);
   checkZombies(registry, report);
   checkRecipes(registry, report);
+  for (const skill of registry.skills.values()) {
+    skill.startingRecipes?.forEach((id, index) => {
+      if (!registry.recipes.has(id)) {
+        report('skills', skill.id, `.startingRecipes[${index}]`, `no recipe "${id}"`);
+      }
+    });
+  }
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }

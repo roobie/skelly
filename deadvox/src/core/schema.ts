@@ -1544,6 +1544,8 @@ const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    /** Recipes a new character knows from the start. */
+    startingRecipes: optional(array(Id)),
     training: optional(
       strictObject({
         craftingTierOffset: optional(Count),
