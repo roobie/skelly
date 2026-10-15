@@ -11,6 +11,7 @@ for (let i = 1; i <= runs; i += 1) {
   if (!ok) {
     failures += 1;
     process.stdout.write(`--- run ${i} FAILED\n${(result.stdout + result.stderr).slice(-6000)}\n`);
+    break;
   } else {
     process.stdout.write(`run ${i} ok\n`);
   }
