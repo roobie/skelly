@@ -117,6 +117,91 @@ it('rejects ambiguous city pool identities instead of choosing a template or ass
   ]);
 });
 
+const UNMET_QUOTA = /fixture_pool.*fixture_small_house.*scenario:fixture_scenario:city/;
+
+describe('city pool quotas', () => {
+  const quotaSetup = (choices: { id: string; weight: number; atLeast?: number; atMost?: number }[]) => {
+    const scenario = fixtureScenario();
+    const pool = fixturePool(choices.map(({ id, ...row }) => ({ ref: { kind: 'template' as const, id }, ...row })));
+    const admitted = buildRegistry(fixtureScenarioSources(scenario, fixtureService(), pool));
+    return { scenario, ...admitted };
+  };
+  const countsOf = (plan: ReturnType<typeof buildCityPlan>) => {
+    const counts = new Map<string, number>();
+    for (const { template } of plan.placements) {
+      counts.set(template.id, (counts.get(template.id) ?? 0) + 1);
+    }
+    return counts;
+  };
+  const Seeds = [1, 11, 73, 191, 307, 1009, 4099];
+
+  it('meets every atLeast and exceeds no atMost for any seed, however unlikely the draw', () => {
+    const { scenario, registry, issues } = quotaSetup([
+      { id: 'fixture_house', weight: 100, atMost: 4 },
+      { id: 'fixture_small_house', weight: 1, atLeast: 2 },
+    ]);
+    expect(issues).toEqual([]);
+    const grid = cityGridOf(registry, scenario.city);
+    for (const seed of Seeds) {
+      const counts = countsOf(buildCityPlan({ seed, registry, floor: 0, grid, scenario }));
+      expect(counts.get('fixture_small_house') ?? 0).toBeGreaterThanOrEqual(2);
+      expect(counts.get('fixture_house') ?? 0).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it('forces a quota row even when its weight is zero', () => {
+    const { scenario, registry } = quotaSetup([
+      { id: 'fixture_house', weight: 1 },
+      { id: 'fixture_small_house', weight: 0, atLeast: 1 },
+    ]);
+    const grid = cityGridOf(registry, scenario.city);
+    for (const seed of Seeds) {
+      const plan = buildCityPlan({ seed, registry, floor: 0, grid, scenario });
+      expect(countsOf(plan).get('fixture_small_house') ?? 0).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('resolves the same plan for the same seed', () => {
+    const { scenario, registry } = quotaSetup([
+      { id: 'fixture_house', weight: 3, atMost: 5 },
+      { id: 'fixture_small_house', weight: 0, atLeast: 2 },
+    ]);
+    const grid = cityGridOf(registry, scenario.city);
+    const ids = (seed: number) =>
+      buildCityPlan({ seed, registry, floor: 0, grid, scenario }).placements.map(({ template, origin, turn }) => [
+        template.id,
+        origin,
+        turn,
+      ]);
+    for (const seed of Seeds) {
+      expect(ids(seed)).toEqual(ids(seed));
+    }
+  });
+
+  it('aborts naming the pool and the choice when the grid cannot place a quota', () => {
+    const { scenario, registry } = quotaSetup([
+      { id: 'fixture_house', weight: 1 },
+      { id: 'fixture_small_house', weight: 1, atLeast: 1 },
+    ]);
+    const base = cityGridOf(registry, scenario.city);
+    const grid = {
+      ...base,
+      templates: base.templates.map((row) => (row.atLeast ? { ...row, atLeast: 1000 } : row)),
+    };
+    expect(() => buildCityPlan({ seed: 1, registry, floor: 0, grid, scenario })).toThrow(UNMET_QUOTA);
+  });
+
+  it('reports a quota the grid cannot guarantee, and a row whose atLeast exceeds its atMost', () => {
+    const { issues } = quotaSetup([
+      { id: 'fixture_house', weight: 1 },
+      { id: 'fixture_small_house', weight: 1, atLeast: 1000 },
+    ]);
+    expect(issues.some(({ path, message }) => path.endsWith('.city.pool') && message.includes('1000'))).toBe(true);
+    const inverted = quotaSetup([{ id: 'fixture_house', weight: 1, atLeast: 3, atMost: 1 }]);
+    expect(inverted.issues.some(({ path }) => path.includes('mapPools[0].choices'))).toBe(true);
+  });
+});
+
 describe('content-owned city building types', () => {
   it('chooses positive building weights proportionally and ignores their common scale', () => {
     const scenario = fixtureScenario();

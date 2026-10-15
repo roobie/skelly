@@ -1237,10 +1237,16 @@ const MapPoolSchema = strictObject({
           minValue(0),
           check((value) => Number.isFinite(value), 'must be finite'),
         ),
+        atLeast: optional(pipe(number(), integer('must be a whole number'), minValue(1))),
+        atMost: optional(pipe(number(), integer('must be a whole number'), minValue(0))),
       }),
     ),
     minLength(1),
     maxLength(32),
+    check(
+      (rows) => rows.every(({ atLeast, atMost }) => atLeast === undefined || atMost === undefined || atLeast <= atMost),
+      'atLeast must not exceed atMost',
+    ),
     check(
       (rows) => new Set(rows.map(({ ref }) => `${ref.kind}:${ref.id}`)).size === rows.length,
       'building refs must be unique',
