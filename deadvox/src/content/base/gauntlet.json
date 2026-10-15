@@ -131,6 +131,18 @@
       "size": [5, 2, 10]
     },
     {
+      "color": "#8d8f8a",
+      "id": "gauntlet_roof_parapet",
+      "name": "Parapet wall",
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [1, 2, 1]
+        }
+      ],
+      "size": [1, 2, 1]
+    },
+    {
       "color": "#a7aa9f",
       "id": "gauntlet_roof_ac",
       "name": "Air conditioner",
@@ -484,7 +496,7 @@
           "kind": "standing"
         }
       },
-      "id": "gauntlet_city_roof_fitted",
+      "id": "gauntlet_city_roof_sheet_fitted",
       "joins": [],
       "lootContext": {
         "tier": "Tier1",
@@ -498,7 +510,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof",
+                "id": "gauntlet_city_roof_sheet",
                 "kind": "piece"
               },
               "weight": 1
@@ -514,6 +526,95 @@
             {
               "ref": {
                 "id": "gauntlet_roof_circulation",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "circulation",
+          "size": [18, 4, 16],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 6],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_roof_empty",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_roof_ac",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_roof_vent",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "equipment",
+          "size": [4, 4, 4],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "landing": {
+          "at": [14, 1, 11],
+          "kind": "standing"
+        },
+        "north": {
+          "at": [8, 1, 4],
+          "kind": "standing"
+        },
+        "south": {
+          "at": [8, 1, 14],
+          "kind": "standing"
+        },
+        "west": {
+          "at": [2, 1, 11],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_city_roof_walled_fitted",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [18, 5, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_slab",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "deck",
+          "size": [18, 1, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_roof_circulation_walled",
                 "kind": "piece"
               },
               "weight": 1
@@ -747,10 +848,17 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof_fitted",
+                "id": "gauntlet_city_roof_sheet_fitted",
                 "kind": "assembly"
               },
-              "weight": 1
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_walled_fitted",
+                "kind": "assembly"
+              },
+              "weight": 2
             }
           ],
           "id": "roof",
@@ -1071,10 +1179,17 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof_fitted",
+                "id": "gauntlet_city_roof_sheet_fitted",
                 "kind": "assembly"
               },
-              "weight": 1
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_walled_fitted",
+                "kind": "assembly"
+              },
+              "weight": 2
             }
           ],
           "id": "roof",
@@ -1215,10 +1330,17 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof_fitted",
+                "id": "gauntlet_city_roof_sheet_fitted",
                 "kind": "assembly"
               },
-              "weight": 1
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_walled_fitted",
+                "kind": "assembly"
+              },
+              "weight": 2
             }
           ],
           "id": "roof",
@@ -1449,10 +1571,17 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof_fitted",
+                "id": "gauntlet_city_roof_sheet_fitted",
                 "kind": "assembly"
               },
-              "weight": 1
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_walled_fitted",
+                "kind": "assembly"
+              },
+              "weight": 2
             }
           ],
           "id": "roof",
@@ -6065,10 +6194,17 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof",
+                "id": "gauntlet_city_roof_sheet",
                 "kind": "piece"
               },
-              "weight": 1
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_slab",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "roof",
@@ -6158,10 +6294,17 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof",
+                "id": "gauntlet_city_roof_sheet",
                 "kind": "piece"
               },
-              "weight": 1
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_slab",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "roof",
@@ -6251,10 +6394,17 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof",
+                "id": "gauntlet_city_roof_sheet",
                 "kind": "piece"
               },
-              "weight": 1
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_slab",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "roof",
@@ -6344,10 +6494,17 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof",
+                "id": "gauntlet_city_roof_sheet",
                 "kind": "piece"
               },
-              "weight": 1
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_slab",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "roof",
@@ -9033,7 +9190,7 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_city_roof",
+      "id": "gauntlet_city_roof_sheet",
       "layers": [
         [
           "..................",
@@ -9112,7 +9269,96 @@
           "role": "interior_floor"
         },
         "r": {
-          "material": "roofing",
+          "material": "roofing_sheet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [18, 1, 16],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_roof_slab",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "################.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "F": {
+          "furniture": "crate"
+        },
+        "H": {
+          "facing": "e",
+          "furniture": "ladder"
+        },
+        "Z": {
+          "chance": 0.80000000000000004,
+          "spawn": "shambler"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roofing_slab",
           "role": "interior_floor"
         }
       },
@@ -9655,74 +9901,74 @@
           [
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAARRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA"
+            "AAAAAARRRRAAAAARAA"
           ],
           [
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAARRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA"
+            "AAAAAARRRRAAAAARAA"
           ],
           [
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAARRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA"
+            "AAAAAARRRRAAAAARAA"
           ],
           [
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAARRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
             "RRRRRRRRRRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRR....RRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA",
-            "RRRRRRRRRRRRRRRRAA"
+            "AAAAAARRRRAAAAARAA"
           ]
         ]
       },
@@ -9730,6 +9976,176 @@
         ".": {
           "material": "opening",
           "role": "opening"
+        }
+      },
+      "ports": [],
+      "size": [18, 4, 16],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_roof_circulation_walled",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "WWWWWWWWWW........",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "WWWWWW....WWWWW..."
+        ],
+        [
+          "..................",
+          "..................",
+          "WWWWWWWWWW........",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "W.................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "WWWWWW....WWWWW..."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSRRRRRRAA",
+            "SRRRRRRRRRRRRRRRAA",
+            "SRRRRRRRRRRRRRRRAA",
+            "SRRRRRRRRRRRRRRRAA",
+            "SRRR....RRRRRRRRAA",
+            "SRRR....RRRRRRRRAA",
+            "SRRR....RRRRRRRRAA",
+            "SRRR....RRRRRRRRAA",
+            "SRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "SSSSSSRRRRSSSSSRAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSRRRRRRAA",
+            "SRRRRRRRRRRRRRRRAA",
+            "SRRRRRRRRRRRRRRRAA",
+            "SRRRRRRRRRRRRRRRAA",
+            "SRRR....RRRRRRRRAA",
+            "SRRR....RRRRRRRRAA",
+            "SRRR....RRRRRRRRAA",
+            "SRRR....RRRRRRRRAA",
+            "SRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "SSSSSSRRRRSSSSSRAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAARRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "AAAAAARRRRAAAAARAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAARRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRR....RRRRRRRRAA",
+            "ARRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "AAAAAARRRRAAAAARAA"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "W": {
+          "furniture": "gauntlet_roof_parapet"
         }
       },
       "ports": [],

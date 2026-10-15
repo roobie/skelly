@@ -53,7 +53,14 @@ Fixture builders should include only the content an assertion exercises. Use one
 
 Keep exterior shells visually continuous around authored openings; doors and solid window frames remain deliberate gaps. Floor and roof courses meeting an exterior wall use that wall's material, so interior flooring does not appear as an exposed facade stripe. Interior flooring retains its authored material. Doors need clear space on both sides so a player can pass through. See `floorCourseWallGap` and `checkTemplateSpace` in `src/core/content.ts`, and `templateDoorIssues` in `src/core/templateSpatial.ts`.
 
-Keep enclosed building roofs flush with their exterior wall footprint so the roof silhouette follows the shell instead of adding projecting eaves. A city roof is a flat urban roof: a non-wood roofing deck that fits brick and concrete walls, bound per style through the `roofing` binding, inside a parapet of the wall's own shell material, because a deck bound to the style's wooden floor reads as a wooden roof on those walls. Open forecourt canopies are separate structures, not building eaves. See `src/content/base/gauntlet-city-kits.libsonnet`, `gauntlet_city_roof`, and `src/game/testHouse.ts`, `testHouse`.
+Keep enclosed building roofs flush with their exterior wall footprint so the roof silhouette follows the shell instead of adding projecting eaves. City roofs are a mixture of two treatments, chosen per building by a weighted content choice, never by a building id in code:
+
+> roofs should be a mixture of simple sheet metal and some are semi-walled concrete roofs
+
+- A sheet-metal roof is a plain galvanized deck.
+- A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges, never a full ring.
+
+Both decks are non-wood, bound per style through the `roofing_sheet` and `roofing_slab` bindings, because a deck bound to the style's wooden floor reads as a wooden roof on brick and concrete walls. The reason for the mix is that roofs read as a varied, plausible urban skyline rather than one uniform treatment. The wall segments are furniture on cells that the plain roof claims as air, so both treatments keep the same solid support, and they leave the ladder landing and every route open. Open forecourt canopies are separate structures, not building eaves. See `src/content/base/gauntlet-city-decor.libsonnet`, `roofs`, `src/content/base/gauntlet-city-kits.libsonnet`, `roofDeck`, and `src/game/testHouse.ts`, `testHouse`.
 
 Fixed loot takes eligibility from its resolved authored source context, not a compiled placement's ID. Stacking changes that ID without changing the source's authority. Anchor usage overrides retain the resolved tier; fitted children meet the same context. See `placementLootIssues` in `src/core/placementLoot.ts` and its callers in `src/core/authoredLayout.ts` and `src/core/scenarioComposition.ts`.
 

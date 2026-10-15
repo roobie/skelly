@@ -22,8 +22,12 @@
           "block": "air",
           "role": "opening"
         },
-        "roofing": {
-          "block": "asphalt",
+        "roofing_sheet": {
+          "block": "galvanized",
+          "role": "interior_floor"
+        },
+        "roofing_slab": {
+          "block": "concrete",
           "role": "interior_floor"
         }
       },
@@ -51,8 +55,12 @@
           "block": "air",
           "role": "opening"
         },
-        "roofing": {
-          "block": "asphalt",
+        "roofing_sheet": {
+          "block": "galvanized",
+          "role": "interior_floor"
+        },
+        "roofing_slab": {
+          "block": "concrete",
           "role": "interior_floor"
         }
       },

@@ -163,6 +163,23 @@ local lowerSlots = [
   slot('floor_shell', 'gauntlet_city_floor_shell', [0, 8, 0], [18, 1, 16]),
   slot('floor_inside', 'gauntlet_city_floor_lower', [1, 8, 3], [14, 1, 12]),
 ];
+local roofDeck = function(id, material) {
+  id: id, size: [18, 1, 16], style: 'brick_townhouse',
+  lootContext: context, palette: palette + { r: { role: 'interior_floor', material: material } },
+  layers: [[
+    '..................', '..................', '################..', '#rrrrrrrrrrrrrr#..',
+    '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..',
+    '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..',
+    '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '################..',
+  ]],
+  ownership: { layers: [[
+    'AAAAAAAAAAAAAAAAAA', 'AAAAAAAAAAAAAAAAAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
+    'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
+    'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
+    'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
+  ]] },
+  anchors: {}, ports: [],
+};
 local kit = {
   mapPieces: doors.mapPieces + [
     {
@@ -247,23 +264,8 @@ local kit = {
     room + {
       id: 'gauntlet_city_room_cupboards', palette: palette + { F: { furniture: 'kitchen_cupboard' } },
     },
-    {
-      id: 'gauntlet_city_roof', size: [18, 1, 16], style: 'brick_townhouse',
-      lootContext: context, palette: palette + { r: { role: 'interior_floor', material: 'roofing' } },
-      layers: [[
-        '..................', '..................', '################..', '#rrrrrrrrrrrrrr#..',
-        '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..',
-        '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..',
-        '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '################..',
-      ]],
-      ownership: { layers: [[
-        'AAAAAAAAAAAAAAAAAA', 'AAAAAAAAAAAAAAAAAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
-        'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
-        'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
-        'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
-      ]] },
-      anchors: {}, ports: [],
-    },
+    roofDeck('gauntlet_city_roof_sheet', 'roofing_sheet'),
+    roofDeck('gauntlet_city_roof_slab', 'roofing_slab'),
   ],
   mapAssemblies: [
     {
@@ -271,7 +273,7 @@ local kit = {
       slots: lowerSlots + [
         slot('upper_shell', 'gauntlet_city_upper_shell', [0, 9, 0], [18, 7, 16]),
         roomSlot('upper_room', [1, 9, 3], 'room'),
-        slot('roof', 'gauntlet_city_roof', [0, 16, 0], [18, 1, 16]),
+        slot('roof', 'gauntlet_city_roof_sheet', [0, 16, 0], [18, 1, 16]),
       ],
       joins: [], ports: [],
       anchors: { entry: { kind: 'standing', at: [8, 1, 8] }, upper: { kind: 'standing', at: [11, 9, 6] } },
@@ -288,7 +290,7 @@ local kit = {
         slot('middle_floor_inside', 'gauntlet_city_floor_middle', [1, 16, 3], [14, 1, 12]),
         slot('upper_shell', 'gauntlet_city_upper_shell', [0, 17, 0], [18, 7, 16]),
         roomSlot('upper_room', [1, 17, 3], 'room'),
-        slot('roof', 'gauntlet_city_roof', [0, 24, 0], [18, 1, 16]),
+        slot('roof', 'gauntlet_city_roof_sheet', [0, 24, 0], [18, 1, 16]),
       ],
       joins: [], ports: [],
       anchors: { entry: { kind: 'standing', at: [8, 1, 8] },
@@ -311,7 +313,7 @@ local kit = {
           { ref: { kind: 'piece', id: 'gauntlet_city_room_cupboards' }, weight: 1 },
         ] },
       { id: 'roof', at: [0, 8, 0], size: [18, 1, 16], turn: 0,
-        choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_roof' }, weight: 1 }] },
+        choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_roof_sheet' }, weight: 1 }] },
     ],
     joins: [], ports: [],
     anchors: { entry: { kind: 'standing', at: [8, 1, 8] } },
