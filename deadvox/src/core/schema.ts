@@ -1226,12 +1226,26 @@ const SiteLayoutSchema = strictObject({
 });
 
 const PoolRefSchema = strictObject({ kind: picklist(['template', 'assembly']), id: Id, style: optional(Id) });
-const CityPoolRowSchema = strictObject({
-  ref: PoolRefSchema,
-  weight: pipe(
-    number(),
-    minValue(0),
-    check((value) => Number.isFinite(value), 'must be finite'),
+const MapPoolSchema = strictObject({
+  id: Id,
+  choices: pipe(
+    array(
+      strictObject({
+        ref: PoolRefSchema,
+        weight: pipe(
+          number(),
+          minValue(0),
+          check((value) => Number.isFinite(value), 'must be finite'),
+        ),
+      }),
+    ),
+    minLength(1),
+    maxLength(32),
+    check(
+      (rows) => new Set(rows.map(({ ref }) => `${ref.kind}:${ref.id}@${ref.style ?? ''}`)).size === rows.length,
+      'building refs must be unique',
+    ),
+    check((rows) => rows.some(({ weight }) => weight > 0), 'needs a positive building weight'),
   ),
 });
 
@@ -1292,16 +1306,7 @@ const ScenarioSchema = strictObject({
       }),
     ),
     streetProps: optional(pipe(array(Id), maxLength(16))),
-    templates: pipe(
-      array(CityPoolRowSchema),
-      minLength(1),
-      maxLength(32),
-      check(
-        (rows) => new Set(rows.map(({ ref }) => `${ref.kind}:${ref.id}@${ref.style ?? ''}`)).size === rows.length,
-        'building refs must be unique',
-      ),
-      check((rows) => rows.some(({ weight }) => weight > 0), 'needs a positive building weight'),
-    ),
+    pool: Id,
   }),
 });
 
@@ -1961,6 +1966,7 @@ const SECTION_DESCRIPTOR = {
   mapPieces: { schema: optional(array(MapPieceSchema)), label: 'map pieces', order: 24 },
   mapAssemblies: { schema: optional(array(MapAssemblySchema)), label: 'map assemblies', order: 25 },
   mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
+  mapPools: { schema: optional(array(MapPoolSchema)), label: 'map pools', order: 27 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1980,6 +1986,7 @@ export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type MapPieceDef = InferOutput<typeof MapPieceSchema>;
 export type MapAssemblyDef = InferOutput<typeof MapAssemblySchema>;
 export type MapSiteDef = InferOutput<typeof MapSiteSchema>;
+export type MapPoolDef = InferOutput<typeof MapPoolSchema>;
 export type KitPort = InferOutput<typeof KitPortSchema>;
 export type KitAnchor = InferOutput<typeof KitAnchorSchema>;
 export type KitRef = InferOutput<typeof KitRefSchema>;

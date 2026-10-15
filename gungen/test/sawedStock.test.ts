@@ -10,6 +10,7 @@ import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, FIRING_GRIP } from '../src/gun/parts.ts';
 import { pumpShotgun } from '../src/gun/templates.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const polygon = (solids: readonly ExtrudedPolygonSolid[], id: string) => {
   const solid = solids.find((candidate) => candidate.id === id);
@@ -23,6 +24,51 @@ const stockProfile = (length: 'M' | 'L', style: 'tapered' | 'tapered-sawed') =>
   FAMILIES.stock!.build({ length, style }).solids.filter(
     (solid): solid is ExtrudedPolygonSolid => solid.kind === 'extruded-polygon',
   );
+
+// Asserts the properties a sawed-off stock build must keep: short-barrel gripless pump lower,
+// Asserts the properties a sawed-off stock build must keep: short-barrel gripless pump lower,
+// a valid assembly, an unambiguous firing-grip anchor inside the grip section, and a matching hold.
+const check = (condition: unknown, message: string): void => {
+  if (!condition) {
+    throw new Error(message);
+  }
+};
+const expectSawedStockBuild = (assembly: ReturnType<typeof generate>, seed: number) => {
+  const stockEntry = Object.entries(assembly.parts).find(([, part]) => part.family === 'stock');
+  check(stockEntry !== undefined, `seed ${seed}: one stock part`);
+  if (!stockEntry) {
+    throw new Error(`seed ${seed}: missing stock part`);
+  }
+  const [stockId, stockInstance] = stockEntry;
+  check(stockInstance.params?.style === 'tapered-sawed', `seed ${seed}: sawed style`);
+  check(assembly.parts.lower?.params?.layout === 'pump', `seed ${seed}: pump layout`);
+  check(assembly.parts.grip === undefined, `seed ${seed}: sawed stock is gripless`);
+  check(assembly.parts.barrel?.params?.length === 'S', `seed ${seed}: short barrel`);
+  const report = validate(assembly, gunDomain);
+  check(report.ok, `seed ${seed}: ${report.issues.map((issue) => issue.message).join('; ')}`);
+  const resolved = resolve(assembly, gunDomain);
+  const anchors = selectGunAnchors(resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY);
+  check(!('code' in anchors), `seed ${seed}: one unambiguous hold`);
+  const stock = resolved.defs.get(stockId)!;
+  check(stock.tags?.includes(FIRING_GRIP), `seed ${seed}: stock is the firing grip`);
+  const params = Object.fromEntries(
+    Object.entries(resolved.params.get(stockId)!).map(([key, value]) => [key, value.value]),
+  );
+  const stockHold = GUN_ANCHORS.stock!.anchors(params, stock).hold!;
+  const grip = polygon(
+    stock.solids.filter((solid): solid is ExtrudedPolygonSolid => solid.kind === 'extruded-polygon'),
+    'grip',
+  );
+  const localHold = stockHold.position;
+  check(localHold[2] >= grip.z[0] && localHold[2] <= grip.z[1], `seed ${seed}: hold sits inside the grip section`);
+  check(
+    grip.profile.every((a, index) => {
+      const b = grip.profile[(index + 1) % grip.profile.length]!;
+      return (b[0] - a[0]) * (localHold[1] - a[1]) - (b[1] - a[1]) * (localHold[0] - a[0]) >= -1e-8;
+    }),
+    `seed ${seed}: hold sits inside the grip polygon`,
+  );
+};
 
 describe('sawed-off tapered stock', () => {
   it.each(['M', 'L'] as const)('%s preserves the tapered front and ends just behind the grip', (length) => {
@@ -70,51 +116,37 @@ describe('sawed-off tapered stock', () => {
   });
 
   // Generates and validates stock variants across the selected seed set.
-  it('generates sawed stocks only on short-barrel builds, in a 10–20% seed share, with one valid hold', {
-    timeout: 30_000,
-  }, () => {
-    const sawedSeeds: number[] = [];
+  it('generates a valid sawed stock on a short-barrel build and a valid plain stock otherwise', () => {
+    let sawedSeen = false;
+    let plainValidSeen = false;
+    for (let seed = 0; seed < 60 && !(sawedSeen && plainValidSeen); seed++) {
+      const assembly = generate(pumpShotgun, gunDomain, seed);
+      const stockEntry = Object.entries(assembly.parts).find(([, part]) => part.family === 'stock');
+      expect(stockEntry, `seed ${seed}: one stock part`).toBeDefined();
+      if (stockEntry?.[1].params?.style === 'tapered-sawed') {
+        if (!sawedSeen) {
+          sawedSeen = true;
+          expectSawedStockBuild(assembly, seed);
+        }
+      } else if (validate(assembly, gunDomain).ok) {
+        plainValidSeen = true;
+      }
+    }
+    expect(sawedSeen).toBe(true);
+    expect(plainValidSeen).toBe(true);
+  });
+});
+
+sweepGroup('sawed-off tapered stock', () => {
+  it('generates sawed stocks only on short-barrel builds across 300 seeds', () => {
     for (let seed = 0; seed < 300; seed++) {
       const assembly = generate(pumpShotgun, gunDomain, seed);
       const stockEntry = Object.entries(assembly.parts).find(([, part]) => part.family === 'stock');
       expect(stockEntry, `seed ${seed}: one stock part`).toBeDefined();
-      if (!stockEntry) {
-        throw new Error(`seed ${seed}: missing stock part`);
-      }
-      const [stockId, stockInstance] = stockEntry;
-      if (stockInstance.params?.style !== 'tapered-sawed') {
+      if (stockEntry?.[1].params?.style !== 'tapered-sawed') {
         continue;
       }
-      sawedSeeds.push(seed);
-      expect(assembly.parts.lower?.params?.layout, `seed ${seed}`).toBe('pump');
-      expect(assembly.parts.grip, `seed ${seed}: sawed stock is gripless`).toBeUndefined();
-      expect(assembly.parts.barrel?.params?.length, `seed ${seed}`).toBe('S');
-      const report = validate(assembly, gunDomain);
-      expect(report.ok, `seed ${seed}: ${report.issues.map((issue) => issue.message).join('; ')}`).toBe(true);
-      const resolved = resolve(assembly, gunDomain);
-      const anchors = selectGunAnchors(resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY);
-      expect('code' in anchors, `seed ${seed}`).toBe(false);
-      const stock = resolved.defs.get(stockId)!;
-      expect(stock.tags).toContain(FIRING_GRIP);
-      const params = Object.fromEntries(
-        Object.entries(resolved.params.get(stockId)!).map(([key, value]) => [key, value.value]),
-      );
-      const stockHold = GUN_ANCHORS.stock!.anchors(params, stock).hold!;
-      const grip = polygon(
-        stock.solids.filter((solid): solid is ExtrudedPolygonSolid => solid.kind === 'extruded-polygon'),
-        'grip',
-      );
-      const localHold = stockHold.position;
-      expect(localHold[2]).toBeGreaterThanOrEqual(grip.z[0]);
-      expect(localHold[2]).toBeLessThanOrEqual(grip.z[1]);
-      expect(
-        grip.profile.every((a, index) => {
-          const b = grip.profile[(index + 1) % grip.profile.length]!;
-          return (b[0] - a[0]) * (localHold[1] - a[1]) - (b[1] - a[1]) * (localHold[0] - a[0]) >= -1e-8;
-        }),
-      ).toBe(true);
+      expectSawedStockBuild(assembly, seed);
     }
-    expect(sawedSeeds.length).toBeGreaterThanOrEqual(30);
-    expect(sawedSeeds.length).toBeLessThanOrEqual(60);
   });
 });

@@ -1,10 +1,7 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '../../src/core/content.ts';
-import type { ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
+import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
-
-export const poolRows = (ids: readonly string[], kind: 'template' | 'assembly' = 'template') =>
-  ids.map((id) => ({ ref: { kind, id }, weight: 1 }));
 
 export const fixtureScenario = (): ScenarioDef => ({
   id: 'fixture_scenario',
@@ -22,9 +19,13 @@ export const fixtureScenario = (): ScenarioDef => ({
     pad: 2,
     gap: 2,
     blend: 4,
-    templates: poolRows(['fixture_house']),
+    pool: 'fixture_pool',
   },
 });
+
+export const fixturePool = (
+  choices: MapPoolDef['choices'] = [{ ref: { kind: 'template', id: 'fixture_house' }, weight: 1 }],
+): MapPoolDef => ({ id: 'fixture_pool', choices });
 
 const serviceCell = (x: number, y: number, z: number): string => {
   if (y === 0) {
@@ -60,7 +61,11 @@ export const fixtureService = (): TemplateDef => ({
   access: { ground: 'ground', entrance: [2, 7, 2], storeys: [{ id: 'ground', floor: 7 }], stairs: [] },
 });
 
-export const fixtureScenarioSources = (scenario = fixtureScenario(), service = fixtureService()): ContentSource[] => {
+export const fixtureScenarioSources = (
+  scenario = fixtureScenario(),
+  service = fixtureService(),
+  pool = fixturePool(),
+): ContentSource[] => {
   const {
     body: [body],
   } = JSON.parse(readFileSync('src/content/base/body.json', 'utf8'));
@@ -135,6 +140,7 @@ export const fixtureScenarioSources = (scenario = fixtureScenario(), service = f
         compression: [
           { ...compression, id: scenario.compression, caps: { ...compression.caps, wait: compression.caps.wait + 1 } },
         ],
+        mapPools: [pool],
         scenarios: [scenario],
       },
     },

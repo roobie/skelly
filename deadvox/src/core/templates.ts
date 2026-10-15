@@ -10,7 +10,7 @@ import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import type { LootContext } from './loot.ts';
-import { Rng } from './random.ts';
+import { pickWeighted, Rng } from './random.ts';
 import type { DoorLockDef, KitAnchor, KitPort, KitRef, MapAssemblyDef, MapPieceDef, TemplateAccess } from './schema.ts';
 import { constructFlight } from './stairFlight.ts';
 import { compileOwnership, ownershipCell } from './templateOwnership.ts';
@@ -472,7 +472,7 @@ const resolveSlot = (
     if (width !== slot.size[0] || template.size[1] !== slot.size[1] || depth !== slot.size[2]) {
       throw new Error(`${label} variant=${template.id}: piece must equal its delegated slot`);
     }
-    return { choice, placement };
+    return { weight: choice.weight, placement };
   });
   const reference = candidates[0]!.placement.template;
   const portContract = (template: CompiledTemplate) =>
@@ -496,21 +496,10 @@ const resolveSlot = (
       );
     }
   }
-  const total = choices.reduce((sum, choice) => sum + choice.weight, 0);
-  if (!Number.isFinite(total)) {
-    throw new Error(`${label}: total weight must be finite`);
-  }
-  let roll = Rng.stream(context.seed, JSON.stringify([context.siteId, context.slotPath ?? assembly.id, slot.id])).range(
-    0,
-    total,
-  );
-  for (const { choice, placement } of candidates) {
-    roll -= choice.weight;
-    if (roll < 0) {
-      return placement;
-    }
-  }
-  return candidates.at(-1)!.placement;
+  return pickWeighted(
+    candidates,
+    Rng.stream(context.seed, JSON.stringify([context.siteId, context.slotPath ?? assembly.id, slot.id])),
+  )!.placement;
 };
 
 const placedPort = (placement: Placement, port: KitPort): KitPort => {

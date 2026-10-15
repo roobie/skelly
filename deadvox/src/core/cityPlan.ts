@@ -1,10 +1,10 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_TEMPLATES } from './hamlet.ts';
-import { hash3, Rng } from './random.ts';
+import { hash3, pickWeighted, Rng } from './random.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
-import type { ScenarioDef } from './schema.ts';
+import type { MapPoolDef, ScenarioDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { BlockBox } from './structure.ts';
@@ -21,10 +21,12 @@ import {
 
 export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
 const SINGLE_STOREY = new Set(['gas_station', 'shed']);
-type CityPoolRow = ScenarioDef['city']['templates'][number];
-type PoolRef = Pick<CityPoolRow['ref'], 'id' | 'style'>;
-export type CityGrid = Omit<ScenarioDef['city'], 'templates' | 'streetProps'> & {
-  readonly templates: readonly CityPoolRow[];
+interface PoolRef {
+  readonly id: string;
+  readonly style?: string | undefined;
+}
+export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps'> & {
+  readonly templates: readonly Readonly<PoolRef & { weight: number }>[];
   readonly streetProps?: readonly string[] | undefined;
 };
 type Cell = readonly [number, number];
@@ -56,10 +58,10 @@ export const benchmarkCityGrid = (): CityGrid => ({
   blend: CITY.blend,
   blocksX: Math.ceil(CITY.reach / (CITY.street + CITY.blockX)),
   blocksZ: Math.ceil(CITY.reach / (CITY.street + CITY.blockZ)),
-  templates: HAMLET_TEMPLATES.map((id) => ({ ref: { kind: 'template', id }, weight: 1 })),
+  templates: HAMLET_TEMPLATES.map((id) => ({ id, weight: 1 })),
 });
 
-const cityDecorationIssues = (registry: Registry, city: CityGrid): [string, string][] => {
+const cityDecorationIssues = (registry: Registry, city: Omit<CityGrid, 'templates'>): [string, string][] => {
   const issues: [string, string][] = [];
   if (city.perimeter && !registry.blockIds.has(city.perimeter.block)) {
     issues.push(['.city.perimeter.block', `no block "${city.perimeter.block}"`]);
@@ -99,26 +101,57 @@ const cityPerimeter = (registry: Registry, grid: CityGrid, floor: number, bounds
   return structures;
 };
 
-const cityPoolIssues = (registry: Registry, city: CityGrid): [string, string][] =>
-  city.templates.flatMap(({ ref: { id, style } }, row): [string, string][] => {
-    const path = `.city.templates[${row}]`;
-    const template = registry.templates.get(id) ?? registry.mapAssemblies.get(id);
+/** The scenario's city with its named pool resolved to weighted building ids. */
+export const cityGridOf = (registry: Registry, city: ScenarioDef['city']): CityGrid => {
+  const { pool, ...grid } = city;
+  const choices = registry.mapPools.get(pool)?.choices;
+  if (!choices) {
+    throw new Error(`Missing city pool "${pool}"`);
+  }
+  return {
+    ...grid,
+    templates: choices.map(({ ref, weight }) => ({ id: ref.id, ...(ref.style ? { style: ref.style } : {}), weight })),
+  };
+};
+
+const poolStyleIssue = (
+  registry: Registry,
+  { kind, id, style }: MapPoolDef['choices'][number]['ref'],
+): string | undefined => {
+  if (!style) {
+    return undefined;
+  }
+  if (kind !== 'assembly') {
+    return `style "${style}" needs an assembly, not template "${id}"`;
+  }
+  return registry.mapStyles.has(style) ? undefined : `no style "${style}"`;
+};
+
+const cityPoolIssues = (registry: Registry, city: ScenarioDef['city']): [string, string][] => {
+  const pool = registry.mapPools.get(city.pool);
+  if (!pool) {
+    return [['.city.pool', `no map pool "${city.pool}"`]];
+  }
+  const grid = { ...city, templates: [] };
+  return pool.choices.flatMap(({ ref }, index): [string, string][] => {
+    const at = `.city.pool.choices[${index}].ref`;
+    const { id } = ref;
     if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
-      return [[path, `ambiguous template and assembly "${id}"`]];
+      return [[at, `ambiguous template and assembly "${id}"`]];
     }
-    if (!template) {
-      return [[path, `no template or assembly "${id}"`]];
+    const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(id);
+    if (!building) {
+      return [[at, `no ${ref.kind} "${id}" in pool "${pool.id}"`]];
     }
-    if (style && !registry.mapAssemblies.has(id)) {
-      return [[`${path}.ref.style`, `style "${style}" needs an assembly, not template "${id}"`]];
+    const styleIssue = poolStyleIssue(registry, ref);
+    if (styleIssue) {
+      return [[`${at}.style`, styleIssue]];
     }
-    if (style && !registry.mapStyles.has(style)) {
-      return [[`${path}.ref.style`, `no style "${style}"`]];
-    }
-    return template.size[0] > city.blockX - 2 * city.pad || template.size[2] > cityRowDepth(city)
-      ? [[path, `template "${id}" does not fit the reserved row`]]
+    return building.size[0] > city.blockX - 2 * city.pad || building.size[2] > cityRowDepth(grid)
+      ? [[at, `${ref.kind} "${id}" does not fit the reserved row`]]
       : [];
   });
+};
 
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
@@ -231,18 +264,6 @@ export const cityRowStart = (grid: CityGrid, row: number): number =>
 
 const groundedY = (template: Placement['template'], floor: number): number => floor - (template.groundLayer ?? 0);
 
-const pickRow = (rows: readonly CityPoolRow[], unit: number): CityPoolRow => {
-  const open = rows.filter(({ weight }) => weight > 0);
-  const roll = unit * open.reduce((sum, { weight }) => sum + weight, 0);
-  let upTo = 0;
-  return (
-    open.find(({ weight }) => {
-      upTo += weight;
-      return roll < upTo;
-    }) ?? open.at(-1)!
-  );
-};
-
 const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
   const { seed, floor, grid, compiled, maxStoreys } = context;
   const pitchX = grid.street + grid.blockX;
@@ -256,17 +277,18 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
       footprint({ template: compiled({ id, style }, 1), origin: [0, 0, 0], turn })[0] <= end - x;
     const pool =
       k === 0 && row === 0 && context.incidentalTemplates.length > 0
-        ? context.incidentalTemplates.map((id) => ({ ref: { kind: 'template' as const, id }, weight: 1 }))
+        ? context.incidentalTemplates.map((id) => ({ id, weight: 1 }))
         : grid.templates;
-    const first = pickRow(pool, hash3(seed, i * 64 + k, j * (grid.rows ?? 2) + row, 0)).ref;
-    const ref = fits(first) ? first : grid.templates.find((candidate) => fits(candidate.ref))?.ref;
-    if (!ref) {
+    const selected = pickWeighted(pool, Rng.stream(seed, `city:${i},${j}/row:${row}/building:${k}/type`));
+    const building =
+      selected && fits(selected) ? selected : grid.templates.find((choice) => choice.weight > 0 && fits(choice));
+    if (!building) {
       break;
     }
-    const storeys = SINGLE_STOREY.has(ref.id)
+    const storeys = SINGLE_STOREY.has(building.id)
       ? 1
       : 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * maxStoreys);
-    const template = compiled(ref, storeys, `city:${i},${j}/row:${row}/building:${k}`);
+    const template = compiled(building, storeys, `city:${i},${j}/row:${row}/building:${k}`);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const bank = j * pitchZ + cityRowStart(grid, row);
     const z = row % 2 === 0 ? bank : bank + 2 * cityRowDepth(grid) - depth;
@@ -302,9 +324,7 @@ export const servicePlacement = ({
 const freezeGrid = (grid: CityGrid): Readonly<CityGrid> =>
   Object.freeze({
     ...grid,
-    templates: Object.freeze(
-      grid.templates.map((row) => Object.freeze({ ...row, ref: Object.freeze({ ...row.ref }) })),
-    ),
+    templates: Object.freeze(grid.templates.map((choice) => Object.freeze({ ...choice }))),
     ...(grid.perimeter ? { perimeter: Object.freeze({ ...grid.perimeter }) } : {}),
     ...(grid.streetProps ? { streetProps: Object.freeze([...grid.streetProps]) } : {}),
   });

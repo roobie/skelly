@@ -24,6 +24,49 @@ const freeFloat = (barrelLength: string, handguardLength: string, fit = 'receive
 const clampConnection = (assembly: ReturnType<typeof freeFloat>) =>
   assembly.connections.some(({ from, to }) => from === 'handguard.front' && to === 'barrel.clamp');
 
+const byName = (name: string) => TEMPLATES.find((template) => template.name === name)!;
+
+const check = (condition: unknown, message: string): void => {
+  if (!condition) {
+    throw new Error(message);
+  }
+};
+
+// Measures the free-float share of a template's generated handguards against the mount choices
+// the template declares, proving both mounts occur and that free-float builds drop the barrel clamp.
+const freeFloatFraction = (name: string, count = 500) => {
+  const template = byName(name);
+  const mount = template.slots.find((slot) => slot.family === 'handguard')?.params?.mount;
+  const choices = Array.isArray(mount) ? mount : [mount];
+  const declared = choices.filter((choice) => choice === 'free-float').length / choices.length;
+  let freeFloatCount = 0;
+  let presentCount = 0;
+  let sawClamped = false;
+  for (let seed = 0; seed < count; seed++) {
+    const {
+      parts: { handguard, barrel },
+      connections,
+    } = generate(template, gunDomain, seed);
+    if (handguard) {
+      presentCount += 1;
+    }
+    if (handguard?.params?.mount === 'free-float') {
+      freeFloatCount += 1;
+      check(
+        handguard.params.length === barrel?.params?.length,
+        `${name} seed ${seed}: free-float length follows the barrel`,
+      );
+      check(
+        !connections.some(({ from, to }) => from === 'handguard.front' && to === 'barrel.clamp'),
+        `${name} seed ${seed}: free-float drops the barrel clamp`,
+      );
+    } else if (handguard?.params?.mount === 'clamped') {
+      sawClamped = true;
+    }
+  }
+  return { fraction: freeFloatCount / presentCount, declared, sawClamped, sawFreeFloat: freeFloatCount > 0 };
+};
+
 describe('free-floating handguards', () => {
   it('hangs from the receiver without a barrel clamp and keeps its own length when the barrel changes', () => {
     for (const barrelLength of ['S', 'M', 'L']) {
@@ -51,30 +94,20 @@ describe('free-floating handguards', () => {
 
   sweepGroup('chooses mounts by template data and keeps other families clamped', () => {
     it('passes', () => {
-      const byName = (name: string) => TEMPLATES.find((template) => template.name === name)!;
-      const freeFloatFraction = (name: string, count = 500) => {
-        let freeFloatCount = 0;
-        let presentCount = 0;
-        for (let seed = 0; seed < count; seed++) {
-          const {
-            parts: { handguard, barrel },
-            connections,
-          } = generate(byName(name), gunDomain, seed);
-          if (handguard) {
-            presentCount += 1;
-          }
-          if (handguard?.params?.mount === 'free-float') {
-            freeFloatCount += 1;
-            expect(handguard.params.length).toBe(barrel?.params?.length);
-            expect(connections.some(({ from, to }) => from === 'handguard.front' && to === 'barrel.clamp')).toBe(false);
-          }
-        }
-        return freeFloatCount / presentCount;
-      };
-      expect(freeFloatFraction('ar')).toBeGreaterThanOrEqual(0.7);
-      expect(freeFloatFraction('ar')).toBeLessThanOrEqual(0.8);
-      expect(freeFloatFraction('battle-rifle')).toBeGreaterThanOrEqual(0.45);
-      expect(freeFloatFraction('battle-rifle')).toBeLessThanOrEqual(0.55);
+      const arFraction = freeFloatFraction('ar');
+      expect(arFraction.fraction, 'AR free-float share follows the template choices').toBeCloseTo(
+        arFraction.declared,
+        1,
+      );
+      expect(arFraction.sawFreeFloat).toBe(true);
+      expect(arFraction.sawClamped).toBe(true);
+      const battleRifleFraction = freeFloatFraction('battle-rifle');
+      expect(battleRifleFraction.fraction, 'battle-rifle free-float share follows the template choices').toBeCloseTo(
+        battleRifleFraction.declared,
+        1,
+      );
+      expect(battleRifleFraction.sawFreeFloat).toBe(true);
+      expect(battleRifleFraction.sawClamped).toBe(true);
       for (const name of ['ak', 'smg', 'bolt-rifle-box']) {
         for (let seed = 0; seed < 20; seed++) {
           const { handguard } = generate(byName(name), gunDomain, seed).parts;

@@ -9,6 +9,7 @@ local buildings = kit.mapAssemblies + [cellar + {
     if part.id == 'shell' then part + { choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_cellar_shell' }, weight: 1 }] }
     else if part.id == 'upper_shell' then part + { choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_shell' }, weight: 1 }] }
     else if part.id == 'floor_shell' then part + { choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_street_course' }, weight: 1 }] }
+    else if part.id == 'door' then part + { at: [part.at[0], 9, part.at[2]] }
     else part
     for part in cellar.slots
   ],

@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { cityGridOf } from '../src/core/cityPlan.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { ownershipCell } from '../src/core/templateOwnership.ts';
@@ -38,8 +39,8 @@ const cityAlternatives = function* (everyStyle = false) {
   const { registry } = BUNDLED_CONTENT;
   const rows = new Map(
     [...registry.scenarios.values()]
-      .flatMap((scenario) => scenario.city.templates)
-      .map(({ ref }) => [everyStyle ? `${ref.id}@${ref.style ?? ''}` : ref.id, ref] as const),
+      .flatMap((scenario) => cityGridOf(registry, scenario.city).templates)
+      .map((row) => [everyStyle ? `${row.id}@${row.style ?? ''}` : row.id, row] as const),
   );
   const buildings = [...rows.values()].flatMap(({ id, style }) => {
     const assembly = registry.mapAssemblies.get(id);
