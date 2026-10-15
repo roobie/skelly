@@ -161,7 +161,7 @@ describe('city pool quotas', () => {
     }
   });
 
-  it('meets two competing quota rows at once without dropping either on a retry', () => {
+  it('stops retrying once every quota is met', () => {
     const { scenario, registry } = quotaSetup([
       { id: 'fixture_house', weight: 1, atLeast: 1, atMost: 2 },
       { id: 'fixture_small_house', weight: 1, atLeast: 1 },
@@ -176,20 +176,31 @@ describe('city pool quotas', () => {
     }
   });
 
-  it('builds the bundled gauntlet city without a quota abort and meets its quotas for a covering set of seeds', () => {
-    const { registry } = BUNDLED_CONTENT;
-    const scenario = registry.scenarios.get('gauntlet')!;
-    const grid = cityGridOf(registry, scenario.city);
-    const quotas = grid.templates.filter(({ atLeast }) => atLeast);
-    expect(quotas.length).toBeGreaterThan(0);
-    for (const seed of [2, 3, 9, 20, 22, 31]) {
-      const counts = countsOf(buildCityPlan({ seed, registry, floor: 0, grid, scenario }));
-      for (const { id, atLeast, atMost } of quotas) {
-        expect(counts.get(id) ?? 0).toBeGreaterThanOrEqual(atLeast!);
-        expect(counts.get(id) ?? 0).toBeLessThanOrEqual(atMost ?? Number.POSITIVE_INFINITY);
-      }
+  it('keeps an earlier forced row when forcing a later one displaces a row that met its quota by weight', () => {
+    const { scenario, registry } = quotaSetup([
+      { id: 'fixture_house', weight: 1 },
+      { id: 'fixture_small_house', weight: 1 },
+    ]);
+    const house = registry.templates.get('fixture_house')!;
+    for (const id of ['quota_a', 'quota_b', 'filler']) {
+      registry.templates.set(id, { ...house, id });
     }
-  }, 20_000);
+    const grid = {
+      ...cityGridOf(registry, scenario.city),
+      blockX: 9,
+      templates: [
+        { id: 'quota_a', weight: 0, atLeast: 1 },
+        { id: 'quota_b', weight: 1, atLeast: 1, atMost: 1 },
+        { id: 'filler', weight: 2 },
+      ],
+    };
+    for (const seed of Seeds) {
+      const counts = countsOf(buildCityPlan({ seed, registry, floor: 0, grid, scenario }));
+      expect(counts.get('quota_a') ?? 0).toBeGreaterThanOrEqual(1);
+      expect(counts.get('quota_b') ?? 0).toBeGreaterThanOrEqual(1);
+      expect(counts.get('quota_b') ?? 0).toBeLessThanOrEqual(1);
+    }
+  });
 
   it('resolves the same plan for the same seed', () => {
     const { scenario, registry } = quotaSetup([

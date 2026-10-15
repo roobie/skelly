@@ -331,7 +331,7 @@ const fillWithQuotas = (context: FillContext, fill: (forced: string[]) => Placem
   const forcedRows = new Set<string>();
   for (;;) {
     const short = new Set(quotaShortfalls(context));
-    if (short.size === 0 || [...short].every((id) => forcedRows.has(id))) {
+    if ([...short].every((id) => forcedRows.has(id))) {
       break;
     }
     for (const id of short) {
