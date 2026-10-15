@@ -22,7 +22,7 @@ try {
       timeout: 600_000,
     });
     for (let t = 0; t < 1; t++) {
-      await page.waitForTimeout(20_000);
+      await page.waitForTimeout(500);
       const text = await page.evaluate(() => {
         const g = globalThis;
         const w = g.gauntletWitness ?? g.worldLoadWitness;
