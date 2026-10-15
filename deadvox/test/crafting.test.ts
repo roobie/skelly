@@ -74,7 +74,13 @@ const recipe = (components: RecipeDef['components'], qualities: RecipeDef['quali
   components,
 });
 const character = { skills: {}, knownRecipes: new Set(['fixture']) };
-const fixtureWorkstationRegistry = (workFactorBonus: number) => {
+const workFactorBonus = 0.37;
+let workstationRegistry: Registry | undefined;
+// Built once: a content build costs about a second and every workstation case reads it unchanged.
+const fixtureWorkstationRegistry = () => {
+  if (workstationRegistry) {
+    return workstationRegistry;
+  }
   const built = buildRegistry([
     ...inputs,
     {
@@ -95,7 +101,8 @@ const fixtureWorkstationRegistry = (workFactorBonus: number) => {
   if (built.issues.length > 0) {
     throw new Error(`Invalid fixture workstation: ${JSON.stringify(built.issues)}`);
   }
-  return built.registry;
+  workstationRegistry = built.registry;
+  return workstationRegistry;
 };
 
 const stock = (
@@ -124,7 +131,7 @@ const stock = (
 
 describe('pure craft planner', () => {
   it('requires its named workstation to be within two metres', () => {
-    const definitions = fixtureWorkstationRegistry(0.2);
+    const definitions = fixtureWorkstationRegistry();
     const recipeWithStation = { ...recipe([[{ item: 'rag', count: 1 }]]), workstation: 'fixture_station' };
     const near = stock([{ type: 'rag' }], definitions);
     near.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
@@ -140,7 +147,7 @@ describe('pure craft planner', () => {
   });
 
   it('uses an in-reach workstation quality instead of requiring a tool item', () => {
-    const definitions = fixtureWorkstationRegistry(0.2);
+    const definitions = fixtureWorkstationRegistry();
     const recipeWithStation = {
       ...recipe([[{ item: 'rag', count: 1 }]], { sawing: 1 }),
       workstation: 'fixture_station',
@@ -153,8 +160,7 @@ describe('pure craft planner', () => {
   });
 
   it('subtracts the fixture workstation bonus from recipe work time', () => {
-    const workFactorBonus = 0.37;
-    const definitions = fixtureWorkstationRegistry(workFactorBonus);
+    const definitions = fixtureWorkstationRegistry();
     const recipeWithStation = { ...recipe([[{ item: 'rag', count: 1 }]]), workstation: 'fixture_station' };
     const staged = stock([{ type: 'rag' }], definitions);
     staged.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });

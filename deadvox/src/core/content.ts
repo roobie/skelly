@@ -22,6 +22,7 @@ import {
   type DayCycleDef,
   type FurnitureDef,
   type ItemDef,
+  type ModelDef,
   type RecipeDef,
   type SiteLayoutDef,
   type TemplateDef,
@@ -369,6 +370,37 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   }
 };
 
+/** Whether a firearm's exported mounts accept any attachment whose model is a suppressor. */
+const acceptsSuppressor = (registry: Registry, model: ModelDef | undefined): boolean => {
+  const suppressors = new Set(
+    [...registry.items.values()].flatMap((candidate) => {
+      const candidateModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
+      return candidateModel?.attachment?.kind === 'suppressor' ? [candidateModel.attachment.id] : [];
+    }),
+  );
+  return Object.values(model?.compatibility ?? {}).some((ids) => ids.some((id) => suppressors.has(id)));
+};
+
+/** Authored shot selections must resolve, and a gun that can mount a suppressor must author the quiet event. */
+const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry: Registry, report: Report): void => {
+  const firearm = item.firearm!;
+  if (!registry.sounds.has(firearm.shotSound)) {
+    report('items', item.id, '.firearm.shotSound', `no sound event "${firearm.shotSound}"`);
+  }
+  if (firearm.suppressedShotSound !== undefined) {
+    if (!registry.sounds.has(firearm.suppressedShotSound)) {
+      report('items', item.id, '.firearm.suppressedShotSound', `no sound event "${firearm.suppressedShotSound}"`);
+    }
+  } else if (acceptsSuppressor(registry, model)) {
+    report(
+      'items',
+      item.id,
+      '.firearm.suppressedShotSound',
+      'a suppressor-mountable firearm needs a suppressed shot sound',
+    );
+  }
+};
+
 const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): void => {
   if (item.firearm?.pump && item.firearm.dispersionRadians !== 0) {
     report('items', item.id, '.firearm.dispersionRadians', 'pump pellet spread owns its cone');
@@ -378,6 +410,9 @@ const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): vo
     report('items', item.id, '.model', 'a magazine-fed firearm needs a model with a magazine slot');
   }
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
+  if (item.firearm) {
+    checkFirearmSounds(item, model, registry, report);
+  }
   for (const attachment of model?.attachments ?? []) {
     const registered = [...registry.items.values()].some((candidate) => {
       const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
@@ -1034,6 +1069,19 @@ const checkScenarios = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkBlockFootsteps = (registry: Registry, report: Report): void => {
+  for (const { id, footsteps } of registry.blocks) {
+    if (!footsteps) {
+      continue;
+    }
+    for (const [family, event] of Object.entries(footsteps)) {
+      if (!registry.sounds.has(event)) {
+        report('blocks', id, `.footsteps.${family}`, `no sound event "${event}"`);
+      }
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1041,6 +1089,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
   };
   checkCamoBlocks(registry, report);
+  checkBlockFootsteps(registry, report);
   for (const block of registry.blocks) {
     for (const [gait, event] of Object.entries(block.rustle ?? {})) {
       const sound = registry.sounds.get(event);

@@ -53,11 +53,11 @@ local ladder = lab.entry.ladder;
       ]
       for style in [{ id: 'brick_townhouse', share: 0.75 }, { id: 'concrete_townhouse', share: 0.25 }]
     ] + [
-      { ref: { kind: 'assembly', id: 'gauntlet_food_store' }, weight: 6 },
-      { ref: { kind: 'assembly', id: 'gauntlet_hardware_store' }, weight: 4 },
-      { ref: { kind: 'assembly', id: 'gauntlet_medical_site' }, weight: 3 },
-      { ref: { kind: 'assembly', id: 'gauntlet_police_station' }, weight: 2 },
-      { ref: { kind: 'assembly', id: 'gauntlet_gun_store' }, weight: 1 },
+      { ref: { kind: 'assembly', id: 'gauntlet_food_store' }, weight: 6, atMost: 3 },
+      { ref: { kind: 'assembly', id: 'gauntlet_hardware_store' }, weight: 4, atMost: 2 },
+      { ref: { kind: 'assembly', id: 'gauntlet_medical_site' }, weight: 3, atMost: 2 },
+      { ref: { kind: 'assembly', id: 'gauntlet_police_station' }, weight: 2, atLeast: 1, atMost: 2 },
+      { ref: { kind: 'assembly', id: 'gauntlet_gun_store' }, weight: 1, atLeast: 1, atMost: 1 },
     ],
   }],
 }
