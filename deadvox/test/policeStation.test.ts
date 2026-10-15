@@ -3,7 +3,7 @@ import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
-import { compileAssembly, type PlacedPiece } from '../src/core/templates.ts';
+import { type CompiledTemplate, cellsOf, compileAssembly, type PlacedPiece } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 
 const content = buildBundledContent();
@@ -19,25 +19,77 @@ const near = (positions: Vec3[], piece: PlacedPiece) =>
         STAIR_BODY_HALF_WIDTH + 0.5,
   );
 
-it('connects the police reception, office, holding cells and armoury without sealing off their furniture', () => {
+const furnitureClearanceIssues = (registry: Registry, station: CompiledTemplate) => {
+  const issues: string[] = [];
+  const occupied = new Map<string, string>();
+  for (const piece of station.pieces) {
+    for (const offset of cellsOf(piece.size)) {
+      const [x, y, z] = piece.pos.map((value, axis) => value + offset[axis]!) as Vec3;
+      const key = [x, y, z].join(',');
+      if (
+        occupied.has(key) ||
+        registry.blocks[station.blocks[x + station.size[0] * (z + station.size[2] * y)]!]!.solid
+      ) {
+        issues.push(`${piece.furniture} intersects ${occupied.get(key) ?? 'wall'} at ${key}`);
+      }
+      occupied.set(key, piece.furniture);
+    }
+  }
+  return issues.concat(doorApproachIssues(registry, station, occupied));
+};
+
+const doorApproachIssues = (registry: Registry, station: CompiledTemplate, occupied: Map<string, string>) => {
+  const issues: string[] = [];
+  for (const door of station.pieces.filter(({ furniture }) => registry.furniture.get(furniture)?.door)) {
+    const across = door.facing === 'e' || door.facing === 'w' ? 0 : 2;
+    const faceSize: Vec3 = [...door.size];
+    faceSize[across] = 1;
+    for (const offset of cellsOf(faceSize)) {
+      for (const side of [-1, door.size[across]]) {
+        const point = door.pos.map((value, axis) => value + (axis === across ? side : offset[axis]!));
+        if (occupied.has(point.join(','))) {
+          issues.push(`${door.furniture} blocked approach at ${point}`);
+        }
+      }
+    }
+  }
+  return issues;
+};
+
+it('keeps every furniture disorder alternative clear of walls, furniture and door approaches with every room reachable', () => {
   expect(content.issues).toEqual([]);
   const { registry } = content;
   const assembly = registry.mapAssemblies.get('gauntlet_police_station')!;
-  const station = compileAssembly(registry, assembly, { seed: 1, siteId: 'police_contract' });
-  const reached = new Set(templateReachableStandingPositions(registry, station).map((point) => point.join(',')));
-  for (const role of ['reception', 'office', 'holding', 'armoury']) {
-    const anchor = station.anchors![role]!;
-    expect(anchor, role).toBeDefined();
-    expect(reached.has(anchor.at.join(',')), role).toBe(true);
-  }
-  const cells = Object.entries(station.anchors!).filter(([id]) => id.startsWith('cell_'));
-  expect(cells.length).toBeGreaterThan(1);
-  for (const [id, anchor] of cells) {
-    expect(reached.has(anchor.at.join(',')), id).toBe(true);
-  }
-  const furnishings = new Set(station.pieces.map(({ furniture }) => furniture));
-  for (const furniture of ['desk', 'chair', 'bed', 'gauntlet_cell_bars', 'gauntlet_cell_door']) {
-    expect(furnishings.has(furniture), furniture).toBe(true);
+  const alternatives = assembly.slots.filter(({ choices }) => choices.length > 1);
+  expect(alternatives.length).toBeGreaterThan(0);
+  // Each bay is disjoint and outside reserved circulation; cover each local pose without a seed sweep.
+  const variants = Math.max(...alternatives.map(({ choices }) => choices.length));
+  for (let variant = 0; variant < variants; variant++) {
+    const station = compileAssembly(
+      registry,
+      {
+        ...assembly,
+        slots: assembly.slots.map((slot) => ({ ...slot, choices: [slot.choices[variant % slot.choices.length]!] })),
+      },
+      { seed: 1, siteId: 'police_contract' },
+    );
+    const reached = new Set(templateReachableStandingPositions(registry, station).map((point) => point.join(',')));
+    for (const role of ['reception', 'office', 'holding', 'armoury']) {
+      expect(reached.has(station.anchors![role]!.at.join(',')), role).toBe(true);
+    }
+    const cells = Object.entries(station.anchors!).filter(([id]) => id.startsWith('cell_'));
+    expect(cells.length).toBeGreaterThan(1);
+    for (const [id, anchor] of cells) {
+      expect(reached.has(anchor.at.join(',')), id).toBe(true);
+    }
+    expect(furnitureClearanceIssues(registry, station)).toEqual([]);
+    const furnishings = new Set(station.pieces.map(({ furniture }) => furniture));
+    for (const furniture of ['desk', 'chair', 'bed', 'gauntlet_cell_bars', 'gauntlet_cell_door']) {
+      expect(furnishings.has(furniture), furniture).toBe(true);
+    }
+    expect(station.pieces.some(({ furniture }) => furniture === 'chair_on_back' || furniture === 'chair_on_side')).toBe(
+      true,
+    );
   }
 });
 

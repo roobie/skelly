@@ -1,4 +1,5 @@
 local furniture = (import 'furniture.jsonnet').furniture;
+local disorder = import 'furniture-disorder.libsonnet';
 local woodDoor = std.filter(function(f) f.id == 'wood_door', furniture)[0];
 local empty = [
   '..............', '..............', '..............', '..............',
@@ -6,13 +7,13 @@ local empty = [
   '..............', '..............', '..............', '..............',
 ];
 local floor = [
-  '.c.c.....#CCC.', '.RRc.....#CCC.', '.RR......O...c', '.RR......O....',
-  '######DD######', '.........L....', '.........L....', 'BBEE#BBEE#GG..',
+  '....qq...#CCC.', '.RR.qq...#CCC.', '.RR......O..qq', '.RR......O..qq',
+  '######DD######', 'qq.......L....', 'qq.......L....', 'BBEE#BBEE#GG..',
   'bb..#bb..#GG..', 'bb..#bb..#AA..', 'bb..#bb..#AA..', 'bb..#bb..#..SS',
 ];
 local low = [
-  '.c.c.....#CCC.', '.RRc.....#CCC.', '.RR......O...c', '.RR......O....',
-  '######DD######', '.........L....', '.........L....', 'BBEE#BBEE#GG..',
+  '....qq...#CCC.', '.RR.qq...#CCC.', '.RR......O..qq', '.RR......O..qq',
+  '######DD######', 'qq.......L....', 'qq.......L....', 'BBEE#BBEE#GG..',
   '....#....#GG..', '....#....#AA..', '....#....#AA..', '....#....#..SS',
 ];
 local tall = [
@@ -26,7 +27,7 @@ local upper = [
   '....#....#....', '....#....#....', '....#....#....', '....#....#....',
 ];
 local claims(layer) = [
-  std.join('', [if c == '.' then 'R' else 'S' for c in std.stringChars(row)])
+  std.join('', [if c == 'q' then '.' else if c == '.' then 'R' else 'S' for c in std.stringChars(row)])
   for row in layer
 ];
 local panel = {
@@ -49,7 +50,13 @@ local panel = {
     id: 'gauntlet_police_office_key', rolls: [1, 1],
     entries: [{ item: 'gauntlet_police_armoury_key', weight: 1 }],
   }],
-  furniture: [
+  chairPieces: disorder.pieces('gauntlet_police_chair', 'gauntlet_police', { usage: ['Hunting'], tier: 'Tier1' }),
+  chairSlots: [
+    disorder.slot('reception_chair', 'gauntlet_police_chair', [5, 1, 3], disorder.poses[:2]),
+    disorder.slot('office_chair', 'gauntlet_police_chair', [13, 1, 5], disorder.poses[2:]),
+    disorder.slot('displaced_chair', 'gauntlet_police_chair', [1, 1, 8]),
+  ],
+  furniture: disorder.furniture + [
     panel,
     woodDoor + {
       id: 'gauntlet_cell_door', name: 'Cell door', color: panel.color,
@@ -69,13 +76,13 @@ local panel = {
     lootContext: { usage: ['Hunting'], tier: 'Tier1' },
     palette: {
       '.': { role: 'opening', material: 'opening' },
+      q: { role: 'opening', material: 'opening' },
       '#': { role: 'shell', material: 'partition' },
       D: { furniture: 'wood_door' },
       O: { furniture: 'wood_door', facing: 'e' },
       L: { furniture: 'wood_door', facing: 'e', lock: { id: 'gauntlet_police_armoury', locked: true } },
       R: { furniture: 'desk', facing: 'e', loot: 'desk' },
       C: { furniture: 'desk', loot: 'gauntlet_police_office_key' },
-      c: { furniture: 'chair' },
       B: { furniture: 'gauntlet_cell_bars' },
       E: { furniture: 'gauntlet_cell_door' },
       b: { furniture: 'bed' },

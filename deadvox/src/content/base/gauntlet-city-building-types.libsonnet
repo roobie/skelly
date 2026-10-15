@@ -125,6 +125,7 @@ local building(id, context, shellId, roomId) = {
     shell('gauntlet_gun_front', 'gauntlet_gun_shop', hunting, shopWindows),
     shell('gauntlet_hardware_front', 'gauntlet_hardware_shop', industrial, shopWindows),
     police.piece,
+  ] + police.chairPieces + [
     room('gauntlet_food_aisles', residential, shopRows, shopTall, {
       C: { furniture: 'counter', loot: 'gauntlet_food_stock' },
       S: stock('gauntlet_food_stock'), G: stock('gauntlet_food_stock'), A: box('gauntlet_food_stock'),
@@ -141,9 +142,10 @@ local building(id, context, shellId, roomId) = {
   ],
   mapAssemblies: [
     building('gauntlet_police_station', hunting, 'gauntlet_police_front', 'gauntlet_police_rooms') + {
+      slots+: police.chairSlots,
       anchors: {
         entry: { kind: 'standing', at: [8, 1, 4] },
-        reception: { kind: 'standing', at: [6, 1, 5] },
+        reception: { kind: 'standing', at: [8, 1, 6] },
         office: { kind: 'standing', at: [12, 1, 6] },
         holding: { kind: 'standing', at: [8, 1, 9] },
         cell_west: { kind: 'standing', at: [4, 1, 13] },

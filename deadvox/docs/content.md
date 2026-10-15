@@ -7,7 +7,7 @@ read_if:
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you're authoring or changing exterior door openings
-  - you're authoring or changing furniture appearance, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
+  - you're authoring or changing furniture appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
 ---
@@ -152,6 +152,8 @@ window hole. See `src/content/base/gauntlet-city-doors.libsonnet`, `gauntlet_cit
 The city pool is authored, not inferred from item usage or building names. Keep prevalence and guarantees in the scenario's named pool so a mod can tune them without changing geometry. Quotas guarantee specialty buildings; residential prevalence comes from weights alone. An impossible quota must fail loudly rather than silently omit a required building. Quota recovery stays bounded and deterministic rather than searching layouts. See `src/core/schema.ts`, `MapPoolSchema` and `PoolRefSchema`, and `src/core/cityPlan.ts`, `cityGridOf`, `cityPoolIssues`, `fillRow` and `buildCityPlan`.
 
 Special buildings must be deliberately designed and curated as plausible places, not generic rooms with different loot. Room function, furnishings, circulation and supplies must agree: a police station needs public reception, working desks, holding cells and a small secured armoury. The gauntlet requires exactly one police station. See `src/content/base/gauntlet-city-police.libsonnet`, `piece`; `src/content/base/gauntlet-city-building-types.libsonnet`, `mapAssemblies`; and `src/content/base/scenarios.jsonnet`, `mapPools`.
+
+Loose furniture in abandoned buildings should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. See `src/content/base/furniture-disorder.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-city-police.libsonnet`, `chairSlots`.
 
 Keep type geometry separate from the pool, and the pool separate from the scenario, so changing prevalence never requires editing a building or restating the scenario: a mod changes one building's weight by overriding the pool by id. Referenced assemblies, pieces, styles and loot tables remain independently overridable by id. See `src/content/base/scenarios.jsonnet` and `src/core/content.ts`, `buildRegistry`.
 
