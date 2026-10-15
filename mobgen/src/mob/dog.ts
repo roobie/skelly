@@ -468,6 +468,7 @@ const PAW_BONES = LEGS.map((leg) => leg.paw);
 export interface DogStance {
   readonly limp?: number;
   readonly headTilt?: number;
+  readonly gait?: 'original' | 'trot';
   /** Bones hidden by accumulated cuts; grounding ignores them so a severed limb is not an invisible support. */
   readonly severed?: ReadonlySet<string> | undefined;
 }
@@ -514,6 +515,14 @@ const groundDogPose = (realized: Realized, pose: Pose, severed?: ReadonlySet<str
  * second, independently tuned number. */
 const FORWARD_SWING_DEG = 16;
 const BACK_SWING_DEG = 12;
+
+const DOG_TROT = {
+  stridePerWithersHeight: 1.77,
+  liftPerWithersHeight: 0.14,
+  supportPerWithersHeight: 0.31,
+  compressionPerWithersHeight: 0.025,
+  pitchDeg: 2,
+} as const;
 /** At full limp the fore-left/hind-right diagonal takes this much shorter steps than the other, so the
  * shamble's timing is uneven. Its planted paws still track the ground exactly: both legs of a stance
  * half solve to the same offset, only the distance covered differs. */
@@ -625,7 +634,7 @@ const DOG_PAIR_OF_LEG: Readonly<Record<string, number>> = {
 /** Every leg's rest sagitta plus the shared stance offsets and the per-diagonal step lengths they imply.
  * Both legs of a stance half are planted at the same Z offsets, so neither can drift against the other;
  * each diagonal's step length is exactly the ground its stance sweeps. */
-const dogStepGeometry = (realized: Realized, limpScale: number) => {
+const dogStepGeometry = (realized: Realized, limpScale: number, original: boolean) => {
   const legs = LEGS.map((leg) => {
     const { u, v } = legSegmentsOf(realized, leg);
     const dy = u[0] + v[0];
@@ -639,8 +648,10 @@ const dogStepGeometry = (realized: Realized, limpScale: number) => {
     };
   });
   const mean = (values: readonly number[]): number => values.reduce((sum, v) => sum + v, 0) / values.length;
-  const frontOffset = mean(legs.map((leg) => leg.frontOffset));
-  const backOffset = mean(legs.map((leg) => leg.backOffset));
+  const frontOffset = original
+    ? mean(legs.map((leg) => leg.frontOffset))
+    : (-boneById(realized.body.bones, 'foreUpper.L').head[1] * DOG_TROT.stridePerWithersHeight) / 4;
+  const backOffset = original ? mean(legs.map((leg) => leg.backOffset)) : -frontOffset;
   const fullStep = backOffset - frontOffset;
   const stepLengths = DOG_PAIRS.map((pair) => (pair.limp ? fullStep * (1 - LIMP_STEP_SHORTEN * limpScale) : fullStep));
   return { legs, frontOffset, stepLengths };
@@ -649,6 +660,7 @@ const dogStepGeometry = (realized: Realized, limpScale: number) => {
 interface LegAnchors {
   /** World Y of the upper-leg head in the base pose with a zero root, before grounding shifts it. */
   readonly headWorldY: number;
+  readonly headShiftZ: number;
   /** World X rotation (degrees) of the upper leg's parent, so a world-frame swing can be written local. */
   readonly parentAngleDeg: number;
 }
@@ -665,17 +677,20 @@ const legAnchors = (realized: Realized, base: Pose): Readonly<Record<string, Leg
     const parentAngleDeg = parent ? (Math.atan2(parent.r[7], parent.r[4]) * 180) / Math.PI : 0;
     anchors[leg.key] = {
       headWorldY: applyPoint(transforms.get(leg.key)!, upper.head)[1],
+      headShiftZ: applyPoint(transforms.get(leg.key)!, upper.head)[2] - upper.head[2],
       parentAngleDeg,
     };
   }
   return anchors;
 };
 
-/** Ground distance (metres) the dog covers in one full stride (both diagonal pairs). Derived from the
- * stance legs' own sweep, so a viewer can advance the walk by distance instead of a tuned phase rate. */
+/** Ground distance per full cycle (both diagonals), shared with the pose's stance sweep. */
 export const dogStrideLength = (realized: Realized, stance: DogStance = {}): number => {
   const limpScale = Math.max(0, Math.min(1, stance.limp ?? 0));
-  return dogStepGeometry(realized, limpScale).stepLengths.reduce((sum, step) => sum + step, 0);
+  return dogStepGeometry(realized, limpScale, stance.gait === 'original').stepLengths.reduce(
+    (sum, step) => sum + step,
+    0,
+  );
 };
 
 /** A staggering diagonal gait driven by ground distance, not wall time: `distance` is how far the body
@@ -689,8 +704,9 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
   if (speed <= 0 || !Number.isFinite(distance)) {
     return base;
   }
-  const { legs, frontOffset, stepLengths } = dogStepGeometry(realized, limpScale);
-  const anchors = legAnchors(realized, base);
+  const original = stance.gait === 'original';
+  const [, height] = boneById(realized.body.bones, 'foreUpper.L').head;
+  const { legs, frontOffset, stepLengths } = dogStepGeometry(realized, limpScale, original);
   const cycleLength = stepLengths[0]! + stepLengths[1]!;
   const cycle = ((distance % cycleLength) + cycleLength) % cycleLength;
   const pairIndex = cycle < stepLengths[0]! ? 0 : 1;
@@ -698,7 +714,14 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
   const stepDistance = pairIndex === 0 ? cycle : cycle - stepLengths[0]!;
   const progress = stepDistance / stepLength;
   const reach = Math.sin(progress * Math.PI);
-  const liftHeight = LIFT_HEIGHT_M * reach;
+  const liftHeight = (original ? LIFT_HEIGHT_M : height * DOG_TROT.liftPerWithersHeight) * reach;
+  const bodyRotations = original
+    ? base.rotations
+    : {
+        ...base.rotations,
+        pelvis: mulMM(base.rotations.pelvis!, rotX(DOG_TROT.pitchDeg * Math.sin(2 * Math.PI * progress))),
+      };
+  const anchors = legAnchors(realized, { ...base, rotations: bodyRotations });
   const blend = progress * progress * (3 - 2 * progress);
   const phase = legs.map((leg) => {
     const legPair = DOG_PAIR_OF_LEG[leg.leg.key]!;
@@ -712,18 +735,19 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
     const arcWorld = anchor.headWorldY + Math.cos(phi) * arcAnkleYRel(leg.u, leg.v, offset) - Math.sin(phi) * restZ;
     return { leg, stance: isStance, offset, lift: isStance ? 0 : liftHeight * sideScale, arcWorld, anchor };
   });
-  // One support height the planted legs share: the higher of the pair's rigid arcs at its current sweep,
-  // so both plant flat instead of one riding its own arc above the other. A swing leg solves to that same
-  // height plus its lift, so it leaves and rejoins the ground exactly as the pair swaps. The arc is
-  // measured through the parent's own rotation, in the world frame the solve targets.
-  const supportY = Math.max(...phase.filter((step) => step.stance).map((step) => step.arcWorld));
-  const rotations: Record<string, Mat3> = { ...base.rotations };
+  // A shared ankle height keeps both diagonals on one ground plane. The trot reserves reach for
+  // knee flex at its widest sweep; footfall compression changes torso height without moving the paws.
+  const supportY = original
+    ? Math.max(...phase.filter((step) => step.stance).map((step) => step.arcWorld))
+    : height *
+      (DOG_TROT.supportPerWithersHeight + DOG_TROT.compressionPerWithersHeight * Math.cos(2 * Math.PI * progress));
+  const rotations: Record<string, Mat3> = { ...bodyRotations };
   for (const { leg, offset, lift, anchor } of phase) {
     // Rotations act in rest-pose world axes while the solve lives in the parent's frame, so rotate the
     // world target back through the parent's own rotation before solving; the upper keeps its own angle.
     const phi = (anchor.parentAngleDeg * Math.PI) / 180;
     const wy = supportY + lift - anchor.headWorldY;
-    const wz = leg.u[1] + leg.v[1] + offset;
+    const wz = leg.u[1] + leg.v[1] + offset - (original ? 0 : anchor.headShiftZ);
     const { swingDeg, foldDeg } = stanceLegAngles(
       leg.u,
       leg.v,
@@ -734,11 +758,8 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
     rotations[leg.leg.lower] = rotX(foldDeg);
     // Keep the foot level: cancel the leg's own swing at the paw, so the sole keeps one orientation and a
     // planted paw's horizontal position is exactly the ankle offset the solve placed.
-    rotations[leg.leg.paw] = rotX(-(swingDeg + foldDeg));
+    rotations[leg.leg.paw] = rotX(-(swingDeg + foldDeg + (original ? 0 : anchor.parentAngleDeg)));
   }
-  // The walk's lurch lives in the uneven step lengths and the swing lift, not a body sway: any root
-  // translation or spine roll would drag the planted forelegs off the ground with it. A head bob rides on
-  // top so the body still reads as drunk, not mechanical.
   const addBodyRotation = (bone: string, delta: Mat3): void => {
     rotations[bone] = mulMM(rotations[bone] ?? IDENTITY_M, delta);
   };

@@ -169,7 +169,10 @@ let gridZ = 0;
 // same spirit as idle.ts's own seed-based phase offset for a crowd of actors sharing one body.
 let idleTime = 0;
 const currentStance = (): IdleStance => idleStanceSelect.value as IdleStance;
+const dogGait: 'original' | 'trot' =
+  new URLSearchParams(location.search).get('dogGait') === 'trot' ? 'trot' : 'original';
 const dogStance = (genome: Genome, severed?: ReadonlySet<string>) => ({
+  gait: dogGait,
   limp: genome.params.limp ?? 0,
   headTilt: genome.params.headTilt ?? 0,
   severed,
@@ -359,6 +362,7 @@ const updateUrl = (): void => {
   params.set('speed', speedInput.value);
   params.set('walk', walkOn.checked ? '1' : '0');
   params.set('stance', idleStanceSelect.value);
+  params.set('dogGait', dogGait);
   if (new URLSearchParams(location.search).get('shot') === '1') {
     params.set('shot', '1');
   }
