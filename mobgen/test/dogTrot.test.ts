@@ -7,19 +7,14 @@ import { dogTemplate } from '../src/mob/dogTemplate.ts';
 
 const dog = realize(generate(dogTemplate, 7));
 
-describe('dog trot comparison', () => {
-  it('covers more ground per cycle and lowers cadence without erasing the impaired diagonal', () => {
-    const original = dogStrideLength(dog, { gait: 'original' });
-    const trot = dogStrideLength(dog);
-    const speed = 2.8;
-    expect(trot).toBeGreaterThan(original);
-    expect(speed / trot).toBeLessThan(speed / original);
+describe('dog trot', () => {
+  it('keeps the impaired gait shorter than the unimpaired trot', () => {
     const impaired = dogStrideLength(dog, { limp: 0.6 });
-    expect(impaired).toBeLessThan(trot);
-    expect(impaired / trot).toBeCloseTo(dogStrideLength(dog, { gait: 'original', limp: 0.6 }) / original);
+    expect(impaired).toBeGreaterThan(0);
+    expect(impaired).toBeLessThan(dogStrideLength(dog));
   });
 
-  it('scales stride with the actual skeleton rather than a fixed metric step', () => {
+  it('scales stride with the skeleton and lowers cadence as stride grows', () => {
     const larger = {
       ...dog,
       body: {
@@ -32,6 +27,8 @@ describe('dog trot comparison', () => {
       },
     };
     expect(dogStrideLength(larger)).toBeCloseTo(dogStrideLength(dog) * 2);
+    const speed = 2.8;
+    expect(speed / dogStrideLength(larger)).toBeLessThan(speed / dogStrideLength(dog));
   });
 
   it.each([0, 0.6])('compensates bob and pitch at both planted diagonals (limp %s)', (limp) => {

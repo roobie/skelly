@@ -29,7 +29,7 @@ The crawler is a distinct prone creature, not a humanoid gait variant: its arm-d
 
 The dog shambler is a quadruped: four paws, a hanging head and a limping diagonal gait whose opposite-corner pairs (fore-left with hind-right, fore-right with hind-left) define it, so it is its own body plan rather than a crouched humanoid. The four paws are the declared supports, and the template is `comparison-only` (`src/core/template.ts`, `TemplateStatus`): it is kept to compare gaits against other quadrupeds, is not fit for a player to meet, and so is never shipped. Consumers refuse it through `consumableTemplate` and the viewer labels it. See `src/mob/dog.ts`, `buildDog`, `dogPose`, `dogGaitPose`, `dogHitPose`, `src/mob/dogTemplate.ts`, `dogTemplate`, and `test/dog.test.ts`.
 
-### Dog gait comparison
+### Dog gait
 
 The trot uses a withers-normalized stride rather than increasing cadence to compensate for a short,
 rigid leg sweep. Its scale is grounded in observed canine trotting proportions
@@ -39,10 +39,6 @@ cycle distance-driven avoids foot jumps when speed changes. Joint flex and footf
 motion must be solved around fixed ground targets, not layered onto planted legs afterwards. The
 impaired diagonal retains its relative shortening so increased stride does not erase the shambler's
 limp. See `src/mob/dog.ts`, `DOG_TROT`, `dogStepGeometry`, `dogStrideLength` and `dogGaitPose`.
-
-The viewer keeps the original gait available for visual judgment; `dogGait=trot` selects the proposal
-and `dogGait=original` selects the comparison. Both use the same body, seed and distance-driven ground.
-See `src/viewer/main.ts`, `dogGait`, `dogStance` and `updateUrl`.
 
 ### Template readiness
 
