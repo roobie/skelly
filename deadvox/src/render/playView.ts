@@ -175,7 +175,10 @@ export const createPlayView = (
   page.addEventListener('pagehide', dispose);
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
-  const flashlight = new Flashlight(scene);
+  const flashlight = new Flashlight(
+    scene,
+    !(config.debug && new URLSearchParams(globalThis.location?.search ?? '').get('torchspill') === '0'),
+  );
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorch(flashlight.light);

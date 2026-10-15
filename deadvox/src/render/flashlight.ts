@@ -7,6 +7,7 @@ import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { DEFAULT_TORCH } from '../core/mood.ts';
 import type { Sky } from '../core/sky.ts';
+import { installFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
 import type { HeldItems } from './hands.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
 
@@ -87,9 +88,15 @@ export class Flashlight {
   private readonly at = new Vector3();
   private readonly ahead = new Vector3();
 
-  constructor(scene: Scene) {
+  private readonly spill: boolean;
+
+  constructor(scene: Scene, spill = true) {
+    this.spill = spill;
     // Before any material compiles; the light chunk is shared by all of them.
     installNearFieldFalloff();
+    if (spill) {
+      installFlashlightSpill();
+    }
     this.light.decay = FLASHLIGHT_DECAY;
     const { shadow } = this.light;
     shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
@@ -146,6 +153,8 @@ export class Flashlight {
     this.light.distance = def.radius;
     this.light.angle = MathUtils.degToRad(def.beam.angleDegrees / 2);
     this.light.penumbra = def.beam.penumbra;
+    // The shader widens the cone without changing its content-defined hotspot.
+    this.light.shadow.focus = this.spill ? spillHalfAngle(this.light.angle) / this.light.angle : 1;
     this.light.position.copy(this.at);
     camera.getWorldDirection(this.ahead);
     this.light.target.position.copy(this.at).addScaledVector(this.ahead, 10);

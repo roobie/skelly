@@ -33,6 +33,8 @@ The Diagnostics interaction-ray toggle draws to the nearer of an opaque hit or t
 
 Look and camera parameters are copied from the URL, making a reported pose reproducible. Use `tools/render-probe.mjs` with a `cam=` pose for headless shader reproduction; inspect the screenshot and pixel scan. SwiftShader is not a GPU, so a clean run cannot rule out driver-specific defects. Flip one debug toggle at a time before theorizing; see `src/debug/lookUrl.ts`, `src/debug/camUrl.ts`, and `src/core/weatheringUrl.ts`.
 
+Compare beam spill at the same nighttime camera pose with `?debug=1&torchspill=0` for the original cone and without `torchspill=0` for the blended profile. Reload between comparisons because the shared shader is installed before materials compile. See `src/render/playView.ts`, `createPlayView`.
+
 Software-rendered browser contracts should exercise logic without paying renderer startup cost. Use render-free mode for DOM/input/simulation assertions and pixel mode only for visual witnesses. A stage that checks a frame-applied effect must wait for that effect before asserting. See `test/browser/stage-mode.mjs`, `modes`, and `tools/ui-browser-contract.mjs`.
 
 ## Browser stages

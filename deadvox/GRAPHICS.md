@@ -20,6 +20,8 @@ Distance fog, the clear background and height mist share the camera's diffuse sk
 
 A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. See `src/render/playView.ts`, `prepareLighting`, and `src/render/flashlight.ts`, `flashlightDaylightScale`.
 
+Battery beams keep their focused hotspot inside a dim, softly fading spill because the surrounding pool should remain readable without becoming as bright as the centre. Blend both lobes in one spot-light profile and widen its shadow camera so the spill cannot shine through occluders or require another shadow pass. The shared path covers handheld, head-mounted and weapon-mounted beams; simulation awareness keeps the authored beam contract independently. See `src/render/flashlightCone.ts`, `withFlashlightSpill`, and `src/render/flashlight.ts`, `Flashlight`.
+
 Post-processing and shadows support the intended mood. Compare the same workload on a real GPU before claiming a performance win; SwiftShader cannot establish reference-GPU cost. Keep image changes separate from waste removal so visual quality remains an operator decision. See `src/bench/post.ts`, `benchDraw`.
 
 Tone mapping, display transfer and colour grading share a fullscreen draw because storing and sampling an intermediate display-space image adds GPU work without adding an effect. Grade remains after tone mapping and transfer so its controls keep their display-referred meaning; bloom stays before them in linear light. See `src/render/moodOutput.ts`, `createMoodOutputPass`, and `src/render/mood.ts`, `Mood`.
