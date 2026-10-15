@@ -21,7 +21,15 @@ try {
     await page.waitForFunction(() => document.querySelector('#world-loading')?.checkVisibility?.() !== true, null, {
       timeout: 180_000,
     });
-    await page.waitForTimeout(8000);
+    await page.waitForFunction(
+      () => {
+        const m = /(\d+) pending/.exec(document.body.innerText);
+        return m !== null && Number(m[1]) <= 2;
+      },
+      null,
+      { timeout: 400_000, polling: 2000 },
+    );
+    await page.waitForTimeout(4000);
     await page.screenshot({ path: `${prefix}${i}.png`, timeout: 90_000 });
     console.log(`shot ${prefix}${i} cam=${cam}`);
     await page.close();
