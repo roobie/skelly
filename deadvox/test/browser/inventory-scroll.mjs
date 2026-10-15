@@ -947,6 +947,9 @@ try {
       const afterRedraw = await page.locator(selector).evaluate((pane) => pane.scrollTop);
       const result = { engine, selector, locked, ...size, ...observed, afterRedraw };
       process.stdout.write(`${JSON.stringify(result)}\n`);
+      if (process.argv[3] && !locked && selector.includes('"around"')) {
+        await page.screenshot({ path: process.argv[3] });
+      }
       if (
         !(observed.top > 0 && observed.pageY === 0 && observed.gameplayWheels === 0 && afterRedraw === observed.top)
       ) {
