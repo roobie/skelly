@@ -21,15 +21,11 @@ try {
     await page.waitForFunction(() => document.querySelector('#world-loading')?.checkVisibility?.() !== true, null, {
       timeout: 180_000,
     });
-    await page.waitForFunction(
-      () => {
-        const m = /(\d+) pending/.exec(document.body.innerText);
-        return m !== null && Number(m[1]) <= 2;
-      },
-      null,
-      { timeout: 400_000, polling: 2000 },
-    );
-    await page.waitForTimeout(4000);
+    for (let t = 0; t < 12; t++) {
+      await page.waitForTimeout(20_000);
+      const text = await page.evaluate(() => /chunks[^\n]*/.exec(document.body.innerText)?.[0]);
+      console.log(`t=${(t + 1) * 20}s ${text}`);
+    }
     await page.screenshot({ path: `${prefix}${i}.png`, timeout: 90_000 });
     console.log(`shot ${prefix}${i} cam=${cam}`);
     await page.close();
