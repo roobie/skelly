@@ -14,6 +14,7 @@ import { planRealFrame } from '../src/game/frameDriver.ts';
 import { IDLE } from '../src/game/session.ts';
 import {
   advance,
+  blockId,
   capture,
   contentLookup,
   createRuntime,
@@ -31,6 +32,19 @@ import {
   seed,
   startRest,
 } from './snapshotTestSupport.ts';
+
+/** Lays authored planks under the player so a sprint window always crosses a footfall surface. */
+const layPlanedBackyard = (runtime: ReturnType<typeof createRuntime>): void => {
+  const plank = blockId('planks');
+  const x0 = Math.floor(runtime.player.body.pos[0]);
+  const z0 = Math.floor(runtime.player.body.pos[2]);
+  const y = Math.floor(runtime.player.body.pos[1]) - 1;
+  for (let bx = x0 - 3; bx <= x0 + 3; bx++) {
+    for (let bz = z0 - 1; bz <= z0 + 1; bz++) {
+      runtime.world.setBlock(bx, y, bz, plank);
+    }
+  }
+};
 
 describe('zombie attack causes', () => {
   it('attributes player damage to the attacking zombie type', () => {
@@ -250,6 +264,7 @@ describe('hamlet save/load continuation', () => {
     expect(uninterrupted.sim.needs.stamina).toBeGreaterThan(0);
     expect(uninterrupted.sim.needs.stamina).toBeLessThan(STAMINA.winded);
     expect(loadedJumping.session.sprinting).toBe(true);
+    layPlanedBackyard(uninterrupted);
     const sprintSnapshot = capture(uninterrupted);
     expect(sprintSnapshot.character.player.sprinting).toBe(true);
 
