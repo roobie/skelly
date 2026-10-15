@@ -30,7 +30,12 @@ const fixtureBuild = buildRegistry([
   itemSource('items-tools.json', ['kitchen_knife']),
   itemSource('items-other.json', ['portable_radio', 'scrap_metal']),
   { source: 'models-melee.json', data: JSON.parse(readFileSync(join(base, 'models-melee.json'), 'utf8')) as unknown },
-  { source: 'recipes.json', data: { skills: recipes.skills.filter(({ id }) => id === 'crafting') } },
+  {
+    source: 'recipes.json',
+    data: {
+      skills: recipes.skills.filter(({ id }) => id === 'crafting').map(({ startingRecipes: _, ...skill }) => skill),
+    },
+  },
 ]);
 if (fixtureBuild.issues.length > 0) {
   throw new Error(`Invalid disassembly fixture: ${JSON.stringify(fixtureBuild.issues)}`);

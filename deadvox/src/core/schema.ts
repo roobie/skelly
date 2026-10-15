@@ -1234,7 +1234,8 @@ const SiteLayoutSchema = strictObject({
     strictObject({
       points: pipe(array(LayoutPoint), minLength(2)),
       width: pipe(Metres, minValue(Number.MIN_VALUE)),
-      surface: optional(picklist(['dirt', 'asphalt'])),
+      /** The block the track's surface is made of. */
+      surface: Id,
     }),
   ),
   /** Observation only: playtest metrics record when the player first stands in each beat's area. */

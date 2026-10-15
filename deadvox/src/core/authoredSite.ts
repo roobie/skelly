@@ -315,7 +315,7 @@ export class AuthoredSite implements Site {
       top: (x, z) => {
         const track = trackAt(x, z);
         if (track) {
-          return registry.blockIds.get(track.surface ?? 'dirt');
+          return registry.blockIds.get(track.surface);
         }
         return leafLitterAt(this.treeIndex.at(x, z), x, z) ? registry.blockIds.get('leaf_litter') : undefined;
       },
