@@ -14,7 +14,7 @@ local wall = [
   '#..............#..', '#..............#..', '#..............#..', '################..',
 ];
 local shopWindows = [
-  '..................', '..................', '###....DD....###..', '#..............#..',
+  '..................', '..................', '###...#DD#...###..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#..', '################..',
@@ -60,8 +60,8 @@ local shell(id, style, context, windows) =
   ownership: { layers: [shellClaim(layer) for layer in layers] },
   anchors: {}, ports: [],
 };
-local room(id, context, rows, tall, furnishings) =
-  local layers = [rows, rows, tall, tall, empty, empty, empty]; {
+local room(id, context, rows, tall, furnishings, upper=empty) =
+  local layers = [rows, rows, tall, tall, upper, upper, upper]; {
   id: id, size: [14, 7, 12], style: 'brick_townhouse', lootContext: context,
   palette: { [key]: palette[key] for key in std.objectFields(palette) if key != 'T' } + furnishings,
   layers: layers,
@@ -77,6 +77,11 @@ local policeTall = [
   '..............', '..............', '..............', '..............',
   '..............', '..............', '..............', '######DD######',
   '..............', '.GG...........', '..............', '..............',
+];
+local policeUpper = [
+  '..............', '..............', '..............', '..............',
+  '..............', '..............', '..............', '##############',
+  '..............', '..............', '..............', '..............',
 ];
 local shopRows = [
   '..............', '..............', '.CC...........', '..............',
@@ -134,7 +139,7 @@ local building(id, context, shellId, roomId) = {
       C: { furniture: 'desk', loot: 'gauntlet_police_gear' },
       G: { furniture: 'range_rack', loot: 'gauntlet_civilian_guns' },
       A: box('gauntlet_ammunition'),
-    }),
+    }, policeUpper),
     room('gauntlet_food_aisles', residential, shopRows, shopTall, {
       C: { furniture: 'counter', loot: 'gauntlet_food_stock' },
       S: stock('gauntlet_food_stock'), G: stock('gauntlet_food_stock'), A: box('gauntlet_food_stock'),

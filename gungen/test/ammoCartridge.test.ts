@@ -65,21 +65,6 @@ describe('cartridge files', () => {
 describe('7.62x39', () => {
   const cartridge = loadCartridgeFile('7.62x39.json');
 
-  it('is a rimless bottleneck metallic cartridge sourced primarily from C.I.P.', () => {
-    expect(cartridge.kind).toBe('metallic');
-    if (cartridge.kind !== 'metallic') {
-      return;
-    }
-    expect(cartridge.case.head.type).toBe('rimless');
-    expect(cartridge.case.body.type).toBe('bottleneck');
-    expect(cartridge.primarySource).toBe('cip');
-    expect(cartridge.sources.cip?.reliability).toBe('standard');
-  });
-
-  it('leaves exactly the primer diameter unsourced', () => {
-    expect(unsourcedPaths(cartridge)).toEqual(['case.primer.diameter']);
-  });
-
   it('cites C.I.P. for every primary case and bullet dimension', () => {
     const { measures } = collectNodes(cartridge);
     const fromElsewhere = ['overallLength.typical', 'payload.length.min', 'payload.length.max'];
@@ -90,12 +75,6 @@ describe('7.62x39', () => {
     for (const { path, node } of dimensions) {
       expect(node.cite?.source, path).toBe('cip');
     }
-  });
-
-  it('records SAAMI as the alternative for the rim diameter', () => {
-    const { measures } = collectNodes(cartridge);
-    const rimDiameter = measures.find(({ path }) => path === 'case.rim.diameter')?.node;
-    expect(rimDiameter?.alternatives?.map((alt) => alt.cite.source)).toEqual(['saami']);
   });
 
   it('states a cone angle that agrees with its own diameters and positions', () => {

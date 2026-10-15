@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityPlan.ts';
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
+import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { placedPoint } from '../src/core/templates.ts';
+import { ownershipCell } from '../src/core/templateOwnership.ts';
+import { type CompiledTemplate, compileAssembly, type PlacedPiece, placedPoint } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { buildingLootEvidence, buildingVariants, cityBuildingDraws } from './fixtures/cityBuildings.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
@@ -107,12 +108,9 @@ it('rejects ambiguous city pool identities instead of choosing a template or ass
       lootContext: data.mapAssemblies![0]!.lootContext,
     },
   ];
+  data.mapPools = [fixturePool([{ ref: { kind: 'template', id: 'fixture_route' }, weight: 1 }])];
   const { registry, issues } = buildRegistry([{ source: 'fixture-city-kits.json', data }]);
   expect(issues).toEqual([]);
-  registry.mapPools.set('fixture_pool', {
-    id: 'fixture_pool',
-    choices: [{ ref: { kind: 'template', id: 'fixture_route' }, weight: 1 }],
-  });
   expect(scenarioPlanIssues(registry, fixtureScenario())).toContainEqual([
     '.city.pool.choices[0].ref',
     'ambiguous template and assembly "fixture_route"',
@@ -214,16 +212,17 @@ describe('content-owned city building types', () => {
 
   it('reports a pool ref that names no building of its kind, or one that does not fit', () => {
     const scenario = fixtureScenario();
-    const { registry } = buildRegistry(fixtureScenarioSources(scenario));
     const refAt = (kind: 'template' | 'assembly', id: string) => {
-      registry.mapPools.set('fixture_pool', { id: 'fixture_pool', choices: [{ ref: { kind, id }, weight: 1 }] });
-      return scenarioPlanIssues(registry, scenario).filter(([path]) => path === '.city.pool.choices[0].ref');
+      const pool = fixturePool([{ ref: { kind, id }, weight: 1 }]);
+      const { issues } = buildRegistry(fixtureScenarioSources(scenario, fixtureService(), pool));
+      return issues.filter(({ path }) => path.endsWith('.city.pool.choices[0].ref'));
     };
     expect(refAt('template', 'no_such_building')).toHaveLength(1);
     expect(refAt('assembly', 'fixture_house')).toHaveLength(1);
     expect(refAt('template', 'fixture_house')).toEqual([]);
-    scenario.city.blockX = 6;
-    expect(refAt('template', 'fixture_house')).toHaveLength(1);
+    expect(refAt('template', 'fixture_service')).toEqual([]);
+    scenario.city.blockX = 13;
+    expect(refAt('template', 'fixture_service')).toHaveLength(1);
   });
 
   it('lets one pool entry from a mod override a single building weight', () => {
@@ -286,5 +285,86 @@ describe('content-owned city building types', () => {
         expect(source.issues, source.label).toEqual([]);
       }
     }
+  });
+});
+
+const insideKitPlane = (compiled: CompiledTemplate, x: number, z: number, y: number): boolean =>
+  x >= 0 && z >= 0 && y >= 0 && x < compiled.size[0] && z < compiled.size[2] && y < compiled.size[1];
+
+/** Floods a wall plane from the given cells and returns the bounding box, in cells. */
+const floodOpening = (
+  seed: readonly (readonly [number, number])[],
+  solid: (y: number, along: number) => boolean,
+): { across: number; height: number } => {
+  const pending: [number, number][] = seed.map(([y, along]) => [y, along]);
+  const seen = new Set<string>();
+  let minAlong = Number.POSITIVE_INFINITY;
+  let maxAlong = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  while (pending.length > 0) {
+    const [y, along] = pending.pop()!;
+    const key = `${y},${along}`;
+    if (seen.has(key) || solid(y, along)) {
+      continue;
+    }
+    seen.add(key);
+    minAlong = Math.min(minAlong, along);
+    maxAlong = Math.max(maxAlong, along);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+    pending.push([y + 1, along], [y - 1, along], [y, along + 1], [y, along - 1]);
+  }
+  return { across: maxAlong - minAlong + 1, height: maxY - minY + 1 };
+};
+
+const doorOpening = (registry: Registry, compiled: CompiledTemplate, piece: PlacedPiece) => {
+  const acrossX = piece.facing === 'e' || piece.facing === 'w';
+  const [px, py, pz] = piece.pos;
+  const [sx, sy, sz] = piece.size;
+  const plane = acrossX ? px : pz;
+  const alongStart = acrossX ? pz : px;
+  const alongLength = acrossX ? sz : sx;
+  const solid = (y: number, along: number): boolean => {
+    const x = acrossX ? plane : along;
+    const z = acrossX ? along : plane;
+    return (
+      !insideKitPlane(compiled, x, z, y) ||
+      registry.blocks[compiled.blocks[ownershipCell(compiled.size, [x, y, z])]!]?.solid === true
+    );
+  };
+  const seed: [number, number][] = [];
+  for (let y = py; y < py + sy; y++) {
+    for (let along = alongStart; along < alongStart + alongLength; along++) {
+      seed.push([y, along]);
+    }
+  }
+  return floodOpening(seed, solid);
+};
+
+describe('gauntlet door openings', () => {
+  it('places every wall door in an opening that matches the door size', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const assemblies = [...registry.mapAssemblies.values()].filter((assembly) => assembly.id.startsWith('gauntlet'));
+    expect(assemblies.length).toBeGreaterThan(0);
+    let doors = 0;
+    for (const assembly of assemblies) {
+      const compiled = compileAssembly(registry, assembly, { seed: 1, siteId: `door-openings:${assembly.id}` });
+      for (const piece of compiled.pieces) {
+        const def = registry.furniture.get(piece.furniture);
+        // A hatch opens through the space above and below it, not across a wall.
+        if (!def?.door || def.shape || def.door.hatch) {
+          continue;
+        }
+        doors += 1;
+        const [width, height, depth] = piece.size;
+        const acrossX = piece.facing === 'e' || piece.facing === 'w';
+        const opening = doorOpening(registry, compiled, piece);
+        const label = `${assembly.id} ${piece.furniture} at ${piece.pos.join(',')}`;
+        expect(opening.across, `${label} opening width`).toBe(acrossX ? depth : width);
+        expect(opening.height, `${label} opening height`).toBe(height);
+      }
+    }
+    expect(doors).toBeGreaterThan(0);
   });
 });
