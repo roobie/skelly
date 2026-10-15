@@ -107,37 +107,73 @@ export const advanceShamblerFootsteps = (
 /** The authored shambler footstep event for a block; a block without a contract (air) is silent. */
 export const shamblerFootstepEventForBlock = (block: BlockDef): SoundEventId | undefined => block.footsteps?.shambler;
 
+/** An actor's horizontal half extents in blocks; halfDepth defaults to a square footprint. */
+export interface Footprint {
+  halfWidth: number;
+  halfDepth?: number;
+}
+
 /**
- * Samples the block cell immediately below a grounded actor's feet. A chunk id the registry does not cover
- * is an engine invariant failure: authored validation cannot vouch for chunk data written by another pack.
+ * The blocks under an actor's footprint, nearest to its centre first. A chunk id the registry does not
+ * cover is an engine invariant failure: authored validation cannot vouch for chunk data written by
+ * another pack.
  */
-const blockUnderfoot = (
+const supportBlocks = (
   position: Vec3,
+  footprint: Footprint,
   blockIdAt: (x: number, y: number, z: number) => number,
   blocks: readonly BlockDef[],
-): BlockDef => {
-  const x = Math.floor(position[0]);
+): BlockDef[] => {
   const y = Math.floor(position[1] + 0.01) - 1;
-  const z = Math.floor(position[2]);
-  const block = blocks[blockIdAt(x, y, z)];
-  if (!block) {
-    throw new Error(`chunk block under (${x}, ${y}, ${z}) is outside the content registry`);
+  const { halfWidth, halfDepth: footprintHalfDepth } = footprint;
+  const halfDepth = footprintHalfDepth ?? halfWidth;
+  const found: { block: BlockDef; distance: number; x: number; z: number }[] = [];
+  for (let x = Math.floor(position[0] - halfWidth); x < Math.ceil(position[0] + halfWidth); x++) {
+    for (let z = Math.floor(position[2] - halfDepth); z < Math.ceil(position[2] + halfDepth); z++) {
+      const block = blocks[blockIdAt(x, y, z)];
+      if (!block) {
+        throw new Error(`chunk block under (${x}, ${y}, ${z}) is outside the content registry`);
+      }
+      const dx = x + 0.5 - position[0];
+      const dz = z + 0.5 - position[2];
+      found.push({ block, distance: dx * dx + dz * dz, x, z });
+    }
   }
-  return block;
+  // An actor on a ledge can straddle supports; nearest to the centre wins, ties by fixed cell order.
+  found.sort((a, b) => a.distance - b.distance || a.x - b.x || a.z - b.z);
+  return found.map(({ block }) => block);
 };
 
-/** Selects the authored player footstep event for the block underfoot, if the block declares one. */
+/** Selects the authored player footstep event for the nearest supporting block, if it declares one. */
 export const footstepEventAt = (
   position: Vec3,
+  footprint: Footprint,
   blockIdAt: (x: number, y: number, z: number) => number,
   blocks: readonly BlockDef[],
-): SoundEventId | undefined => footstepEventForBlock(blockUnderfoot(position, blockIdAt, blocks));
+): SoundEventId | undefined => {
+  for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
+    const event = footstepEventForBlock(block);
+    if (event !== undefined) {
+      return event;
+    }
+  }
+  return undefined;
+};
 
-/** Selects the authored shambler footstep event for the block underfoot, if the block declares one. */
+/** Selects the authored shambler footstep event for the nearest supporting block, if it declares one. */
 export const shamblerFootstepEventAt = (
   position: Vec3,
+  footprint: Footprint,
   blockIdAt: (x: number, y: number, z: number) => number,
   blocks: readonly BlockDef[],
-): SoundEventId | undefined => shamblerFootstepEventForBlock(blockUnderfoot(position, blockIdAt, blocks));
+): SoundEventId | undefined => {
+  for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
+    const event = shamblerFootstepEventForBlock(block);
+    if (event !== undefined) {
+      return event;
+    }
+  }
+  return undefined;
+};
 
 export const isHardLanding = (fallHeightMetres: number): boolean => fallHeightMetres >= HARD_LANDING_METRES;

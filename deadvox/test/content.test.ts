@@ -544,6 +544,63 @@ describe('content', () => {
     ).toEqual([]);
   });
 
+  it('requires a suppressed shot sound on a firearm whose model can mount a suppressor', () => {
+    const data = {
+      items: [
+        {
+          id: 'fixture_gun',
+          economy: { usage: [], tiers: [] },
+          name: 'Fixture gun',
+          category: 'weapon',
+          weight: 1,
+          size: [1, 1],
+          model: 'fixture_gun',
+          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot' },
+        },
+        {
+          id: 'fixture_suppressor',
+          economy: { usage: [], tiers: [] },
+          name: 'Fixture suppressor',
+          category: 'misc',
+          weight: 1,
+          size: [1, 2],
+          model: 'fixture_suppressor',
+        },
+      ],
+      models: [
+        {
+          id: 'fixture_gun',
+          file: 'assets/models/fixture_gun.glb',
+          compatibility: { 'barrel.muzzle.0': ['fixture-suppressor'] },
+        },
+        {
+          id: 'fixture_suppressor',
+          file: 'assets/models/fixture_suppressor.glb',
+          attachment: {
+            id: 'fixture-suppressor',
+            massKg: 0.4,
+            kind: 'suppressor',
+            mount: 'muzzle',
+            mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
+            properties: { noiseFactor: 0.25 },
+          },
+        },
+      ],
+    };
+    const source = 'suppressor-fixture.json';
+    expect(buildRegistry([baseSounds, { source, data }]).issues).toContainEqual({
+      source,
+      path: 'items[0].firearm.suppressedShotSound',
+      message: 'a suppressor-mountable firearm needs a suppressed shot sound',
+    });
+
+    const suppressed = structuredClone(data) as typeof data & {
+      items: { firearm?: { suppressedShotSound?: string } }[];
+    };
+    suppressed.items[0]!.firearm!.suppressedShotSound = 'gunshot_m4_suppressed';
+    expect(buildRegistry([baseSounds, { source, data: suppressed }]).issues).toEqual([]);
+  });
+
   it.each([SKILL_LEVEL_MIN - 1, SKILL_LEVEL_MAX + 1])(
     'rejects recipe skill level %s outside the character scale',
     (level) => {

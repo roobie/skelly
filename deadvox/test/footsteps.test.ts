@@ -22,15 +22,34 @@ const FIXTURE_BLOCK = {
   solid: true,
   footsteps: { player: 'footstep_grass', shambler: 'shambler_step_grass' },
 };
+const FIXTURE_PLANK = {
+  id: 'fixture_plank',
+  name: 'Plank',
+  color: '#8a6a3f',
+  solid: true,
+  footsteps: { player: 'footstep_wood', shambler: 'shambler_step_wood' },
+};
 const fixtureRegistry = () =>
-  buildRegistry([soundsSource, { source: 'fixture-blocks.json', data: { blocks: [FIXTURE_BLOCK] } }]);
+  buildRegistry([soundsSource, { source: 'fixture-blocks.json', data: { blocks: [FIXTURE_BLOCK, FIXTURE_PLANK] } }]);
 
 describe('player footsteps', () => {
   it('resolves a new block id from its authored footstep selection without a code edit', () => {
     const { registry, issues } = fixtureRegistry();
     expect(issues).toEqual([]);
     const runtimeId = registry.blockIds.get(FIXTURE_BLOCK.id)!;
-    expect(footstepEventAt([0.4, 1.2, 0.6], () => runtimeId, registry.blocks)).toBe('footstep_grass');
+    expect(footstepEventAt([0.4, 1.2, 0.6], { halfWidth: 0.3 }, () => runtimeId, registry.blocks)).toBe(
+      'footstep_grass',
+    );
+  });
+
+  it('takes the supporting block event when the centre cell is over air', () => {
+    const { registry } = fixtureRegistry();
+    const plank = registry.blockIds.get(FIXTURE_PLANK.id)!;
+    // The actor stands on a plank ledge with its centre over the air cell beside it.
+    const blockIdAt = (x: number) => (x === 1 ? plank : 0);
+    expect(footstepEventAt([0.9, 1, 0.5], { halfWidth: 0.6, halfDepth: 0.6 }, blockIdAt, registry.blocks)).toBe(
+      'footstep_wood',
+    );
   });
 
   it('rejects a footstep event the pack does not define, naming the authored path', () => {
@@ -51,7 +70,7 @@ describe('player footsteps', () => {
     const { registry } = buildRegistry([]);
     const air = registry.blocks[registry.blockIds.get('air')!]!;
     expect(footstepEventForBlock(air)).toBeUndefined();
-    expect(() => footstepEventAt([0, 1, 0], () => 999, registry.blocks)).toThrow();
+    expect(() => footstepEventAt([0, 1, 0], { halfWidth: 0.3 }, () => 999, registry.blocks)).toThrow();
   });
 
   it('uses the configured walking, jogging, and sprinting distances between footfalls', () => {

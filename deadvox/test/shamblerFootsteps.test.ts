@@ -169,7 +169,8 @@ describe('shambler footsteps', () => {
     let sampledCell: Vec3 | undefined;
     expect(
       shamblerFootstepEventAt(
-        [2.4, 1.3, 3.8],
+        [2.5, 1.3, 3.5],
+        { halfWidth: 0.3 },
         (x, y, z) => {
           sampledCell = [x, y, z];
           return runtimeId;
@@ -178,6 +179,15 @@ describe('shambler footsteps', () => {
       ),
     ).toBe('shambler_step_grass');
     expect(sampledCell).toEqual([2, 0, 3]);
+    // Centre over air, footprint on the mossy block: the supporting cell's contract still sounds.
+    expect(
+      shamblerFootstepEventAt(
+        [0.9, 1, 0.5],
+        { halfWidth: 0.6, halfDepth: 0.6 },
+        (x) => (x === 1 ? runtimeId : 0),
+        fixture.registry.blocks,
+      ),
+    ).toBe('shambler_step_grass');
     const air = fixture.registry.blocks[fixture.registry.blockIds.get('air')!]!;
     expect(shamblerFootstepEventForBlock(air)).toBeUndefined();
   });

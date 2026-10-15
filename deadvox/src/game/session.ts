@@ -952,7 +952,7 @@ export const createSession = (options: SessionOptions) => {
     const footsteps = advanceFootsteps(footstepClock, travelled > 0 ? playerMovement() : 'still', travelled);
     footstepClock = footsteps.clock;
     for (let i = 0; i < footsteps.steps; i++) {
-      const event = footstepEventAt(feet(), (x, y, z) => world.getBlock(x, y, z), registry.blocks);
+      const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), registry.blocks);
       if (event) {
         playPlayerSound(event, time);
       }
@@ -1064,7 +1064,12 @@ export const createSession = (options: SessionOptions) => {
       );
     },
     onFootstep: (position, id, mode, zombie) => {
-      const event = shamblerFootstepEventAt(position, (x, y, z) => world.getBlock(x, y, z), registry.blocks);
+      const event = shamblerFootstepEventAt(
+        position,
+        zombie.body,
+        (x, y, z) => world.getBlock(x, y, z),
+        registry.blocks,
+      );
       if (!event) {
         return;
       }
