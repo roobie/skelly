@@ -185,16 +185,24 @@ describe('city pool quotas', () => {
     for (const id of ['quota_a', 'quota_b', 'filler']) {
       registry.templates.set(id, { ...house, id });
     }
-    const grid = {
+    const gridWith = (templates: { id: string; weight: number; atLeast?: number; atMost?: number }[]) => ({
       ...cityGridOf(registry, scenario.city),
       blockX: 9,
-      templates: [
-        { id: 'quota_a', weight: 0, atLeast: 1 },
-        { id: 'quota_b', weight: 1, atLeast: 1, atMost: 1 },
-        { id: 'filler', weight: 2 },
-      ],
-    };
-    for (const seed of Seeds) {
+      templates,
+    });
+    const quotaA = { id: 'quota_a', weight: 0 };
+    const quotaB = { id: 'quota_b', weight: 1, atMost: 1 };
+    const filler = { id: 'filler', weight: 2 };
+    const placedB = (templates: Parameters<typeof gridWith>[0], seed: number) =>
+      (countsOf(buildCityPlan({ seed, registry, floor: 0, grid: gridWith(templates), scenario })).get('quota_b') ?? 0) >
+      0;
+    // Displacement depends on the RNG stream, so pick seeds by the property instead of from `Seeds`.
+    const displacing = Array.from({ length: 200 }, (_, seed) => seed).filter(
+      (seed) => placedB([quotaA, quotaB, filler], seed) && !placedB([{ ...quotaA, atLeast: 1 }, quotaB, filler], seed),
+    );
+    expect(displacing.length).toBeGreaterThan(0);
+    const grid = gridWith([{ ...quotaA, atLeast: 1 }, { ...quotaB, atLeast: 1 }, filler]);
+    for (const seed of displacing) {
       const counts = countsOf(buildCityPlan({ seed, registry, floor: 0, grid, scenario }));
       expect(counts.get('quota_a') ?? 0).toBeGreaterThanOrEqual(1);
       expect(counts.get('quota_b') ?? 0).toBeGreaterThanOrEqual(1);
