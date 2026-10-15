@@ -13,6 +13,7 @@ import { browserStageUrl } from './stage-mode.mjs';
 const { firefox } = await loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
+// argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
 const RACK_GRID = [5, 6];
