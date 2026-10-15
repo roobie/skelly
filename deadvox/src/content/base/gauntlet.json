@@ -15856,8 +15856,8 @@
           "################.."
         ],
         [
-          ".ababababababab...",
-          ".ababababababab...",
+          "..................",
+          "..................",
           "###...#DD#...###..",
           "#..............#..",
           "#..............#..",
@@ -15874,8 +15874,8 @@
           "################.."
         ],
         [
-          "..................",
-          "..................",
+          ".ababababababab...",
+          ".ababababababab...",
           "#TTTTTTTTTTTTTT#..",
           "#..............#..",
           "#..............#..",
@@ -15989,8 +15989,8 @@
             "SSSSSSSSSSSSSSSSAA"
           ],
           [
-            "ASSSSSSSSSSSSSSAAA",
-            "ASSSSSSSSSSSSSSAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
             "SSSAAASSSSAAASSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -16007,8 +16007,8 @@
             "SSSSSSSSSSSSSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "ASSSSSSSSSSSSSSAAA",
+            "ASSSSSSSSSSSSSSAAA",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",

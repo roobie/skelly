@@ -159,7 +159,7 @@ local yard(block) = { role: 'trim', block: block };
       [0, 1, 13, 'l'], [1, 1, 13, 'l'], [2, 1, 13, 'l'], [3, 1, 13, 'l'],
     ]),
     shell('gauntlet_food_front', 'gauntlet_food_shop', residential, shopWindows, { a: 'awning_a', b: 'awning_b', p: 'produce' }, [
-      [3, 0, 1, 'ababababababab'], [3, 1, 1, 'ababababababab'],
+      [4, 0, 1, 'ababababababab'], [4, 1, 1, 'ababababababab'],
       [0, 1, 2, 'pp'], [0, 1, 12, 'pp'], [1, 1, 2, 'p'], [1, 1, 13, 'p'],
     ]),
     shell('gauntlet_gun_front', 'gauntlet_gun_shop', hunting, shopWindows, { k: 'grille', s: 'bags' }, [
