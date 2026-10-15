@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildCityPlan, servicePlacement } from '../src/core/cityPlan.ts';
+import { buildCityPlan, cityGridOf, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { worldSolid } from '../src/core/collision.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -37,6 +37,7 @@ const registry = {
   blockIds: new Map(BUNDLED_CONTENT.registry.blockIds),
   templates: new Map([...BUNDLED_CONTENT.registry.templates, ...own.registry.templates]),
   furniture: new Map([...BUNDLED_CONTENT.registry.furniture, ...own.registry.furniture]),
+  mapPools: new Map([...BUNDLED_CONTENT.registry.mapPools, ...own.registry.mapPools]),
   body: new Map([...BUNDLED_CONTENT.registry.body, ...own.registry.body]),
   compression: new Map([...BUNDLED_CONTENT.registry.compression, ...own.registry.compression]),
 };
@@ -48,7 +49,7 @@ const floor = CHUNK;
 
 describe('owned hatch/ladder portal fixtures', () => {
   it.each([0, 1, 2, 3] as const)('descends and returns through a rotated chunk-seam portal, turn %s', (turn) => {
-    const grid = { ...profile.city, street: CHUNK - profile.city.pad - 2 };
+    const grid = { ...cityGridOf(registry, profile.city), street: CHUNK - profile.city.pad - 2 };
     const basePlan = buildCityPlan({ seed: 73, registry, floor, grid, scenario: profile });
     const placement: Placement = servicePlacement({ template, floor, grid, cell: turn < 2 ? [0, -1] : [-1, 0], turn });
     const site = new CitySite(73, registry, scale, { ...basePlan, placements: [placement], service: placement });

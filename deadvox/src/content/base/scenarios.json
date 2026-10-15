@@ -1,4 +1,67 @@
 {
+  "mapPools": [
+    {
+      "choices": [
+        {
+          "ref": {
+            "id": "gauntlet_city_1",
+            "kind": "assembly"
+          },
+          "weight": 36
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_2",
+            "kind": "assembly"
+          },
+          "weight": 30
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_3",
+            "kind": "assembly"
+          },
+          "weight": 18
+        },
+        {
+          "ref": {
+            "id": "gauntlet_food_store",
+            "kind": "assembly"
+          },
+          "weight": 6
+        },
+        {
+          "ref": {
+            "id": "gauntlet_hardware_store",
+            "kind": "assembly"
+          },
+          "weight": 4
+        },
+        {
+          "ref": {
+            "id": "gauntlet_medical_site",
+            "kind": "assembly"
+          },
+          "weight": 3
+        },
+        {
+          "ref": {
+            "id": "gauntlet_police_station",
+            "kind": "assembly"
+          },
+          "weight": 2
+        },
+        {
+          "ref": {
+            "id": "gauntlet_gun_store",
+            "kind": "assembly"
+          },
+          "weight": 1
+        }
+      ],
+      "id": "gauntlet_city"
+    }
+  ],
   "scenarios": [
     {
       "body": "player",
@@ -15,10 +78,10 @@
           "height": 8,
           "thickness": 2
         },
+        "pool": "gauntlet_city",
         "rows": 4,
         "street": 12,
-        "streetProps": ["gauntlet_car_wreck"],
-        "templates": ["gauntlet_city_1", "gauntlet_city_2", "gauntlet_city_3"]
+        "streetProps": ["gauntlet_car_wreck"]
       },
       "composition": {
         "descents": [

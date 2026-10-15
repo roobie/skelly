@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildCityPlan, scenarioPlanIssues, servicePlacement } from '../src/core/cityPlan.ts';
+import { buildCityPlan, cityGridOf, scenarioPlanIssues, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
@@ -75,10 +75,11 @@ const fixture = () => {
 describe('authored scenario composition', () => {
   it('places fixed container and surface items at the turned anchor independent of column requests', () => {
     const { profile, registry } = fixture();
-    const base = buildCityPlan({ seed: 7, registry, floor: 32, grid: profile.city, scenario: profile });
+    const grid = cityGridOf(registry, profile.city);
+    const base = buildCityPlan({ seed: 7, registry, floor: 32, grid, scenario: profile });
     const compiled = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
     for (const turn of [0, 1, 2, 3] as const) {
-      const service = servicePlacement({ template: compiled, floor: 32, grid: profile.city, cell: [-1, 0], turn });
+      const service = servicePlacement({ template: compiled, floor: 32, grid, cell: [-1, 0], turn });
       const composition = composeScenario(registry, profile, service, 32)!;
       const site = new CitySite(7, registry, makeScale(0.5), {
         ...base,
@@ -139,13 +140,14 @@ describe('authored scenario composition', () => {
 
   it('keeps public leads at separate locations and destination landmarks in the finished plan', () => {
     const { profile, registry } = fixture();
-    const plan = buildCityPlan({ seed: 8, registry, floor: 32, grid: profile.city, scenario: profile });
+    const grid = cityGridOf(registry, profile.city);
+    const plan = buildCityPlan({ seed: 8, registry, floor: 32, grid, scenario: profile });
     const { leads, landmarks } = plan.composition!;
     expect(leads[0]!.origin).not.toEqual(leads[1]!.origin);
     for (const placement of [...leads, ...landmarks]) {
       expect(plan.placements).toContain(placement);
     }
-    const benchmark = buildCityPlan({ seed: 8, registry, floor: 32, grid: profile.city });
+    const benchmark = buildCityPlan({ seed: 8, registry, floor: 32, grid });
     expect(new CitySite(8, registry, makeScale(0.5), benchmark).authoredPlacements).toEqual([]);
   });
 });
@@ -155,7 +157,13 @@ it('plans incidental utilities in addition to the reserved campus', () => {
   const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
   expect(profile).toBeDefined();
   const scale = makeScale(0.5);
-  const plan = buildCityPlan({ seed: 9, registry, floor: 64, grid: profile.city, scenario: profile });
+  const plan = buildCityPlan({
+    seed: 9,
+    registry,
+    floor: 64,
+    grid: cityGridOf(registry, profile.city),
+    scenario: profile,
+  });
   const site = new CitySite(9, registry, scale, plan);
   expect(
     site.placements.some((placement: Placement) =>
