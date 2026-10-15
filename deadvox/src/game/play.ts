@@ -3544,7 +3544,7 @@ export const startPlay = (
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
-    const visible = hudVisibility(hudOptions, false, screen.isOpen || reading.isOpen || mainMenuOpen);
+    const visible = hudVisibility(hudOptions, false, menuState.menuPointer);
     let mark = realNow();
     prepareStreaming(now);
     meshingQueueMs = realNow() - mark;

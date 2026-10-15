@@ -80,7 +80,7 @@ describe('HUD options', () => {
   });
 
   it('hides the interaction hint while a modal screen is open and leaves the other elements alone', () => {
-    const settings = { ...DEFAULT_HUD_OPTIONS, shown: true };
+    const settings = { ...DEFAULT_HUD_OPTIONS, shown: true, interaction: true };
     const open = hudVisibility(settings, false, true);
     expect(open.interaction).toBe(false);
     expect(open).toEqual({ ...hudVisibility(settings), interaction: false });
