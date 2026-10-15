@@ -29,6 +29,10 @@ Every cell is unclaimed, owned solid or owned air. Air excavates; unclaimed cell
 terrain alone. Children stay inside their delegated slots. Siblings never overwrite each
 other, even when their materials agree. Collision diagnostics identify both owners and the
 cell. Stairs and excavation use the same authority rather than a privileged post-pass.
+Reserved cells are owned air that body proofs may rely on; other owned air only
+excavates. An ownership layer must agree with the literal blocks and with every delegated
+child's footprint so a mark cannot promise space that a child fills. See
+`deadvox/src/core/templateOwnership.ts`, `compileOwnership`.
 
 Reserve walking volume, support and connector mouths before attaching rooms or clutter.
 Role palettes separate structural meaning from material choice: interior flooring must

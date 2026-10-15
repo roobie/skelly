@@ -1,29 +1,15 @@
 ---
 read_if:
-  - you author browser mods or change their identity contract
-  - you change content schemas, validation, registry merging, or recipe/workstation data
-  - you change item economy metadata, source contexts, loot selection or loot-point descriptions
-  - you change skill content tuning or training rules
-  - you're authoring or changing base template geometry or palettes
-  - you're authoring or changing exterior door openings
-  - you change content references, static reachability, or disassembly-output contracts
-  - you change how content-loading tests build their registry fixtures
-  - you change recipe, workstation or book reachability contracts
-  - you author weathering profiles or site weathering-profile references
-  - you change static reachability checks
-  - you author or validate time-windowed template spawns
-  - you're authoring or changing playtest fixed loot
-  - you're assigning noise to a furniture action
-  - you're authoring base surface materials or procedural pattern tuning
-  - you're authoring or changing visual furniture shapes or container appearance
-  - you need the procedure or isolated look probe for furniture refinement
-  - you're assigning noise to opening a door
-  - you change site-generation tuning or its content schema
-  - you're authoring or changing Deadvox content sources or their build pipeline
+  - you author or change Deadvox content sources or their build pipeline
+  - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you add code that reads a content row by a fixed id
-  - you author or validate curated map kits, role styles or connector contracts
+  - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
+  - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
+  - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
+  - you're authoring or changing exterior door openings
+  - you're authoring or changing furniture appearance, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
+  - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
-  - you author graphics defaults or permitted player graphics choices
 ---
 
 # Content sections and recipes
@@ -85,16 +71,25 @@ or change body obstruction and support within reserved circulation. This permits
 certificate for the selected composition to cover every alternative without searching
 combinations. Exclusive ownership prevents write order from changing a facade.
 Structural material roles must agree with the style binding so interior flooring cannot
-silently become shell treatment. See `src/core/schema.ts`, `MapPieceSchema` and
-`MapAssemblySchema`, and `src/core/templates.ts`, `compileMapPiece`, `traversalContract`
-and `compileAssembly`.
+silently become shell treatment, and structural roles must bind solid blocks because
+standing anchors, port landings and climb certificates read support from block solidity.
+A non-solid shell would pass ownership yet fail the support-dependent proofs (standing, landings, climbs) later. See
+`src/core/schema.ts`, `MapPieceSchema` and `MapAssemblySchema`; `src/core/templates.ts`,
+`compileMapPiece`, `traversalContract` and `compileAssembly`; and `src/core/mapKit.ts`,
+`mapKitIssues` and `reservedStanding`.
+
+A sealed port is a geometric join, not a passage: it must sit on its face and inside the
+piece so siblings align, but it claims no mouth or body clearance because nothing
+traverses it. See `src/core/mapKit.ts`, `portIssues`.
 
 City building pools may name an assembly instead of a literal template, but not both
 under the same identity. An assembly owns its authored floor topology; stress-test
 stacking cannot invent additional floors. Resolve alternatives independently for each
 stable building location before requesting chunks: caching one selected assembly for a
-whole pool would repeat the same furnishings across the city. See `src/core/cityPlan.ts`,
-`buildCityPlan` and `templateCompiler`.
+whole pool would repeat the same furnishings across the city. A literal template has no
+alternatives, so one compiled buffer per storey count serves every building that uses
+it; only assemblies resolve per location. See `src/core/cityPlan.ts`, `buildCityPlan`
+and `templateCompiler`.
 
 City placement honours the authored ground storey so a cellar stays underground
 rather than lifting the building above the street. Ordinary buildings and the service
@@ -180,7 +175,7 @@ Survey the fixture's real-world construction and its authored role before choosi
 
 Choose the structural appearance in content through `src/core/schema.ts`, `FurnitureSchema`, rather than a renderer ID exception. Follow `../../docs/jsonnet.md`, "Jsonnet authoring", for the source boundary. Derive procedural parts from the definition's dimensions in `src/render/furnitureDetail.ts`, `furnitureDetail`, so the same construction works for differently sized definitions. Keep front relief within the occupied envelope and check rotated facings: protruding decoration would advertise interaction space the picker cannot reach.
 
-Use `tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
+Use `deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
 
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
 
