@@ -298,6 +298,37 @@ describe('one finished city plan', () => {
     expect(site.surface.top(plan.spawn[0], plan.spawn[2])).toBe(registry.blockIds.get('asphalt'));
   });
 
+  it('never stacks a template past its authored maxStoreys while an unlimited one still stacks', () => {
+    const limited = registry.templates.get('fixture_house')!;
+    const capped = {
+      ...registry,
+      templates: new Map(registry.templates).set(limited.id, { ...limited, maxStoreys: 1 }),
+    };
+    const plan = buildCityPlan({
+      seed: 73,
+      registry: capped,
+      floor,
+      grid: {
+        ...fixtureGrid,
+        blocksX: 3,
+        blocksZ: 3,
+        templates: [
+          { id: 'fixture_house', weight: 1 },
+          { id: 'fixture_small_house', weight: 1 },
+        ],
+      },
+      maxStoreys: 4,
+    });
+    const heights = (id: string) =>
+      plan.placements
+        .filter((placement) => placement.template.id.split('×')[0] === id)
+        .map((placement) => placement.template.size[1]);
+    const [, unstacked] = limited.size;
+    expect(heights('fixture_house').length).toBeGreaterThan(0);
+    expect(heights('fixture_house').every((height) => height === unstacked)).toBe(true);
+    expect(heights('fixture_small_house').some((height) => height > unstacked)).toBe(true);
+  });
+
   it('chooses the service block/turn independently of incidental template selection', () => {
     const forPool = (templates: typeof fixtureGrid.templates) =>
       buildCityPlan({ seed: 74, registry, floor, grid: { ...fixtureGrid, templates }, scenario: profile });
