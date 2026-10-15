@@ -5,7 +5,7 @@ import process from 'node:process';
 import { launchChromium } from '../test/browser/chromium.mjs';
 
 const [base, prefix, ...cams] = process.argv.slice(2);
-const browser = await launchChromium('zzshots', {
+const browser = await launchChromium('render-probe', {
   args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'],
 });
 try {
