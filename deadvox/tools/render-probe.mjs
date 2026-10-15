@@ -6,8 +6,8 @@
 //   node tools/render-probe.mjs <url> [--out shot.png] [--wait ms]
 //                               [--scan cyan,magenta|none] [--window x,y,w,h] [--click selector]
 //
-// --click presses the start control (`#go`) once it is enabled, so a `cam=` pose renders in the
-// world instead of on the start screen.
+// --click presses the element matching the given selector (for example the start control `#go`)
+// once it is enabled, so a `cam=` pose renders in the world instead of on the start screen.
 //
 // Opens <url> in Playwright Chromium on SwiftShader (software WebGL), waits, screenshots,
 // and scans the screenshot's pixels. It prints the WebGL renderer string, filtered console
