@@ -130,20 +130,33 @@ describe('the healing gate', () => {
     expect(body.health - 50).toBeCloseTo(5 * body.healthRecoveryPerGameHour, 6);
   });
 
-  it('heals while fatigue is above the awake ceiling', () => {
-    const { sim, rest } = makeRest();
-    sim.needs.calories = 100;
-    sim.needs.hydration = 100;
-    sim.needs.fatigue = 150;
-    sim.body.damageHealth(50);
-    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
-    finishSleepOnset(sim, rest);
-    expect(sim.actions.asleep).toBe(true);
-    for (let i = 0; i < 120; i++) {
-      tickReal(sim, 1 / 60);
+  it('wires sleeping recovery above the awake fatigue ceiling without healing the same awake state', () => {
+    const sleeping = makeRest();
+    const awake = makeRest();
+    for (const { sim } of [sleeping, awake]) {
+      sim.needs.calories = 100;
+      sim.needs.hydration = 100;
+      sim.needs.fatigue = 150;
+      sim.body.damageHealth(50);
     }
-    expect(sim.needs.fatigue).toBeGreaterThan(80);
-    expect(sim.body.health).toBeGreaterThan(50);
+    expect(sleeping.rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    finishSleepOnset(sleeping.sim, sleeping.rest);
+    expect(sleeping.sim.actions.asleep).toBe(true);
+    const healthBefore = sleeping.sim.body.health;
+    const start = sleeping.sim.time;
+    sleeping.sim.frame(simSeconds(HOUR / 2));
+    const elapsed = sleeping.sim.time - start;
+    awake.sim.frame(simSeconds(elapsed));
+    const ceiling = sleeping.sim.body.tuning.healthRecoveryFatigueCeiling.awake!;
+    expect(sleeping.sim.needs.fatigue).toBeGreaterThan(ceiling);
+    expect(awake.sim.needs.fatigue).toBeGreaterThan(ceiling);
+    expect(sleeping.sim.body.health - healthBefore).toBeCloseTo(
+      simToGameHours(sleeping.sim.clock, elapsed) *
+        sleeping.sim.body.healthRecoveryPerGameHour *
+        sleeping.sim.body.sleepRecoveryFactor,
+      6,
+    );
+    expect(awake.sim.body.health).toBe(50);
   });
 });
 

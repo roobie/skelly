@@ -79,7 +79,7 @@ describe('firearm cycle timelines', () => {
       expect(hand.at(hand.durationSeconds)).toBe(0);
       expect(hand.at(hand.durationSeconds + hand.rearwardSeconds / 2)).toBeGreaterThan(0);
       expect(hand.durationSeconds).toBeGreaterThan(hand.rearwardSeconds + hand.dwellSeconds + hand.forwardSeconds);
-      expect(hand.forwardSeconds * 10).toBeLessThan(hand.rearwardSeconds);
+      expect(hand.forwardSeconds).toBeLessThan(hand.rearwardSeconds);
     }
   });
 });

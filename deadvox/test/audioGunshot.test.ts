@@ -12,11 +12,13 @@ import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/
 import { simRate, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { hearVocalNoise } from '../src/core/zombies.ts';
-import { GameAudio } from '../src/game/audio.ts';
+import { GameAudio, VOICE_CAPS } from '../src/game/audio.ts';
 import { firearmShotEmission, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const audios: GameAudio[] = [];
+const GUNSHOT_CAP = VOICE_CAPS.get('gunshot')!;
+const SHOT_BURST = GUNSHOT_CAP + 1;
 const base = 'src/content/base';
 const baseRegistryBuild = buildRegistry(
   readdirSync(base)
@@ -256,14 +258,13 @@ describe('game audio playback', () => {
 
   it('starts every rapid shot, steals the oldest with a 10ms fade, and bounds even unended tails', async () => {
     const { audio, play, selected, context, fetchBuffer } = setup();
-    for (let index = 0; index < 40; index++) {
+    for (let index = 0; index < SHOT_BURST; index++) {
       play('gunshot', [1, 2, 3], index * 0.02);
       // biome-ignore lint/performance/noAwaitInLoops: exercise ordered warm shots, not another cold burst
       await flush();
       expect(context.sources).toHaveLength(index + 1);
     }
-    // Thirty-two full voices and at most thirty-two fading tails, including late onended.
-    expect(context.peakConnectedSources).toBeLessThanOrEqual(64);
+    expect(context.peakConnectedSources).toBeLessThanOrEqual(2 * GUNSHOT_CAP);
     const oldest = context.sources[0]!;
     const gain = oldest.connect.mock.calls[0]![0] as GainNode;
     expect(gain.gain.setValueAtTime).toHaveBeenCalledWith(expect.any(Number), 10);
@@ -290,15 +291,15 @@ describe('game audio playback', () => {
     }
     play('gunshot', [1, 2, 3], 1);
     await flush();
-    expect(context.sources).toHaveLength(41);
-    expect(context.sources[40]!.stop).not.toHaveBeenCalled();
+    expect(context.sources).toHaveLength(SHOT_BURST + 1);
+    expect(context.sources[SHOT_BURST]!.stop).not.toHaveBeenCalled();
   });
 
   it('does not let pending decodes reject trigger pulls and still deduplicates cold loads', async () => {
     const { play, context, fetchBuffer } = setup();
     const complete: Array<(response: Response) => void> = [];
     fetchBuffer.mockImplementation(() => new Promise<Response>((resolve) => complete.push(resolve)));
-    for (let index = 0; index < 40; index++) {
+    for (let index = 0; index < SHOT_BURST; index++) {
       play('gunshot', [0, 0, 0], index * 0.02);
     }
     expect(fetchBuffer).toHaveBeenCalledTimes(2);
@@ -307,17 +308,16 @@ describe('game audio playback', () => {
       resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) } as Response);
     }
     await flush();
-    expect(context.sources).toHaveLength(40);
-    expect(context.peakConnectedSources).toBeLessThanOrEqual(64);
-    // The review's 40-shot cold burst now gives every retiree its fade, in one audio quantum.
+    expect(context.sources).toHaveLength(SHOT_BURST);
+    expect(context.peakConnectedSources).toBeLessThanOrEqual(2 * GUNSHOT_CAP);
     expect(context.sources.flatMap(({ stop }) => stop.mock.calls).every(([when]) => when === 10.01)).toBe(true);
     expect(context.decodeAudioData).toHaveBeenCalledTimes(2);
-    for (let index = 40; index < 80; index++) {
+    for (let index = SHOT_BURST; index < 2 * SHOT_BURST; index++) {
       play('gunshot', [0, 0, 0], index * 0.02);
     }
     await flush();
-    expect(context.sources).toHaveLength(80);
-    expect(context.peakConnectedSources).toBe(64);
+    expect(context.sources).toHaveLength(2 * SHOT_BURST);
+    expect(context.peakConnectedSources).toBe(2 * GUNSHOT_CAP);
   });
 
   it('head-locks default player sounds while world sounds retain their source position', async () => {
