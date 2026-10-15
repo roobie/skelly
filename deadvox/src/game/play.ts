@@ -2764,7 +2764,7 @@ export const startPlay = (
     if (registry.items.get(item.type)?.firearm?.pump) {
       return true;
     }
-    const shot = firearmShotEmission(item, firearms.noiseFactorFor(item));
+    const shot = firearmShotEmission(registry, item, firearms.noiseFactorFor(item));
     session.playPlayerSound(shot.event, time, shot);
     return true;
   };

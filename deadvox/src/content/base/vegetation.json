@@ -1,73 +1,105 @@
 {
   "blocks": [
     {
+      "color": "#62503b",
+      "footsteps": {
+        "player": "footstep_wood",
+        "shambler": "shambler_step_wood"
+      },
       "id": "tree_trunk",
       "name": "Tree trunk",
-      "color": "#62503b",
-      "solid": true,
       "opaque": true,
       "pattern": "rough",
+      "solid": true,
       "weatherable": false
     },
     {
+      "color": "#705941",
+      "footsteps": {
+        "player": "footstep_wood",
+        "shambler": "shambler_step_wood"
+      },
       "id": "tree_branch",
       "name": "Tree branch",
-      "color": "#705941",
-      "solid": true,
       "opaque": true,
       "pattern": "rough",
+      "solid": true,
       "weatherable": false
     },
     {
+      "color": "#526b3d",
+      "footsteps": {
+        "player": "footstep_leaves",
+        "shambler": "shambler_step_leaves"
+      },
       "id": "leaves",
       "name": "Leaves",
-      "color": "#526b3d",
-      "solid": false,
       "opaque": true,
-      "rustle": { "gentle": "foliage_rustle", "fast": "foliage_rustle_fast" },
       "pattern": "noise",
+      "rustle": {
+        "fast": "foliage_rustle_fast",
+        "gentle": "foliage_rustle"
+      },
+      "solid": false,
       "weatherable": false
     },
     {
+      "color": "#425b35",
+      "footsteps": {
+        "player": "footstep_leaves",
+        "shambler": "shambler_step_leaves"
+      },
       "id": "hedge",
       "name": "Hedge",
-      "color": "#425b35",
-      "solid": false,
       "opaque": true,
-      "rustle": { "gentle": "foliage_rustle", "fast": "foliage_rustle_fast" },
       "pattern": "noise",
+      "rustle": {
+        "fast": "foliage_rustle_fast",
+        "gentle": "foliage_rustle"
+      },
+      "solid": false,
       "weatherable": false
     },
     {
+      "color": "#766047",
+      "footsteps": {
+        "player": "footstep_leaves",
+        "shambler": "shambler_step_leaves"
+      },
       "id": "leaf_litter",
       "name": "Leaf litter",
-      "color": "#766047",
-      "solid": true,
       "opaque": true,
       "pattern": "noise",
+      "solid": true,
       "weatherable": false
     }
   ],
   "sounds": [
     {
-      "id": "foliage_rustle",
-      "variants": ["assets/audio/footstep-leaves-01.ogg"],
-      "gain": 0.4,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.45,
       "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 4 }
+      "gain": 0.40000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "foliage_rustle",
+      "minIntervalSimSeconds": 0.45000000000000001,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 4
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/footstep-leaves-01.ogg"]
     },
     {
-      "id": "foliage_rustle_fast",
-      "variants": ["assets/audio/footstep-leaves-01.ogg"],
-      "gain": 0.75,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.15,
       "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 10 }
+      "gain": 0.75,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "foliage_rustle_fast",
+      "minIntervalSimSeconds": 0.14999999999999999,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 10
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/footstep-leaves-01.ogg"]
     }
   ]
 }

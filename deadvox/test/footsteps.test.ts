@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { buildRegistry } from '../src/core/content.ts';
 import {
   advanceFootsteps,
+  footstepEventAt,
   footstepEventForBlock,
   HARD_LANDING_METRES,
   initialFootstepClock,
@@ -8,27 +11,47 @@ import {
   STEP_DISTANCE_METRES,
 } from '../src/core/footsteps.ts';
 
+const soundsSource = {
+  source: 'sounds.json',
+  data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
+};
+const FIXTURE_BLOCK = {
+  id: 'fixture_moss',
+  name: 'Moss',
+  color: '#3f6b2f',
+  solid: true,
+  footsteps: { player: 'footstep_grass', shambler: 'shambler_step_grass' },
+};
+const fixtureRegistry = () =>
+  buildRegistry([soundsSource, { source: 'fixture-blocks.json', data: { blocks: [FIXTURE_BLOCK] } }]);
+
 describe('player footsteps', () => {
-  it('maps every base walking surface to its closest curated sound', () => {
-    for (const [block, event] of [
-      ['grass', 'footstep_grass'],
-      ['dirt', 'footstep_mud'],
-      ['sand', 'footstep_sand'],
-      ['asphalt', 'footstep_stone'],
-      ['stone', 'footstep_stone'],
-      ['concrete', 'footstep_stone'],
-      ['brick', 'footstep_stone'],
-      ['plaster', 'footstep_stone'],
-      ['tiles', 'footstep_stone'],
-      ['roof', 'footstep_stone'],
-      ['window_frame', 'footstep_stone'],
-      ['planks', 'footstep_wood'],
-      ['fabric', 'footstep_leaves'],
-      ['carpet', 'footstep_leaves'],
-    ] as const) {
-      expect(footstepEventForBlock(block)).toBe(event);
-    }
-    expect(footstepEventForBlock('modded_unknown')).toBe('footstep_stone');
+  it('resolves a new block id from its authored footstep selection without a code edit', () => {
+    const { registry, issues } = fixtureRegistry();
+    expect(issues).toEqual([]);
+    const runtimeId = registry.blockIds.get(FIXTURE_BLOCK.id)!;
+    expect(footstepEventAt([0.4, 1.2, 0.6], () => runtimeId, registry.blocks)).toBe('footstep_grass');
+  });
+
+  it('rejects a footstep event the pack does not define, naming the authored path', () => {
+    const { issues } = buildRegistry([{ source: 'fixture-blocks.json', data: { blocks: [FIXTURE_BLOCK] } }]);
+    expect(issues).toContainEqual({
+      source: 'fixture-blocks.json',
+      path: 'blocks[0].footsteps.player',
+      message: 'no sound event "footstep_grass"',
+    });
+    expect(issues).toContainEqual({
+      source: 'fixture-blocks.json',
+      path: 'blocks[0].footsteps.shambler',
+      message: 'no sound event "shambler_step_grass"',
+    });
+  });
+
+  it('keeps air and an out-of-registry chunk id out of the authored selection contract', () => {
+    const { registry } = buildRegistry([]);
+    const air = registry.blocks[registry.blockIds.get('air')!]!;
+    expect(footstepEventForBlock(air)).toBeUndefined();
+    expect(() => footstepEventAt([0, 1, 0], () => 999, registry.blocks)).toThrow();
   });
 
   it('uses the configured walking, jogging, and sprinting distances between footfalls', () => {

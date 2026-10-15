@@ -36,6 +36,7 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
+const baseSounds = base.find(({ source }) => source === 'sounds.json')!;
 const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
   const zombieFile = base.find((file) => file.source === 'zombies.json')!;
   const data = structuredClone(zombieFile.data) as {
@@ -159,7 +160,7 @@ const firearmFixture = (skillZeroHandling: unknown) => ({
   category: 'weapon',
   weight: 1,
   size: [1, 1],
-  firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, skillZeroHandling },
+  firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', skillZeroHandling },
 });
 
 const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: string): boolean => {
@@ -511,11 +512,12 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01 },
+      firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01, shotSound: 'gunshot' },
     };
-    const { issues } = buildRegistry([{ source, data: { items: [item] } }]);
+    const { issues } = buildRegistry([baseSounds, { source, data: { items: [item] } }]);
     expect(issues.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
     const { issues: zeroConeIssues } = buildRegistry([
+      baseSounds,
       { source, data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] } },
     ]);
     expect(zeroConeIssues).toEqual([]);
@@ -530,7 +532,7 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { recoilKickRadians: 0.01 },
+      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot' },
     };
     const missing = validateContent({ source, data: { items: [item] } });
     expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -1399,6 +1401,7 @@ describe('content references', () => {
     };
     const source = 'military-sources.json';
     const { issues } = buildRegistry([
+      baseSounds,
       {
         source: 'military-fixture.json',
         data: {
@@ -2040,6 +2043,7 @@ describe('content', () => {
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
     const { registry, issues } = buildRegistry([
       baseBlocks,
+      baseSounds,
       {
         source: 'mod-camo.json',
         data: { blocks: [{ ...camo, color: '#56789a', patternPalette: palette, patternWashout: 0.37 }] },
@@ -2073,6 +2077,7 @@ describe('content', () => {
     const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const issues = buildRegistry([
       baseBlocks,
+      baseSounds,
       {
         source: 'camo-contract.json',
         data: {

@@ -19,7 +19,7 @@ import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { FISTS_MELEE, hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
 import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
-import { FIREARM_SHOT_SOUND_EVENTS, firearmShotEmission } from '../src/game/audioPresentation.ts';
+import { firearmShotEmission, firearmShotSoundEvents } from '../src/game/audioPresentation.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { firearmHandlingFor, SHELL_LOAD_SECONDS } from '../src/game/firearmHandling.ts';
@@ -41,7 +41,7 @@ const { registry } = buildRegistry(
 const contentNoiseEvents = new Set(
   [...registry.sounds].filter(([, sound]) => sound.noise.enabled).map(([event]) => event),
 );
-const shamblerFootstepEvents = new Set(registry.blocks.map(({ id }) => shamblerFootstepEventForBlock(id)));
+const shamblerFootstepEvents = new Set(registry.blocks.map((block) => shamblerFootstepEventForBlock(block)));
 
 interface PlayedSound {
   sound: Readonly<SoundEmission>;
@@ -218,8 +218,8 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const surfaces = new Map<string, string>();
     for (const block of registry.blocks) {
       if (block.solid) {
-        const event = footstepEventForBlock(block.id);
-        if (registry.sounds.has(event) && !surfaces.has(event)) {
+        const event = footstepEventForBlock(block);
+        if (event && registry.sounds.has(event) && !surfaces.has(event)) {
           surfaces.set(event, block.id);
         }
       }
@@ -398,7 +398,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'shotgun noise emitted',
       events.slice(from).some((event) => event.kind === 'noise'),
     );
-    for (const event of FIREARM_SHOT_SOUND_EVENTS) {
+    for (const event of firearmShotSoundEvents(registry)) {
       const before = events.length;
       session.playPlayerSound(event, session.sim.time);
       drainEvents();
@@ -438,7 +438,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   };
 
   const exerciseFight = (scenario: NoiseScenario) => {
-    const { session, state, played, advance } = scenario;
+    const { session, world, state, played, advance } = scenario;
     const shambler = registry.zombies.get('shambler')!;
     const player = session.body.pos;
     const id = session.zombies.add(shambler, [player[0], player[1], player[2] - 1], [0, 0, 1]);
@@ -469,6 +469,13 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     }
     const from = played.length;
     state.intent = { ...IDLE, forward: -1 };
+    const chaser = session.feet();
+    const floorBlock = registry.blockIds.get('stone')!;
+    for (let x = Math.floor(chaser[0]) - 24; x <= Math.floor(chaser[0]) + 24; x++) {
+      for (let z = Math.floor(chaser[2]) - 48; z <= Math.floor(chaser[2]) + 16; z++) {
+        world.setBlock(x, 0, z, floorBlock);
+      }
+    }
     advance(120);
     state.intent = { ...IDLE };
     observe(
@@ -758,7 +765,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   expect(meanX()).toBeLessThan(before);
 });
 
-it('applies attachment noise factors and far-tier cutoffs to suppressed AR and AK shots', () => {
+it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots', () => {
   const scale = makeScale(0.5);
   const session = createSession({
     registry,
@@ -819,19 +826,12 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR and A
       unsuppressedEvent: 'gunshot',
       suppressed: false,
     },
-    {
-      label: 'suppressed AK',
-      item: firearm('rifle_ak', { muzzle: firearm('real_suppressor') }),
-      event: 'gunshot',
-      unsuppressedEvent: 'gunshot',
-      suppressed: true,
-    },
   ] as const;
   const emittedRadii = new Map<string, number>();
 
   for (const { label, item, event, unsuppressedEvent, suppressed } of cases) {
     const attachmentNoiseFactor = firearmAttachmentResponse(registry, item).noiseFactor;
-    const shot = firearmShotEmission(item, session.firearms.noiseFactorFor(item));
+    const shot = firearmShotEmission(registry, item, session.firearms.noiseFactorFor(item));
     expect(shot.event).toBe(event);
     expect(shot.noiseRadiusScale).toBe(attachmentNoiseFactor);
     const emissions = session.sim.events.reader();
@@ -873,8 +873,5 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR and A
 
   expect(emittedRadii.get('suppressed AR')! / emittedRadii.get('unsuppressed AR')!).toBe(
     firearmAttachmentResponse(registry, cases[1].item).noiseFactor,
-  );
-  expect(emittedRadii.get('suppressed AK')! / emittedRadii.get('unsuppressed AK')!).toBe(
-    firearmAttachmentResponse(registry, cases[3].item).noiseFactor,
   );
 });

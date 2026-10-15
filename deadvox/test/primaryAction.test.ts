@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -30,7 +31,12 @@ const capabilities = [
   { id: 'held_rag', kind: 'use', category: 'material', treatment: { bleeding: 1 } },
   { id: 'held_material_pill', kind: 'use', category: 'material', analgesic: FIXTURE_ANALGESIC },
   { id: 'held_tool_pill', kind: 'use', category: 'tool', analgesic: FIXTURE_ANALGESIC },
-  { id: 'held_gun', kind: 'firearm', firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01 }, twoHanded: true },
+  {
+    id: 'held_gun',
+    kind: 'firearm',
+    firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01, shotSound: 'gunshot' },
+    twoHanded: true,
+  },
   {
     id: 'held_igniter',
     kind: 'ignite',
@@ -69,6 +75,10 @@ const capabilities = [
   },
 ] as const;
 const { registry, issues } = buildRegistry([
+  {
+    source: '../content/base/sounds.json',
+    data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
+  },
   {
     source: 'hand-action-fixture',
     data: {
