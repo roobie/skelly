@@ -535,9 +535,11 @@ describe('gauntlet door openings', () => {
   });
 });
 
+const houseId = /^gauntlet_city_\d+/;
+
 describe('gauntlet shop fronts', () => {
   // The street face and the yard in front of it: the rows a player sees from the road.
-  const STREET_ROWS = 4;
+  const streetRows = 4;
   const streetBlocks = (assemblyId: string): Set<string> => {
     const { registry } = BUNDLED_CONTENT;
     const seen = new Set<string>();
@@ -547,14 +549,14 @@ describe('gauntlet shop fronts', () => {
         siteId: `shop-front:${assemblyId}`,
       });
       const [sx, sy, sz] = compiled.size;
-      for (let y = 0; y < sy; y++) {
-        for (let z = 0; z < Math.min(STREET_ROWS, sz); z++) {
-          for (let x = 0; x < sx; x++) {
-            const block = registry.blocks[compiled.blocks[ownershipCell(compiled.size, [x, y, z])]!];
-            if (block && block.id !== 'air') {
-              seen.add(block.id);
-            }
-          }
+      const cells = sy * Math.min(streetRows, sz) * sx;
+      for (let i = 0; i < cells; i++) {
+        const x = i % sx;
+        const z = Math.floor(i / sx) % Math.min(streetRows, sz);
+        const y = Math.floor(i / (sx * Math.min(streetRows, sz)));
+        const id = registry.blocks[compiled.blocks[ownershipCell(compiled.size, [x, y, z])]!]?.id;
+        if (id && id !== 'air') {
+          seen.add(id);
         }
       }
     }
@@ -563,7 +565,7 @@ describe('gauntlet shop fronts', () => {
 
   it('gives every shop a street face that carries blocks no house shows, and no two shops share them', () => {
     const { registry } = BUNDLED_CONTENT;
-    const houses = [...registry.mapAssemblies.keys()].filter((id) => /^gauntlet_city_\d+/.test(id));
+    const houses = [...registry.mapAssemblies.keys()].filter((id) => houseId.test(id));
     expect(houses.length).toBeGreaterThan(0);
     const houseBlocks = new Set(houses.flatMap((id) => [...streetBlocks(id)]));
     const shops = [
