@@ -1,4 +1,4 @@
-import { buildCityPlan, scenarioPlanIssues } from './cityPlan.ts';
+import { buildCityPlan, cityGridOf, scenarioPlanIssues } from './cityPlan.ts';
 import { CitySite } from './citySite.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -37,7 +37,13 @@ export class GauntletSite extends CitySite {
       seed,
       registry,
       scale,
-      buildCityPlan({ seed, registry, floor: terrainHeight(seed, scale, 0, 0), grid: scenario.city, scenario }),
+      buildCityPlan({
+        seed,
+        registry,
+        floor: terrainHeight(seed, scale, 0, 0),
+        grid: cityGridOf(registry, scenario.city),
+        scenario,
+      }),
     );
     const certificate = scenarioCertificate(this);
     if (certificate.issues.length > 0) {
@@ -62,7 +68,7 @@ const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressu
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
-  const ordinary = site.placements.filter((placement) => grid.templates.includes(placement.template.id));
+  const ordinary = site.placements.filter((placement) => grid.templates.some(({ id }) => id === placement.template.id));
   const weights = ordinaryHamletSpawnWeights(site.registry);
   const append = <T extends { pos: Vec3 }>(columns: Map<string, T[]>, spawn: T) => {
     const key = `${toChunk(spawn.pos[0])},${toChunk(spawn.pos[2])}`;

@@ -125,6 +125,14 @@ cannot host a door. A door must be its own opening, not a leaf standing in a lar
 window hole. See `src/content/base/gauntlet-city-doors.libsonnet`, `gauntlet_city_door`,
 `src/core/templates.ts`, `compileAssembly`, and `test/cityKitPlan.test.ts`, "gauntlet door openings".
 
+### City building types
+
+The city pool is authored, not inferred from item usage or building names. It is a named `mapPools` entry that the scenario's city names by id. Each row has the shape of a kit slot, a ref (`template` or `assembly`, plus an id) and a relative weight, and owns that weight; an enabled fitting row is selected before its seeded kit slots resolve. A selected building that cannot fit the row tail falls back to the first enabled fitting row, preserving the existing packing rule. A zero weight disables a type without removing its geometry or loot definitions. A missing pool, an unknown ref, a ref of the wrong kind and a ref that does not fit the reserved row are each reported with the path of the offender. See `src/core/schema.ts`, `MapPoolSchema` and `PoolRefSchema`, and `src/core/cityPlan.ts`, `cityGridOf`, `cityPoolIssues` and `fillRow`.
+
+Keep type geometry separate from the pool, and the pool separate from the scenario, so changing prevalence never requires editing a building or restating the scenario: a mod changes one building's weight by overriding the pool by id. Referenced assemblies, pieces, styles and loot tables remain independently overridable by id. See `src/content/base/scenarios.jsonnet` and `src/core/content.ts`, `buildRegistry`.
+
+Residential majority comes from weights alone, with no separate share rule, so there is one way to tune the mix. Supply shops supplement the houses, while police equipment rooms and gun shops remain rare draws. Their civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. Medical tents provide treatment supplies rather than a guaranteed full kit. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-city-building-types.libsonnet`, `src/content/base/gauntlet-city-medical.libsonnet`, and `src/core/loot.ts`, `lootTypeIssue`.
+
 ## Recipes
 
 Recipe data names the result, inputs, skill and quality requirements, and optional workstation; `RecipeSchema` in `src/core/schema.ts` owns its shape and bounds. Keep alternative inputs bounded so validation cannot expand without limit.
