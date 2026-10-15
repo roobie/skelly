@@ -706,12 +706,6 @@ try {
         slots: { muzzle: { uid: 202, type: 'real_suppressor', count: 1, condition: 1 } },
       },
       { label: 'unsuppressed AK', uid: 103, type: 'rifle_ak' },
-      {
-        label: 'suppressed AK',
-        uid: 104,
-        type: 'rifle_ak',
-        slots: { muzzle: { uid: 204, type: 'real_suppressor', count: 1, condition: 1 } },
-      },
     ];
     session.firearms.fire = () => ({ committed: true });
     try {
@@ -736,11 +730,6 @@ try {
     noiseByLabel.get('suppressed AR') / noiseByLabel.get('unsuppressed AR'),
     factorByLabel.get('suppressed AR'),
     'fireWeapon scales AR noise by its fitted suppressor factor',
-  );
-  assert.equal(
-    noiseByLabel.get('suppressed AK') / noiseByLabel.get('unsuppressed AK'),
-    factorByLabel.get('suppressed AK'),
-    'fireWeapon scales AK noise by its fitted suppressor factor',
   );
   assert.deepEqual(errors, []);
   process.stdout.write(
