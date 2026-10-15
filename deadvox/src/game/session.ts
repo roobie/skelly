@@ -29,7 +29,7 @@ import {
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
   advanceFootsteps,
-  footstepEventForBlock,
+  footstepEventAt,
   initialFootstepClock,
   isHardLanding,
   shamblerFootstepEventAt,
@@ -952,9 +952,10 @@ export const createSession = (options: SessionOptions) => {
     const footsteps = advanceFootsteps(footstepClock, travelled > 0 ? playerMovement() : 'still', travelled);
     footstepClock = footsteps.clock;
     for (let i = 0; i < footsteps.steps; i++) {
-      const [x, y, z] = feet();
-      const surface = registry.blocks[world.getBlock(x, y - 1, z)]?.id ?? 'unknown';
-      playPlayerSound(footstepEventForBlock(surface), time);
+      const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), registry.blocks);
+      if (event) {
+        playPlayerSound(event, time);
+      }
     }
   };
   const playerSense = () => {
@@ -1063,10 +1064,15 @@ export const createSession = (options: SessionOptions) => {
       );
     },
     onFootstep: (position, id, mode, zombie) => {
-      const event = shamblerFootstepEventAt(position, (x, y, z) => {
-        const block = world.getBlock(x, y, z);
-        return registry.blocks[block]?.id ?? 'unknown';
-      });
+      const event = shamblerFootstepEventAt(
+        position,
+        zombie.body,
+        (x, y, z) => world.getBlock(x, y, z),
+        registry.blocks,
+      );
+      if (!event) {
+        return;
+      }
       playWorldSound(event, position, sim.time, {
         sourceLabel: `${zombie.type.name.toLowerCase()} #${id} · ${mode}`,
         body: zombieFigure(zombie.type, zombie.figureSeed).realized.body,

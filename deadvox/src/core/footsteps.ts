@@ -1,4 +1,5 @@
 import type { Vec3 } from './coords.ts';
+import type { BlockDef } from './schema.ts';
 import type { SoundEventId } from './soundEvents.ts';
 
 export type PlayerGait = 'still' | 'walking' | 'jogging' | 'sprinting';
@@ -29,30 +30,8 @@ export const initialFootstepClock = (): FootstepClock => ({
   stepIndex: 0,
 });
 
-const SURFACE_EVENTS = new Map<string, SoundEventId>([
-  ['grass', 'footstep_grass'],
-  ['dirt', 'footstep_mud'],
-  ['sand', 'footstep_sand'],
-  ['asphalt', 'footstep_stone'],
-  ['stone', 'footstep_stone'],
-  ['concrete', 'footstep_stone'],
-  ['brick', 'footstep_stone'],
-  ['plaster', 'footstep_stone'],
-  ['tiles', 'footstep_stone'],
-  ['roof', 'footstep_stone'],
-  ['window_frame', 'footstep_stone'],
-  ['planks', 'footstep_wood'],
-  ['tree_trunk', 'footstep_wood'],
-  ['tree_branch', 'footstep_wood'],
-  ['leaves', 'footstep_leaves'],
-  ['hedge', 'footstep_leaves'],
-  ['leaf_litter', 'footstep_leaves'],
-  ['fabric', 'footstep_leaves'],
-  ['carpet', 'footstep_leaves'],
-]);
-
-/** Unmapped modded surfaces use the closest hard-ground set until they get explicit surface metadata. */
-export const footstepEventForBlock = (blockId: string): SoundEventId => SURFACE_EVENTS.get(blockId) ?? 'footstep_stone';
+/** The authored player footstep event for a block; a block without a contract (air) is silent. */
+export const footstepEventForBlock = (block: BlockDef): SoundEventId | undefined => block.footsteps?.player;
 
 export interface FootstepAdvance {
   clock: FootstepClock;
@@ -125,41 +104,76 @@ export const advanceShamblerFootsteps = (
   return { clock: { distanceUntilStep: remaining - distance, nextLongStep }, steps };
 };
 
-const SHAMBLER_SURFACE_EVENTS = new Map<string, SoundEventId>([
-  ['grass', 'shambler_step_grass'],
-  ['dirt', 'shambler_step_mud'],
-  ['sand', 'shambler_step_sand'],
-  ['asphalt', 'shambler_step_stone'],
-  ['stone', 'shambler_step_stone'],
-  ['concrete', 'shambler_step_stone'],
-  ['brick', 'shambler_step_stone'],
-  ['plaster', 'shambler_step_stone'],
-  ['tiles', 'shambler_step_stone'],
-  ['roof', 'shambler_step_stone'],
-  ['window_frame', 'shambler_step_stone'],
-  ['planks', 'shambler_step_wood'],
-  ['tree_trunk', 'shambler_step_wood'],
-  ['tree_branch', 'shambler_step_wood'],
-  ['leaves', 'shambler_step_leaves'],
-  ['hedge', 'shambler_step_leaves'],
-  ['leaf_litter', 'shambler_step_leaves'],
-  ['fabric', 'shambler_step_leaves'],
-  ['carpet', 'shambler_step_leaves'],
-]);
+/** The authored shambler footstep event for a block; a block without a contract (air) is silent. */
+export const shamblerFootstepEventForBlock = (block: BlockDef): SoundEventId | undefined => block.footsteps?.shambler;
 
-/** Surface-to-event pairing mirrors player footsteps; unknown surfaces use the hard-ground sound. */
-export const shamblerFootstepEventForBlock = (blockId: string): SoundEventId =>
-  SHAMBLER_SURFACE_EVENTS.get(blockId) ?? 'shambler_step_stone';
+/** An actor's horizontal half extents in blocks; halfDepth defaults to a square footprint. */
+export interface Footprint {
+  halfWidth: number;
+  halfDepth?: number;
+}
 
-/** Selects the surface cell immediately below a grounded actor's feet. */
+/**
+ * The blocks under an actor's footprint, nearest to its centre first. A chunk id the registry does not
+ * cover is an engine invariant failure: authored validation cannot vouch for chunk data written by
+ * another pack.
+ */
+const supportBlocks = (
+  position: Vec3,
+  footprint: Footprint,
+  blockIdAt: (x: number, y: number, z: number) => number,
+  blocks: readonly BlockDef[],
+): BlockDef[] => {
+  const y = Math.floor(position[1] + 0.01) - 1;
+  const { halfWidth, halfDepth: footprintHalfDepth } = footprint;
+  const halfDepth = footprintHalfDepth ?? halfWidth;
+  const found: { block: BlockDef; distance: number; x: number; z: number }[] = [];
+  for (let x = Math.floor(position[0] - halfWidth); x < Math.ceil(position[0] + halfWidth); x++) {
+    for (let z = Math.floor(position[2] - halfDepth); z < Math.ceil(position[2] + halfDepth); z++) {
+      const block = blocks[blockIdAt(x, y, z)];
+      if (!block) {
+        throw new Error(`chunk block under (${x}, ${y}, ${z}) is outside the content registry`);
+      }
+      const dx = x + 0.5 - position[0];
+      const dz = z + 0.5 - position[2];
+      found.push({ block, distance: dx * dx + dz * dz, x, z });
+    }
+  }
+  // An actor on a ledge can straddle supports; nearest to the centre wins, ties by fixed cell order.
+  found.sort((a, b) => a.distance - b.distance || a.x - b.x || a.z - b.z);
+  return found.map(({ block }) => block);
+};
+
+/** Selects the authored player footstep event for the nearest supporting block, if it declares one. */
+export const footstepEventAt = (
+  position: Vec3,
+  footprint: Footprint,
+  blockIdAt: (x: number, y: number, z: number) => number,
+  blocks: readonly BlockDef[],
+): SoundEventId | undefined => {
+  for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
+    const event = footstepEventForBlock(block);
+    if (event !== undefined) {
+      return event;
+    }
+  }
+  return undefined;
+};
+
+/** Selects the authored shambler footstep event for the nearest supporting block, if it declares one. */
 export const shamblerFootstepEventAt = (
   position: Vec3,
-  blockIdAt: (x: number, y: number, z: number) => string,
-): SoundEventId => {
-  const x = Math.floor(position[0]);
-  const y = Math.floor(position[1] + 0.01) - 1;
-  const z = Math.floor(position[2]);
-  return shamblerFootstepEventForBlock(blockIdAt(x, y, z));
+  footprint: Footprint,
+  blockIdAt: (x: number, y: number, z: number) => number,
+  blocks: readonly BlockDef[],
+): SoundEventId | undefined => {
+  for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
+    const event = shamblerFootstepEventForBlock(block);
+    if (event !== undefined) {
+      return event;
+    }
+  }
+  return undefined;
 };
 
 export const isHardLanding = (fallHeightMetres: number): boolean => fallHeightMetres >= HARD_LANDING_METRES;

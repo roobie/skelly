@@ -149,4 +149,17 @@ describe('validate CLI', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('reports a firearm with no authored shot sound from the CLI', () => {
+    const root = makeMinimalPack('content');
+    try {
+      const run = validateAt(root, 'test/fixtures/content/firearm-missing-shot-sound.json');
+      expect(run.status).toBe(1);
+      expect(run.stdout).toContain(
+        'FAIL  test/fixtures/content/firearm-missing-shot-sound.json items[0].firearm.shotSound: missing',
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

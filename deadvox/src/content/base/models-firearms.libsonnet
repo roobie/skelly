@@ -7,6 +7,7 @@
         "dispersionRadians": 0,
         "pump": true,
         "recoilKickRadians": 0.035000000000000003,
+        "shotSound": "gunshot",
         "skillZeroHandling": {
           "automaticFollowup": {
             "recoilKickScale": 20,
@@ -43,6 +44,8 @@
       "firearm": {
         "dispersionRadians": 0.012,
         "recoilKickRadians": 0.0060000000000000001,
+        "shotSound": "gunshot_m4",
+        "suppressedShotSound": "gunshot_m4_suppressed",
         "skillZeroHandling": {
           "automaticFollowup": {
             "recoilKickScale": 7,
@@ -69,6 +72,7 @@
       "firearm": {
         "dispersionRadians": 0.017999999999999999,
         "recoilKickRadians": 0.012,
+        "shotSound": "gunshot",
         "skillZeroHandling": {
           "automaticFollowup": {
             "recoilKickScale": 12,

@@ -1,7 +1,8 @@
+import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { MoveStart } from '../core/handling.ts';
 import type { Location } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
+import { defOf, type Item } from '../core/items.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 
 export interface HandlingSoundCue {
@@ -24,43 +25,54 @@ export const createRefusalPresenter = (
   };
 };
 
-interface FirearmSoundProfile {
-  readonly unsuppressed: SoundEventId;
-  readonly suppressed?: SoundEventId;
-}
+/** Every shot event authored by a firearm, for gameplay-noise and listening-guide checks. */
+export const firearmShotSoundEvents = (registry: Registry): ReadonlySet<SoundEventId> => {
+  const events = new Set<SoundEventId>();
+  for (const item of registry.items.values()) {
+    if (!item.firearm) {
+      continue;
+    }
+    events.add(item.firearm.shotSound);
+    if (item.firearm.suppressedShotSound !== undefined) {
+      events.add(item.firearm.suppressedShotSound);
+    }
+  }
+  return events;
+};
 
-const FIREARM_SOUND_BY_ITEM: ReadonlyMap<string, FirearmSoundProfile> = new Map([
-  ['rifle_assault', { unsuppressed: 'gunshot_m4', suppressed: 'gunshot_m4_suppressed' }],
-]);
+const hasMountedSuppressor = (registry: Registry, item: Item): boolean =>
+  Object.values(item.slots ?? {}).some((attachment) => {
+    if (!attachment) {
+      return false;
+    }
+    const modelId = defOf(registry, attachment.type).model;
+    const metadata = modelId === undefined ? undefined : registry.models.get(modelId)?.attachment;
+    return metadata?.kind === 'suppressor' || hasMountedSuppressor(registry, attachment);
+  });
 
-export const FIREARM_SHOT_SOUND_EVENTS: ReadonlySet<SoundEventId> = new Set([
-  'gunshot',
-  ...[...FIREARM_SOUND_BY_ITEM.values()].flatMap(({ unsuppressed, suppressed }) =>
-    suppressed === undefined ? [unsuppressed] : [unsuppressed, suppressed],
-  ),
-]);
-
-const hasMountedSuppressor = (item: Item): boolean =>
-  Object.values(item.slots ?? {}).some((attachment) =>
-    attachment ? attachment.type === 'real_suppressor' || hasMountedSuppressor(attachment) : false,
-  );
-
-/** Item-keyed shot selection shared by player and actor presentation; fitted suppressors are read from the item tree. */
+/** Content-selected shot sound shared by player and actor presentation; fitted suppressors are read from the item tree. */
 export const firearmShotSound = (
+  registry: Registry,
   item: Item,
   perspective: 'player' | 'actor' = 'player',
 ): { event: SoundEventId; sourceLabel: string; listenerRelative: boolean } => {
-  const profile = FIREARM_SOUND_BY_ITEM.get(item.type);
-  const suppressed = profile?.suppressed !== undefined && hasMountedSuppressor(item);
+  const profile = defOf(registry, item.type).firearm;
+  if (!profile) {
+    throw new Error(`item "${item.type}" is not a firearm`);
+  }
+  const suppressed = hasMountedSuppressor(registry, item);
+  if (suppressed && profile.suppressedShotSound === undefined) {
+    throw new Error(`firearm "${item.type}" has a fitted suppressor but no suppressed shot sound`);
+  }
   return {
-    event: suppressed ? profile.suppressed! : (profile?.unsuppressed ?? 'gunshot'),
+    event: suppressed ? profile.suppressedShotSound! : profile.shotSound,
     sourceLabel: item.type,
     listenerRelative: perspective === 'player',
   };
 };
 
-export const firearmShotEmission = (item: Item, noiseRadiusScale: number) => ({
-  ...firearmShotSound(item),
+export const firearmShotEmission = (registry: Registry, item: Item, noiseRadiusScale: number) => ({
+  ...firearmShotSound(registry, item),
   noiseRadiusScale,
 });
 

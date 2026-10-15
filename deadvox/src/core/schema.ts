@@ -147,6 +147,16 @@ const BlockSchema = strictObject({
   opaque: optional(vBoolean()),
   /** Content-owned brushing events: gentle movement and fast movement. */
   rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
+  /**
+   * Authored ground-contact events, one per actor family. Omitted means the block is silent underfoot,
+   * which is the built-in air's case; authored walkable blocks select both events explicitly.
+   */
+  footsteps: optional(
+    strictObject({
+      player: picklist(SOUND_EVENT_IDS),
+      shambler: picklist(SOUND_EVENT_IDS),
+    }),
+  ),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
   /** Whether render-only site weathering may affect this built material. */
@@ -297,6 +307,10 @@ const MeleeClassSchema = strictObject({
 // A pump feeds item-owned shells from its exported tube; other firearms feed from a fitted magazine (`magazineWellCalibre`).
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
+  /** Shot presentation event; every firearm selects one, so a new gun needs no code edit. */
+  shotSound: picklist(SOUND_EVENT_IDS),
+  /** Shot event while a suppressor is fitted; required when the model can mount one. */
+  suppressedShotSound: optional(picklist(SOUND_EVENT_IDS)),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */

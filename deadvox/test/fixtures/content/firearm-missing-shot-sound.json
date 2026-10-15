@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "id": "fixture_unselected_gun",
+      "economy": { "usage": [], "tiers": [] },
+      "name": "Unselected gun",
+      "category": "weapon",
+      "weight": 1,
+      "size": [1, 1],
+      "firearm": { "recoilKickRadians": 0.01, "dispersionRadians": 0 }
+    }
+  ]
+}

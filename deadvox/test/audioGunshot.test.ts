@@ -354,7 +354,7 @@ describe('game audio playback', () => {
     audio.updateListener(listenerAtStart, [0, 0, -1]);
     session.playPlayerSound('player_strain');
     const ar = { uid: 1, type: 'rifle_assault', count: 1, condition: 1, origin: { kind: 'fixture' } as const };
-    const shot = firearmShotEmission(ar, session.firearms.noiseFactorFor(ar));
+    const shot = firearmShotEmission(baseRegistry, ar, session.firearms.noiseFactorFor(ar));
     session.playPlayerSound(shot.event, session.sim.time, shot);
     const suppressedAr = {
       ...ar,
@@ -362,7 +362,11 @@ describe('game audio playback', () => {
         muzzle: { uid: 2, type: 'real_suppressor', count: 1, condition: 1, origin: { kind: 'fixture' } as const },
       },
     };
-    const suppressedShot = firearmShotEmission(suppressedAr, session.firearms.noiseFactorFor(suppressedAr));
+    const suppressedShot = firearmShotEmission(
+      baseRegistry,
+      suppressedAr,
+      session.firearms.noiseFactorFor(suppressedAr),
+    );
     session.playPlayerSound(suppressedShot.event, session.sim.time, suppressedShot);
     audio.updateListener([listenerAtStart[0] + 3, listenerAtStart[1], listenerAtStart[2]], [1, 0, 0]);
     await flush();

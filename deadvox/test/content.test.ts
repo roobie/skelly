@@ -36,6 +36,7 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
+const baseSounds = base.find(({ source }) => source === 'sounds.json')!;
 const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
   const zombieFile = base.find((file) => file.source === 'zombies.json')!;
   const data = structuredClone(zombieFile.data) as {
@@ -159,7 +160,7 @@ const firearmFixture = (skillZeroHandling: unknown) => ({
   category: 'weapon',
   weight: 1,
   size: [1, 1],
-  firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, skillZeroHandling },
+  firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', skillZeroHandling },
 });
 
 const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: string): boolean => {
@@ -511,11 +512,12 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01 },
+      firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01, shotSound: 'gunshot' },
     };
-    const { issues } = buildRegistry([{ source, data: { items: [item] } }]);
+    const { issues } = buildRegistry([baseSounds, { source, data: { items: [item] } }]);
     expect(issues.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
     const { issues: zeroConeIssues } = buildRegistry([
+      baseSounds,
       { source, data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] } },
     ]);
     expect(zeroConeIssues).toEqual([]);
@@ -530,7 +532,7 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { recoilKickRadians: 0.01 },
+      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot' },
     };
     const missing = validateContent({ source, data: { items: [item] } });
     expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -540,6 +542,63 @@ describe('content', () => {
         data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] },
       }),
     ).toEqual([]);
+  });
+
+  it('requires a suppressed shot sound on a firearm whose model can mount a suppressor', () => {
+    const data = {
+      items: [
+        {
+          id: 'fixture_gun',
+          economy: { usage: [], tiers: [] },
+          name: 'Fixture gun',
+          category: 'weapon',
+          weight: 1,
+          size: [1, 1],
+          model: 'fixture_gun',
+          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot' },
+        },
+        {
+          id: 'fixture_suppressor',
+          economy: { usage: [], tiers: [] },
+          name: 'Fixture suppressor',
+          category: 'misc',
+          weight: 1,
+          size: [1, 2],
+          model: 'fixture_suppressor',
+        },
+      ],
+      models: [
+        {
+          id: 'fixture_gun',
+          file: 'assets/models/fixture_gun.glb',
+          compatibility: { 'barrel.muzzle.0': ['fixture-suppressor'] },
+        },
+        {
+          id: 'fixture_suppressor',
+          file: 'assets/models/fixture_suppressor.glb',
+          attachment: {
+            id: 'fixture-suppressor',
+            massKg: 0.4,
+            kind: 'suppressor',
+            mount: 'muzzle',
+            mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
+            properties: { noiseFactor: 0.25 },
+          },
+        },
+      ],
+    };
+    const source = 'suppressor-fixture.json';
+    expect(buildRegistry([baseSounds, { source, data }]).issues).toContainEqual({
+      source,
+      path: 'items[0].firearm.suppressedShotSound',
+      message: 'a suppressor-mountable firearm needs a suppressed shot sound',
+    });
+
+    const suppressed = structuredClone(data) as typeof data & {
+      items: { firearm?: { suppressedShotSound?: string } }[];
+    };
+    suppressed.items[0]!.firearm!.suppressedShotSound = 'gunshot_m4_suppressed';
+    expect(buildRegistry([baseSounds, { source, data: suppressed }]).issues).toEqual([]);
   });
 
   it.each([SKILL_LEVEL_MIN - 1, SKILL_LEVEL_MAX + 1])(
@@ -1399,6 +1458,7 @@ describe('content references', () => {
     };
     const source = 'military-sources.json';
     const { issues } = buildRegistry([
+      baseSounds,
       {
         source: 'military-fixture.json',
         data: {
@@ -2040,6 +2100,7 @@ describe('content', () => {
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
     const { registry, issues } = buildRegistry([
       baseBlocks,
+      baseSounds,
       {
         source: 'mod-camo.json',
         data: { blocks: [{ ...camo, color: '#56789a', patternPalette: palette, patternWashout: 0.37 }] },
@@ -2073,6 +2134,7 @@ describe('content', () => {
     const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const issues = buildRegistry([
       baseBlocks,
+      baseSounds,
       {
         source: 'camo-contract.json',
         data: {

@@ -1,193 +1,289 @@
 {
   "blocks": [
     {
+      "color": "#5b8c3a",
+      "footsteps": {
+        "player": "footstep_grass",
+        "shambler": "shambler_step_grass"
+      },
       "id": "grass",
       "name": "Grass",
-      "color": "#5b8c3a",
-      "solid": true,
       "pattern": "noise",
+      "solid": true,
       "weatherable": false
     },
     {
+      "color": "#7a5a3a",
+      "footsteps": {
+        "player": "footstep_mud",
+        "shambler": "shambler_step_mud"
+      },
       "id": "dirt",
       "name": "Dirt",
-      "color": "#7a5a3a",
-      "solid": true,
       "pattern": "noise",
+      "solid": true,
       "weatherable": false
     },
     {
+      "color": "#8a8d91",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "stone",
       "name": "Stone",
-      "color": "#8a8d91",
-      "solid": true,
       "pattern": "rough",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#8a8d91",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "rock",
       "name": "Natural stone",
-      "color": "#8a8d91",
-      "solid": true,
       "pattern": "rough",
+      "solid": true,
       "weatherable": false
     },
     {
+      "color": "#d6c68f",
+      "footsteps": {
+        "player": "footstep_sand",
+        "shambler": "shambler_step_sand"
+      },
       "id": "sand",
       "name": "Sand",
-      "color": "#d6c68f",
-      "solid": true,
       "pattern": "noise",
+      "solid": true,
       "weatherable": false
     },
     {
+      "color": "#3b3d40",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "asphalt",
       "name": "Asphalt",
-      "color": "#3b3d40",
-      "solid": true,
       "pattern": "noise",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#b5b3ad",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "concrete",
       "name": "Concrete",
-      "color": "#b5b3ad",
-      "solid": true,
       "pattern": "noise",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#a0763f",
+      "footsteps": {
+        "player": "footstep_wood",
+        "shambler": "shambler_step_wood"
+      },
       "id": "planks",
       "name": "Wooden planks",
-      "color": "#a0763f",
-      "solid": true,
       "pattern": "planks",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#9c4f3a",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "brick",
       "name": "Brick",
-      "color": "#9c4f3a",
-      "solid": true,
       "pattern": "brick",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#d9d4c7",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "plaster",
       "name": "Plaster",
-      "color": "#d9d4c7",
-      "solid": true,
       "pattern": "noise",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#cfd6da",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "tiles",
       "name": "Tiles",
-      "color": "#cfd6da",
-      "solid": true,
       "pattern": "tiles",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#5b6f9a",
+      "footsteps": {
+        "player": "footstep_leaves",
+        "shambler": "shambler_step_leaves"
+      },
       "id": "fabric",
       "name": "Fabric",
-      "color": "#5b6f9a",
       "solid": true,
       "weatherable": false
     },
     {
+      "color": "#4a4b50",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "roof",
       "name": "Roofing",
-      "color": "#4a4b50",
-      "solid": true,
       "pattern": "shingles",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#6b4f4a",
+      "footsteps": {
+        "player": "footstep_leaves",
+        "shambler": "shambler_step_leaves"
+      },
       "id": "carpet",
       "name": "Carpet",
-      "color": "#6b4f4a",
-      "solid": true,
       "pattern": "noise",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#e6e2d8",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "window_frame",
       "name": "Window frame",
-      "color": "#e6e2d8",
       "solid": true,
       "weatherable": false
     },
     {
+      "color": "#8f4b4b",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "siding_red",
       "name": "Painted siding (faded red)",
-      "color": "#8f4b4b",
-      "solid": true,
       "pattern": "siding",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#7a8d94",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "siding_blue",
       "name": "Painted siding (faded blue-grey)",
-      "color": "#7a8d94",
-      "solid": true,
       "pattern": "siding",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#aab4b8",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "galvanized",
       "name": "Galvanized sheet",
-      "color": "#aab4b8",
-      "solid": true,
       "pattern": "corrugated",
+      "solid": true,
       "weatherable": false
     },
     {
+      "color": "#5f6b58",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "cobblestone_mossy",
       "name": "Mossy cobblestone",
-      "color": "#5f6b58",
-      "solid": true,
       "pattern": "cobble",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#bcab8a",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "dressed_stone",
       "name": "Dressed stone",
-      "color": "#bcab8a",
-      "solid": true,
       "pattern": "dressed",
+      "solid": true,
       "weatherable": true
     },
     {
+      "color": "#c9a43a",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "hazard_yellow",
       "name": "Hazard paint",
-      "color": "#c9a43a",
       "solid": true,
       "weatherable": false
     },
     {
+      "color": "#89979a",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "chain_link",
       "name": "Chain-link fence",
-      "color": "#89979a",
       "solid": true,
       "weatherable": false
     },
     {
+      "color": "#9b8d6a",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "sandbag",
       "name": "Sandbag",
-      "color": "#9b8d6a",
       "solid": true,
       "weatherable": false
     },
     {
+      "color": "#777b6a",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
       "id": "camo_woodland",
       "name": "Weathered woodland camouflage",
-      "color": "#777b6a",
-      "solid": true,
       "pattern": "camo",
-      "weatherable": true,
       "patternPalette": ["#53694d", "#78634d", "#9b8a6b", "#3b4039"],
-      "patternWashout": 0.42
+      "patternWashout": 0.41999999999999998,
+      "solid": true,
+      "weatherable": true
     }
   ]
 }
