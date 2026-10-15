@@ -447,7 +447,30 @@ export const gauntletFlow = async (browser, baseUrl) => {
     assert.ok(journey.resourceTypes.length > 0);
     assert.notEqual(journey.run.discovery.entranceTravel, null);
     await page.locator('#death').waitFor({ state: 'visible' });
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest.controller.winCheckpointStatus === 'saved');
+    try {
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest.controller.winCheckpointStatus === 'saved', undefined, {
+        timeout: 20000,
+      });
+    } catch (error) {
+      const diag = await page.evaluate(() => {
+        const c = globalThis.deadvoxSaveTest.controller;
+        return {
+          status: c.winCheckpointStatus,
+          writing: c.writing,
+          queued: c.queued ? c.queued.reason : null,
+          failure: c.failure,
+          statusText: c.statusText,
+          savedGeneration: c.savedGeneration,
+          playHalted: c.playHalted,
+          protectedCurrent: c.protectedCurrent,
+          entered: c.entered,
+          storageUnavailable: c.storageUnavailable,
+          ids: [c.worldId, c.characterId],
+          sessionRun: globalThis.gauntletWitness.session.scenarioRun,
+        };
+      });
+      throw new Error(`DIAG win checkpoint ${JSON.stringify(diag)}`, { cause: error });
+    }
     await page.reload();
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
     await page.click('#continue');
