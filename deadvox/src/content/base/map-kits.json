@@ -21,6 +21,10 @@
         "opening": {
           "block": "air",
           "role": "opening"
+        },
+        "roofing": {
+          "block": "asphalt",
+          "role": "interior_floor"
         }
       },
       "id": "concrete_townhouse"
@@ -46,6 +50,10 @@
         "opening": {
           "block": "air",
           "role": "opening"
+        },
+        "roofing": {
+          "block": "asphalt",
+          "role": "interior_floor"
         }
       },
       "id": "brick_townhouse"

@@ -9039,18 +9039,18 @@
           "..................",
           "..................",
           "################..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
-          "#pppppppppppppp#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
+          "#rrrrrrrrrrrrrr#..",
           "################.."
         ]
       ],
@@ -9109,6 +9109,10 @@
         },
         "p": {
           "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roofing",
           "role": "interior_floor"
         }
       },

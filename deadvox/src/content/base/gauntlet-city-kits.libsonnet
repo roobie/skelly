@@ -249,12 +249,12 @@ local kit = {
     },
     {
       id: 'gauntlet_city_roof', size: [18, 1, 16], style: 'brick_townhouse',
-      lootContext: context, palette: palette,
+      lootContext: context, palette: palette + { r: { role: 'interior_floor', material: 'roofing' } },
       layers: [[
-        '..................', '..................', '################..', '#pppppppppppppp#..',
-        '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..',
-        '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..',
-        '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..', '################..',
+        '..................', '..................', '################..', '#rrrrrrrrrrrrrr#..',
+        '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..',
+        '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..',
+        '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '################..',
       ]],
       ownership: { layers: [[
         'AAAAAAAAAAAAAAAAAA', 'AAAAAAAAAAAAAAAAAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
