@@ -1,3 +1,4 @@
+local police = import 'gauntlet-city-police.libsonnet';
 local residential = { usage: ['Residential'], tier: 'Tier1' };
 local hunting = { usage: ['Hunting'], tier: 'Tier1' };
 local industrial = { usage: ['Industrial'], tier: 'Tier1' };
@@ -68,21 +69,6 @@ local room(id, context, rows, tall, furnishings, upper=empty, style='brick_townh
   ownership: { layers: [claim(layer, 'R') for layer in layers] },
   anchors: {}, ports: [],
 };
-local policeRows = [
-  '..............', '..............', '.CCC..........', '.CCC..........',
-  '..............', '..............', '..............', '######DD######',
-  '..............', '.GG.......AA..', '..........AA..', '..............',
-];
-local policeTall = [
-  '..............', '..............', '..............', '..............',
-  '..............', '..............', '..............', '######DD######',
-  '..............', '.GG...........', '..............', '..............',
-];
-local policeUpper = [
-  '..............', '..............', '..............', '..............',
-  '..............', '..............', '..............', '##############',
-  '..............', '..............', '..............', '..............',
-];
 local shopRows = [
   '..............', '..............', '.CC...........', '..............',
   '...SS....SS...', '...SS....SS...', '..............', '..............',
@@ -112,10 +98,13 @@ local building(id, context, shellId, roomId) = {
   access: { ground: 'floor_0', entrance: [8, 1, 6], storeys: [{ id: 'floor_0', floor: 1 }], stairs: [] },
 };
 {
+  items: police.items,
+  furniture: police.furniture,
   mapStyles: [
     { id: 'gauntlet_police', bindings: {
       facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
       sign: { role: 'trim', block: 'siding_blue' },
+      partition: { role: 'shell', block: 'planks' },
     } },
     { id: 'gauntlet_food_shop', bindings: {
       facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
@@ -135,11 +124,7 @@ local building(id, context, shellId, roomId) = {
     shell('gauntlet_food_front', 'gauntlet_food_shop', residential, shopWindows),
     shell('gauntlet_gun_front', 'gauntlet_gun_shop', hunting, shopWindows),
     shell('gauntlet_hardware_front', 'gauntlet_hardware_shop', industrial, shopWindows),
-    room('gauntlet_police_rooms', hunting, policeRows, policeTall, {
-      C: { furniture: 'desk', loot: 'gauntlet_police_gear' },
-      G: { furniture: 'range_rack', loot: 'gauntlet_civilian_guns' },
-      A: box('gauntlet_ammunition'),
-    }, policeUpper, 'gauntlet_police'),
+    police.piece,
     room('gauntlet_food_aisles', residential, shopRows, shopTall, {
       C: { furniture: 'counter', loot: 'gauntlet_food_stock' },
       S: stock('gauntlet_food_stock'), G: stock('gauntlet_food_stock'), A: box('gauntlet_food_stock'),
@@ -155,12 +140,23 @@ local building(id, context, shellId, roomId) = {
     }),
   ],
   mapAssemblies: [
-    building('gauntlet_police_station', hunting, 'gauntlet_police_front', 'gauntlet_police_rooms'),
+    building('gauntlet_police_station', hunting, 'gauntlet_police_front', 'gauntlet_police_rooms') + {
+      anchors: {
+        entry: { kind: 'standing', at: [8, 1, 4] },
+        reception: { kind: 'standing', at: [6, 1, 5] },
+        office: { kind: 'standing', at: [12, 1, 6] },
+        holding: { kind: 'standing', at: [8, 1, 9] },
+        cell_west: { kind: 'standing', at: [4, 1, 13] },
+        cell_east: { kind: 'standing', at: [9, 1, 13] },
+        armoury: { kind: 'point', at: [14, 1, 12] },
+      },
+      access: { ground: 'floor_0', entrance: [8, 1, 4], storeys: [{ id: 'floor_0', floor: 1 }], stairs: [] },
+    },
     building('gauntlet_food_store', residential, 'gauntlet_food_front', 'gauntlet_food_aisles'),
     building('gauntlet_gun_store', hunting, 'gauntlet_gun_front', 'gauntlet_gun_sales'),
     building('gauntlet_hardware_store', industrial, 'gauntlet_hardware_front', 'gauntlet_hardware_aisles'),
   ],
-  loot: [
+  loot: police.loot + [
     { id: 'gauntlet_food_stock', rolls: [1, 3], entries: [
       { item: 'canned_beans', weight: 4 }, { item: 'canned_soup', weight: 3 },
       { item: 'crackers', weight: 3 }, { item: 'water_bottle', weight: 2 }, { nothing: true, weight: 4 },

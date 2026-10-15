@@ -143,6 +143,76 @@
       "size": [4, 3, 1]
     },
     {
+      "color": "#626d70",
+      "id": "gauntlet_cell_bars",
+      "name": "Cell bars",
+      "shape": [
+        {
+          "position": [0.10000000000000001, 0, 0.40000000000000002],
+          "size": [0.12, 4, 0.20000000000000001]
+        },
+        {
+          "position": [0.69999999999999996, 0, 0.40000000000000002],
+          "size": [0.12, 4, 0.20000000000000001]
+        },
+        {
+          "position": [0, 0.10000000000000001, 0.40000000000000002],
+          "size": [1, 0.14999999999999999, 0.20000000000000001]
+        },
+        {
+          "position": [0, 3.7000000000000002, 0.40000000000000002],
+          "size": [1, 0.14999999999999999, 0.20000000000000001]
+        }
+      ],
+      "size": [1, 4, 1]
+    },
+    {
+      "color": "#626d70",
+      "door": {
+        "handlingSimSeconds": 0.59999999999999998,
+        "prying": {
+          "fastestTimeSimSeconds": 7.5,
+          "quality": 3,
+          "skill": "mechanics",
+          "strikeIntervalSimSeconds": 0.5,
+          "timeSimSeconds": 15
+        }
+      },
+      "id": "gauntlet_cell_door",
+      "name": "Cell door",
+      "shape": [
+        {
+          "position": [0, 0, 0.34999999999999998],
+          "size": [0.14999999999999999, 4, 0.29999999999999999]
+        },
+        {
+          "position": [1.8500000000000001, 0, 0.34999999999999998],
+          "size": [0.14999999999999999, 4, 0.29999999999999999]
+        },
+        {
+          "position": [0.59999999999999998, 0, 0.40000000000000002],
+          "size": [0.12, 4, 0.20000000000000001]
+        },
+        {
+          "position": [1.25, 0, 0.40000000000000002],
+          "size": [0.12, 4, 0.20000000000000001]
+        },
+        {
+          "position": [0, 0.10000000000000001, 0.34999999999999998],
+          "size": [2, 0.14999999999999999, 0.29999999999999999]
+        },
+        {
+          "position": [0, 3.7000000000000002, 0.34999999999999998],
+          "size": [2, 0.14999999999999999, 0.29999999999999999]
+        },
+        {
+          "position": [1.5, 1.7, 0.29999999999999999],
+          "size": [0.34999999999999998, 0.40000000000000002, 0.40000000000000002]
+        }
+      ],
+      "size": [2, 4, 1]
+    },
+    {
       "color": "#c94b3d",
       "id": "gauntlet_button",
       "name": "Nuclear objective button",
@@ -259,7 +329,34 @@
       "size": [6, 8, 2]
     }
   ],
+  "items": [
+    {
+      "category": "tool",
+      "description": "A small key stamped ARMOURY.",
+      "economy": {
+        "tiers": ["Tier1"],
+        "usage": ["Hunting"]
+      },
+      "id": "gauntlet_police_armoury_key",
+      "key": {
+        "lock": "gauntlet_police_armoury"
+      },
+      "name": "Police armoury key",
+      "size": [1, 1],
+      "weight": 10
+    }
+  ],
   "loot": [
+    {
+      "entries": [
+        {
+          "item": "gauntlet_police_armoury_key",
+          "weight": 1
+        }
+      ],
+      "id": "gauntlet_police_office_key",
+      "rolls": [1, 1]
+    },
     {
       "entries": [
         {
@@ -5897,7 +5994,7 @@
     },
     {
       "access": {
-        "entrance": [8, 1, 6],
+        "entrance": [8, 1, 4],
         "ground": "floor_0",
         "stairs": [],
         "storeys": [
@@ -5908,12 +6005,32 @@
         ]
       },
       "anchors": {
-        "entry": {
-          "at": [8, 1, 6],
+        "armoury": {
+          "at": [14, 1, 12],
+          "kind": "point"
+        },
+        "cell_east": {
+          "at": [9, 1, 13],
           "kind": "standing"
         },
-        "stock": {
-          "at": [8, 1, 12],
+        "cell_west": {
+          "at": [4, 1, 13],
+          "kind": "standing"
+        },
+        "entry": {
+          "at": [8, 1, 4],
+          "kind": "standing"
+        },
+        "holding": {
+          "at": [8, 1, 9],
+          "kind": "standing"
+        },
+        "office": {
+          "at": [12, 1, 6],
+          "kind": "standing"
+        },
+        "reception": {
+          "at": [6, 1, 5],
           "kind": "standing"
         }
       },
@@ -16567,102 +16684,102 @@
       "id": "gauntlet_police_rooms",
       "layers": [
         [
-          "..............",
-          "..............",
-          ".CCC..........",
-          ".CCC..........",
-          "..............",
-          "..............",
-          "..............",
+          ".c.c.....#CCC.",
+          ".RRc.....#CCC.",
+          ".RR......O...c",
+          ".RR......O....",
           "######DD######",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
+          ".........L....",
+          ".........L....",
+          "BBEE#BBEE#GG..",
+          "bb..#bb..#GG..",
+          "bb..#bb..#AA..",
+          "bb..#bb..#AA..",
+          "bb..#bb..#..SS"
         ],
         [
-          "..............",
-          "..............",
-          ".CCC..........",
-          ".CCC..........",
-          "..............",
-          "..............",
-          "..............",
+          ".c.c.....#CCC.",
+          ".RRc.....#CCC.",
+          ".RR......O...c",
+          ".RR......O....",
           "######DD######",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
+          ".........L....",
+          ".........L....",
+          "BBEE#BBEE#GG..",
+          "....#....#GG..",
+          "....#....#AA..",
+          "....#....#AA..",
+          "....#....#..SS"
         ],
         [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
+          ".........#....",
+          ".........#....",
+          ".........O....",
+          ".........O....",
           "######DD######",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
+          ".........L....",
+          ".........L....",
+          "BBEE#BBEE#GG..",
+          "....#....#GG..",
+          "....#....#....",
+          "....#....#....",
+          "....#....#..SS"
         ],
         [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
+          ".........#....",
+          ".........#....",
+          ".........O....",
+          ".........O....",
           "######DD######",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
+          ".........L....",
+          ".........L....",
+          "BBEE#BBEE#GG..",
+          "....#....#GG..",
+          "....#....#....",
+          "....#....#....",
+          "....#....#..SS"
         ],
         [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
+          ".........#....",
+          ".........#....",
+          ".........#....",
+          ".........#....",
           "##############",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
+          ".........#....",
+          ".........#....",
+          "##########....",
+          "....#....#....",
+          "....#....#....",
+          "....#....#....",
+          "....#....#...."
         ],
         [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
+          ".........#....",
+          ".........#....",
+          ".........#....",
+          ".........#....",
           "##############",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
+          ".........#....",
+          ".........#....",
+          "##########....",
+          "....#....#....",
+          "....#....#....",
+          "....#....#....",
+          "....#....#...."
         ],
         [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
+          ".........#....",
+          ".........#....",
+          ".........#....",
+          ".........#....",
+          "##############",
+          ".........#....",
+          ".........#....",
+          "##########....",
+          "....#....#....",
+          "....#....#....",
+          "....#....#....",
+          "....#....#...."
         ]
       ],
       "lootContext": {
@@ -16672,108 +16789,108 @@
       "ownership": {
         "layers": [
           [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSSRRRRRRRRRR",
-            "RSSSRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
+            "RSRSRRRRRSSSSR",
+            "RSSSRRRRRSSSSR",
+            "RSSRRRRRRSRRRS",
+            "RSSRRRRRRSRRRR",
             "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "SSSSSSSSSSSSRR",
+            "SSRRSSSRRSSSRR",
+            "SSRRSSSRRSSSRR",
+            "SSRRSSSRRSSSRR",
+            "SSRRSSSRRSRRSS"
           ],
           [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSSRRRRRRRRRR",
-            "RSSSRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
+            "RSRSRRRRRSSSSR",
+            "RSSSRRRRRSSSSR",
+            "RSSRRRRRRSRRRS",
+            "RSSRRRRRRSRRRR",
             "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "SSSSSSSSSSSSRR",
+            "RRRRSRRRRSSSRR",
+            "RRRRSRRRRSSSRR",
+            "RRRRSRRRRSSSRR",
+            "RRRRSRRRRSRRSS"
           ],
           [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
             "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "SSSSSSSSSSSSRR",
+            "RRRRSRRRRSSSRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRSS"
           ],
           [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
             "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "SSSSSSSSSSSSRR",
+            "RRRRSRRRRSSSRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRSS"
           ],
           [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
             "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "SSSSSSSSSSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR"
           ],
           [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
             "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "SSSSSSSSSSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR"
           ],
           [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "SSSSSSSSSSSSSS",
+            "RRRRRRRRRSRRRR",
+            "RRRRRRRRRSRRRR",
+            "SSSSSSSSSSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR",
+            "RRRRSRRRRSRRRR"
           ]
         ]
       },
       "palette": {
         "#": {
-          "material": "facade",
+          "material": "partition",
           "role": "shell"
         },
         ".": {
@@ -16784,16 +16901,49 @@
           "furniture": "crate",
           "loot": "gauntlet_ammunition"
         },
+        "B": {
+          "furniture": "gauntlet_cell_bars"
+        },
         "C": {
           "furniture": "desk",
-          "loot": "gauntlet_police_gear"
+          "loot": "gauntlet_police_office_key"
         },
         "D": {
           "furniture": "wood_door"
         },
+        "E": {
+          "furniture": "gauntlet_cell_door"
+        },
         "G": {
           "furniture": "range_rack",
           "loot": "gauntlet_civilian_guns"
+        },
+        "L": {
+          "facing": "e",
+          "furniture": "wood_door",
+          "lock": {
+            "id": "gauntlet_police_armoury",
+            "locked": true
+          }
+        },
+        "O": {
+          "facing": "e",
+          "furniture": "wood_door"
+        },
+        "R": {
+          "facing": "e",
+          "furniture": "desk",
+          "loot": "desk"
+        },
+        "S": {
+          "furniture": "shelf",
+          "loot": "gauntlet_police_gear"
+        },
+        "b": {
+          "furniture": "bed"
+        },
+        "c": {
+          "furniture": "chair"
         }
       },
       "ports": [],
@@ -18201,6 +18351,10 @@
         "opening": {
           "block": "air",
           "role": "opening"
+        },
+        "partition": {
+          "block": "planks",
+          "role": "shell"
         },
         "sign": {
           "block": "siding_blue",

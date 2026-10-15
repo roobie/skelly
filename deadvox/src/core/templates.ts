@@ -39,13 +39,15 @@ export function* cellsOf([sx, sy, sz]: readonly [number, number, number]): Gener
   }
 }
 
+type TemplateCells = Pick<TemplateDef, 'size' | 'layers'>;
+
 /** The character at a template cell, or undefined outside the layers. */
-const charAt = (template: TemplateDef, x: number, y: number, z: number): string | undefined => {
+const charAt = (template: TemplateCells, x: number, y: number, z: number): string | undefined => {
   const row = template.layers[y]?.[z] ?? '';
   return row.length === template.size[0] ? row[x] : [...row][x];
 };
 
-function* markedCells(template: TemplateDef, char: string): Generator<Vec3> {
+function* markedCells(template: TemplateCells, char: string): Generator<Vec3> {
   const [sx, sy, sz] = template.size;
   for (let y = 0; y < sy; y++) {
     for (let z = 0; z < sz; z++) {
@@ -64,7 +66,7 @@ function* markedCells(template: TemplateDef, char: string): Generator<Vec3> {
  * Returns the anchors, or why the marks don't split into whole pieces.
  */
 export const findPieces = (
-  template: TemplateDef,
+  template: TemplateCells,
   char: string,
   piece: Vec3,
 ): { anchors: Vec3[]; problem?: undefined } | { anchors?: undefined; problem: string } => {
@@ -94,9 +96,9 @@ export const findPieces = (
 };
 
 /** Actual door-lock occurrences, not unused palette declarations; shared by content and site checks. */
-export const templateLockIds = (registry: Registry, template: TemplateDef): string[] =>
+export const templateLockIds = (registry: Registry, template: TemplateDef | MapPieceDef): string[] =>
   Object.entries(template.palette).flatMap(([char, entry]) => {
-    if (typeof entry === 'string' || !entry.lock || !entry.furniture) {
+    if (typeof entry === 'string' || !('lock' in entry) || !entry.lock || !entry.furniture) {
       return [];
     }
     const furniture = registry.furniture.get(entry.furniture);
