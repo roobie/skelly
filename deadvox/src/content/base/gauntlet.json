@@ -15417,7 +15417,7 @@
           "..............",
           "..............",
           "..............",
-          "##############",
+          "..............",
           "..............",
           "..............",
           "..............",
@@ -15522,7 +15522,7 @@
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "SSSSSSSSSSSSSS",
+            "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
@@ -15557,7 +15557,7 @@
       },
       "ports": [],
       "size": [14, 7, 12],
-      "style": "brick_townhouse"
+      "style": "gauntlet_police"
     },
     {
       "anchors": {},
