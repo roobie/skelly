@@ -104,7 +104,9 @@ local building(id, context, shellId, roomId) = {
     { id: 'gauntlet_police', bindings: {
       facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
       sign: { role: 'trim', block: 'siding_blue' },
-      partition: { role: 'shell', block: 'planks' },
+      partition: { role: 'shell', block: 'concrete' },
+      floor: { role: 'interior_floor', block: 'concrete' },
+      footing: { role: 'support', block: 'concrete' },
     } },
     { id: 'gauntlet_food_shop', bindings: {
       facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
@@ -142,7 +144,12 @@ local building(id, context, shellId, roomId) = {
   ],
   mapAssemblies: [
     building('gauntlet_police_station', hunting, 'gauntlet_police_front', 'gauntlet_police_rooms') + {
-      slots+: police.chairSlots,
+      slots: [
+        s + if s.id == 'ground' || s.id == 'roof' then {
+          choices: [choice + { ref+: { style: 'gauntlet_police' } } for choice in s.choices],
+        } else {}
+        for s in super.slots
+      ] + police.chairSlots,
       anchors: {
         entry: { kind: 'standing', at: [8, 1, 4] },
         reception: { kind: 'standing', at: [8, 1, 6] },

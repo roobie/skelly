@@ -104,6 +104,17 @@ it('keeps every furniture disorder alternative clear of walls, furniture and doo
   }
 });
 
+it('has no wooden-plank structural surfaces in the police station', () => {
+  const { registry } = content;
+  const station = compileAssembly(registry, registry.mapAssemblies.get('gauntlet_police_station')!, {
+    seed: 1,
+    siteId: 'police_material_contract',
+  });
+  const structural = [...new Set(station.blocks)].map((id) => registry.blocks[id]!).filter(({ solid }) => solid);
+  expect(structural.length).toBeGreaterThan(0);
+  expect(structural.filter(({ pattern }) => pattern === 'planks')).toEqual([]);
+});
+
 it('keeps the office key outside the locked armoury and police weapons and ammunition inside it', () => {
   const { registry } = content;
   const station = compileAssembly(registry, registry.mapAssemblies.get('gauntlet_police_station')!, {

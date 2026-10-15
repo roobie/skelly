@@ -6113,7 +6113,8 @@
             {
               "ref": {
                 "id": "gauntlet_city_ground",
-                "kind": "piece"
+                "kind": "piece",
+                "style": "gauntlet_police"
               },
               "weight": 1
             }
@@ -6158,7 +6159,8 @@
             {
               "ref": {
                 "id": "gauntlet_city_roof",
-                "kind": "piece"
+                "kind": "piece",
+                "style": "gauntlet_police"
               },
               "weight": 1
             }
@@ -18591,12 +18593,20 @@
           "block": "brick",
           "role": "shell"
         },
+        "floor": {
+          "block": "concrete",
+          "role": "interior_floor"
+        },
+        "footing": {
+          "block": "concrete",
+          "role": "support"
+        },
         "opening": {
           "block": "air",
           "role": "opening"
         },
         "partition": {
-          "block": "planks",
+          "block": "concrete",
           "role": "shell"
         },
         "sign": {
