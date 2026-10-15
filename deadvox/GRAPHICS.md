@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're changing procedural surface weathering or building appearance
-  - you're changing the solar-phase look, flashlight daylight adaptation, or evaluating renderer performance
+  - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, or evaluating renderer performance
   - you're changing wide ambient occlusion or its interaction with skylight
   - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating opt-in GPU quality trials

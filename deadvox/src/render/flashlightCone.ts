@@ -23,29 +23,6 @@ export const withFlashlightSpill = (chunk: string): string => {
   )}`;
 };
 
-/** CPU reference of the shader profile, for angular property checks. */
-export const flashlightConeAttenuation = (
-  angle: number,
-  beamHalfAngle: number,
-  penumbra: number,
-  profile: BeamSpill,
-): number => {
-  const smoothstep = (lo: number, hi: number, value: number): number => {
-    const t = Math.max(0, Math.min(1, (value - lo) / (hi - lo)));
-    return t * t * (3 - 2 * t);
-  };
-  const coneCosine = Math.cos(beamHalfAngle);
-  const angleCosine = Math.cos(angle);
-  const hotspot = smoothstep(
-    coneCosine,
-    Math.max(Math.cos(beamHalfAngle * (1 - penumbra)), coneCosine + (1 - coneCosine) * MINIMUM_SOFTNESS),
-    angleCosine,
-  );
-  const spill =
-    profile.intensity * smoothstep(Math.cos(spillHalfAngle(beamHalfAngle, profile)), coneCosine, angleCosine);
-  return spill + (1 - spill) * hotspot;
-};
-
 // UniformsUtils.clone preserves typed-array identity, unlike Vector2 or ordinary arrays.
 // Every built-in material therefore observes active-light changes without shader recompiles.
 const spillUniform = { value: new Float32Array([1, 0]) };
