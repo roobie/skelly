@@ -21,9 +21,23 @@ try {
     await page.waitForFunction(() => document.querySelector('#world-loading')?.checkVisibility?.() !== true, null, {
       timeout: 180_000,
     });
-    for (let t = 0; t < 12; t++) {
+    for (let t = 0; t < 6; t++) {
       await page.waitForTimeout(20_000);
-      const text = await page.evaluate(() => /chunks[^\n]*/.exec(document.body.innerText)?.[0]);
+      const text = await page.evaluate(() => {
+        const g = globalThis;
+        const w = g.gauntletWitness ?? g.worldLoadWitness;
+        const el = document.querySelector('#world-loading');
+        return JSON.stringify({
+          chunks: /chunks[^\n]*/.exec(document.body.innerText)?.[0],
+          witness: Object.keys(g).filter((k) => /witness/i.test(k)),
+          loadingEl: el ? [el.className, el.hidden, el.checkVisibility?.()] : null,
+          ready: w?.worldLoading?.ready,
+          paused: w?.session?.sim?.paused,
+          locked: w?.input?.locked,
+          unmeshed: w?.engine?.streamer?.unmeshedColumns?.(w.session.body.pos[0], w.session.body.pos[2], w.engine.config.radiusChunks),
+          lockEl: document.pointerLockElement !== null,
+        });
+      });
       console.log(`t=${(t + 1) * 20}s ${text}`);
     }
     await page.screenshot({ path: `${prefix}${i}.png`, timeout: 90_000 });
