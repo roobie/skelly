@@ -6,8 +6,9 @@ import type { Registry } from '../core/content.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { DEFAULT_TORCH } from '../core/mood.ts';
+import type { BeamSpill } from '../core/schema.ts';
 import type { Sky } from '../core/sky.ts';
-import { installFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
+import { installFlashlightSpill, setFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
 import type { HeldItems } from './hands.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
 
@@ -89,6 +90,7 @@ export class Flashlight {
   private readonly ahead = new Vector3();
 
   private readonly spill: boolean;
+  private activeSpill: BeamSpill | undefined;
 
   constructor(scene: Scene, spill = true) {
     this.spill = spill;
@@ -151,10 +153,15 @@ export class Flashlight {
     this.light.intensity = def.intensity * this.daylightScale * this.strength;
     this.light.castShadow = flashlightCastsShadow(this.shadowsAllowed, this.light.intensity);
     this.light.distance = def.radius;
-    this.light.angle = MathUtils.degToRad(def.beam.angleDegrees / 2);
+    const angle = MathUtils.degToRad(def.beam.angleDegrees / 2);
+    if (this.spill && (this.activeSpill !== def.beam.spill || angle !== this.light.angle)) {
+      this.activeSpill = def.beam.spill;
+      setFlashlightSpill(def.beam.spill);
+      // The shader widens the cone without changing its content-defined hotspot.
+      this.light.shadow.focus = spillHalfAngle(angle, def.beam.spill) / angle;
+    }
+    this.light.angle = angle;
     this.light.penumbra = def.beam.penumbra;
-    // The shader widens the cone without changing its content-defined hotspot.
-    this.light.shadow.focus = this.spill ? spillHalfAngle(this.light.angle) / this.light.angle : 1;
     this.light.position.copy(this.at);
     camera.getWorldDirection(this.ahead);
     this.light.target.position.copy(this.at).addScaledVector(this.ahead, 10);

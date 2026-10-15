@@ -1,10 +1,11 @@
-import { ShaderChunk } from 'three';
+import { ShaderChunk, ShaderLib } from 'three';
+import type { BeamSpill } from '../core/schema.ts';
 
-export const FLASHLIGHT_SPILL = { radiusRatio: 1.5, intensity: 0.18, minimumSoftness: 0.1 } as const;
+const MINIMUM_SOFTNESS = 0.1;
 
 /** Cone radius, not angle, grows by the spill ratio at every axial distance. */
-export const spillHalfAngle = (beamHalfAngle: number): number =>
-  Math.atan(FLASHLIGHT_SPILL.radiusRatio * Math.tan(beamHalfAngle));
+export const spillHalfAngle = (beamHalfAngle: number, profile: BeamSpill): number =>
+  Math.atan(profile.radiusRatio * Math.tan(beamHalfAngle));
 
 const ORIGINAL = 'return smoothstep( coneCosine, penumbraCosine, angleCosine );';
 
@@ -13,18 +14,22 @@ export const withFlashlightSpill = (chunk: string): string => {
   if (!chunk.includes(ORIGINAL)) {
     throw new Error('flashlightCone: spot attenuation not found in three lights_pars_begin chunk');
   }
-  const { radiusRatio, intensity, minimumSoftness } = FLASHLIGHT_SPILL;
-  return chunk.replace(
+  return `uniform vec2 uFlashlightSpill;\n${chunk.replace(
     ORIGINAL,
-    `float spillCosine = coneCosine / sqrt( ${radiusRatio ** 2} + ${1 - radiusRatio ** 2} * coneCosine * coneCosine );
-    float hotspot = smoothstep( coneCosine, max( penumbraCosine, mix( coneCosine, 1.0, ${minimumSoftness} ) ), angleCosine );
-    float spill = ${intensity} * smoothstep( spillCosine, coneCosine, angleCosine );
+    `float spillCosine = coneCosine / sqrt( uFlashlightSpill.x + ( 1.0 - uFlashlightSpill.x ) * coneCosine * coneCosine );
+    float hotspot = smoothstep( coneCosine, max( penumbraCosine, mix( coneCosine, 1.0, ${MINIMUM_SOFTNESS} ) ), angleCosine );
+    float spill = uFlashlightSpill.y * smoothstep( spillCosine, coneCosine, angleCosine );
     return mix( spill, 1.0, hotspot );`,
-  );
+  )}`;
 };
 
 /** CPU reference of the shader profile, for angular property checks. */
-export const flashlightConeAttenuation = (angle: number, beamHalfAngle: number, penumbra: number): number => {
+export const flashlightConeAttenuation = (
+  angle: number,
+  beamHalfAngle: number,
+  penumbra: number,
+  profile: BeamSpill,
+): number => {
   const smoothstep = (lo: number, hi: number, value: number): number => {
     const t = Math.max(0, Math.min(1, (value - lo) / (hi - lo)));
     return t * t * (3 - 2 * t);
@@ -33,24 +38,32 @@ export const flashlightConeAttenuation = (angle: number, beamHalfAngle: number, 
   const angleCosine = Math.cos(angle);
   const hotspot = smoothstep(
     coneCosine,
-    Math.max(
-      Math.cos(beamHalfAngle * (1 - penumbra)),
-      coneCosine + (1 - coneCosine) * FLASHLIGHT_SPILL.minimumSoftness,
-    ),
+    Math.max(Math.cos(beamHalfAngle * (1 - penumbra)), coneCosine + (1 - coneCosine) * MINIMUM_SOFTNESS),
     angleCosine,
   );
   const spill =
-    FLASHLIGHT_SPILL.intensity * smoothstep(Math.cos(spillHalfAngle(beamHalfAngle)), coneCosine, angleCosine);
+    profile.intensity * smoothstep(Math.cos(spillHalfAngle(beamHalfAngle, profile)), coneCosine, angleCosine);
   return spill + (1 - spill) * hotspot;
+};
+
+// UniformsUtils.clone preserves typed-array identity, unlike Vector2 or ordinary arrays.
+// Every built-in material therefore observes active-light changes without shader recompiles.
+const spillUniform = { value: new Float32Array([1, 0]) };
+export const setFlashlightSpill = (profile: BeamSpill): void => {
+  spillUniform.value[0] = profile.radiusRatio ** 2;
+  spillUniform.value[1] = profile.intensity;
 };
 
 let installed = false;
 
-/** Install before material compilation; the shared spot chunk covers every receiving material. */
+/** Install before material compilation; shared chunks and uniforms cover all built-in receiving materials. */
 export const installFlashlightSpill = (): void => {
   if (installed) {
     return;
   }
   ShaderChunk.lights_pars_begin = withFlashlightSpill(ShaderChunk.lights_pars_begin);
+  for (const shader of Object.values(ShaderLib)) {
+    shader.uniforms.uFlashlightSpill = spillUniform;
+  }
   installed = true;
 };
