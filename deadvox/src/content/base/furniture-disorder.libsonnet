@@ -1,6 +1,9 @@
 local chair = std.filter(function(f) f.id == 'chair', (import 'furniture.jsonnet').furniture)[0];
+// A fallen chair keeps its other properties, but cannot provide a seat.
 local tipped(id, axes, reverse) = {
-  id: id, name: chair.name, color: chair.color,
+  [field]: chair[field] for field in std.objectFields(chair) if field != 'rest'
+} + {
+  id: id,
   size: [chair.size[a] for a in axes],
   shape: [
     {

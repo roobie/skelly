@@ -3,7 +3,13 @@ import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
-import { type CompiledTemplate, cellsOf, compileAssembly, type PlacedPiece } from '../src/core/templates.ts';
+import {
+  type CompiledTemplate,
+  cellsOf,
+  compileAssembly,
+  compileMapPiece,
+  type PlacedPiece,
+} from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 
 const content = buildBundledContent();
@@ -87,9 +93,14 @@ it('keeps every furniture disorder alternative clear of walls, furniture and doo
     for (const furniture of ['desk', 'chair', 'bed', 'gauntlet_cell_bars', 'gauntlet_cell_door']) {
       expect(furnishings.has(furniture), furniture).toBe(true);
     }
-    expect(station.pieces.some(({ furniture }) => furniture === 'chair_on_back' || furniture === 'chair_on_side')).toBe(
-      true,
-    );
+    const poseFurniture = alternatives.flatMap(({ choices }) => {
+      const { ref } = choices[variant % choices.length]!;
+      return compileMapPiece(registry, registry.mapPieces.get(ref.id)!).pieces.map(
+        ({ furniture }) => registry.furniture.get(furniture)!,
+      );
+    });
+    expect(poseFurniture.some(({ rest }) => rest === undefined)).toBe(true);
+    expect(poseFurniture.some(({ rest }) => rest !== undefined)).toBe(true);
   }
 });
 
