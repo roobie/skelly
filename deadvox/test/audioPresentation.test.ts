@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { SoundDef } from '../src/core/content.ts';
+import { buildRegistry, type SoundDef } from '../src/core/content.ts';
 import type { Item } from '../src/core/items.ts';
 import {
   createRefusalPresenter,
@@ -73,30 +74,79 @@ const firearm = (type: string, slots: Item['slots'] = {}): Item => ({
   slots,
 });
 
+const FIXTURES = 'src/content/base';
+const baseRegistry = buildRegistry(
+  readdirSync(FIXTURES)
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+    .map((file) => ({
+      source: file,
+      data: JSON.parse(readFileSync(join(FIXTURES, file), 'utf8')) as unknown,
+    })),
+).registry;
+
 describe('firearm audio presentation', () => {
   it('selects the M4 sound only for the AR and keeps AK and actor selection consistent', () => {
     const ar = firearm('rifle_assault');
     const ak = firearm('rifle_ak');
-    expect(firearmShotSound(ar)).toMatchObject({ event: 'gunshot_m4', sourceLabel: ar.type, listenerRelative: true });
-    expect(firearmShotSound(ak)).toMatchObject({ event: 'gunshot', sourceLabel: ak.type, listenerRelative: true });
+    expect(firearmShotSound(baseRegistry, ar)).toMatchObject({
+      event: 'gunshot_m4',
+      sourceLabel: ar.type,
+      listenerRelative: true,
+    });
+    expect(firearmShotSound(baseRegistry, ak)).toMatchObject({
+      event: 'gunshot',
+      sourceLabel: ak.type,
+      listenerRelative: true,
+    });
 
     const suppressedAr = firearm('rifle_assault', { muzzle: firearm('real_suppressor') });
-    expect(firearmShotSound(suppressedAr)).toMatchObject({
+    expect(firearmShotSound(baseRegistry, suppressedAr)).toMatchObject({
       event: 'gunshot_m4_suppressed',
       sourceLabel: suppressedAr.type,
       listenerRelative: true,
     });
-    expect(firearmShotSound(suppressedAr, 'actor')).toMatchObject({
+    expect(firearmShotSound(baseRegistry, suppressedAr, 'actor')).toMatchObject({
       event: 'gunshot_m4_suppressed',
       listenerRelative: false,
     });
   });
 
+  it('selects a new firearm id from its authored shot sound without a code edit', () => {
+    const { registry, issues } = buildRegistry([
+      ...readdirSync(FIXTURES)
+        .filter((file) => file.endsWith('.json'))
+        .sort()
+        .map((file) => ({
+          source: file,
+          data: JSON.parse(readFileSync(join(FIXTURES, file), 'utf8')) as unknown,
+        })),
+      {
+        source: 'fixture-firearm.json',
+        data: {
+          items: [
+            {
+              id: 'fixture_carbine',
+              economy: { usage: [], tiers: [] },
+              name: 'Fixture carbine',
+              category: 'weapon',
+              weight: 1,
+              size: [1, 1],
+              firearm: { shotSound: 'gunshot_m4', recoilKickRadians: 0.01, dispersionRadians: 0 },
+            },
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    expect(firearmShotSound(registry, firearm('fixture_carbine')).event).toBe('gunshot_m4');
+  });
+
   it('keeps M4 sound selection separate from attachment-based noise scaling', () => {
     const definitions = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as SoundDef[];
     const byId = new Map(definitions.map((definition) => [definition.id, definition]));
-    const unsuppressed = firearmShotSound(firearm('rifle_assault'));
-    const suppressed = firearmShotSound(firearm('rifle_assault', { muzzle: firearm('real_suppressor') }));
+    const unsuppressed = firearmShotSound(baseRegistry, firearm('rifle_assault'));
+    const suppressed = firearmShotSound(baseRegistry, firearm('rifle_assault', { muzzle: firearm('real_suppressor') }));
     const unsuppressedNoise = byId.get(unsuppressed.event)?.noise;
     const suppressedNoise = byId.get(suppressed.event)?.noise;
 

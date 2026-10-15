@@ -659,40 +659,66 @@ export const compileAssembly = (
   };
 };
 
+const emptyVoxels = (size: Vec3) => {
+  const volume = size[0] * size[1] * size[2];
+  return {
+    size,
+    blocks: new Uint16Array(volume),
+    ownership: new Uint8Array(volume),
+    reserved: new Uint8Array(volume),
+    provenance: new Array<VoxelProvenance | undefined>(volume),
+  };
+};
+
 const composeAssemblyVoxels = (
   assembly: TemplateAssembly,
   resolved: readonly { slot: TemplateSlot; placement: Placement }[],
   context: AssemblyContext,
 ) => {
-  const volume = assembly.size[0] * assembly.size[1] * assembly.size[2];
-  const blocks = new Uint16Array(volume);
-  const ownership = new Uint8Array(volume);
-  const reserved = new Uint8Array(volume);
-  const provenance: (VoxelProvenance | undefined)[] = new Array(volume);
+  const voxels = emptyVoxels(assembly.size);
   for (const { slot, placement } of resolved) {
-    for (const cell of cellsOf(placement.template.size)) {
-      const from = ownershipCell(placement.template.size, cell);
-      if (placement.template.ownership![from] === 0) {
-        continue;
+    const collide = (to: number, at: Vec3, inherited: VoxelProvenance): never => {
+      const { reserved, provenance } = voxels;
+      throw new Error(
+        `${slotLabel(context, assembly, slot)} variant=${placement.template.id} source=${inherited.source}: ` +
+          `${reserved[to] ? 'reserved circulation collision' : 'ownership collision'} at ${at.join(',')} between ${provenance[to]!.owner} (${provenance[to]!.source}) and ${inherited.owner}`,
+      );
+    };
+    composePlacement(slot, placement, voxels, collide);
+  }
+  const { size: _size, ...composed } = voxels;
+  return composed;
+};
+
+// Hot at content build: plain index arithmetic, no per-cell tuples.
+const composePlacement = (
+  slot: TemplateSlot,
+  { template, origin, turn }: Placement,
+  { size, blocks, ownership, reserved, provenance }: ReturnType<typeof emptyVoxels>,
+  collide: (to: number, at: Vec3, inherited: VoxelProvenance) => never,
+) => {
+  const [sx, sy, sz] = template.size;
+  for (let y = 0; y < sy; y++) {
+    for (let z = 0; z < sz; z++) {
+      for (let x = 0; x < sx; x++) {
+        const from = x + sx * (z + sz * y);
+        if (template.ownership![from] === 0) {
+          continue;
+        }
+        const [u, v] = turned(template.size, turn, x, z);
+        const at: Vec3 = [origin[0] + u, origin[1] + y, origin[2] + v];
+        const to = ownershipCell(size, at);
+        const inherited = template.provenance![from]!;
+        if (ownership[to] !== 0) {
+          collide(to, at, inherited);
+        }
+        blocks[to] = template.blocks[from]!;
+        ownership[to] = template.ownership![from]!;
+        reserved[to] = template.reserved![from]!;
+        provenance[to] = { ...inherited, turn: ((inherited.turn + slot.turn) % 4) as Turn };
       }
-      const point = placedPoint(placement, [cell[0] + 0.5, cell[1], cell[2] + 0.5]);
-      const at: Vec3 = [point[0] - 0.5, point[1], point[2] - 0.5];
-      const to = ownershipCell(assembly.size, at);
-      const inherited = placement.template.provenance![from]!;
-      const { owner } = inherited;
-      if (ownership[to] !== 0) {
-        throw new Error(
-          `${slotLabel(context, assembly, slot)} variant=${placement.template.id} source=${inherited.source}: ` +
-            `${reserved[to] ? 'reserved circulation collision' : 'ownership collision'} at ${at.join(',')} between ${provenance[to]!.owner} (${provenance[to]!.source}) and ${owner}`,
-        );
-      }
-      blocks[to] = placement.template.blocks[from]!;
-      ownership[to] = placement.template.ownership![from]!;
-      reserved[to] = placement.template.reserved![from]!;
-      provenance[to] = { ...inherited, turn: ((inherited.turn + slot.turn) % 4) as Turn };
     }
   }
-  return { blocks, ownership, reserved, provenance };
 };
 
 /** A placed piece in world coordinates. */

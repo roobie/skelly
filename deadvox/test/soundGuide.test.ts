@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
 import type { Manifest } from '../src/core/assets.ts';
 import type { SoundDef } from '../src/core/content.ts';
-import { FIREARM_SHOT_SOUND_EVENTS, HEARTBEAT_FILES } from '../src/game/audioPresentation.ts';
+import { HEARTBEAT_FILES } from '../src/game/audioPresentation.ts';
 import {
   buildHeartbeatSoundGuide,
   buildSoundGuide,
@@ -141,7 +142,24 @@ describe('audio listening guide', () => {
       expect(entry?.variants.every(({ author, licence }) => author === 'BR' && licence === 'CC0-1.0')).toBe(true);
     }
     expect(guide.some(({ id }) => id === 'gunshot_pbs1_reference')).toBe(true);
-    expect(FIREARM_SHOT_SOUND_EVENTS.has('gunshot_pbs1_reference')).toBe(false);
+    const shotEvents = new Set(
+      readdirSync('src/content/base')
+        .filter((file) => file.endsWith('.json'))
+        .flatMap(
+          (file) =>
+            (
+              JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as {
+                items?: { firearm?: { shotSound: string; suppressedShotSound?: string } }[];
+              }
+            ).items ?? [],
+        )
+        .flatMap((item) =>
+          item.firearm
+            ? [item.firearm.shotSound, item.firearm.suppressedShotSound].filter((event) => event !== undefined)
+            : [],
+        ),
+    );
+    expect(shotEvents.has('gunshot_pbs1_reference')).toBe(false);
   });
 
   it('credits every listed variant from its manifest source', () => {

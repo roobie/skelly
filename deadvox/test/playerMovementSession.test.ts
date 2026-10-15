@@ -38,6 +38,7 @@ const makeRuntime = ({
   seed = 73,
   restore = undefined as Readonly<SaveSnapshot> | undefined,
   content = registry,
+  world = new World(),
 } = {}) => {
   const scale = makeScale(0.5);
   let intent: MoveIntent = { ...IDLE };
@@ -48,7 +49,7 @@ const makeRuntime = ({
   const session = createSession({
     registry: content,
     ...(restore ? { restore } : {}),
-    world: new World(),
+    world,
     isSolid,
     isOpaque: isSolid,
     scale,
@@ -308,7 +309,14 @@ describe('session movement consequences', () => {
   });
 
   it('feeds the session step clock to the readied-walk aim once per stride', () => {
-    const runtime = makeRuntime();
+    const world = new World();
+    const stone = registry.blockIds.get('stone')!;
+    for (let x = -5; x <= 5; x++) {
+      for (let z = -80; z <= 80; z++) {
+        world.setBlock(x, 0, z, stone);
+      }
+    }
+    const runtime = makeRuntime({ world });
     const firearm = runtime.session.inventory.create('pump_shotgun');
     expect(runtime.session.inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
     runtime.setReadyHeld(true);

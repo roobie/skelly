@@ -144,21 +144,52 @@ describe('shambler footsteps', () => {
     expect(movedSteps('stroll', 3, fixture)).toBeGreaterThan(0);
   });
 
-  it('maps the block underfoot to the matching shambler surface event', () => {
-    expect(shamblerFootstepEventForBlock('grass')).toBe('shambler_step_grass');
-    expect(shamblerFootstepEventForBlock('dirt')).toBe('shambler_step_mud');
-    expect(shamblerFootstepEventForBlock('sand')).toBe('shambler_step_sand');
-    expect(shamblerFootstepEventForBlock('stone')).toBe('shambler_step_stone');
-    expect(shamblerFootstepEventForBlock('planks')).toBe('shambler_step_wood');
-    expect(shamblerFootstepEventForBlock('carpet')).toBe('shambler_step_leaves');
+  it('keeps a type with no authored footstep family silent while it travels', () => {
+    const silent = { ...SHAMBLER, id: 'fixture_crawler', footstepSound: undefined };
+    expect(movedSteps('stroll', 3, silent)).toBe(0);
+  });
+
+  it('selects the authored shambler footstep for a new block id and keeps air silent', () => {
+    const fixtureBlock = {
+      id: 'fixture_moss',
+      name: 'Moss',
+      color: '#3f6b2f',
+      solid: true,
+      footsteps: { player: 'footstep_grass', shambler: 'shambler_step_grass' },
+    };
+    const fixture = buildRegistry([
+      {
+        source: 'sounds.json',
+        data: JSON.parse(readFileSync(join(BASE, 'sounds.json'), 'utf8')) as unknown,
+      },
+      { source: 'fixture-blocks.json', data: { blocks: [fixtureBlock] } },
+    ]);
+    expect(fixture.issues).toEqual([]);
+    const runtimeId = fixture.registry.blockIds.get(fixtureBlock.id)!;
     let sampledCell: Vec3 | undefined;
     expect(
-      shamblerFootstepEventAt([2.4, 1.3, 3.8], (x, y, z) => {
-        sampledCell = [x, y, z];
-        return 'planks';
-      }),
-    ).toBe('shambler_step_wood');
+      shamblerFootstepEventAt(
+        [2.5, 1.3, 3.5],
+        { halfWidth: 0.3 },
+        (x, y, z) => {
+          sampledCell = [x, y, z];
+          return runtimeId;
+        },
+        fixture.registry.blocks,
+      ),
+    ).toBe('shambler_step_grass');
     expect(sampledCell).toEqual([2, 0, 3]);
+    // Centre over air, footprint on the mossy block: the supporting cell's contract still sounds.
+    expect(
+      shamblerFootstepEventAt(
+        [0.9, 1, 0.5],
+        { halfWidth: 0.6, halfDepth: 0.6 },
+        (x) => (x === 1 ? runtimeId : 0),
+        fixture.registry.blocks,
+      ),
+    ).toBe('shambler_step_grass');
+    const air = fixture.registry.blocks[fixture.registry.blockIds.get('air')!]!;
+    expect(shamblerFootstepEventForBlock(air)).toBeUndefined();
   });
 
   it('lets only the nearest three moving shamblers emit footsteps', () => {

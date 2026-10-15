@@ -340,12 +340,14 @@ describe('passable but opaque vegetation', () => {
     const shamblerFoliage = eventForAsset('world', 'footstep-leaves-');
 
     for (const name of ['tree_trunk', 'tree_branch']) {
-      expect(footstepEventForBlock(name)).toBe(playerWood);
-      expect(shamblerFootstepEventForBlock(name)).toBe(shamblerWood);
+      const block = registry.blocks[registry.blockIds.get(name)!]!;
+      expect(footstepEventForBlock(block)).toBe(playerWood);
+      expect(shamblerFootstepEventForBlock(block)).toBe(shamblerWood);
     }
     for (const name of ['leaves', 'hedge', 'leaf_litter']) {
-      expect(footstepEventForBlock(name)).toBe(playerFoliage);
-      expect(shamblerFootstepEventForBlock(name)).toBe(shamblerFoliage);
+      const block = registry.blocks[registry.blockIds.get(name)!]!;
+      expect(footstepEventForBlock(block)).toBe(playerFoliage);
+      expect(shamblerFootstepEventForBlock(block)).toBe(shamblerFoliage);
     }
   });
 
