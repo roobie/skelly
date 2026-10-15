@@ -24,6 +24,7 @@
           "weight": 18
         },
         {
+          "atMost": 3,
           "ref": {
             "id": "gauntlet_food_store",
             "kind": "assembly"
@@ -31,6 +32,7 @@
           "weight": 6
         },
         {
+          "atMost": 2,
           "ref": {
             "id": "gauntlet_hardware_store",
             "kind": "assembly"
@@ -38,6 +40,7 @@
           "weight": 4
         },
         {
+          "atMost": 2,
           "ref": {
             "id": "gauntlet_medical_site",
             "kind": "assembly"
@@ -45,6 +48,8 @@
           "weight": 3
         },
         {
+          "atLeast": 1,
+          "atMost": 2,
           "ref": {
             "id": "gauntlet_police_station",
             "kind": "assembly"
@@ -52,6 +57,8 @@
           "weight": 2
         },
         {
+          "atLeast": 1,
+          "atMost": 1,
           "ref": {
             "id": "gauntlet_gun_store",
             "kind": "assembly"

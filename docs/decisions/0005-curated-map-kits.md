@@ -23,7 +23,14 @@ references but must not synthesize architecture. The repository-wide rule belong
 Pieces own literal geometry, role palettes, anchors and typed connection contracts.
 Assemblies delegate named spatial slots, select contract-equivalent alternatives and name
 curated transition pieces for joins. Site recipes own placement and intended routes.
-Keep arrangements fixed rather than introducing fitting, backtracking or general grammars.
+Keep arrangements fixed rather than introducing general grammars or search. The one
+exception is a pool quota (`atLeast`): when a fill ends short, it retries the site forcing
+every short row, plus those forced before, into the earliest slots where they fit. It stops
+when the quotas are met or a retry would force no new row, so there is at most one retry per
+quota row, and it aborts naming the pool, the choice and the site if a quota is still unmet.
+The retry is bounded and loud so a plan stays a deterministic function of its seed and a
+content error cannot hide.
+See `deadvox/docs/content.md`, "Curated kits".
 
 Every cell is unclaimed, owned solid or owned air. Air excavates; unclaimed cells leave
 terrain alone. Children stay inside their delegated slots. Siblings never overwrite each
