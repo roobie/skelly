@@ -28,6 +28,12 @@ export const templateBodySpace = (registry: Registry, template: CompiledTemplate
   return { standing: (position: Vec3) => space.standing(position), clear: (position: Vec3) => space.clear(position) };
 };
 const key = (pos: Vec3): string => pos.join(',');
+const FLOOD_STEPS: readonly (readonly [number, number])[] = [
+  [0.5, 0],
+  [-0.5, 0],
+  [0, 0.5],
+  [0, -0.5],
+];
 
 class TemplateSpace {
   readonly registry: Registry;
@@ -79,9 +85,17 @@ class TemplateSpace {
     return this.terrain(x, y, z) || (this.furniture[x + sx * (z + sz * y)]! & (doorsOpen ? 2 : 1)) !== 0;
   }
   clear([x, feet, z]: Vec3): boolean {
-    for (const [bx, y, bz] of bodyCells([x, feet, z])) {
-      if (this.occupied(bx, y, bz, true)) {
-        return false;
+    // Hot at content build: the flood calls this per candidate step, so no generator or tuples.
+    const yEnd = Math.ceil(feet + BODY_HEIGHT);
+    const zEnd = Math.ceil(z + BODY_HALF_WIDTH);
+    const xEnd = Math.ceil(x + BODY_HALF_WIDTH);
+    for (let y = Math.floor(feet); y < yEnd; y++) {
+      for (let bz = Math.floor(z - BODY_HALF_WIDTH); bz < zEnd; bz++) {
+        for (let bx = Math.floor(x - BODY_HALF_WIDTH); bx < xEnd; bx++) {
+          if (this.occupied(bx, y, bz, true)) {
+            return false;
+          }
+        }
       }
     }
     return true;
@@ -237,16 +251,14 @@ class TemplateSpace {
     const reached = new Set([key(entrance)]);
     const queue: Vec3[] = [entrance];
     for (const from of queue) {
-      const neighbours = [
-        [0.5, 0],
-        [-0.5, 0],
-        [0, 0.5],
-        [0, -0.5],
-      ].flatMap(([dx, dz]) => [0, 1, -1].map((dy): Vec3 => [from[0] + dx!, from[1] + dy, from[2] + dz!]));
-      for (const next of neighbours) {
-        if (!reached.has(key(next)) && within(next) && this.canMove(from, next)) {
-          reached.add(key(next));
-          queue.push(next);
+      for (const [dx, dz] of FLOOD_STEPS) {
+        for (const dy of [0, 1, -1]) {
+          const next: Vec3 = [from[0] + dx, from[1] + dy, from[2] + dz];
+          const id = key(next);
+          if (!reached.has(id) && within(next) && this.canMove(from, next)) {
+            reached.add(id);
+            queue.push(next);
+          }
         }
       }
     }
