@@ -514,17 +514,16 @@ try {
     // With overlay scrollbars both gutters are 0, and the cap-wide check below would pass vacuously.
     assert.ok(
       vicinityAtFloor.gutter > 0,
-      `Chromium has classic scrollbars (launched without --hide-scrollbars), so the cap-wide rack meets both scroll gutters: ${JSON.stringify(vicinityAtFloor)}`,
+      `Chromium has classic scrollbars (launched without --hide-scrollbars), so the cap-wide rack meets the pane's scroll gutter: ${JSON.stringify(vicinityAtFloor)}`,
     );
   }
   await page.evaluate(() => globalThis.scrollFixture.addCapRack());
   const capWideRack = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
     const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
-    const scroll = rack?.querySelector('.inv-grid-scroll');
-    const grid = scroll?.querySelector('.inv-grid');
+    const grid = rack?.querySelector('.inv-grid');
     const item = grid?.querySelector('.inv-item');
-    if (!(around && scroll && grid && item)) {
+    if (!(around && grid && item)) {
       throw new Error('cap-width rack fixture is missing');
     }
     const pane = around.getBoundingClientRect();
@@ -537,9 +536,9 @@ try {
       viewport: { width: window.innerWidth, height: window.innerHeight },
       sectionWidth: rack.getBoundingClientRect().width,
       gridWidth: grid.getBoundingClientRect().width,
-      clientWidth: scroll.clientWidth,
-      scrollWidth: scroll.scrollWidth,
-      scrollLeft: scroll.scrollLeft,
+      clientWidth: around.clientWidth,
+      scrollWidth: around.scrollWidth,
+      scrollLeft: around.scrollLeft,
       itemLeft: itemBox.x - grid.getBoundingClientRect().x,
       itemRect: { x: itemBox.x, y: itemBox.y, width: itemBox.width, height: itemBox.height },
       cell,
@@ -567,10 +566,10 @@ try {
     capWideRack.cap - 1,
     'fixture item occupies the rack’s last column',
   );
-  assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
+  assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll the pane sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
   // Grid names in this browser's UI font at the base tuning, in boxes that copy the rendered rack token, so they keep
-  // its classes and gutter. Each line but the last runs until the next glyph would cross the border, nothing shows
+  // its classes. Each line but the last runs until the next glyph would cross the border, nothing shows
   // past the border, and the cell shows at least the start validate predicts. Scroll sizes are read along the lines
   // only: across them, Firefox counts a font's content area as overflow where it is taller than the line height, so
   // the lines' own box is compared with the item's content box instead.
@@ -747,10 +746,9 @@ try {
     page.evaluate(() => {
       const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
       const section = rack?.closest('[data-around-section="container"]');
-      const scroll = rack?.querySelector('.inv-grid-scroll');
-      const grid = scroll?.querySelector('.inv-grid');
+      const grid = rack?.querySelector('.inv-grid');
       const around = document.querySelector('#inventory [data-pane="around"]');
-      if (!(rack && section && scroll && grid && around)) {
+      if (!(rack && section && grid && around)) {
         throw new Error('cap-width container layout is missing');
       }
       const sectionTop = section.getBoundingClientRect().top;
@@ -773,8 +771,8 @@ try {
         gridWidth: grid.getBoundingClientRect().width,
         cap: globalThis.scrollFixture.containerMaxWidthCells,
         cell,
-        scrollWidth: scroll.scrollWidth,
-        clientWidth: scroll.clientWidth,
+        scrollWidth: around.scrollWidth,
+        clientWidth: around.clientWidth,
       };
     });
   const balancedCapContainer = await capContainerLayout();
