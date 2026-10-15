@@ -1311,11 +1311,6 @@ button.inv-option.game-cursor-hover {
   background: #fff;
   content: "";
 }
-.activity-progress-percent {
-  font:
-    1rem ui-monospace,
-    monospace;
-}
 .activity-progress-copy {
   position: absolute;
   top: calc(50% + 4rem);
