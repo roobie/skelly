@@ -13,8 +13,8 @@
 // doesn't change shader programs. The sun's shadow is full whenever its light shines, the night
 // stand-in included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
 // `shadow.intensity` to 0 and stops redrawing its map (but a casting light with no map yet always gets
-// one allocated by three's pass, `needsMap`). The flashlight's `castShadow` follows its beam being on
-// and bright (flashlight.ts), a second program variant that `warmUp` compiles in advance.
+// one allocated by three's pass, `needsMap`). Beam shadow-count variants are warmed in advance to
+// avoid switch-on stalls.
 //
 // The sun's map is drawn from the chunk faces that face it, where its light enters a solid, not from
 // three.js's default for a one-sided material, the back faces where light leaves. At an inside corner
@@ -134,7 +134,7 @@ export class Shadows {
   private readonly rig: Object3D;
   private readonly meshes: ChunkMeshes;
   private state: ShadowState = { ...DEFAULT_SHADOWS, sun: false, torch: false };
-  private torch: SpotLight | undefined;
+  private torches: readonly SpotLight[] = [];
   /** What the flashlight's pass looks through: only layer 0, so the player's figure (layer 1) is left out. */
   private readonly torchView = new PerspectiveCamera();
   private strength = 0;
@@ -216,9 +216,8 @@ export class Shadows {
     return { sun: this.sunCasters, torch: this.torchCasters };
   }
 
-  /** The flashlight whose beam shadows are managed here; its own `castShadow` follows the beam. */
-  attachTorch(light: SpotLight): void {
-    this.torch = light;
+  attachTorches(lights: readonly SpotLight[]): void {
+    this.torches = lights;
   }
 
   /** Takes a whole state, as read from the defaults or the URL. Turning a light's shadows on or off rebuilds the programs once. */
@@ -272,27 +271,21 @@ export class Shadows {
     this.sunDue = sunMapDue(changed, this.sinceDraw);
   }
 
-  /**
-   * Compiles the programs the game draws in, for each state the flashlight's shadow takes (a beam that is
-   * on casts; one that is off doesn't), through `mood.warmUp`. Depth programs, which are tiny, build the first
-   * time something casts.
-   */
   warmUp(
     mood: { warmUp: (scenes: readonly { scene: Scene; camera: Camera }[]) => Promise<unknown> },
     targets: readonly { scene: Scene; camera: Camera }[],
   ): Promise<unknown> {
-    const { torch } = this;
-    const before = torch?.castShadow ?? false;
-    const states = torch && this.state.torch ? [true, false] : [false];
-    // Each call captures the lights as they are right now, before it returns.
-    const jobs = states.map((casts) => {
-      if (torch) {
-        torch.castShadow = casts;
+    const before = this.torches.map((torch) => torch.castShadow);
+    const maxCasting = this.state.torch ? this.torches.length : 0;
+    // Shader variants depend on the number of casting spots, not their identity.
+    const jobs = Array.from({ length: maxCasting + 1 }, (_, count) => {
+      for (const [index, torch] of this.torches.entries()) {
+        torch.castShadow = index >= this.torches.length - maxCasting + count;
       }
       return mood.warmUp(targets);
     });
-    if (torch) {
-      torch.castShadow = before;
+    for (const [index, torch] of this.torches.entries()) {
+      torch.castShadow = before[index]!;
     }
     return Promise.all(jobs);
   }
@@ -321,7 +314,7 @@ export class Shadows {
     if (scene !== this.scene) {
       return;
     }
-    const { light, torch, meshes } = this;
+    const { light, torches, meshes } = this;
     if (!this.sunDue && needsMap(light)) {
       // A casting light whose map three.js hasn't allocated yet (its light out, or sun shadows just switched on):
       // its programs would bind three's placeholder, which GL rejects against a sampler2DShadow in the
@@ -341,9 +334,12 @@ export class Shadows {
       this.sinceDraw = 0;
       this.sunDue = false;
     }
-    if (torch?.castShadow) {
-      this.torchCasters = meshes.selectShadowCasters(withinRange(torch.position, torch.distance), BackSide);
-      draw([torch], scene, this.torchView);
+    this.torchCasters = 0;
+    for (const torch of torches) {
+      if (torch.castShadow) {
+        this.torchCasters += meshes.selectShadowCasters(withinRange(torch.position, torch.distance), BackSide);
+        draw([torch], scene, this.torchView);
+      }
     }
   }
 }

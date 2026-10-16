@@ -21,8 +21,11 @@ const BODY_REGION_WORD_BOUNDARY = /([A-Z])/g;
 const BODY_REGION_INITIAL = /^[a-z]/;
 export const bodyRegionLabel = (region: BodyRegion): string =>
   region.replace(BODY_REGION_WORD_BOUNDARY, ' $1').replace(BODY_REGION_INITIAL, (first) => first.toUpperCase());
+/** The kinds a melee weapon or swing can deal; acid is no weapon class. */
+export const MELEE_DAMAGE_KINDS = ['blunt', 'cut', 'pierce'] as const;
+export type MeleeDamageKind = (typeof MELEE_DAMAGE_KINDS)[number];
 /** What a hit does to flesh; weapons, enemy attacks, bleeding and shock all read it. */
-export const DAMAGE_KINDS = ['blunt', 'cut', 'pierce'] as const;
+export const DAMAGE_KINDS = [...MELEE_DAMAGE_KINDS, 'acid'] as const;
 export type DamageKind = (typeof DAMAGE_KINDS)[number];
 const INFECTION_STAGES = ['none', 'early', 'advanced', 'resolved'] as const;
 type InfectionStage = (typeof INFECTION_STAGES)[number];

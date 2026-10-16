@@ -11,6 +11,7 @@
           {
             "bloodLossPerSimSecond": 0.002,
             "chance": {
+              "acid": 0.050000000000000003,
               "blunt": 0.10000000000000001,
               "cut": 0.40000000000000002,
               "pierce": 0.29999999999999999
@@ -30,6 +31,7 @@
           {
             "bloodLossPerSimSecond": 0.014999999999999999,
             "chance": {
+              "acid": 0.02,
               "blunt": 0.029999999999999999,
               "cut": 0.34999999999999998,
               "pierce": 0.40000000000000002
@@ -50,6 +52,7 @@
           {
             "bloodLossPerSimSecond": 0.12,
             "chance": {
+              "acid": 0,
               "blunt": 0.01,
               "cut": 0.14999999999999999,
               "pierce": 0.14999999999999999
@@ -70,6 +73,7 @@
           {
             "bloodLossPerSimSecond": 1.6699999999999999,
             "chance": {
+              "acid": 0,
               "blunt": 0.002,
               "cut": 0.050000000000000003,
               "pierce": 0.029999999999999999
@@ -128,6 +132,12 @@
       },
       "minimumMovementSpeed": 0.5,
       "movementSlowdownPerDamage": 0.0050000000000000001,
+      "outerWearMultiplier": {
+        "acid": 4,
+        "blunt": 1,
+        "cut": 1,
+        "pierce": 1
+      },
       "pain": {
         "acuteFadePerSimSecond": 0.050000000000000003,
         "acuteFadeSharePerSimSecond": 0.01,
@@ -145,6 +155,7 @@
         },
         "knockoutAt": 100,
         "perDamage": {
+          "acid": 3,
           "blunt": 1.6000000000000001,
           "cut": 2,
           "pierce": 2
@@ -192,6 +203,7 @@
       "restFatigueRecoveryPerGameHour": 3.75,
       "roughSleepShare": 0.59999999999999998,
       "shockPerDamage": {
+        "acid": 1,
         "blunt": 2,
         "cut": 0,
         "pierce": 0

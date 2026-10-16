@@ -8,8 +8,8 @@ type PlayerHitArea = Extract<WearSlot, 'head' | 'torso' | 'legs'>;
 /** Maps a body region to the outermost worn item covering it. */
 const outermostWornOver = (inventory: Inventory, area: PlayerHitArea): Item | undefined => inventory.worn[area];
 
-/** Wear the outermost worn item covering the struck body region. */
-export const wearOnPlayerHit = (inventory: Inventory, region: BodyRegion): void => {
+/** Wear the outermost worn item covering the struck body region, scaled by the hit's damage-kind multiplier. */
+export const wearOnPlayerHit = (inventory: Inventory, region: BodyRegion, wearMultiplier: number): void => {
   let area: PlayerHitArea;
   switch (region) {
     case 'head':
@@ -32,7 +32,7 @@ export const wearOnPlayerHit = (inventory: Inventory, region: BodyRegion): void 
   const item = outermostWornOver(inventory, area);
   const rate = item && defOf(inventory.registry, item.type).wearable?.wearPerHit;
   if (item && rate !== undefined) {
-    inventory.changeCondition(item.uid, -rate);
+    inventory.changeCondition(item.uid, -rate * wearMultiplier);
   }
 };
 

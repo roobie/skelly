@@ -6,11 +6,11 @@ import type { ContentFile } from '../src/core/schema.ts';
 import { STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { ownershipCell } from '../src/core/templateOwnership.ts';
 import { type CompiledTemplate, compileAssembly, type PlacedPiece, placedPoint } from '../src/core/templates.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 import { buildingLootEvidence, buildingVariants, cityBuildingDraws } from './fixtures/cityBuildings.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 it('resolves one repeatable variant per slot and varies city assemblies across buildings and seeds', () => {
   const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;

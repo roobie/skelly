@@ -68,9 +68,21 @@ describe('item wear', () => {
     expect(inventory.add(otherWorn, { kind: 'worn' })).toBe(true);
     const rate = hitRegistry.items.get(item)!.wearable!.wearPerHit!;
 
-    wearOnPlayerHit(inventory, region);
+    wearOnPlayerHit(inventory, region, 1);
 
     expect(worn.condition).toBe(1 - rate);
     expect(otherWorn.condition).toBe(1);
+  });
+
+  it('scales the wear on a hit by the damage kind’s multiplier', () => {
+    const inventory = new Inventory(hitRegistry);
+    const outer = inventory.create('jacket');
+    expect(inventory.add(outer, { kind: 'worn' })).toBe(true);
+    const rate = hitRegistry.items.get('jacket')!.wearable!.wearPerHit!;
+    const multiplier = 2;
+
+    wearOnPlayerHit(inventory, 'torso', multiplier);
+
+    expect(outer.condition).toBeCloseTo(1 - rate * multiplier);
   });
 });

@@ -11,13 +11,13 @@ import { makeScale } from '../src/core/scale.ts';
 import type { Site } from '../src/core/site.ts';
 import { type Placement, placedPieces } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { testHouseScene } from '../src/game/worldSetup.ts';
+import { startupContent } from './baseRegistry.ts';
 import { fixtureEconomy } from './economyFixtures.ts';
 
-const content = buildBundledContent();
+const content = startupContent();
 const stock = 'fixture_economy_stock';
 const fixtureRegistry = (): Registry => {
   const base = content.registry;

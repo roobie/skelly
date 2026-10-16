@@ -1,10 +1,10 @@
 import { LinearFilter, RepeatWrapping, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { expect, it } from 'vitest';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
+import { startupContent } from './baseRegistry.ts';
 
 it('selects cached noise only when enabled and reuses the lattice across shader recompiles', () => {
-  const meshes = new ChunkMeshes(0.5, buildBundledContent().registry);
+  const meshes = new ChunkMeshes(0.5, startupContent().registry);
   const { material } = meshes;
   const compile = () => {
     const shader = { uniforms: {}, vertexShader: '', fragmentShader: '' } as WebGLProgramParametersWithUniforms;

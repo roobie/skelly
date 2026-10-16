@@ -1047,7 +1047,7 @@ export const createSession = (options: SessionOptions) => {
         return;
       }
       const region = pickZombieHitRegion(hitRegions, sim.rng(`player-hit-region:${attacker}:${sim.time}`).next());
-      wearOnPlayerHit(inventory, region);
+      wearOnPlayerHit(inventory, region, bodyTuning.outerWearMultiplier[kind]);
       const source = zombieStore.get(attacker);
       const attackerType = source?.type.name.toLowerCase() ?? 'zombie';
       sim.hit(source ? modified('attack.damage', amount, source) : amount, `a ${attackerType}`, region, { kind });
