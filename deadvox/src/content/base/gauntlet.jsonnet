@@ -100,7 +100,7 @@ local utilities = [
   items: types.items + publicNotes,
   mapPools: kits.mapPools + city.mapPools,
   blocks: tents.blocks + types.blocks,
-  loot: types.loot + tents.loot,
+  loot: types.loot + tents.loot + kits.loot,
   mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
     air: { role: 'opening', block: 'air' }, concrete: { role: 'interior_floor', block: 'concrete' },
     brick: { role: 'shell', block: 'brick' }, galvanized: { role: 'shell', block: 'galvanized' },

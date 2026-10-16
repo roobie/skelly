@@ -324,13 +324,17 @@ export class BlockEntities {
   }
 
   /** Native eligibility shared by options and effects; key ids come from held definitions. */
-  doorRefusal(entity: BlockEntity, operation: DoorOperation, keys: readonly string[]): string | undefined {
-    if (!this.defOf(entity).door) {
+  doorRefusal(entity: BlockEntity, operation: DoorOperation, keys: readonly string[], from?: Vec3): string | undefined {
+    const { door } = this.defOf(entity);
+    if (!door) {
       return "It isn't a door";
     }
     if (operation === 'open') {
       if (entity.open) {
         return "It's already open";
+      }
+      if (door.barredFrom && from && this.sideOf(entity, from) === door.barredFrom) {
+        return "It's boarded up";
       }
       return entity.lock?.locked ? "It's locked" : undefined;
     }
@@ -338,6 +342,14 @@ export class BlockEntities {
       return entity.open ? undefined : "It's already closed";
     }
     return this.lockRefusal(entity, operation === 'lock', keys);
+  }
+
+  /** Which face of a door a point is on: the facing side is the front. */
+  private sideOf(entity: BlockEntity, point: Vec3): 'front' | 'back' {
+    const alongX = entity.facing === 'e' || entity.facing === 'w';
+    const axis = alongX ? 0 : 2;
+    const offset = point[axis]! - (entity.pos[axis]! + entity.size[axis]! / 2);
+    return offset * FACE_OUTWARD[entity.facing] >= 0 ? 'front' : 'back';
   }
 
   private lockRefusal(entity: BlockEntity, locked: boolean, keys: readonly string[]): string | undefined {

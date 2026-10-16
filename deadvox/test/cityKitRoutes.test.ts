@@ -182,14 +182,20 @@ for (const { building, variant, compile } of cityAlternatives()) {
     const targets = Object.values(compiled.anchors!).filter((anchor) => anchor.kind === 'standing');
     expect(targets.length, 'standing route witnesses').toBeGreaterThan(0);
     const entry = compiled.access!.entrance;
+    const doorSlot = building.slots.find((slot) => slot.id === 'door');
+    const cellsAt = (size: Vec3, at: Vec3) =>
+      [...cellsOf(size)].map((offset) =>
+        ownershipCell(compiled.size, offset.map((value, axis) => value + at[axis]!) as Vec3),
+      );
+    const doorPieces = compiled.pieces.filter((piece) => registry.furniture.get(piece.furniture)!.door);
+    const locked = new Set(
+      doorPieces.filter((piece) => piece.lock?.locked).flatMap((piece) => cellsAt(piece.size, piece.pos)),
+    );
     const doors = new Set(
-      compiled.pieces
-        .filter((piece) => registry.furniture.get(piece.furniture)!.door && !piece.lock?.locked)
-        .flatMap((piece) =>
-          [...cellsOf(piece.size)].map((offset) =>
-            ownershipCell(compiled.size, offset.map((value, axis) => value + piece.pos[axis]!) as Vec3),
-          ),
-        ),
+      [
+        ...doorPieces.filter((piece) => !piece.lock?.locked).flatMap((piece) => cellsAt(piece.size, piece.pos)),
+        ...(doorSlot ? cellsAt(doorSlot.size, doorSlot.at) : []),
+      ].filter((cell) => !locked.has(cell)),
     );
     const reachable = (entrance: Vec3) =>
       new Set(
