@@ -30,7 +30,7 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 **The glob is simulated.** The spit leaves as a glob that flies on an arc at a speed from content and hits the first thing it meets: a solid, a zombie body or the player. The player can sidestep a glob in flight, which makes the spit read as a thing in the world and gives a second chance after the wind-up. Thrown items have no in-flight simulation (`DESIGN.md`, "Held-item throws"), so the glob is a new owner of in-flight state, with its own collision.
 
-**Aim is seeded.** The glob aims where the player is at release, with a seeded spread from content, so replays and saves agree and a far spit can miss. See `DESIGN.md`, "Determinism".
+**Aim is seeded.** The glob aims where the player is at release, with a seeded spread from content, so replays and saves agree and a far spit can miss. The release is one output that carries no damage, so the glob and the damage path hang off a single seam. See `DESIGN.md`, "Determinism", and `src/core/zombies.ts`, `AcidSpitRelease`.
 
 **A zombie in the way takes the acid.** A body the glob meets stops it, as it stops pellets and fragments, and that zombie takes the burn unless its type is immune to acid. Acid zombies are immune; shamblers are not. A crowd therefore shields the player and takes the acid, so "use the crowd" stays a tactic. Immunity is a per-type resistance to the acid kind in content, beside the existing per-region melee resistance, not a check on the acid zombie, so later tiers and other types choose it by data. See `src/core/zombies.ts`, `ZombieSystem.firePellets`, and `src/core/schema.ts`, `ZombieSchema`, `meleeDamageResistance`.
 
