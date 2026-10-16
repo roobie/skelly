@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { PerspectiveCamera } from 'three';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { stepBody } from '../src/core/physics.ts';
@@ -27,7 +28,7 @@ const FLOOR = (_x: number, y: number): boolean => y === 0;
 let renderer!: MobActorMeshes;
 
 beforeAll(() => {
-  renderer = new MobActorMeshes(BLOCK_SIZE, 4);
+  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { figureSeeds: figureSeedPool(registry.zombies) });
 });
 
 afterAll(() => renderer.dispose());

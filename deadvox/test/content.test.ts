@@ -1075,6 +1075,38 @@ describe('content', () => {
     expect(validateContent(missingStepLength).map((issue) => issue.path)).toContain('zombies[0].stepLength');
   });
 
+  it('requires figureSeeds on every zombie type but the amalgam, which must not define them', () => {
+    const zombieFile = base.find((file) => file.source === 'zombies.json')!;
+    type Authored = { model: string; figureSeeds?: number[] };
+    const issuesAfter = (model: string, change: (zombie: Authored) => void): string[] => {
+      const data = structuredClone(zombieFile.data) as { zombies: Authored[] };
+      change(data.zombies.find((zombie) => zombie.model === model)!);
+      return validateContent({ source: zombieFile.source, data }).map((issue) => issue.path);
+    };
+    const seeded = (zombie: Authored) => zombie.figureSeeds!;
+
+    expect(
+      issuesAfter('shambler', (zombie) => {
+        delete zombie.figureSeeds;
+      }),
+    ).toContain('zombies');
+    expect(
+      issuesAfter('shambler', (zombie) => {
+        zombie.figureSeeds = [];
+      }),
+    ).not.toEqual([]);
+    expect(
+      issuesAfter('shambler', (zombie) => {
+        zombie.figureSeeds = [seeded(zombie)[0]!, seeded(zombie)[0]!];
+      }),
+    ).not.toEqual([]);
+    expect(
+      issuesAfter('amalgam', (zombie) => {
+        zombie.figureSeeds = [1];
+      }),
+    ).not.toEqual([]);
+  });
+
   it('reports a duplicate id within a file', () => {
     const block = { id: 'ok', name: 'Fine', color: '#ffffff', solid: true };
     const issues = validateContent({ source: 'dup.json', data: { blocks: [block, block] } });
@@ -1640,12 +1672,18 @@ describe('content references', () => {
         },
       },
     ]);
-    expect(issues.map(({ path }) => path)).toEqual(['items[0].salvageTimeGameMinutes', 'items[1].salvageTimeGameMinutes']);
+    expect(issues.map(({ path }) => path)).toEqual([
+      'items[0].salvageTimeGameMinutes',
+      'items[1].salvageTimeGameMinutes',
+    ]);
   });
 
   it('rejects a starting recipe that names no recipe instead of dropping it', () => {
     const { issues } = buildRegistry([
-      { source: 'starting-recipe-fixture', data: { skills: [{ id: 'fixture_skill', name: 'Fixture', startingRecipes: ['fixture_missing'] }] } },
+      {
+        source: 'starting-recipe-fixture',
+        data: { skills: [{ id: 'fixture_skill', name: 'Fixture', startingRecipes: ['fixture_missing'] }] },
+      },
     ]);
     expect(issues.map(({ path }) => path)).toEqual(['skills[0].startingRecipes[0]']);
   });
@@ -1743,6 +1781,7 @@ describe('content references', () => {
             id: 'clerk',
             name: 'Clerk',
             model: 'shambler',
+            figureSeeds: [1],
             spawnWeight: 1,
             canJumpObstacles: true,
             sounds: zombieSounds,

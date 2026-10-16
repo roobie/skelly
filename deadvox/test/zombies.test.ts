@@ -7,6 +7,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';
 import { SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
@@ -1909,6 +1910,27 @@ describe('shambler scenarios', () => {
     expect([...restored.store.entries()].map(([id, zombie]) => [id, zombie.figureSeed])).toEqual(expected);
   });
 
+  it('rejects a restored figure seed that its type does not author', () => {
+    const system = new ZombieSystem({ ...senses(() => player([100, 2, 0])), seed: 0x7_14 });
+    system.add(SHAMBLER, [0, 1, 0], [0, 0, -1]);
+    const authored = system.snapshotState();
+    const [entry] = authored.zombies;
+    const snapshot = {
+      ...authored,
+      zombies: [{ ...entry!, zombie: { ...entry!.zombie, figureSeed: Math.max(...SHAMBLER.figureSeeds!) + 1 } }],
+    };
+    const restored = new ZombieSystem(senses(() => player([100, 2, 0])));
+    expect(() => restored.restoreState(snapshot, (id) => registry.zombies.get(id))).toThrow('Invalid zombie state');
+  });
+
+  it('realizes a figure for every authored seed of every type', () => {
+    for (const type of registry.zombies.values()) {
+      for (const seed of type.figureSeeds ?? []) {
+        expect(() => zombieFigure(type, seed)).not.toThrow();
+      }
+    }
+  });
+
   it('cannot walk after both legs are severed', () => {
     const walking = { ...SHAMBLER, speed: speedRates(0.8, 0.8) };
     const system = new ZombieSystem(senses(() => player([100, 2, 0])));
@@ -3590,7 +3612,8 @@ describe('dismemberment', () => {
       const id = system.add(type, [4, 1, 4], [0, 0, -1]);
       const zombie = system.store.get(id)!;
       renderer = new MobActorMeshes(BLOCK_SIZE, 64, {
-        poolSize: mobFigurePoolSizeThrough(zombie.figureSeed),
+        figureSeeds: figureSeedPool(registry.zombies),
+        poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.zombies), zombie.figureSeed),
       });
       renderer.setWorld((_x, y, _z) => {
         const solid = y === -1;

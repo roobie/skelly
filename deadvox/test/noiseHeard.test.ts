@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
 import {
@@ -679,7 +680,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
   expect(zombie.investigationTier).toBe('near');
   expect(zombie.lastPerceived).toEqual(noise.pos);
 
-  const renderer = new MobActorMeshes(scale.blockSize, 2);
+  const renderer = new MobActorMeshes(scale.blockSize, 2, { figureSeeds: figureSeedPool(registry.zombies) });
   try {
     const camera = new PerspectiveCamera(55, 1, 0.01, 50);
     camera.position.set(4, 2, -3);

@@ -2,7 +2,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
-import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { carveAround, missingFlesh, protectedCoreCell } from '../src/core/amalgamCarving.ts';
@@ -856,7 +855,7 @@ describe('amalgam body and combat seam', () => {
     const id = simulation.add(type, [0, 1, 0]);
     const state = structuredClone(simulation.snapshotState());
     const { zombie } = state.zombies.find((entry) => entry.id === id)!;
-    const unsupportedSeed = SHAMBLER_FIGURE_SEEDS.find((seed) => seed !== AMALGAM_FIGURE_SEED)!;
+    const unsupportedSeed = AMALGAM_FIGURE_SEED + 1;
     const unsupportedFigure = amalgamFigureForType(type, unsupportedSeed);
     zombie.figureSeed = unsupportedSeed;
     zombie.regions = Object.fromEntries(

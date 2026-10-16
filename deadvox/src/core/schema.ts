@@ -1375,6 +1375,14 @@ const ZombieSchema = strictObject({
   model: ZOMBIE_MODEL,
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
+  /** Mobgen figure seeds an individual of this type is drawn from. Every model but the amalgam, whose figure seed is fixed, defines them. */
+  figureSeeds: optional(
+    pipe(
+      array(pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more'))),
+      minLength(1, 'needs at least one figure seed'),
+      check((seeds) => new Set(seeds).size === seeds.length, 'figure seeds must be distinct'),
+    ),
+  ),
   /** Overrides body-height pitch scaling for this type's voice cues. */
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
@@ -1965,6 +1973,10 @@ const SECTION_DESCRIPTOR = {
         check(
           (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.downed === undefined)),
           'every type but the amalgam, which never lies downed, must define downed',
+        ),
+        check(
+          (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.figureSeeds === undefined)),
+          'every type but the amalgam, whose figure seed is fixed, must define figureSeeds',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
       ),

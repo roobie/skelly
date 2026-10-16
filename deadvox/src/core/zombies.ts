@@ -1,4 +1,3 @@
-import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import {
   carveAround,
   centralCell,
@@ -64,6 +63,13 @@ export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_
 const BACKGROUND_STEP_CAP_METRES = 1;
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 export const zombieBodyDimensions = measureZombieBody;
+
+const requiredFigureSeeds = (type: ZombieDef): readonly number[] => {
+  if (type.figureSeeds === undefined) {
+    throw new Error(`Zombie type ${type.id} is missing its authored figureSeeds`);
+  }
+  return type.figureSeeds;
+};
 
 export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
   type.model === 'amalgam' ? type.attack.reach * amalgamFigureForType(type, figureSeed).scale : type.attack.reach;
@@ -1617,7 +1623,6 @@ export class ZombieSystem {
           !validZombieEventState(zombie) ||
           !validHordeMemberState(zombie) ||
           !Number.isSafeInteger(zombie.figureSeed) ||
-          !(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(zombie.figureSeed) ||
           !validHitFlinchTime(zombie.hitFlinchTime) ||
           !validStanceWeight(zombie.stanceWeight) ||
           !validStepOffset(zombie.stepOffset) ||
@@ -1632,6 +1637,9 @@ export class ZombieSystem {
         }
         if (type.model === 'amalgam' && zombie.figureSeed !== AMALGAM_FIGURE_SEED) {
           throw new Error(`Invalid amalgam figure seed for entity ${id}`);
+        }
+        if (type.model !== 'amalgam' && !requiredFigureSeeds(type).includes(zombie.figureSeed)) {
+          throw new Error(`Invalid zombie state for entity ${id}`);
         }
         const expectedRegions = zombieRegionsFor(type, zombie.figureSeed);
         const expectedRegionIds = Object.keys(expectedRegions);
@@ -1899,10 +1907,10 @@ export class ZombieSystem {
     const figureSeed =
       type.model === 'amalgam'
         ? AMALGAM_FIGURE_SEED
-        : SHAMBLER_FIGURE_SEEDS[
+        : requiredFigureSeeds(type)[
             Rng.stream(this.options.seed ?? 0, `zombie-figure:${this.store.nextId}`).int(
               0,
-              SHAMBLER_FIGURE_SEEDS.length - 1,
+              requiredFigureSeeds(type).length - 1,
             )
           ]!;
     const dimensions = zombieBodyDimensions(type, this.options.blockSize);

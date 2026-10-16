@@ -1,9 +1,12 @@
+local figureSeeds = std.range(1, 8);
+
 {
   "zombies": [
     {
       "id": "shambler",
       "name": "Shambler",
       "model": "shambler",
+      "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
       "spawnWeight": 1,
       "footstepSound": "shambler",
@@ -118,6 +121,7 @@
       "id": "military_shambler",
       "name": "Soldier",
       "model": "shambler",
+      "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
       "spawnWeight": 1,
       "authoredOnly": true,
@@ -233,6 +237,7 @@
       "id": "runner",
       "name": "Runner",
       "model": "runner",
+      "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
       "spawnWeight": 0.12,
       "sounds": {
@@ -332,6 +337,7 @@
       "id": "crawler",
       "name": "Crawler",
       "model": "shambler",
+      "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
       "spawnWeight": 0.08,
       "sounds": {

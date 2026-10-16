@@ -13,6 +13,7 @@ import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
 import { FOREST_DENSITY_FIELD, FOREST_HALF_EXTENT_METRES, TREE_CELL_METRES, TREE_MIX } from '../core/vegetation.ts';
+import { figureSeedPool } from '../core/zombieFigure.ts';
 import { ZombieSystem } from '../core/zombies.ts';
 import { type SiteName, siteFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
@@ -309,7 +310,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         registry: engine.registry,
         zombies,
       });
-      zombieMeshes = new MobActorMeshes(s, shamblerCount);
+      zombieMeshes = new MobActorMeshes(s, shamblerCount, { figureSeeds: figureSeedPool(engine.registry.zombies) });
       engine.scene.add(zombieMeshes.group);
     } catch (error) {
       aborted = true;
