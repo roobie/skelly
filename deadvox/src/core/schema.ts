@@ -1207,8 +1207,13 @@ const PaletteThingSchema = pipe(
     chance: optional(Fraction),
     /** Daily game-clock window; omitted markers spawn when their column loads. */
     window: optional(SpawnWindowSchema),
+    /** The ground here: the cell stamps nothing and keeps whatever surface the site put under the item. */
+    ground: optional(literal(true)),
   }),
-  check((e) => (e.furniture === undefined) !== (e.spawn === undefined), 'needs exactly one of "furniture" or "spawn"'),
+  check(
+    (e) => [e.furniture, e.spawn, e.ground].filter((part) => part !== undefined).length === 1,
+    'needs exactly one of "furniture", "spawn" or "ground"',
+  ),
   check((e) => e.spawn !== undefined || e.window === undefined, '"window" only goes with "spawn"'),
   check(
     (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined && e.lock === undefined),

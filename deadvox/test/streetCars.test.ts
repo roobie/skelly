@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
+import type { Chunk } from '../src/core/chunk.ts';
 import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -7,6 +7,7 @@ import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { footprint } from '../src/core/templates.ts';
+import { generateChunk } from '../src/core/worldgen.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 
 const { registry, issues } = buildBundledContent();
@@ -45,12 +46,19 @@ it('street car procedural variants', () => {
   expect(streetCars(1)).toEqual(draws[0]);
 });
 
-// An item template is a floor pad plus furniture; a pad that is not the street's own block shows as a patch.
+// An item template is a floor pad plus furniture; a pad that stamps its own block shows as a patch on the street.
 it('keeps the street surface under every placed item standing on a street cell', () => {
   const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;
   const grid = cityGridOf(registry, scenario.city);
   const plan = buildCityPlan({ seed: 1, registry, grid, floor: 0, scenario });
-  const site = new CitySite(1, registry, makeScale(0.5), plan);
+  const scale = makeScale(0.5);
+  const site = new CitySite(1, registry, scale, plan);
+  const terrain = {
+    seed: 1,
+    scale,
+    surface: site.surface,
+    blocks: { grass: 1000, dirt: 1001, rock: 1002, sand: 1003 },
+  };
   const mismatches: string[] = [];
   let checked = 0;
   for (const placement of plan.placements) {
@@ -69,7 +77,7 @@ it('keeps the street surface under every placed item standing on a street cell',
       const [cx, cy, cz] = [toChunk(x), toChunk(origin[1]), toChunk(z)];
       const key = `${cx},${cy},${cz}`;
       if (!chunks.has(key)) {
-        const chunk = new Chunk(cx, cy, cz);
+        const chunk = generateChunk(terrain, [cx, cy, cz]);
         site.stamp(chunk);
         chunks.set(key, chunk);
       }
