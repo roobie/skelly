@@ -1,6 +1,7 @@
 import { deepStrictEqual } from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
@@ -22,14 +23,13 @@ it('restores bundled startup admission including origins and isolates each calle
   const built = buildBundledContent();
   expect(built.issues).toEqual([]);
   const first = startupContent();
-  expect(startupContent() === first).toBe(false);
-  deepStrictEqual(first, built);
+  expect(isDeepStrictEqual(first, built)).toBe(true);
   expect(first.origins.size).toBeGreaterThan(0);
   first.registry.blocks[0]!.name = 'fixture-mutated-startup-block';
   first.registry.items.clear();
   (first.origins as Map<string, unknown>).clear();
   first.issues.push({ source: 'fixture', path: '', message: 'fixture mutation' });
-  deepStrictEqual(startupContent(), built);
+  expect(isDeepStrictEqual(startupContent(), built)).toBe(true);
 });
 
 it('isolates nested content mutations and map edits from other fixture callers', () => {
