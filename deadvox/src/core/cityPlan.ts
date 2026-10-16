@@ -778,9 +778,10 @@ const standAtWall = (
 ): { placement: Placement; extent: Extent } => {
   const template = context.compiled({ id }, 1, siteId);
   const extent = footprint({ template, origin: [0, 0, 0], turn: side.turn });
+  // Dressing's authored air must not excavate the top solid terrain voxel.
   const origin = againstWall(
     { side: side.side, bounds, setback: 0 },
-    { y: groundedY(template, context.floor), at: at(extent), extent },
+    { y: groundedY(template, context.floor + 1), at: at(extent), extent },
   );
   return { placement: freezePlacement({ template, origin, turn: side.turn }), extent };
 };
