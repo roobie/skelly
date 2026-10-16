@@ -222,6 +222,8 @@ const UiTuningSchema = strictObject({
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
+  /** The sound event played when the player tries an action that cannot be completed. */
+  refusalSound: picklist(SOUND_EVENT_IDS),
 });
 
 const SaveTuningSchema = strictObject({
@@ -572,6 +574,8 @@ const ItemSchema = strictObject({
   disassembly: optional(DisassemblySchema),
   /** Fixed outputs for found items with no recipe. */
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
+  /** Work time to salvage; required with `salvage`, forbidden without it. */
+  salvageTimeGameMinutes: optional(PositiveGameMinutes),
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),
@@ -1331,7 +1335,8 @@ const SiteLayoutSchema = strictObject({
     strictObject({
       points: pipe(array(LayoutPoint), minLength(2)),
       width: pipe(Metres, minValue(Number.MIN_VALUE)),
-      surface: optional(picklist(['dirt', 'asphalt'])),
+      /** The block the track's surface is made of. */
+      surface: Id,
     }),
   ),
   /** Observation only: playtest metrics record when the player first stands in each beat's area. */
@@ -1469,6 +1474,14 @@ const ZombieSchema = strictObject({
   model: ZOMBIE_MODEL,
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
+  /** Mobgen figure seeds an individual of this type is drawn from. Every model but the amalgam, whose figure seed is fixed, defines them. */
+  figureSeeds: optional(
+    pipe(
+      array(pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more'))),
+      minLength(1, 'needs at least one figure seed'),
+      check((seeds) => new Set(seeds).size === seeds.length, 'figure seeds must be distinct'),
+    ),
+  ),
   /** Overrides body-height pitch scaling for this type's voice cues. */
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
@@ -1643,6 +1656,8 @@ const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    /** Recipes a new character knows from the start. */
+    startingRecipes: optional(array(Id)),
     training: optional(
       strictObject({
         craftingTierOffset: optional(Count),
@@ -2059,6 +2074,10 @@ const SECTION_DESCRIPTOR = {
         check(
           (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.downed === undefined)),
           'every type but the amalgam, which never lies downed, must define downed',
+        ),
+        check(
+          (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.figureSeeds === undefined)),
+          'every type but the amalgam, whose figure seed is fixed, must define figureSeeds',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
       ),

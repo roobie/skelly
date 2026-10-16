@@ -1120,6 +1120,41 @@ describe('content', () => {
     expect(validateContent(missingStepLength).map((issue) => issue.path)).toContain('zombies[0].stepLength');
   });
 
+  it('requires figureSeeds on every zombie type but the amalgam, which must not define them', () => {
+    const zombieFile = base.find((file) => file.source === 'zombies.json')!;
+    interface Authored {
+      model: string;
+      figureSeeds?: number[] | undefined;
+    }
+    const issuesAfter = (model: string, change: (zombie: Authored) => void): string[] => {
+      const data = structuredClone(zombieFile.data) as { zombies: Authored[] };
+      change(data.zombies.find((zombie) => zombie.model === model)!);
+      return validateContent({ source: zombieFile.source, data }).map((issue) => issue.path);
+    };
+    const seeded = (zombie: Authored) => zombie.figureSeeds!;
+
+    expect(
+      issuesAfter('shambler', (zombie) => {
+        zombie.figureSeeds = undefined;
+      }),
+    ).toContain('zombies');
+    expect(
+      issuesAfter('shambler', (zombie) => {
+        zombie.figureSeeds = [];
+      }),
+    ).not.toEqual([]);
+    expect(
+      issuesAfter('shambler', (zombie) => {
+        zombie.figureSeeds = [seeded(zombie)[0]!, seeded(zombie)[0]!];
+      }),
+    ).not.toEqual([]);
+    expect(
+      issuesAfter('amalgam', (zombie) => {
+        zombie.figureSeeds = [1];
+      }),
+    ).not.toEqual([]);
+  });
+
   it('reports a duplicate id within a file', () => {
     const block = { id: 'ok', name: 'Fine', color: '#ffffff', solid: true };
     const issues = validateContent({ source: 'dup.json', data: { blocks: [block, block] } });
@@ -1342,7 +1377,7 @@ describe('content references', () => {
     source: 'reference-dependencies.json',
     data: {
       items: baseContent('items-other.json').items!.filter(({ id }) => id === 'bandage'),
-      skills: baseContent('recipes.json').skills,
+      skills: baseContent('recipes.json').skills!.map(({ startingRecipes: _, ...skill }) => skill),
       sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
     },
   };
@@ -1563,6 +1598,7 @@ describe('content references', () => {
               category: 'material',
               weight: 1,
               size: [1, 1],
+              salvageTimeGameMinutes: gameMinutes(1),
               salvage: [{ item, count: 1 }],
             },
             {
@@ -1631,6 +1667,7 @@ describe('content references', () => {
       weight: 1,
       size: [1, 1],
       economy: { usage: ['Residential'], tiers: ['Tier1'] },
+      salvageTimeGameMinutes: 1,
       salvage: [{ item: 'fixture_shared', count: 1 }],
     };
     const shared = {
@@ -1667,6 +1704,36 @@ describe('content references', () => {
     ]);
     expect(result.issues).toEqual([]);
     expect(result.registry.recipes.has('fixture_recipe')).toBe(true);
+  });
+
+  it('rejects a salvage list without an authored work time, and a work time without a salvage list', () => {
+    const fields = { category: 'material', weight: 1, size: [1, 1] };
+    const { issues } = buildRegistry([
+      {
+        source: 'salvage-time-fixture',
+        data: {
+          items: [
+            { id: 'fixture_untimed', name: 'Untimed', ...fields, salvage: [{ item: 'fixture_bare', count: 1 }] },
+            { id: 'fixture_orphan_time', name: 'Orphan', ...fields, salvageTimeGameMinutes: 1 },
+            { id: 'fixture_bare', name: 'Bare', ...fields },
+          ],
+        },
+      },
+    ]);
+    expect(issues.map(({ path }) => path)).toEqual([
+      'items[0].salvageTimeGameMinutes',
+      'items[1].salvageTimeGameMinutes',
+    ]);
+  });
+
+  it('rejects a starting recipe that names no recipe instead of dropping it', () => {
+    const { issues } = buildRegistry([
+      {
+        source: 'starting-recipe-fixture',
+        data: { skills: [{ id: 'fixture_skill', name: 'Fixture', startingRecipes: ['fixture_missing'] }] },
+      },
+    ]);
+    expect(issues.map(({ path }) => path)).toEqual(['skills[0].startingRecipes[0]']);
   });
 
   it('allows tables to hold candidates without becoming a second geography authority', () => {
@@ -1762,6 +1829,7 @@ describe('content references', () => {
             id: 'clerk',
             name: 'Clerk',
             model: 'shambler',
+            figureSeeds: [1],
             spawnWeight: 1,
             canJumpObstacles: true,
             sounds: zombieSounds,

@@ -17,8 +17,26 @@ const root = fileURLToPath(new URL('../..', import.meta.url));
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
 const RACK_GRID = [5, 6];
+const refusalSound = {
+  source: 'inventory-scroll-sounds',
+  data: {
+    sounds: [
+      {
+        id: 'player_nope',
+        variants: ['assets/audio/nope.ogg'],
+        gain: 0.5,
+        pitchJitter: [1, 1],
+        gainJitter: [1, 1],
+        minIntervalSimSeconds: 0.75,
+        category: 'body',
+        noise: { enabled: false, radiusMetres: 1 },
+      },
+    ],
+  },
+};
 // Owned overflowing containers/items: changing shipped clothes or loadouts cannot turn this into a no-op.
 const content = [
+  refusalSound,
   {
     source: 'inventory-scroll-fixture',
     data: {
@@ -185,7 +203,10 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
   ),
   get capTokenUid() { return capToken?.uid; },
   useUiTuning(tuning) {
-    const ui = buildRegistry([{ source: 'ui-tuning-fixture', data: { ui: [{ id: 'core', ...tuning }] } }]);
+    const ui = buildRegistry([
+      ${JSON.stringify(refusalSound)},
+      { source: 'ui-tuning-fixture', data: { ui: [{ id: 'core', refusalSound: 'player_nope', ...tuning }] } },
+    ]);
     if (ui.issues.length) throw Error('Invalid UI tuning fixture: ' + JSON.stringify(ui.issues));
     applyUiTokens(ui.registry, document.documentElement);
     screen.update();
