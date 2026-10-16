@@ -37,7 +37,7 @@ export const sitePalette = (registry: Pick<Registry, 'siteGeneration' | 'blockId
     terrain: {
       grass: block(palette.terrain.grass),
       dirt: block(palette.terrain.dirt),
-      stone: block(palette.terrain.rock),
+      rock: block(palette.terrain.rock),
       sand: block(palette.terrain.sand),
     },
     paving: block(palette.paving),
