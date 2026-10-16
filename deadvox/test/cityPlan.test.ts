@@ -316,11 +316,13 @@ describe('one finished city plan', () => {
       grid: cityGridOf(admitted.registry, scenario.city),
       scenario,
     });
-    const height = scenario.city.perimeter!.height;
+    const { height } = scenario.city.perimeter!;
     const probe = plan.bounds.z0 - 1;
     const covers = ({ min, max }: (typeof plan.structures)[number]) => min[2] <= probe && probe < max[2];
     expect(perimeterGaps(plan.structures, plan.bounds, floor, height)).toEqual([]);
-    const cut = plan.structures.filter((box) => !(covers(box) && box.min[0] <= plan.spawn[0] && plan.spawn[0] < box.max[0]));
+    const cut = plan.structures.filter(
+      (box) => !(covers(box) && box.min[0] <= plan.spawn[0] && plan.spawn[0] < box.max[0]),
+    );
     expect(cut.length).toBeLessThan(plan.structures.length);
     expect(perimeterGaps(cut, plan.bounds, floor, height).join('\n')).toContain('north side is open');
   });
@@ -328,17 +330,20 @@ describe('one finished city plan', () => {
   it.each([
     { wall: 3, reports: true },
     { wall: 6, reports: false },
-  ])('checks a roof jump against a wall $wall blocks high at the ring setback (reports: $reports)', ({ wall, reports }) => {
-    const scenario = fixtureScenario();
-    scenario.city = {
-      ...scenario.city,
-      perimeter: { block: 'fixture_solid', height: wall, thickness: 2 },
-      ring: { pool: 'fixture_pool', setback: 6 },
-    };
-    const { registry: admitted } = buildRegistry(fixtureScenarioSources(fixtureScenario()));
-    const paths = scenarioPlanIssues(admitted, scenario).map(([path]) => path);
-    expect(paths.includes('.city.perimeter.clearance')).toBe(reports);
-  });
+  ])(
+    'checks a roof jump against a wall $wall blocks high at the ring setback (reports: $reports)',
+    ({ wall, reports }) => {
+      const scenario = fixtureScenario();
+      scenario.city = {
+        ...scenario.city,
+        perimeter: { block: 'fixture_solid', height: wall, thickness: 2 },
+        ring: { pool: 'fixture_pool', setback: 6 },
+      };
+      const { registry: admitted } = buildRegistry(fixtureScenarioSources(fixtureScenario()));
+      const paths = scenarioPlanIssues(admitted, scenario).map(([path]) => path);
+      expect(paths.includes('.city.perimeter.clearance')).toBe(reports);
+    },
+  );
 
   it('fails validation when the edge ring names a pool that does not exist', () => {
     const scenario = fixtureScenario();
