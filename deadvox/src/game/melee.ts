@@ -14,6 +14,8 @@ export const meleeWeaponFromContent = (weapon: ContentMeleeWeapon): MeleeWeapon 
     damage: weapon.damage,
     reach: weapon.reach,
     cooldown: weapon.cooldownSimSeconds,
+    contactFraction: weapon.contactFraction,
+    windupCapSimSeconds: weapon.windupCapSimSeconds,
     stamina: weapon.stamina,
     ...(weapon.impulse === undefined ? {} : { impulse: weapon.impulse }),
     ...(weapon.damageVariance === undefined ? {} : { damageVariance: weapon.damageVariance }),

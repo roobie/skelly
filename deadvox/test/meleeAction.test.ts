@@ -35,7 +35,16 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR: SolidAt = (_x, y) => y === 0;
-const BASE_WEAPON: MeleeWeapon = { damage: 1, reach: 3, cooldown: 0.8, stamina: 4, impulse: 4, type: 'blunt' };
+const BASE_WEAPON: MeleeWeapon = {
+  damage: 1,
+  reach: 3,
+  cooldown: 0.8,
+  stamina: 4,
+  impulse: 4,
+  type: 'blunt',
+  contactFraction: 0.4,
+  windupCapSimSeconds: 0.25,
+};
 const blockedPlayer = {
   pos: [1000, 1, 1000] as Vec3,
   facing: [1, 0, 0] as Vec3,
@@ -158,10 +167,12 @@ describe('melee pose and contact contract', () => {
   });
 
   it('caps contact wind-up and shares the click-locked contact ray with the displayed pose', () => {
-    expect(meleeContactTime(0.8)).toBe(0.25);
-    expect(meleeContactTime(1.1)).toBe(0.25);
-    expect(meleeContactTime(0.5)).toBe(0.2);
-    const action = actionPose({ profile: 'pierce', contactAt: meleeContactTime(0.8) });
+    const fraction = 0.4;
+    const cap = 0.25;
+    expect(meleeContactTime(0.8, fraction, cap)).toBe(cap);
+    expect(meleeContactTime(1.1, fraction, cap)).toBe(cap);
+    expect(meleeContactTime(0.5, fraction, cap)).toBeCloseTo(0.5 * fraction);
+    const action = actionPose({ profile: 'pierce', contactAt: meleeContactTime(0.8, fraction, cap) });
     expect(meleePoseAndContact(action, 0.24, false).contactRay).toBeUndefined();
     const contact = meleePoseAndContact(action, action.contactAt, false);
     expect(contact.contactRay).toEqual({ origin: [1, 2, 3], direction: [0, 0, -1] });
@@ -242,7 +253,9 @@ describe('player melee action', () => {
     ).toBe('started');
     expect(needs.stamina).toBe(96);
     expect(zombie.regions.head).toBe(initialHealth);
-    expect(combatFor(system).activeMeleeAction?.contactAt).toBe(Math.min(0.4 * BASE_WEAPON.cooldown, 0.25));
+    expect(combatFor(system).activeMeleeAction?.contactAt).toBe(
+      meleeContactTime(BASE_WEAPON.cooldown, BASE_WEAPON.contactFraction!, BASE_WEAPON.windupCapSimSeconds!),
+    );
 
     // The player turns more than 30 degrees; the in-flight action keeps its captured ray.
     const turnedDirection: Vec3 = [1, 0, 0];

@@ -132,7 +132,7 @@ describe('firearm audio presentation', () => {
               category: 'weapon',
               weight: 1,
               size: [1, 1],
-              firearm: { shotSound: 'gunshot_m4', recoilKickRadians: 0.01, dispersionRadians: 0 },
+              firearm: { shotSound: 'gunshot_m4', recoilKickRadians: 0.01, dispersionRadians: 0, handling: {} },
             },
           ],
         },

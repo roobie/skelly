@@ -6,7 +6,7 @@ import type { Vec3 } from './coords.ts';
 import type { HandlingQueue, MoveJob } from './handling.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
-import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
+import { chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { Readable } from './readable.ts';
 
@@ -52,21 +52,17 @@ export const doorOptions = (
   ];
 };
 
-export const EAT_TIME = 3;
-const DRINK_TIME = 2;
-export const TAKE_TIME = 2;
-
 /** How one of `def` is consumed: eaten, drunk or, for a painkiller, taken. Undefined for anything else. */
 export const consumption = (def: ReturnType<typeof defOf>): { label: string; simSeconds: number } | undefined => {
   const name = def.name.toLowerCase();
   if (def.analgesic) {
-    return { label: `Take one ${name}`, simSeconds: TAKE_TIME };
+    return { label: `Take one ${name}`, simSeconds: def.analgesic.takeSimSeconds };
   }
   if (!def.food) {
     return undefined;
   }
   const drink = def.category === 'drink';
-  return { label: `${drink ? 'Drink' : 'Eat'} the ${name}`, simSeconds: drink ? DRINK_TIME : EAT_TIME };
+  return { label: `${drink ? 'Drink' : 'Eat'} the ${name}`, simSeconds: def.food.consumeSimSeconds };
 };
 
 export interface MoveOption {
@@ -230,7 +226,7 @@ const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): Use
         operation: 'battery',
         light,
         battery,
-        plan: { ok: true, time: BATTERY_SWAP },
+        plan: { ok: true, time: defOf(inv.registry, light.type).light!.power!.swapSimSeconds },
       }
     : refuseUse('Hold the light it goes in first');
 };

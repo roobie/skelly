@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import type { Modifier } from '../src/core/modifiers.ts';
 import type { AnalgesicDef } from '../src/core/pain.ts';
-import { gameMinutes } from '../src/core/time.ts';
+import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
 // The test's own painkillers: two items sharing one group, and one of another group.
 const PILL: AnalgesicDef = {
   group: 'otc',
+  takeSimSeconds: simSeconds(1),
   reliefPerDose: 3,
   maxRelief: 5,
   onsetGameMinutes: gameMinutes(30),
@@ -176,7 +177,14 @@ describe('pain', () => {
       category: 'medical',
       weight: 1,
       size: [1, 1],
-      analgesic: { reliefPerDose: 3, maxRelief: 3, onsetGameMinutes: 0, peakGameMinutes, fadeGameMinutes: 0 },
+      analgesic: {
+        takeSimSeconds: 1,
+        reliefPerDose: 3,
+        maxRelief: 3,
+        onsetGameMinutes: 0,
+        peakGameMinutes,
+        fadeGameMinutes: 0,
+      },
     });
     const { registry, issues } = buildRegistry([
       { source: 'zero-phase-fixture', data: { items: [zeroPhased('instant', 30), zeroPhased('nothing', 0)] } },
