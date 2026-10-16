@@ -50,6 +50,10 @@ can override earlier definitions; disabled files are not admitted packs. Continu
 refuses missing, changed, additional or reordered packs rather than resuming a world
 under different definitions. See `src/game/browserMods.ts`, `evaluateMods`, and
 `src/core/saveFormat.ts`, `currentSaveVersionIdentity` and `contentPackDifferences`.
+Preserved-save notices name pack differences with the mod's own id, without its
+internal browser namespace. Raw decoder diagnostics do not belong in that notice:
+an ordinary game update is not a mod problem. See `src/ui/saveController.ts`,
+`SaveController.inspectOtherNamespaces`, and `../INTERFACE.md`, "Text".
 The panel remains opt-in pending BR's decision about making it the default entry.
 
 ## Bundled mods

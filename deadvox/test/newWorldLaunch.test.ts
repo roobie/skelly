@@ -18,6 +18,7 @@ import { SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';
 import { capture, createRuntime, registry as saveFixtureRegistry } from './snapshotTestSupport.ts';
 
+const FULL_HASH = /[a-f0-9]{64}/;
 const BODY_MARKUP = /<body\b[^>]*>([\s\S]*)<\/body>/;
 const SCRIPT_MARKUP = /<script\b[^>]*>[\s\S]*?<\/script>/g;
 const fixtureSnapshot = capture(createRuntime());
@@ -123,7 +124,32 @@ it('refuses Continue and names the browser mod missing from a saved world', asyn
   await controller.validateContent(saveFixtureRegistry);
   expect(controller.isRestored).toBe(false);
   expect(document.getElementById('continue')!.hidden).toBe(true);
-  expect(document.getElementById('save-status')!.textContent).toContain('Missing mod: browser.fixture-mod');
+  const status = document.getElementById('save-status')!.textContent!;
+  expect(status).toContain('Missing mod: fixture-mod');
+  expect(status).not.toContain('browser.fixture-mod');
+  expect(status).not.toMatch(FULL_HASH);
+});
+
+it('preserves an older simulation save without appending decoder diagnostics', async () => {
+  enableSaveEnvironment();
+  const controller = title();
+  const running = await currentSaveVersionIdentity();
+  const record = await recordFor('fixture-world', {
+    ...running,
+    components: { ...running.components, simulationHash: 'a'.repeat(64) },
+  });
+  const saved = JSON.parse(new TextDecoder().decode(record.payload)).versionIdentity;
+  stubLiveRecord(controller, record);
+  vi.spyOn(controller.storage, 'listNamespaces').mockResolvedValue([saved.digest]);
+  vi.spyOn(controller.storage, 'load').mockImplementation((namespace) =>
+    Promise.resolve(namespace === saved.digest ? record : undefined),
+  );
+  await controller.prepare();
+  await controller.validateContent(saveFixtureRegistry);
+  const status = document.getElementById('save-status')!.textContent!;
+  expect(status).toContain(saved.digest.slice(0, 12));
+  expect(status).not.toMatch(FULL_HASH);
+  expect(status).not.toContain('Save version mismatch');
 });
 
 it('refuses a live record marked dead and starts a new world without replacement confirmation', async () => {

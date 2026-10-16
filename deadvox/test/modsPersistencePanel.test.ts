@@ -23,8 +23,7 @@ test('unavailable storage names the failure and starts with an empty mod set', a
   const root = document.createElement('div');
   document.body.append(root);
   const result = chooseMods(root, storage);
-  await Promise.resolve();
-  expect(root.querySelector('[role=alert]')?.textContent).toContain('Mod storage unavailable');
+  await vi.waitFor(() => expect(root.querySelector('[role=alert]')?.textContent).toContain('Mod storage unavailable'));
   expect(root.querySelectorAll('[data-mod-source]')).toHaveLength(0);
   root.querySelector<HTMLButtonElement>('#mods-start')!.click();
   expect((await result).admitted).toEqual([]);
@@ -46,14 +45,12 @@ test('a failed edit clears the entire loaded set rather than starting with a sub
   const root = document.createElement('div');
   document.body.append(root);
   const result = chooseMods(root, storage);
-  await Promise.resolve();
-  expect(root.querySelectorAll('[data-mod-source]')).toHaveLength(2);
+  await vi.waitFor(() => expect(root.querySelectorAll('[data-mod-source]')).toHaveLength(2));
   root.querySelector<HTMLButtonElement>('li button:last-of-type')!.click();
   expect(root.querySelector<HTMLButtonElement>('#mods-start')!.disabled).toBe(true);
   fail(new Error('quota'));
-  await Promise.resolve();
+  await vi.waitFor(() => expect(root.querySelector('[role=alert]')?.textContent).toContain('Mod storage unavailable'));
   expect(root.querySelectorAll('[data-mod-source]')).toHaveLength(0);
-  expect(root.querySelector('[role=alert]')?.textContent).toContain('Mod storage unavailable');
   root.querySelector<HTMLButtonElement>('#mods-start')!.click();
   expect((await result).admitted).toEqual([]);
 });

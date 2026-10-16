@@ -863,7 +863,7 @@ function validateVersion(version: SaveVersionComponents): void {
   }
 }
 
-function contentPackDifferences(
+export function contentPackDifferences(
   saved: SaveVersionComponents['contentPacks'],
   running: SaveVersionComponents['contentPacks'],
 ): string[] {

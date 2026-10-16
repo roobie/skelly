@@ -1,18 +1,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import process from 'node:process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-
-// biome-ignore lint/style/noProcessEnv: optional local evidence capture during the existing startup flow.
-const screenshotDir = process.env.MOD_SCREENSHOT_DIR;
-const capturePanel = async (page, name) => {
-  if (screenshotDir) {
-    mkdirSync(screenshotDir, { recursive: true });
-    await page.screenshot({ path: join(screenshotDir, `${name}.png`), fullPage: true });
-  }
-};
 
 export const selectFixtureMods = async (page) => {
   const path = fileURLToPath(new URL('../fixtures/mods/browser-mod.json', import.meta.url));
@@ -21,7 +10,6 @@ export const selectFixtureMods = async (page) => {
   assert.equal(await page.locator('#view canvas').count(), 0, 'mod selection precedes engine creation');
   await page.locator('#mods-screen input[type=file]').setInputFiles(path);
   await page.locator('[data-mod-source="mod-1/browser-mod.json"]').waitFor();
-  await capturePanel(page, 'valid-mod');
   const paste = async (data) => {
     await page.getByRole('textbox', { name: 'Mod JSON or URL' }).fill(data);
     await page.getByRole('button', { name: 'Add', exact: true }).click();
@@ -31,7 +19,6 @@ export const selectFixtureMods = async (page) => {
   assert.equal(await page.locator('#mods-start').isDisabled(), true, 'enabled broken JSON blocks startup');
   const invalid = page.locator('[data-mod-source="mod-3/pasted.json"]');
   assert.notEqual((await invalid.locator('pre').textContent()).trim(), '', 'broken file has validator feedback');
-  await capturePanel(page, 'broken-mod');
   await invalid.getByRole('checkbox').uncheck();
   await page.getByRole('button', { name: 'Move mod-2/pasted.json up', exact: true }).click();
   assert.deepEqual(

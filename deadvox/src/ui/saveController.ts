@@ -4,6 +4,7 @@ import type { Registry } from '../core/content.ts';
 import {
   type ActiveBrowserMod,
   type ActiveBundledMod,
+  contentPackDifferences,
   currentSaveVersionIdentity,
   decodeSave,
   type SaveContentKind,
@@ -35,6 +36,7 @@ const SCHEDULER_IDS = new Set([
   'handling',
   'firearms',
 ]);
+const BROWSER_MOD_DIFFERENCE_PREFIX = /^(Missing|Different|Additional) mod: browser\./;
 const CONTINUE_KEY = 'deadvox.continue-namespace';
 const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
 const DEAD_WORLD_KEY = 'deadvox.dead-world';
@@ -350,9 +352,18 @@ export class SaveController {
       if (record) {
         this.oldVersionLabel = `An older or different-version save is preserved · ${namespace.slice(0, 12)} · ${versionLabel(record.payload)}`;
         try {
-          await decodeSave(record.payload, { version: this.identityValue!.components, contentLookup: () => true });
-        } catch (error) {
-          this.oldVersionLabel += ` · ${errorMessage(error)}`;
+          const envelope = JSON.parse(new TextDecoder().decode(record.payload)) as {
+            versionIdentity: SaveVersionIdentity;
+          };
+          const differences = contentPackDifferences(
+            envelope.versionIdentity.components.contentPacks,
+            this.identityValue!.components.contentPacks,
+          ).map((difference) => difference.replace(BROWSER_MOD_DIFFERENCE_PREFIX, '$1 mod: '));
+          if (differences.length > 0) {
+            this.oldVersionLabel += ` · ${differences.join('; ')}`;
+          }
+        } catch {
+          // Unreadable pack metadata must not hide a preserved save.
         }
       }
     } catch {
