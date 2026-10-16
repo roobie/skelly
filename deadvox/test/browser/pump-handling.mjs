@@ -2,7 +2,6 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative end-to-end assertions
 // biome-ignore-all lint/performance/noAwaitInLoops: native arrow navigation is sequential
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -1004,9 +1003,6 @@ try {
   );
   await releaseRevolverReload();
   assert.equal(revolverLoaded.reached, true, 'holding reload opens and inserts a revolver round');
-  const artifacts = resolve(projectRoot, 'test-results', 'pump-handling');
-  await mkdir(artifacts, { recursive: true });
-  await page.screenshot({ path: resolve(artifacts, 'revolver-open-loading.png') });
   const revolverClosed = await page.evaluate(
     ({ gun, tuning }) =>
       globalThis.pumpManualFrames.until(
@@ -1025,14 +1021,6 @@ try {
     revolverStock.gun,
   );
   assert.equal(readyRevolver.reached, true);
-  await page.mouse.click(640, 450, { button: 'middle' });
-  await page.evaluate(() => {
-    for (let frame = 0; frame < 60; frame++) {
-      globalThis.pumpManualFrames.step(1 / 60);
-    }
-  });
-  await page.screenshot({ path: resolve(artifacts, 'revolver-aim.png') });
-  await page.mouse.click(640, 450, { button: 'middle' });
   await page.mouse.click(640, 450);
   const revolverFired = await page.evaluate(
     ({ gun, tuning }) =>
