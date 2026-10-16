@@ -559,9 +559,8 @@ export class MobActorMeshes implements ZombieRenderer {
   private world: RigidWorld | undefined;
 
   constructor(blockSize: number, capacity: number | undefined, options: MobActorMeshesOptions) {
-    capacity ??= DEFAULT_CAPACITY;
     this.blockSize = blockSize;
-    this.capacity = capacity;
+    this.capacity = capacity ?? DEFAULT_CAPACITY;
     this.tentacleGeometry = options.includeAmalgam ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
     this.tentacleTipGeometry = options.includeAmalgam ? new SphereGeometry(0.16, 8, 6) : undefined;
     this.tentacleMaterial = options.includeAmalgam

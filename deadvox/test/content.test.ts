@@ -1077,7 +1077,10 @@ describe('content', () => {
 
   it('requires figureSeeds on every zombie type but the amalgam, which must not define them', () => {
     const zombieFile = base.find((file) => file.source === 'zombies.json')!;
-    type Authored = { model: string; figureSeeds?: number[] };
+    interface Authored {
+      model: string;
+      figureSeeds?: number[] | undefined;
+    }
     const issuesAfter = (model: string, change: (zombie: Authored) => void): string[] => {
       const data = structuredClone(zombieFile.data) as { zombies: Authored[] };
       change(data.zombies.find((zombie) => zombie.model === model)!);
@@ -1087,7 +1090,7 @@ describe('content', () => {
 
     expect(
       issuesAfter('shambler', (zombie) => {
-        delete zombie.figureSeeds;
+        zombie.figureSeeds = undefined;
       }),
     ).toContain('zombies');
     expect(
@@ -1659,15 +1662,15 @@ describe('content references', () => {
   });
 
   it('rejects a salvage list without an authored work time, and a work time without a salvage list', () => {
-    const base = { category: 'material', weight: 1, size: [1, 1] };
+    const fields = { category: 'material', weight: 1, size: [1, 1] };
     const { issues } = buildRegistry([
       {
         source: 'salvage-time-fixture',
         data: {
           items: [
-            { id: 'fixture_untimed', name: 'Untimed', ...base, salvage: [{ item: 'fixture_bare', count: 1 }] },
-            { id: 'fixture_orphan_time', name: 'Orphan', ...base, salvageTimeGameMinutes: 1 },
-            { id: 'fixture_bare', name: 'Bare', ...base },
+            { id: 'fixture_untimed', name: 'Untimed', ...fields, salvage: [{ item: 'fixture_bare', count: 1 }] },
+            { id: 'fixture_orphan_time', name: 'Orphan', ...fields, salvageTimeGameMinutes: 1 },
+            { id: 'fixture_bare', name: 'Bare', ...fields },
           ],
         },
       },

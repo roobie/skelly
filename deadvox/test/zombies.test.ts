@@ -7,7 +7,6 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';
 import { SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
@@ -22,6 +21,7 @@ import { Simulation } from '../src/core/sim.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate } from '../src/core/time.ts';
+import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import {

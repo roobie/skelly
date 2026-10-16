@@ -2,9 +2,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
-import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import {
   advanceStanceWeight,
   HIT_FLINCH_DURATION,

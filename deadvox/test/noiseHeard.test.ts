@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
-import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
 import {
@@ -18,6 +17,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SimEvent, Timed } from '../src/core/sim.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
+import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import { FISTS_MELEE, hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
 import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
 import { firearmShotEmission, firearmShotSoundEvents } from '../src/game/audioPresentation.ts';
