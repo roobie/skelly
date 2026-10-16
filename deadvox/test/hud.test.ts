@@ -1,7 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { cellCount, defOf } from '../src/core/items.ts';
@@ -14,14 +11,9 @@ import {
   type TimedActionPresentation,
   timedActionHandlingPresentation,
 } from '../src/ui/hud.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 
 /** A cupboard next to a player in a hoodie, for testing furniture and pocket locations. */
 const kitchen = () => {
