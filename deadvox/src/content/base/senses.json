@@ -17,7 +17,8 @@
         "throwChargeSimSeconds": 1.25,
         "throwMaxDistanceMetres": 16,
         "throwMinimumHoldSimSeconds": 0.29999999999999999,
-        "throwStanceDropHoldRealSeconds": 0.5
+        "throwStanceDropHoldRealSeconds": 0.5,
+        "wornLightToggleHoldRealSeconds": 0.5
       },
       "movement": {
         "backwardSpeedScale": 0.5,

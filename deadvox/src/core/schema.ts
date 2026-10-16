@@ -454,6 +454,8 @@ const LightSchema = strictObject({
   ),
   /** What powers it: an item with a battery component, and charge used per Game hour. */
   power: optional(strictObject({ battery: Id, chargePerGameHour: GamePerHour, swapSimSeconds: PositiveSimSeconds })),
+  /** Stays lit while worn and answers the worn-light control, so a source not in the hand needs no new key. */
+  wornSwitch: optional(vBoolean()),
 });
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
@@ -1980,6 +1982,7 @@ const SenseSchema = strictObject({
     throwChargeSimSeconds: PositiveSimSeconds,
     throwMinimumHoldSimSeconds: PositiveSimSeconds,
     throwStanceDropHoldRealSeconds: Positive,
+    wornLightToggleHoldRealSeconds: Positive,
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
   }),

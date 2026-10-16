@@ -422,6 +422,24 @@ describe('keyboard registry', () => {
       'down',
     ]);
   });
+  it('shares L between the worn-light hold and the F2-gated debug key without a clash', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+    keyboard.context = () => ({ context: 'play', debug: true });
+    const downs = () => commands.filter(({ phase }) => phase === 'down').map(({ action }) => action);
+
+    expect(keyboard.press(event('KeyL'))).toBe(true);
+    keyboard.release(event('KeyL'));
+    expect(downs()).toContain('light.worn-toggle');
+    expect(downs()).not.toContain('debug.fog-decrease');
+
+    commands.length = 0;
+    expect(keyboard.press(event('F2'))).toBe(true);
+    expect(keyboard.press(event('KeyL'))).toBe(true);
+    expect(downs()).toContain('debug.fog-decrease');
+    expect(downs()).not.toContain('light.worn-toggle');
+  });
   it('gates the review map behind F2+M and moves game freeze off M', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.binding('debug.review-map-toggle')?.defaults[0]?.code).toBe('KeyM');

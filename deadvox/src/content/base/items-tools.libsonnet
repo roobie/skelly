@@ -162,7 +162,7 @@ local items = [
       intensity=2.5,
       beam={ angleDegrees: 24, penumbra: 0.35, decay: 1, spill: { enabled: false, radiusRatio: 1.5, intensity: 0.18 } },
       chargePerGameHour=0.2,
-    ),
+    ) + { wornSwitch: true },
   },
   {
     id: 'torch',

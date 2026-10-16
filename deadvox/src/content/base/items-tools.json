@@ -293,7 +293,8 @@
           "swapSimSeconds": 2
         },
         "radius": 12,
-        "seenFrom": 30
+        "seenFrom": 30,
+        "wornSwitch": true
       },
       "name": "Headlamp",
       "size": [1, 2],

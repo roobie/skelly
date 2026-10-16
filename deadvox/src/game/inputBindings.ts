@@ -112,6 +112,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state'),
   row('noclip.descend', 'Descend while flying', ['noclip'], ['KeyC'], 'held-state'),
   row('hand.use-off', 'Use off hand', world, ['Equal']),
+  row('light.worn-toggle', 'Hold to switch worn lights on or off', world, ['KeyL'], 'hold'),
   row('world.interact', 'Tap to interact or pocket a ground item; hold to wield it', world, ['KeyF']),
   row(
     'firearm.reload',

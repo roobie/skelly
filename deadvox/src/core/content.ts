@@ -348,6 +348,9 @@ const checkItemLightModel = (item: ItemDef, registry: Registry, report: Report) 
   ) {
     report('items', item.id, '.model', 'an emissive light model needs an emissive material');
   }
+  if (item.light?.wornSwitch === true && !item.wearable) {
+    report('items', item.id, '.light.wornSwitch', 'a worn-switch light needs a wearable component');
+  }
 };
 
 const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, report: Report) => {
