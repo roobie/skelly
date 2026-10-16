@@ -94,7 +94,7 @@ local roofDeck = std.filter(function(p) p.id == 'gauntlet_city_roof_slab', kits.
 local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.mapPieces)[0];
 {
   start: {
-    template: 'gauntlet_start', spawn: [14, 9, 11], minimumOpenDescents: 2,
+    template: 'gauntlet_start', cell: [0, 0], spawn: [14, 9, 11], minimumOpenDescents: 2,
     descents: [
       { kind: 'ladder', ladder: [23, 1, 10], upper: [20, 9, 11], lower: [25, 1, 11] },
       { kind: 'stairs', hatch: [10, 8, 5], upper: [18, 9, 6], lower: [14, 1, 1] },

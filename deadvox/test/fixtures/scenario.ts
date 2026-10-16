@@ -86,6 +86,7 @@ const fixtureStartTemplate = (): TemplateDef => {
 
 export const fixtureStart = (): NonNullable<ScenarioDef['composition']>['start'] => ({
   template: 'fixture_start',
+  cell: [0, 0],
   spawn: [2, 7, 2],
   minimumOpenDescents: 1,
   descents: [{ kind: 'ladder', ladder: [4, 1, 3], upper: [6.5, 7, 4], lower: [3, 1, 4] }],

@@ -847,7 +847,8 @@ export const buildCityPlan = ({
   scenario?: ScenarioDef;
 }): CityPlan => {
   const cells = cityCells(grid);
-  const candidates = cells.filter(([i, j]) => i !== 0 || j !== 0);
+  const startCell = scenario?.composition?.start.cell ?? [0, 0];
+  const candidates = cells.filter(([i, j]) => i !== startCell[0] || j !== startCell[1]);
   const serviceBlock = scenario
     ? candidates[Rng.stream(seed, `scenario:${scenario.id}:service-block`).int(0, candidates.length - 1)]!
     : undefined;
@@ -877,7 +878,7 @@ export const buildCityPlan = ({
         template: startTemplate(registry, scenario.composition.start.template, seed, `scenario:${scenario.id}:start`),
         floor,
         grid,
-        cell: [0, 0],
+        cell: scenario.composition.start.cell,
         turn: 0,
       })
     : undefined;
@@ -890,7 +891,7 @@ export const buildCityPlan = ({
       if (service && serviceBlock?.[0] === i && serviceBlock[1] === j) {
         return [service];
       }
-      if (start && i === 0 && j === 0) {
+      if (start && i === startCell[0] && j === startCell[1]) {
         return [start];
       }
       return Array.from({ length: grid.rows ?? 2 }, (_, row) => fillRow(context, [i, j], row)).flat();

@@ -53,13 +53,27 @@ it('admits the authored roof spawn and keeps its reserved block inside the stree
   expect(scenarioPlanIssues(registry, profile)).toEqual([]);
   expect(start.spawn[1]).toBeGreaterThan(plan.floor + 1);
   expect(plan.spawn).toEqual(start.spawn);
-  expect(plan.candidates.some(([x, z]) => x === 0 && z === 0)).toBe(false);
+  const [cellX, cellZ] = profile.composition!.start.cell;
+  expect(plan.candidates.some(([x, z]) => x === cellX && z === cellZ)).toBe(false);
   const { placement } = start;
   expect(plan.placements).toContain(placement);
   expect(placement.origin[0]).toBeGreaterThanOrEqual(plan.core.x0);
   expect(placement.origin[2]).toBeGreaterThanOrEqual(plan.core.z0);
   expect(placement.origin[0] + placement.template.size[0]).toBeLessThanOrEqual(plan.core.x1);
   expect(placement.origin[2] + placement.template.size[2]).toBeLessThanOrEqual(plan.core.z1);
+});
+
+it('honours the authored start cell and refuses a cell outside the street grid', () => {
+  const own = structuredClone(profile);
+  const cell = plan.candidates[0]!;
+  own.composition!.start.cell = [...cell];
+  expect(scenarioPlanIssues(registry, own)).toEqual([]);
+  const moved = buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own });
+  expect(moved.composition!.start.placement.origin).not.toEqual(start.placement.origin);
+  expect(moved.candidates).not.toContainEqual(cell);
+  expect(scenarioCertificate(new CitySite(9, registry, scale, moved)).issues).toEqual([]);
+  own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
+  expect(scenarioPlanIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
 });
 
 for (const descent of start.descents) {

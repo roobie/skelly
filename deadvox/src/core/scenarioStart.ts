@@ -53,6 +53,14 @@ export const scenarioStartIssues = (registry: Registry, scenario: ScenarioDef): 
   try {
     const template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
     const { city } = scenario;
+    if (
+      start.cell[0] < -city.blocksX ||
+      start.cell[0] >= city.blocksX ||
+      start.cell[1] < -city.blocksZ ||
+      start.cell[1] >= city.blocksZ
+    ) {
+      issues.push(['.composition.start.cell', 'start cell must lie inside the street grid']);
+    }
     if (template.size[0] > city.blockX - 2 * city.pad || template.size[2] > city.blockZ - 2 * city.pad) {
       issues.push(['.composition.start.template', 'start template must fit inside its reserved city block']);
     }

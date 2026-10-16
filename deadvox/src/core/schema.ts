@@ -1544,6 +1544,7 @@ const ScenarioSchema = strictObject({
     strictObject({
       start: strictObject({
         template: Id,
+        cell: tuple([pipe(number(), integer()), pipe(number(), integer())]),
         spawn: CellPosition,
         minimumOpenDescents: optional(pipe(Count, minValue(1), maxValue(32)), 2),
         descents: pipe(array(StartDescentSchema), minLength(1), maxLength(32)),
