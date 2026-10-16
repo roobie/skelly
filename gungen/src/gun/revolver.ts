@@ -584,8 +584,6 @@ const revolverFrame: PartFamily = {
       ...octagonalBossRing(),
       ...guardBowSolids(frame.height),
       ...rearSightSolids(),
-      ...hammerSolids(),
-      ...triggerSolids(frame.height),
       rearFrameBridgeSolid(jointY, frame.height, params.gripLength ?? 'M'),
     ];
     const barrelPort: PortDef = {
@@ -594,15 +592,6 @@ const revolverFrame: PartFamily = {
       gender: 'female',
       size: params.bore ?? 'M',
       pos: [boreX, 0, 0],
-      normal: [1, 0, 0],
-      up: [0, 1, 0],
-      required: true,
-    };
-    const cylinderPort: PortDef = {
-      id: 'cylinder',
-      mount: 'revolver-cylinder',
-      gender: 'female',
-      pos: [cylinderCentreX, cylinderCentreY, 0],
       normal: [1, 0, 0],
       up: [0, 1, 0],
       required: true,
@@ -618,18 +607,55 @@ const revolverFrame: PartFamily = {
     };
     return {
       family: 'revolver-frame',
-      solids,
+      solids: solids.flatMap((solid) => {
+        if (solid.kind !== 'extruded-polygon' || !['rear-shoulder', 'rear-ramp'].includes(solid.id)) {
+          return [solid];
+        }
+        const hammer = hammerSolids()[0]!;
+        if (hammer.kind !== 'extruded-polygon') {
+          return [solid];
+        }
+        return [
+          { ...solid, id: `${solid.id}-far`, z: [solid.z[0], hammer.z[0]] as const },
+          { ...solid, id: `${solid.id}-near`, z: [hammer.z[1], solid.z[1]] as const },
+        ];
+      }),
       ports: [
         barrelPort,
-        cylinderPort,
+        {
+          id: 'cylinder',
+          mount: 'revolver-cylinder',
+          gender: 'female',
+          pos: [cylinderCentreX, cylinderCentreY, 0],
+          normal: [1, 0, 0],
+          up: [0, 1, 0],
+        },
         gripPort,
+        {
+          id: 'crane',
+          mount: 'revolver-crane',
+          gender: 'female',
+          pos: [cylinderCentreX, cylinderCentreY, 0],
+          normal: [1, 0, 0],
+          up: [0, 1, 0],
+          required: true,
+        },
+        {
+          id: 'trigger',
+          mount: 'revolver-trigger',
+          gender: 'female',
+          pos: [0, 0, 0],
+          normal: [1, 0, 0],
+          up: [0, 1, 0],
+          required: true,
+        },
         {
           id: 'hammer',
           mount: 'revolver-hammer',
           gender: 'female',
-          pos: [-7.25, 0.25, 0],
-          normal: [0, 1, 0],
-          up: [1, 0, 0],
+          pos: [0, 0, 0],
+          normal: [1, 0, 0],
+          up: [0, 1, 0],
         },
         {
           id: 'trigger-guard',
@@ -643,7 +669,7 @@ const revolverFrame: PartFamily = {
       keepOuts: [
         keepOut('cylinder-swing', [cylinderRearX, -3.5, -4], [cylinderFrontX, 1, -1.5], 'cylinder'),
         keepOut('cylinder-gap', [cylinderFrontX, -1, -1], [boreX, 1, 1]),
-        keepOut('hammer-travel', [-8.75, -1.5, -1], [-6.25, 1.25, 1]),
+        keepOut('hammer-travel', [-8.75, -1.5, -1], [-6.25, 1.25, 1], 'hammer'),
       ],
       axes: [{ kind: 'sight', origin: [-6, 1.75, 0], dir: [1, 0, 0], eyeReliefU: 4 }],
     };
@@ -720,24 +746,7 @@ const revolverCylinder: PartFamily = {
       undefined,
       'metal',
     );
-    const craneProfile: Profile = [
-      [-0.75 - cylinderCentreX, -3.75 - cylinderCentreY],
-      [0.75 - cylinderCentreX, -3.75 - cylinderCentreY],
-      [0.75 - cylinderCentreX, -3 - cylinderCentreY],
-      [-0.25 - cylinderCentreX, -1.75 - cylinderCentreY],
-      [-0.75 - cylinderCentreX, -1.75 - cylinderCentreY],
-    ];
-    const crane = polySolid('crane-yoke', craneProfile, [-0.5, 0.5], 'z', 'revolver-cylinder', undefined, 'metal');
-    const rod = polySolid(
-      'ejector-rod',
-      octagonAcrossFlats(0.25, [-1.25 - cylinderCentreY, 0]),
-      [-0.25 - cylinderCentreX, 5.5 - cylinderCentreX],
-      'x',
-      'revolver-cylinder',
-      undefined,
-      'metal',
-    );
-    const solids = [drum, crane, rod];
+    const solids = [drum];
     const displaySolids = [
       ...solids,
       ...Array.from({ length: chamberCount }, (_, index) => cylinderFlute(index)),
@@ -750,6 +759,24 @@ const revolverCylinder: PartFamily = {
       solids,
       displaySolids,
       ports: [
+        {
+          id: 'crane',
+          mount: 'revolver-cylinder',
+          gender: 'male',
+          pos: [0, 0, 0],
+          normal: [-1, 0, 0],
+          up: [0, 1, 0],
+          required: true,
+        },
+        {
+          id: 'ejector',
+          mount: 'revolver-ejector',
+          gender: 'female',
+          pos: [0, 0, 0],
+          normal: [1, 0, 0],
+          up: [0, 1, 0],
+          required: true,
+        },
         {
           id: 'frame',
           mount: 'revolver-cylinder',
@@ -775,6 +802,117 @@ const revolverCylinder: PartFamily = {
       ],
     };
   },
+};
+
+const movingMount = (mount: string, pos: Vec3 = [0, 0, 0]): PortDef => ({
+  id: 'mount',
+  mount,
+  gender: 'male',
+  pos,
+  normal: [-1, 0, 0],
+  up: [0, 1, 0],
+  required: true,
+});
+
+const revolverHammer: PartFamily = {
+  name: 'revolver-hammer',
+  params: {},
+  build: () => ({
+    family: 'revolver-hammer',
+    solids: hammerSolids(),
+    ports: [movingMount('revolver-hammer')],
+    keepOuts: [],
+    axes: [],
+  }),
+};
+const revolverTrigger: PartFamily = {
+  name: 'revolver-trigger',
+  params: { frameSize: { ...size, from: [{ port: 'mount', param: 'frameSize' }] } },
+  build: (params) => ({
+    family: 'revolver-trigger',
+    solids: triggerSolids(frameSide(params.frameSize ?? 'M').height),
+    ports: [movingMount('revolver-trigger')],
+    keepOuts: [],
+    axes: [],
+  }),
+};
+const revolverCrane: PartFamily = {
+  name: 'revolver-crane',
+  params: {},
+  build: () => ({
+    family: 'revolver-crane',
+    solids: [
+      polySolid(
+        'crane-yoke',
+        [
+          [-0.75 - cylinderCentreX, -3.75 - cylinderCentreY],
+          [0.75 - cylinderCentreX, -3.75 - cylinderCentreY],
+          [0.75 - cylinderCentreX, -3 - cylinderCentreY],
+          [-0.25 - cylinderCentreX, -1.75 - cylinderCentreY],
+          [-0.75 - cylinderCentreX, -1.75 - cylinderCentreY],
+        ],
+        [-0.5, 0.5],
+        'z',
+        'revolver-crane',
+        undefined,
+        'metal',
+      ),
+    ],
+    ports: [
+      movingMount('revolver-crane'),
+      {
+        id: 'cylinder',
+        mount: 'revolver-cylinder',
+        gender: 'female',
+        pos: [0, 0, 0],
+        normal: [1, 0, 0],
+        up: [0, 1, 0],
+        required: true,
+      },
+    ],
+    keepOuts: [],
+    axes: [],
+  }),
+};
+const revolverEjector: PartFamily = {
+  name: 'revolver-ejector',
+  params: {},
+  build: () => ({
+    family: 'revolver-ejector',
+    solids: [
+      polySolid(
+        'ejector-rod',
+        octagonAcrossFlats(0.25),
+        [-0.25 - cylinderCentreX, 5.5 - cylinderCentreX],
+        'x',
+        'revolver-ejector',
+        undefined,
+        'metal',
+      ),
+      ...Array.from({ length: chamberCount * 2 }, (_, index) => {
+        const vertex = (i: number): Vec2 => {
+          const angle = (i * Math.PI) / chamberCount;
+          const radius = i % 2 === 0 ? orbit : orbit / 2;
+          return [radius * Math.cos(angle), radius * Math.sin(angle)];
+        };
+        return polySolid(
+          `extractor-star-${index}`,
+          [[0, 0], vertex(index), vertex(index + 1)],
+          [-cylinderLength / 2, -cylinderLength / 2 + 0.015],
+          'x',
+          'revolver-extractor-star',
+          undefined,
+          'metal',
+        );
+      }),
+    ],
+    ports: [
+      movingMount('revolver-ejector'),
+      { ...movingMount('revolver-ejector', [-cylinderCentreX, -cylinderCentreY, 0]), id: 'barrel', required: false },
+    ],
+    keepOuts: [],
+    axes: [],
+  }),
 };
 
 const revolverBarrelProfile = (acrossFlats: number): Profile => octagonAcrossFlats(acrossFlats);
@@ -981,6 +1119,14 @@ const revolverBarrel: PartFamily = {
       solids,
       ports: [
         {
+          id: 'ejector',
+          mount: 'revolver-ejector',
+          gender: 'female',
+          pos: [0, 0, 0],
+          normal: [1, 0, 0],
+          up: [0, 1, 0],
+        },
+        {
           id: 'frame',
           mount: 'barrel',
           gender: 'male',
@@ -1014,7 +1160,7 @@ const revolverBarrel: PartFamily = {
           'ejector-rod-channel',
           [1, -1.5, -C.ejectorChannelHalfWidth.pickedU],
           [rodLength, -1, C.ejectorChannelHalfWidth.pickedU],
-          'cylinder',
+          'ejector',
         ),
       ],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: [1, 0, 0] }],
@@ -1622,7 +1768,8 @@ export const revolverAlignment = {
     const guards = frameDef.solids
       .filter(({ id }) => TRIGGER_GUARD_ID.test(id))
       .sort((a, b) => Number(a.id.slice('trigger-guard-'.length)) - Number(b.id.slice('trigger-guard-'.length)));
-    const triggers = frameDef.solids.filter(({ id }) => TRIGGER_ID.test(id));
+    const triggerDef = revolverParts(resolved).find(([, def]) => def.family === 'revolver-trigger')?.[1];
+    const triggers = triggerDef?.solids.filter(({ id }) => TRIGGER_ID.test(id)) ?? [];
     if (
       guards.length !== 10 ||
       guards.some((solid, index) => solid.id !== `trigger-guard-${index}` || solid.kind !== 'extruded-polygon') ||
@@ -1731,6 +1878,10 @@ export const revolverRules: Rule[] = [
 ];
 
 export const revolverFamilySet: Readonly<Record<string, PartFamily>> = {
+  'revolver-hammer': revolverHammer,
+  'revolver-trigger': revolverTrigger,
+  'revolver-crane': revolverCrane,
+  'revolver-ejector': revolverEjector,
   'revolver-frame': revolverFrame,
   'revolver-cylinder': revolverCylinder,
   'revolver-barrel': revolverBarrel,

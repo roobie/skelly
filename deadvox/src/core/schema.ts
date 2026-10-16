@@ -687,6 +687,59 @@ const ActionSchema = pipe(
   ),
 );
 
+const RevolverRotationSchema = strictObject({
+  node: pipe(string(), nonEmpty('must not be empty')),
+  pivot: Point,
+  axis: UnitVector,
+});
+const RevolverSchema = pipe(
+  strictObject({
+    chambers: pipe(number(), integer('must be a whole number'), minValue(1)),
+    crane: strictObject({
+      ...RevolverRotationSchema.entries,
+      openRadians: pipe(
+        number(),
+        check((value) => Number.isFinite(value) && value !== 0, 'needs a finite nonzero angle'),
+      ),
+    }),
+    cylinder: strictObject({
+      node: pipe(string(), nonEmpty('must not be empty')),
+      centre: Point,
+      axis: UnitVector,
+      chamberRadiusMetres: Positive,
+      chamberZeroRadians: pipe(
+        number(),
+        check((value) => Number.isFinite(value), 'must be finite'),
+      ),
+    }),
+    ejector: strictObject({
+      node: pipe(string(), nonEmpty('must not be empty')),
+      axis: UnitVector,
+      strokeMetres: Positive,
+    }),
+    hammer: strictObject({
+      ...RevolverRotationSchema.entries,
+      cockRadians: pipe(
+        number(),
+        check((value) => Number.isFinite(value) && value !== 0, 'needs a finite nonzero angle'),
+      ),
+    }),
+    trigger: strictObject({
+      ...RevolverRotationSchema.entries,
+      pullRadians: pipe(
+        number(),
+        check((value) => Number.isFinite(value) && value !== 0, 'needs a finite nonzero angle'),
+      ),
+    }),
+  }),
+  check(
+    (value) =>
+      new Set([value.crane.node, value.cylinder.node, value.ejector.node, value.hammer.node, value.trigger.node])
+        .size === 5,
+    'revolver parts need distinct nodes',
+  ),
+);
+
 const MagazineRoundSchema = strictObject({
   /** Centre in metres in the magazine model frame (+x forward, +y up, +z right). */
   at: Point,
@@ -853,6 +906,7 @@ const ModelSchema = pipe(
     muzzleDirection: optional(UnitVector),
     /** Optional estimated action cycles and the named moving GLB nodes. */
     action: optional(ActionSchema),
+    revolver: optional(RevolverSchema),
     /**
      * Where the charging handle sits around the bore: degrees from the top of the receiver toward the gun's right
      * (+z). A rack rolls the gun toward the off hand, further when the handle is on the far side (`DESIGN.md`, "Rifles"). Hand-authored: the export does not carry it.

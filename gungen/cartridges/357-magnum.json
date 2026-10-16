@@ -1,0 +1,147 @@
+{
+  "aliases": [],
+  "case": {
+    "body": {
+      "diameterAtHead": {
+        "cite": {
+          "locator": "printed p. 36, cartridge drawing, cylindrical body diameter",
+          "source": "saami",
+          "verbatim": ".379 (9.63) CYLINDRICAL"
+        },
+        "tolerance": {
+          "minus": 0.14999999999999999
+        },
+        "value": 9.6300000000000008
+      },
+      "diameterAtMouth": {
+        "cite": {
+          "locator": "printed p. 36, cartridge drawing, cylindrical body diameter",
+          "source": "saami",
+          "verbatim": ".379 (9.63) CYLINDRICAL"
+        },
+        "tolerance": {
+          "minus": 0.14999999999999999
+        },
+        "value": 9.6300000000000008
+      },
+      "type": "straight"
+    },
+    "bodyStart": {
+      "cite": null,
+      "note": "Not specified by the governing cartridge drawing; no supplemental source has been established.",
+      "value": null
+    },
+    "head": {
+      "type": "rimmed"
+    },
+    "length": {
+      "cite": {
+        "locator": "printed p. 36, cartridge drawing, head face to mouth",
+        "source": "saami",
+        "verbatim": "1.290 - .020 (32.77 - 0.51)"
+      },
+      "tolerance": {
+        "minus": 0.51000000000000001
+      },
+      "value": 32.770000000000003
+    },
+    "materials": [],
+    "primer": {
+      "designation": {
+        "cite": null,
+        "note": "Not specified by the governing cartridge drawing; no supplemental source has been established.",
+        "value": null
+      },
+      "diameter": {
+        "cite": null,
+        "note": "Not specified by the governing cartridge drawing; no supplemental source has been established.",
+        "value": null
+      },
+      "options": []
+    },
+    "rim": {
+      "diameter": {
+        "cite": {
+          "locator": "printed p. 36, cartridge drawing, rim diameter",
+          "source": "saami",
+          "verbatim": ".440 - .012 (11.18 - 0.30)"
+        },
+        "tolerance": {
+          "minus": 0.29999999999999999
+        },
+        "value": 11.18
+      },
+      "thickness": {
+        "cite": {
+          "locator": "printed p. 36, cartridge drawing, rim thickness",
+          "source": "saami",
+          "verbatim": ".060 - .011 (1.52 - 0.28)"
+        },
+        "tolerance": {
+          "minus": 0.28000000000000003
+        },
+        "value": 1.52
+      }
+    }
+  },
+  "designation": ".357 Magnum",
+  "format": 1,
+  "id": "357-magnum",
+  "kind": "metallic",
+  "notes": [],
+  "overallLength": {
+    "max": {
+      "cite": {
+        "locator": "printed p. 36, cartridge drawing, overall length limits",
+        "source": "saami",
+        "verbatim": "1.405 (35.69) MIN – 1.590 (40.39) MAX"
+      },
+      "value": 40.390000000000001
+    },
+    "typical": {
+      "cite": null,
+      "note": "Not specified by the governing cartridge drawing; no supplemental source has been established.",
+      "value": null
+    }
+  },
+  "payload": {
+    "diameter": {
+      "cite": {
+        "locator": "printed p. 36, cartridge drawing, jacketed bullet diameter",
+        "source": "saami",
+        "verbatim": ".3580 - .0030 (9.093 - 0.076) JACKETED BULLET"
+      },
+      "tolerance": {
+        "minus": 0.075999999999999998
+      },
+      "value": 9.093
+    },
+    "length": {
+      "max": {
+        "cite": null,
+        "note": "Not specified by the governing cartridge drawing; no supplemental source has been established.",
+        "value": null
+      },
+      "min": {
+        "cite": null,
+        "note": "Not specified by the governing cartridge drawing; no supplemental source has been established.",
+        "value": null
+      }
+    },
+    "type": "bullet",
+    "variants": []
+  },
+  "primarySource": "saami",
+  "relatedTo": [],
+  "sources": {
+    "saami": {
+      "body": "SAAMI",
+      "reliability": "standard",
+      "retrieved": "2026-10-16",
+      "revision": "Approved 12-13-2022; drawing revised 07/06/2021",
+      "sha256": "e2dad5c77ab57636dcdaa3379150703f4b72420e523f455dba0ff1f8e5d0ca34",
+      "title": "ANSI/SAAMI Z299.3-2022, Centerfire Pistol and Revolver: 357 Magnum cartridge and chamber drawing",
+      "url": "https://saami.org/wp-content/uploads/2025/05/SAAMI-Z299.3-2022-Centerfire-Pistol-Revolver-Approved-12-13-2022.pdf"
+    }
+  }
+}
