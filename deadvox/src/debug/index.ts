@@ -26,7 +26,7 @@ import type {
   InputReplayStatusState,
 } from '../game/debugInterface.ts';
 import { firearmBoreTarget } from '../game/firearmAim.ts';
-import { inputBindings, labelForAction } from '../game/inputBindings.ts';
+import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
 import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
@@ -48,6 +48,7 @@ import {
   readClosedGroups,
   writeClosedGroups,
 } from './groups.ts';
+import { KeyTrace } from './keyTrace.ts';
 import { KitOverlay } from './kitOverlay.ts';
 import { LookControls } from './look.ts';
 import { lookDump, lookDumpFilename } from './lookDump.ts';
@@ -333,6 +334,9 @@ const panelTemplate = ({
   revealZombies,
   toggleReveal,
   measureSnapshot,
+  keyTraceEnabled,
+  toggleKeyTrace,
+  exportKeyTrace,
   copySnapshotResult,
   exportMetrics,
   toggleOpen,
@@ -376,6 +380,9 @@ const panelTemplate = ({
   revealZombies: boolean;
   toggleReveal: () => void;
   measureSnapshot: () => void;
+  keyTraceEnabled: boolean;
+  toggleKeyTrace: () => void;
+  exportKeyTrace: () => void;
   copySnapshotResult: () => void;
   exportMetrics: () => void;
   toggleOpen: () => void;
@@ -482,6 +489,10 @@ const panelTemplate = ({
     `,
     diagnostics: html`
       <div class="debug-actions"><button id="measure-snapshot" type="button" @click=${measureSnapshot}>Measure snapshot (50×)</button></div>
+      <div class="debug-actions" aria-label="Key trace">
+        <button type="button" aria-pressed=${keyTraceEnabled} @click=${toggleKeyTrace}>Key trace · ${keyTraceEnabled ? 'ON' : 'OFF'}</button>
+        <button type="button" @click=${exportKeyTrace}>Download key trace (JSON)</button>
+      </div>
       <p class="debug-hot-legend">Hot-pixel check (PgDn) colour = material:
         ${Object.values(HOT_CATEGORIES).map((c) => html`<span style="color:${c.css}">${c.label}</span> `)}
         · brightness = kind: ${HOT_KINDS.join('; ')}.</p>
@@ -1059,6 +1070,9 @@ export const copyTextOrSelect = async (
 export const loadSkyRoute = async () => (await import('./skyRoute.ts')).attachSkyRoute;
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
+  const keyTrace = new KeyTrace();
+  keyboardInput.trace = undefined;
+  let keyTraceEnabled = false;
   setDebugFirearmsSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
   setDebugInventoryManagementSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
   setDebugWound(hooks.sim.body, location.search, hooks.engine.config.debug, hooks.newGame);
@@ -1466,6 +1480,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       f3Open,
       revealZombies,
       snapshotStatus,
+      keyTraceEnabled,
       spawnMenu.isOpen,
       shamblerCount,
       spawnStatus,
@@ -1502,6 +1517,32 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           },
           measureSnapshot: () => {
             snapshotStatus = snapshotMeasurementStatus(hooks.measureSnapshot());
+            shellKey = '';
+            drawShell();
+          },
+          keyTraceEnabled,
+          toggleKeyTrace: () => {
+            if (!hooks.engine.config.debug) {
+              return;
+            }
+            keyTraceEnabled = !keyTraceEnabled;
+            if (keyTraceEnabled) {
+              keyTrace.clear();
+            }
+            keyboardInput.trace = keyTraceEnabled ? keyTrace.record : undefined;
+            shellKey = '';
+            drawShell();
+          },
+          exportKeyTrace: () => {
+            download = {
+              url: URL.createObjectURL(new Blob([keyTrace.export()], { type: 'application/json' })),
+              name: 'deadvox-key-trace.json',
+            };
+            shellKey = '';
+            drawShell();
+            host.querySelector<HTMLAnchorElement>('#debug-download')?.click();
+            URL.revokeObjectURL(download.url);
+            download = undefined;
             shellKey = '';
             drawShell();
           },

@@ -15,7 +15,7 @@ import type { FurnitureDef } from '../core/schema.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
-import { workshopCar, workshopLift } from './workshopVehicle.ts';
+import { vehicleModel, workshopLift } from './workshopVehicle.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
 const INSET = 0.02;
@@ -130,8 +130,8 @@ export class FurnitureMeshes {
     if (def.id === 'workshop_lift') {
       return workshopLift(entity, this.blockSize);
     }
-    if (def.id === 'workshop_stripped_car') {
-      return workshopCar(entity, this.blockSize);
+    if (def.vehicle) {
+      return vehicleModel(entity, def.vehicle, this.blockSize);
     }
     if (def.door) {
       return this.door(entity, material, def);

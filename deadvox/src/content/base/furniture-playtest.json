@@ -124,7 +124,33 @@
       "color": "#5b605c",
       "id": "workshop_stripped_car",
       "name": "Stripped car",
-      "size": [4, 4, 9]
+      "size": [4, 4, 9],
+      "vehicle": {
+        "blueprint": "rover",
+        "body": "#b3a07c",
+        "dirt": 0,
+        "removed": [
+          "bonnet",
+          "front-wing-near",
+          "front-wing-far",
+          "headlight-near",
+          "headlight-far",
+          "front-panel",
+          "front-bumper",
+          "rear-bumper",
+          "door-front-near",
+          "door-front-far",
+          "door-rear-near",
+          "door-rear-far",
+          "tailgate-upper",
+          "tailgate-lower",
+          "wheel-front-near",
+          "wheel-front-far",
+          "wheel-rear-near",
+          "wheel-rear-far",
+          "spare-wheel"
+        ]
+      }
     },
     {
       "color": "#615b50",

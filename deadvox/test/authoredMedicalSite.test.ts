@@ -127,16 +127,16 @@ describe('authored medical site', () => {
     ).toBe(true);
   });
 
-  it('hangs plaques across the standing eye line and keeps the notice room accessible', () => {
-    const hung = layout.buildings.flatMap((building) => {
-      const template = compileTemplate(result.registry, result.registry.templates.get(building.template)!);
+  it('hangs wall mounts across the standing eye line and keeps the notice room accessible', () => {
+    const wallMounts = [...result.registry.templates.values()].flatMap((templateDefinition) => {
+      const template = compileTemplate(result.registry, templateDefinition);
       return template.pieces.flatMap((piece) => {
         const definition = result.registry.furniture.get(piece.furniture)!;
         return definition.mount === 'wall' ? [{ template, piece, definition }] : [];
       });
     });
-    expect(hung.length).toBeGreaterThan(0);
-    for (const { template, piece, definition } of hung) {
+    expect(wallMounts.length).toBeGreaterThan(0);
+    for (const { template, piece, definition } of wallMounts) {
       const [x, y, z] = piece.pos;
       const [width, , depth] = template.size;
       let floor = y - 1;

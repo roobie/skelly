@@ -6,6 +6,7 @@
 import {
   array,
   check,
+  finite,
   type InferOutput,
   integer,
   literal,
@@ -28,6 +29,7 @@ import {
   union,
   boolean as vBoolean,
 } from 'valibot';
+import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { hasSegment } from './authoredTerrain.mjs';
 import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
@@ -372,6 +374,14 @@ const AmmoSchema = strictObject({
   stripSimSeconds: PositiveSimSeconds,
 });
 
+export const BeamSpillSchema = strictObject({
+  /** Off keeps the tunables authored but renders the plain cone; a mod or `torchspill=1` turns it on. */
+  enabled: vBoolean(),
+  radiusRatio: pipe(number(), finite(), minValue(1 + Number.EPSILON)),
+  intensity: pipe(number(), finite(), minValue(0), maxValue(1 - Number.EPSILON)),
+});
+export type BeamSpill = InferOutput<typeof BeamSpillSchema>;
+
 const LightSchema = strictObject({
   /** Metres it lights up. */
   radius: Positive,
@@ -393,6 +403,8 @@ const LightSchema = strictObject({
       angleDegrees: pipe(Positive, maxValue(180, 'must be at most 180')),
       /** Share of the cone, from its edge inward, over which the beam fades to dark; the rest is the hotspot. */
       penumbra: pipe(number(), minValue(0, 'must be at least 0'), maxValue(1, 'must be at most 1')),
+      decay: NonNegative,
+      spill: optional(BeamSpillSchema),
     }),
   ),
   burning: optional(
@@ -1043,6 +1055,23 @@ const FurnitureSchema = pipe(
     ),
     /** Render-only boxes in cell coordinates; gameplay continues to use the furniture cells. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
+    /** Rendered as this vehicle: a blueprint without the `removed` fittings, in `body` paint, `dirt` grimy (0 clean to 1 filthy). */
+    vehicle: optional(
+      pipe(
+        strictObject({
+          blueprint: string(),
+          body: Color,
+          dirt: Fraction,
+          removed: array(string()),
+        }),
+        check(({ blueprint }) => BLUEPRINTS[blueprint] !== undefined, 'unknown vehicle blueprint'),
+        check(
+          ({ blueprint, removed }) =>
+            removed.every((id) => BLUEPRINTS[blueprint]?.fittings.some((fitting) => fitting.id === id)),
+          'removed names a fitting the blueprint lacks',
+        ),
+      ),
+    ),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
     rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
     /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
@@ -1435,7 +1464,6 @@ const MapPoolSchema = strictObject({
       }),
     ),
     minLength(1),
-    maxLength(32),
     check(
       (rows) => rows.every(({ atLeast, atMost }) => atLeast === undefined || atMost === undefined || atLeast <= atMost),
       'atLeast must not exceed atMost',
