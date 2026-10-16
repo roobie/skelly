@@ -40,6 +40,7 @@ import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
+import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import {
   gameHours,
@@ -1513,7 +1514,7 @@ const MapPoolSchema = strictObject({
 
 const ScenarioSchema = strictObject({
   id: Id,
-  kind: literal('gauntlet'),
+  kind: picklist(SCENARIO_KINDS),
   outbreakAgeGameHours: PositiveGameHours,
   decalLimit: pipe(Count, maxValue(4096)),
   body: Id,
