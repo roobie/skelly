@@ -66,7 +66,12 @@ export class GauntletSite extends CitySite {
   }
 }
 
-const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressure: boolean, authoredMarkers: boolean) => {
+const gauntletPopulation = (
+  site: CitySite,
+  scenarioId: string,
+  settlementPressure: boolean,
+  authoredMarkers: boolean,
+) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
