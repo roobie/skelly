@@ -291,6 +291,7 @@ export class HeldItems {
     this.view.updateMatrixWorld(true);
     this.poseRummage(renderPose, handling);
     this.poseMagazineLoad(handling);
+    this.poseRevolverHands(firearmPoses);
     for (const compass of this.compasses.values()) {
       compass.update(main.rotation.y);
     }
@@ -942,24 +943,37 @@ export class HeldItems {
       );
       object.quaternion.setFromAxisAngle(new Vector3(...data.crane.axis), data.crane.openRadians * opening);
     }
-    this.revolverLoadingHand(item, model, frame);
+  }
+
+  private poseRevolverHands(frames: readonly HeldFirearmPose[]): void {
+    for (const item of Object.values(this.inventory.hands)) {
+      const modelId = item && defOf(this.inventory.registry, item.type).model;
+      const model = modelId ? this.inventory.registry.models.get(modelId) : undefined;
+      if (item?.firearm?.cylinder && model?.revolver) {
+        this.revolverLoadingHand(
+          item,
+          model,
+          frames.find((frame) => frame.uid === item.uid),
+        );
+      }
+    }
   }
 
   private revolverLoadingHand(item: Item, model: ModelDef, frame: HeldFirearmPose | undefined): void {
     const held = this.shown.get(item.uid)!;
     const side = this.inventory.hands.right?.uid === item.uid ? 'left' : 'right';
-    const base = this.handBases.get(side);
     const cylinder = item.firearm!.cylinder!;
     const target = frame?.revolver?.chamber ?? cylinder.aligned;
     const point = revolverChamberPoint(model.revolver!, target, target, cylinder.open ? 1 : 0);
     const port = modelToView(model, point.map((value, index) => value - model.grip!.at[index]!) as Vec3);
     const arm = this.arms.get(side);
     held.updateWorldMatrix(true, false);
-    const rest =
-      arm?.parent && base
-        ? (held.worldToLocal(arm.parent.localToWorld(new Vector3(...base))).toArray() as Vec3)
+    const rest = arm?.parent ? (held.worldToLocal(arm.getWorldPosition(new Vector3())).toArray() as Vec3) : undefined;
+    const tuning = defOf(this.inventory.registry, item.type).firearm!.revolver!.loadPose;
+    const feed =
+      frame?.revolver?.step === 'load' && rest
+        ? shellLoadPose(rest, port, side, { ...frame, feed: tuning })
         : undefined;
-    const feed = frame?.revolver?.step === 'load' && rest ? shellLoadPose(rest, port, side, frame) : undefined;
     const reaching = feed?.wrist ?? (frame?.revolver?.step === 'pick' ? port : undefined);
     if (arm?.parent && reaching && !this.inventory.hands[side]) {
       arm.position.copy(arm.parent.worldToLocal(held.localToWorld(new Vector3(...reaching))));

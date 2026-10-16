@@ -14,6 +14,11 @@
           doubleActionPullSimSeconds: 0.15, doubleActionDispersionRadians: 0.024,
           recoverySimSeconds: 0.3, openSimSeconds: 0.5, ejectSimSeconds: 0.6,
           pickSimSeconds: 0.7, loadSimSeconds: 1, closeSimSeconds: 0.4, cockSimSeconds: 0.3,
+          loadPose: {
+            pickupEnd: 0.2, approachEnd: 0.7, thumbEnd: 0.84,
+            pickupSide: 0.05, pickupBelow: 0.1, pickupBack: 0.1,
+            palmBelow: 0.018, palmBack: 0.04, thumbLift: 0.01, thumbTravel: 0.045,
+          },
         },
       },
     },

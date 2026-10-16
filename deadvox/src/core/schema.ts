@@ -327,6 +327,27 @@ const MeleeClassSchema = strictObject({
   speedMultiplier: Positive,
 });
 
+const RoundFeedPoseSchema = pipe(
+  strictObject({
+    pickupEnd: NonNegative,
+    approachEnd: NonNegative,
+    thumbEnd: NonNegative,
+    pickupSide: NonNegative,
+    pickupBelow: NonNegative,
+    pickupBack: NonNegative,
+    palmBelow: NonNegative,
+    palmBack: NonNegative,
+    thumbLift: NonNegative,
+    thumbTravel: NonNegative,
+  }),
+  check(
+    (pose) =>
+      pose.pickupEnd > 0 && pose.pickupEnd < pose.approachEnd && pose.approachEnd < pose.thumbEnd && pose.thumbEnd < 1,
+    'feed phases must increase strictly between zero and one',
+  ),
+);
+export type RoundFeedPoseTuning = InferOutput<typeof RoundFeedPoseSchema>;
+
 // A pump feeds item-owned shells from its exported tube; other firearms feed from a fitted magazine (`magazineWellCalibre`).
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
@@ -350,6 +371,7 @@ const FirearmSchema = strictObject({
       ejectSimSeconds: PositiveSimSeconds,
       pickSimSeconds: PositiveSimSeconds,
       loadSimSeconds: PositiveSimSeconds,
+      loadPose: RoundFeedPoseSchema,
       closeSimSeconds: PositiveSimSeconds,
       cockSimSeconds: PositiveSimSeconds,
     }),

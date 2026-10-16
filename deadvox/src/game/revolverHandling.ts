@@ -134,6 +134,9 @@ export class RevolverHandling {
   }
 
   private insert(gun: Item, params: JobParams): string | undefined {
+    if (!this.loadingHandFree(gun)) {
+      return 'My other hand is full';
+    }
     const cylinder = gun.firearm!.cylinder!;
     const ammo = typeof params.ammoUid === 'number' ? this.inventory.itemByUid(params.ammoUid) : undefined;
     const index = typeof params.chamber === 'number' ? params.chamber : undefined;
@@ -222,6 +225,11 @@ export class RevolverHandling {
     return this.loadStep(gun, time);
   }
 
+  private loadingHandFree(gun: Item): boolean {
+    const other = this.inventory.hands.right?.uid === gun.uid ? 'left' : 'right';
+    return !this.inventory.hands[other];
+  }
+
   private loadStep(gun: Item, time: number): string | undefined {
     const cylinder = gun.firearm!.cylinder!;
     const [ammo] = [...this.inventory.items()]
@@ -233,12 +241,15 @@ export class RevolverHandling {
       const round = [...this.inventory.registry.items.values()].find((item) => item.ammo?.calibre === calibre);
       return `I have no ${round?.name ?? 'compatible round'}s`;
     }
+    const order = firingOrder(cylinder);
+    const spent = order.find((index) => cylinder.chambers[index]!.state === 'case');
+    if (ammo && spent === undefined && !this.loadingHandFree(gun)) {
+      return 'My other hand is full';
+    }
     if (!cylinder.open) {
       this.enqueue(gun, 'open', time);
       return;
     }
-    const order = firingOrder(cylinder);
-    const spent = order.find((index) => cylinder.chambers[index]!.state === 'case');
     if (spent !== undefined) {
       this.enqueue(gun, cylinder.chambers.some((entry) => entry.state === 'round') ? 'pick' : 'eject', time, {
         chamber: spent,

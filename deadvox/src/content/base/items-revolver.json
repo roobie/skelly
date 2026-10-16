@@ -16,6 +16,18 @@
           "doubleActionDispersionRadians": 0.024,
           "doubleActionPullSimSeconds": 0.14999999999999999,
           "ejectSimSeconds": 0.59999999999999998,
+          "loadPose": {
+            "approachEnd": 0.69999999999999996,
+            "palmBack": 0.040000000000000001,
+            "palmBelow": 0.017999999999999999,
+            "pickupBack": 0.10000000000000001,
+            "pickupBelow": 0.10000000000000001,
+            "pickupEnd": 0.20000000000000001,
+            "pickupSide": 0.050000000000000003,
+            "thumbEnd": 0.83999999999999997,
+            "thumbLift": 0.01,
+            "thumbTravel": 0.044999999999999998
+          },
           "loadSimSeconds": 1,
           "openSimSeconds": 0.5,
           "pickSimSeconds": 0.69999999999999996,

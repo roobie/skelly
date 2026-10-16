@@ -49,7 +49,15 @@ const fixture = () => {
   const inventory = new Inventory(registry);
   const gun = inventory.create('fixture_revolver');
   const ammo = inventory.create('fixture_round', 12);
-  if (!(inventory.add(gun, { kind: 'hand', side: 'right' }) && inventory.add(ammo, { kind: 'hand', side: 'left' }))) {
+  const bagDefinition = [...registry.items.values()].find((item) => item.wearable && item.container)!;
+  const bag = inventory.create(bagDefinition.id);
+  if (
+    !(
+      inventory.add(gun, { kind: 'hand', side: 'right' }) &&
+      inventory.add(bag, { kind: 'worn' }) &&
+      inventory.add(ammo, { kind: 'pocket', owner: bag, pocket: 0 })
+    )
+  ) {
     throw new Error('Revolver fixture does not fit');
   }
   const queue = new HandlingQueue(inventory);
@@ -127,6 +135,32 @@ const fixture = () => {
 };
 
 describe('revolver cylinder handling', () => {
+  it('loads only with the non-gun hand free, whichever hand holds the gun', () => {
+    for (const side of ['right', 'left'] as const) {
+      const f = fixture();
+      const pocket = f.inventory.locate(f.ammo)!;
+      if (pocket.kind !== 'pocket') {
+        throw new Error('Fixture ammunition needs a carried pocket');
+      }
+      if (side === 'left') {
+        expect(f.inventory.move(f.gun, { kind: 'hand', side }).ok).toBe(true);
+      }
+      const other = side === 'right' ? 'left' : 'right';
+      expect(f.inventory.move(f.ammo, { kind: 'hand', side: other }).ok).toBe(true);
+      const before = snapshotFirearm(f.gun.firearm!);
+      const carried = f.ammo.count;
+      expect(f.mechanics.loadNext(f.gun.uid, f.time())).toBeTypeOf('string');
+      expect(f.queue.busy).toBe(false);
+      expect(snapshotFirearm(f.gun.firearm!)).toEqual(before);
+      expect(f.ammo.count).toBe(carried);
+      expect(f.inventory.move(f.ammo, pocket).ok).toBe(true);
+      f.load();
+      f.load();
+      expect(f.rounds()).toBe(1);
+      expect(f.ammo.count).toBe(carried - 1);
+    }
+  });
+
   it('a partial load feeds the next double-action strike, not the previously aligned chamber', () => {
     const f = fixture();
     const { aligned } = f.cylinder();

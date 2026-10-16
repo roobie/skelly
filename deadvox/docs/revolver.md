@@ -15,7 +15,7 @@ A normal top-up preserves live cartridges and picks out cases individually. Deli
 
 Speedloaders are follow-up work, not part of loose-round loading. Separating them keeps the cylinder's ownership and interruptions reviewable before another ammunition container is introduced.
 
-The revolver is one-handed with one-hand aim, leaving the off hand available rather than treating a handgun as a long gun. Existing grip, bore and sight transforms own aiming; moving parts do not change shot admission. See `src/core/heldPose.ts`, `heldFirearmTransform`.
+The revolver is one-handed with one-hand aim, leaving the off hand available rather than treating a handgun as a long gun. Loading a round requires that the hand not wielding the gun is free, because that hand carries the round to the chamber. Its reach and the visible round share the loading job's progress; ordinary stance posing must not overwrite the reach. See `src/game/revolverHandling.ts`, `RevolverHandling`, and `src/render/hands.ts`, `HeldItems`. Existing grip, bore and sight transforms own aiming; moving parts do not change shot admission. See `src/core/heldPose.ts`, `heldFirearmTransform`.
 
 Only the authored calibre is accepted. Per-chamber cartridge types remain explicit so future compatible ammunition can use the same owner without inventing a second chamber representation. Compatibility needs its own content rule before another calibre can be loaded.
 
