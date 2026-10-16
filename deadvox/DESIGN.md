@@ -1587,6 +1587,7 @@ so scale does not force a later redesign:
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
+- **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
 - **Day and night** follow one sun model derived from the base pack's latitude,
   fixed date and nautical twilight. The sky and fog follow the resulting phases;
   light and night looks blend through dusk and dawn, and a flashlight matters
