@@ -35,7 +35,7 @@ local variants = [
     id: variant.id, size: [4, 5, 9],
     lootContext: { usage: [], tier: 'Tier1' },
     decals: [decals.scorch([3.6, 1, 3])],
-    palette: { '=': 'concrete', W: { furniture: variant.id, facing: 'n' } },
+    palette: { '=': { ground: true }, W: { furniture: variant.id, facing: 'n' } },
     layers: [
       ['====', '====', '====', '====', '====', '====', '====', '====', '===='],
       ['WWWW', 'WWWW', 'WWWW', 'WWWW', 'WWWW', 'WWWW', 'WWWW', 'WWWW', 'WWWW'],

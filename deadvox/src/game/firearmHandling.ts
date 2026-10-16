@@ -383,7 +383,7 @@ export class FirearmMechanics {
     queue.registerAction(MAGAZINE_ACTION, (params) => this.completeMagazineChange(params.uid, params.magazineUid));
     queue.registerAction(STRIP_ACTION, (params): string | undefined => {
       const gun = typeof params.uid === 'number' ? inventory.itemByUid(params.uid) : undefined;
-      const type = gun?.firearm?.tube?.[0];
+      const type = gun?.firearm?.retainedRoundType ?? gun?.firearm?.tube?.[0];
       if (!(gun && type && this.held(gun.uid) && gun.firearm?.actionOpen)) {
         return 'I cannot reach a round';
       }
@@ -401,7 +401,11 @@ export class FirearmMechanics {
       if (!placed) {
         return 'I have no room for that round';
       }
-      gun.firearm.tube!.shift();
+      if (gun.firearm.retainedRoundType) {
+        gun.firearm.retainedRoundType = undefined;
+      } else {
+        gun.firearm.tube!.shift();
+      }
       return undefined;
     });
   }
@@ -862,7 +866,7 @@ export class FirearmMechanics {
       state !== undefined &&
       (state.cylinder
         ? state.cylinder.chambers.some((chamber) => chamber.state !== 'empty')
-        : state.chamber !== 'empty' || (state.tube?.length ?? 0) > 0)
+        : state.chamber !== 'empty' || state.retainedRoundType !== undefined || (state.tube?.length ?? 0) > 0)
     );
   }
 
@@ -955,8 +959,7 @@ export class FirearmMechanics {
     if (!ammoMatchesCalibre(ammo.type, data.calibre, this.inventory.registry)) {
       return 'Wrong ammunition';
     }
-    const returning = this.isBolt(gun) && !gun.firearm?.actionOpen && gun.firearm?.chamber === 'round' ? 1 : 0;
-    return (gun.firearm?.tube?.length ?? 0) + returning >= data.model.internalMagazine.capacity
+    return (gun.firearm?.tube?.length ?? 0) >= data.model.internalMagazine.capacity
       ? 'The magazine is full'
       : undefined;
   }
@@ -1004,21 +1007,7 @@ export class FirearmMechanics {
     }
     const integral = this.heldPump();
     if (integral?.uid === uid && this.isBolt(integral)) {
-      if (this.queue.busy || integral.firearm?.cycle) {
-        return 'My hands are busy';
-      }
-      if (!integral.firearm?.actionOpen) {
-        this.startHandCycle(integral, time, 'open');
-      }
-      for (const type of integral.firearm!.tube!) {
-        this.queue.enqueueAction(
-          STRIP_ACTION,
-          'Remove round',
-          defOf(this.inventory.registry, type).ammo!.stripSimSeconds * this.handlingFactor('reloadDuration'),
-          { uid },
-        );
-      }
-      return undefined;
+      return this.stripBolt(integral, time);
     }
     const gun = this.heldMagazineFed();
     if (gun?.uid !== uid) {
@@ -1031,6 +1020,25 @@ export class FirearmMechanics {
       return 'No magazine is fitted';
     }
     this.enqueueMagazineAction(gun, 'Remove magazine', time);
+    return undefined;
+  }
+
+  private stripBolt(gun: Item, time: number): string | undefined {
+    if (this.queue.busy || gun.firearm?.cycle) {
+      return 'My hands are busy';
+    }
+    if (!gun.firearm?.actionOpen) {
+      this.startHandCycle(gun, time, 'open');
+    }
+    const { retainedRoundType, tube } = gun.firearm!;
+    for (const type of [...(retainedRoundType ? [retainedRoundType] : []), ...tube!]) {
+      this.queue.enqueueAction(
+        STRIP_ACTION,
+        'Remove round',
+        defOf(this.inventory.registry, type).ammo!.stripSimSeconds * this.handlingFactor('reloadDuration'),
+        { uid: gun.uid },
+      );
+    }
     return undefined;
   }
 
@@ -1141,6 +1149,9 @@ export class FirearmMechanics {
       return [
         `Bolt: ${item.firearm?.actionOpen ? 'open' : 'closed'}`,
         `Chamber: ${this.chamberWords(item)}`,
+        ...(item.firearm?.retainedRoundType
+          ? [`Retained round: ${defOf(this.inventory.registry, item.firearm.retainedRoundType).name}`]
+          : []),
         `Magazine: ${item.firearm?.tube?.length ?? 0}/${firearmHandlingFor(item, this.inventory.registry).model.internalMagazine!.capacity}`,
       ];
     }
@@ -1420,10 +1431,7 @@ export class FirearmMechanics {
     }
     if (state.chamber === 'round' && state.roundType !== undefined) {
       if (state.cycle?.preserveRound) {
-        if (!state.tube || state.tube.length >= data.model.internalMagazine!.capacity) {
-          return 'The magazine is full';
-        }
-        state.tube.unshift(state.roundType);
+        state.retainedRoundType = state.roundType;
         state.chamber = 'empty';
         state.roundType = undefined;
         return undefined;
@@ -1437,7 +1445,8 @@ export class FirearmMechanics {
   /** The action closes on the integral or fitted magazine's top round. */
   private feed(item: Item, state: FirearmState): void {
     const source = this.isIntegral(item) ? state.tube : item.slots?.magazine?.cartridges;
-    state.roundType = source?.shift();
+    state.roundType = state.retainedRoundType ?? source?.shift();
+    state.retainedRoundType = undefined;
     state.chamber = state.roundType ? 'round' : 'empty';
   }
 

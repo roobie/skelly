@@ -50,6 +50,8 @@ export interface FirearmState {
   roundType?: string | undefined;
   /** Integral magazine cartridges in feed order; detachable magazines own their own cartridges. */
   tube?: string[];
+  /** Top-up must not spend magazine capacity on the chamber's extracted round. */
+  retainedRoundType?: string | undefined;
   actionOpen?: boolean;
   /** Ejected items awaiting their simulation-clock landings. */
   landings?: FirearmLanding[] | undefined;
@@ -60,12 +62,14 @@ export interface FirearmState {
 
 /** No live state is advanced or cancelled by a snapshot. */
 export const snapshotFirearm = (state: FirearmState): FirearmState => {
-  const { chamber, cylinder, roundType, tube, actionOpen, landings, pendingCase, cycle, readying } = state;
+  const { chamber, cylinder, roundType, retainedRoundType, tube, actionOpen, landings, pendingCase, cycle, readying } =
+    state;
   return {
     ...(chamber === undefined ? {} : { chamber }),
     ...(cylinder === undefined ? {} : { cylinder: structuredClone(cylinder) }),
     ...(roundType === undefined ? {} : { roundType }),
     ...(tube === undefined ? {} : { tube: [...tube] }),
+    ...(retainedRoundType === undefined ? {} : { retainedRoundType }),
     ...(actionOpen === undefined ? {} : { actionOpen }),
     ...(landings === undefined ? {} : { landings: structuredClone(landings) }),
     ...(pendingCase === undefined ? {} : { pendingCase: structuredClone(pendingCase) }),
@@ -121,6 +125,7 @@ const assertCylinderState = (state: FirearmState): void => {
     state.chamber !== undefined ||
     state.roundType !== undefined ||
     state.tube !== undefined ||
+    state.retainedRoundType !== undefined ||
     state.pendingCase !== undefined ||
     state.cycle !== undefined
   ) {
@@ -152,6 +157,12 @@ const assertCylinderState = (state: FirearmState): void => {
 };
 
 const assertOpenActionState = (state: FirearmState): void => {
+  if (
+    state.retainedRoundType !== undefined &&
+    (typeof state.retainedRoundType !== 'string' || !state.retainedRoundType || !state.actionOpen)
+  ) {
+    throw new Error('A retained round needs an open bolt');
+  }
   if (state.actionOpen !== undefined && typeof state.actionOpen !== 'boolean') {
     throw new Error('Invalid firearm action-open state');
   }

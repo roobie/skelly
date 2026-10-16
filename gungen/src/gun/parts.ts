@@ -47,12 +47,13 @@ import { AR_HANDLE_CHANNEL, arChargingHandle } from './arChargingHandle.ts';
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import {
-  BOLT_MAGAZINE_RESERVE_U,
   BOLT_MAGAZINE_WALL_U,
+  BOLT_WELL_PROFILES,
   boltCalibreParam,
   boltCartridge,
   boltMagazineSection,
   boltStrokeUnits,
+  boltWellProfile,
 } from './boltCartridge.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
@@ -4282,7 +4283,7 @@ export const magazine: PartFamily = {
     length: { values: ['5-round', '10-round', ...SIZE_CLASSES], default: 'M' },
     profile: choice('standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved', 'stanag-straight'),
     integral: choice('no', 'yes'),
-    wellBody: choice('standard', 'sporter'),
+    wellBody: { values: Object.keys(BOLT_WELL_PROFILES), default: 'standard' },
     orientation: choice(...MAGAZINE_ORIENTATIONS),
     variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
   },
@@ -4295,7 +4296,8 @@ export const magazine: PartFamily = {
     }
     const magazineLength = magazineLengthData(params.length, profile, params.variant);
     const isCompactBoltMagazine = params.length === '5-round' || params.length === '10-round';
-    const len = params.wellBody === 'sporter' ? SPORTER_PROPORTIONS.magazine.bodyLengthU : magazineLength.length;
+    const wellProfile = boltWellProfile(params.wellBody ?? 'standard');
+    const len = wellProfile.bodyLengthU ?? magazineLength.length;
     const { depth, width } =
       params.integral === 'yes'
         ? boltMagazineSection(boltCartridge(params.boltCalibre))
@@ -4360,10 +4362,14 @@ export const magazine: PartFamily = {
                 'internal-magazine-well',
                 [
                   -depth / 2 + BOLT_MAGAZINE_WALL_U,
-                  resolvedInsertion - len + BOLT_MAGAZINE_RESERVE_U,
-                  -width / 2 + BOLT_MAGAZINE_WALL_U,
+                  resolvedInsertion - len + wellProfile.floorReserveU,
+                  -width / 2 + wellProfile.sideWallU,
                 ],
-                [depth / 2 - BOLT_MAGAZINE_WALL_U, resolvedInsertion, width / 2 - BOLT_MAGAZINE_WALL_U],
+                [
+                  depth / 2 - BOLT_MAGAZINE_WALL_U,
+                  resolvedInsertion + wellProfile.topProudU,
+                  width / 2 - wellProfile.sideWallU,
+                ],
               ),
             ]
           : [],

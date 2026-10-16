@@ -68,7 +68,7 @@ export const SPORTER_PROPORTIONS = {
       ],
     ] as const,
   },
-  magazine: { bodyLengthU: 2.75, feedPortY: -1.75 },
+  magazine: { feedPortY: -1.75 },
   handle: {
     rearInsetU: 1,
     sideRootClearanceU: 0.25,

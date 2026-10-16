@@ -2,10 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { toChunk } from '../src/core/coords.ts';
+import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { doorOptions } from '../src/core/options.ts';
+import { doorOptions, doorPlan } from '../src/core/options.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { placedPieces } from '../src/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
@@ -298,5 +298,38 @@ describe('door locks', () => {
       path: 'layouts[0].buildings[1]',
       message: 'lock "test_a" is used more than once in this site',
     });
+  });
+});
+
+describe('boarded doors', () => {
+  // Every house door faces the street (cityPlan fillRow), and the planks stand on the front.
+  it('bars the boarded door from its front, the side every placed house door faces the street', () => {
+    expect(registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom).toBe('front');
+  });
+
+  it.each([
+    { facing: 'n', size: [2, 4, 1], outward: -1 },
+    { facing: 's', size: [2, 4, 1], outward: 1 },
+    { facing: 'e', size: [1, 4, 2], outward: 1 },
+    { facing: 'w', size: [1, 4, 2], outward: -1 },
+  ] as const)('refuse opening from the barricaded side and open from the other facing $facing', (spec) => {
+    const inventory = new Inventory(registry);
+    const door = inventory.furnish({
+      type: 'gauntlet_door_boarded',
+      pos: [4, 0, 4],
+      size: [...spec.size],
+      facing: spec.facing,
+    })!;
+    const barred = registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom!;
+    const alongX = spec.facing === 'e' || spec.facing === 'w';
+    const at = (sign: number): Vec3 => (alongX ? [5 + sign * 3, 0, 5] : [5, 0, 5 + sign * 3]);
+    const front = at(spec.outward);
+    const back = at(-spec.outward);
+    const [street, inside] = barred === 'back' ? [back, front] : [front, back];
+
+    inventory.actorPosition = () => street;
+    expect(doorPlan(inventory, door, 'open')).toMatchObject({ ok: false, reason: "It's boarded up" });
+    inventory.actorPosition = () => inside;
+    expect(doorPlan(inventory, door, 'open').ok).toBe(true);
   });
 });

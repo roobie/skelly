@@ -1781,6 +1781,23 @@
   ],
   "defaultCalibre": "308-winchester",
   "extractionClearanceGridSteps": 2,
-  "magazineReserveGridSteps": 2,
-  "magazineWallGridSteps": 1
+  "integralWells": {
+    "sporter": {
+      "bodyLengthU": 2.75,
+      "expectedCapacityByCalibre": {
+        "308-winchester": 4
+      },
+      "floorReserveU": 0.25,
+      "sideWallU": 0.02,
+      "topProudU": 0.125
+    },
+    "standard": {
+      "bodyLengthU": null,
+      "expectedCapacityByCalibre": {},
+      "floorReserveU": 0.5,
+      "sideWallU": 0.25,
+      "topProudU": 0
+    }
+  },
+  "magazineOuterWallU": 0.25
 }

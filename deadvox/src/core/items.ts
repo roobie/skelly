@@ -435,7 +435,11 @@ const assertIntegralAmmunition = (registry: Registry, model: ModelDef | undefine
   if ((state.chamber === 'round') !== (state.roundType !== undefined)) {
     throw new Error('Integral-magazine chamber needs exactly one real cartridge');
   }
-  for (const round of [...state.tube, ...(state.roundType ? [state.roundType] : [])]) {
+  for (const round of [
+    ...state.tube,
+    ...(state.roundType ? [state.roundType] : []),
+    ...(state.retainedRoundType ? [state.retainedRoundType] : []),
+  ]) {
     if (defOf(registry, round).ammo?.calibre !== model.calibre) {
       throw new Error('Integral-magazine ammunition calibre mismatch');
     }
@@ -445,7 +449,10 @@ const assertIntegralAmmunition = (registry: Registry, model: ModelDef | undefine
 /** Content-coupled constraints checked when rebuilding items from a decoded snapshot. */
 const assertAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
   const def = defOf(registry, type);
-  if ((state.actionOpen !== undefined || state.cycle?.phase !== undefined) && !def.firearm?.bolt) {
+  if (
+    (state.actionOpen !== undefined || state.cycle?.phase !== undefined || state.retainedRoundType !== undefined) &&
+    !def.firearm?.bolt
+  ) {
     throw new Error('Action-open state needs a bolt firearm');
   }
   const revolverModel = def.model ? registry.models.get(def.model) : undefined;
@@ -582,6 +589,7 @@ const ammunitionWeight = (registry: Registry, item: Item): number => {
   const rounds = [
     ...(state.tube ?? []),
     ...(state.roundType ? [state.roundType] : []),
+    ...(state.retainedRoundType ? [state.retainedRoundType] : []),
     ...(state.cylinder?.chambers.flatMap((chamber) => (chamber.state === 'round' ? [chamber.roundType] : [])) ?? []),
   ];
   const modelId = defOf(registry, item.type).model;

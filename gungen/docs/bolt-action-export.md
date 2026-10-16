@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change turn-bolt geometry, integral magazine fit or hunting-rifle exports
+  - you change turn-bolt geometry, staggered integral capacity or hunting-rifle exports
   - you change the shared manual-action model contract consumed by Deadvox
   - you regenerate the hunting rifle, its civilian cartridge or its optional scope
   - you change the sporter's bore-registered action, furniture joint or silhouette tuning
@@ -28,7 +28,9 @@ The round action needs bedding below it, not an enclosed box handguard. The mati
 
 ## Geometry and motion boundary
 
-Cartridge identity must not silently select a different action envelope: modded bolt designs must either size from their selected cartridge or report a validation issue. The bolt catalogue owns cartridge admission and visual extraction, wall and follower estimates; these are not manufacturing specifications. Well capacity counts the rounds that fit the resolved cavity, not a nominal capacity label. See `cartridges/catalogue/bolt.jsonnet`, `src/gun/boltCartridge.ts`, `boltCalibreIssue`, and `src/gun/internalMagazine.ts`, `internalMagazineCapacity`.
+The .308 BDL-type short action holds four rounds in the magazine plus one separately chambered. Reworking the internal well preserves the traced exterior instead of changing the shared gun scale to make ammunition fit. Wall, feed-mouth and follower clearances are stylized authoring choices, not measurements from a real box drawing. The catalogue owns the target and clearances; the staggered column must actually fit, rather than acquire a nominal capacity shim. See `cartridges/catalogue/bolt.jsonnet`, `integralWells`, and `src/gun/internalMagazine.ts`, `internalMagazineLayout`.
+
+Cartridge identity must not silently select a different action envelope: modded bolt designs must either size from their selected cartridge or report a validation issue. Reusing the magazine column packer keeps same-side and opposite-side clearance constraints consistent across detachable and integral magazines. See `src/gun/boltCartridge.ts`, `boltCalibreIssue`, and `src/ammo/magazineColumn.ts`, `layoutColumn`.
 
 The carrier, arm and knob share one turn about the carrier's longitudinal centreline. Each part stores that pivot and bore-parallel axis in its own local frame, while the export transforms them into the model frame. The handle profile supplies the lift angle. Receiver relief leaves room for the handle root. Rail clearance follows the turned neck, while the sporter's bedding and low tang leave its rearward root clear without lifting the rail; neither approach permits collisions by family exemption. Continuous clearance is certified for the coupled body and handle over both the lift arc and the lifted draw, including fixed optic geometry; interval displacement bounds prevent narrow collisions between samples from being missed. Axial tail length must not inflate the turn-speed bound, and obstacles reuse immutable phase poses, so bedding detail does not multiply identical motion work. See `src/gun/parts.ts`, `boltTurn`, and `src/gun/boltSweep.ts`, `sweepBoltAction`.
 

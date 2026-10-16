@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { actionOpenSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -11,6 +10,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { FirearmMechanics, type FirearmShotEffect } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const { registry, issues } = buildRegistry(
   readdirSync('src/content/base')
@@ -95,6 +95,7 @@ const fixture = (skill = 0) => {
       .reduce((sum, { item }) => sum + item.count, 0) +
     (gun.firearm?.tube?.length ?? 0) +
     (gun.firearm?.chamber === 'round' ? 1 : 0) +
+    (gun.firearm?.retainedRoundType ? 1 : 0) +
     (gun.firearm?.landings?.filter((landing) => landing.type === rounds.type).length ?? 0);
   return { inventory, gun, rounds, queue, mechanics, effects, step, finish, load, rack, fire, total, time: () => now };
 };
@@ -144,19 +145,39 @@ it('opens before loading, consumes one round per job, closes to feed, and refuse
   expect(f.gun.firearm?.tube).toHaveLength(2);
 });
 
-it('top-up returns the live chamber round without a landing or loss', () => {
+it('tops up the full magazine while keeping the separately chambered round', () => {
   const f = fixture();
   f.load();
   f.rack();
   const before = f.total();
+  const { capacity } = f.inventory.registry.models.get('fixture_model')!.internalMagazine!;
+  for (let index = 0; index < capacity; index++) {
+    f.load();
+  }
+  f.mechanics.cancelLoad(f.gun.uid);
+  f.finish();
+  expect(f.gun.firearm?.tube).toHaveLength(capacity);
+  expect(f.gun.firearm?.chamber).toBe('round');
+  expect(f.total()).toBe(before);
+});
+
+it('top-up retains the extracted live round and its mass outside the magazine until closing', () => {
+  const f = fixture();
+  f.load();
+  f.rack();
+  const before = f.total();
+  const mass = f.inventory.carriedWeight();
   f.load();
   expect(f.gun.firearm?.actionOpen).toBe(true);
-  expect(f.gun.firearm?.tube).toHaveLength(2);
+  expect(f.gun.firearm?.tube).toHaveLength(1);
+  expect(f.gun.firearm?.retainedRoundType).toBe(f.rounds.type);
+  expect(f.inventory.carriedWeight()).toBe(mass);
   expect(f.effects).toEqual([]);
   expect(f.total()).toBe(before);
   f.mechanics.cancelLoad(f.gun.uid);
   f.finish();
   expect(f.gun.firearm?.chamber).toBe('round');
+  expect(f.gun.firearm?.retainedRoundType).toBeUndefined();
   expect(f.total()).toBe(before);
 });
 
@@ -194,6 +215,22 @@ it('removal ejects the chambered round then strips magazine rounds without consu
   expect(f.total()).toBe(before);
 });
 
+it('removal recovers a retained top-up round before stripping the magazine', () => {
+  const f = fixture();
+  f.load();
+  f.rack();
+  f.load();
+  expect(f.gun.firearm?.retainedRoundType).toBe(f.rounds.type);
+  const before = f.total();
+  expect(f.mechanics.removeMagazine(f.gun.uid, f.time())).toBeUndefined();
+  f.finish();
+  expect(f.gun.firearm?.retainedRoundType).toBeUndefined();
+  expect(f.gun.firearm?.tube).toEqual([]);
+  expect(f.mechanics.stillLoaded(f.gun.uid)).toBe(false);
+  expect(f.effects).toEqual([]);
+  expect(f.total()).toBe(before);
+});
+
 it('skill scales the bolt clock and ejection includes the exported unlock phase', () => {
   const novice = fixture();
   const experienced = fixture(SKILL_LEVEL_MAX);
@@ -207,7 +244,7 @@ it('skill scales the bolt clock and ejection includes the exported unlock phase'
   );
 });
 
-it('a top-up saved after opening commits its returned round but cancels manual motion in the save copy', async () => {
+it('a top-up save retains the extracted round outside the magazine and cancels only manual motion', async () => {
   const f = fixture();
   f.load();
   f.rack();
@@ -255,7 +292,9 @@ it('a top-up saved after opening commits its returned round but cancels manual m
   expect(restored.hands.right?.firearm?.actionOpen).toBe(true);
   expect(restored.hands.right?.firearm?.cycle).toBeUndefined();
   expect(f.gun.firearm?.cycle?.phase).toBe('open');
-  expect(restored.hands.right?.firearm?.tube).toEqual([f.rounds.type]);
+  expect(restored.hands.right?.firearm?.tube).toEqual([]);
+  expect(restored.hands.right?.firearm?.retainedRoundType).toBe(f.rounds.type);
+  expect(restored.carriedWeight()).toBe(f.inventory.carriedWeight());
   expect(restored.itemByUid(f.rounds.uid)?.count).toBe(f.rounds.count);
   const corrupt = structuredClone(state);
   corrupt.hands.right!.firearm!.chamber = 'round';

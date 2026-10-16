@@ -150,6 +150,8 @@ export interface CompiledTemplate {
   readonly size: Vec3;
   /** A block id per cell, x + sx * (z + sz * y). Furniture and spawn cells are air. */
   readonly blocks: Uint16Array;
+  /** One where the cell is "the ground here": nothing is stamped and the site's surface shows. */
+  readonly ground?: Uint8Array;
   /** Zero is unclaimed, one owns occupancy, two owns air. */
   readonly ownership?: Uint8Array;
   readonly reserved?: Uint8Array;
@@ -239,9 +241,12 @@ export const compileTemplate = (
   const blocks = new Uint16Array(sx * sy * sz);
   const { pieces, spawns } = compileMarkers(registry, template);
   checkDecalDoors(registry, template, pieces);
+  const ground = new Uint8Array(blocks.length);
   for (const [x, y, z] of cellsOf(template.size)) {
     const entry = template.palette[charAt(template, x, y, z) ?? ''];
-    blocks[x + sx * (z + sz * y)] = typeof entry === 'string' ? registry.blockIds.get(entry)! : 0;
+    const index = x + sx * (z + sz * y);
+    blocks[index] = typeof entry === 'string' ? registry.blockIds.get(entry)! : 0;
+    ground[index] = Number(typeof entry === 'object' && entry.ground === true);
   }
   if (template.ownership && (template.access?.stairs.length ?? 0) > 0) {
     throw new Error(`${template.id}: owned pieces must author stair geometry, not use a post-pass flight`);
@@ -255,6 +260,7 @@ export const compileTemplate = (
     lootContext: template.lootContext,
     size: [sx, sy, sz],
     blocks,
+    ...(ground.includes(1) ? { ground } : {}),
     ...compileOwnership(template, blocks, pieces, source),
     pieces,
     spawns,
@@ -315,7 +321,7 @@ export const placedBlockAt = (placement: Placement, [x, y, z]: Vec3): number | u
     return undefined;
   }
   const index = u + sx * (v + sz * h);
-  return template.ownership?.[index] === 0 ? undefined : template.blocks[index];
+  return template.ownership?.[index] === 0 || template.ground?.[index] ? undefined : template.blocks[index];
 };
 
 /** Writes the part of a placed template that falls inside the chunk. */
@@ -332,7 +338,7 @@ export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
       for (let lx = lo[0]!; lx < hi[0]!; lx++) {
         const [x, z] = unturned(template.size, turn, base[0] + lx - origin[0], base[2] + lz - origin[2]);
         const index = x + sx * (z + sz * y);
-        if (template.ownership?.[index] !== 0) {
+        if (template.ownership?.[index] !== 0 && !template.ground?.[index]) {
           chunk.set(lx, ly, lz, template.blocks[index]!);
         }
       }

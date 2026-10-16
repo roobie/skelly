@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change bolt-rifle handling, open-action saves or top-up conservation
+  - you change bolt-rifle handling, magazine-plus-chamber capacity or open-action saves
   - you change turn-bolt posing or integral-magazine loading presentation
 ---
 
@@ -10,7 +10,7 @@ read_if:
 
 A bolt rifle must require a deliberate cycle after firing rather than acquire an automatic action merely because its ammunition uses one projectile. Integral loading shares the pump's queue and ammunition owner, while the open bolt remains an item fact: cancelling a hand job must not silently close it. See `src/game/firearmHandling.ts`, `FirearmMechanics`, and `src/core/firearmState.ts`, `snapshotFirearm`.
 
-Top-up returns a chambered live round before taking another from inventory. Admission reserves room for that return; refusing a full magazine is preferable to losing or throwing away a cartridge. Consumption belongs to each completed load job, so interruption cannot consume the visible round. Closing after a completed load and cancelling a partly completed round are different intentions: the latter leaves the action open for an explicit rack. Removal deliberately ejects the chambered round, but strips the magazine without cycling each round through the chamber. See `src/game/firearmHandling.ts`, `loadReason`, `cancelLoad`, and `removeMagazine`.
+A top-up must conserve the extracted live round without spending magazine capacity, otherwise the magazine-plus-chamber identity is unreachable. Item ownership keeps that retained round safe across interruption, saves and unloading; closing must restore it before taking a magazine round. A cancelled insertion must not consume the visible cartridge. Closing after a completed load and cancelling a partly completed round are different intentions, so cancellation must not silently close an interrupted action. See `src/core/firearmState.ts`, `FirearmState`, and `src/game/firearmHandling.ts`, `feed`, `cancelLoad`, and `stripBolt`.
 
 The save copy cancels manual motion, not committed ammunition transfers. An open action cannot retain a chambered cartridge or case. Save restoration validates the item mechanism as well as the structural state; see `src/core/items.ts`, `assertAmmunition`, and `src/core/firearmState.ts`, `assertFirearmState`.
 

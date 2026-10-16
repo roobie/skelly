@@ -65,7 +65,7 @@
     "ejectDirection": [0.12038585308576918, 0.24077170617153837, 0.9630868246861535],
     "holdOpen": false
   },
-  "internalMagazine": { "capacity": 2 },
+  "internalMagazine": { "capacity": 4 },
   "attachments": [],
   "attachmentSlots": [
     {

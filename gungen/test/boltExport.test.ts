@@ -16,6 +16,7 @@ import { exportCartridgeModels } from '../src/gun/cartridgeExport.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { internalMagazineCapacity } from '../src/gun/internalMagazine.ts';
 import { OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
 import { loadDesigns } from './helpers.ts';
 
@@ -175,20 +176,8 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
   }
   const model = out.modelEntry;
   const resolved = resolve(hunting.assembly, gunDomain);
-  const well = [...resolved.defs.values()]
-    .flatMap((def) => def.keepOuts)
-    .find(({ id }) => id === 'internal-magazine-well')!;
-  if (BOLT_CARTRIDGE.kind !== 'metallic') {
-    throw new Error('metallic fixture required');
-  }
-  const diameter = BOLT_CARTRIDGE.case.rim.diameter.value! / (gunDomain.units.metresPerUnit * 1000);
-  const capacity = model.internalMagazine?.capacity;
-  if (capacity === undefined) {
-    throw new Error('Integral capacity is missing');
-  }
-  const height = 2 * well.box.half[1];
-  expect(capacity * diameter).toBeLessThanOrEqual(height);
-  expect((capacity + 1) * diameter).toBeGreaterThan(height);
+  expect(model.internalMagazine?.capacity).toBeDefined();
+  expect(model.internalMagazine?.capacity).toBe(internalMagazineCapacity(resolved, BOLT_CARTRIDGE));
   expect(model.slots?.magazine).toBeUndefined();
   expect(Object.values(model.compatibility ?? {}).some((allowed) => allowed.includes('optic-hunting-3-9x'))).toBe(true);
   expect(model.sight?.kind).toBe('iron');
