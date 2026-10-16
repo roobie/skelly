@@ -1029,6 +1029,7 @@ const FurnitureSchema = pipe(
     shotTarget: optional(literal(true)),
     scenarioGoal: optional(literal(true)),
     readable: optional(ReadableSchema),
+    mount: optional(literal('wall')),
     container: optional(ContainerSchema),
     /** The loot table rolled into its container when the chunk generates. */
     loot: optional(Id),
@@ -1099,6 +1100,18 @@ const FurnitureSchema = pipe(
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
   check(({ climbable, solid }) => !climbable || solid === false, 'a climbable piece must not be solid'),
+  check(
+    ({ mount, size, shape, solid }) =>
+      !mount ||
+      (size.every((extent) => extent === 1) &&
+        solid === false &&
+        shape?.length === 1 &&
+        shape.every(
+          ({ position: [x, y, z], size: [w, h, d] }) =>
+            x === 0 && y === 0 && w === 1 && h === 1 && d < 1 && z + d === 1,
+        )),
+    'a wall mount needs a non-solid single-cell shape spanning its face, thin and flush with its back',
+  ),
 );
 
 // ---- loot tables ----
@@ -1501,6 +1514,19 @@ const ScenarioSchema = strictObject({
     ladder: CellPosition,
     upper: CellPosition,
     lower: CellPosition,
+  }),
+  /** The ordinary buildings' street pressure; authored markers are separate from it. */
+  population: strictObject({
+    settlementPressure: vBoolean(),
+    authoredMarkers: vBoolean(),
+    /** Ordinary buildings per street group; each group gets roadside stragglers. */
+    groupSize: pipe(Count, minValue(1), maxValue(64)),
+    /** Hordes in the whole city, each on a different seeded street group. */
+    hordes: pipe(Count, maxValue(16)),
+    /** Metres each side of a street's centreline where stragglers stand. */
+    roadsideOffset: pipe(Count, minValue(1), maxValue(32)),
+    /** Stragglers added to each group on top of its hamlet-sized count. */
+    extraStragglers: pipe(Count, maxValue(16)),
   }),
   city: strictObject({
     blocksX: pipe(Count, minValue(1), maxValue(4)),

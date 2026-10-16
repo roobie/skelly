@@ -20,6 +20,11 @@
       "name": "Placeholder sign",
       "size": [2, 3, 1],
       "color": "#99794c",
+      "shape": [
+        { "position": [0, 1, 0.4], "size": [2, 2, 0.2] },
+        { "position": [0.2, 0, 0.4], "size": [0.2, 1, 0.2] },
+        { "position": [1.6, 0, 0.4], "size": [0.2, 1, 0.2] }
+      ],
       "readable": {
         "title": "Placeholder — a wooden sign",
         "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION\n\nThis is a sample of readable furniture. The hamlet signs and actual directions will be authored later."

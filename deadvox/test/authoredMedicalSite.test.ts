@@ -9,6 +9,7 @@ import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFligh
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, compileTemplate, type Facing } from '../src/core/templates.ts';
 import { USE_REACH } from '../src/game/play.ts';
+import { PLAYER } from '../src/game/player.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -126,7 +127,30 @@ describe('authored medical site', () => {
     ).toBe(true);
   });
 
-  it('hangs the readable research notice on the wall without blocking room access', () => {
+  it('hangs wall mounts across the standing eye line and keeps the notice room accessible', () => {
+    const wallMounts = [...result.registry.templates.values()].flatMap((templateDefinition) => {
+      const template = compileTemplate(result.registry, templateDefinition);
+      return template.pieces.flatMap((piece) => {
+        const definition = result.registry.furniture.get(piece.furniture)!;
+        return definition.mount === 'wall' ? [{ template, piece, definition }] : [];
+      });
+    });
+    expect(wallMounts.length).toBeGreaterThan(0);
+    for (const { template, piece, definition } of wallMounts) {
+      const [x, y, z] = piece.pos;
+      const [width, , depth] = template.size;
+      let floor = y - 1;
+      while (floor >= 0 && !result.registry.blocks[template.blocks[x + width * (z + depth * floor)]!]?.solid) {
+        floor -= 1;
+      }
+      expect(floor, `${piece.furniture} standing support`).toBeGreaterThanOrEqual(0);
+      const shape = definition.shape![0]!;
+      const eyeLine = (floor + 1) * BLOCK_SIZE + PLAYER.eye;
+      const faceCentre = (y + shape.position[1] + shape.size[1] / 2) * BLOCK_SIZE;
+      expect(Math.abs(faceCentre - eyeLine), `${piece.furniture} standing eye line`).toBeLessThanOrEqual(
+        (shape.size[1] * BLOCK_SIZE) / 2,
+      );
+    }
     expect(templateSpatialIssues(result.registry, medical)).toEqual([]);
     const reachable = templateReachableStandingPositions(result.registry, medical);
     const notice = required(

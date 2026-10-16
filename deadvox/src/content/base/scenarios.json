@@ -270,6 +270,14 @@
       "id": "gauntlet",
       "kind": "gauntlet",
       "outbreakAgeGameHours": 2880,
+      "population": {
+        "authoredMarkers": true,
+        "extraStragglers": 2,
+        "groupSize": 7,
+        "hordes": 1,
+        "roadsideOffset": 3,
+        "settlementPressure": true
+      },
       "portal": {
         "hatch": [42, 40, 39],
         "ladder": [43, 33, 39],

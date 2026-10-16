@@ -2171,6 +2171,50 @@ describe('templates', () => {
     ]);
   });
 
+  it('requires a solid host behind every wall mount in its palette facing', () => {
+    const plaques = {
+      source: 'wall-mount-fixture.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_plaque',
+            name: 'Fixture plaque',
+            size: [1, 1, 1],
+            color: '#99794c',
+            mount: 'wall',
+            solid: false,
+            shape: [{ position: [0, 0, 0.875], size: [1, 1, 0.125] }],
+          },
+        ],
+      },
+    };
+    for (const [facing, rows] of [
+      ['n', ['...', '.P.', '.#.']],
+      ['e', ['...', '#P.', '...']],
+      ['s', ['.#.', '.P.', '...']],
+      ['w', ['...', '.P#', '...']],
+    ] as const) {
+      const t = template(
+        [[...rows]],
+        { '.': 'air', '#': 'brick', P: { furniture: 'fixture_plaque', facing } },
+        [3, 1, 3],
+      );
+      expect(buildRegistry([...templateBase, plaques, t]).issues).toEqual([]);
+      t.data.templates[0]!.palette['#'] = 'air';
+      expect(buildRegistry([...templateBase, plaques, t]).issues).toContainEqual({
+        source: t.source,
+        path: 'templates[0].palette["P"].furniture',
+        message: 'wall mount at [1, 0, 1] needs a solid block behind its back face',
+      });
+    }
+    expect(
+      validateContent({
+        source: plaques.source,
+        data: { furniture: [{ ...plaques.data.furniture[0], mount: 'ceiling' }] },
+      }),
+    ).toContainEqual(expect.objectContaining({ path: 'furniture[0].mount' }));
+  });
+
   it('needs every furniture mark to belong to a whole piece', () => {
     // A 2-wide crate marked on one cell only.
     const t = template([['C..', '...']], { C: { furniture: 'crate' }, '.': 'air' }, [3, 1, 2]);
