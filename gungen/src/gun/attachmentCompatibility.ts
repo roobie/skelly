@@ -143,6 +143,7 @@ export const attachmentCompatibility = (
   firearm: Assembly,
   slots: readonly Pick<AttachmentSlotMetadata, 'id' | 'mount' | 'notchIndex'>[],
   domain: Domain = gunDomain,
+  excludedAttachments: readonly string[] = [],
 ): Readonly<Record<string, readonly string[]>> => {
   const source = resolve(firearm, domain);
   const fittedParts = new Set(
@@ -186,7 +187,10 @@ export const attachmentCompatibility = (
         throw new Error(`Malformed attachment slot ID ${slot.id}`);
       }
       const accepted = (candidatesByMount.get(slot.mount) ?? [])
-        .filter((candidate) => passesFitRules({ base, candidate, slot, host, port }))
+        .filter(
+          (candidate) =>
+            !excludedAttachments.includes(candidate.id) && passesFitRules({ base, candidate, slot, host, port }),
+        )
         .map(({ id }) => id);
       return [slot.id, accepted];
     }),

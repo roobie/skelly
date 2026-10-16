@@ -4,7 +4,7 @@ import { loadPlaytestText } from '../../../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../../../site/playtestLanguage.js';
 
 // Bumped by each published patch; see `docs/playtest-run.md`, "Frozen round publication".
-const PATCH = 1;
+const PATCH = 2;
 const language = applyPlaytestLanguage(navigator.languages, location.search);
 const text = await loadPlaytestText(fetch, new URL('../../../site/playtest.json', import.meta.url), language);
 
@@ -24,13 +24,21 @@ const app = text
           <li>${text.feedbackBefore}<a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">${text.feedbackLink}</a>${text.feedbackAfter}</li>
           <li>${text.email}</li>
         </ul>
-        <p>
+        <section class="mode" aria-labelledby="mode-play">
+          <h2 id="mode-play">${text.playHeading}</h2>
+          <p>${text.playHint}</p>
           <a class="playtest-action" href="{{PLAY_URL}}">${text.playLink}</a>
+        </section>
+        <section class="mode" aria-labelledby="mode-beginner">
+          <h2 id="mode-beginner">${text.beginnerHeading}</h2>
+          <p>${text.beginnerHint}</p>
           <a class="beginner-action" href="{{PLAY_URL}}&mods=beginner">${text.beginnerLink}</a>
+        </section>
+        <section class="mode" aria-labelledby="mode-tutorial">
+          <h2 id="mode-tutorial">${text.tutorialHeading}</h2>
+          <p>${text.tutorialHint}</p>
           <a class="tutorial-action" href="{{PLAY_URL}}&tutorial=1">${text.tutorialLink}</a>
-        </p>
-        <p>${text.beginnerHint}</p>
-        <p>${text.tutorialHint}</p>
+        </section>
       </section>
       <footer><a href="https://roobie.github.io/skelly/">skelly projects</a></footer>
     </main>`

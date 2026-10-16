@@ -124,6 +124,7 @@ export interface GunExportMetadata {
 interface GunExportOptions extends GunExportMetadata {
   /** Geometry-only callers skip the slot solver; CLI model exports explicitly request its certificate. */
   readonly includeAttachmentCompatibility?: boolean;
+  readonly excludedAttachments?: readonly string[];
 }
 
 interface GunModelEntryOptions extends GunExportMetadata {
@@ -430,7 +431,7 @@ export const exportGunGlb = (
   appearance: AppearanceContext,
   options: GunExportOptions = {},
 ): GunExportResult => {
-  const { includeAttachmentCompatibility = false, ...metadata } = options;
+  const { includeAttachmentCompatibility = false, excludedAttachments = [], ...metadata } = options;
   const message = boltMetadataIssue(assembly, metadata.cartridge);
   if (message) {
     return { ok: false, error: { code: 'structure-issues', issues: [{ rule: 'structure', message, parts: [] }] } };
@@ -478,7 +479,7 @@ export const exportGunGlb = (
   const magazine = magazineSlotData(resolved);
   const revolver = revolverMetadata(resolved, metadata.cartridge);
   const compatibility = includeAttachmentCompatibility
-    ? attachmentCompatibility(assembly, attachmentSlotsData)
+    ? attachmentCompatibility(assembly, attachmentSlotsData, gunDomain, excludedAttachments)
     : undefined;
   const compatibilityPairs =
     compatibility === undefined

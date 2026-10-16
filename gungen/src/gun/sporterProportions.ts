@@ -25,7 +25,9 @@ export const SPORTER_PROPORTIONS = {
     combDegrees: ['2', '0', '1', '3', '4', '5', '6'],
   },
   barrel: { lengthU: { S: 28, M: 38, L: 48 } },
-  frontSight: { muzzleInsetRatios: ['0.05', '0.025', '0.075', '0.1'], sightLineU: 2.5, rearX: 6.5 },
+  frontSight: { muzzleInsetRatios: ['0.05', '0.025', '0.075', '0.1'], sightLineU: 2, rearX: 6.5 },
+  // A barrel-mounted open leaf is viewed from the stock, not with the eye against its notch.
+  rearSight: { eyeReliefU: 24, halfWidthU: 0.625, notchHalfWidthU: 0.0625, notchDepthU: 0.25 },
   foreEnd: {
     lengthU: { S: 14.5, M: 17.5, L: 20.5 },
     capLengthU: 3.5,

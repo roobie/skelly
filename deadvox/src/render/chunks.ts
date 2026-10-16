@@ -4,6 +4,7 @@ import {
   BufferGeometry,
   type Camera,
   Color,
+  type DataTexture,
   Frustum,
   Group,
   Matrix4,
@@ -18,6 +19,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { MeshData } from '../core/mesher.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { patchHeightFog } from './heightFog.ts';
+import { createSurfaceNoise } from './surfaceNoise.ts';
 import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
 
 // Per-block brightness variation stands in for textures. It's computed in the
@@ -79,6 +81,7 @@ const chunkMaterial = ({
   mixCeiling,
   weatheringBlend,
   registry,
+  surfaceNoise,
 }: {
   blockSize: number;
   linearColors: { value: number };
@@ -101,11 +104,13 @@ const chunkMaterial = ({
   mixCeiling: { value: number };
   weatheringBlend: { value: number };
   registry: Registry;
+  surfaceNoise: { value: DataTexture | null };
 }): MeshLambertMaterial => {
   const material = new MeshLambertMaterial({ vertexColors: true });
   const camo = camoShaderConfig(registry.blocks);
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uBlockSize = { value: blockSize };
+    shader.uniforms.uSurfaceNoise = surfaceNoise;
     shader.uniforms.uLinearColors = linearColors;
     shader.uniforms.uPatterns = patterns;
     shader.uniforms.uOcclusion = occlusion;
@@ -244,6 +249,7 @@ export class ChunkMeshes {
   private readonly boxes = new Map<Mesh, Box3>();
   readonly material: MeshLambertMaterial;
   private readonly blockSize: number;
+  private readonly surfaceNoise: { value: DataTexture | null } = { value: null };
   private readonly linearColors = { value: 0 };
   private readonly patterns = { value: 1 };
   private readonly occlusion = { value: 1 };
@@ -293,6 +299,7 @@ export class ChunkMeshes {
       mixCeiling: this.mixCeiling,
       weatheringBlend: this.weatheringBlend,
       registry,
+      surfaceNoise: this.surfaceNoise,
     });
     this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);
@@ -335,7 +342,17 @@ export class ChunkMeshes {
     this.setDetailDefine('DEADVOX_COARSE_WEATHER', on);
   }
 
-  private setDetailDefine(name: 'DEADVOX_FAST_CAMO' | 'DEADVOX_COARSE_WEATHER', on: boolean): void {
+  setCachedSurfaceNoise(on: boolean): void {
+    if (on) {
+      this.surfaceNoise.value ??= createSurfaceNoise();
+    }
+    this.setDetailDefine('DEADVOX_TEXTURE_NOISE', on);
+  }
+
+  private setDetailDefine(
+    name: 'DEADVOX_FAST_CAMO' | 'DEADVOX_COARSE_WEATHER' | 'DEADVOX_TEXTURE_NOISE',
+    on: boolean,
+  ): void {
     this.material.defines ??= {};
     const { defines } = this.material;
     if ((defines[name] === 1) === on) {

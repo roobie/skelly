@@ -83,6 +83,7 @@ export const previewFittedAttachments = (
   source: Report,
   values: readonly string[],
   domain: Domain = gunDomain,
+  excludedAttachments: readonly string[] = [],
 ): AttachmentPreviewResult => {
   const parsed = parseAttachmentFit(values);
   if (!parsed.ok) {
@@ -93,7 +94,7 @@ export const previewFittedAttachments = (
   }
 
   const slots = attachmentSlots(source.resolved);
-  const compatibility = attachmentCompatibility(source.resolved.assembly, slots, domain);
+  const compatibility = attachmentCompatibility(source.resolved.assembly, slots, domain, excludedAttachments);
   const selection = selectSlots(parsed.requests, slots, compatibility);
   if (!selection.ok) {
     return selection;

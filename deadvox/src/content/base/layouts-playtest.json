@@ -91,6 +91,10 @@
                 {
                   "item": "bandage",
                   "count": 1
+                },
+                {
+                  "item": "cartridge_box_357_h_magnum",
+                  "count": 1
                 }
               ]
             },
@@ -103,6 +107,10 @@
                 },
                 {
                   "item": "baseball_cap",
+                  "count": 1
+                },
+                {
+                  "item": "revolver_357",
                   "count": 1
                 }
               ]

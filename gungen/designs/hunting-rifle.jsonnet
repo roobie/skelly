@@ -2,6 +2,7 @@ local base = import 'archetype-bolt-rifle.json';
 base + {
   template: 'hunting-rifle',
   calibre: '308-winchester',
+  excludedAttachments: ['optic-digital-thermal'],
   finish: { furniture: 'wood-walnut', metal: 'steel-blued' },
   assembly: base.assembly + {
     name: 'hunting-rifle',

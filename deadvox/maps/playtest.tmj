@@ -66,7 +66,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[12,1,2],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"aa_battery\",\"count\":1},{\"item\":\"matches\",\"count\":1},{\"item\":\"stick\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"kitchen_knife\",\"count\":1},{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[12,1,7],\"items\":[{\"item\":\"can_opener\",\"count\":1},{\"item\":\"evacuation_note\",\"count\":1,\"key\":true},{\"item\":\"flashlight\",\"count\":1,\"key\":true},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[12,9,11],\"items\":[{\"item\":\"school_backpack\",\"count\":1},{\"item\":\"baseball_cap\",\"count\":1}]}]"
+              "value": "[{\"at\":[12,1,2],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"aa_battery\",\"count\":1},{\"item\":\"matches\",\"count\":1},{\"item\":\"stick\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"kitchen_knife\",\"count\":1},{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[12,1,7],\"items\":[{\"item\":\"can_opener\",\"count\":1},{\"item\":\"evacuation_note\",\"count\":1,\"key\":true},{\"item\":\"flashlight\",\"count\":1,\"key\":true},{\"item\":\"bandage\",\"count\":1},{\"item\":\"cartridge_box_357_h_magnum\",\"count\":1}]},{\"at\":[12,9,11],\"items\":[{\"item\":\"school_backpack\",\"count\":1},{\"item\":\"baseball_cap\",\"count\":1},{\"item\":\"revolver_357\",\"count\":1}]}]"
             }
           ]
         },

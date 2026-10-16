@@ -1,6 +1,22 @@
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 import { test } from 'node:test';
+import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
+
+test('shader console errors invalidate collection without treating warnings as failures', () => {
+  const page = new EventEmitter();
+  const errors = [];
+  watchPageErrors(page, (error) => errors.push(error));
+  page.emit('console', { type: () => 'warning', text: () => 'diagnostic warning' });
+  assert.deepEqual(errors, []);
+  page.emit('console', { type: () => 'error', text: () => 'Shader Error: fragment shader is not compiled' });
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].message, 'Shader Error: fragment shader is not compiled');
+  const exception = new Error('page exception');
+  page.emit('pageerror', exception);
+  assert.equal(errors[1], exception);
+});
 
 test('nearest-rank percentiles do not mutate samples', () => {
   const samples = [40, 10, 30, 20];

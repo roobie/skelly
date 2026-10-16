@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
-import { applyDir, applyPoint, length, sub } from '@skelly/engine/core/math.ts';
+import { applyDir, applyPoint, invert, length, sub } from '@skelly/engine/core/math.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly } from '@skelly/engine/core/schema.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
@@ -158,13 +158,73 @@ it.each(['missing-test-cartridge', '12-gauge-00-buck'])(
   },
 );
 
-it.each([...designs.map((design) => design.assembly), { ...scoped, name: 'scoped hunting fixture' }])(
-  'certifies the whole handle arc and draw against fixed geometry: $name',
-  (assembly) => {
-    expect(validate(assembly, gunDomain).issues).toEqual([]);
-    expect(sweepBoltAction(resolve(assembly, gunDomain))).toEqual([]);
-  },
-);
+// The sweep bisects every moving solid against every fixed solid, so its cost is the pair count.
+const SWEEP_MS_PER_PAIR_BUDGET = 10;
+const sweepPairs = (assembly: Assembly): number => {
+  const resolved = resolve(assembly, gunDomain);
+  const action = resolveGunAction(resolved)!;
+  const moving = new Set(Object.values(action.parts).map(({ id }) => id));
+  const movers = Object.values(action.parts).reduce((sum, part) => sum + part.def.solids.length, 0);
+  const obstacles = [...resolved.defs]
+    .filter(([id]) => !moving.has(id))
+    .reduce((sum, [, def]) => sum + def.solids.length, 0);
+  return movers * obstacles;
+};
+
+for (const assembly of [...designs.map((design) => design.assembly), { ...scoped, name: 'scoped hunting fixture' }]) {
+  it(
+    `certifies the whole handle arc and draw against fixed geometry: ${assembly.name}`,
+    () => {
+      expect(validate(assembly, gunDomain).issues).toEqual([]);
+      expect(sweepBoltAction(resolve(assembly, gunDomain))).toEqual([]);
+    },
+    1000 + sweepPairs(assembly) * SWEEP_MS_PER_PAIR_BUDGET,
+  );
+}
+
+it('keeps the sporting front post tip centred and visible between the rear notch cheeks from its eye', () => {
+  const resolved = resolve(hunting.assembly, gunDomain);
+  const rear = resolved.defs.get('rear-sight')!;
+  const front = resolved.defs.get('front-sight')!;
+  const axis = rear.axes.find(({ kind }) => kind === 'sight')!;
+  const eye = axis.origin.map((value, i) => value - axis.dir[i]! * axis.eyeReliefU!);
+  const [, leftMax] = localSolidBounds(rear.solids.find(({ id }) => id === 'leaf-left')!);
+  const [rightMin] = localSolidBounds(rear.solids.find(({ id }) => id === 'leaf-right')!);
+  const [postMin, postMax] = localSolidBounds(front.solids.find(({ id }) => id === 'post')!);
+  const rearInverse = invert(resolved.placed.get('rear-sight')!);
+  for (const z of [postMin[2], postMax[2]]) {
+    const tip = applyPoint(
+      rearInverse,
+      applyPoint(resolved.placed.get('front-sight')!, [(postMin[0] + postMax[0]) / 2, postMax[1], z]),
+    );
+    const fraction = (axis.origin[0] - eye[0]!) / (tip[0] - eye[0]!);
+    expect(fraction).toBeGreaterThan(0);
+    expect(fraction).toBeLessThan(1);
+    const projectedY = eye[1]! + (tip[1] - eye[1]!) * fraction;
+    const projectedZ = eye[2]! + (tip[2] - eye[2]!) * fraction;
+    expect(projectedY).toBeCloseTo(axis.origin[1], 8);
+    expect(projectedZ).toBeGreaterThan(leftMax[2]);
+    expect(projectedZ).toBeLessThan(rightMin[2]);
+  }
+});
+
+it('removes a design-excluded attachment from both single and pair certificates', () => {
+  const asset = { id: 'exclusion_fixture', file: 'assets/models/exclusion_fixture.glb' as const };
+  const baseline = exportFileText(JSON.stringify({ ...hunting, excludedAttachments: [] }), asset);
+  if (!baseline.ok) {
+    throw new Error(baseline.message);
+  }
+  const excluded = baseline.modelEntry.compatibilityPairs?.[0]?.[0][1];
+  if (!excluded) {
+    throw new Error('Exclusion fixture needs an accepted attachment pair');
+  }
+  const restricted = exportFileText(JSON.stringify({ ...hunting, excludedAttachments: [excluded] }), asset);
+  if (!restricted.ok) {
+    throw new Error(restricted.message);
+  }
+  expect(Object.values(restricted.modelEntry.compatibility ?? {}).flat()).not.toContain(excluded);
+  expect(restricted.modelEntry.compatibilityPairs?.some((pair) => pair.some(([, id]) => id === excluded))).toBe(false);
+});
 
 it('exports integral capacity from the well, iron or fitted-optic sights, and a validated phased action', () => {
   const out = exportFileText(readFileSync('designs/hunting-rifle.json', 'utf8'), {
@@ -181,6 +241,7 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
   expect(model.slots?.magazine).toBeUndefined();
   expect(Object.values(model.compatibility ?? {}).some((allowed) => allowed.includes('optic-hunting-3-9x'))).toBe(true);
   expect(model.sight?.kind).toBe('iron');
+  expect(Object.values(model.compatibility ?? {}).flat()).not.toContain('optic-digital-thermal');
   expect(model.anchors?.loading_port).toBeDefined();
   const optic = exportGunGlb(
     scoped,

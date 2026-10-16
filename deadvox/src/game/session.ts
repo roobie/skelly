@@ -39,7 +39,7 @@ import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../cor
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
-import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
+import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
@@ -986,22 +986,10 @@ export const createSession = (options: SessionOptions) => {
     const { yaw } = sampledInput();
     const eyeHeightMetres = playerEyeHeightMetres();
     const hour = hourOfDay(sim.calendar);
-    const lightSources = [...inventory.items()]
-      .map(({ item, location, path }) =>
-        lightSenseSourceFor({
-          registry,
-          item,
-          location,
-          path,
-          playerPosition: body.pos,
-          eyeHeightMetres,
-        }),
-      )
-      .filter((source) => source !== undefined)
-      .map((source) => ({
-        ...source,
-        sunlit: isSunExposedAt([source.pos[0], source.pos[1] + source.heightMetres / s, source.pos[2]], hour),
-      }));
+    const lightSources = inventoryLightSources(inventory, body.pos, eyeHeightMetres).map((source) => ({
+      ...source,
+      sunlit: isSunExposedAt([source.pos[0], source.pos[1] + source.heightMetres / s, source.pos[2]], hour),
+    }));
     const playerLightHeight: Vec3 = [body.pos[0], body.pos[1] + eyeHeightMetres / s, body.pos[2]];
     const [carriedLight] = lightSources.filter((source) => source.carried).sort((a, b) => b.seenFrom - a.seenFrom);
     return {

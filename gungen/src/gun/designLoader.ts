@@ -4,17 +4,22 @@ import { loadDesign, loadDesignValue } from '@skelly/engine/core/designLoader.ts
 import { describeValue, parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
 import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import type { Template } from '@skelly/engine/core/template.ts';
+import { ATTACHMENT_IDS } from './attachments.ts';
 import { boltCalibreIssue, isBoltAssembly, withBoltCalibre } from './boltCartridge.ts';
 import { gunDomain } from './domain.ts';
 import { GUN_FINISH_SLOTS, GUN_PALETTE } from './palette.ts';
 import { GUN_PREFABS } from './prefabs.ts';
 import { TEMPLATES } from './templates.ts';
 
-export type GunDesign = Design & { readonly calibre?: string };
-type WithGunCalibre<T> = T extends { readonly ok: true; readonly design: infer D }
-  ? Omit<T, 'design'> & { readonly design: D & { readonly calibre?: string } }
+interface GunDesignMetadata {
+  readonly calibre?: string;
+  readonly excludedAttachments?: readonly string[];
+}
+export type GunDesign = Design & GunDesignMetadata;
+type WithGunMetadata<T> = T extends { readonly ok: true; readonly design: infer D }
+  ? Omit<T, 'design'> & { readonly design: D & GunDesignMetadata }
   : T;
-export type GunDesignLoadResult = WithGunCalibre<DesignLoadResult>;
+export type GunDesignLoadResult = WithGunMetadata<DesignLoadResult>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -134,9 +139,26 @@ export const loadGunDesignValue = (
       error: { code: 'invalid-shape', path: 'calibre', message: shapeError },
     };
   }
+  const excludedAttachments = isRecord(raw) ? raw.excludedAttachments : undefined;
+  if (
+    excludedAttachments !== undefined &&
+    (!Array.isArray(excludedAttachments) ||
+      excludedAttachments.some((id) => typeof id !== 'string' || !ATTACHMENT_IDS.some((known) => known === id)))
+  ) {
+    return {
+      ok: false,
+      declaredStatus: loaded.declaredStatus,
+      error: {
+        code: 'invalid-shape',
+        path: 'excludedAttachments',
+        message: 'expected an array of known attachment ids',
+      },
+    };
+  }
   const design: GunDesign = {
     ...loaded.design,
     ...(calibre === undefined ? {} : { calibre }),
+    ...(excludedAttachments === undefined ? {} : { excludedAttachments: excludedAttachments as string[] }),
   };
   const adapted = { ...loaded, design } as GunDesignLoadResult;
   const invalidFinish = finishError(loaded);

@@ -24,6 +24,7 @@ const tuning: GraphicsOptions = {
   smallSunMap: toggle('Fixture shadow'),
   fastCamo: toggle('Fixture camo'),
   coarseWeathering: toggle('Fixture weather'),
+  cachedSurfaceNoise: toggle('Fixture noise'),
 };
 const source = (options: GraphicsOptions) => ({
   source: 'fixture-graphics.json',
@@ -95,7 +96,7 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
   const targets = {
     mood: { setRenderScale: vi.fn(), setBloomScale: vi.fn() },
     shadows: { setSmallSunMap: vi.fn() },
-    meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn() },
+    meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn(), setCachedSurfaceNoise: vi.fn() },
   };
   let saved = '';
   const storage = {
@@ -112,6 +113,10 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
   expect(targets.shadows.setSmallSunMap).toHaveBeenLastCalledWith(tuning.smallSunMap.default);
   expect(targets.meshes.setFastCamo).toHaveBeenLastCalledWith(false);
   expect(targets.meshes.setCoarseWeathering).toHaveBeenLastCalledWith(tuning.coarseWeathering.default);
+  expect(targets.meshes.setCachedSurfaceNoise).toHaveBeenLastCalledWith(tuning.cachedSurfaceNoise.default);
+  controls.set('cachedSurfaceNoise', false);
+  expect(targets.meshes.setCachedSurfaceNoise).toHaveBeenLastCalledWith(false);
+  controls.clear('cachedSurfaceNoise');
   controls.clear('renderScale');
   expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.default);
   expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
