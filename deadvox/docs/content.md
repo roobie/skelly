@@ -28,6 +28,25 @@ The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
 and `evaluateMods`. Bundled core-pack fragments remain content files rather than
 independent mods; see `src/game/bundledContent.ts`, `buildBundledContent`.
 
+## Bundled mods
+
+A bundled mod ships with the game but is applied only when asked, with `?mods=` and
+a comma-separated list of ids; `?mods=1` is the separate mods panel. Each one goes through
+the same intake as a player mod, so an unknown id is refused at startup with the usual
+diagnostics instead of being ignored. A bundled mod is derived from the base sources when
+it is selected, never written out as a second set of numbers, so it follows base tuning.
+That derivation is the seam player mods lack: they replace whole rows and cannot scale a
+base value. See `src/game/bundledMods.ts`, `selectBundledMods`.
+
+Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Damage, movement
+speed (wander and chase), detection (sight, night sight and the hearing multiplier, which
+covers footsteps and noise alike) and health each have one factor, `BEGINNER_FACTORS`. It exists
+so a new player can learn the game against slower, weaker enemies that notice less.
+
+A save records each active bundled mod as a content pack in its version identity, so a
+beginner-mode world is stored apart from a normal one and loads only when started with the
+same `?mods=`. See `src/core/saveFormat.ts`, `currentSaveVersionIdentity`.
+
 ## Core-pack integrity
 
 Reject removal of required rows when validating core or modded packs. Keeping this check at the pack-validation boundary lets focused tests and tools construct partial registries without accepting an incomplete playable pack. See `requiredContentIssues` in `src/core/content.ts` and `validate` in `src/cli/validate.ts`.
