@@ -2,6 +2,7 @@
 read_if:
   - you're collecting or comparing a real-GPU Deadvox performance baseline
   - you're changing the performance harness or interpreting its evidence
+  - you're deciding whether a rejected measurement can support a performance claim
 ---
 
 # Real-GPU baseline
@@ -11,22 +12,15 @@ GPU cost, and lower cost does not authorize a different look. See `deadvox/GRAPH
 "Look decisions". Keep machine evidence outside the repository; it is a comparison artifact,
 not a portable performance promise.
 
-Run `node deadvox/tools/perf-baseline.mjs --out=/path/outside/repository` after installing
-check dependencies and compiling content. A working desktop display and Playwright's full
-Chromium are required. Supply the display through the environment, not a tracked host path.
-Use `--root=deadvox` to select the source build, `--route=ID` for one configured route,
-`--config=PATH` for an alternative compiled configuration, or `--executable=PATH` for an
-explicit browser binary. The harness builds an instrumented production bundle into that
-source tree's ignored build directory; do not publish this diagnostic bundle.
+See `deadvox/tools/perf-baseline.mjs`, `run`, for collection and the same file's usage
+message for invocation. Workloads and sampling policy belong in
+`deadvox/src/config/perf-baseline.jsonnet`, so comparisons can share an explicit fixture
+rather than depend on an operator's saved preferences. Do not publish diagnostic bundles
+as ordinary game builds.
 
-See `deadvox/tools/perf-baseline.mjs`, `run`, for collection, and
-`deadvox/src/config/perf-baseline.jsonnet` for workloads and sampling policy. A new isolated
-browser context per run excludes saved machine graphics preferences. The sky route uses
-its own cold/warm traversal; other routes warm before replaying a frame-indexed camera
-sweep. The horde remains live and the camera is raised through the debug fixture so attacks
-do not end collection. Fixed input does not promise bit-identical AI trajectories: frame
-cadence still controls live simulation time. Inspect screenshots and actor draw evidence
-before comparing runs. An interior view must remain inside its authored enclosure.
+Fixed input does not promise bit-identical AI trajectories: frame cadence still controls
+live simulation time. Inspect scene evidence before comparing runs; a repeatable camera
+alone cannot establish that the intended workload was exercised.
 
 Whole-frame and segmented GPU timers run separately because elapsed queries cannot nest.
 Alternating order reduces drift bias; it cannot eliminate driver overhead from segment
@@ -36,10 +30,11 @@ serial budget components. Frame intervals include presentation and browser sched
 main-thread frame timing covers the game callback, not all browser tasks. CPU profiles run
 separately without GPU queries, so profiling overhead cannot contaminate the GPU baseline.
 
-The measurement build is unminified to retain useful profiler symbols. Compare only like
-measurement builds. Source transform boundaries fail on drift rather than silently omitting
-instrumentation. Query polling is asynchronous; disjoint clocks, software rendering,
-unresolved queries, page errors and incomplete sky traversal invalidate collection.
+Compare only like measurement builds. Reject invalid measurements rather than retrying
+until a run succeeds: selecting only successful attempts hides instability and can make an
+unreliable workload appear to meet its budget. Investigate the rejected attempt before
+collecting replacement evidence. See `deadvox/tools/perf-baseline.mjs`, `run`, for the
+collection checks rather than treating a separate prose checklist as the acceptance contract.
 
 See `deadvox/tools/perf-baseline-stats.mjs`, `rankProfile`, for CPU attribution. Categories
 are inclusive stack-based samples, mutually exclusive, not exact subsystem timers. Worker
