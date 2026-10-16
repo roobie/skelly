@@ -26,6 +26,15 @@ const signedVolume = (positions: Float32Array, indices: Uint32Array): number => 
 };
 
 describe('5.56x45 round profile estimate', () => {
+  it('uses the sourced maximum for presentation without filling an unknown typical length', () => {
+    const fixture: MetallicCartridge = {
+      ...natoCartridge,
+      overallLength: { ...natoCartridge.overallLength, typical: { value: null, cite: null, note: 'Fixture unknown' } },
+    };
+    const profile = roundProfiles(fixture);
+    expect(maximum(profile.bullet, 0)).toBeCloseTo(fixture.overallLength.max.value!, 6);
+    expect(fixture.overallLength.typical.value).toBeNull();
+  });
   it('keeps bullet length unsourced and uses the named seating-depth assumption only for the model', () => {
     expect(natoCartridge.payload.length.min.value).toBeNull();
     const profile = roundProfiles(natoCartridge);
@@ -45,8 +54,10 @@ describe('7.62x39 round profiles', () => {
   });
 
   it('leaves the fired case open with a constant, declared wall thickness', () => {
-    const mouth = profiles.firedCase.filter(([axial]) => axial === 38.7);
-    expect(mouth.map(([, radius]) => radius)).toEqual([4.3, 4.3 - CASE_WALL_MM]);
+    const mouth = profiles.firedCase.filter(([axial]) => axial === cartridge.case.length.value);
+    const { body } = cartridge.case;
+    const radius = (body.type === 'bottleneck' ? body.neck.diameterAtMouth.value! : body.diameterAtMouth.value!) / 2;
+    expect(mouth.map(([, value]) => value)).toEqual([radius, radius - CASE_WALL_MM]);
     expect(profiles.firedCase.at(-1)![1]).toBe(0);
   });
 

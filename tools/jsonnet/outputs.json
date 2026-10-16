@@ -1,6 +1,10 @@
 {
   "files": [
     {
+      "source": "deadvox/src/content/base/assets/manifest.jsonnet",
+      "output": "deadvox/src/content/base/assets/manifest.json"
+    },
+    {
       "source": "deadvox/src/content/base/blocks.jsonnet",
       "output": "deadvox/src/content/base/blocks.json"
     },
@@ -163,6 +167,14 @@
     {
       "source": "deadvox/test/fixtures/mods/browser-mod.jsonnet",
       "output": "deadvox/test/fixtures/mods/browser-mod.json"
+    },
+    {
+      "source": "gungen/cartridges/357-magnum.jsonnet",
+      "output": "gungen/cartridges/357-magnum.json"
+    },
+    {
+      "source": "gungen/designs/archetype-revolver.jsonnet",
+      "output": "gungen/designs/archetype-revolver.json"
     },
     {
       "source": "site/playtest.jsonnet",

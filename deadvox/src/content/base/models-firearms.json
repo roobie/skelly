@@ -2049,6 +2049,83 @@
     },
     {
       "anchors": {
+        "muzzle": [0.12075, 0, 0]
+      },
+      "attachmentSlots": [
+        {
+          "direction": [1, 0, 4.8985871965894128e-16],
+          "id": "barrel.muzzle.0",
+          "mount": "muzzle",
+          "position": [0.12075, 0, 0],
+          "up": [0, 1, 0]
+        }
+      ],
+      "attachments": [],
+      "calibre": "357-magnum",
+      "compatibility": {
+        "barrel.muzzle.0": []
+      },
+      "compatibilityPairs": [],
+      "file": "assets/models/revolver.glb",
+      "grip": {
+        "at": [-0.12075, -0.094875000000000001, 0],
+        "turn": [0, 0, 0]
+      },
+      "id": "revolver",
+      "muzzleDirection": [1, 0, 4.8985871965894128e-16],
+      "revolver": {
+        "chambers": 6,
+        "crane": {
+          "axis": [1, 0, 2.4492935982947064e-16],
+          "node": "crane:revolver-crane",
+          "openRadians": -1.2915436464758039,
+          "pivot": [0, -0.043124999999999997, -0.0057499999999999964]
+        },
+        "cylinder": {
+          "axis": [1, 0, 2.4492935982947064e-16],
+          "centre": [-0.031625, -0.014374999999999999, 0],
+          "chamberRadiusMetres": 0.014374999999999999,
+          "chamberZeroRadians": 0,
+          "node": "cylinder:revolver-cylinder"
+        },
+        "ejector": {
+          "axis": [-1, 0, -3.6739403974420594e-16],
+          "node": "ejector:revolver-ejector",
+          "strokeMetres": 0.032770000000000001
+        },
+        "hammer": {
+          "axis": [-1.2246467991473532e-16, 0, 1],
+          "cockRadians": 0.11461955804015964,
+          "node": "hammer:revolver-hammer",
+          "pivot": [-0.076187500000000005, -0.017250000000000001, -9.3302778010038974e-18]
+        },
+        "trigger": {
+          "axis": [-1.2246467991473532e-16, 0, 1],
+          "node": "trigger:revolver-trigger",
+          "pivot": [-0.037374999999999999, -0.051749999999999997, -4.5771174118132325e-18],
+          "pullRadians": -0.78277349750844938
+        }
+      },
+      "sight": {
+        "direction": [1, 0, 0],
+        "eye": [-0.069000000000000006, 0.020125000000000001, 0],
+        "eyeReliefMetres": 0.045999999999999999,
+        "kind": "iron",
+        "up": [0, 1, 0]
+      }
+    },
+    {
+      "calibre": "357-magnum",
+      "file": "assets/models/round-357_h_magnum.glb",
+      "id": "round_357_h_magnum"
+    },
+    {
+      "calibre": "357-magnum",
+      "file": "assets/models/case-357_h_magnum.glb",
+      "id": "case_357_h_magnum"
+    },
+    {
+      "anchors": {
         "muzzle": [0.80049999999999999, 0.00040000000000000002, 0.039399999999999998]
       },
       "file": "assets/models/rifle_battle.glb",
