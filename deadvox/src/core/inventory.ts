@@ -202,6 +202,8 @@ export class Inventory {
   canReach: (pos: Vec3) => boolean = () => true;
   /** Whether a piece of furniture is within reach. */
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
+  /** Where the actor stands, in blocks; the game sets it. Undefined means no side is known. */
+  actorPosition: () => Vec3 | undefined = () => undefined;
   /**
    * Why a move can't take `item` out of hand `from` or into hand `to` because a hand holds something outside the
    * inventory, such as a ladder; the game sets it.

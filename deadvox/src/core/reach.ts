@@ -82,6 +82,7 @@ const pilesInRadius = (inventory: Inventory, position: Vec3, radiusBlocks: numbe
 export const bindReach = (player: ReachPlayer): (() => ReachSnapshot) => {
   player.inventory.canReach = (position) => pileInReach(player, position);
   player.inventory.canReachEntity = (entity) => furnitureInReach(player, entity);
+  player.inventory.actorPosition = () => player.position;
   return () => reach(player);
 };
 

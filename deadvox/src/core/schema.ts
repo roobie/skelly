@@ -1030,6 +1030,8 @@ const FurnitureSchema = pipe(
         openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
         hatch: optional(literal(true)),
+        /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
+        barredFrom: optional(picklist(['front', 'back'])),
       }),
     ),
     /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */

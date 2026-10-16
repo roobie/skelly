@@ -2,10 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { toChunk } from '../src/core/coords.ts';
+import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { doorOptions } from '../src/core/options.ts';
+import { doorOptions, doorPlan } from '../src/core/options.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { placedPieces } from '../src/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
@@ -298,5 +298,22 @@ describe('door locks', () => {
       path: 'layouts[0].buildings[1]',
       message: 'lock "test_a" is used more than once in this site',
     });
+  });
+});
+
+describe('boarded doors', () => {
+  it('refuse opening from the barricaded side and open from the other', () => {
+    const inventory = new Inventory(registry);
+    const door = inventory.furnish({ type: 'gauntlet_door_boarded', pos: [4, 0, 4], size: [2, 4, 1], facing: 'n' })!;
+    const barred = registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom!;
+    // A north-facing door has its front on -z.
+    const front: Vec3 = [5, 0, 2];
+    const back: Vec3 = [5, 0, 7];
+    const [street, inside] = barred === 'back' ? [back, front] : [front, back];
+
+    inventory.actorPosition = () => street;
+    expect(doorPlan(inventory, door, 'open')).toMatchObject({ ok: false, reason: "It's boarded up" });
+    inventory.actorPosition = () => inside;
+    expect(doorPlan(inventory, door, 'open').ok).toBe(true);
   });
 });

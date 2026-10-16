@@ -23,12 +23,14 @@ local variants = [
     id: 'door', at: at, size: [2, 4, 1], turn: 0,
     choices: [{ ref: { kind: 'piece', id: variant.id }, weight: variant.weight } for variant in variants],
   },
-  // Planks stand proud of the leaf on the street side, so the leaf behind stays a door.
+  // Planks stand proud of the leaf on its back, the street side, so the leaf behind stays a
+  // door and `barredFrom` keeps the street from opening it.
   furniture: [
     {
       [field]: leaf[field] for field in std.objectFields(leaf) if field != 'size'
     } + {
       id: 'gauntlet_door_boarded', name: 'Boarded wooden door', size: leaf.size,
+      door: leaf.door + { barredFrom: 'back' },
       shape: [
         { position: [0, 0, 0.4], size: [2, 4, 0.6] },
         { position: [0, 0.6, 0], size: [2, 0.4, 0.4] },
