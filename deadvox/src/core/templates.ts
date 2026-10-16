@@ -349,6 +349,7 @@ export interface AssemblyContext {
   readonly slotPath?: string;
   readonly ancestors?: readonly string[];
   readonly style?: string;
+  readonly pieceCache?: Map<string, CompiledTemplate>;
 }
 
 export const contentPointer = (registry: Registry, section: string, id: string): string => {
@@ -356,13 +357,8 @@ export const contentPointer = (registry: Registry, section: string, id: string):
   return origin ? `${origin.source}:${origin.path}` : `${section}:${id}`;
 };
 
-export const compileMapPiece = (
-  registry: Registry,
-  piece: MapPieceDef,
-  context?: AssemblyContext,
-): CompiledTemplate => {
+const compilePieceTemplate = (registry: Registry, piece: MapPieceDef, styleId: string): CompiledTemplate => {
   const source = contentPointer(registry, 'mapPieces', piece.id);
-  const styleId = context?.style ?? piece.style;
   const style = registry.mapStyles.get(styleId);
   if (!style) {
     throw new Error(`${source}: missing style ${styleId}`);
@@ -393,7 +389,21 @@ export const compileMapPiece = (
   if (!templateResolves(registry, literal)) {
     throw new Error(`${source}: unresolved piece palette`);
   }
-  const compiled = compileTemplate(registry, literal, source);
+  return compileTemplate(registry, literal, source);
+};
+
+export const compileMapPiece = (
+  registry: Registry,
+  piece: MapPieceDef,
+  context?: AssemblyContext,
+): CompiledTemplate => {
+  const styleId = context?.style ?? piece.style;
+  const key = JSON.stringify([piece.id, styleId]);
+  let compiled = context?.pieceCache?.get(key);
+  if (!compiled) {
+    compiled = compilePieceTemplate(registry, piece, styleId);
+    context?.pieceCache?.set(key, compiled);
+  }
   const owner = context?.slotPath ?? piece.id;
   return {
     ...compiled,
@@ -676,7 +686,12 @@ export const compileAssembly = (
   if (context.ancestors?.includes(assembly.id)) {
     throw new Error(`${source}: nesting cycle ${[...context.ancestors, assembly.id].join(' -> ')}`);
   }
-  const childContext = { ...context, ancestors: [...(context.ancestors ?? []), assembly.id] };
+  // Keep reusable leaf buffers within one immutable compilation, never across registry edits.
+  const childContext = {
+    ...context,
+    pieceCache: context.pieceCache ?? new Map<string, CompiledTemplate>(),
+    ancestors: [...(context.ancestors ?? []), assembly.id],
+  };
   const seams: TemplateSlot[] = assembly.joins.map((join) => {
     const piece = registry.mapPieces.get(join.seam.piece);
     if (!piece) {

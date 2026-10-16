@@ -1584,8 +1584,16 @@ const ScenarioSchema = strictObject({
         block: Id,
         height: pipe(Count, minValue(1), maxValue(32)),
         thickness: pipe(Count, minValue(2), maxValue(8)),
+        /** Solid wire fence on top of the wall. */
+        wire: optional(strictObject({ block: Id, height: pipe(Count, minValue(1), maxValue(8)) })),
+        /** Assembly set against the wall's inside face every `pitch` blocks, facing inward. */
+        lining: optional(strictObject({ assembly: Id, pitch: pipe(Count, minValue(2), maxValue(64)) })),
+        /** Assembly set against the wall where the central street meets it. */
+        gate: optional(strictObject({ assembly: Id })),
       }),
     ),
+    /** One row of buildings around the grid, backs to the wall and fronts to the outermost street. */
+    ring: optional(strictObject({ pool: Id, setback: pipe(Count, minValue(1), maxValue(64)) })),
     streetProps: optional(pipe(array(Id), maxLength(16))),
     pool: Id,
   }),
