@@ -133,7 +133,7 @@
     {
       "color": "#7a5534",
       "door": {
-        "barredFrom": "back",
+        "barredFrom": "front",
         "handlingSimSeconds": 0.59999999999999998,
         "prying": {
           "fastestTimeSimSeconds": 7.5,

@@ -302,13 +302,29 @@ describe('door locks', () => {
 });
 
 describe('boarded doors', () => {
-  it('refuse opening from the barricaded side and open from the other', () => {
+  // Every house door faces the street (cityPlan fillRow), and the planks stand on the front.
+  it('bars the boarded door from its front, the side every placed house door faces the street', () => {
+    expect(registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom).toBe('front');
+  });
+
+  it.each([
+    { facing: 'n', size: [2, 4, 1], outward: -1 },
+    { facing: 's', size: [2, 4, 1], outward: 1 },
+    { facing: 'e', size: [1, 4, 2], outward: 1 },
+    { facing: 'w', size: [1, 4, 2], outward: -1 },
+  ] as const)('refuse opening from the barricaded side and open from the other facing $facing', (spec) => {
     const inventory = new Inventory(registry);
-    const door = inventory.furnish({ type: 'gauntlet_door_boarded', pos: [4, 0, 4], size: [2, 4, 1], facing: 'n' })!;
+    const door = inventory.furnish({
+      type: 'gauntlet_door_boarded',
+      pos: [4, 0, 4],
+      size: [...spec.size],
+      facing: spec.facing,
+    })!;
     const barred = registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom!;
-    // A north-facing door has its front on -z.
-    const front: Vec3 = [5, 0, 2];
-    const back: Vec3 = [5, 0, 7];
+    const alongX = spec.facing === 'e' || spec.facing === 'w';
+    const at = (sign: number): Vec3 => (alongX ? [5 + sign * 3, 0, 5] : [5, 0, 5 + sign * 3]);
+    const front = at(spec.outward);
+    const back = at(-spec.outward);
     const [street, inside] = barred === 'back' ? [back, front] : [front, back];
 
     inventory.actorPosition = () => street;

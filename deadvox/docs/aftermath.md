@@ -78,8 +78,8 @@ street side, so a boarded door is still a door and can be opened from inside.
 Boarding is a barricade made from inside, so it holds against the street. The boarded door's
 content names the barricaded side (`door.barredFrom`, a face of the door's facing), and a door
 refuses opening from that side while it opens from the other. The refusal is the player's
-ordinary door refusal. Forcing it from the street waits for block bashing, which #273 ("zombies
-bash doors and weak blocks by strength") covers for zombies; player forcing needs its own issue.
+ordinary door refusal. Forcing it from the street waits for #800 ("deadvox: player forces or bashes blocks,
+starting with boarded doors"); #273 covers the zombie side.
 See `src/content/base/gauntlet-city-doors.libsonnet`, `furniture`; `src/core/blockEntities.ts`,
 `doorRefusal`; `test/locks.test.ts`, "boarded doors"; and `test/cityKitPlan.test.ts`,
 "gauntlet door openings".
