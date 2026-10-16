@@ -12,6 +12,7 @@ local ladder = lab.entry.ladder;
     body: 'player', compression: 'player',
     serviceTemplate: service.id,
     composition: {
+      start: (import 'gauntlet-start.libsonnet').start,
       fixedLoot: [{
         at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18],
         items: [{ item: 'flashlight', placement: 'surface', key: true }],
@@ -51,7 +52,7 @@ local ladder = lab.entry.ladder;
       perimeter: {
         block: 'concrete', height: 12, thickness: 2,
         wire: { block: 'chain_link', height: 2 },
-        lining: { assembly: 'gauntlet_perimeter_lining', pitch: 12 },
+        lining: { assembly: 'gauntlet_perimeter_lining', pitch: 48 },
         gate: { assembly: 'gauntlet_perimeter_gate' },
       },
       streetProps: ['gauntlet_street_cars'],

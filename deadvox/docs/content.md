@@ -10,7 +10,7 @@ read_if:
   - you're authoring or changing exterior door openings, or townhouse aftermath scenes (`deadvox/docs/aftermath.md`)
   - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author decals or scenario outbreak age
-  - you author a scenario, its start or its ways down, or move scenario rules from code into content
+  - you author a scenario, its start-building rooms or ways down, or move scenario rules from code into content
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
 ---
@@ -242,7 +242,20 @@ Every shop shows a street cue that no house carries, and no two shop types share
 
 ### City perimeter
 
-The wall is content: block, height, thickness and optional wire on `city.perimeter`, and optional `lining` and `gate` assemblies. The wall is one closed loop, including across the central street, because a gap at the street would be the one way out and the loop check fails any open span. The lining (barriers and notices) repeats along the inside foot and the gate dresses the street crossing; both are authored templates or assemblies that must fit beside the wall, and notice text follows `INTERFACE.md`, "Text" and faces inward. The gate is solid for movement, so the central street ends at it. A ring building's roof is reachable by its ladder, so the wall plus wire must out-top a sprinting jump from the top of every building in the ring pool, measured at its full height including rooftop fittings, so it over-reports rather than under-reports. The run is the setback minus the body's width on both sides (the city pool's setback is the street plus pad), and a run too short for the sprint to reach its apex is bounded by the apex, because a slower jump peaks at the wall. The check reads the jump from the player's sprint speed, take-off speed and body width, so it follows tuning, and fails with the path of the lever, `.city.ring.setback` (`.city.pad` without a ring), when the arc clears the wall and wire. Tall roofs within jump reach would turn the wall into a step, so the ring pool holds low buildings only; raising the wall would change the look, so the pool and the setback are the levers. See `src/core/cityPlan.ts`, `clearanceIssues`, `perimeterGaps` and `perimeterIssues`, `src/game/player.ts`, `PLAYER` and `sprintJumpRise`, and `src/content/base/gauntlet-city-perimeter.libsonnet`.
+The perimeter must stay closed across streets as well as blocks, because a street gap
+would become an escape. Its dressing must face inward without opening a way through;
+notice text follows
+`INTERFACE.md`, "Text". Reachable roofs must not turn the wall into a step, so clearance
+covers the start building as well as pool buildings, including rooftop fittings. The
+start uses its actual distance to the wall, with or without a ring. Jump clearance
+follows player physics rather than a separate content limit;
+a slower jump can peak at the wall even when a sprint would reach its apex beyond it.
+Lower buildings or more separation preserve containment without changing the wall's look.
+See `src/core/cityPlan.ts`, `clearanceIssues`, `perimeterGaps` and `perimeterIssues`;
+`src/game/player.ts`, `PLAYER` and `sprintJumpRise`; and
+`src/content/base/gauntlet-city-perimeter.libsonnet`.
+
+The wall needs only a few plinths.
 
 ## Scenarios
 
@@ -267,17 +280,22 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   leads, beside what it counts. Only leads reached by different routes count toward it,
   because two leads behind one blocked street fail together and would overstate how
   forgiving the scenario is. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`.
-- **Start.** The gauntlet starts on an authored roof with several authored ways down, each
-  trading speed against safety or noise, so leaving the roof is the first decision. They
-  are authored to keep the first version simple. Every route proof roots at the start, so
-  the rooftop start lands in #393 before seeded placement, and the proofs are rebuilt
-  around their root once, not twice. The template's climb proof covers the roof and ways
-  down; each world's route proof still runs from the roof, because the seeded city around
-  the building can block the foot of a way down. At least two ways down stay open in
-  every world, so one blocked way never leaves a single forced exit and leaving the roof
-  stays a choice. The foot of a way down need not be kept clear. The start building
-  stands away from the perimeter wall, so its roof cannot become a jump over it and the
-  ring's clearance check need not cover it.
+- **Start.** The tallest roof opens the run with an overview and a descent. Ways down
+  trade speed against safety or noise, so leaving the roof is a choice. The start
+  building is a condo block repurposed during the outbreak. It needs enough room and
+  something on every storey to make it interesting, rather than just a staircase.
+  See `src/content/base/gauntlet-start.libsonnet`, `start`, and
+  `src/content/base/gauntlet-start-rooms.libsonnet`, `slots`.
+  Collapsed floors are extra risky shortcuts, not registered descents, so the start
+  check never certifies an interior fall to meet the minimum.
+  Each world's route proof still starts at the roof because the seeded city can block
+  the foot of a way down. Redundant ways down prevent one obstruction from forcing a
+  single exit. A way down counts even when it can injure or kill, because choosing the
+  risk is part of the descent; its foot need not be kept clear. The roof needs the same
+  wall-clearance proof as other city buildings so it cannot become a jump over the
+  perimeter, with or without a ring. See `src/core/scenarioStart.ts`,
+  `scenarioStartIssues`; `src/core/cityPlan.ts`, `buildCityPlan` and `clearanceIssues`; and
+  `src/core/scenarioCertificate.ts`, `scenarioCertificate`.
 - **Street approach.** The street a kind's proof enters its site from is an authored
   anchor, not derived from the site, so a scenario can approach from another side and
   stay the same kind. Under a rooftop start the anchor need not sit at the foot of a way
@@ -295,9 +313,9 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   goal shares with other actions move to the table in the same #393 step as the goal's
   own, rather than waiting for #456's wider sweep and leaving a second copy behind.
 
-The gauntlet sweep tracked by #393 brings the gauntlet's code to these rules; until it
-lands, its street start, lead and landmark counts and positions, street approach, lead
-redundancy and goal refusal text stay fixed in code.
+The remaining gauntlet sweep under #393 covers lead and landmark authoring, street
+approach, lead redundancy and goal refusal text; those boundaries still need content
+ownership so a mod can express the scenario without a code edit.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules

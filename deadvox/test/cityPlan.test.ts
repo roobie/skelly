@@ -15,6 +15,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
 import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
+import { generateChunk } from '../src/core/worldgen.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
@@ -338,6 +339,79 @@ describe('one finished city plan', () => {
       expect(perimeterGaps(plan.structures, plan.bounds, floor, scenario.city.perimeter!.height)).toEqual([]);
     },
   );
+
+  it('stands enclosure dressing above the surface without carving pits in its footprint', () => {
+    const scenario = fixtureScenario();
+    scenario.city.perimeter = {
+      block: 'fixture_solid',
+      height: 6,
+      thickness: 2,
+      lining: { assembly: 'fixture_lining', pitch: 6 },
+      gate: { assembly: 'fixture_gate' },
+    };
+    const sources = fixtureScenarioSources(scenario);
+    sources.push({
+      source: 'enclosure-fixture.json',
+      data: {
+        templates: ['fixture_lining', 'fixture_gate'].map((id) => ({
+          id,
+          size: [4, 2, 2],
+          lootContext: registry.templates.get('fixture_house')!.lootContext,
+          palette: { '.': 'air', '=': 'fixture_solid' },
+          layers: [
+            ['....', '===='],
+            ['....', '===='],
+          ],
+        })),
+      },
+    });
+    const admitted = buildRegistry(sources);
+    expect(admitted.issues).toEqual([]);
+    const plan = buildCityPlan({
+      seed: 73,
+      registry: admitted.registry,
+      floor,
+      grid: cityGridOf(admitted.registry, scenario.city),
+      scenario,
+    });
+    const site = new CitySite(73, admitted.registry, scale, plan);
+    const dressings = plan.placements.filter(({ template }) =>
+      ['fixture_lining', 'fixture_gate'].includes(template.id),
+    );
+    expect(dressings.some(({ template }) => template.id === 'fixture_lining')).toBe(true);
+    expect(dressings.some(({ template }) => template.id === 'fixture_gate')).toBe(true);
+    const solid = admitted.registry.blockIds.get('fixture_solid')!;
+    const chunks = new Map<string, Chunk>();
+    for (const placement of dressings) {
+      const [width, depth] = footprint(placement);
+      const [x0, y0, z0] = placement.origin;
+      for (let z = z0; z < z0 + depth; z++) {
+        for (let x = x0; x < x0 + width; x++) {
+          const ground = site.surface.height(x, z, floor + 1);
+          expect(y0 + (placement.template.groundLayer ?? 0)).toBe(ground + 1);
+          const cell: Vec3 = [toChunk(x), toChunk(ground), toChunk(z)];
+          const key = cell.join(',');
+          let chunk = chunks.get(key);
+          if (!chunk) {
+            chunk = generateChunk(
+              {
+                seed: 73,
+                scale,
+                surface: site.surface,
+                blocks: { grass: solid, dirt: solid, rock: solid, sand: solid },
+              },
+              cell,
+            );
+            site.stamp(chunk);
+            chunks.set(key, chunk);
+          }
+          expect(admitted.registry.blocks[chunk.get(mod(x, CHUNK), mod(ground, CHUNK), mod(z, CHUNK))]!.solid).toBe(
+            true,
+          );
+        }
+      }
+    }
+  });
 
   it('reports a gap when a stretch of the north wall is missing', () => {
     const scenario = fixtureScenario();

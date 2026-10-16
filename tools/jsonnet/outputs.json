@@ -41,6 +41,10 @@
       "output": "deadvox/src/content/base/gauntlet-look.json"
     },
     {
+      "source": "deadvox/src/content/base/gauntlet-start.jsonnet",
+      "output": "deadvox/src/content/base/gauntlet-start.json"
+    },
+    {
       "source": "deadvox/src/content/base/gauntlet.jsonnet",
       "output": "deadvox/src/content/base/gauntlet.json"
     },

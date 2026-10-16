@@ -59,7 +59,7 @@ function checkManifest(expectedText) {
   }
 }
 
-function formatJson(source, target) {
+export function formatJson(source, target) {
   const formatPath = target.endsWith('.tmj') ? `${target}.json` : target;
   return execFileSync(
     process.execPath,
@@ -68,6 +68,7 @@ function formatJson(source, target) {
       cwd: REPOSITORY_ROOT,
       encoding: 'utf8',
       input: source,
+      maxBuffer: Number.POSITIVE_INFINITY,
     },
   );
 }

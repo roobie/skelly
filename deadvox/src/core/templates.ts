@@ -231,6 +231,16 @@ const checkDecalDoors = (registry: Registry, template: TemplateDef, pieces: read
   }
 };
 
+export const templateEnvelope = (
+  definition: TemplateDef | MapAssemblyDef,
+): Pick<CompiledTemplate, 'size' | 'groundLayer'> => {
+  const ground = definition.access?.storeys.find((storey) => storey.id === definition.access?.ground);
+  return {
+    size: [...definition.size],
+    ...(definition.access ? { groundLayer: (ground?.floor ?? 1) - 1 } : {}),
+  };
+};
+
 /** Resolves a template's palette against the registry. The validator has already checked it. */
 export const compileTemplate = (
   registry: Registry,
@@ -254,18 +264,17 @@ export const compileTemplate = (
   for (const stair of template.access?.stairs ?? []) {
     constructFlight(blocks, template.size, stair, registry.blockIds.get(stair.block) ?? 0);
   }
-  const groundLayer = template.access?.storeys.find((floor) => floor.id === template.access?.ground)?.floor;
   return {
     id: template.id,
     lootContext: template.lootContext,
-    size: [sx, sy, sz],
+    ...templateEnvelope(template),
     blocks,
     ...(ground.includes(1) ? { ground } : {}),
     ...compileOwnership(template, blocks, pieces, source),
     pieces,
     spawns,
     ...(template.decals ? { decals: template.decals } : {}),
-    ...(template.access ? { access: template.access, groundLayer: (groundLayer ?? 1) - 1 } : {}),
+    ...(template.access ? { access: template.access } : {}),
   };
 };
 
@@ -728,18 +737,17 @@ export const compileAssembly = (
     resolved,
     `seed=${context.seed} slot=${context.slotPath ?? assembly.id} source=${source}`,
   );
-  const ground = assembly.access?.storeys.find((storey) => storey.id === assembly.access?.ground);
   return {
     id: assembly.id,
     lootContext: assembly.lootContext,
     anchors: assembly.anchors,
     ports,
-    size: [...assembly.size],
+    ...templateEnvelope(assembly),
     ...composeAssemblyVoxels(assembly, resolved, context),
     pieces: resolved.flatMap(({ placement }) => placedPieces(placement)),
     spawns: resolved.flatMap(({ placement }) => placedSpawns(placement)),
     decals: resolved.flatMap(({ placement }) => placedDecals(placement)),
-    ...(assembly.access ? { access: assembly.access, groundLayer: (ground?.floor ?? 1) - 1 } : {}),
+    ...(assembly.access ? { access: assembly.access } : {}),
   };
 };
 

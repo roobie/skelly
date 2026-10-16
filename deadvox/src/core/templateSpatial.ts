@@ -415,6 +415,7 @@ export const templateClimbCertificate = (
   };
   // Ladder cells are owned connector furniture, not owned-air reservations.
   const admittedBody = (point: Vec3): boolean =>
+    !template.reserved ||
     [...bodyCells(point)].every(
       ([x, y, z]) =>
         x >= 0 &&
@@ -466,6 +467,24 @@ export const templateStandingRoute = (
     space.reached(from, reserved).has(key(to))
   );
 };
+
+export const templateWalkingRoutes = (
+  registry: Registry,
+  template: CompiledTemplate,
+  from: Vec3,
+  targets: readonly Vec3[],
+): boolean[] => {
+  const space = new TemplateSpace(registry, template);
+  const standing = targets.map((point) => space.standing(point));
+  if (!(space.standing(from) && standing.some(Boolean))) {
+    return targets.map(() => false);
+  }
+  const reached = space.reached(from);
+  return targets.map((point, index) => standing[index]! && reached.has(key(point)));
+};
+
+export const templateWalkingRoute = (registry: Registry, template: CompiledTemplate, from: Vec3, to: Vec3): boolean =>
+  templateWalkingRoutes(registry, template, from, [to])[0]!;
 
 export const templateReachableStandingPositions = (
   registry: Registry,

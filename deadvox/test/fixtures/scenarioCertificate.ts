@@ -15,6 +15,7 @@ import { DOOR_ACTION } from '../../src/game/doorAction.ts';
 import { createSession, IDLE, type SessionOptions } from '../../src/game/session.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
 import { descentLid, queueDescentLidOpening } from './descentLid.ts';
+import { leaveRoof } from './scenarioStart.ts';
 
 export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): CitySite => {
   const own = buildFixtureRegistry([
@@ -220,12 +221,22 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
     assert(result);
     return result!;
   };
+  const foot = leaveRoof(session, space, plan.composition!.start, {
+    intent: (value) => {
+      intent = { ...value };
+    },
+    yaw: (value) => {
+      yaw = value;
+    },
+    frame: () => session.frame(1 / 60),
+    blockSize: scale.blockSize,
+  });
   const corner: Vec3 = [
     plan.service!.origin[0] - plan.grid.pad - plan.grid.street / 2,
-    plan.spawn[1],
+    plan.floor + 1,
     plan.service!.origin[2] - plan.grid.pad - plan.grid.street / 2,
   ];
-  walk([[...plan.spawn], [corner[0], corner[1], plan.spawn[2]], corner]);
+  walk(route(foot, corner));
   walk(route(corner, plan.portal!.upper));
   const hatchIndex = plan.service!.template.pieces.findIndex((piece) =>
     piece.pos.every((value, axis) => value === profile.portal.hatch[axis]),

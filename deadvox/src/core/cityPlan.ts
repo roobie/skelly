@@ -6,6 +6,7 @@ import { hash3, pickWeighted, Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
+import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
 import type { MapPoolDef, ScenarioDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
@@ -18,6 +19,7 @@ import {
   placedPoint,
   stackTemplate,
   type Turn,
+  templateEnvelope,
   templateResolves,
 } from './templates.ts';
 
@@ -189,14 +191,15 @@ const streetPropChoices = (registry: Registry, id: string): { id: string; weight
   });
 };
 
-const cityDecorationIssues = (registry: Registry, city: ScenarioDef['city']): [string, string][] => {
+const cityDecorationIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
+  const { city } = scenario;
   const issues: [string, string][] = [];
   const { perimeter, ring } = city;
   if (ring && !perimeter) {
     issues.push(['.city.ring', 'an edge ring needs a perimeter wall to back onto']);
   }
   if (perimeter) {
-    issues.push(...perimeterIssues(registry, city, perimeter));
+    issues.push(...perimeterIssues(registry, scenario, perimeter));
   }
   for (const id of city.streetProps ?? []) {
     const kitRef = registry.mapPools.get(id)?.choices.find(({ ref }) => ref.kind !== 'template');
@@ -250,14 +253,15 @@ const dressingIssues = (registry: Registry, city: ScenarioDef['city'], perimeter
 };
 
 /** A sprint jump from the roof edge must still be below the wall-plus-wire top where it crosses the wall. */
-const clearanceIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {
+const clearanceIssues = (registry: Registry, scenario: ScenarioDef, perimeter: Perimeter): [string, string][] => {
+  const { city } = scenario;
   const { ring } = city;
   const wallTop = perimeter.height + 1 + (perimeter.wire?.height ?? 0);
   const setback = ring ? ring.setback : city.street + city.pad;
   const run = setback * BLOCK_SIZE - 2 * PLAYER.halfWidth;
-  const arcTop = (roof: number) => roof + sprintJumpRise(run) / BLOCK_SIZE;
+  const arcTop = (roof: number, distance = run) => roof + sprintJumpRise(distance) / BLOCK_SIZE;
   const choices = registry.mapPools.get(ring?.pool ?? city.pool)?.choices ?? [];
-  return choices.flatMap(({ ref }) => {
+  const issues = choices.flatMap(({ ref }) => {
     const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id);
     return building && arcTop(building.size[1]) >= wallTop
       ? [
@@ -268,14 +272,38 @@ const clearanceIssues = (registry: Registry, city: ScenarioDef['city'], perimete
         ]
       : [];
   });
+  const start = scenario.composition?.start;
+  if (start) {
+    const definition = registry.templates.get(start.template) ?? registry.mapAssemblies.get(start.template);
+    if (!definition) {
+      return issues;
+    }
+    const template = templateEnvelope(definition);
+    const origin = serviceOrigin(template, 0, city, start.cell);
+    const bounds = cityBounds(city);
+    const distance = Math.min(
+      origin[0] - bounds.x0,
+      bounds.x1 - origin[0] - template.size[0],
+      origin[2] - bounds.z0,
+      bounds.z1 - origin[2] - template.size[2],
+    );
+    if (arcTop(origin[1] + template.size[1], distance * BLOCK_SIZE - 2 * PLAYER.halfWidth) >= wallTop) {
+      issues.push([
+        '.composition.start.template',
+        `a jump from the roof of "${start.template}" clears the wall; lower the start building or move it farther from the wall`,
+      ]);
+    }
+  }
+  return issues;
 };
 
-const perimeterIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {
+const perimeterIssues = (registry: Registry, scenario: ScenarioDef, perimeter: Perimeter): [string, string][] => {
+  const { city } = scenario;
   const blocks = [perimeter.block, ...(perimeter.wire ? [perimeter.wire.block] : [])];
   const issues: [string, string][] = blocks
     .filter((block) => !registry.blockIds.has(block))
     .map((block) => ['.city.perimeter', `no block "${block}"`]);
-  issues.push(...dressingIssues(registry, city, perimeter), ...clearanceIssues(registry, city, perimeter));
+  issues.push(...dressingIssues(registry, city, perimeter), ...clearanceIssues(registry, scenario, perimeter));
   if (blocks.every((block) => registry.blockIds.has(block))) {
     const bounds = cityBounds(city);
     for (const gap of perimeterGaps(cityPerimeter(registry, perimeter, bounds, 0), bounds, 0, perimeter.height)) {
@@ -333,8 +361,8 @@ const poolStyleIssue = (
 };
 
 /** Building slots every plan has: each row of each non-service block holds at least one building. */
-const guaranteedSlots = (city: ScenarioDef['city'], incidental: number): number => {
-  const blocks = 4 * city.blocksX * city.blocksZ - 1;
+const guaranteedSlots = (city: ScenarioDef['city'], incidental: number, hasStart: boolean): number => {
+  const blocks = 4 * city.blocksX * city.blocksZ - 1 - Number(hasStart);
   return blocks * ((city.rows ?? 2) - (incidental > 0 ? 1 : 0));
 };
 
@@ -375,7 +403,11 @@ const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, str
     {
       at: '.city.pool',
       id: city.pool,
-      slots: guaranteedSlots(city, scenario.composition?.incidentalTemplates.length ?? 0),
+      slots: guaranteedSlots(
+        city,
+        scenario.composition?.incidentalTemplates.length ?? 0,
+        scenario.composition !== undefined,
+      ),
     },
     ...(city.ring ? [{ at: '.city.ring.pool', id: city.ring.pool, slots: ringSlots(city) }] : []),
   ];
@@ -407,7 +439,11 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
     ]);
   }
   const width = city.blockX - 2 * city.pad;
-  issues.push(...cityDecorationIssues(registry, city), ...cityPoolIssues(registry, scenario));
+  issues.push(
+    ...cityDecorationIssues(registry, scenario),
+    ...cityPoolIssues(registry, scenario),
+    ...scenarioStartIssues(registry, scenario),
+  );
   const template = registry.templates.get(serviceTemplate);
   const assembly = registry.mapAssemblies.get(serviceTemplate);
   const service = template ?? assembly;
@@ -516,7 +552,8 @@ interface FillContext {
 export const cityRowStart = (grid: CityGrid, row: number): number =>
   grid.street + grid.pad + Math.floor(row / 2) * (2 * cityRowDepth(grid) + grid.street);
 
-const groundedY = (template: Placement['template'], floor: number): number => floor - (template.groundLayer ?? 0);
+const groundedY = (template: Pick<Placement['template'], 'groundLayer'>, floor: number): number =>
+  floor - (template.groundLayer ?? 0);
 
 /** The next slot's building: a forced quota choice that fits, else the weighted draw over rows under their `atMost`. */
 const chooseBuilding = (
@@ -608,28 +645,49 @@ const fillWithQuotas = (context: FillContext, fill: (forced: PoolRef[]) => Place
   return placements;
 };
 
+const serviceOrigin = (
+  template: Pick<Placement['template'], 'groundLayer'>,
+  floor: number,
+  grid: Pick<CityGrid, 'street' | 'blockX' | 'blockZ' | 'pad'>,
+  [i, j]: Cell,
+): Vec3 => [
+  i * (grid.street + grid.blockX) + grid.street + grid.pad,
+  groundedY(template, floor),
+  j * (grid.street + grid.blockZ) + grid.street + grid.pad,
+];
+
 export const servicePlacement = ({
   template,
   floor,
   grid,
-  cell: [i, j],
+  cell,
   turn,
 }: {
   template: ReturnType<typeof compileTemplate>;
   floor: number;
-  grid: CityGrid;
+  grid: Pick<CityGrid, 'street' | 'blockX' | 'blockZ' | 'pad'>;
   cell: Cell;
   turn: Turn;
 }): Placement =>
   freezePlacement({
     template,
-    origin: [
-      i * (grid.street + grid.blockX) + grid.street + grid.pad,
-      groundedY(template, floor),
-      j * (grid.street + grid.blockZ) + grid.street + grid.pad,
-    ],
+    origin: serviceOrigin(template, floor, grid, cell),
     turn,
   });
+
+const startPlacement = (context: FillContext, scenario?: ScenarioDef): Placement | undefined => {
+  const definition = scenario?.composition?.start;
+  if (!definition) {
+    return undefined;
+  }
+  return servicePlacement({
+    template: startTemplate(context.registry, definition.template, context.seed, `scenario:${scenario!.id}:start`),
+    floor: context.floor,
+    grid: context.grid,
+    cell: definition.cell,
+    turn: 0,
+  });
+};
 
 const freezeChoices = (choices: readonly PoolChoice[]) =>
   Object.freeze(choices.map((choice) => Object.freeze({ ...choice })));
@@ -728,9 +786,10 @@ const standAtWall = (
 ): { placement: Placement; extent: Extent } => {
   const template = context.compiled({ id }, 1, siteId);
   const extent = footprint({ template, origin: [0, 0, 0], turn: side.turn });
+  // Dressing's authored air must not excavate the top solid terrain voxel.
   const origin = againstWall(
     { side: side.side, bounds, setback: 0 },
-    { y: groundedY(template, context.floor), at: at(extent), extent },
+    { y: groundedY(template, context.floor + 1), at: at(extent), extent },
   );
   return { placement: freezePlacement({ template, origin, turn: side.turn }), extent };
 };
@@ -838,7 +897,8 @@ export const buildCityPlan = ({
   scenario?: ScenarioDef;
 }): CityPlan => {
   const cells = cityCells(grid);
-  const candidates = cells.filter(([i, j]) => i !== 0 || j !== 0);
+  const startCell = scenario?.composition?.start.cell ?? [0, 0];
+  const candidates = cells.filter(([i, j]) => i !== startCell[0] || j !== startCell[1]);
   const serviceBlock = scenario
     ? candidates[Rng.stream(seed, `scenario:${scenario.id}:service-block`).int(0, candidates.length - 1)]!
     : undefined;
@@ -863,15 +923,21 @@ export const buildCityPlan = ({
           turn: Rng.stream(seed, `scenario:${scenario.id}:service-turn`).int(0, 3) as Turn,
         })
       : undefined;
-  const composition = service && scenario ? composeScenario(registry, scenario, service, floor) : undefined;
+  const start = startPlacement(context, scenario);
+  const composition =
+    service && scenario && start ? composeScenario(registry, scenario, service, { floor, start }) : undefined;
   const fillCells = (forced: PoolRef[]): Placement[] => {
     context.counts = new Map();
     context.forced = forced;
-    return cells.flatMap(([i, j]) =>
-      service && serviceBlock?.[0] === i && serviceBlock[1] === j
-        ? [service]
-        : Array.from({ length: grid.rows ?? 2 }, (_, row) => fillRow(context, [i, j], row)).flat(),
-    );
+    return cells.flatMap(([i, j]) => {
+      if (service && serviceBlock?.[0] === i && serviceBlock[1] === j) {
+        return [service];
+      }
+      if (start && i === startCell[0] && j === startCell[1]) {
+        return [start];
+      }
+      return Array.from({ length: grid.rows ?? 2 }, (_, row) => fillRow(context, [i, j], row)).flat();
+    });
   };
   const placements = fillWithQuotas(context, fillCells, scenario ? `scenario:${scenario.id}:city` : 'city');
   if (composition) {
@@ -879,7 +945,7 @@ export const buildCityPlan = ({
   }
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
-  const spawn: Vec3 = [grid.street / 2, floor + 1, grid.street / 2];
+  const spawn: Vec3 = composition ? [...composition.start.spawn] : [grid.street / 2, floor + 1, grid.street / 2];
   const core = cityCore(grid);
   const bounds = cityBounds(grid);
   const { perimeter } = grid;

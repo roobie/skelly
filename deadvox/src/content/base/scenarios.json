@@ -150,7 +150,7 @@
           "height": 12,
           "lining": {
             "assembly": "gauntlet_perimeter_lining",
-            "pitch": 12
+            "pitch": 48
           },
           "thickness": 2,
           "wire": {
@@ -276,6 +276,33 @@
           }
         ],
         "retreat": [36, 41, 32],
+        "start": {
+          "cell": [0, 0],
+          "descents": [
+            {
+              "kind": "ladder",
+              "ladder": [39, 1, 10],
+              "lower": [41, 1, 11],
+              "upper": [36, 41, 11]
+            },
+            {
+              "hatch": [10, 40, 5],
+              "kind": "stairs",
+              "lower": [14, 1, 1],
+              "upper": [18, 41, 6]
+            },
+            {
+              "edge": [5, 41, 8],
+              "kind": "drop",
+              "landing": [5, 3, 8],
+              "lower": [5, 1, 14],
+              "upper": [6, 41, 8]
+            }
+          ],
+          "minimumOpenDescents": 2,
+          "spawn": [22, 41, 14],
+          "template": "gauntlet_start"
+        },
         "storeys": [
           {
             "id": "intake",

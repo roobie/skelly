@@ -1,6 +1,7 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type PlacementLootSource, placementLootIssues } from './placementLoot.ts';
+import { composeStart, type ScenarioStart } from './scenarioStart.ts';
 import type { ScenarioDef } from './schema.ts';
 import {
   type CompiledTemplate,
@@ -12,6 +13,7 @@ import {
 } from './templates.ts';
 
 export interface ScenarioComposition {
+  readonly start: ScenarioStart;
   readonly leads: readonly Placement[];
   readonly landmarks: readonly Placement[];
   readonly lootSources: readonly PlacementLootSource[];
@@ -153,6 +155,7 @@ export const scenarioSources = (registry: Registry) => {
         .map(({ ref }) => ref.id),
       ...(scenario.composition
         ? [
+            scenario.composition.start.template,
             ...scenario.composition.leads.map((lead) => lead.template),
             ...scenario.composition.landmarks,
             ...scenario.composition.incidentalTemplates,
@@ -170,7 +173,7 @@ export const composeScenario = (
   registry: Registry,
   scenario: ScenarioDef,
   service: Placement,
-  floor: number,
+  { floor, start }: { floor: number; start: Placement },
 ): ScenarioComposition | undefined => {
   const authored = scenario.composition;
   if (!authored) {
@@ -219,6 +222,7 @@ export const composeScenario = (
   }
   Object.freeze(fixedLoot);
   return Object.freeze({
+    start: composeStart(authored.start, start),
     leads,
     landmarks,
     lootSources: Object.freeze([

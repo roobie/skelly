@@ -138,6 +138,10 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const { engine, session, input } = w;
       const { placedPieces } = await import('/src/core/templates.ts');
       const { furnitureSurfacePosition } = await import('/src/core/furnitureSurface.ts');
+      const { scenarioCertificate } = await import('/src/core/scenarioCertificate.ts');
+      const { leaveRoof } = await import('/test/fixtures/scenarioStart.ts');
+      const certificate = scenarioCertificate(engine.site);
+      let foot;
       const { IDLE } = await import('/src/game/session.ts');
       const [clue] = placedPieces(engine.site.plan.composition.leads[0]);
       if (!clue) {
@@ -148,23 +152,40 @@ export const gauntletFlow = async (browser, baseUrl) => {
       input.intent = () => IDLE;
       const walkBeside = (entity, at) => {
         const standing = [entity.pos[0] - 1, at[2] + 0.5];
-        const distance = () => Math.hypot(standing[0] - session.body.pos[0], standing[1] - session.body.pos[2]);
-        const frames = Math.ceil((distance() / 2 + 3) * 60);
-        input.intent = () => ({ ...IDLE, forward: 1, walk: true });
-        for (let n = 0; n < frames && distance() >= 0.04; n++) {
-          input.yaw = Math.atan2(session.body.pos[0] - standing[0], session.body.pos[2] - standing[1]);
-          input.pitch = 0;
-          session.frame(1 / 60);
+        const route = certificate.space.path(foot, [standing[0], engine.site.plan.floor + 1, standing[1]]);
+        if (!route) {
+          throw new Error('No route from roof exit to public paper');
         }
-        input.intent = () => IDLE;
-        if (distance() >= 0.04) {
-          throw new Error('Could not walk beside the public-paper support');
+        for (const point of route) {
+          const distance = () => Math.hypot(point[0] - session.body.pos[0], point[2] - session.body.pos[2]);
+          const frames = Math.ceil((distance() / 2 + 3) * 60);
+          input.intent = () => ({ ...IDLE, forward: 1, walk: true });
+          for (let n = 0; n < frames && distance() >= 0.04; n++) {
+            input.yaw = Math.atan2(session.body.pos[0] - point[0], session.body.pos[2] - point[2]);
+            input.pitch = 0;
+            session.frame(1 / 60);
+          }
+          input.intent = () => IDLE;
+          if (distance() >= 0.04) {
+            throw new Error('Could not walk beside the public-paper support');
+          }
         }
       };
       try {
         for (let n = 0; n < 60; n++) {
           session.frame(1 / 60);
         }
+        input.pitch = 0;
+        foot = leaveRoof(session, certificate.space, engine.site.plan.composition.start, {
+          intent: (value) => {
+            input.intent = () => value;
+          },
+          yaw: (value) => {
+            input.yaw = value;
+          },
+          frame: () => session.frame(1 / 60),
+          blockSize: engine.config.scale.blockSize,
+        });
         const entity = [...engine.entities.all].find((value) => value.pos.every((v, axis) => v === clue.pos[axis]));
         if (!entity) {
           throw new Error('Public lead not streamed at start');
@@ -302,7 +323,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
               input.yaw = Math.atan2(-dx, -dz);
               input.pitch = 0;
               const remaining = Math.hypot(dx, dz);
-              const sprint = target[1] === plan.spawn[1] && remaining > 2;
+              const sprint = target[1] === plan.floor + 1 && remaining > 2;
               intent = { ...IDLE, forward: 1, sprint, walk: !sprint };
               return remaining < 0.04;
             },
@@ -449,12 +470,12 @@ export const gauntletFlow = async (browser, baseUrl) => {
       };
       const corner = [
         plan.service.origin[0] - plan.grid.pad - plan.grid.street / 2,
-        plan.spawn[1],
+        plan.floor + 1,
         plan.service.origin[2] - plan.grid.pad - plan.grid.street / 2,
       ];
       try {
         await until(() => session.body.onGround, 120, 'start support');
-        await walk([[...plan.spawn], [corner[0], corner[1], plan.spawn[2]], corner]);
+        await walk(route([session.body.pos[0], plan.floor + 1, session.body.pos[2]], corner));
         const resourceTypes = await takeResource();
         await openHatch();
         let position = plan.portal.upper;

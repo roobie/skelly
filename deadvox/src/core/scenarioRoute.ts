@@ -8,14 +8,15 @@ import { INVENTORY_CHEST, INVENTORY_REACH } from './reach.ts';
 import { makeScale } from './scale.ts';
 import { sitePalette } from './sitePalette.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
-import { footprint } from './templates.ts';
+import { footprint, type Placement } from './templates.ts';
 import { World } from './world.ts';
 import { generateChunk } from './worldgen.ts';
 
 const key = (point: readonly number[]) => point.join(',');
 
 const nearest = (queue: Vec3[], to: Readonly<Vec3>): Vec3 => {
-  const distance = (point: Vec3) => Math.abs(point[0] - to[0]) + Math.abs(point[2] - to[2]);
+  const distance = (point: Vec3) =>
+    Math.abs(point[0] - to[0]) + Math.abs(point[1] - to[1]) + Math.abs(point[2] - to[2]);
   let closest = 0;
   for (let i = 1; i < queue.length; i++) {
     if (distance(queue[i]!) < distance(queue[closest]!)) {
@@ -165,38 +166,75 @@ export class ScenarioRouteSpace {
     return true;
   }
 
-  path(from: Readonly<Vec3>, to: Readonly<Vec3>): Vec3[] | undefined {
-    if (from[1] !== to[1] || !this.standing(from) || !this.standing(to)) {
+  path(
+    from: Readonly<Vec3>,
+    to: Readonly<Vec3>,
+    options: { steps?: boolean; placement?: Placement } = {},
+  ): Vec3[] | undefined {
+    if ((!options.steps && from[1] !== to[1]) || !this.standing(from) || !this.standing(to)) {
       return undefined;
     }
-    const service = this.site.plan.service!;
+    const service = options.placement ?? this.site.plan.service!;
     const [width, depth] = footprint(service);
-    const within = ([x, , z]: Vec3) =>
+    const within = ([x, y, z]: Vec3) =>
       x >= Math.min(from[0], to[0], service.origin[0] - 2) &&
       x <= Math.max(from[0], to[0], service.origin[0] + width + 2) &&
       z >= Math.min(from[2], to[2], service.origin[2] - 2) &&
-      z <= Math.max(from[2], to[2], service.origin[2] + depth + 2);
+      z <= Math.max(from[2], to[2], service.origin[2] + depth + 2) &&
+      (!options.steps || (y >= Math.min(from[1], to[1]) && y <= Math.max(from[1], to[1])));
+    return this.search(from, to, within, options.steps ?? false);
+  }
+
+  private *neighbours(point: Vec3, steps: boolean): Generator<Vec3> {
+    for (const [dx, dz] of [
+      [0.5, 0],
+      [-0.5, 0],
+      [0, 0.5],
+      [0, -0.5],
+    ]) {
+      for (const dy of steps ? [0, 1, -1] : [0]) {
+        yield [point[0] + dx!, point[1] + dy, point[2] + dz!];
+      }
+    }
+  }
+
+  private search(
+    from: Readonly<Vec3>,
+    to: Readonly<Vec3>,
+    within: (point: Vec3) => boolean,
+    steps: boolean,
+  ): Vec3[] | undefined {
     const queue: Vec3[] = [[...from]];
     const parents = new Map<string, Vec3 | undefined>([[key(from), undefined]]);
     while (queue.length > 0) {
       const point = nearest(queue, to);
-      if (Math.hypot(point[0] - to[0], point[2] - to[2]) <= 0.5 && this.sweep(point, to)) {
+      if (point[1] === to[1] && Math.hypot(point[0] - to[0], point[2] - to[2]) <= 0.5 && this.sweep(point, to)) {
         return reconstruct(parents, point, to);
       }
-      for (const [dx, dz] of [
-        [0.5, 0],
-        [-0.5, 0],
-        [0, 0.5],
-        [0, -0.5],
-      ]) {
-        const next: Vec3 = [point[0] + dx!, point[1], point[2] + dz!];
-        if (within(next) && !parents.has(key(next)) && this.sweep(point, next)) {
+      for (const next of this.neighbours(point, steps)) {
+        if (
+          within(next) &&
+          !parents.has(key(next)) &&
+          (point[1] === next[1] ? this.sweep(point, next) : this.step(point, next))
+        ) {
           parents.set(key(next), point);
           queue.push(next);
         }
       }
     }
     return undefined;
+  }
+
+  private step(from: Readonly<Vec3>, to: Readonly<Vec3>): boolean {
+    const height = Math.max(from[1], to[1]);
+    const raisedFrom: Vec3 = [from[0], height, from[2]];
+    const raisedTo: Vec3 = [to[0], height, to[2]];
+    return (
+      this.standing(to) &&
+      this.sweep(from, raisedFrom, false) &&
+      this.sweep(raisedFrom, raisedTo, false) &&
+      this.sweep(raisedTo, to, false)
+    );
   }
 
   visibleReach(point: Readonly<Vec3>, entity: BlockEntity): boolean {

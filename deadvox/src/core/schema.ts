@@ -27,6 +27,7 @@ import {
   transform,
   tuple,
   union,
+  variant,
   boolean as vBoolean,
 } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
@@ -1520,6 +1521,18 @@ const MapPoolSchema = strictObject({
   ),
 });
 
+const StartDescentSchema = variant('kind', [
+  strictObject({ kind: literal('ladder'), ladder: CellPosition, upper: CellPosition, lower: CellPosition }),
+  strictObject({ kind: literal('stairs'), hatch: CellPosition, upper: CellPosition, lower: CellPosition }),
+  strictObject({
+    kind: literal('drop'),
+    upper: CellPosition,
+    edge: CellPosition,
+    landing: CellPosition,
+    lower: CellPosition,
+  }),
+]);
+
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -1530,6 +1543,13 @@ const ScenarioSchema = strictObject({
   serviceTemplate: Id,
   composition: optional(
     strictObject({
+      start: strictObject({
+        template: Id,
+        cell: tuple([pipe(number(), integer()), pipe(number(), integer())]),
+        spawn: CellPosition,
+        minimumOpenDescents: optional(pipe(Count, minValue(1), maxValue(32)), 2),
+        descents: pipe(array(StartDescentSchema), minLength(1), maxLength(32)),
+      }),
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
       leads: tuple([
         strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
