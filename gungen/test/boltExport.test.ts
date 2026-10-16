@@ -158,13 +158,29 @@ it.each(['missing-test-cartridge', '12-gauge-00-buck'])(
   },
 );
 
-it.each([...designs.map((design) => design.assembly), { ...scoped, name: 'scoped hunting fixture' }])(
-  'certifies the whole handle arc and draw against fixed geometry: $name',
-  (assembly) => {
-    expect(validate(assembly, gunDomain).issues).toEqual([]);
-    expect(sweepBoltAction(resolve(assembly, gunDomain))).toEqual([]);
-  },
-);
+// The sweep bisects every moving solid against every fixed solid, so its cost is the pair count.
+const SWEEP_MS_PER_PAIR_BUDGET = 10;
+const sweepPairs = (assembly: Assembly): number => {
+  const resolved = resolve(assembly, gunDomain);
+  const action = resolveGunAction(resolved)!;
+  const moving = new Set(Object.values(action.parts).map(({ id }) => id));
+  const movers = Object.values(action.parts).reduce((sum, part) => sum + part.def.solids.length, 0);
+  const obstacles = [...resolved.defs]
+    .filter(([id]) => !moving.has(id))
+    .reduce((sum, [, def]) => sum + def.solids.length, 0);
+  return movers * obstacles;
+};
+
+for (const assembly of [...designs.map((design) => design.assembly), { ...scoped, name: 'scoped hunting fixture' }]) {
+  it(
+    `certifies the whole handle arc and draw against fixed geometry: ${assembly.name}`,
+    () => {
+      expect(validate(assembly, gunDomain).issues).toEqual([]);
+      expect(sweepBoltAction(resolve(assembly, gunDomain))).toEqual([]);
+    },
+    1000 + sweepPairs(assembly) * SWEEP_MS_PER_PAIR_BUDGET,
+  );
+}
 
 it('exports integral capacity from the well, iron or fitted-optic sights, and a validated phased action', () => {
   const out = exportFileText(readFileSync('designs/hunting-rifle.json', 'utf8'), {
