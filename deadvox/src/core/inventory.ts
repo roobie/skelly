@@ -536,6 +536,15 @@ export class Inventory {
     );
   }
 
+  carriedByUid(uid: number): Item | undefined {
+    for (const { item } of this.carriedTree()) {
+      if (item.uid === uid) {
+        return item;
+      }
+    }
+    return undefined;
+  }
+
   /** Grams held and worn, with everything inside. */
   carriedWeight(): number {
     return this.carried().reduce((sum, item) => sum + weightOf(this.registry, item), 0);
