@@ -70,7 +70,7 @@ import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
-import { zombieFigure } from '../core/zombieFigure.ts';
+import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
 import { SEVERED_ITEM } from '../core/zombieRegionNames.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
@@ -112,7 +112,7 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
-import { shamblerBodyPitch } from './shamblerAudio.ts';
+import { shamblerVoiceLaw } from './shamblerAudio.ts';
 import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
@@ -584,6 +584,7 @@ const observeScenarioMovement = (
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const dayCycle = dayCycleFor(registry.dayCycle);
+  const shamblerVoice = shamblerVoiceLaw(figureSeedPool(registry.zombies));
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const physics = physicsFor(scale);
@@ -711,7 +712,7 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const bodyPitch = soundPitchMultiplier ?? (mobBody ? shamblerBodyPitch(mobBody) : 1);
+    const bodyPitch = soundPitchMultiplier ?? (mobBody ? shamblerVoice.bodyPitch(mobBody) : 1);
     const pitch = selected.pitch * bodyPitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
@@ -779,6 +780,24 @@ export const createSession = (options: SessionOptions) => {
       ),
     (move) => {
       awardInventoryPractice();
+      let source: Readonly<Vec3> | undefined;
+      if (move.from.kind === 'pile') {
+        source = move.from.pile.pos;
+      } else if (move.from.kind === 'furniture') {
+        source = move.from.entity.pos;
+      }
+      const { target } = move;
+      const carriedPocket =
+        target.kind === 'pocket' && [...inventory.carriedTree()].some(({ item }) => item === target.owner);
+      const acquired = target.kind === 'hand' || target.kind === 'worn' || carriedPocket;
+      if (
+        source &&
+        registry.items.get(move.item.type)?.readable &&
+        acquired &&
+        options.discovery?.clues.some((at) => at.every((value, axis) => value === source[axis]))
+      ) {
+        scenarioRun?.discover('clueRead', sim.calendar);
+      }
       options.audio.onMoveComplete?.(move, sim.time);
     },
   );

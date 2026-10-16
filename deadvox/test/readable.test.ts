@@ -98,7 +98,7 @@ describe('authored readable text', () => {
     expect(issues).toEqual([]);
     const shown: Readonly<Readable>[] = [];
     const session = createSession({
-      registry,
+      registry: { ...registry, zombies: BUNDLED_CONTENT.registry.zombies },
       world: new World(),
       isSolid: () => false,
       isOpaque: () => false,

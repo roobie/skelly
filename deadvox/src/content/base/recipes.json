@@ -350,6 +350,7 @@
     {
       "id": "crafting",
       "name": "Crafting",
+      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank"],
       "training": {
         "craftingTierOffset": 1
       }

@@ -20,8 +20,14 @@ export interface DisassemblyPlan {
   duration: number;
 }
 
-/** Salvage has no authored work time; its fixed duration is in game seconds. */
-export const SALVAGE_DURATION = 5 * 60;
+/** Authored work time in game seconds; content validation guarantees one for any disassemblable item. */
+export const disassemblyWorkTime = (definition: ItemDef): number => {
+  const time = definition.disassembly?.timeGameMinutes ?? definition.salvageTimeGameMinutes;
+  if (time === undefined) {
+    throw new Error(`Item "${definition.id}" has no disassembly work time`);
+  }
+  return time;
+};
 
 const rounded = (value: number, mode: 'floor' | 'round' | 'ceil'): number => {
   switch (mode) {
@@ -103,7 +109,7 @@ export const planDisassembly = (
     definition.disassembly?.yields.flatMap(({ toolModifier }) => (toolModifier ? [toolModifier.quality] : [])) ?? [],
   );
   const toolLevels = Object.fromEntries([...qualities].map((quality) => [quality, qualityLevel(quality)]));
-  const work = definition.disassembly?.timeGameMinutes ?? SALVAGE_DURATION;
+  const work = disassemblyWorkTime(definition);
   return {
     kind: 'disassembly',
     source,

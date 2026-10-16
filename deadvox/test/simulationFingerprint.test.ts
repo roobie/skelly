@@ -335,6 +335,16 @@ describe('simulation source fingerprint', () => {
     expect(await hash(runtimeChanged, ...entries)).not.toBe(original);
   });
 
+  it('fingerprints trusted JSON admission configuration without parsing it as a module', async () => {
+    const sources = new Map([
+      [resolve(root, entries[0]!), "import config from '../config/intake.json'; export const cap = config.cap;"],
+      [resolve(root, 'src/config/intake.json'), '{"cap": 100}'],
+    ]);
+    const before = await hash(sources, ...entries);
+    sources.set(resolve(root, 'src/config/intake.json'), '{"cap": 200}');
+    expect(await hash(sources, ...entries)).not.toBe(before);
+  });
+
   it('recomputes the identity for create, update, and delete hot changes', async () => {
     const results = await Promise.all(
       (['create', 'update', 'delete'] as const).map(async (type) => {

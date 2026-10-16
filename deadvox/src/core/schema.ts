@@ -34,6 +34,7 @@ import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
@@ -183,6 +184,7 @@ const ITEM_CATEGORIES = [
   'ammo',
   'material',
   'book',
+  'note',
   'misc',
 ] as const;
 
@@ -223,6 +225,8 @@ const UiTuningSchema = strictObject({
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
+  /** The sound event played when the player tries an action that cannot be completed. */
+  refusalSound: picklist(SOUND_EVENT_IDS),
 });
 
 const SaveTuningSchema = strictObject({
@@ -573,6 +577,8 @@ const ItemSchema = strictObject({
   disassembly: optional(DisassemblySchema),
   /** Fixed outputs for found items with no recipe. */
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
+  /** Work time to salvage; required with `salvage`, forbidden without it. */
+  salvageTimeGameMinutes: optional(PositiveGameMinutes),
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),
@@ -1148,6 +1154,36 @@ const OwnershipSchema = strictObject({
   /** '.' leaves terrain alone, S claims occupancy, A excavates, R reserves empty circulation. */
   layers: array(array(pipe(string(), regex(/^[.SAR]*$/)))),
 });
+const DecalVariantSchema = strictObject({
+  sizeMetres: tuple([Positive, Positive]),
+  color: Color,
+  agedColor: Color,
+  opacity: Fraction,
+  agedOpacity: Fraction,
+  ageingGameHours: PositiveGameHours,
+  noiseScale: Positive,
+  edgeRaggedness: Fraction,
+  /** Normalized line segments, each [x0, y0, x1, y1, width]. */
+  strokes: pipe(
+    array(
+      pipe(
+        tuple([Fraction, Fraction, Fraction, Fraction, Fraction]),
+        check(([x0, y0, x1, y1, width]) => width > 0 && (x0 !== x1 || y0 !== y1), 'needs a nonzero stroke'),
+      ),
+    ),
+    maxLength(64),
+  ),
+});
+export const DecalSchema = strictObject({
+  kind: picklist(Object.keys(DECAL_KINDS) as DecalKind[]),
+  at: tuple([number(), number(), number()]),
+  door: optional(tuple([number(), number(), number()])),
+  normal: picklist(['n', 'e', 's', 'w', 'up', 'down']),
+  rotation: number(),
+  variants: pipe(array(DecalVariantSchema), nonEmpty(), maxLength(32)),
+});
+export type DecalDef = InferOutput<typeof DecalSchema>;
+
 const TemplateSchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
@@ -1159,6 +1195,7 @@ const TemplateSchema = strictObject({
   palette: record(Char, union([Id, PaletteThingSchema])),
   /** Layers from the bottom up; each is rows along z of characters along x. */
   layers: array(array(string())),
+  decals: optional(pipe(array(DecalSchema), maxLength(128))),
   /** Explicit floors and flights, never stress-test repetitions. Floor heights are feet heights in blocks. */
   access: optional(TemplateAccessSchema),
   ownership: optional(OwnershipSchema),
@@ -1195,6 +1232,7 @@ const MapPieceSchema = strictObject({
   style: Id,
   palette: record(Char, union([strictObject({ role: MaterialRole, material: Id }), PaletteThingSchema])),
   layers: array(array(string())),
+  decals: optional(pipe(array(DecalSchema), maxLength(128))),
   ownership: OwnershipSchema,
   anchors: record(Id, KitAnchorSchema),
   ports: array(KitPortSchema),
@@ -1349,7 +1387,8 @@ const SiteLayoutSchema = strictObject({
     strictObject({
       points: pipe(array(LayoutPoint), minLength(2)),
       width: pipe(Metres, minValue(Number.MIN_VALUE)),
-      surface: optional(picklist(['dirt', 'asphalt'])),
+      /** The block the track's surface is made of. */
+      surface: Id,
     }),
   ),
   /** Observation only: playtest metrics record when the player first stands in each beat's area. */
@@ -1389,13 +1428,18 @@ const MapPoolSchema = strictObject({
 const ScenarioSchema = strictObject({
   id: Id,
   kind: literal('gauntlet'),
+  outbreakAgeGameHours: PositiveGameHours,
+  decalLimit: pipe(Count, maxValue(4096)),
   body: Id,
   compression: Id,
   serviceTemplate: Id,
   composition: optional(
     strictObject({
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
-      leads: tuple([Id, Id]),
+      leads: tuple([
+        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
+        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
+      ]),
       landmarks: tuple([Id, Id]),
       incidentalTemplates: pipe(array(Id), minLength(1), maxLength(32)),
       objective: CellPosition,
@@ -1487,6 +1531,14 @@ const ZombieSchema = strictObject({
   model: ZOMBIE_MODEL,
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
+  /** Mobgen figure seeds an individual of this type is drawn from. Every model but the amalgam, whose figure seed is fixed, defines them. */
+  figureSeeds: optional(
+    pipe(
+      array(pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more'))),
+      minLength(1, 'needs at least one figure seed'),
+      check((seeds) => new Set(seeds).size === seeds.length, 'figure seeds must be distinct'),
+    ),
+  ),
   /** Overrides body-height pitch scaling for this type's voice cues. */
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
@@ -1661,6 +1713,8 @@ const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    /** Recipes a new character knows from the start. */
+    startingRecipes: optional(array(Id)),
     training: optional(
       strictObject({
         craftingTierOffset: optional(Count),
@@ -1770,6 +1824,18 @@ const SiteGenerationSchema = strictObject({
     woodlandEdgeVariation: pipe(Fraction, maxValue(0.5, 'must not exceed 0.5')),
     openDensity: Fraction,
     obstacleMarginMetres: NonNegative,
+  }),
+  // One palette shared by every site kind: terrain, paving, trees and litter are block ids.
+  palette: strictObject({
+    terrain: strictObject({ grass: Id, dirt: Id, rock: Id, sand: Id }),
+    paving: Id,
+    trees: strictObject({ trunk: Id, branch: Id, leaves: Id }),
+    leafLitter: Id,
+  }),
+  hamlet: strictObject({
+    hedge: Id,
+    northSide: pipe(array(Id), minLength(1)),
+    southSide: pipe(array(Id), minLength(1)),
   }),
 });
 const SenseSchema = strictObject({
@@ -2077,6 +2143,10 @@ const SECTION_DESCRIPTOR = {
         check(
           (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.downed === undefined)),
           'every type but the amalgam, which never lies downed, must define downed',
+        ),
+        check(
+          (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.figureSeeds === undefined)),
+          'every type but the amalgam, whose figure seed is fixed, must define figureSeeds',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
       ),

@@ -49,10 +49,10 @@ const validSkillPractice = (level: number, practice: number | undefined): practi
   practice >= 0 &&
   (level === SKILL_LEVEL_LEGENDARY ? practice === 0 : practice < practiceForNextLevel(level));
 
-/** Explicit starting source, shared with CLI reachability in the next hand-off. */
-const STARTING_RECIPES = ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank'] as const;
-export const startingKnownRecipes = (registry: Registry): string[] =>
-  STARTING_RECIPES.filter((id) => registry.recipes.has(id));
+/** Content validation guarantees each authored starting recipe exists. */
+export const startingKnownRecipes = (registry: Registry): string[] => [
+  ...new Set([...registry.skills.values()].flatMap((skill) => skill.startingRecipes ?? [])),
+];
 
 export class Character implements HandedCharacter {
   private readonly side: HandSide;

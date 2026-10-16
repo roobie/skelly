@@ -14,6 +14,17 @@
         "woodlandEdgeVariation": 0.3,
         "openDensity": 0.035,
         "obstacleMarginMetres": 1
+      },
+      "palette": {
+        "terrain": { "grass": "grass", "dirt": "dirt", "rock": "rock", "sand": "sand" },
+        "paving": "asphalt",
+        "trees": { "trunk": "tree_trunk", "branch": "tree_branch", "leaves": "leaves" },
+        "leafLitter": "leaf_litter"
+      },
+      "hamlet": {
+        "hedge": "hedge",
+        "northSide": ["small_house", "bungalow", "corner_store", "hardware_store"],
+        "southSide": ["gas_station", "shed", "garage"]
       }
     }
   ]

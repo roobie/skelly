@@ -101,7 +101,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -209,7 +209,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -317,7 +317,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -425,7 +425,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -533,7 +533,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -641,7 +641,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -749,7 +749,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -857,7 +857,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -965,7 +965,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -1073,7 +1073,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -1181,7 +1181,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -1289,7 +1289,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -1397,7 +1397,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -1505,7 +1505,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -1613,7 +1613,7 @@
     {
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_intact",
-      "name": "Stripped car",
+      "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
         "blueprint": "rover",
@@ -1984,40 +1984,6 @@
       "solid": false
     },
     {
-      "color": "#dfd6b9",
-      "id": "gauntlet_public_memo",
-      "name": "Maintenance route",
-      "readable": {
-        "text": "The service store is on the block with the square raised water tank. Go around the low brick building to the rear apron. The two tall, narrow exhausts stand together there; the inspection hatch beside them opens onto the maintenance ladder. The office is not the basement access.\n\nSquare raised water tank → low brick store\n                           rear apron → paired exhausts → hatch\n",
-        "title": "Maintenance route"
-      },
-      "shape": [
-        {
-          "position": [0.10000000000000001, 0.10000000000000001, 0.80000000000000004],
-          "size": [1.8, 1.8, 0.10000000000000001]
-        }
-      ],
-      "size": [2, 2, 1],
-      "solid": false
-    },
-    {
-      "color": "#dfd6b9",
-      "id": "gauntlet_public_directions",
-      "name": "Delivery instructions",
-      "readable": {
-        "text": "Deliver instruments to the low brick service store beside the yellow loading frame. Do not leave them at a utility cabinet or a lone duct riser. Walk around to the rear apron, find the pair of narrow exhausts, and use the inspection hatch beside them. The lid is unlocked; the ladder below reaches the intake floor. Return by the same hatch when the shift ends.\n",
-        "title": "Delivery instructions"
-      },
-      "shape": [
-        {
-          "position": [0.10000000000000001, 0.10000000000000001, 0.80000000000000004],
-          "size": [1.8, 1.8, 0.10000000000000001]
-        }
-      ],
-      "size": [2, 2, 1],
-      "solid": false
-    },
-    {
       "color": "#707b7e",
       "id": "gauntlet_water_tank",
       "name": "Square raised water tank",
@@ -2085,6 +2051,38 @@
       "name": "Police armoury key",
       "size": [1, 1],
       "weight": 10
+    },
+    {
+      "category": "note",
+      "economy": {
+        "tiers": ["Tier1"],
+        "usage": ["Industrial"]
+      },
+      "id": "gauntlet_public_memo",
+      "model": "paper_sheet",
+      "name": "Maintenance route",
+      "readable": {
+        "text": "The service store is on the block with the square raised water tank. Go around the low brick building to the rear apron. The two tall, narrow exhausts stand together there; the inspection hatch beside them opens onto the maintenance ladder. The office is not the basement access.\n\nSquare raised water tank → low brick store\n                           rear apron → paired exhausts → hatch\n",
+        "title": "Maintenance route"
+      },
+      "size": [1, 1],
+      "weight": 5
+    },
+    {
+      "category": "note",
+      "economy": {
+        "tiers": ["Tier1"],
+        "usage": ["Industrial"]
+      },
+      "id": "gauntlet_public_directions",
+      "model": "folded_note",
+      "name": "Delivery instructions",
+      "readable": {
+        "text": "Deliver instruments to the low brick service store beside the yellow loading frame. Do not leave them at a utility cabinet or a lone duct riser. Walk around to the rear apron, find the pair of narrow exhausts, and use the inspection hatch beside them. The lid is unlocked; the ladder below reaches the intake floor. Return by the same hatch when the shift ends.\n",
+        "title": "Delivery instructions"
+      },
+      "size": [1, 1],
+      "weight": 5
     }
   ],
   "loot": [
@@ -20630,6 +20628,207 @@
     },
     {
       "anchors": {},
+      "decals": [
+        {
+          "at": [12, 0, -2.5],
+          "kind": "blood",
+          "normal": "up",
+          "rotation": 0.10000000000000001,
+          "variants": [
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.45000000000000001,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.29999999999999999, 0.55000000000000004],
+              "strokes": []
+            },
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.59999999999999998,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.23999999999999999, 0.41999999999999998],
+              "strokes": []
+            }
+          ]
+        },
+        {
+          "at": [11.699999999999999, 0, -1.2],
+          "kind": "blood",
+          "normal": "up",
+          "rotation": -0.20000000000000001,
+          "variants": [
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.45000000000000001,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.29999999999999999, 0.55000000000000004],
+              "strokes": []
+            },
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.59999999999999998,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.23999999999999999, 0.41999999999999998],
+              "strokes": []
+            }
+          ]
+        },
+        {
+          "at": [12.1, 0, 0.5],
+          "kind": "blood",
+          "normal": "up",
+          "rotation": 0.25,
+          "variants": [
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.45000000000000001,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.29999999999999999, 0.55000000000000004],
+              "strokes": []
+            },
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.59999999999999998,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.23999999999999999, 0.41999999999999998],
+              "strokes": []
+            }
+          ]
+        },
+        {
+          "at": [11.800000000000001, 0, 2],
+          "kind": "blood",
+          "normal": "up",
+          "rotation": -0.10000000000000001,
+          "variants": [
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.45000000000000001,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.29999999999999999, 0.55000000000000004],
+              "strokes": []
+            },
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.59999999999999998,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.23999999999999999, 0.41999999999999998],
+              "strokes": []
+            }
+          ]
+        },
+        {
+          "at": [12.300000000000001, 0, 3.5],
+          "kind": "blood",
+          "normal": "up",
+          "rotation": 0.29999999999999999,
+          "variants": [
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.45000000000000001,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.29999999999999999, 0.55000000000000004],
+              "strokes": []
+            },
+            {
+              "agedColor": "#34251d",
+              "agedOpacity": 0.71999999999999997,
+              "ageingGameHours": 504,
+              "color": "#6c2019",
+              "edgeRaggedness": 0.59999999999999998,
+              "noiseScale": 8,
+              "opacity": 0.88,
+              "sizeMetres": [0.23999999999999999, 0.41999999999999998],
+              "strokes": []
+            }
+          ]
+        },
+        {
+          "at": [12, 2.3999999999999999, 0.44],
+          "door": [11, 0, 0],
+          "kind": "paint",
+          "normal": "n",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#91896c",
+              "agedOpacity": 0.65000000000000002,
+              "ageingGameHours": 8760,
+              "color": "#b5ab70",
+              "edgeRaggedness": 0.20000000000000001,
+              "noiseScale": 9,
+              "opacity": 0.90000000000000002,
+              "sizeMetres": [0.55000000000000004, 0.55000000000000004],
+              "strokes": [
+                [
+                  0.10000000000000001, 0.10000000000000001, 0.90000000000000002, 0.90000000000000002,
+                  0.070000000000000007
+                ],
+                [
+                  0.10000000000000001, 0.90000000000000002, 0.90000000000000002, 0.10000000000000001,
+                  0.070000000000000007
+                ]
+              ]
+            },
+            {
+              "agedColor": "#91896c",
+              "agedOpacity": 0.65000000000000002,
+              "ageingGameHours": 8760,
+              "color": "#b5ab70",
+              "edgeRaggedness": 0.20000000000000001,
+              "noiseScale": 9,
+              "opacity": 0.90000000000000002,
+              "sizeMetres": [0.5, 0.59999999999999998],
+              "strokes": [
+                [
+                  0.10000000000000001, 0.10000000000000001, 0.90000000000000002, 0.90000000000000002,
+                  0.070000000000000007
+                ],
+                [
+                  0.10000000000000001, 0.90000000000000002, 0.90000000000000002, 0.10000000000000001,
+                  0.070000000000000007
+                ]
+              ]
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_service_shell",
       "layers": [
         [
@@ -24795,6 +24994,38 @@
   ],
   "templates": [
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_0_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -24817,6 +25048,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_0_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -24839,6 +25102,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_0_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -24861,6 +25156,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_0_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -24883,6 +25210,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_0_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -24905,6 +25264,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_0_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -24927,6 +25318,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_1_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -24949,6 +25372,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_1_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -24971,6 +25426,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_1_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -24993,6 +25480,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_1_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25015,6 +25534,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_1_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25037,6 +25588,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_1_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25059,6 +25642,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_2_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25081,6 +25696,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_2_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25103,6 +25750,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_2_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25125,6 +25804,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_2_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25147,6 +25858,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_2_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25169,6 +25912,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_0_2_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25191,6 +25966,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_0_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25213,6 +26020,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_0_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25235,6 +26074,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_0_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25257,6 +26128,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_0_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25279,6 +26182,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_0_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25301,6 +26236,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_0_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25323,6 +26290,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_1_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25345,6 +26344,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_1_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25367,6 +26398,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_1_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25389,6 +26452,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_1_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25411,6 +26506,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_1_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25433,6 +26560,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_1_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25455,6 +26614,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_2_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25477,6 +26668,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_2_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25499,6 +26722,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_2_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25521,6 +26776,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_2_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25543,6 +26830,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_2_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25565,6 +26884,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_1_2_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25587,6 +26938,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_0_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25609,6 +26992,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_0_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25631,6 +27046,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_0_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25653,6 +27100,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_0_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25675,6 +27154,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_0_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25697,6 +27208,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_0_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25719,6 +27262,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_1_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25741,6 +27316,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_1_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25763,6 +27370,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_1_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25785,6 +27424,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_1_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25807,6 +27478,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_1_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25829,6 +27532,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_1_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25851,6 +27586,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_2_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25873,6 +27640,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_2_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25895,6 +27694,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_2_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25917,6 +27748,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_2_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25939,6 +27802,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_2_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25961,6 +27856,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_2_2_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -25983,6 +27910,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_0_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26005,6 +27964,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_0_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26027,6 +28018,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_0_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26049,6 +28072,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_0_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26071,6 +28126,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_0_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26093,6 +28180,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_0_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26115,6 +28234,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_1_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26137,6 +28288,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_1_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26159,6 +28342,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_1_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26181,6 +28396,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_1_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26203,6 +28450,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_1_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26225,6 +28504,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_1_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26247,6 +28558,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_2_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26269,6 +28612,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_2_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26291,6 +28666,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_2_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26313,6 +28720,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_2_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26335,6 +28774,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_2_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26357,6 +28828,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_3_2_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26379,6 +28882,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_0_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26401,6 +28936,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_0_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26423,6 +28990,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_0_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26445,6 +29044,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_0_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26467,6 +29098,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_0_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26489,6 +29152,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_0_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26511,6 +29206,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_1_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26533,6 +29260,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_1_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26555,6 +29314,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_1_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26577,6 +29368,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_1_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26599,6 +29422,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_1_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26621,6 +29476,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_1_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26643,6 +29530,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_2_intact",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26665,6 +29584,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_2_doors",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26687,6 +29638,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_2_wheels",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26709,6 +29692,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_2_front",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26731,6 +29746,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_2_rear",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26753,6 +29800,38 @@
       "size": [4, 5, 9]
     },
     {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
       "id": "gauntlet_car_wreck_4_2_shell",
       "layers": [
         ["====", "====", "====", "====", "====", "====", "====", "====", "===="],
@@ -26776,33 +29855,35 @@
     },
     {
       "id": "gauntlet_public_memo",
-      "layers": [["=="], ["FF"], ["FF"]],
+      "layers": [["==", "=="], ["FF", "FF"], ["FF", "FF"]],
       "lootContext": {
         "tier": "Tier1",
-        "usage": []
+        "usage": ["Industrial"]
       },
       "palette": {
         "=": "concrete",
         "F": {
-          "furniture": "gauntlet_public_memo"
+          "furniture": "crate",
+          "loot": "d41_empty"
         }
       },
-      "size": [2, 3, 1]
+      "size": [2, 3, 2]
     },
     {
       "id": "gauntlet_public_directions",
-      "layers": [["=="], ["FF"], ["FF"]],
+      "layers": [["==", "=="], ["FF", "FF"], ["FF", "FF"]],
       "lootContext": {
         "tier": "Tier1",
-        "usage": []
+        "usage": ["Industrial"]
       },
       "palette": {
         "=": "concrete",
         "F": {
-          "furniture": "gauntlet_public_directions"
+          "furniture": "crate",
+          "loot": "d41_empty"
         }
       },
-      "size": [2, 3, 1]
+      "size": [2, 3, 2]
     },
     {
       "id": "gauntlet_water_tank",

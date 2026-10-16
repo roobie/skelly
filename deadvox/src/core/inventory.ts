@@ -18,11 +18,12 @@ import type { Vec3 } from './coords.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
   disassemblyOutputs,
-  SALVAGE_DURATION,
+  disassemblyWorkTime,
   sameDisassemblyOutputs,
   validDisassemblyToolLevels,
 } from './disassembly.ts';
 import { firearmSlotIds, isLongGun, slingFitted } from './firearmFitting.ts';
+import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import type { ItemOrigin } from './itemOrigin.ts';
 import {
   cellCount,
@@ -302,11 +303,7 @@ export class Inventory {
       (entity.pockets ?? []).some((_, pocket) => this.add(item, { kind: 'furniture', entity, pocket }));
     }
     if (surfaceLoot.length > 0) {
-      const pos: Vec3 = [
-        entity.pos[0] + Math.floor(entity.size[0] / 2),
-        entity.pos[1] + entity.size[1],
-        entity.pos[2] + Math.floor(entity.size[2] / 2),
-      ];
+      const pos = furnitureSurfacePosition(entity);
       for (const rolled of surfaceLoot) {
         if (!this.add(this.createRolled(rolled), { kind: 'pile', pos })) {
           throw new Error(`fixed surface item "${rolled.type}" does not fit on its furniture`);
@@ -1578,11 +1575,10 @@ const validateDisassemblyWorkItem = (
   if (!source) {
     throw new Error('Invalid disassembly work payload');
   }
-  const duration = source.disassembly ? source.disassembly.timeGameMinutes : SALVAGE_DURATION;
-  const hasDisassembly = Boolean(source.disassembly || source.salvage);
-  if (!hasDisassembly) {
+  if (!(source.disassembly || source.salvage)) {
     throw new Error('Invalid disassembly work payload');
   }
+  const duration = disassemblyWorkTime(source);
   if (!validDisassemblyToolLevels(source, work.toolLevels)) {
     throw new Error('Invalid disassembly work payload');
   }

@@ -9,6 +9,7 @@ read_if:
   - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you're authoring or changing exterior door openings
   - you're authoring or changing furniture appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
+  - you author decals or scenario outbreak age
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
 ---
@@ -28,6 +29,33 @@ may override the same definitions; identity is not a definition-id collision rul
 The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
 and `evaluateMods`. Bundled core-pack fragments remain content files rather than
 independent mods; see `src/game/bundledContent.ts`, `buildBundledContent`.
+
+The pre-start panel rejects invalid files whole and keeps their diagnostics visible.
+An enabled invalid file blocks Start rather than silently starting a different world;
+disabling it permits startup with the remaining content, including the base pack alone.
+See `src/ui/modsPanel.ts`, `chooseMods`, and `src/game/browserMods.ts`, `evaluateMods`.
+The intake byte limit belongs to trusted startup configuration in
+`src/config/browser-mods.jsonnet`, not to a selected mod: admission must bound a file
+before parsing or trusting its definitions.
+
+Browser selections persist as one atomic IndexedDB record, including source text,
+order and enabled state. An unavailable or failed store leaves the panel with no mods
+loaded and a visible storage error, never a partially restored selection. See
+`src/game/modStorage.ts`, `ModStorage`, and `src/ui/modsPanel.ts`, `chooseMods`.
+
+Each admitted browser mod contributes its explicit identity, version and canonical
+content hash to the save's ordered pack identity. An omitted mod version denotes the
+initial version; changing content still changes its hash. Delivery names and JSON
+object key order are not identity. Selection order is identity because later files
+can override earlier definitions; disabled files are not admitted packs. Continue
+refuses missing, changed, additional or reordered packs rather than resuming a world
+under different definitions. See `src/game/browserMods.ts`, `evaluateMods`, and
+`src/core/saveFormat.ts`, `currentSaveVersionIdentity` and `contentPackDifferences`.
+Preserved-save notices name pack differences with the mod's own id, without its
+internal browser namespace. Raw decoder diagnostics do not belong in that notice:
+an ordinary game update is not a mod problem. See `src/ui/saveController.ts`,
+`SaveController.inspectOtherNamespaces`, and `../INTERFACE.md`, "Text".
+The panel remains opt-in pending BR's decision about making it the default entry.
 
 ## Bundled mods
 
@@ -73,15 +101,23 @@ Weathering is a render-only content choice, not saved world state. Named profile
 
 Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`. Unrelated contract fixtures may author common-supply metadata through `test/economyFixtures.ts`, `buildFixtureRegistry`; admission tests must use raw sources so the fixture builder cannot conceal missing metadata.
 
+Transport tests check the fetched payload and stream limits rather than rebuilding the
+playable pack at each asynchronous step. Admission and malformed-JSON rejection belong
+to `test/browserMods.test.ts`; keeping that owner avoids load-sensitive transport timeouts.
+
 ## Authored structures and sites
 
 Keep exterior shells visually continuous around authored openings; doors and solid window frames remain deliberate gaps. Floor and roof courses meeting an exterior wall use that wall's material, so interior flooring does not appear as an exposed facade stripe. Interior flooring retains its authored material. Doors need clear space on both sides so a player can pass through. See `floorCourseWallGap` and `checkTemplateSpace` in `src/core/content.ts`, and `templateDoorIssues` in `src/core/templateSpatial.ts`.
 
 Keep enclosed building roofs flush with their exterior wall footprint so the roof silhouette follows the shell instead of adding projecting eaves. Open forecourt canopies are separate structures, not building eaves. See `src/content/base/gauntlet-city-kits.libsonnet`, `gauntlet_city_roof`, and `src/game/testHouse.ts`, `testHouse`.
 
+Scenario lead references may carry fixed loot on their template's furniture anchors, so a portable clue uses the same surface or container machinery as other items. Lead admission requires readable furniture or a readable fixed item; the route certificate still proves independent access around solid supports. Surface loot and discovery share furniture-top positioning so an observation identifies the pile actually offered by inventory, rather than the support's corner. See `src/core/furnitureSurface.ts`, `furnitureSurfacePosition`. Unknown placement kinds fail schema validation instead of selecting a fallback. See `src/core/schema.ts`, `FixedLootItem`; `src/core/scenarioComposition.ts`, `extraTemplateIssues`; and `src/core/scenarioCertificate.ts`, `lead`.
+
 Fixed loot takes eligibility from its resolved authored source context, not a compiled placement's ID. Stacking changes that ID without changing the source's authority. Anchor usage overrides retain the resolved tier; fitted children meet the same context. See `placementLootIssues` in `src/core/placementLoot.ts` and its callers in `src/core/authoredLayout.ts` and `src/core/scenarioComposition.ts`.
 
 Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `siteGeneration` in `src/core/schema.ts`, `site-generation.json`, and `AuthoredSite` in `src/core/authoredSite.ts`.
+
+Every site kind shares one block palette in the same entry, so a block choice has a single content home. Hamlet-only choices (hedge and the template pools) sit apart in its `hamlet` field. Code reads them through `sitePalette` in `src/core/sitePalette.ts`; names that resolve to nothing are validation errors (`checkSiteGeneration` in `src/core/content.ts`), never a runtime fallback. The one exception is `benchmarkCityGrid` in `src/core/cityPlan.ts`, which has no registry and keeps the hamlet template list in `HAMLET_TEMPLATES` in `src/core/hamlet.ts` until the city sweep under #393 reads it from content.
 
 Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
@@ -240,6 +276,33 @@ Choose the structural appearance in content through `src/core/schema.ts`, `Furni
 Use `deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
 
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
+
+## Authored decals
+
+Decals are presentation-only surface marks, not furniture or blocks. They cannot change
+collision, sight, searching or saves: their placements derive from content. They share
+scene lighting so darkness hides them and carried light reveals them. Authored marks
+are needed for beats furniture cannot carry, such as a blood trail leading into a room.
+Keep them sparse rather than covering every surface.
+
+Scenario content owns time since the outbreak because different scenarios may be days,
+months or years afterward. The gauntlet authors months, so blood reads dried rather
+than fresh. Definitions own the ageing response instead of a renderer-wide age default.
+See `src/core/schema.ts`, `DecalSchema` and `ScenarioSchema`; the closed kind dispatch
+is `src/core/decalKinds.ts`, `DECAL_KINDS`.
+
+Templates and kit pieces own surface placements independently of occupied cells. A door
+attachment names its ordinary upright door anchor so the mark follows that panel without
+owning door state. Size, palette, stroke geometry, seeded variants and ageing live in
+`src/content/base/decals.libsonnet`; the scenario owns the count cap, and validation
+reports a service template whose decals exceed it so the renderer never truncates the
+marks authors placed first (`scenarioPlanIssues` in `src/core/cityPlan.ts`). See
+`src/core/templates.ts`, `placedDecals`, and `src/render/decals.ts`, `AuthoredDecals`.
+The renderer batches authored marks and shares stain noise with body blood. Use
+`decals=0` in a review URL to compare without the marks; it does not alter the world.
+For hardware review use `tools/decal-probe.mjs` with matching posed head and main
+URLs and an evidence directory. Exclusive paired trials distinguish decal cost from
+whole-scene variation; screenshots also need operator judgment.
 
 ## Furniture action noise
 

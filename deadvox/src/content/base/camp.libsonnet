@@ -67,7 +67,8 @@ local campWallRunCrouchHole = campWallRun + {
     {
       "id": "camp_hq_safe_note",
       "name": "Officer's note",
-      "category": "book",
+      "category": "note",
+      "model": "paper_sheet",
       "weight": 5,
       "size": [1, 1],
       "readable": {

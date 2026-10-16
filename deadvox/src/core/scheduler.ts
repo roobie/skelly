@@ -136,7 +136,8 @@ export class Scheduler {
         return this.time - start;
       }
     }
-    this.time = target;
+    // A tick may end up to the epsilon past `target`; time must not step back below what ticks observed.
+    this.time = Math.max(this.time, target);
     return dt;
   }
 

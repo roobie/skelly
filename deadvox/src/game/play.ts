@@ -195,7 +195,7 @@ const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
 ];
 
 const scenarioDiscovery = (site: Engine['site']) =>
-  site instanceof CitySite ? discoveryForPlan(site.plan) : undefined;
+  site instanceof CitySite ? discoveryForPlan(site.plan, site.registry) : undefined;
 
 const scenarioObjective = (site: Engine['site']): Readonly<Vec3> | undefined =>
   site instanceof CitySite ? site.plan.composition?.objective : undefined;
@@ -566,12 +566,9 @@ const createPlayRefusalPresenter = (
   audio: GameAudio,
   showNotice: (text: string) => void,
 ) => {
-  const nope = registry.sounds.get('player_nope');
-  return createRefusalPresenter(
-    showNotice,
-    () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
-    nope?.minIntervalSimSeconds ?? 0,
-  );
+  const event = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.refusalSound;
+  const nope = registry.sounds.get(event)!;
+  return createRefusalPresenter(showNotice, () => audio.preview(event, nope.variants[0]!), nope.minIntervalSimSeconds);
 };
 
 export interface StartPlayOptions {

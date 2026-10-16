@@ -160,6 +160,7 @@
       "size": [1, 2],
       "model": "pliers",
       "tool": { "qualities": { "wrenching": 1, "cutting": 1 } },
+      "salvageTimeGameMinutes": 5,
       "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "rubber_strip", "count": 1 }]
     },
     {
@@ -186,6 +187,7 @@
       "weight": 1400,
       "size": [3, 2],
       "model": "broken_toaster",
+      "salvageTimeGameMinutes": 5,
       "salvage": [
         { "item": "circuit_board", "count": 1 },
         { "item": "fuse", "count": 1 },
@@ -200,6 +202,7 @@
       "weight": 900,
       "size": [2, 3],
       "model": "desk_lamp",
+      "salvageTimeGameMinutes": 5,
       "salvage": [
         { "item": "glass_bulb", "count": 1 },
         { "item": "glass_lens", "count": 1 },
@@ -214,6 +217,7 @@
       "weight": 1500,
       "size": [3, 3],
       "model": "table_fan",
+      "salvageTimeGameMinutes": 5,
       "salvage": [
         { "item": "small_spring", "count": 1 },
         { "item": "copper_wire", "count": 1 },
@@ -227,6 +231,7 @@
       "weight": 250,
       "size": [1, 2],
       "model": "cracked_phone",
+      "salvageTimeGameMinutes": 5,
       "salvage": [
         { "item": "circuit_board", "count": 1 },
         { "item": "glass_shards", "count": 1 },
@@ -240,6 +245,7 @@
       "weight": 350,
       "size": [2, 2],
       "model": "broken_clock",
+      "salvageTimeGameMinutes": 5,
       "salvage": [
         { "item": "small_spring", "count": 1 },
         { "item": "circuit_board", "count": 1 },
@@ -324,6 +330,7 @@
       "weight": 360,
       "size": [2, 1],
       "model": "hinge_set",
+      "salvageTimeGameMinutes": 5,
       "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "fastener_pack", "count": 1 }]
     },
     {
@@ -343,6 +350,7 @@
       "size": [1, 3],
       "model": "hand_saw",
       "tool": { "qualities": { "sawing": 1 } },
+      "salvageTimeGameMinutes": 5,
       "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "wooden_plank", "count": 1 }]
     },
     {
@@ -353,6 +361,7 @@
       "size": [1, 2],
       "model": "screwdriver",
       "tool": { "qualities": { "screwing": 1 } },
+      "salvageTimeGameMinutes": 5,
       "salvage": [{ "item": "scrap_metal", "count": 1 }]
     },
     {
@@ -363,6 +372,7 @@
       "size": [1, 3],
       "model": "wrench",
       "tool": { "qualities": { "wrenching": 1 } },
+      "salvageTimeGameMinutes": 5,
       "salvage": [{ "item": "scrap_metal", "count": 1 }]
     },
     {
