@@ -2,6 +2,7 @@ import { html, render } from 'lit-html';
 import type { HandedCharacter } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import {
+  type ActiveBundledMod,
   currentSaveVersionIdentity,
   decodeSave,
   type SaveContentKind,
@@ -149,10 +150,10 @@ export class SaveController {
     this.capture('scenario won');
   }
 
-  constructor(backend: SaveBackendPreference = 'auto') {
+  constructor(backend: SaveBackendPreference = 'auto', bundledMods: readonly ActiveBundledMod[] = []) {
     this.environmentProblem = saveEnvironmentProblem();
     if (!this.environmentProblem) {
-      this.identity = currentSaveVersionIdentity();
+      this.identity = currentSaveVersionIdentity(bundledMods);
       this.worldId = globalThis.crypto.randomUUID();
       this.characterId = globalThis.crypto.randomUUID();
     }

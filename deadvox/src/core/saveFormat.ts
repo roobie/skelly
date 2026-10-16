@@ -912,8 +912,26 @@ function versionDigest(version: SaveVersionComponents): Promise<string> {
   return sha256(canonicalBytes(identityTuple(version)));
 }
 
-export async function currentSaveVersionIdentity(): Promise<SaveVersionIdentity> {
+/** A bundled mod applied to the running content, identified by the hash of its data. */
+export interface ActiveBundledMod {
+  id: string;
+  data: unknown;
+}
+
+export async function currentSaveVersionIdentity(
+  bundledMods: readonly ActiveBundledMod[] = [],
+): Promise<SaveVersionIdentity> {
   const components = structuredClone(defaultVersion());
+  const packs = await Promise.all(
+    [...bundledMods]
+      .sort((a, b) => (a.id < b.id ? -1 : 1))
+      .map(async (mod) => ({
+        id: `bundled.${mod.id}`,
+        version: '1',
+        canonicalHash: await sha256(canonicalBytes(mod.data)),
+      })),
+  );
+  components.contentPacks.push(...packs);
   validateVersion(components);
   return {
     digest: await versionDigest(components),

@@ -1503,6 +1503,8 @@ const ZombieSchema = strictObject({
   sight: Positive,
   /** Metres by night. */
   nightSight: Positive,
+  /** Multiplies the range at which a light is spotted; omitted is 1. */
+  lightSightScale: optional(Positive),
   /** Sim seconds before a heard or seen stimulus is forgotten. */
   stimulusMemorySimSeconds: Positive,
   /** Half-angle of the sight cone, in degrees. */

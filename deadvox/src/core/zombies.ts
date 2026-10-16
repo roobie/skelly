@@ -1130,7 +1130,8 @@ const seesPlayer = ({
   let sightRange = zombie.nightSight + (zombie.sight - zombie.nightSight) * sightBlend;
   const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos) ?? dayPhase === 'day';
   const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
-  const maximumRange = Math.max(sightRange, player.lit ? player.lightSeenFrom * playerLightScale : 0);
+  const lightSpotScale = zombie.lightSightScale ?? 1;
+  const maximumRange = Math.max(sightRange, player.lit ? player.lightSeenFrom * playerLightScale * lightSpotScale : 0);
   if (metres > maximumRange) {
     return false;
   }
@@ -1145,7 +1146,7 @@ const seesPlayer = ({
   const clear = clearAtHeight(eyeHeight);
   const lightClear = !player.lit || clearAtHeight(lightHeight);
   if (player.lit && lightClear && playerLightScale > 0) {
-    sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale);
+    sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale * lightSpotScale);
   } else if (player.crouching) {
     sightRange *= tuning.crouch.sightRangeScale;
   }
@@ -1177,7 +1178,10 @@ const canSeeLight = ({
   const distance = Math.hypot(delta[0], delta[2]) * blockSize;
   const sunlit = source.sunlit ?? isSunExposedAt?.(source.pos) ?? dayPhase === 'day';
   const exposure = source.carried ? 'carried' : 'world';
-  if (distance <= 0 || distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light)) {
+  if (
+    distance <= 0 ||
+    distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light) * (zombie.lightSightScale ?? 1)
+  ) {
     return undefined;
   }
   const direction = unit(delta);
