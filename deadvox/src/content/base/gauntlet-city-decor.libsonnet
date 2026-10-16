@@ -24,11 +24,7 @@ local circulation = [
 ];
 local equipmentSlot = {
   id: 'equipment', at: [4, 1, 6], size: [4, 4, 4], turn: 0,
-  choices: [
-    { ref: { kind: 'piece', id: 'gauntlet_roof_empty' }, weight: 3 },
-    { ref: { kind: 'piece', id: 'gauntlet_roof_ac' }, weight: 2 },
-    { ref: { kind: 'piece', id: 'gauntlet_roof_vent' }, weight: 1 },
-  ],
+  pool: 'gauntlet_roof_equipment',
 };
 local rooftop = function(id, deck) {
   id: id, size: [18, 5, 16], lootContext: context,
@@ -48,6 +44,14 @@ local rooftop = function(id, deck) {
   joins: [], ports: [],
 };
 {
+  mapPools: [{
+    id: equipmentSlot.pool,
+    choices: [
+      { ref: { kind: 'piece', id: 'gauntlet_roof_empty' }, weight: 3 },
+      { ref: { kind: 'piece', id: 'gauntlet_roof_ac' }, weight: 2 },
+      { ref: { kind: 'piece', id: 'gauntlet_roof_vent' }, weight: 1 },
+    ],
+  }],
   furniture: [
     {
       id: 'gauntlet_roof_ac', name: 'Air conditioner', size: [4, 3, 4], color: '#a7aa9f',

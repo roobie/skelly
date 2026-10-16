@@ -122,7 +122,9 @@ it('reports an unknown style on a pool row or a slot ref with its source path', 
   const slot = assembly.slots[0]!;
   const styled = {
     ...assembly,
-    slots: [{ ...slot, choices: [{ ...slot.choices[0]!, ref: { ...slot.choices[0]!.ref, style: 'no_such_style' } }] }],
+    slots: [
+      { ...slot, choices: [{ ...slot.choices![0]!, ref: { ...slot.choices![0]!.ref, style: 'no_such_style' } }] },
+    ],
   };
   expect(() => compileAssembly(registry, styled, { seed: 1, siteId: 'unknown_style' })).toThrow(
     new RegExp(`slot=fixture_route/${slot.id}: unknown style no_such_style`),

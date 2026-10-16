@@ -156,7 +156,7 @@ it('keys variants by stable slot path rather than slot visitation order', () => 
     const ordered = reverse
       ? {
           ...definition,
-          slots: [...definition.slots].reverse().map((entry) => ({ ...entry, choices: [...entry.choices].reverse() })),
+          slots: [...definition.slots].reverse().map((entry) => ({ ...entry, choices: [...entry.choices!].reverse() })),
         }
       : definition;
     const compiled = compileAssembly(registry, ordered, { ...context, seed: 1 });
@@ -169,7 +169,7 @@ it('keys variants by stable slot path rather than slot visitation order', () => 
 it('rejects alternatives that change reserved circulation', () => {
   const registry = registryOf(piece('room', '#.', 'SR'), piece('blocked_contract', '#.', 'SA'));
   const room = slot('room', 'room', [0, 0, 0], [2, 1, 1]);
-  room.choices.push({ ref: { kind: 'piece', id: 'blocked_contract' }, weight: 1 });
+  room.choices!.push({ ref: { kind: 'piece', id: 'blocked_contract' }, weight: 1 });
   expect(() => compileAssembly(registry, assembly('fixture_contract', [2, 1, 1], [room]), context)).toThrow(
     DIFFERENT_RESERVATIONS,
   );

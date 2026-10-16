@@ -215,7 +215,7 @@ it('rejects individually admissible alternatives with different climb geometry',
     solid: false,
   });
   data.mapPieces!.push(alternative);
-  data.mapAssemblies![0]!.slots[0]!.choices.push({ ref: { kind: 'piece', id: alternative.id }, weight: 1 });
+  data.mapAssemblies![0]!.slots[0]!.choices!.push({ ref: { kind: 'piece', id: alternative.id }, weight: 1 });
   const result = build(data);
   expect(result.issues.some((issue) => issue.path.startsWith('mapPieces['))).toBe(false);
   expect(

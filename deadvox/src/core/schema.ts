@@ -1089,13 +1089,17 @@ const MapPieceSchema = strictObject({
   ports: array(KitPortSchema),
 });
 const KitRefSchema = strictObject({ kind: picklist(['piece', 'assembly']), id: Id, style: optional(Id) });
-const KitSlotSchema = strictObject({
-  id: Id,
-  at: tuple([Count, Count, Count]),
-  size: KitSize,
-  turn: picklist([0, 1, 2, 3]),
-  choices: pipe(array(strictObject({ ref: KitRefSchema, weight: Positive })), nonEmpty()),
-});
+const KitSlotSchema = pipe(
+  strictObject({
+    id: Id,
+    at: tuple([Count, Count, Count]),
+    size: KitSize,
+    turn: picklist([0, 1, 2, 3]),
+    choices: optional(pipe(array(strictObject({ ref: KitRefSchema, weight: Positive })), nonEmpty())),
+    pool: optional(Id),
+  }),
+  check((slot) => (slot.choices === undefined) !== (slot.pool === undefined), 'needs exactly one of choices or pool'),
+);
 const KitEndpointSchema = strictObject({ slot: Id, port: Id });
 const KitJoinSchema = strictObject({
   id: Id,
@@ -1241,7 +1245,7 @@ const SiteLayoutSchema = strictObject({
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
 });
 
-const PoolRefSchema = strictObject({ kind: picklist(['template', 'assembly']), id: Id, style: optional(Id) });
+const PoolRefSchema = union([KitRefSchema, strictObject({ kind: literal('template'), id: Id, style: optional(Id) })]);
 const MapPoolSchema = strictObject({
   id: Id,
   choices: pipe(

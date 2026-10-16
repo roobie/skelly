@@ -1,6 +1,6 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import type { KitAnchor, KitPort, MapSiteDef } from './schema.ts';
+import type { KitAnchor, KitPort, MapAssemblyDef, MapSiteDef } from './schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { ownershipCell } from './templateOwnership.ts';
 import {
@@ -18,6 +18,7 @@ import {
   compileAssembly,
   compileMapPiece,
   contentPointer,
+  kitSlotChoices,
   type Placement,
   placedPoint,
 } from './templates.ts';
@@ -211,6 +212,23 @@ export const compileMapSite = (registry: Registry, site: MapSiteDef, context: As
   return { template, origin: [...site.origin], turn: site.turn };
 };
 
+const slotSourceIssues = (registry: Registry, assembly: MapAssemblyDef): MapKitIssue[] =>
+  assembly.slots.flatMap((slot, index) => {
+    try {
+      kitSlotChoices(registry, slot);
+      return [];
+    } catch (error) {
+      return [
+        {
+          section: 'mapAssemblies' as const,
+          id: assembly.id,
+          path: `.slots[${index}]`,
+          message: error instanceof Error ? error.message : String(error),
+        },
+      ];
+    }
+  });
+
 export const mapKitIssues = (registry: Registry): MapKitIssue[] => {
   const issues: MapKitIssue[] = [];
   for (const style of registry.mapStyles.values()) {
@@ -244,6 +262,11 @@ export const mapKitIssues = (registry: Registry): MapKitIssue[] => {
     check('mapPieces', piece.id, () => compileMapPiece(registry, piece));
   }
   for (const assembly of registry.mapAssemblies.values()) {
+    const slotIssues = slotSourceIssues(registry, assembly);
+    issues.push(...slotIssues);
+    if (slotIssues.length > 0) {
+      continue;
+    }
     check('mapAssemblies', assembly.id, () =>
       compileAssembly(registry, assembly, { seed: 0, siteId: `validation:${assembly.id}` }),
     );
