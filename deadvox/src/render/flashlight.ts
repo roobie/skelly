@@ -1,7 +1,7 @@
-// The beam stays in the scene with zero intensity while off, so switching it
-// doesn't recompile every material.
+// Keep the light and its shader installed through warm-up; on/off and content spill
+// changes then update light properties and uniforms without recompiling materials.
 
-import { MathUtils, Mesh, type PerspectiveCamera, type Scene, SpotLight, Vector3 } from 'three';
+import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } from 'three';
 import type { Registry } from '../core/content.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -56,15 +56,13 @@ export class Flashlight {
   private readonly ahead = new Vector3();
 
   private readonly spill: boolean;
-  private readonly materialKeys = new WeakMap<object, () => string>();
-
-  private readonly scene: Scene;
-
   constructor(scene: Scene, spill = true) {
-    this.scene = scene;
     this.spill = spill;
     // Before any material compiles; the light chunk is shared by all of them.
     installNearFieldFalloff();
+    if (spill) {
+      installFlashlightSpill();
+    }
     const { shadow } = this.light;
     shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
     shadow.camera.near = SHADOW_NEAR;
@@ -120,21 +118,7 @@ export class Flashlight {
     this.light.distance = def.radius;
     const angle = MathUtils.degToRad(def.beam.angleDegrees / 2);
     const spill = this.spill ? def.beam.spill : undefined;
-    if (installFlashlightSpill(spill !== undefined)) {
-      // Changing presence needs a plain/spill shader variant; profile edits only update uniforms.
-      this.scene.traverse((object) => {
-        if (object instanceof Mesh) {
-          for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-            const originalKey: () => string =
-              this.materialKeys.get(material) ?? material.customProgramCacheKey.bind(material);
-            this.materialKeys.set(material, originalKey);
-            material.customProgramCacheKey = () => `${originalKey()}:flashlight-spill:${spill !== undefined}`;
-            material.needsUpdate = true;
-          }
-        }
-      });
-    }
-    if (spill) {
+    if (this.spill) {
       setFlashlightSpill(spill);
     }
     this.light.shadow.focus = spill ? spillHalfAngle(angle, spill) / angle : 1;

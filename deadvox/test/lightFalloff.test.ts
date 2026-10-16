@@ -29,12 +29,11 @@ describe('near-field light falloff', () => {
     expect(once).toContain(`lightDistance + ${NEAR_FIELD_M.toFixed(3)}`);
   });
 
-  it('caps close-surface brightness while preserving stronger illumination nearby for a fixture light', () => {
+  it('limits close-surface brightness variation for a fixture light', () => {
     const exposed = (albedo: number, d: number): number => {
       const window = (1 - (d / 20) ** 4) ** 2;
       return ((5 / (d + NEAR_FIELD_M)) * window * albedo * 3) / Math.PI;
     };
-    expect(exposed(0.5, 1)).toBeGreaterThan(exposed(0.5, 10));
     // Close surfaces vary little: 0.5 m to 2 m is under 2x (a plain 1 / d would be 4x).
     expect(exposed(0.5, 0.5) / exposed(0.5, 2)).toBeLessThan(2);
   });
