@@ -38,7 +38,8 @@ Third-party files stay as received, including their metadata. See
 
 ## Zero drift: code shows what and how, docs say why and when
 
-The pillar and its reasons are in `README.md`, "Zero drift". When you write a doc,
+The pillar and its reasons are in `PILLARS.md`, "Zero drift"; read `PILLARS.md` for
+the other engineering pillars. When you write a doc,
 a comment or a PR:
 
 - Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
@@ -46,7 +47,7 @@ a comment or a PR:
   root, the doc's subproject root (`deadvox/`, `engine/`, `gungen/`, `mobgen/`) when relevant,
   or the doc itself. Cross-subproject cues use a repo-root path.
 - Prose section cues use only a backticked path, comma and double-quoted name:
-  `README.md`, "Zero drift". Bare paths, backticked names and numbered references
+  `PILLARS.md`, "Zero drift". Bare paths, backticked names and numbered references
   fail: agents copy nearby examples, so alternate spellings undermine the rule.
   Markdown links with resolving heading anchors remain allowed. Names resolve to
   headings or bold lead-in labels; names in other file types must occur verbatim.
