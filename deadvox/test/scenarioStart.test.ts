@@ -5,7 +5,7 @@ import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityP
 import { CitySite } from '../src/core/citySite.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
+import { scenarioCertificate, scenarioStartCertificate } from '../src/core/scenarioCertificate.ts';
 import { type StartDescent, scenarioStartIssues } from '../src/core/scenarioStart.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
 import { type BlockBox, stampChunk } from '../src/core/structure.ts';
@@ -40,7 +40,7 @@ const certificate = (
   minimumOpenDescents: number,
   blocked: readonly StartDescent[] = [],
 ) =>
-  scenarioCertificate(
+  scenarioStartCertificate(
     new ObstructedStartSite(
       blocked.map((descent) => obstruction(descent.lower)),
       {
@@ -93,13 +93,13 @@ it('honours the authored start cell and refuses a cell outside the street grid',
   const own = structuredClone(profile);
   const cell = plan.candidates[0]!;
   own.composition!.start.cell = [...cell];
-  expect(scenarioPlanIssues(registry, own)).toEqual([]);
+  expect(scenarioStartIssues(registry, own)).toEqual([]);
   const moved = buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own });
   expect(moved.composition!.start.placement.origin).not.toEqual(start.placement.origin);
   expect(moved.candidates).not.toContainEqual(cell);
-  expect(scenarioCertificate(new CitySite(9, registry, scale, moved)).issues).toEqual([]);
+  expect(scenarioStartCertificate(new CitySite(9, registry, scale, moved)).issues).toEqual([]);
   own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
-  expect(scenarioPlanIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
+  expect(scenarioStartIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
 });
 
 it('refuses a start roof that can clear the wall, with or without a ring', () => {
@@ -142,7 +142,7 @@ it('refuses a start overtopped by a building in either city pool', () => {
       mapPools: new Map(registry.mapPools).set(pool.id, pool),
     };
     const startIssues = () =>
-      scenarioPlanIssues(fixtures, own).filter(([path]) => path === '.composition.start.template');
+      scenarioStartIssues(fixtures, own).filter(([path]) => path === '.composition.start.template');
     expect(startIssues()).toEqual([]);
     building.size[1] = start.placement.template.size[1] + 1;
     expect(startIssues().length).toBeGreaterThan(0);

@@ -283,6 +283,19 @@ class Certificate {
   }
 }
 
+export const scenarioStartCertificate = (site: CitySite): ScenarioCertificate => {
+  const { composition } = site.plan;
+  if (!composition) {
+    return {
+      space: new ScenarioRouteSpace(site),
+      issues: [['.composition', 'scenario needs its final composed route metadata']],
+    };
+  }
+  const certificate = new Certificate(site, composition);
+  certificate.start();
+  return { space: certificate.space, issues: certificate.issues };
+};
+
 export const scenarioCertificate = (site: CitySite): ScenarioCertificate => {
   const { composition, service, portal } = site.plan;
   if (!(composition && service && portal)) {

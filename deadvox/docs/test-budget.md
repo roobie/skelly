@@ -3,7 +3,7 @@ read_if:
   - you're reviewing why the default Deadvox unit suite was reduced
   - you're revisiting a cut after a budget overrun or related defect
   - you're measuring suite growth between milestones
-  - you're changing content-scaling route or chunk-order test work
+  - you're changing content-scaling route, start-phase admission or chunk-order test work
   - you're changing base-registry fixture construction or its isolation
 ---
 
@@ -26,13 +26,23 @@ Isolate city route alternatives so content additions do not accumulate into one 
 
 For production chunk-order checks, native deep equality avoids matcher traversal dominating generation and stamping without weakening full-data comparisons. A workload-scaled deadline avoids coupling content growth to a fixed allowance. See `test/scenarioCertificate.test.ts`, `stampProbeCells`.
 
-Skyline admission needs the compiler's grounded envelopes, not fully expanded voxel maps:
-seeded choices cannot exceed their declared envelope. Routes sharing a roof origin also
-share one static flood rather than repeating the same search for each exit. These avoid
-multiplying content-validation work by both building choices and ways down without
-caching mutable registries. See `src/core/templates.ts`, `templateEnvelope`;
+Skyline and perimeter-clearance admission need the compiler's grounded envelopes, not
+fully expanded voxel maps: seeded choices cannot exceed their declared envelope. The
+clearance proof and actual placement share an origin calculation so grounding cannot
+drift between them. Routes sharing a roof origin also share one static flood rather
+than repeating the same search for each exit. These avoid multiplying validation work
+by content size without caching mutable registries. See `src/core/templates.ts`,
+`templateEnvelope`; `src/core/cityPlan.ts`, `serviceOrigin` and `clearanceIssues`;
 `src/core/scenarioStart.ts`, `skylineIssues`; and `src/core/templateSpatial.ts`,
 `templateWalkingRoutes`.
+
+Start-only admission and obstruction cases must not repeatedly certify unrelated lab
+routes. Keep full-composition coverage at the integration boundary, and use the same
+start-proof owner for focused cases. A shared read-only compiled plan is safe only
+when each obstruction probe owns fresh route-space and entity state; a clear probe
+must not reuse an obstructed probe's memoized geometry. See `test/scenarioStart.test.ts`,
+`certificate`; and `src/core/scenarioCertificate.ts`, `scenarioStartCertificate` and
+`scenarioCertificate`.
 
 ## Base-registry fixtures
 

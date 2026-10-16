@@ -19,6 +19,7 @@ import {
   placedPoint,
   stackTemplate,
   type Turn,
+  templateEnvelope,
   templateResolves,
 } from './templates.ts';
 
@@ -273,13 +274,12 @@ const clearanceIssues = (registry: Registry, scenario: ScenarioDef, perimeter: P
   });
   const start = scenario.composition?.start;
   if (start) {
-    let template: Placement['template'];
-    try {
-      template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
-    } catch {
+    const definition = registry.templates.get(start.template) ?? registry.mapAssemblies.get(start.template);
+    if (!definition) {
       return issues;
     }
-    const { origin } = servicePlacement({ template, floor: 0, grid: city, cell: start.cell, turn: 0 });
+    const template = templateEnvelope(definition);
+    const origin = serviceOrigin(template, 0, city, start.cell);
     const bounds = cityBounds(city);
     const distance = Math.min(
       origin[0] - bounds.x0,
@@ -552,7 +552,8 @@ interface FillContext {
 export const cityRowStart = (grid: CityGrid, row: number): number =>
   grid.street + grid.pad + Math.floor(row / 2) * (2 * cityRowDepth(grid) + grid.street);
 
-const groundedY = (template: Placement['template'], floor: number): number => floor - (template.groundLayer ?? 0);
+const groundedY = (template: Pick<Placement['template'], 'groundLayer'>, floor: number): number =>
+  floor - (template.groundLayer ?? 0);
 
 /** The next slot's building: a forced quota choice that fits, else the weighted draw over rows under their `atMost`. */
 const chooseBuilding = (
@@ -644,11 +645,22 @@ const fillWithQuotas = (context: FillContext, fill: (forced: PoolRef[]) => Place
   return placements;
 };
 
+const serviceOrigin = (
+  template: Pick<Placement['template'], 'groundLayer'>,
+  floor: number,
+  grid: Pick<CityGrid, 'street' | 'blockX' | 'blockZ' | 'pad'>,
+  [i, j]: Cell,
+): Vec3 => [
+  i * (grid.street + grid.blockX) + grid.street + grid.pad,
+  groundedY(template, floor),
+  j * (grid.street + grid.blockZ) + grid.street + grid.pad,
+];
+
 export const servicePlacement = ({
   template,
   floor,
   grid,
-  cell: [i, j],
+  cell,
   turn,
 }: {
   template: ReturnType<typeof compileTemplate>;
@@ -659,11 +671,7 @@ export const servicePlacement = ({
 }): Placement =>
   freezePlacement({
     template,
-    origin: [
-      i * (grid.street + grid.blockX) + grid.street + grid.pad,
-      groundedY(template, floor),
-      j * (grid.street + grid.blockZ) + grid.street + grid.pad,
-    ],
+    origin: serviceOrigin(template, floor, grid, cell),
     turn,
   });
 
