@@ -315,6 +315,12 @@ const checkDisassembly = (item: ItemDef, registry: Registry, qualities: Readonly
       report('items', item.id, `.salvage[${index}].item`, `no item "${output.item}"`);
     }
   });
+  if (item.salvage && item.salvageTimeGameMinutes === undefined) {
+    report('items', item.id, '.salvageTimeGameMinutes', 'a salvage list needs an authored work time');
+  }
+  if (!item.salvage && item.salvageTimeGameMinutes !== undefined) {
+    report('items', item.id, '.salvageTimeGameMinutes', 'a salvage work time needs a salvage list');
+  }
   if (disassembly && item.salvage) {
     report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
   }
@@ -886,6 +892,30 @@ const checkTemplates = (registry: Registry, report: Report) => {
   }
 };
 
+const checkSiteGeneration = (registry: Registry, report: Report) => {
+  for (const entry of registry.siteGeneration.values()) {
+    const { terrain, trees, ...single } = entry.palette;
+    const blocks: [string, string][] = [
+      ...Object.entries(terrain).map(([key, name]): [string, string] => [`.palette.terrain.${key}`, name]),
+      ...Object.entries(trees).map(([key, name]): [string, string] => [`.palette.trees.${key}`, name]),
+      ...Object.entries(single).map(([key, name]): [string, string] => [`.palette.${key}`, name]),
+      ['.hamlet.hedge', entry.hamlet.hedge],
+    ];
+    for (const [path, name] of blocks) {
+      if (!registry.blockIds.has(name)) {
+        report('siteGeneration', entry.id, path, `no block "${name}"`);
+      }
+    }
+    for (const side of ['northSide', 'southSide'] as const) {
+      for (const id of entry.hamlet[side]) {
+        if (!registry.templates.has(id)) {
+          report('siteGeneration', entry.id, `.hamlet.${side}`, `no template "${id}"`);
+        }
+      }
+    }
+  }
+};
+
 const checkZombies = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const zombie of registry.zombies.values()) {
@@ -997,19 +1027,21 @@ const checkRecipes = (registry: Registry, report: Report) => {
 };
 
 const checkKeys = (registry: Registry, report: Report) => {
-  const doorLocks = new Set(
-    [...registry.templates.values()].flatMap((template) => templateLockIds(registry, template)),
-  );
+  const sources = [
+    ...[...registry.templates.values()].map((definition) => ({ section: 'templates' as const, definition })),
+    ...[...registry.mapPieces.values()].map((definition) => ({ section: 'mapPieces' as const, definition })),
+  ];
+  const doorLocks = new Set(sources.flatMap(({ definition }) => templateLockIds(registry, definition)));
   const keyLocks = new Set([...registry.items.values()].flatMap((item) => (item.key ? [item.key.lock] : [])));
   for (const item of registry.items.values()) {
     if (item.key && !doorLocks.has(item.key.lock)) {
       report('items', item.id, '.key.lock', `no door has lock "${item.key.lock}"`);
     }
   }
-  for (const template of registry.templates.values()) {
-    for (const lock of new Set(templateLockIds(registry, template))) {
+  for (const { section, definition } of sources) {
+    for (const lock of new Set(templateLockIds(registry, definition))) {
       if (!keyLocks.has(lock)) {
-        report('templates', template.id, '.palette', `no key names lock "${lock}"`);
+        report(section, definition.id, '.palette', `no key names lock "${lock}"`);
       }
     }
   }
@@ -1101,6 +1133,21 @@ const checkBlockFootsteps = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
+  for (const skill of registry.skills.values()) {
+    skill.startingRecipes?.forEach((id, index) => {
+      if (!registry.recipes.has(id)) {
+        report('skills', skill.id, `.startingRecipes[${index}]`, `no recipe "${id}"`);
+      }
+    });
+  }
+  for (const tuning of registry.ui.values()) {
+    if (!registry.sounds.has(tuning.refusalSound)) {
+      report('ui', tuning.id, '.refusalSound', `no sound event "${tuning.refusalSound}"`);
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1124,12 +1171,14 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
+  checkSiteGeneration(registry, report);
   for (const issue of mapKitIssues(registry)) {
     report(issue.section, issue.id, issue.path, issue.message);
   }
   checkKeys(registry, report);
   checkZombies(registry, report);
   checkRecipes(registry, report);
+  checkSkillAndUiReferences(registry, report);
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }

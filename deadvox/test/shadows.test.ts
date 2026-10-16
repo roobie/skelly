@@ -30,7 +30,7 @@ import { buildBundledContent } from '../src/game/bundledContent.ts';
 const BUNDLED_CONTENT = buildBundledContent();
 
 import { ChunkMeshes } from '../src/render/chunks.ts';
-import { FLASHLIGHT_INTENSITY, flashlightCastsShadow } from '../src/render/flashlight.ts';
+import { flashlightCastsShadow } from '../src/render/flashlight.ts';
 import { FrameTimes } from '../src/render/frameTimes.ts';
 import { PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
 import {
@@ -45,6 +45,7 @@ import {
   sunShadowTexelSize,
   withinRange,
 } from '../src/render/shadows.ts';
+import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
 
 const strengthAt = (hour: number): number => sunShadowStrength(skyAt(hour).lightIntensity);
 const cycle = dayPhaseAt(DEFAULT_DAY_CYCLE, 0);
@@ -88,8 +89,8 @@ describe('shadow settings', () => {
   });
 
   it('draws the flashlight map only for a beam that is allowed, on and bright enough to show', () => {
-    expect(flashlightCastsShadow(true, FLASHLIGHT_INTENSITY)).toBe(true);
-    expect(flashlightCastsShadow(false, FLASHLIGHT_INTENSITY)).toBe(false);
+    expect(flashlightCastsShadow(true, CALIBRATED_BEAM_INTENSITY)).toBe(true);
+    expect(flashlightCastsShadow(false, CALIBRATED_BEAM_INTENSITY)).toBe(false);
     expect(flashlightCastsShadow(true, 0)).toBe(false);
     // Full daylight scales the beam to about 0.01 cd (flashlight.ts), not worth a depth pass.
     expect(flashlightCastsShadow(true, 0.01)).toBe(false);

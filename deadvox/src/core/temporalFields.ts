@@ -50,6 +50,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.light.power.chargePerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'items.book.readingGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'items.disassembly.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
+  { path: 'items.salvageTimeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'recipes.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'furniture.door.prying.timeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.door.prying.fastestTimeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import {
   advanceStanceWeight,
   HIT_FLINCH_DURATION,
@@ -124,7 +125,7 @@ describe('rendered and hit shambler poses', () => {
     zombie.gaitPhase = 0;
     zombie.attackWindup = 0;
     zombie.attackWait = 0.9;
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { poolSize: 2 });
+    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 2 });
     try {
       renderer.sync(system.store, 0, 1);
       renderer.sync(system.store, 0, 1, true);
@@ -165,7 +166,7 @@ describe('rendered and hit shambler poses', () => {
     expect(flinched.pose.rotations.head).not.toEqual(base.pose.rotations.head);
     expect(recovered.transforms).toEqual(base.transforms);
 
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { poolSize: 2 });
+    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 2 });
     try {
       renderer.sync(system.store, 0, 1, true);
       const mismatch = maxOffset(renderer, id, zombie);
@@ -280,7 +281,7 @@ describe('rendered and hit shambler poses', () => {
     zombie.attackWindup = 0.15;
     system.setFrozen(true);
 
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { poolSize: 2 });
+    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 2 });
     try {
       renderer.sync(system.store, 0, 1, true);
       const headBox = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE)).head.find(

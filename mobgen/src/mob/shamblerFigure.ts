@@ -4,9 +4,6 @@ import { worldPosition } from '../core/voxelize.ts';
 // Side effect: registers the shipped archetypes so `consumableTemplate` can resolve them.
 import './templates.ts';
 
-/** Explicit, known-valid seeds shared by the simulation and detailed renderer. */
-export const SHAMBLER_FIGURE_SEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8] as const);
-
 export type ShamblerHitRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
 export interface BoneVoxelBox {
   readonly bone: string;
@@ -103,9 +100,6 @@ export const zombieFigure = (model: string, seed: number): ShamblerFigure => {
   const cached = cache.get(key);
   if (cached) {
     return cached;
-  }
-  if (!(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(seed)) {
-    throw new Error(`Unknown zombie figure seed ${seed}`);
   }
   // A consumer refuses a comparison-only template here, so a model kept only for side-by-side checks
   // cannot be spawned or exported even if a caller asks for it by name.
