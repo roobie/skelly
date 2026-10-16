@@ -6,6 +6,95 @@
       "name": "Tent canvas",
       "solid": true,
       "weatherable": false
+    },
+    {
+      "color": "#2a5ad6",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "shop_blue",
+      "name": "Shop paint (police blue)",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#3f9e4a",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "shop_green",
+      "name": "Shop paint (grocer green)",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#e07b1a",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "shop_orange",
+      "name": "Shop paint (gun-shop orange)",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#f2c200",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "shop_yellow",
+      "name": "Shop paint (hardware yellow)",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#d0312d",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "shop_red",
+      "name": "Shop paint (medical red)",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#f0ede4",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "shop_white",
+      "name": "Shop paint (awning white)",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#a8c840",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "shop_produce",
+      "name": "Produce crates",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#2b2d30",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "shop_grille",
+      "name": "Shopfront grille",
+      "opaque": false,
+      "solid": true,
+      "weatherable": false
     }
   ],
   "furniture": [
@@ -40,6 +129,107 @@
         }
       ],
       "size": [5, 2, 10]
+    },
+    {
+      "color": "#a7aa9f",
+      "id": "gauntlet_roof_ac",
+      "name": "Air conditioner",
+      "shape": [
+        {
+          "position": [0.20000000000000001, 0, 0.20000000000000001],
+          "size": [3.6000000000000001, 0.40000000000000002, 3.6000000000000001]
+        },
+        {
+          "position": [0.40000000000000002, 0.40000000000000002, 0.40000000000000002],
+          "size": [3.2000000000000002, 2.2000000000000002, 3.2000000000000002]
+        },
+        {
+          "position": [0.10000000000000001, 2.6000000000000001, 0.10000000000000001],
+          "size": [3.7999999999999998, 0.40000000000000002, 3.7999999999999998]
+        },
+        {
+          "position": [0.59999999999999998, 0.80000000000000004, 0.20000000000000001],
+          "size": [2.7999999999999998, 0.20000000000000001, 0.20000000000000001]
+        },
+        {
+          "position": [0.59999999999999998, 1.3, 0.20000000000000001],
+          "size": [2.7999999999999998, 0.20000000000000001, 0.20000000000000001]
+        },
+        {
+          "position": [0.59999999999999998, 1.8, 0.20000000000000001],
+          "size": [2.7999999999999998, 0.20000000000000001, 0.20000000000000001]
+        }
+      ],
+      "size": [4, 3, 4]
+    },
+    {
+      "color": "#747c79",
+      "id": "gauntlet_roof_vent",
+      "name": "Roof vent",
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 0.29999999999999999, 4]
+        },
+        {
+          "position": [1, 0.29999999999999999, 1],
+          "size": [2, 2.1000000000000001, 2]
+        },
+        {
+          "position": [0.29999999999999999, 2.3999999999999999, 0.29999999999999999],
+          "size": [3.3999999999999999, 0.59999999999999998, 3.3999999999999999]
+        }
+      ],
+      "size": [4, 3, 4]
+    },
+    {
+      "color": "#526a38",
+      "id": "gauntlet_yard_shrub",
+      "name": "Shrub",
+      "shape": [
+        {
+          "position": [1.3, 0, 0.80000000000000004],
+          "size": [0.29999999999999999, 1, 0.29999999999999999]
+        },
+        {
+          "position": [0.29999999999999999, 0.5, 0.20000000000000001],
+          "size": [2.3999999999999999, 0.90000000000000002, 1.6000000000000001]
+        },
+        {
+          "position": [0, 0.69999999999999996, 0.5],
+          "size": [1.5, 0.80000000000000004, 1.2]
+        },
+        {
+          "position": [1.1000000000000001, 1.2, 0.40000000000000002],
+          "size": [1.5, 0.80000000000000004, 1.2]
+        }
+      ],
+      "size": [3, 2, 2],
+      "solid": false
+    },
+    {
+      "color": "#74664d",
+      "id": "gauntlet_yard_fence",
+      "name": "Wooden fence",
+      "shape": [
+        {
+          "position": [0, 0, 0.29999999999999999],
+          "size": [0.40000000000000002, 3, 0.40000000000000002]
+        },
+        {
+          "position": [3.6000000000000001, 0, 0.29999999999999999],
+          "size": [0.40000000000000002, 3, 0.40000000000000002]
+        },
+        {
+          "position": [0.40000000000000002, 0.69999999999999996, 0.34999999999999998],
+          "size": [3.2000000000000002, 0.40000000000000002, 0.29999999999999999]
+        },
+        {
+          "position": [0.40000000000000002, 2, 0.34999999999999998],
+          "size": [3.2000000000000002, 0.40000000000000002, 0.29999999999999999]
+        }
+      ],
+      "size": [4, 3, 1]
     },
     {
       "color": "#c94b3d",
@@ -276,6 +466,95 @@
   ],
   "mapAssemblies": [
     {
+      "anchors": {
+        "landing": {
+          "at": [14, 1, 11],
+          "kind": "standing"
+        },
+        "north": {
+          "at": [8, 1, 4],
+          "kind": "standing"
+        },
+        "south": {
+          "at": [8, 1, 14],
+          "kind": "standing"
+        },
+        "west": {
+          "at": [2, 1, 11],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_city_roof_fitted",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [18, 5, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_roof",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "deck",
+          "size": [18, 1, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_roof_circulation",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "circulation",
+          "size": [18, 4, 16],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 6],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_roof_empty",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_roof_ac",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_roof_vent",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "equipment",
+          "size": [4, 4, 4],
+          "turn": 0
+        }
+      ]
+    },
+    {
       "access": {
         "entrance": [8, 1, 8],
         "ground": "floor_0",
@@ -296,6 +575,10 @@
           "at": [8, 1, 8],
           "kind": "standing"
         },
+        "street": {
+          "at": [8, 1, 1],
+          "kind": "standing"
+        },
         "upper": {
           "at": [11, 9, 6],
           "kind": "standing"
@@ -308,7 +591,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 17, 16],
+      "size": [18, 21, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -464,14 +747,43 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof",
-                "kind": "piece"
+                "id": "gauntlet_city_roof_fitted",
+                "kind": "assembly"
               },
               "weight": 1
             }
           ],
           "id": "roof",
-          "size": [18, 1, 16],
+          "size": [18, 5, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_yard_open",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_shrubs",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_fenced",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "yard",
+          "size": [18, 4, 2],
           "turn": 0
         }
       ]
@@ -505,6 +817,10 @@
           "at": [11, 9, 6],
           "kind": "standing"
         },
+        "street": {
+          "at": [8, 1, 1],
+          "kind": "standing"
+        },
         "upper": {
           "at": [2, 17, 12],
           "kind": "standing"
@@ -517,7 +833,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 25, 16],
+      "size": [18, 29, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -755,14 +1071,43 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof",
-                "kind": "piece"
+                "id": "gauntlet_city_roof_fitted",
+                "kind": "assembly"
               },
               "weight": 1
             }
           ],
           "id": "roof",
-          "size": [18, 1, 16],
+          "size": [18, 5, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_yard_open",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_shrubs",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_fenced",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "yard",
+          "size": [18, 4, 2],
           "turn": 0
         }
       ]
@@ -783,6 +1128,10 @@
         "entry": {
           "at": [8, 1, 8],
           "kind": "standing"
+        },
+        "street": {
+          "at": [8, 1, 1],
+          "kind": "standing"
         }
       },
       "id": "gauntlet_city_1",
@@ -792,7 +1141,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 9, 16],
+      "size": [18, 13, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -866,14 +1215,277 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof",
-                "kind": "piece"
+                "id": "gauntlet_city_roof_fitted",
+                "kind": "assembly"
               },
               "weight": 1
             }
           ],
           "id": "roof",
+          "size": [18, 5, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_yard_open",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_shrubs",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_fenced",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "yard",
+          "size": [18, 4, 2],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [8, 9, 8],
+        "ground": "floor_1",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "floor_0"
+          },
+          {
+            "floor": 9,
+            "id": "floor_1"
+          }
+        ]
+      },
+      "anchors": {
+        "cellar": {
+          "at": [8, 1, 8],
+          "kind": "standing"
+        },
+        "entry": {
+          "at": [8, 9, 8],
+          "kind": "standing"
+        },
+        "street": {
+          "at": [8, 9, 1],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_city_cellar",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [18, 21, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_ground",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "ground",
           "size": [18, 1, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_cellar_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [18, 7, 16],
+          "turn": 0
+        },
+        {
+          "at": [7, 9, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_door",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [1, 1, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_lower_crates",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_lower_cupboards",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "room",
+          "size": [14, 7, 12],
+          "turn": 0
+        },
+        {
+          "at": [1, 1, 5],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_stairs_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "stairs",
+          "size": [11, 8, 2],
+          "turn": 0
+        },
+        {
+          "at": [0, 8, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_street_course",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "floor_shell",
+          "size": [18, 1, 16],
+          "turn": 0
+        },
+        {
+          "at": [1, 8, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_floor_lower",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "floor_inside",
+          "size": [14, 1, 12],
+          "turn": 0
+        },
+        {
+          "at": [0, 9, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "upper_shell",
+          "size": [18, 7, 16],
+          "turn": 0
+        },
+        {
+          "at": [1, 9, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_room_crates",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_room_cupboards",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "upper_room",
+          "size": [14, 7, 12],
+          "turn": 0
+        },
+        {
+          "at": [0, 16, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_roof_fitted",
+                "kind": "assembly"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "roof",
+          "size": [18, 5, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 9, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_yard_open",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_shrubs",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_fenced",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "yard",
+          "size": [18, 4, 2],
           "turn": 0
         }
       ]
@@ -6116,8 +6728,8 @@
       "ownership": {
         "layers": [
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSSSS..SSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6134,8 +6746,8 @@
             "SSSSSSSSSSSSSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSSSS..SSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6152,8 +6764,8 @@
             "SSSSSSSSSSSSSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSAAS..SAASSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6170,8 +6782,8 @@
             "SSSSSAAAAAASSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSAAS..SAASSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6188,8 +6800,8 @@
             "SSSSSAAAAAASSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSAASSSSAASSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6206,8 +6818,8 @@
             "SSSSSAAAAAASSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6224,8 +6836,8 @@
             "SSSSSSSSSSSSSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6417,8 +7029,8 @@
       "ownership": {
         "layers": [
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6435,8 +7047,8 @@
             "SSSSSSSSSSSSSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6453,8 +7065,8 @@
             "SSSSSSSSSSSSSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSAASSSSAASSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6471,8 +7083,8 @@
             "SSSSSAAAAAASSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSAASSSSAASSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6489,8 +7101,8 @@
             "SSSSSAAAAAASSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSAASSSSAASSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6507,8 +7119,8 @@
             "SSSSSAAAAAASSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6525,8 +7137,8 @@
             "SSSSSSSSSSSSSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -6610,8 +7222,8 @@
       "ownership": {
         "layers": [
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "..................",
+            "..................",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -8502,6 +9114,724 @@
       },
       "ports": [],
       "size": [18, 1, 16],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_cellar_shell",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "..................",
+            "..................",
+            "SSSSSSSSSSSSSSSS..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "SSSSSSSSSSSSSSSS.."
+          ],
+          [
+            "..................",
+            "..................",
+            "SSSSSSSSSSSSSSSS..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "SSSSSSSSSSSSSSSS.."
+          ],
+          [
+            "..................",
+            "..................",
+            "SSSSSSSSSSSSSSSS..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "SSSSSSSSSSSSSSSS.."
+          ],
+          [
+            "..................",
+            "..................",
+            "SSSSSSSSSSSSSSSS..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "SSSSSSSSSSSSSSSS.."
+          ],
+          [
+            "..................",
+            "..................",
+            "SSSSSSSSSSSSSSSS..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "SSSSSSSSSSSSSSSS.."
+          ],
+          [
+            "..................",
+            "..................",
+            "SSSSSSSSSSSSSSSS..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "SSSSSSSSSSSSSSSS.."
+          ],
+          [
+            "..................",
+            "..................",
+            "SSSSSSSSSSSSSSSS..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "S..............S..",
+            "SSSSSSSSSSSSSSSS.."
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        }
+      },
+      "ports": [],
+      "size": [18, 7, 16],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_street_course",
+      "layers": [
+        [
+          "==================",
+          "==================",
+          "################==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "#..............#==",
+          "################=="
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "S..............SSS",
+            "SSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        }
+      },
+      "ports": [],
+      "size": [18, 1, 16],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_roof_empty",
+      "layers": [
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        }
+      },
+      "ports": [],
+      "size": [4, 4, 4],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_roof_ac",
+      "layers": [
+        ["FFFF", "FFFF", "FFFF", "FFFF"],
+        ["FFFF", "FFFF", "FFFF", "FFFF"],
+        ["FFFF", "FFFF", "FFFF", "FFFF"],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "F": {
+          "furniture": "gauntlet_roof_ac"
+        }
+      },
+      "ports": [],
+      "size": [4, 4, 4],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_roof_vent",
+      "layers": [
+        ["FFFF", "FFFF", "FFFF", "FFFF"],
+        ["FFFF", "FFFF", "FFFF", "FFFF"],
+        ["FFFF", "FFFF", "FFFF", "FFFF"],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "F": {
+          "furniture": "gauntlet_roof_vent"
+        }
+      },
+      "ports": [],
+      "size": [4, 4, 4],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_roof_circulation",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRR....RRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA",
+            "RRRRRRRRRRRRRRRRAA"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        }
+      },
+      "ports": [],
+      "size": [18, 4, 16],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_yard_open",
+      "layers": [
+        ["..................", ".................."],
+        ["..................", ".................."],
+        ["..................", ".................."],
+        ["..................", ".................."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["AAAAARRRRRRAAAAAAA", "AAAAARRRRRRAAAAAAA"],
+          ["AAAAARRRRRRAAAAAAA", "AAAAARRRRRRAAAAAAA"],
+          ["AAAAARRRRRRAAAAAAA", "AAAAARRRRRRAAAAAAA"],
+          ["AAAAARRRRRRAAAAAAA", "AAAAARRRRRRAAAAAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        }
+      },
+      "ports": [],
+      "size": [18, 4, 2],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_yard_shrubs",
+      "layers": [
+        [".BBB........BBB...", ".BBB........BBB..."],
+        [".BBB........BBB...", ".BBB........BBB..."],
+        ["..................", ".................."],
+        ["..................", ".................."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["ASSSARRRRRRASSSAAA", "ASSSARRRRRRASSSAAA"],
+          ["ASSSARRRRRRASSSAAA", "ASSSARRRRRRASSSAAA"],
+          ["AAAAARRRRRRAAAAAAA", "AAAAARRRRRRAAAAAAA"],
+          ["AAAAARRRRRRAAAAAAA", "AAAAARRRRRRAAAAAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "furniture": "gauntlet_yard_shrub"
+        }
+      },
+      "ports": [],
+      "size": [18, 4, 2],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_yard_fenced",
+      "layers": [
+        [".BBB........FFFF..", ".BBB.............."],
+        [".BBB........FFFF..", ".BBB.............."],
+        ["............FFFF..", ".................."],
+        ["..................", ".................."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["ASSSARRRRRRASSSSAA", "ASSSARRRRRRAAAAAAA"],
+          ["ASSSARRRRRRASSSSAA", "ASSSARRRRRRAAAAAAA"],
+          ["AAAAARRRRRRASSSSAA", "AAAAARRRRRRAAAAAAA"],
+          ["AAAAARRRRRRAAAAAAA", "AAAAARRRRRRAAAAAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "furniture": "gauntlet_yard_shrub"
+        },
+        "F": {
+          "furniture": "gauntlet_yard_fence"
+        }
+      },
+      "ports": [],
+      "size": [18, 4, 2],
       "style": "brick_townhouse"
     },
     {
@@ -14183,7 +15513,7 @@
       "layers": [
         [
           "..................",
-          "..................",
+          "..l..........l....",
           "#######DD#######..",
           "#..............#..",
           "#..............#..",
@@ -14201,7 +15531,7 @@
         ],
         [
           "..................",
-          "..................",
+          "..l..........l....",
           "#######DD#######..",
           "#..............#..",
           "#..............#..",
@@ -14219,7 +15549,25 @@
         ],
         [
           "..................",
+          "..l..........l....",
+          "###..##DD##..###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
           "..................",
+          "..l..........l....",
           "###..##DD##..###..",
           "#..............#..",
           "#..............#..",
@@ -14238,25 +15586,7 @@
         [
           "..................",
           "..................",
-          "###..##DD##..###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
+          "#TTTTTTTTTTTTTT#..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14316,7 +15646,7 @@
         "layers": [
           [
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AASAAAAAAAAAASAAAA",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -14334,7 +15664,7 @@
           ],
           [
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AASAAAAAAAAAASAAAA",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -14352,7 +15682,7 @@
           ],
           [
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AASAAAAAAAAAASAAAA",
             "SSSAASSSSSSAASSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -14370,7 +15700,7 @@
           ],
           [
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AASAAAAAAAAAASAAAA",
             "SSSAASSSSSSAASSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -14457,6 +15787,10 @@
         "T": {
           "material": "sign",
           "role": "trim"
+        },
+        "l": {
+          "material": "post",
+          "role": "trim"
         }
       },
       "ports": [],
@@ -14469,7 +15803,7 @@
       "layers": [
         [
           "..................",
-          "..................",
+          "..pp........pp....",
           "#######DD#######..",
           "#..............#..",
           "#..............#..",
@@ -14487,7 +15821,7 @@
         ],
         [
           "..................",
-          "..................",
+          "..p..........p....",
           "#######DD#######..",
           "#..............#..",
           "#..............#..",
@@ -14540,9 +15874,9 @@
           "################.."
         ],
         [
-          "..................",
-          "..................",
-          "################..",
+          ".ababababababab...",
+          ".ababababababab...",
+          "#TTTTTTTTTTTTTT#..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14602,7 +15936,7 @@
         "layers": [
           [
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AASSAAAAAAAASSAAAA",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -14620,7 +15954,7 @@
           ],
           [
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AASAAAAAAAAAASAAAA",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -14673,8 +16007,8 @@
             "SSSSSSSSSSSSSSSSAA"
           ],
           [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "ASSSSSSSSSSSSSSAAA",
+            "ASSSSSSSSSSSSSSAAA",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -14743,6 +16077,18 @@
         "T": {
           "material": "sign",
           "role": "trim"
+        },
+        "a": {
+          "material": "awning_a",
+          "role": "trim"
+        },
+        "b": {
+          "material": "awning_b",
+          "role": "trim"
+        },
+        "p": {
+          "material": "produce",
+          "role": "trim"
         }
       },
       "ports": [],
@@ -14755,7 +16101,25 @@
       "layers": [
         [
           "..................",
+          ".sssss......sssss.",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
           "..................",
+          ".ss............ss.",
           "#######DD#######..",
           "#..............#..",
           "#..............#..",
@@ -14774,7 +16138,7 @@
         [
           "..................",
           "..................",
-          "#######DD#######..",
+          "###kkk#DD#kkk###..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14792,7 +16156,7 @@
         [
           "..................",
           "..................",
-          "###...#DD#...###..",
+          "###kkk#DD#kkk###..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14810,25 +16174,7 @@
         [
           "..................",
           "..................",
-          "###...#DD#...###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
+          "#TTTTTTTTTTTTTT#..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14888,6 +16234,60 @@
         "layers": [
           [
             "AAAAAAAAAAAAAAAAAA",
+            "ASSSSSAAAAAASSSSSA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "ASSAAAAAAAAAAAASSA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
             "SSSSSSSSSSSSSSSSAA",
             "S..............SAA",
@@ -14925,6 +16325,246 @@
           [
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "T": {
+          "material": "sign",
+          "role": "trim"
+        },
+        "k": {
+          "material": "grille",
+          "role": "trim"
+        },
+        "s": {
+          "material": "bags",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [18, 7, 16],
+      "style": "gauntlet_gun_shop"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_hardware_front",
+      "layers": [
+        [
+          "..................",
+          "..qq........pppp..",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..qq........pppp..",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..qq..............",
+          "###...#DD#...###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "###...#DD#...###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#TTTTTTTTTTTTTT#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#TTTTTTTTTTTTTT#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AASSAAAAAAAASSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AASSAAAAAAAASSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AASSAAAAAAAAAAAAAA",
             "SSSAAASSSSAAASSSAA",
             "S..............SAA",
             "S..............SAA",
@@ -15029,291 +16669,13 @@
         "T": {
           "material": "sign",
           "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [18, 7, 16],
-      "style": "gauntlet_gun_shop"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_hardware_front",
-      "layers": [
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###...#DD#...###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###...#DD#...###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#TTTTTTTTTTTTTT#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Industrial"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAAASSSSAAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAAASSSSAAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
         },
-        ".": {
-          "material": "opening",
-          "role": "opening"
+        "p": {
+          "material": "lumber",
+          "role": "trim"
         },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "T": {
-          "material": "sign",
+        "q": {
+          "material": "pipes",
           "role": "trim"
         }
       },
@@ -16290,7 +17652,7 @@
       "id": "gauntlet_triage_tent",
       "layers": [
         [
-          "##...##",
+          "#T...T#",
           "#.....#",
           "#.....#",
           "#.....#",
@@ -16304,7 +17666,7 @@
           "#######"
         ],
         [
-          "##...##",
+          "#T...T#",
           "#.....#",
           "#.....#",
           "#.....#",
@@ -16318,7 +17680,7 @@
           "#######"
         ],
         [
-          "##...##",
+          "#T...T#",
           "#.....#",
           "#.....#",
           "#.....#",
@@ -16332,7 +17694,7 @@
           "#######"
         ],
         [
-          "##...##",
+          "#T...T#",
           "#.....#",
           "#.....#",
           "#.....#",
@@ -16346,7 +17708,7 @@
           "#######"
         ],
         [
-          "##TTT##",
+          "TTTTTTT",
           "#.....#",
           "#.....#",
           "#.....#",
@@ -16961,8 +18323,12 @@
           "block": "air",
           "role": "opening"
         },
+        "post": {
+          "block": "shop_blue",
+          "role": "trim"
+        },
         "sign": {
-          "block": "siding_blue",
+          "block": "shop_blue",
           "role": "trim"
         }
       },
@@ -16970,6 +18336,14 @@
     },
     {
       "bindings": {
+        "awning_a": {
+          "block": "shop_green",
+          "role": "trim"
+        },
+        "awning_b": {
+          "block": "shop_white",
+          "role": "trim"
+        },
         "facade": {
           "block": "brick",
           "role": "shell"
@@ -16978,8 +18352,12 @@
           "block": "air",
           "role": "opening"
         },
+        "produce": {
+          "block": "shop_produce",
+          "role": "trim"
+        },
         "sign": {
-          "block": "plaster",
+          "block": "shop_green",
           "role": "trim"
         }
       },
@@ -16987,16 +18365,24 @@
     },
     {
       "bindings": {
+        "bags": {
+          "block": "sandbag",
+          "role": "trim"
+        },
         "facade": {
           "block": "brick",
           "role": "shell"
+        },
+        "grille": {
+          "block": "shop_grille",
+          "role": "trim"
         },
         "opening": {
           "block": "air",
           "role": "opening"
         },
         "sign": {
-          "block": "siding_red",
+          "block": "shop_orange",
           "role": "trim"
         }
       },
@@ -17008,12 +18394,20 @@
           "block": "brick",
           "role": "shell"
         },
+        "lumber": {
+          "block": "planks",
+          "role": "trim"
+        },
         "opening": {
           "block": "air",
           "role": "opening"
         },
+        "pipes": {
+          "block": "galvanized",
+          "role": "trim"
+        },
         "sign": {
-          "block": "hazard_yellow",
+          "block": "shop_yellow",
           "role": "trim"
         }
       },
@@ -17026,7 +18420,7 @@
           "role": "shell"
         },
         "cross": {
-          "block": "siding_red",
+          "block": "shop_red",
           "role": "trim"
         },
         "opening": {

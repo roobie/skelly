@@ -3,6 +3,7 @@ import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityPlan.ts';
 import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
+import { STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { ownershipCell } from '../src/core/templateOwnership.ts';
 import { type CompiledTemplate, compileAssembly, type PlacedPiece, placedPoint } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
@@ -49,52 +50,84 @@ it('resolves one repeatable variant per slot and varies city assemblies across b
   expect(selections.some((selected) => new Set(selected).size > 1)).toBe(true);
 });
 
-it('aligns the authored ground course with the city surface while keeping cellar floors below it', () => {
+describe('authored city grounding', () => {
+  it('aligns the authored ground course with the city surface while keeping cellar floors below it', () => {
+    const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
+    const building = data.mapAssemblies![0]!;
+    building.size[1] *= 2;
+    data.mapPieces!.push({ ...data.mapPieces![0]!, id: 'street_room', ports: [] });
+    building.slots.push({
+      ...building.slots[0]!,
+      id: 'street_room',
+      at: [0, 5, 0],
+      choices: [{ ref: { kind: 'piece', id: 'street_room' }, weight: 1 }],
+    });
+    building.access = {
+      ground: 'street',
+      entrance: [1, 6, 2],
+      storeys: [
+        { id: 'cellar', floor: 1 },
+        { id: 'street', floor: 6 },
+      ],
+      stairs: [],
+    };
+    data.mapSites = [];
+    const { registry, issues } = buildRegistry([{ source: 'fixture-city-cellar.json', data }]);
+    expect(issues).toEqual([]);
+    const floor = 20;
+    const plan = buildCityPlan({
+      seed: 1,
+      registry,
+      floor,
+      grid: {
+        street: 4,
+        blockX: 14,
+        blockZ: 12,
+        pad: 2,
+        gap: 2,
+        blend: 2,
+        blocksX: 1,
+        blocksZ: 1,
+        templates: [{ id: building.id, weight: 1 }],
+      },
+    });
+    expect(plan.placements.length).toBeGreaterThan(0);
+    for (const placement of plan.placements) {
+      expect(placedPoint(placement, placement.template.access!.entrance)[1]).toBe(floor + 1);
+      const cellar = placement.template.access!.storeys.find((storey) => storey.id === 'cellar')!;
+      expect(placedPoint(placement, [1, cellar.floor, 2])[1]).toBeLessThan(floor);
+    }
+  });
+});
+
+it('reports an unknown style on a pool row or a slot ref with its source path', () => {
   const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
-  const building = data.mapAssemblies![0]!;
-  building.size[1] *= 2;
-  data.mapPieces!.push({ ...data.mapPieces![0]!, id: 'street_room', ports: [] });
-  building.slots.push({
-    ...building.slots[0]!,
-    id: 'street_room',
-    at: [0, 5, 0],
-    choices: [{ ref: { kind: 'piece', id: 'street_room' }, weight: 1 }],
-  });
-  building.access = {
-    ground: 'street',
-    entrance: [1, 6, 2],
-    storeys: [
-      { id: 'cellar', floor: 1 },
-      { id: 'street', floor: 6 },
-    ],
-    stairs: [],
-  };
-  data.mapSites = [];
-  const { registry, issues } = buildRegistry([{ source: 'fixture-city-cellar.json', data }]);
+  const { registry, issues } = buildRegistry([{ source: 'fixture-city-kits.json', data }]);
   expect(issues).toEqual([]);
-  const floor = 20;
-  const plan = buildCityPlan({
-    seed: 1,
-    registry,
-    floor,
-    grid: {
-      street: 4,
-      blockX: 14,
-      blockZ: 12,
-      pad: 2,
-      gap: 2,
-      blend: 2,
-      blocksX: 1,
-      blocksZ: 1,
-      templates: [{ id: building.id, weight: 1 }],
+  const pooled = buildRegistry([
+    {
+      source: 'fixture-city-style.json',
+      data: {
+        ...data,
+        mapPools: [
+          fixturePool([{ ref: { kind: 'assembly', id: 'fixture_route', style: 'no_such_style' }, weight: 1 }]),
+        ],
+      },
     },
-  });
-  expect(plan.placements.length).toBeGreaterThan(0);
-  for (const placement of plan.placements) {
-    expect(placedPoint(placement, placement.template.access!.entrance)[1]).toBe(floor + 1);
-    const cellar = placement.template.access!.storeys.find((storey) => storey.id === 'cellar')!;
-    expect(placedPoint(placement, [1, cellar.floor, 2])[1]).toBeLessThan(floor);
-  }
+  ]).registry;
+  expect(scenarioPlanIssues(pooled, fixtureScenario())).toContainEqual([
+    '.city.pool.choices[0].ref.style',
+    'no style "no_such_style"',
+  ]);
+  const assembly = registry.mapAssemblies.get('fixture_route')!;
+  const slot = assembly.slots[0]!;
+  const styled = {
+    ...assembly,
+    slots: [{ ...slot, choices: [{ ...slot.choices[0]!, ref: { ...slot.choices[0]!.ref, style: 'no_such_style' } }] }],
+  };
+  expect(() => compileAssembly(registry, styled, { seed: 1, siteId: 'unknown_style' })).toThrow(
+    new RegExp(`slot=fixture_route/${slot.id}: unknown style no_such_style`),
+  );
 });
 
 it('rejects ambiguous city pool identities instead of choosing a template or assembly namespace', () => {
@@ -500,5 +533,85 @@ describe('gauntlet door openings', () => {
       }
     }
     expect(doors).toBeGreaterThan(0);
+  });
+});
+
+const houseId = /^gauntlet_city_\d+/;
+
+// The yard rows in front of a shop door, where a player walks up from the street.
+const yardRows = 2;
+const shopIds = [
+  'gauntlet_police_station',
+  'gauntlet_food_store',
+  'gauntlet_gun_store',
+  'gauntlet_hardware_store',
+  'gauntlet_medical_site',
+];
+
+describe('gauntlet shop fronts', () => {
+  // The street face and the yard in front of it: the rows a player sees from the road.
+  const streetRows = 4;
+  const streetBlocks = (assemblyId: string): Set<string> => {
+    const { registry } = BUNDLED_CONTENT;
+    const seen = new Set<string>();
+    for (const seed of [1, 2, 3]) {
+      const compiled = compileAssembly(registry, registry.mapAssemblies.get(assemblyId)!, {
+        seed,
+        siteId: `shop-front:${assemblyId}`,
+      });
+      const [sx, sy, sz] = compiled.size;
+      const cells = sy * Math.min(streetRows, sz) * sx;
+      for (let i = 0; i < cells; i++) {
+        const x = i % sx;
+        const z = Math.floor(i / sx) % Math.min(streetRows, sz);
+        const y = Math.floor(i / (sx * Math.min(streetRows, sz)));
+        const id = registry.blocks[compiled.blocks[ownershipCell(compiled.size, [x, y, z])]!]?.id;
+        if (id && id !== 'air') {
+          seen.add(id);
+        }
+      }
+    }
+    return seen;
+  };
+
+  it('gives every shop a street face that carries blocks no house shows, and no two shops share them', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const houses = [...registry.mapAssemblies.keys()].filter((id) => houseId.test(id));
+    expect(houses.length).toBeGreaterThan(0);
+    const houseBlocks = new Set(houses.flatMap((id) => [...streetBlocks(id)]));
+    const marks = shopIds.map((id) => ({
+      id,
+      marks: [...streetBlocks(id)].filter((block) => !houseBlocks.has(block)),
+    }));
+    for (const { id, marks: own } of marks) {
+      expect(own.length, `${id} identifying blocks`).toBeGreaterThan(0);
+    }
+    const all = marks.flatMap(({ marks: own }) => own);
+    expect(new Set(all).size, 'a block identifies more than one shop type').toBe(all.length);
+  });
+
+  it('leaves a standing body of headroom over every walkable street-side cell of every shop', () => {
+    const { registry } = BUNDLED_CONTENT;
+    let walkable = 0;
+    for (const id of shopIds) {
+      for (const seed of [1, 2, 3]) {
+        const compiled = compileAssembly(registry, registry.mapAssemblies.get(id)!, { seed, siteId: `headroom:${id}` });
+        const solid = (x: number, y: number, z: number): boolean =>
+          registry.blocks[compiled.blocks[ownershipCell(compiled.size, [x, y, z])]!]?.solid === true;
+        const yard = Array.from({ length: Math.min(yardRows, compiled.size[2]) * compiled.size[0] }, (_, i) => ({
+          x: i % compiled.size[0],
+          z: Math.floor(i / compiled.size[0]),
+        })).filter(({ x, z }) => solid(x, 0, z) && !solid(x, 1, z));
+        walkable += yard.length;
+        const top = Math.min(compiled.size[1], Math.ceil(1 + STAIR_BODY_HEIGHT));
+        const blocked = yard.flatMap(({ x, z }) =>
+          Array.from({ length: top - 1 }, (_, i) => i + 1)
+            .filter((y) => solid(x, y, z))
+            .map((y) => `${x},${y},${z}`),
+        );
+        expect(blocked, `${id} seed ${seed} cells that block a standing body`).toEqual([]);
+      }
+    }
+    expect(walkable).toBeGreaterThan(0);
   });
 });

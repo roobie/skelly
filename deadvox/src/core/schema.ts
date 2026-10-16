@@ -1048,6 +1048,8 @@ const OwnershipSchema = strictObject({
 const TemplateSchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
+  /** The most storeys the stress-test city stacks this template to; absent means no limit. */
+  maxStoreys: optional(pipe(Count, minValue(1), maxValue(8))),
   /** Blocks: [x, y, z]. */
   size: Size,
   /** What each character means: a block id ("air" for empty), or furniture or a spawn point. */
@@ -1094,7 +1096,7 @@ const MapPieceSchema = strictObject({
   anchors: record(Id, KitAnchorSchema),
   ports: array(KitPortSchema),
 });
-const KitRefSchema = strictObject({ kind: picklist(['piece', 'assembly']), id: Id });
+const KitRefSchema = strictObject({ kind: picklist(['piece', 'assembly']), id: Id, style: optional(Id) });
 const KitSlotSchema = strictObject({
   id: Id,
   at: tuple([Count, Count, Count]),
@@ -1247,7 +1249,7 @@ const SiteLayoutSchema = strictObject({
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
 });
 
-const PoolRefSchema = strictObject({ kind: picklist(['template', 'assembly']), id: Id });
+const PoolRefSchema = strictObject({ kind: picklist(['template', 'assembly']), id: Id, style: optional(Id) });
 const MapPoolSchema = strictObject({
   id: Id,
   choices: pipe(
@@ -1270,7 +1272,7 @@ const MapPoolSchema = strictObject({
       'atLeast must not exceed atMost',
     ),
     check(
-      (rows) => new Set(rows.map(({ ref }) => `${ref.kind}:${ref.id}`)).size === rows.length,
+      (rows) => new Set(rows.map(({ ref }) => `${ref.kind}:${ref.id}@${ref.style ?? ''}`)).size === rows.length,
       'building refs must be unique',
     ),
     check((rows) => rows.some(({ weight }) => weight > 0), 'needs a positive building weight'),
