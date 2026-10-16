@@ -154,6 +154,14 @@ describe('viewer attachment previews', () => {
     expect(result.message).toContain('foregrip');
   });
 
+  it('rejects a design-excluded preview even when the attachment physically fits', () => {
+    const source = validate(ar, gunDomain);
+    const fits = ['real-suppressor@barrel.muzzle'];
+    expect(previewFittedAttachments(source, fits).ok).toBe(true);
+    const result = previewFittedAttachments(source, fits, gunDomain, ['real-suppressor']);
+    expect(result.ok).toBe(false);
+  });
+
   it('keeps suppressor appearance independent of the host gun finish', () => {
     const arColor = suppressorColor(ar, { variant: 'ar' });
     const awmColor = suppressorColor(awm, { variant: 'awm' });

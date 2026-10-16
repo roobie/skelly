@@ -1370,7 +1370,7 @@ export class HeldItems {
     const otherSide: HandSide = side === 'right' ? 'left' : 'right';
     const model = modelId ? this.inventory.registry.models.get(modelId) : undefined;
     if (model?.internalMagazine && model.anchors?.support) {
-      const support = heldAnchorOffset(model, 'support');
+      const support = heldAnchorOffset(model, model.anchors.support_wrist ? 'support_wrist' : 'support');
       const offhandGrip: Vec3 = support.map((value, index) => value + heldAt[index]!) as Vec3;
       this.addArm(otherSide, offhandGrip, held, heldAt);
       return;

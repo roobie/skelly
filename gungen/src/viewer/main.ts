@@ -392,7 +392,12 @@ const redraw = () => {
   clearLayers();
   const action = resolveGunAction(report.resolved);
   const contextTemplate = editorState?.template ?? activeTemplate;
-  const preview = previewFittedAttachments(report, initialQuery.getAll('fit'));
+  const preview = previewFittedAttachments(
+    report,
+    initialQuery.getAll('fit'),
+    gunDomain,
+    editorState?.excludedAttachments,
+  );
   fitNotice.textContent = preview.ok ? '' : preview.message;
   fitNotice.hidden = preview.ok;
   const renderReport = preview.ok ? preview.report : report;

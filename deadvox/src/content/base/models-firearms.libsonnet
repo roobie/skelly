@@ -2,6 +2,9 @@
 // https://crateclub.com/blogs/loadout/how-long-does-it-take-to-reload-an-assault-rifle
 // Changing a magazine here stows it instead, so skill 0 sits at the slow end.
 local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
+local huntingRifle = import 'gungen/rifle_hunting.model.json';
+// The exported support is a contact on the wood; seat the wrist below and behind it so the palm's end meets it without obscuring ADS.
+local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
 
 {
   "items": [
@@ -161,7 +164,11 @@ local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSi
       "grip": { "at": [0.296, 0.0078, -0.0179], "turn": [-90, 0, 0] },
       "id": "sniper_rifle"
     },
-    import 'gungen/rifle_hunting.model.json',
+    huntingRifle + {
+      anchors: huntingRifle.anchors + {
+        support_wrist: [huntingRifle.anchors.support[i] + huntingSupportWristOffset[i] for i in std.range(0, 2)],
+      },
+    },
     import 'gungen/round_308_h_winchester.model.json',
     import 'gungen/case_308_h_winchester.model.json',
     import 'gungen/optic_hunting_3_9x.model.json',

@@ -27,7 +27,11 @@ const EXPORTED_GUNS = ASSET_SOURCES.flatMap(({ url, files }) => {
   const design = typeof url === 'string' ? DESIGN_SOURCE.exec(url)?.[1] : undefined;
   return design ? files.map((file) => ({ design, file, modelId: MODEL_FILE.exec(file)?.[1] })) : [];
 });
-const omitDeadvoxOwnedFields = ({ chargingHandleDegrees: _chargingHandleDegrees, ...model }) => model;
+const omitDeadvoxOwnedFields = ({ chargingHandleDegrees: _chargingHandleDegrees, anchors, ...model }) => {
+  // Gungen owns contact geometry; Deadvox content may place the player's wrist relative to that contact.
+  const { support_wrist: _supportWrist, ...exportedAnchors } = anchors ?? {};
+  return { ...model, ...(anchors ? { anchors: exportedAnchors } : {}) };
+};
 const glbJson = (bytes) =>
   JSON.parse(
     bytes

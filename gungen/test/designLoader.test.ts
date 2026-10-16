@@ -6,6 +6,7 @@ import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
+import { ATTACHMENT_IDS } from '../src/gun/attachments.ts';
 import { type GunDesign, loadGunDesign, loadGunDesignValue } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_FINISH_SLOTS } from '../src/gun/palette.ts';
@@ -56,6 +57,27 @@ const expectFatal = (result: ReturnType<typeof load>) => {
   }
   return result;
 };
+
+it('preserves authored attachment exclusions through design loading and editor saving', () => {
+  const excludedAttachments = [ATTACHMENT_IDS[0]];
+  const loaded = load(makeDesign({ excludedAttachments }));
+  if (!loaded.ok) {
+    throw new Error(loaded.error.message);
+  }
+  const saved = saveDesign(editorStateFromDesign(loaded.design, ar), gunDomain);
+  if (!saved.ok) {
+    throw new Error(saved.reason);
+  }
+  expect(saved.design.excludedAttachments).toEqual(excludedAttachments);
+});
+
+it.each([{ excludedAttachments: 'not-an-array' }, { excludedAttachments: ['unknown-fixture-attachment'] }])(
+  'rejects malformed or unknown attachment exclusions: $excludedAttachments',
+  ({ excludedAttachments }) => {
+    const result = expectFatal(load({ ...makeDesign(), excludedAttachments }));
+    expect(result.error.path).toBe('excludedAttachments');
+  },
+);
 
 describe('loadDesign: feasibility evaluation', () => {
   it('evaluates an explicit-calibre design once per load', () => {
