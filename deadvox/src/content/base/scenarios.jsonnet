@@ -16,7 +16,10 @@ local ladder = lab.entry.ladder;
         at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18],
         items: [{ item: 'flashlight', placement: 'surface', key: true }],
       }],
-      leads: ['gauntlet_public_memo', 'gauntlet_public_directions'],
+      leads: [
+        { template: 'gauntlet_public_memo', fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_memo', placement: 'surface' }] }] },
+        { template: 'gauntlet_public_directions', fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_directions', placement: 'surface' }] }] },
+      ],
       landmarks: ['gauntlet_water_tank', 'gauntlet_loading_frame'],
       incidentalTemplates: ['gauntlet_incidental_bollard', 'gauntlet_incidental_cabinet', 'gauntlet_incidental_riser'],
       objective: lab.anchors.objective,

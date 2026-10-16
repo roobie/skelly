@@ -183,6 +183,7 @@ const ITEM_CATEGORIES = [
   'ammo',
   'material',
   'book',
+  'note',
   'misc',
 ] as const;
 
@@ -1417,7 +1418,10 @@ const ScenarioSchema = strictObject({
   composition: optional(
     strictObject({
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
-      leads: tuple([Id, Id]),
+      leads: tuple([
+        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
+        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
+      ]),
       landmarks: tuple([Id, Id]),
       incidentalTemplates: pipe(array(Id), minLength(1), maxLength(32)),
       objective: CellPosition,

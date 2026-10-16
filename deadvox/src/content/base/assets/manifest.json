@@ -382,7 +382,7 @@
     },
     {
       "author": "Skelly contributors",
-      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps; no external asset source or texture is used.",
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps and loose and folded paper; no external asset source or texture is used.",
       "download": null,
       "files": [
         "assets/models/hand_saw.glb",
@@ -413,7 +413,9 @@
         "assets/models/scrap_foregrip.glb",
         "assets/models/hinge_set.glb",
         "assets/models/glass_bulb.glb",
-        "assets/models/glowstick.glb"
+        "assets/models/glowstick.glb",
+        "assets/models/paper_sheet.glb",
+        "assets/models/folded_note.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Project-built low-poly hand-tool and content stand-ins",
