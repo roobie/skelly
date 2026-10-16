@@ -1230,7 +1230,10 @@ describe('authored fixed loot', () => {
     const door = compiledArmoury.pieces.find((piece) => piece.furniture === 'container_door');
     expect(door?.lock).toEqual({ id: 'camp_armoury', locked: true });
     expect(result.registry.furniture.get('container_door')?.door?.prying).toBeDefined();
-    expect(compiledArmoury.pieces.some((piece) => piece.furniture === 'camp_closing_note')).toBe(true);
+    const closingNote = overrideFor(overrides, 'camp_armoury', 'camp_closing_note');
+    expect(closingNote).toBeDefined();
+    expect(furnitureAt(closingNote!)).toBe('field_desk');
+    expect(result.registry.items.get('camp_closing_note')?.category).toBe('note');
     expect(compiledArmoury.spawns).toEqual([]);
 
     expectCampHqProperties(compiledArmoury);

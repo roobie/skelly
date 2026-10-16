@@ -50,6 +50,7 @@ local campWallRunCrouchHole = campWallRun + {
       "category": "book",
       "weight": 5,
       "size": [1, 1],
+      "model": "notebook",
       "readable": {
         "title": "Clinic supply manifest",
         "text": "SUPPLY RECORD — COMMUNITY HEALTH SITE\n\nAntibiotics, sampling kits and dressings were sent to the clinic. Keep the ward stocked and the pharmacy secured. The road remains under military protection."
@@ -74,6 +75,18 @@ local campWallRunCrouchHole = campWallRun + {
       "readable": {
         "title": "Note to the relief officer",
         "text": "The reserve safe is locked. Its key is in the radio desk drawer downstairs. The suppressor in the safe is for the next patrol taking the north road."
+      }
+    },
+    {
+      "id": "camp_closing_note",
+      "name": "Playtest closing note",
+      "category": "note",
+      "model": "folded_note",
+      "weight": 5,
+      "size": [1, 1],
+      "readable": {
+        "title": "A note for the next visitor",
+        "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing."
       }
     }
   ],
@@ -251,17 +264,6 @@ local campWallRunCrouchHole = campWallRun + {
       "loot": "camp_supplies"
     },
     {
-      "id": "camp_closing_note",
-      "name": "Playtest closing note",
-      "size": [2, 2, 1],
-      "color": "#b8b5a5",
-      "solid": false,
-      "readable": {
-        "title": "A note for the next visitor",
-        "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing."
-      }
-    },
-    {
       "id": "camp_orders",
       "name": "Camp orders board",
       "size": [2, 2, 1],
@@ -312,7 +314,9 @@ local campWallRunCrouchHole = campWallRun + {
           "furniture": "ammo_crate"
         },
         "N": {
-          "furniture": "camp_closing_note"
+          "furniture": "field_desk",
+          "facing": "n",
+          "loot": "d41_empty"
         },
         // Leave room for a body between the ladder and magazine crate; it climbs through the roof hatch so the
         // climber steps onto the roof rather than the strip above a wall (`DESIGN.md`, "Ladders and hatches").
@@ -350,8 +354,8 @@ local campWallRunCrouchHole = campWallRun + {
           "#......AA..H.......#",
           "#............AA....#",
           "#............AA....#",
-          "#..NN..............#",
-          "#..................#",
+          "#..NNN.............#",
+          "#..NNN.............#",
           "####################"
         ],
         [
@@ -364,8 +368,8 @@ local campWallRunCrouchHole = campWallRun + {
           "#......AA..H.......#",
           "#............AA....#",
           "#............AA....#",
-          "#..NN..............#",
-          "#..................#",
+          "#..NNN.............#",
+          "#..NNN.............#",
           "####################"
         ],
         [

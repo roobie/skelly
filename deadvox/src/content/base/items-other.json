@@ -171,6 +171,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
       "id": "field_manual",
+      "model": "notebook",
       "name": "Field Manual: Making Do",
       "readable": {
         "text": "A pocket guide to salvaging useful material from damaged equipment.",
@@ -198,6 +199,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
       "id": "camp_craft_book",
+      "model": "notebook",
       "name": "Camp Craft",
       "readable": {
         "text": "Notes on making simple light and shelter from things found nearby.",
@@ -236,6 +238,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
       "id": "home_repair_book",
+      "model": "notebook",
       "name": "Home Repair Handbook",
       "readable": {
         "text": "A practical handbook for keeping tools and household goods working.",
@@ -264,6 +267,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
       "id": "workshop_notes",
+      "model": "notebook",
       "name": "Workshop Notes",
       "readable": {
         "text": "Handwritten notes on careful repairs and using salvaged wire.",
@@ -280,6 +284,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
       "id": "paperback",
+      "model": "notebook",
       "name": "Paperback novel",
       "size": [2, 2],
       "weight": 300

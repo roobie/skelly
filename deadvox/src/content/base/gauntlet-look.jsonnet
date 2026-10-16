@@ -14,27 +14,6 @@ local metal = '#707b7e';
       ],
     },
     {
-      id: 'gauntlet_look_memo',
-      name: 'Draft maintenance memo',
-      size: [2, 2, 1],
-      color: '#dfd6b9',
-      solid: false,
-      shape: [{ position: [0.1, 0.1, 0.8], size: [1.8, 1.8, 0.1] }],
-      readable: {
-        title: 'Draft — ventilation invoice',
-        text: |||
-          PROTOTYPE LOOK — NOT FINAL GAUNTLET LORE
-
-          Accounts queried the extra ducting again. The low brick service building has paired exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.
-
-          Street → service building → rear apron
-                                       paired exhausts → hatch
-
-          This sketch describes this prototype only. The final independent notes must describe the service block actually selected for the city.
-        |||,
-      },
-    },
-    {
       id: 'gauntlet_look_bollard', name: 'Utility bollard', size: [2, 4, 2], color: metal,
       shape: [
         { position: [0.4, 0, 0.4], size: [1.2, 3.8, 1.2] },

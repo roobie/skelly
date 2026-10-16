@@ -417,9 +417,10 @@
         "assets/models/glass_bulb.glb",
         "assets/models/glowstick.glb",
         "assets/models/paper_sheet.glb",
-        "assets/models/folded_note.glb"
+        "assets/models/folded_note.glb",
+        "assets/models/notebook.glb"
       ],
-      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps and loose and folded paper; no external asset source or texture is used."
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps, loose and folded paper and a notebook; no external asset source or texture is used."
     },
     {
       "title": "Heartbeat Sounds",
