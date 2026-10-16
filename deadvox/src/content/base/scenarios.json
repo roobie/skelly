@@ -186,6 +186,15 @@
                 "placement": "surface"
               }
             ]
+          },
+          {
+            "at": [39, 41, 38],
+            "items": [
+              {
+                "item": "gauntlet_maintenance_memo",
+                "placement": "surface"
+              }
+            ]
           }
         ],
         "incidentalTemplates": [

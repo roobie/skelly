@@ -754,6 +754,10 @@
                   "count": 150
                 }
               ]
+            },
+            {
+              "at": [3, 1, 9],
+              "items": [{ "item": "camp_closing_note", "placement": "surface" }]
             }
           ]
         },

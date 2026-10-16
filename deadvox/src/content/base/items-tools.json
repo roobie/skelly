@@ -243,7 +243,13 @@
       "light": {
         "beam": {
           "angleDegrees": 60,
-          "penumbra": 0.59999999999999998
+          "decay": 1,
+          "penumbra": 0.59999999999999998,
+          "spill": {
+            "enabled": false,
+            "intensity": 0.17999999999999999,
+            "radiusRatio": 1.5
+          }
         },
         "color": "#fff1d8",
         "intensity": 5,
@@ -271,7 +277,13 @@
       "light": {
         "beam": {
           "angleDegrees": 24,
-          "penumbra": 0.34999999999999998
+          "decay": 1,
+          "penumbra": 0.34999999999999998,
+          "spill": {
+            "enabled": false,
+            "intensity": 0.17999999999999999,
+            "radiusRatio": 1.5
+          }
         },
         "color": "#fff1d8",
         "intensity": 2.5,

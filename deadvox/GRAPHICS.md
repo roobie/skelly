@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're changing procedural surface weathering or building appearance
-  - you're changing the solar-phase look, flashlight daylight adaptation, or evaluating renderer performance
+  - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, or evaluating renderer performance
   - you're changing wide ambient occlusion or its interaction with skylight
   - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating opt-in GPU quality trials
@@ -19,6 +19,12 @@ Tone mapping follows the solar cycle: neutral in bright daylight, shifting towar
 Distance fog, the clear background and height mist share the camera's diffuse sky visibility so they cannot glow where the sky cannot reach. Use the interior field's spatial interpolation rather than a separate transition, keeping doorway changes aligned with held-item lighting. See `src/render/playView.ts`, `prepareLighting`; `src/render/sky.ts`, `applySky`; and `src/render/mood.ts`, `Mood.setSky`.
 
 A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. See `src/render/playView.ts`, `prepareLighting`, and `src/render/flashlight.ts`, `flashlightDaylightScale`.
+
+Item light content owns focused-cone brightness, reach, shape and decay so authors can tune different kinds of beam without renderer constants. Spill is optional: omit it, or author it with `enabled` false, for the exact plain cone with an unwidened shadow camera. Base battery beams author a dim spill switched off, because the plain cone is the look the game ships with; the tunables stay in content so a mod can turn it on. Blend both lobes in one spot and widen its shadow camera so spill cannot bypass occluders or require another shadow pass. Install the spill shader before warm-up and express plain beams through neutral uniforms, so both existing and later-created materials use one program without switch-on recompilation or stale variants. See `src/core/schema.ts`, `BeamSpillSchema`, `src/content/base/items-tools.libsonnet`, `batteryBeam`, and `src/render/flashlight.ts`, `Flashlight`.
+
+Retune beam intensity and decay against three targets. A mid-grey surface at 10 m stays readable. Close surfaces stay under the bloom clip and the ACES shoulder, where a bright warm colour skews towards orange. Brightness varies by under 2x between 0.5 m and 2 m, where plain inverse-distance falloff varies 4x. The near-field offset makes the last two hold while keeping the reach, so a lower offset needs a lower intensity and a higher one allows more. See `src/render/lightFalloff.ts`, `NEAR_FIELD_M`, and `test/lightFalloff.test.ts`, which checks the close-up variation.
+
+Use `torchspill=1` in the URL to turn on authored spill that content leaves disabled, and `torchspill=0` to force the plain cone, without enabling debug mode. This render-only override neither invents absent spill nor changes simulation awareness. See `src/render/playView.ts`, `createPlayView`. Handheld and head-mounted beams share this path; weapon-mounted flashlights lack nested lens resolution (#763) and receive no rendered beam or spill. See `src/render/flashlightCone.ts`, `withFlashlightSpill`.
 
 Post-processing and shadows support the intended mood. Compare the same workload on a real GPU before claiming a performance win; SwiftShader cannot establish reference-GPU cost. Keep image changes separate from waste removal so visual quality remains an operator decision. See `src/bench/post.ts`, `benchDraw`.
 
