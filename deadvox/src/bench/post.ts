@@ -9,6 +9,7 @@
 import { AUTO_TONE, DEFAULT_SHADOWS, type LookState, type MoodState } from '../core/mood.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather } from '../core/weather.ts';
+import type { GameConfig } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { applyLook } from '../render/look.ts';
 
@@ -16,6 +17,18 @@ import { applyLook } from '../render/look.ts';
 // effect on, which is the full cost of the mood pass.
 const BENCH_LOOK: LookState = { tone: AUTO_TONE, exposure: 3, srgb: true, patterns: true, vao: true };
 const BENCH_MOOD: MoodState = { post: true, bloom: true, film: true, grade: 1, bloomClip: null };
+
+// The benchmark's own weathering, a content profile for the same reason: the play default's profile may change
+// without changing what the benchmark measures.
+export const BENCH_WEATHERING_PROFILE_ID = 'bench';
+
+/** Gives a bench config the bench weathering instead of the play default's. */
+export const applyBenchWeathering = (config: GameConfig): void => {
+  const profile = config.content.registry.weathering.get(BENCH_WEATHERING_PROFILE_ID);
+  config.weatheringProfileId = BENCH_WEATHERING_PROFILE_ID;
+  config.weatheringDefaultProfileId = BENCH_WEATHERING_PROFILE_ID;
+  config.weathering = profile ? { ...profile } : undefined;
+};
 
 export const benchPostFromUrl = (params: URLSearchParams): boolean => params.get('post') === '1';
 

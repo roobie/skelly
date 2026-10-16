@@ -1,10 +1,32 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { benchDraw, benchPostFromUrl, postUrlPart } from '../src/bench/post.ts';
+import { applyBenchWeathering, benchDraw, benchPostFromUrl, postUrlPart } from '../src/bench/post.ts';
 import { benchRunFromUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
+import { buildRegistry } from '../src/core/content.ts';
+import type { StartupContent } from '../src/game/bundledContent.ts';
+import { makeConfig } from '../src/game/config.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
 
 const params = (query: string) => new URLSearchParams(query);
+
+const BASE = 'src/content/base';
+const { registry } = buildRegistry(
+  readdirSync(BASE)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
+    .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown })),
+);
+
+describe('benchmark weathering', () => {
+  it('does not follow the play default, so changing the default look leaves the bench workload alone', () => {
+    const config = makeConfig(1, 64, { registry } as unknown as StartupContent);
+    const playStrength = config.weathering?.strength ?? 0;
+    applyBenchWeathering(config);
+    expect(config.weathering?.strength).toBeGreaterThan(playStrength);
+  });
+});
 
 describe('benchmark post-processing option', () => {
   it('is off unless &post=1, so the default benchmark renders as it always did', () => {

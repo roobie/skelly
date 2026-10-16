@@ -52,6 +52,10 @@ Benchmarks use only effective mod defaults, ignoring machine preferences and deb
 URL overrides, because saved choices must not silently change the comparison workload.
 See `src/game/engine.ts`, `createEngine`, and `src/main.ts`.
 
+Benchmarks also fix their own look and weathering, so a change to the play default cannot
+change what they measure. The weathering is a content profile, not a code constant, so a mod
+sees it. See `src/bench/post.ts`, `BENCH_LOOK` and `applyBenchWeathering`.
+
 Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's
 policy can change without stale defaults becoming machine preferences. Validate stored
 choices against the effective content policy before using them; unavailable storage must
