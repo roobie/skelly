@@ -76,7 +76,7 @@ export const cityRowDepth = (grid: Pick<CityShape, 'blockZ' | 'pad' | 'rows' | '
   Math.floor((grid.blockZ - 2 * grid.pad - ((grid.rows ?? 2) / 2 - 1) * grid.street) / (grid.rows ?? 2));
 
 /** The street grid alone: every cell's street and block, out to the street along each edge. */
-export const cityCore = (grid: CityShape): Rect => {
+const cityCore = (grid: CityShape): Rect => {
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
   return {
@@ -88,7 +88,7 @@ export const cityCore = (grid: CityShape): Rect => {
 };
 
 /** The area the wall encloses: the grid plus the edge ring's row and its setback from the wall. */
-export const cityBounds = (grid: CityShape): Rect => {
+const cityBounds = (grid: CityShape): Rect => {
   const core = cityCore(grid);
   const grow = grid.ring ? cityRowDepth(grid) + grid.ring.setback : 0;
   return { x0: core.x0 - grow, z0: core.z0 - grow, x1: core.x1 + grow, z1: core.z1 + grow };
