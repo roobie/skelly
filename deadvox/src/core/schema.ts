@@ -36,11 +36,11 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
-import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
+import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import {
   gameHours,
