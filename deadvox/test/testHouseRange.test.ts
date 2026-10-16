@@ -7,7 +7,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import type { Rolled } from '../src/core/loot.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { HandlingRange } from '../src/core/range.ts';
-import { furnitureDistance, INVENTORY_REACH } from '../src/core/reach.ts';
+import { furnitureDistance, reachTuning } from '../src/core/reach.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
@@ -282,7 +282,7 @@ describe('the debug test-house range', () => {
           { inventory: fixture.inventory, position: fixture.body.pos, blockSize: fixture.blockSize },
           fixture.rack,
         ),
-      ).toBeLessThanOrEqual(INVENTORY_REACH);
+      ).toBeLessThanOrEqual(reachTuning(fixture.inventory.registry).reachMetres);
     }
   });
 
