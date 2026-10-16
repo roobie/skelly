@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { compileFunction } from 'node:vm';
 import {
   MathUtils,
@@ -35,7 +36,7 @@ beforeEach(async () => {
 });
 afterEach(restoreShaders);
 
-const profile = { radiusRatio: 1.8, intensity: 0.2 };
+const profile = { enabled: true, radiusRatio: 1.8, intensity: 0.2 };
 const beam = { angleDegrees: 50, penumbra: 0.5, decay: 1.3 };
 const source = (shape: object) => ({
   source: 'fixture-beam.json',
@@ -83,56 +84,67 @@ describe('flashlight cone', () => {
     expect(validateContent(source({ ...beam, decay: -1 }))).not.toEqual([]);
   });
 
-  it.each([true, false])('updates content spill without changing programs with comparison enabled=%s', (enabled) => {
-    const expectProfile = (uniforms: typeof ShaderLib.lambert.uniforms, spill: BeamSpill | undefined) => {
-      const value = uniforms.uFlashlightSpill!.value as Float32Array;
-      expect(value[0]).toBeCloseTo(spill ? spill.radiusRatio ** 2 : 1);
-      expect(value[1]).toBeCloseTo(spill?.intensity ?? 0);
-    };
-    const scene = new Scene();
-    const torch = new Flashlight(scene, enabled);
-    const camera = new PerspectiveCamera();
-    const chunk = ShaderChunk.lights_pars_begin;
-    expect(chunk.includes('uniform vec2 uFlashlightSpill;')).toBe(enabled);
-    const warmUniforms = UniformsUtils.clone(ShaderLib.lambert.uniforms);
-    const material = new MeshLambertMaterial();
-    scene.add(new Mesh(undefined, material));
-    const key = material.customProgramCacheKey();
-    const { version } = material;
-    for (const spill of [profile, undefined, { ...profile, radiusRatio: 2 }]) {
-      const effectiveSpill = enabled ? spill : undefined;
-      const { registry } = buildRegistry([source({ ...beam, spill })]);
-      const inventory = new Inventory(registry);
-      const lit = inventory.create('fixture_beam');
-      expect(inventory.add(lit, { kind: 'worn' })).toBe(true);
-      expect(toggleLight(registry, lit)).toBeUndefined();
-      const held = new HeldItems(inventory, undefined, { skin: '#ffffff', shirt: '#ffffff', trousers: '#ffffff' });
-      torch.update({ registry, inventory, lit, held, camera });
-      expect(torch.light.intensity).toBe(2 * torch.strength);
-      expect(torch.light.distance).toBe(10);
-      expect(torch.light.decay).toBe(beam.decay);
-      expect(torch.light.penumbra).toBe(beam.penumbra);
-      expect(torch.light.angle).toBeCloseTo(MathUtils.degToRad(beam.angleDegrees / 2));
-      expect(torch.light.shadow.focus).toBeCloseTo(
-        effectiveSpill ? cone.spillHalfAngle(torch.light.angle, effectiveSpill) / torch.light.angle : 1,
-      );
-      expect(ShaderChunk.lights_pars_begin).toBe(chunk);
-      expect(material.customProgramCacheKey()).toBe(key);
-      expect(material.version).toBe(version);
-      const lateMaterial = new MeshLambertMaterial();
-      expect(lateMaterial.customProgramCacheKey()).toBe(key);
-      lateMaterial.dispose();
-      const lateUniforms = UniformsUtils.clone(ShaderLib.lambert.uniforms);
-      if (enabled) {
-        expectProfile(warmUniforms, effectiveSpill);
-        expectProfile(lateUniforms, effectiveSpill);
-      } else {
-        expect(lateUniforms).not.toHaveProperty('uFlashlightSpill');
+  it.each([undefined, true, false])(
+    'applies spill by content and the comparison switch %s without changing programs',
+    (override) => {
+      const enabled = override !== false;
+      // Content decides without a switch; `true` turns on spill that is present, `false` forces the plain cone.
+      const spillShown = (spill: BeamSpill | undefined): BeamSpill | undefined => {
+        if (override === false || !spill) {
+          return undefined;
+        }
+        return (override ?? spill.enabled) ? spill : undefined;
+      };
+      const expectProfile = (uniforms: typeof ShaderLib.lambert.uniforms, spill: BeamSpill | undefined) => {
+        const value = uniforms.uFlashlightSpill!.value as Float32Array;
+        expect(value[0]).toBeCloseTo(spill ? spill.radiusRatio ** 2 : 1);
+        expect(value[1]).toBeCloseTo(spill?.intensity ?? 0);
+      };
+      const scene = new Scene();
+      const torch = new Flashlight(scene, override);
+      const camera = new PerspectiveCamera();
+      const chunk = ShaderChunk.lights_pars_begin;
+      expect(chunk.includes('uniform vec2 uFlashlightSpill;')).toBe(enabled);
+      const warmUniforms = UniformsUtils.clone(ShaderLib.lambert.uniforms);
+      const material = new MeshLambertMaterial();
+      scene.add(new Mesh(undefined, material));
+      const key = material.customProgramCacheKey();
+      const { version } = material;
+      for (const spill of [profile, { ...profile, enabled: false }, undefined, { ...profile, radiusRatio: 2 }]) {
+        const effectiveSpill = spillShown(spill);
+        const { registry } = buildRegistry([source({ ...beam, spill })]);
+        const inventory = new Inventory(registry);
+        const lit = inventory.create('fixture_beam');
+        expect(inventory.add(lit, { kind: 'worn' })).toBe(true);
+        expect(toggleLight(registry, lit)).toBeUndefined();
+        const held = new HeldItems(inventory, undefined, { skin: '#ffffff', shirt: '#ffffff', trousers: '#ffffff' });
+        torch.update({ registry, inventory, lit, held, camera });
+        expect(torch.light.intensity).toBe(2 * torch.strength);
+        expect(torch.light.distance).toBe(10);
+        expect(torch.light.decay).toBe(beam.decay);
+        expect(torch.light.penumbra).toBe(beam.penumbra);
+        expect(torch.light.angle).toBeCloseTo(MathUtils.degToRad(beam.angleDegrees / 2));
+        expect(torch.light.shadow.focus).toBeCloseTo(
+          effectiveSpill ? cone.spillHalfAngle(torch.light.angle, effectiveSpill) / torch.light.angle : 1,
+        );
+        expect(ShaderChunk.lights_pars_begin).toBe(chunk);
+        expect(material.customProgramCacheKey()).toBe(key);
+        expect(material.version).toBe(version);
+        const lateMaterial = new MeshLambertMaterial();
+        expect(lateMaterial.customProgramCacheKey()).toBe(key);
+        lateMaterial.dispose();
+        const lateUniforms = UniformsUtils.clone(ShaderLib.lambert.uniforms);
+        if (enabled) {
+          expectProfile(warmUniforms, effectiveSpill);
+          expectProfile(lateUniforms, effectiveSpill);
+        } else {
+          expect(lateUniforms).not.toHaveProperty('uFlashlightSpill');
+        }
+        held.dispose();
       }
-      held.dispose();
-    }
-    material.dispose();
-  });
+      material.dispose();
+    },
+  );
 
   it('plain uniforms reproduce the unmodified cone across its hotspot, edge and exterior', () => {
     cone.installFlashlightSpill();
@@ -154,6 +166,25 @@ describe('flashlight cone', () => {
         expect(patched(...args)).toBe(expected);
         expect(Number.isFinite(expected)).toBe(true);
       }
+    }
+  });
+
+  it('reads the torchspill URL switch as on, off or follow content', async () => {
+    const { spillSwitchFromSearch } = await import('../src/render/flashlight.ts');
+    expect(spillSwitchFromSearch('?torchspill=1')).toBe(true);
+    expect(spillSwitchFromSearch('?torchspill=0')).toBe(false);
+    expect(spillSwitchFromSearch('')).toBeUndefined();
+    expect(spillSwitchFromSearch('?torchspill=maybe')).toBeUndefined();
+  });
+
+  it('base flashlight items author spill present but switched off', () => {
+    const { items } = JSON.parse(readFileSync('src/content/base/items-tools.json', 'utf8')) as {
+      items: { light?: { beam?: { spill?: BeamSpill } } }[];
+    };
+    const spills = items.flatMap((item) => item.light?.beam?.spill ?? []);
+    expect(spills.length).toBeGreaterThan(0);
+    for (const spill of spills) {
+      expect(spill.enabled).toBe(false);
     }
   });
 

@@ -26,7 +26,7 @@ import { BlastFlashes } from './blastFlashes.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
-import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
+import { Flashlight, flashlightDaylightScale, spillSwitchFromSearch } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
@@ -192,10 +192,7 @@ export const createPlayView = (
   page.addEventListener('pagehide', dispose);
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
-  const flashlight = new Flashlight(
-    scene,
-    new URLSearchParams(globalThis.location?.search ?? '').get('torchspill') !== '0',
-  );
+  const flashlight = new Flashlight(scene, spillSwitchFromSearch(globalThis.location?.search ?? ''));
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorch(flashlight.light);

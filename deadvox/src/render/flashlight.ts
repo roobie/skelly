@@ -49,18 +49,28 @@ const MIN_SHADOW_INTENSITY = 0.07;
 export const flashlightCastsShadow = (allowed: boolean, intensity: number): boolean =>
   allowed && intensity > MIN_SHADOW_INTENSITY;
 
+/** The `torchspill` URL parameter as the constructor's switch: `1` true, `0` false, anything else follows content. */
+export const spillSwitchFromSearch = (search: string): boolean | undefined => {
+  const value = new URLSearchParams(search).get('torchspill');
+  if (value === '1' || value === '0') {
+    return value === '1';
+  }
+  return undefined;
+};
+
 export class Flashlight {
   // Colour, range and beam shape come from the lit item's content in `update`.
   readonly light = new SpotLight(undefined, 0);
   private readonly at = new Vector3();
   private readonly ahead = new Vector3();
 
-  private readonly spill: boolean;
-  constructor(scene: Scene, spill = true) {
-    this.spill = spill;
+  private readonly spillOverride: boolean | undefined;
+  /** `spillOverride` is the render-only comparison switch: true enables present spill, false forces the plain cone, undefined follows content. */
+  constructor(scene: Scene, spillOverride?: boolean) {
+    this.spillOverride = spillOverride;
     // Before any material compiles; the light chunk is shared by all of them.
     installNearFieldFalloff();
-    if (spill) {
+    if (spillOverride !== false) {
       installFlashlightSpill();
     }
     const { shadow } = this.light;
@@ -117,8 +127,10 @@ export class Flashlight {
     this.light.castShadow = flashlightCastsShadow(this.shadowsAllowed, this.light.intensity);
     this.light.distance = def.radius;
     const angle = MathUtils.degToRad(def.beam.angleDegrees / 2);
-    const spill = this.spill ? def.beam.spill : undefined;
-    if (this.spill) {
+    const authored = def.beam.spill;
+    const spill =
+      this.spillOverride === false || !authored || !(this.spillOverride ?? authored.enabled) ? undefined : authored;
+    if (this.spillOverride !== false) {
       setFlashlightSpill(spill);
     }
     this.light.shadow.focus = spill ? spillHalfAngle(angle, spill) / angle : 1;

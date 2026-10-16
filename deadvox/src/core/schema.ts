@@ -374,6 +374,8 @@ const AmmoSchema = strictObject({
 });
 
 export const BeamSpillSchema = strictObject({
+  /** Off keeps the tunables authored but renders the plain cone; a mod or `torchspill=1` turns it on. */
+  enabled: vBoolean(),
   radiusRatio: pipe(number(), finite(), minValue(1 + Number.EPSILON)),
   intensity: pipe(number(), finite(), minValue(0), maxValue(1 - Number.EPSILON)),
 });

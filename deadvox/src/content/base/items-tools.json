@@ -246,6 +246,7 @@
           "decay": 1,
           "penumbra": 0.59999999999999998,
           "spill": {
+            "enabled": false,
             "intensity": 0.17999999999999999,
             "radiusRatio": 1.5
           }
@@ -279,6 +280,7 @@
           "decay": 1,
           "penumbra": 0.34999999999999998,
           "spill": {
+            "enabled": false,
             "intensity": 0.17999999999999999,
             "radiusRatio": 1.5
           }
