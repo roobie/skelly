@@ -5,8 +5,8 @@ import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { footprint } from '../src/core/templates.ts';
 import type { ContentFile } from '../src/core/schema.ts';
+import { footprint } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 
 const { registry, issues } = buildBundledContent();
@@ -56,7 +56,10 @@ it('keeps the street surface under every placed item standing on a street cell',
   for (const placement of plan.placements) {
     const { template, origin } = placement;
     const [w, d] = footprint(placement);
-    const cells = Array.from({ length: w * d }, (_, i) => [origin[0] + (i % w), origin[2] + Math.floor(i / w)] as const);
+    const cells = Array.from(
+      { length: w * d },
+      (_, i) => [origin[0] + (i % w), origin[2] + Math.floor(i / w)] as const,
+    );
     const padOnly = !template.blocks.slice(template.size[0] * template.size[2]).some((block) => block !== 0);
     if (!padOnly || template.pieces.length === 0 || !cells.every(([x, z]) => site.surface.top(x, z) !== undefined)) {
       continue;
@@ -71,7 +74,7 @@ it('keeps the street surface under every placed item standing on a street cell',
         chunks.set(key, chunk);
       }
       const chunk = chunks.get(key)!;
-      checked++;
+      checked += 1;
       if (chunk.get(mod(x, CHUNK), mod(origin[1], CHUNK), mod(z, CHUNK)) !== site.surface.top(x, z)) {
         mismatches.push(template.id);
       }
