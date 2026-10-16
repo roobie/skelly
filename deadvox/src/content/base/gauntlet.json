@@ -28433,7 +28433,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_0_intact"
@@ -28487,7 +28489,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_0_doors"
@@ -28541,7 +28545,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_0_wheels"
@@ -28595,7 +28601,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_0_front"
@@ -28649,7 +28657,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_0_rear"
@@ -28703,7 +28713,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_0_shell"
@@ -28757,7 +28769,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_1_intact"
@@ -28811,7 +28825,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_1_doors"
@@ -28865,7 +28881,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_1_wheels"
@@ -28919,7 +28937,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_1_front"
@@ -28973,7 +28993,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_1_rear"
@@ -29027,7 +29049,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_1_shell"
@@ -29081,7 +29105,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_2_intact"
@@ -29135,7 +29161,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_2_doors"
@@ -29189,7 +29217,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_2_wheels"
@@ -29243,7 +29273,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_2_front"
@@ -29297,7 +29329,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_2_rear"
@@ -29351,7 +29385,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_0_2_shell"
@@ -29405,7 +29441,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_0_intact"
@@ -29459,7 +29497,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_0_doors"
@@ -29513,7 +29553,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_0_wheels"
@@ -29567,7 +29609,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_0_front"
@@ -29621,7 +29665,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_0_rear"
@@ -29675,7 +29721,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_0_shell"
@@ -29729,7 +29777,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_1_intact"
@@ -29783,7 +29833,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_1_doors"
@@ -29837,7 +29889,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_1_wheels"
@@ -29891,7 +29945,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_1_front"
@@ -29945,7 +30001,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_1_rear"
@@ -29999,7 +30057,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_1_shell"
@@ -30053,7 +30113,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_2_intact"
@@ -30107,7 +30169,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_2_doors"
@@ -30161,7 +30225,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_2_wheels"
@@ -30215,7 +30281,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_2_front"
@@ -30269,7 +30337,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_2_rear"
@@ -30323,7 +30393,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_1_2_shell"
@@ -30377,7 +30449,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_0_intact"
@@ -30431,7 +30505,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_0_doors"
@@ -30485,7 +30561,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_0_wheels"
@@ -30539,7 +30617,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_0_front"
@@ -30593,7 +30673,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_0_rear"
@@ -30647,7 +30729,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_0_shell"
@@ -30701,7 +30785,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_1_intact"
@@ -30755,7 +30841,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_1_doors"
@@ -30809,7 +30897,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_1_wheels"
@@ -30863,7 +30953,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_1_front"
@@ -30917,7 +31009,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_1_rear"
@@ -30971,7 +31065,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_1_shell"
@@ -31025,7 +31121,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_2_intact"
@@ -31079,7 +31177,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_2_doors"
@@ -31133,7 +31233,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_2_wheels"
@@ -31187,7 +31289,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_2_front"
@@ -31241,7 +31345,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_2_rear"
@@ -31295,7 +31401,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_2_2_shell"
@@ -31349,7 +31457,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_0_intact"
@@ -31403,7 +31513,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_0_doors"
@@ -31457,7 +31569,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_0_wheels"
@@ -31511,7 +31625,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_0_front"
@@ -31565,7 +31681,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_0_rear"
@@ -31619,7 +31737,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_0_shell"
@@ -31673,7 +31793,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_1_intact"
@@ -31727,7 +31849,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_1_doors"
@@ -31781,7 +31905,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_1_wheels"
@@ -31835,7 +31961,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_1_front"
@@ -31889,7 +32017,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_1_rear"
@@ -31943,7 +32073,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_1_shell"
@@ -31997,7 +32129,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_2_intact"
@@ -32051,7 +32185,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_2_doors"
@@ -32105,7 +32241,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_2_wheels"
@@ -32159,7 +32297,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_2_front"
@@ -32213,7 +32353,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_2_rear"
@@ -32267,7 +32409,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_3_2_shell"
@@ -32321,7 +32465,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_0_intact"
@@ -32375,7 +32521,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_0_doors"
@@ -32429,7 +32577,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_0_wheels"
@@ -32483,7 +32633,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_0_front"
@@ -32537,7 +32689,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_0_rear"
@@ -32591,7 +32745,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_0_shell"
@@ -32645,7 +32801,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_1_intact"
@@ -32699,7 +32857,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_1_doors"
@@ -32753,7 +32913,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_1_wheels"
@@ -32807,7 +32969,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_1_front"
@@ -32861,7 +33025,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_1_rear"
@@ -32915,7 +33081,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_1_shell"
@@ -32969,7 +33137,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_2_intact"
@@ -33023,7 +33193,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_2_doors"
@@ -33077,7 +33249,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_2_wheels"
@@ -33131,7 +33305,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_2_front"
@@ -33185,7 +33361,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_2_rear"
@@ -33239,7 +33417,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "W": {
           "facing": "n",
           "furniture": "gauntlet_car_wreck_4_2_shell"
@@ -33302,7 +33482,9 @@
         "usage": ["Industrial"]
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "F": {
           "furniture": "crate",
           "loot": "d41_empty"
@@ -33318,7 +33500,9 @@
         "usage": ["Industrial"]
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "F": {
           "furniture": "crate",
           "loot": "d41_empty"
@@ -33388,7 +33572,9 @@
         "usage": []
       },
       "palette": {
-        "=": "concrete",
+        "=": {
+          "ground": true
+        },
         "F": {
           "furniture": "gauntlet_look_bollard"
         }

@@ -131,6 +131,8 @@ Windowed template spawns use named game-clock boundaries. Keep their rule and re
 
 A map piece makes a cell a spawn point through a palette `spawn` entry with an optional `chance`; a 1x1x1 marker piece is air that claims its cell and carries one such entry. A slot offers weighted marker pieces, and its pick, drawn once when the assembly compiles, decides the zombie type, while `chance` rolls per world. Lab threat varies by overriding the slot choices; see `src/content/base/gauntlet-lab-threat.libsonnet`, `markerPiece`.
 
+An item's floor pad is either authored as part of the item's design (a water tank's concrete foundation is a block in its template) or takes the ground beneath it through a palette `ground` entry, which stamps nothing so the surface the site put there shows. A pad never restates a site's surface block, because a surface then has two homes and the patch returns when the site's surface changes or an item lands on a different one. See `src/core/templates.ts`, `stampPlacement`, and `test/streetCars.test.ts`.
+
 ### Curated kits
 
 A weighted alternative must preserve its consumer's spatial contract, not merely fit a

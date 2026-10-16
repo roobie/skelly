@@ -41,12 +41,12 @@ local publicNotes = [
 local utilities = [
   {
     id: 'gauntlet_public_memo', size: [2, 3, 2], lootContext: { usage: ['Industrial'], tier: 'Tier1' },
-    palette: { '=': 'concrete', F: { furniture: 'crate', loot: 'd41_empty' } },
+    palette: { '=': { ground: true }, F: { furniture: 'crate', loot: 'd41_empty' } },
     layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
     id: 'gauntlet_public_directions', size: [2, 3, 2], lootContext: { usage: ['Industrial'], tier: 'Tier1' },
-    palette: { '=': 'concrete', F: { furniture: 'crate', loot: 'd41_empty' } },
+    palette: { '=': { ground: true }, F: { furniture: 'crate', loot: 'd41_empty' } },
     layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
@@ -79,7 +79,7 @@ local utilities = [
   },
   {
     id: 'gauntlet_incidental_bollard', size: [2, 5, 2], lootContext: emptyLoot,
-    palette: { '=': 'concrete', F: { furniture: 'gauntlet_look_bollard' } },
+    palette: { '=': { ground: true }, F: { furniture: 'gauntlet_look_bollard' } },
     layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF'], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
