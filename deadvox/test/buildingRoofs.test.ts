@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type CompiledTemplate, cellsOf, compileAssembly, compileTemplate } from '../src/core/templates.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const { registry } = buildBundledContent();
+const { registry } = startupContent();
 const blockAt = (template: CompiledTemplate, [x, y, z]: Vec3) =>
   template.blocks[x + template.size[0] * (z + template.size[2] * y)]!;
 const solidCells = (template: CompiledTemplate) =>

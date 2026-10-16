@@ -1,11 +1,11 @@
-import { buildBundledContent } from '../../src/game/bundledContent.ts';
 import {
   makeConfig as buildConfig,
   configFromUrl as readConfig,
   siteFromUrl as readSite,
 } from '../../src/game/config.ts';
+import { startupContent } from '../baseRegistry.ts';
 
-export const content = buildBundledContent();
+export const content = startupContent();
 export const configFromUrl = (params: URLSearchParams) => readConfig(params, content);
 export const makeConfig = (seed: number, radiusM: number, blockSize?: number) =>
   buildConfig(seed, radiusM, content, blockSize);

@@ -8,9 +8,9 @@ import { makeScale } from '../src/core/scale.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { footprint } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const { registry, issues } = buildBundledContent();
+const { registry, issues } = startupContent();
 
 const streetCars = (seed: number) => {
   const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;

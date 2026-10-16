@@ -10,9 +10,9 @@ import {
   compileMapPiece,
   type PlacedPiece,
 } from '../src/core/templates.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const content = buildBundledContent();
+const content = startupContent();
 
 const near = (positions: Vec3[], piece: PlacedPiece) =>
   positions.some(

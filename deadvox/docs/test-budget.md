@@ -4,7 +4,7 @@ read_if:
   - you're revisiting a cut after a budget overrun or related defect
   - you're measuring suite growth between milestones
   - you're changing content-scaling route or chunk-order test work
-  - you're changing base-registry fixture construction or its isolation
+  - you're changing base-registry or bundled-startup fixture construction or its isolation
 ---
 
 # Default Deadvox unit-suite reductions
@@ -30,7 +30,9 @@ For production chunk-order checks, native deep equality avoids matcher traversal
 
 Gameplay tests need validated content, not repeated admission of the same base pack during every file's import. Build that fixture once per run and deserialize a fresh object graph for each caller; do not share mutable registries or disable file isolation. See `test/baseRegistrySetup.ts`, `setup` and `test/baseRegistry.ts`, `baseRegistry`. Run-owned temporary storage prevents concurrent runs from replacing each other's content or interrupting a snapshot read.
 
-Content-admission and overlay tests still build their own inputs. Fixture fidelity and nested mutation isolation are checked separately in `test/baseRegistry.test.ts`; no gameplay assertion is removed when a file switches fixture construction.
+Content-admission and overlay tests still build their own inputs. Gameplay and configuration tests also need the bundled startup result's winning origins, not another admission pass during import. Preserve that result in a separate snapshot because bundled source paths differ from the base-registry fixture's source paths. See `test/baseRegistrySetup.ts`, `writeBaseRegistry` and `test/baseRegistry.ts`, `startupContent`. Both fixtures deserialize per caller so mutating a map, nested definition or admission result cannot leak between callers.
+
+Fixture fidelity and nested mutation isolation are checked separately in `test/baseRegistry.test.ts`; no gameplay assertion is removed when a file switches fixture construction.
 
 ## Milestone growth
 
