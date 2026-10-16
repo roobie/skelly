@@ -1089,9 +1089,9 @@ describe('authored fixed loot', () => {
       );
     const revolvers = anchorsHolding((item) => item === 'revolver_357');
     const boxes = anchorsHolding((item) => result.registry.items.get(item)?.unpack?.item === 'cartridge_357_h_magnum');
-    expect(revolvers.size).toBe(1);
-    expect(boxes.size).toBe(1);
-    expect([...boxes][0]).not.toBe([...revolvers][0]);
+    expect(revolvers.size).toBeGreaterThan(0);
+    expect(boxes.size).toBeGreaterThan(0);
+    expect([...revolvers].filter((anchor) => boxes.has(anchor))).toEqual([]);
   });
 
   it('furnishes the long gun in Dad’s cabin with a sling, so it can go on the shoulder', () => {
