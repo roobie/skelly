@@ -242,7 +242,17 @@ Every shop shows a street cue that no house carries, and no two shop types share
 
 ### City perimeter
 
-The wall is content: block, height, thickness and optional wire on `city.perimeter`, and optional `lining` and `gate` assemblies. The wall is one closed loop, including across the central street, because a gap at the street would be the one way out and the loop check fails any open span. The lining (barriers and notices) repeats along the inside foot and the gate dresses the street crossing; both are authored templates or assemblies that must fit beside the wall, and notice text follows `INTERFACE.md`, "Text" and faces inward. The gate is solid for movement, so the central street ends at it. A ring building's roof is reachable by its ladder, so the wall plus wire must out-top a sprinting jump from the top of every building in the ring pool, measured at its full height including rooftop fittings, so it over-reports rather than under-reports. The run is the setback minus the body's width on both sides (the city pool's setback is the street plus pad), and a run too short for the sprint to reach its apex is bounded by the apex, because a slower jump peaks at the wall. The check reads the jump from the player's sprint speed, take-off speed and body width, so it follows tuning, and fails with the path of the lever, `.city.ring.setback` (`.city.pad` without a ring), when the arc clears the wall and wire. Tall roofs within jump reach would turn the wall into a step, so the ring pool holds low buildings only; raising the wall would change the look, so the pool and the setback are the levers. See `src/core/cityPlan.ts`, `clearanceIssues`, `perimeterGaps` and `perimeterIssues`, `src/game/player.ts`, `PLAYER` and `sprintJumpRise`, and `src/content/base/gauntlet-city-perimeter.libsonnet`.
+The perimeter must stay closed across streets as well as blocks, because a street gap
+would become an escape. Its dressing must face inward without opening a way through;
+notice text follows `INTERFACE.md`, "Text". Reachable roofs must not turn the wall into
+a step, so clearance covers the start building as well as pool buildings, including
+rooftop fittings. The start uses its actual distance to the wall, with or without a
+ring. Jump clearance follows player physics rather than a separate content limit;
+a slower jump can peak at the wall even when a sprint would reach its apex beyond it.
+Lower buildings or more separation preserve containment without changing the wall's look.
+See `src/core/cityPlan.ts`, `clearanceIssues`, `perimeterGaps` and `perimeterIssues`;
+`src/game/player.ts`, `PLAYER` and `sprintJumpRise`; and
+`src/content/base/gauntlet-city-perimeter.libsonnet`.
 
 ## Scenarios
 
@@ -276,9 +286,9 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   the building can block the foot of a way down. At least two ways down stay open in
   every world, so one blocked way never leaves a single forced exit and leaving the roof
   stays a choice. The foot of a way down need not be kept clear. The start building
-  stands away from the perimeter wall, so its roof cannot become a jump over it and the
-  ring's clearance check need not cover it. See `src/core/scenarioStart.ts`,
-  `scenarioStartIssues`; `src/core/cityPlan.ts`, `buildCityPlan`; and
+  needs the same roof-clearance proof as a ring building, so it cannot become a jump
+  over the wall, whether or not the city has a ring. See `src/core/scenarioStart.ts`,
+  `scenarioStartIssues`; `src/core/cityPlan.ts`, `buildCityPlan` and `clearanceIssues`; and
   `src/core/scenarioCertificate.ts`, `scenarioCertificate`.
 - **Street approach.** The street a kind's proof enters its site from is an authored
   anchor, not derived from the site, so a scenario can approach from another side and

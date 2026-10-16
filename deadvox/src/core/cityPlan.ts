@@ -190,14 +190,15 @@ const streetPropChoices = (registry: Registry, id: string): { id: string; weight
   });
 };
 
-const cityDecorationIssues = (registry: Registry, city: ScenarioDef['city']): [string, string][] => {
+const cityDecorationIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
+  const { city } = scenario;
   const issues: [string, string][] = [];
   const { perimeter, ring } = city;
   if (ring && !perimeter) {
     issues.push(['.city.ring', 'an edge ring needs a perimeter wall to back onto']);
   }
   if (perimeter) {
-    issues.push(...perimeterIssues(registry, city, perimeter));
+    issues.push(...perimeterIssues(registry, scenario, perimeter));
   }
   for (const id of city.streetProps ?? []) {
     const kitRef = registry.mapPools.get(id)?.choices.find(({ ref }) => ref.kind !== 'template');
@@ -251,14 +252,15 @@ const dressingIssues = (registry: Registry, city: ScenarioDef['city'], perimeter
 };
 
 /** A sprint jump from the roof edge must still be below the wall-plus-wire top where it crosses the wall. */
-const clearanceIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {
+const clearanceIssues = (registry: Registry, scenario: ScenarioDef, perimeter: Perimeter): [string, string][] => {
+  const { city } = scenario;
   const { ring } = city;
   const wallTop = perimeter.height + 1 + (perimeter.wire?.height ?? 0);
   const setback = ring ? ring.setback : city.street + city.pad;
   const run = setback * BLOCK_SIZE - 2 * PLAYER.halfWidth;
-  const arcTop = (roof: number) => roof + sprintJumpRise(run) / BLOCK_SIZE;
+  const arcTop = (roof: number, distance = run) => roof + sprintJumpRise(distance) / BLOCK_SIZE;
   const choices = registry.mapPools.get(ring?.pool ?? city.pool)?.choices ?? [];
-  return choices.flatMap(({ ref }) => {
+  const issues = choices.flatMap(({ ref }) => {
     const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id);
     return building && arcTop(building.size[1]) >= wallTop
       ? [
@@ -269,14 +271,39 @@ const clearanceIssues = (registry: Registry, city: ScenarioDef['city'], perimete
         ]
       : [];
   });
+  const start = scenario.composition?.start;
+  if (start) {
+    let template: Placement['template'];
+    try {
+      template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
+    } catch {
+      return issues;
+    }
+    const { origin } = servicePlacement({ template, floor: 0, grid: city, cell: start.cell, turn: 0 });
+    const bounds = cityBounds(city);
+    const distance = Math.min(
+      origin[0] - bounds.x0,
+      bounds.x1 - origin[0] - template.size[0],
+      origin[2] - bounds.z0,
+      bounds.z1 - origin[2] - template.size[2],
+    );
+    if (arcTop(origin[1] + template.size[1], distance * BLOCK_SIZE - 2 * PLAYER.halfWidth) >= wallTop) {
+      issues.push([
+        '.composition.start.template',
+        `a jump from the roof of "${start.template}" clears the wall; lower the start building or move it farther from the wall`,
+      ]);
+    }
+  }
+  return issues;
 };
 
-const perimeterIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {
+const perimeterIssues = (registry: Registry, scenario: ScenarioDef, perimeter: Perimeter): [string, string][] => {
+  const { city } = scenario;
   const blocks = [perimeter.block, ...(perimeter.wire ? [perimeter.wire.block] : [])];
   const issues: [string, string][] = blocks
     .filter((block) => !registry.blockIds.has(block))
     .map((block) => ['.city.perimeter', `no block "${block}"`]);
-  issues.push(...dressingIssues(registry, city, perimeter), ...clearanceIssues(registry, city, perimeter));
+  issues.push(...dressingIssues(registry, city, perimeter), ...clearanceIssues(registry, scenario, perimeter));
   if (blocks.every((block) => registry.blockIds.has(block))) {
     const bounds = cityBounds(city);
     for (const gap of perimeterGaps(cityPerimeter(registry, perimeter, bounds, 0), bounds, 0, perimeter.height)) {
@@ -413,7 +440,7 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
   }
   const width = city.blockX - 2 * city.pad;
   issues.push(
-    ...cityDecorationIssues(registry, city),
+    ...cityDecorationIssues(registry, scenario),
     ...cityPoolIssues(registry, scenario),
     ...scenarioStartIssues(registry, scenario),
   );
@@ -626,7 +653,7 @@ export const servicePlacement = ({
 }: {
   template: ReturnType<typeof compileTemplate>;
   floor: number;
-  grid: CityGrid;
+  grid: Pick<CityGrid, 'street' | 'blockX' | 'blockZ' | 'pad'>;
   cell: Cell;
   turn: Turn;
 }): Placement =>

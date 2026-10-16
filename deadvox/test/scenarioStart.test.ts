@@ -76,6 +76,23 @@ it('honours the authored start cell and refuses a cell outside the street grid',
   expect(scenarioPlanIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
 });
 
+it('refuses a start roof that can clear the wall, with or without a ring', () => {
+  const own = structuredClone(profile);
+  const template = structuredClone(registry.mapAssemblies.get(own.composition!.start.template)!);
+  template.id = 'fixture_tall_start';
+  template.size[1] = 1000;
+  const fixtures = { ...registry, mapAssemblies: new Map(registry.mapAssemblies).set(template.id, template) };
+  own.composition!.start.template = template.id;
+  own.composition!.start.cell = [-own.city.blocksX, -own.city.blocksZ];
+  for (const ring of [profile.city.ring, undefined]) {
+    own.city.ring = ring;
+    expect(scenarioPlanIssues(fixtures, own).some(([path]) => path === '.composition.start.template')).toBe(true);
+    template.size[1] = registry.mapAssemblies.get(profile.composition!.start.template)!.size[1];
+    expect(scenarioPlanIssues(fixtures, own).filter(([path]) => path.startsWith('.composition.start'))).toEqual([]);
+    template.size[1] = 1000;
+  }
+});
+
 for (const descent of start.descents) {
   it(`proves the authored ${descent.kind} way down from the roof, not just its foot`, () => {
     expect(certificate([descent], 1).issues).toEqual([]);
