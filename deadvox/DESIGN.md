@@ -3,7 +3,7 @@ read_if:
   - you change browser mod identity or startup admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
-  - you're choosing world scale, view distance or performance targets
+  - you're choosing world scale, view distance, performance targets or the default render scale
   - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
@@ -103,14 +103,25 @@ place the authorities gave up on.
 
 ## Performance and scale
 
-Use a portable reference-laptop class for performance acceptance: integrated
-graphics share memory bandwidth with the CPU, so triangle count, overdraw and
-draw calls compete with simulation; workers also compete with the main thread,
-so keep their number small. Compare the same workloads on that reference class,
+Performance acceptance targets 60 fps on a portable reference-laptop class:
+Intel HD 530-class integrated graphics at a device pixel ratio of 1.5. That
+class is old and widely owned, so meeting it keeps the game playable for most
+testers, and the pixel ratio matches common laptop display scaling, so the
+target counts the pixels those players actually draw. Integrated graphics share
+memory bandwidth with the CPU, so triangle count, overdraw and draw calls
+compete with simulation; workers also compete with the main thread, so keep
+their number small. Compare the same workloads on that reference class,
 measuring rendering, simulation and workers together rather than relying on the
 execution host. Compare the forest workload there when evaluating foliage
 performance changes. See
 [CHALLENGES.md](CHALLENGES.md) for active performance constraints.
+
+Render scale adapts by default: scene resolution drops only while the frame
+rate misses the target, so slower machines trade sharpness for frame rate and
+faster ones keep the full image. The adaptive default is pending #680; until it
+lands, content sets a fixed default. See `src/content/base/graphics.jsonnet` and
+`src/render/mood.ts`, `Mood.setRenderScale`. Look changes made for performance
+follow `deadvox/GRAPHICS.md`, "Look decisions".
 
 Half-metre blocks keep doorways, furniture and interiors at human scale, and
 make stairs walkable rather than jump-sized. The finer quarter-metre scale did

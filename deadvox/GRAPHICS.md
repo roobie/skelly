@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're changing procedural surface weathering or building appearance
-  - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, or evaluating renderer performance
+  - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, or evaluating renderer performance or a look change it makes
   - you're changing wide ambient occlusion or its interaction with skylight
   - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating opt-in GPU quality trials
@@ -30,7 +30,7 @@ Post-processing and shadows support the intended mood. Compare the same workload
 
 Tone mapping, display transfer and colour grading share a fullscreen draw because storing and sampling an intermediate display-space image adds GPU work without adding an effect. Grade remains after tone mapping and transfer so its controls keep their display-referred meaning; bloom stays before them in linear light. See `src/render/moodOutput.ts`, `createMoodOutputPass`, and `src/render/mood.ts`, `Mood`.
 
-A measured cost reduction does not authorize a different default look; default changes require the operator's visual judgment. Scale the post-chain inputs rather than the canvas so DOM/HUD readability and display-space film stay independent of scene resolution. The direct no-post path remains unscaled. See `src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`.
+A performance change may alter the default look only slightly, and each such change needs the operator's approval of a before/after comparison, so optimisations cannot silently degrade the image; a measured cost reduction alone never authorizes it. Scale the post-chain inputs rather than the canvas so DOM/HUD readability and display-space film stay independent of scene resolution. The direct no-post path remains unscaled. See `src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`.
 
 Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `src/render/shadows.ts`, `Shadows.setSmallSunMap`.
 
