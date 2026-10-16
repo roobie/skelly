@@ -605,7 +605,7 @@ try {
     const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
     assert.equal(raisedOutdoor, 1);
     const lightProof = await timePhase('cellar-dark-beam-pixels', async () => {
-      const dark = await shot('cellar-dark', true);
+      const dark = await timePhase('cellar-dark-capture', () => shot('cellar-dark', true));
       await page.evaluate(() => {
         const { session } = globalThis.stairsWitness;
         for (const side of ['left', 'right']) {
@@ -630,7 +630,7 @@ try {
       await mouse5();
       await page.waitForTimeout(700);
       assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left.on), true);
-      const lit = await shot('cellar-beam', true);
+      const lit = await timePhase('cellar-hand-capture', () => shot('cellar-beam', true));
       await page.evaluate(() => {
         const { session } = globalThis.stairsWitness;
         const previous = session.inventory.worn.head;
@@ -651,7 +651,7 @@ try {
           globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
             .length === 2,
       );
-      const both = await shot('cellar-both-beams', true);
+      const both = await timePhase('cellar-combined-capture', () => shot('cellar-both-beams', true));
       await page.evaluate(() => {
         const { session } = globalThis.stairsWitness;
         const reason = session.survival.use(session.inventory.hands.left);
@@ -664,7 +664,7 @@ try {
           globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
             .length === 1,
       );
-      const worn = await shot('cellar-worn-beam', true);
+      const worn = await timePhase('cellar-worn-capture', () => shot('cellar-worn-beam', true));
       const proof = {
         dark: await luminance(dark),
         beam: await luminance(lit),
