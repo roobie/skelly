@@ -1,26 +1,4 @@
-import type { InputContext } from '../game/inputBindings.ts';
-
-export interface KeyTraceEntry {
-  readonly kind: 'down' | 'up' | 'context' | 'cancel' | 'focus' | 'blur' | 'visibility' | 'pointer-lock';
-  readonly at: number;
-  readonly context: InputContext;
-  readonly focus: 'editable' | 'other';
-  readonly hidden: boolean;
-  readonly pointerLocked: boolean;
-  readonly down: readonly string[];
-  readonly blocked: readonly string[];
-  readonly active: readonly { code: string; action: string }[];
-  readonly reason?: string;
-  readonly code?: string;
-  readonly repeat?: boolean;
-  readonly shiftKey?: boolean;
-  readonly ctrlKey?: boolean;
-  readonly altKey?: boolean;
-  readonly metaKey?: boolean;
-  readonly isComposing?: boolean;
-  readonly isTrusted?: boolean;
-  readonly accepted?: boolean;
-}
+import type { KeyTraceEntry } from '../game/inputBindings.ts';
 
 const KEY_TRACE_LIMIT = 2048;
 

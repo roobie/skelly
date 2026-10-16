@@ -95,6 +95,45 @@ const storage = () => {
 };
 
 describe('keyboard registry', () => {
+  it('redacts movement codes from the debug trace while text entry has focus', () => {
+    const bindings = new BindingRegistry(
+      [
+        {
+          id: 'movement.fixture',
+          description: 'Fixture movement',
+          contexts: ['play'],
+          commands: [{ id: 'movement.fixture', kind: 'held-state' }],
+          defaults: [{ code: 'KeyW' }],
+        },
+      ],
+      storage(),
+    );
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'play', debug: true });
+    const trace = new KeyTrace();
+    keyboard.trace = trace.record;
+    const field = document.createElement('input');
+    document.body.append(field);
+    field.focus();
+    try {
+      expect(keyboard.press(event('KeyW'), true)).toBe(false);
+      keyboard.release(event('KeyW'));
+      const { entries } = JSON.parse(trace.export());
+      expect(entries.find((entry: { kind: string }) => entry.kind === 'down')).toMatchObject({
+        focus: 'editable',
+        accepted: false,
+        reason: 'editing',
+      });
+      for (const entry of entries) {
+        expect(entry).not.toHaveProperty('code');
+        expect(entry.down).toEqual([]);
+        expect(entry.blocked).toEqual([]);
+        expect(entry.active).toEqual([]);
+      }
+    } finally {
+      field.remove();
+    }
+  });
   it('records the modifier refusal for a movement down in the debug key trace', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
     keyboard.context = () => ({ context: 'play', debug: true });

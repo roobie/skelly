@@ -1,8 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
 // biome-ignore-all lint/style/noExcessiveClassesPerFile: preferences and their single DOM resolver share the enforced keyboard boundary.
 
-import type { KeyTraceEntry } from '../debug/keyTrace.ts';
-
 export const INPUT_CONTEXTS = {
   title: false,
   menu: false,
@@ -667,6 +665,27 @@ export interface KeyboardState {
   readonly context: InputContext;
   readonly debug: boolean;
 }
+export interface KeyTraceEntry {
+  readonly kind: 'down' | 'up' | 'context' | 'cancel' | 'focus' | 'blur' | 'visibility' | 'pointer-lock';
+  readonly at: number;
+  readonly context: InputContext;
+  readonly focus: 'editable' | 'other';
+  readonly hidden: boolean;
+  readonly pointerLocked: boolean;
+  readonly down: readonly string[];
+  readonly blocked: readonly string[];
+  readonly active: readonly { code: string; action: string }[];
+  readonly reason?: string;
+  readonly code?: string;
+  readonly repeat?: boolean;
+  readonly shiftKey?: boolean;
+  readonly ctrlKey?: boolean;
+  readonly altKey?: boolean;
+  readonly metaKey?: boolean;
+  readonly isComposing?: boolean;
+  readonly isTrusted?: boolean;
+  readonly accepted?: boolean;
+}
 export interface InputCommand {
   readonly action: string;
   readonly phase: 'down' | 'up';
@@ -778,18 +797,25 @@ export class KeyboardInput {
     if (!(this.trace && this.state.debug)) {
       return;
     }
-    this.trace({
+    const focus: KeyTraceEntry['focus'] = editable(document.activeElement) ? 'editable' : 'other';
+    const entry = {
       kind,
       at: performance.now(),
       context: this.state.context,
-      focus: editable(document.activeElement) ? 'editable' : 'other',
+      focus,
       hidden: document.hidden,
       pointerLocked: Boolean(document.pointerLockElement),
       down: [...this.down].filter((code) => this.traceCode(code)),
       blocked: [...this.blocked].filter((code) => this.traceCode(code)),
       active: [...this.active].filter(([code]) => this.traceCode(code)).map(([code, action]) => ({ code, action })),
       ...detail,
-    });
+    };
+    if (entry.focus === 'editable') {
+      const { code: _code, ...redacted } = entry;
+      this.trace({ ...redacted, down: [], blocked: [], active: [] });
+    } else {
+      this.trace(entry);
+    }
   }
   private traceDown(event: KeyEvent, accepted: boolean, reason: string): boolean {
     if (this.trace && this.state.debug && this.traceCode(event.code)) {
