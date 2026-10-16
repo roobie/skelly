@@ -5,23 +5,66 @@
         {
           "ref": {
             "id": "gauntlet_city_1",
-            "kind": "assembly"
+            "kind": "assembly",
+            "style": "brick_townhouse"
           },
-          "weight": 36
+          "weight": 27
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_1",
+            "kind": "assembly",
+            "style": "concrete_townhouse"
+          },
+          "weight": 9
         },
         {
           "ref": {
             "id": "gauntlet_city_2",
-            "kind": "assembly"
+            "kind": "assembly",
+            "style": "brick_townhouse"
           },
-          "weight": 30
+          "weight": 22.5
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_2",
+            "kind": "assembly",
+            "style": "concrete_townhouse"
+          },
+          "weight": 7.5
         },
         {
           "ref": {
             "id": "gauntlet_city_3",
-            "kind": "assembly"
+            "kind": "assembly",
+            "style": "brick_townhouse"
           },
-          "weight": 18
+          "weight": 13.5
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_3",
+            "kind": "assembly",
+            "style": "concrete_townhouse"
+          },
+          "weight": 4.5
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_cellar",
+            "kind": "assembly",
+            "style": "brick_townhouse"
+          },
+          "weight": 9
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_cellar",
+            "kind": "assembly",
+            "style": "concrete_townhouse"
+          },
+          "weight": 3
         },
         {
           "atMost": 3,
@@ -49,7 +92,7 @@
         },
         {
           "atLeast": 1,
-          "atMost": 2,
+          "atMost": 1,
           "ref": {
             "id": "gauntlet_police_station",
             "kind": "assembly"

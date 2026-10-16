@@ -7,8 +7,10 @@
         "diameterMm": 5.7000000000000002,
         "headDamageMultiplier": 2,
         "impulse": 1,
+        "loadSimSeconds": 0.80000000000000004,
         "pellets": 1,
-        "rangeMetres": 500
+        "rangeMetres": 500,
+        "stripSimSeconds": 0.5
       },
       "category": "ammo",
       "description": "A loose 5.56×45 rifle cartridge.",
@@ -30,8 +32,10 @@
         "diameterMm": 7.9199999999999999,
         "headDamageMultiplier": 2,
         "impulse": 1.5,
+        "loadSimSeconds": 0.80000000000000004,
         "pellets": 1,
-        "rangeMetres": 400
+        "rangeMetres": 400,
+        "stripSimSeconds": 0.5
       },
       "category": "ammo",
       "description": "A loose 7.62×39 rifle cartridge.",
@@ -58,7 +62,8 @@
       "size": [2, 1],
       "unpack": {
         "count": 20,
-        "item": "cartridge_5_d_56x45"
+        "item": "cartridge_5_d_56x45",
+        "simSeconds": 1.2
       },
       "weight": 280
     },
@@ -74,7 +79,8 @@
       "size": [2, 1],
       "unpack": {
         "count": 20,
-        "item": "cartridge_7_d_62x39"
+        "item": "cartridge_7_d_62x39",
+        "simSeconds": 1.2
       },
       "weight": 360
     },

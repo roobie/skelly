@@ -41,7 +41,7 @@ for (const room of lab.mapAssemblies!) {
   if (template.pieces.some((piece) => registry.furniture.get(piece.furniture)?.scenarioGoal)) {
     continue;
   }
-  const key = shell.choices[0]!.ref.id;
+  const key = shell.choices![0]!.ref.id;
   roomPools.set(key, [...(roomPools.get(key) ?? []), room]);
 }
 const alternatives = new Map(
@@ -58,7 +58,7 @@ const substitutedRegistry: Registry = {
           {
             ...assembly,
             slots: assembly.slots.map((slot) => {
-              const { ref } = slot.choices[0]!;
+              const { ref } = slot.choices![0]!;
               const choices = ref.kind === 'assembly' ? alternatives.get(ref.id) : undefined;
               const replacements = choices?.filter((room) => room.id !== ref.id);
               return replacements && replacements.length > 0
@@ -319,3 +319,64 @@ it(
   },
   profile.composition!.storeys.length * 2000,
 );
+
+describe('lab threat by depth', () => {
+  // The lab assembly no other lab assembly references stacks the storeys, one assembly slot per storey.
+  const referenced = new Set(
+    lab
+      .mapAssemblies!.flatMap((assembly) => assembly.slots.flatMap((slot) => slot.choices ?? []))
+      .map((choice) => choice.ref.id),
+  );
+  const storeySlots = lab
+    .mapAssemblies!.find((assembly) => !referenced.has(assembly.id))!
+    .slots.filter((slot) => slot.choices?.[0]?.ref.kind === 'assembly');
+  // A threat slot's pieces carry the marker chance; its weighted choices carry the zombie type.
+  const markerChance = new Map(
+    lab.mapPieces!.map((piece) => [
+      piece.id,
+      Object.values(piece.palette).reduce((sum, entry) => sum + ('chance' in entry ? (entry.chance ?? 0) : 0), 0),
+    ]),
+  );
+  const expectedMarkers = (storeyId: string): number =>
+    lab
+      .mapAssemblies!.find((assembly) => assembly.id === storeyId)!
+      .slots.filter((slot) => slot.id.includes('_threat_'))
+      .reduce((sum, slot) => {
+        const total = (slot.choices ?? []).reduce((all, choice) => all + choice.weight, 0);
+        return (
+          sum +
+          (slot.choices ?? []).reduce(
+            (acc, choice) => acc + (choice.weight / total) * markerChance.get(choice.ref.id)!,
+            0,
+          )
+        );
+      }, 0);
+
+  it('weights expected markers no lower on each deeper storey and higher at the bottom than the top', () => {
+    const topDown = [...storeySlots]
+      .sort((a, b) => b.at[1] - a.at[1])
+      .map((slot) => expectedMarkers(slot.choices?.[0]?.ref.id ?? ''));
+    expect(topDown.length).toBeGreaterThan(1);
+    for (let i = 1; i < topDown.length; i++) {
+      expect(topDown[i]).toBeGreaterThanOrEqual(topDown[i - 1]!);
+    }
+    expect(topDown.at(-1)).toBeGreaterThan(topDown[0]!);
+  });
+
+  it('offers the amalgam only on the lowest storey', () => {
+    const amalgamPieces = new Set(
+      lab
+        .mapPieces!.filter((piece) =>
+          Object.values(piece.palette).some(
+            (entry) => typeof entry !== 'string' && 'spawn' in entry && entry.spawn === 'amalgam',
+          ),
+        )
+        .map((piece) => piece.id),
+    );
+    const storeysWithAmalgam = lab.mapAssemblies!.filter((assembly) =>
+      assembly.slots.some((slot) => slot.choices?.some((choice) => amalgamPieces.has(choice.ref.id))),
+    );
+    const lowest = storeySlots.reduce((low, slot) => (slot.at[1] < low.at[1] ? slot : low));
+    expect(storeysWithAmalgam.map((assembly) => assembly.id)).toEqual([lowest.choices?.[0]?.ref.id]);
+  });
+});

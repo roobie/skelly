@@ -401,6 +401,20 @@ const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry
   }
 };
 
+const checkFirearmHandling = (
+  item: ItemDef,
+  firearm: NonNullable<ItemDef['firearm']>,
+  registry: Registry,
+  report: Report,
+): void => {
+  if (firearm.pump && firearm.handling.shellLoadSimSeconds === undefined) {
+    report('items', item.id, '.firearm.handling.shellLoadSimSeconds', 'a pump firearm needs a shell load time');
+  }
+  if (magazineWellCalibre(registry, item.id) !== undefined && firearm.handling.magazine === undefined) {
+    report('items', item.id, '.firearm.handling.magazine', 'a magazine-fed firearm needs magazine handling times');
+  }
+};
+
 const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): void => {
   if (item.firearm?.pump && item.firearm.dispersionRadians !== 0) {
     report('items', item.id, '.firearm.dispersionRadians', 'pump pellet spread owns its cone');
@@ -412,6 +426,7 @@ const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): vo
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
   if (item.firearm) {
     checkFirearmSounds(item, model, registry, report);
+    checkFirearmHandling(item, item.firearm, registry, report);
   }
   for (const attachment of model?.attachments ?? []) {
     const registered = [...registry.items.values()].some((candidate) => {
@@ -978,19 +993,21 @@ const checkRecipes = (registry: Registry, report: Report) => {
 };
 
 const checkKeys = (registry: Registry, report: Report) => {
-  const doorLocks = new Set(
-    [...registry.templates.values()].flatMap((template) => templateLockIds(registry, template)),
-  );
+  const sources = [
+    ...[...registry.templates.values()].map((definition) => ({ section: 'templates' as const, definition })),
+    ...[...registry.mapPieces.values()].map((definition) => ({ section: 'mapPieces' as const, definition })),
+  ];
+  const doorLocks = new Set(sources.flatMap(({ definition }) => templateLockIds(registry, definition)));
   const keyLocks = new Set([...registry.items.values()].flatMap((item) => (item.key ? [item.key.lock] : [])));
   for (const item of registry.items.values()) {
     if (item.key && !doorLocks.has(item.key.lock)) {
       report('items', item.id, '.key.lock', `no door has lock "${item.key.lock}"`);
     }
   }
-  for (const template of registry.templates.values()) {
-    for (const lock of new Set(templateLockIds(registry, template))) {
+  for (const { section, definition } of sources) {
+    for (const lock of new Set(templateLockIds(registry, definition))) {
       if (!keyLocks.has(lock)) {
-        report('templates', template.id, '.palette', `no key names lock "${lock}"`);
+        report(section, definition.id, '.palette', `no key names lock "${lock}"`);
       }
     }
   }

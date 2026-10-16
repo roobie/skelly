@@ -10,7 +10,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { defOf } from '../src/core/items.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
-import { BOX_UNPACK_SECONDS, Unpacking } from '../src/game/unpacking.ts';
+import { Unpacking } from '../src/game/unpacking.ts';
 import { advance, capture, createRuntime } from './snapshotTestSupport.ts';
 
 const BASE = 'src/content/base';
@@ -23,6 +23,7 @@ const { registry, issues } = buildRegistry(
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
+const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSeconds;
 
 const fixtureRegistry = (): Registry => {
   const models = new Map(registry.models);
@@ -60,6 +61,24 @@ const fixtureRegistry = (): Registry => {
       weight: 1,
       size: [2, 2],
       model: modelId,
+    },
+    {
+      id: 'fixture_round',
+      economy: { usage: [], tiers: [] },
+      name: 'Fixture round',
+      category: 'ammo',
+      weight: 0.01,
+      size: [1, 1],
+      ammo: {
+        calibre: 'fixture_calibre',
+        pellets: 1,
+        diameterMm: 5,
+        damage: 1,
+        impulse: 1,
+        rangeMetres: 10,
+        loadSimSeconds: simSeconds(1),
+        stripSimSeconds: simSeconds(1),
+      },
     },
   ];
   for (const definition of definitions) {

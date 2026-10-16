@@ -16,8 +16,6 @@ import type { SenseDef } from './schema.ts';
 import { sunDirection } from './sky.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
-/** Seconds to swap the battery in a light. */
-export const BATTERY_SWAP = 2;
 /** Lift ground-light emitters so the near-field falloff reaches nearby surfaces, rather than only grazing the floor. */
 export const WORLD_LIGHT_HEIGHT_METRES = 0.4;
 export type LightExposure = 'carried' | 'world';

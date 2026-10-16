@@ -3,6 +3,31 @@
     {
       "bindings": {
         "cap": {
+          "block": "concrete",
+          "role": "trim"
+        },
+        "facade": {
+          "block": "concrete",
+          "role": "shell"
+        },
+        "floor": {
+          "block": "planks",
+          "role": "interior_floor"
+        },
+        "footing": {
+          "block": "concrete",
+          "role": "support"
+        },
+        "opening": {
+          "block": "air",
+          "role": "opening"
+        }
+      },
+      "id": "concrete_townhouse"
+    },
+    {
+      "bindings": {
+        "cap": {
           "block": "brick",
           "role": "trim"
         },

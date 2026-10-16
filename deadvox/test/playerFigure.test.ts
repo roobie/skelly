@@ -491,7 +491,7 @@ describe('player figure', () => {
     record(readyMeleePose(false));
     record(readyMeleePose(true));
     const { cooldown } = FISTS_MELEE;
-    const contactAt = meleeContactTime(cooldown);
+    const contactAt = meleeContactTime(cooldown, FISTS_MELEE.contactFraction!, FISTS_MELEE.windupCapSimSeconds!);
     const contact = meleePoseAndContact(
       {
         profile: 'fists',

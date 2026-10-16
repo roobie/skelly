@@ -13,6 +13,8 @@ local melee(type, damage, reach, cooldownSimSeconds, stamina, impulse, wearPerHi
     stamina: stamina,
     impulse: impulse,
     wearPerHit: wearPerHit,
+    contactFraction: 0.4,
+    windupCapSimSeconds: 0.25,
     type: type,
   },
 };
@@ -24,7 +26,7 @@ local batteryBeam(radius, seenFrom, intensity, beam, chargePerGameHour) = {
   color: '#fff1d8',
   intensity: intensity,
   beam: beam,
-  power: { battery: 'aa_battery', chargePerGameHour: chargePerGameHour },
+  power: { battery: 'aa_battery', chargePerGameHour: chargePerGameHour, swapSimSeconds: 2 },
 };
 
 local burns(ignition, douse, sprint, stow, drop, relight) = {

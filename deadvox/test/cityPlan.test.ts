@@ -7,7 +7,7 @@ import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
-import { cellsOf, compileAssembly, compileTemplate, footprint } from '../src/core/templates.ts';
+import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
@@ -71,20 +71,52 @@ const generated = (reverse: boolean) => {
   return { chunks, furniture };
 };
 
-const floorCourses = (id: string) => {
+// Slot choices are enumerated, not rolled: a seeded roll may never pick the style that breaks the rule.
+const nativeDefinitions = (id: string, style?: string) => {
+  const native = BUNDLED_CONTENT.registry;
+  const alternatives = Math.max(
+    ...[...native.mapAssemblies.values()].flatMap((candidate) =>
+      candidate.slots.map((slot) => kitSlotChoices(native, slot).length),
+    ),
+  );
+  return Array.from({ length: alternatives }, (_, variant) => {
+    const selected = {
+      ...native,
+      mapAssemblies: new Map(
+        [...native.mapAssemblies.values()].map((candidate) => [
+          candidate.id,
+          {
+            ...candidate,
+            slots: candidate.slots.map(({ pool: _pool, ...slot }) => {
+              const choices = kitSlotChoices(native, { ...slot, pool: _pool });
+              return { ...slot, choices: [choices[variant % choices.length]!] };
+            }),
+          },
+        ]),
+      ),
+    };
+    return compileAssembly(selected, selected.mapAssemblies.get(id)!, {
+      seed: 73,
+      siteId: 'facade-course-witness',
+      ...(style ? { style } : {}),
+    });
+  });
+};
+
+/** Exterior floor and roof courses of a compiled building, each with the wall block below it. */
+const floorCourses = (id: string, template: ReturnType<typeof compileTemplate>, style?: string) => {
   const native = BUNDLED_CONTENT.registry;
   const shellBlocksByPiece = new Map(
     [...native.mapPieces.values()].map((piece) => [
       piece.id,
       new Set(
-        Object.values(native.mapStyles.get(piece.style)!.bindings)
+        Object.values(native.mapStyles.get(style ?? piece.style)!.bindings)
           .filter(({ role }) => role === 'shell')
           .map(({ block }) => native.blockIds.get(block)),
       ),
     ]),
   );
   const assembly = native.mapAssemblies.get(id)!;
-  const template = compileAssembly(native, assembly, { seed: 73, siteId: 'floor_course' });
   const [sx, sy, sz] = template.size;
   const at = (x: number, y: number, z: number) =>
     x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz ? 0 : template.blocks[x + sx * (z + sz * y)]!;
@@ -126,14 +158,16 @@ const floorCourses = (id: string) => {
 };
 
 describe('one finished city plan', () => {
-  it('keeps generated building floor and roof courses in the exterior wall material', () => {
+  it('keeps compiled building floor and roof courses in the exterior wall material', () => {
     const native = BUNDLED_CONTENT.registry;
     const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-    for (const { id } of cityGridOf(native, scenario.city).templates) {
-      const { courses, scanned } = floorCourses(id);
-      expect(scanned, `${id}: no shell wall under a floor or roof layer was scanned`).toBeGreaterThan(0);
-      for (const [actual, wall, message] of courses) {
-        expect(actual, message).toBe(wall);
+    for (const { id, style } of cityGridOf(native, scenario.city).templates) {
+      for (const [variant, template] of nativeDefinitions(id, style).entries()) {
+        const { courses, scanned } = floorCourses(id, template, style);
+        expect(scanned, `${id}@${style} variant ${variant}: no shell wall was scanned`).toBeGreaterThan(0);
+        for (const [actual, wall, message] of courses) {
+          expect(actual, `${style} variant ${variant} ${message}`).toBe(wall);
+        }
       }
     }
   });
@@ -264,6 +298,37 @@ describe('one finished city plan', () => {
     const site = new CitySite(73, registry, scale, plan);
     expect(site.surface.height(plan.spawn[0], plan.spawn[2], floor + 9)).toBe(floor);
     expect(site.surface.top(plan.spawn[0], plan.spawn[2])).toBe(registry.blockIds.get('asphalt'));
+  });
+
+  it('never stacks a template past its authored maxStoreys while an unlimited one still stacks', () => {
+    const limited = registry.templates.get('fixture_house')!;
+    const capped = {
+      ...registry,
+      templates: new Map(registry.templates).set(limited.id, { ...limited, maxStoreys: 1 }),
+    };
+    const plan = buildCityPlan({
+      seed: 73,
+      registry: capped,
+      floor,
+      grid: {
+        ...fixtureGrid,
+        blocksX: 3,
+        blocksZ: 3,
+        templates: [
+          { id: 'fixture_house', weight: 1 },
+          { id: 'fixture_small_house', weight: 1 },
+        ],
+      },
+      maxStoreys: 4,
+    });
+    const heights = (id: string) =>
+      plan.placements
+        .filter((placement) => placement.template.id.split('×')[0] === id)
+        .map((placement) => placement.template.size[1]);
+    const [, unstacked] = limited.size;
+    expect(heights('fixture_house').length).toBeGreaterThan(0);
+    expect(heights('fixture_house').every((height) => height === unstacked)).toBe(true);
+    expect(heights('fixture_small_house').some((height) => height > unstacked)).toBe(true);
   });
 
   it('chooses the service block/turn independently of incidental template selection', () => {

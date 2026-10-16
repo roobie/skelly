@@ -12,6 +12,7 @@ import { Simulation } from './simulationFixture.ts';
 
 // A painkiller is one by its component, whatever its category.
 const FIXTURE_ANALGESIC = {
+  takeSimSeconds: 1,
   reliefPerDose: 1,
   maxRelief: 1,
   onsetGameMinutes: 1,
@@ -22,11 +23,21 @@ const capabilities = [
   {
     id: 'held_blunt',
     kind: 'melee',
-    weapon: { melee: { damage: 1, reach: 1, cooldownSimSeconds: 1, stamina: 0, type: 'blunt' } },
+    weapon: {
+      melee: {
+        damage: 1,
+        reach: 1,
+        cooldownSimSeconds: 1,
+        stamina: 0,
+        type: 'blunt',
+        contactFraction: 0.4,
+        windupCapSimSeconds: 0.25,
+      },
+    },
   },
   { id: 'held_light', kind: 'light', light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1 } },
-  { id: 'held_food', kind: 'use', category: 'food', food: { calories: 1, water: 0 } },
-  { id: 'held_drink', kind: 'use', category: 'drink', food: { calories: 0, water: 1 } },
+  { id: 'held_food', kind: 'use', category: 'food', food: { calories: 1, water: 0, consumeSimSeconds: 1 } },
+  { id: 'held_drink', kind: 'use', category: 'drink', food: { calories: 0, water: 1, consumeSimSeconds: 1 } },
   { id: 'held_bandage', kind: 'use', category: 'medical' },
   { id: 'held_rag', kind: 'use', category: 'material', treatment: { bleeding: 1 } },
   { id: 'held_material_pill', kind: 'use', category: 'material', analgesic: FIXTURE_ANALGESIC },
@@ -34,7 +45,7 @@ const capabilities = [
   {
     id: 'held_gun',
     kind: 'firearm',
-    firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01, shotSound: 'gunshot' },
+    firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01, shotSound: 'gunshot', handling: {} },
     twoHanded: true,
   },
   {
@@ -62,7 +73,7 @@ const capabilities = [
     kind: 'read',
     book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingGameMinutes: 1 },
   },
-  { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1 } },
+  { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1, simSeconds: 1 } },
   {
     id: 'held_plain',
     kind: 'none',

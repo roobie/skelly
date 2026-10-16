@@ -22,6 +22,7 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { zombieFigure } from '../src/core/zombieFigure.ts';
 import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
@@ -726,7 +727,16 @@ describe('amalgam body and combat seam', () => {
     expect(
       simulation.firePellets(
         projectileShot(
-          { calibre: 'test', pellets: 1, damage: 1, impulse: 0, rangeMetres: 50, diameterMm: 5 },
+          {
+            calibre: 'test',
+            pellets: 1,
+            damage: 1,
+            impulse: 0,
+            rangeMetres: 50,
+            diameterMm: 5,
+            loadSimSeconds: simSeconds(1),
+            stripSimSeconds: simSeconds(1),
+          },
           ray.origin,
           [ray.direction],
         ),

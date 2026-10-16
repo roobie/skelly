@@ -31,8 +31,13 @@ export const DEFAULT_HUD_OPTIONS: HudOptionsState = {
   messages: true,
 };
 
-export const hudVisibility = (state: HudSettings, debug = false): HudOptionsState =>
-  Object.fromEntries(HUD_OPTION_KEYS.map((key) => [key, debug || (state.shown && state[key])])) as HudOptionsState;
+// Hints about the world would be drawn over a modal screen that has taken the player's attention from it.
+export const hudVisibility = (state: HudSettings, debug = false, modalOpen = false): HudOptionsState => {
+  const visible = Object.fromEntries(
+    HUD_OPTION_KEYS.map((key) => [key, debug || (state.shown && state[key])]),
+  ) as HudOptionsState;
+  return modalOpen ? { ...visible, interaction: false } : visible;
+};
 
 const STORAGE_KEY = 'deadvox.hud-options';
 

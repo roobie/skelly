@@ -1,59 +1,57 @@
 {
   "sources": [
     {
-      "title": "The Free Firearm Sound Library — Winchester Model 12",
-      "url": "https://opengameart.org/content/the-free-firearm-sound-library",
       "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
-      "licence": "CC0-1.0",
+      "changes": "K_22P near take, single-shot slices 0.82–1.90 s and 7.42–8.50 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade.",
       "download": "Prepared SFX Library.7z",
       "files": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"],
-      "changes": "K_22P near take, single-shot slices 0.82–1.90 s and 7.42–8.50 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade."
+      "licence": "CC0-1.0",
+      "title": "The Free Firearm Sound Library — Winchester Model 12",
+      "url": "https://opengameart.org/content/the-free-firearm-sound-library"
     },
     {
-      "title": "Gun Reload Sounds — pump rack",
-      "url": "https://opengameart.org/content/gun-reload-sounds",
       "author": "SpringySpringo",
-      "licence": "CC0-1.0",
+      "changes": "BR-selected rack split at 0.19 s: back 0–0.19, forward 0.19–0.40. Cues at hand start and exported rearward+dwell boundary (0.65 s); no animation stretch. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade. Author requests a project link once shipped.",
       "download": "shotguncock_0.wav",
       "files": ["assets/audio/shotgun-rack-back.ogg", "assets/audio/shotgun-rack-forward.ogg"],
-      "changes": "BR-selected rack split at 0.19 s: back 0–0.19, forward 0.19–0.40. Cues at hand start and exported rearward+dwell boundary (0.65 s); no animation stretch. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade. Author requests a project link once shipped."
+      "licence": "CC0-1.0",
+      "title": "Gun Reload Sounds — pump rack",
+      "url": "https://opengameart.org/content/gun-reload-sounds"
     },
     {
-      "title": "Shotgun Reload Sound Effects — individual inserts",
-      "url": "https://opengameart.org/content/shotgun-reload-sound-effects",
       "author": "zer0_sol",
-      "licence": "CC0-1.0",
+      "changes": "First Shell.mp3 0.32–0.90 s and Subsequent Shells.mp3 0.74–1.32 s: one insert, not a whole reload. Starts with each 0.9 s handling job. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade. Placeholder candidates; no direct chamber insertion in this slice.",
       "download": "shotgunsounds.zip",
       "files": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"],
-      "changes": "First Shell.mp3 0.32–0.90 s and Subsequent Shells.mp3 0.74–1.32 s: one insert, not a whole reload. Starts with each 0.9 s handling job. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade. Placeholder candidates; no direct chamber insertion in this slice."
+      "licence": "CC0-1.0",
+      "title": "Shotgun Reload Sound Effects — individual inserts",
+      "url": "https://opengameart.org/content/shotgun-reload-sound-effects"
     },
     {
-      "title": "Equipment Clicks II — hollow hull landing candidates",
-      "url": "https://opengameart.org/content/equipment-clicks-ii",
       "author": "LFA",
-      "licence": "CC0-1.0",
+      "changes": "Slices 2.34–2.69, 3.75–4.12 and 5.39–5.66 s, hollow plastic click candidates, no metal layer. Placeholder, not a recorded shotshell hull. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade.",
       "download": "equipmentclicks.wav",
       "files": [
         "assets/audio/shotgun-hull-01.ogg",
         "assets/audio/shotgun-hull-02.ogg",
         "assets/audio/shotgun-hull-03.ogg"
       ],
-      "changes": "Slices 2.34–2.69, 3.75–4.12 and 5.39–5.66 s, hollow plastic click candidates, no metal layer. Placeholder, not a recorded shotshell hull. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+      "licence": "CC0-1.0",
+      "title": "Equipment Clicks II — hollow hull landing candidates",
+      "url": "https://opengameart.org/content/equipment-clicks-ii"
     },
     {
-      "title": "Torch",
-      "url": "https://opengameart.org/content/torch",
       "author": "jpsweber",
-      "licence": "CC0-1.0",
+      "changes": "Converted torch.obj to glTF binary, scaled to 0.2 m long, turned to lie along +x with the lens at +x, lens no longer emissive, both materials opaque (the OBJ's transmission filter had made them glass)",
       "download": "torch.zip",
       "files": ["assets/models/flashlight.glb"],
-      "changes": "Converted torch.obj to glTF binary, scaled to 0.2 m long, turned to lie along +x with the lens at +x, lens no longer emissive, both materials opaque (the OBJ's transmission filter had made them glass)"
+      "licence": "CC0-1.0",
+      "title": "Torch",
+      "url": "https://opengameart.org/content/torch"
     },
     {
-      "title": "CC0 Flat Guns West",
-      "url": "https://opengameart.org/content/cc0-flat-guns-west",
       "author": "Pichuliru",
-      "licence": "CC0-1.0",
+      "changes": "From the GLB files: rig baked into static meshes at rest and removed, stray icosphere removed, turned to lie on the side along +x with the muzzle at +x, renamed",
       "download": "flat_guns_west.zip",
       "files": [
         "assets/models/pistol_compact.glb",
@@ -65,80 +63,80 @@
         "assets/models/sniper_material.glb",
         "assets/models/sniper_rifle.glb"
       ],
-      "changes": "From the GLB files: rig baked into static meshes at rest and removed, stray icosphere removed, turned to lie on the side along +x with the muzzle at +x, renamed"
+      "licence": "CC0-1.0",
+      "title": "CC0 Flat Guns West",
+      "url": "https://opengameart.org/content/cc0-flat-guns-west"
     },
     {
-      "title": "Gungen AR design export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ar.json",
       "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI and --calibre 5.56x45; exported carrier/hand-only charging-handle nodes, grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up",
       "download": null,
       "files": ["assets/models/rifle_assault.glb"],
-      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI and --calibre 5.56x45; exported carrier/hand-only charging-handle nodes, grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up"
+      "licence": "CC0-1.0",
+      "title": "Gungen AR design export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ar.json"
     },
     {
-      "title": "Gungen AK design export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ak-akm.json",
       "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "changes": "Generated in metres from the curated archetype-ak-akm design, whose own calibre is 7.62x39, with gungen's export:glb CLI; handle geometry travels on the carrier node; exported grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up",
       "download": null,
       "files": ["assets/models/rifle_ak.glb"],
-      "changes": "Generated in metres from the curated archetype-ak-akm design, whose own calibre is 7.62x39, with gungen's export:glb CLI; handle geometry travels on the carrier node; exported grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up"
+      "licence": "CC0-1.0",
+      "title": "Gungen AK design export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ak-akm.json"
     },
     {
-      "title": "Gungen 7.62x39 cartridge exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/7.62x39.json",
       "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; generic projectile profile follows its documented seating-depth assumption; case includes the fired case and primer",
       "download": null,
       "files": ["assets/models/round-7_d_62x39.glb", "assets/models/case-7_d_62x39.glb"],
-      "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; generic projectile profile follows its documented seating-depth assumption; case includes the fired case and primer"
+      "licence": "CC0-1.0",
+      "title": "Gungen 7.62x39 cartridge exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/7.62x39.json"
     },
     {
-      "title": "Gungen magazine prefab exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/prefabs.ts",
       "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "changes": "Generated in metres from gungen's stanag-20, stanag-30 and akm-30 magazine prefabs with its export:magazine CLI, against the sourced 5.56x45 and 7.62x39 cartridge data; the round column, capacity and one pose per round come from the fitted geometry; original project-built geometry",
       "download": null,
       "files": [
         "assets/models/magazine_stanag_20.glb",
         "assets/models/magazine_stanag_30.glb",
         "assets/models/magazine_akm_30.glb"
       ],
-      "changes": "Generated in metres from gungen's stanag-20, stanag-30 and akm-30 magazine prefabs with its export:magazine CLI, against the sourced 5.56x45 and 7.62x39 cartridge data; the round column, capacity and one pose per round come from the fitted geometry; original project-built geometry"
+      "licence": "CC0-1.0",
+      "title": "Gungen magazine prefab exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/prefabs.ts"
     },
     {
-      "title": "Gungen hunting-cabin pump design export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-pump-shotgun.json",
       "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "changes": "Original curated 12-gauge pump geometry, metres/+x forward/+y up, separate carrier and forend GLB nodes coupled in hand mode only. Loading aperture/stroke from sourced shell dimensions; integral tube capacity from geometry with labelled visual reserve estimates. See gungen/docs/pump-action-export.md.",
       "download": null,
       "files": ["assets/models/shotgun_pump.glb"],
-      "changes": "Original curated 12-gauge pump geometry, metres/+x forward/+y up, separate carrier and forend GLB nodes coupled in hand mode only. Loading aperture/stroke from sourced shell dimensions; integral tube capacity from geometry with labelled visual reserve estimates. See gungen/docs/pump-action-export.md."
+      "licence": "CC0-1.0",
+      "title": "Gungen hunting-cabin pump design export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-pump-shotgun.json"
     },
     {
-      "title": "Gungen 5.56x45 cartridge exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/5.56x45.json",
       "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; round includes the projectile and case, case includes the fired case and primer",
       "download": null,
       "files": ["assets/models/round-5_d_56x45.glb", "assets/models/case-5_d_56x45.glb"],
-      "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; round includes the projectile and case, case includes the fired case and primer"
+      "licence": "CC0-1.0",
+      "title": "Gungen 5.56x45 cartridge exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/5.56x45.json"
     },
     {
-      "title": "Gungen 12-gauge shotshell exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/12-gauge-00-buck.json",
       "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "changes": "Original project-built geometry, sourced external mm dimensions converted to metres. Unknown closure uses a labelled generic roll-crimp visual proxy at the conservative loaded envelope; fired hull is open. Wall, lip, closure card and plastic/brass look are visual approximations, not manufacturer data; unsourced primer omitted. See gungen/docs/shotshell-export.md.",
       "download": null,
       "files": ["assets/models/round-12_h_gauge_h_00_h_buck.glb", "assets/models/case-12_h_gauge_h_00_h_buck.glb"],
-      "changes": "Original project-built geometry, sourced external mm dimensions converted to metres. Unknown closure uses a labelled generic roll-crimp visual proxy at the conservative loaded envelope; fired hull is open. Wall, lip, closure card and plastic/brass look are visual approximations, not manufacturer data; unsourced primer omitted. See gungen/docs/shotshell-export.md."
+      "licence": "CC0-1.0",
+      "title": "Gungen 12-gauge shotshell exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/12-gauge-00-buck.json"
     },
     {
-      "title": "15 vocal male strain/hurt/pain/jump sounds",
-      "url": "https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds",
       "author": "qubodup",
-      "licence": "CC0-1.0",
+      "changes": "Selected nine vocal variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded",
       "download": "slightscreams.7z",
       "files": [
         "assets/audio/player-hurt-light-01.ogg",
@@ -151,22 +149,22 @@
         "assets/audio/player-strain-12.ogg",
         "assets/audio/player-strain-14.ogg"
       ],
-      "changes": "Selected nine vocal variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+      "licence": "CC0-1.0",
+      "title": "15 vocal male strain/hurt/pain/jump sounds",
+      "url": "https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds"
     },
     {
-      "title": "80 CC0 creature SFX",
-      "url": "https://opengameart.org/content/80-cc0-creature-sfx",
       "author": "rubberduck",
-      "licence": "CC0-1.0",
+      "changes": "Selected one hurt variant (two more were removed as too high-pitched); converted to 24 kHz mono Opus in Ogg containers; unused source files excluded",
       "download": "80-CC0-creature-SFX.zip",
       "files": ["assets/audio/shambler-hurt-01.ogg"],
-      "changes": "Selected one hurt variant (two more were removed as too high-pitched); converted to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+      "licence": "CC0-1.0",
+      "title": "80 CC0 creature SFX",
+      "url": "https://opengameart.org/content/80-cc0-creature-sfx"
     },
     {
-      "title": "80 CC0 RPG SFX",
-      "url": "https://opengameart.org/content/80-cc0-rpg-sfx",
       "author": "rubberduck",
-      "licence": "CC0-1.0",
+      "changes": "Selected three blade, three wood and three metal variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded",
       "download": "80-CC0-RPG-SFX.zip",
       "files": [
         "assets/audio/melee-swing-01.ogg",
@@ -179,13 +177,13 @@
         "assets/audio/door-close-02.ogg",
         "assets/audio/door-close-03.ogg"
       ],
-      "changes": "Selected three blade, three wood and three metal variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+      "licence": "CC0-1.0",
+      "title": "80 CC0 RPG SFX",
+      "url": "https://opengameart.org/content/80-cc0-rpg-sfx"
     },
     {
-      "title": "Zombies Sound Pack",
-      "url": "https://opengameart.org/content/zombies-sound-pack",
       "author": "artisticdude",
-      "licence": "CC0-1.0",
+      "changes": "Selected nine zombie vocalizations; converted from WAV to 24 kHz mono Opus in Ogg containers; unused source files excluded",
       "download": "zombies.zip",
       "files": [
         "assets/audio/shambler-idle-01.ogg",
@@ -198,13 +196,13 @@
         "assets/audio/shambler-attack-08.ogg",
         "assets/audio/shambler-attack-09.ogg"
       ],
-      "changes": "Selected nine zombie vocalizations; converted from WAV to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+      "licence": "CC0-1.0",
+      "title": "Zombies Sound Pack",
+      "url": "https://opengameart.org/content/zombies-sound-pack"
     },
     {
-      "title": "37 hits/punches",
-      "url": "https://opengameart.org/content/37-hitspunches",
       "author": "Independent.nu",
-      "licence": "CC0-1.0",
+      "changes": "Selected seven impact variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded",
       "download": "independent_nu_ljudbank-hits_and_punches.7z",
       "files": [
         "assets/audio/melee-hit-01.ogg",
@@ -215,13 +213,13 @@
         "assets/audio/shambler-hit-06.ogg",
         "assets/audio/shambler-hit-07.ogg"
       ],
-      "changes": "Selected seven impact variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+      "licence": "CC0-1.0",
+      "title": "37 hits/punches",
+      "url": "https://opengameart.org/content/37-hitspunches"
     },
     {
-      "title": "Different steps on wood, stone, leaves, gravel and mud",
-      "url": "https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud",
       "author": "TinyWorlds",
-      "licence": "CC0-1.0",
+      "changes": "Selected wood, stone, leaves and mud steps; converted to mono Opus in Ogg containers; unused gravel sample excluded because the game has no gravel block",
       "download": "[kdd]DifferentSteps_0.zip",
       "files": [
         "assets/audio/footstep-wood-01.ogg",
@@ -232,13 +230,13 @@
         "assets/audio/footstep-leaves-02.ogg",
         "assets/audio/footstep-mud-01.ogg"
       ],
-      "changes": "Selected wood, stone, leaves and mud steps; converted to mono Opus in Ogg containers; unused gravel sample excluded because the game has no gravel block"
+      "licence": "CC0-1.0",
+      "title": "Different steps on wood, stone, leaves, gravel and mud",
+      "url": "https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud"
     },
     {
-      "title": "Fantozzi's Footsteps (Grass/Sand & Stone)",
-      "url": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
       "author": "Fantozzi",
-      "licence": "CC0-1.0",
+      "changes": "Selected six grass/sand and five stone steps (the source says its sand steps also sound like grass); converted from FLAC to mono Opus in Ogg containers; unused sixth stone sample excluded",
       "download": "Fantozzi-footsteps.7z",
       "files": [
         "assets/audio/footstep-grass-sand-01.ogg",
@@ -253,35 +251,35 @@
         "assets/audio/footstep-stone-05.ogg",
         "assets/audio/footstep-stone-06.ogg"
       ],
-      "changes": "Selected six grass/sand and five stone steps (the source says its sand steps also sound like grass); converted from FLAC to mono Opus in Ogg containers; unused sixth stone sample excluded"
+      "licence": "CC0-1.0",
+      "title": "Fantozzi's Footsteps (Grass/Sand & Stone)",
+      "url": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone"
     },
     {
-      "title": "100 CC0 SFX #2",
-      "url": "https://opengameart.org/content/100-cc0-sfx-2",
       "author": "rubberduck",
-      "licence": "CC0-1.0",
+      "changes": "Selected three wet-footstep variations (sfx100v2_footstep_wet_01–03.ogg); converted from stereo 48 kHz Vorbis to mono 48 kHz Opus in Ogg containers without loudness normalization; unused source effects excluded",
       "download": "sfx_100_v2.zip",
       "files": [
         "assets/audio/footstep-mud-02.ogg",
         "assets/audio/footstep-mud-03.ogg",
         "assets/audio/footstep-mud-04.ogg"
       ],
-      "changes": "Selected three wet-footstep variations (sfx100v2_footstep_wet_01–03.ogg); converted from stereo 48 kHz Vorbis to mono 48 kHz Opus in Ogg containers without loudness normalization; unused source effects excluded"
+      "licence": "CC0-1.0",
+      "title": "100 CC0 SFX #2",
+      "url": "https://opengameart.org/content/100-cc0-sfx-2"
     },
     {
-      "title": "Jump Landing Sound",
-      "url": "https://opengameart.org/content/jump-landing-sound",
       "author": "MentalSanityOff",
-      "licence": "CC0-1.0",
+      "changes": "Converted the 48 kHz MP3 source to mono Opus in an Ogg container",
       "download": "jumpland48000.mp3",
       "files": ["assets/audio/player-landing-hard-01.ogg"],
-      "changes": "Converted the 48 kHz MP3 source to mono Opus in an Ogg container"
+      "licence": "CC0-1.0",
+      "title": "Jump Landing Sound",
+      "url": "https://opengameart.org/content/jump-landing-sound"
     },
     {
-      "title": "CC0 Flat Shaded Melee Weapons",
-      "url": "https://opengameart.org/content/cc0-flat-shaded-melee-weapons",
       "author": "Pichuliru",
-      "licence": "CC0-1.0",
+      "changes": "Converted all 20 source OBJ meshes with their MTL palette material and shared T_PCL_Palette_c.png in Blender to self-contained GLBs; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented each long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root.",
       "download": "flatshadedmelee.zip",
       "files": [
         "assets/models/baseball_bat.glb",
@@ -305,49 +303,49 @@
         "assets/models/tanto.glb",
         "assets/models/wrench.glb"
       ],
-      "changes": "Converted all 20 source OBJ meshes with their MTL palette material and shared T_PCL_Palette_c.png in Blender to self-contained GLBs; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented each long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root."
+      "licence": "CC0-1.0",
+      "title": "CC0 Flat Shaded Melee Weapons",
+      "url": "https://opengameart.org/content/cc0-flat-shaded-melee-weapons"
     },
     {
-      "title": "Pipe",
-      "url": "https://opengameart.org/content/pipe-0",
       "author": "neincenets",
-      "licence": "CC0-1.0",
+      "changes": "Converted pipe.obj in Blender to a self-contained GLB; the download references a missing pipe.mtl, so applied a neutral metallic steel material. Used a non-uniform source-unit scale of 0.18 m/unit along the 5.15-unit shaft and 0.05 m/unit across both transverse axes (0.278 relative scale), yielding a 0.927 m shaft, 3.3 cm tube diameter and 11.7 cm elbow extent. The grip is at the lower end and the strike anchor at the upper open end; oriented the long shaft along +x.",
       "download": "pipe.obj",
       "files": ["assets/models/steel_pipe.glb"],
-      "changes": "Converted pipe.obj in Blender to a self-contained GLB; the download references a missing pipe.mtl, so applied a neutral metallic steel material. Used a non-uniform source-unit scale of 0.18 m/unit along the 5.15-unit shaft and 0.05 m/unit across both transverse axes (0.278 relative scale), yielding a 0.927 m shaft, 3.3 cm tube diameter and 11.7 cm elbow extent. The grip is at the lower end and the strike anchor at the upper open end; oriented the long shaft along +x."
+      "licence": "CC0-1.0",
+      "title": "Pipe",
+      "url": "https://opengameart.org/content/pipe-0"
     },
     {
-      "title": "Cursor pack",
-      "url": "https://opengameart.org/content/cursor-pack",
       "author": "Ivan Voirol",
-      "licence": "CC0-1.0",
+      "changes": "Kept the standard top-left pointer arrow and pointing-hand sprites from cursor.png; trimmed to their silhouettes for a white difference-blended game cursor",
       "download": "cursor.png",
       "files": ["assets/cursors/cursor.png"],
-      "changes": "Kept the standard top-left pointer arrow and pointing-hand sprites from cursor.png; trimmed to their silhouettes for a white difference-blended game cursor"
+      "licence": "CC0-1.0",
+      "title": "Cursor pack",
+      "url": "https://opengameart.org/content/cursor-pack"
     },
     {
-      "title": "3 Melee Sounds",
-      "url": "https://opengameart.org/content/3-melee-sounds",
       "author": "remaxim",
-      "licence": "CC0-1.0",
+      "changes": "Selected the generic swing recording, derived from qubodup's Swish - bamboo stick weapon swishes; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report).",
       "download": "melee.zip",
       "files": ["assets/audio/melee_swing-01.ogg"],
-      "changes": "Selected the generic swing recording, derived from qubodup's Swish - bamboo stick weapon swishes; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report)."
+      "licence": "CC0-1.0",
+      "title": "3 Melee Sounds",
+      "url": "https://opengameart.org/content/3-melee-sounds"
     },
     {
-      "title": "Thwack Sounds",
-      "url": "https://opengameart.org/content/thwack-sounds",
       "author": "Jordan Irwin (AntumDeluge)",
-      "licence": "CC0-1.0",
+      "changes": "Converted the selected PCM WAV; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report).",
       "download": "thwack.zip",
       "files": ["assets/audio/door_blocked_close-01.ogg"],
-      "changes": "Converted the selected PCM WAV; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report)."
+      "licence": "CC0-1.0",
+      "title": "Thwack Sounds",
+      "url": "https://opengameart.org/content/thwack-sounds"
     },
     {
-      "title": "75 CC0 Breaking/Falling/Hit SFX",
-      "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
       "author": "rubberduck",
-      "licence": "CC0-1.0",
+      "changes": "Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report). The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active.",
       "download": "brk.zip",
       "files": [
         "assets/audio/item_drop_wood-01.ogg",
@@ -355,13 +353,13 @@
         "assets/audio/pouch_take-01.ogg",
         "assets/audio/melee_hit_fist-01.ogg"
       ],
-      "changes": "Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report). The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active."
+      "licence": "CC0-1.0",
+      "title": "75 CC0 Breaking/Falling/Hit SFX",
+      "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx"
     },
     {
-      "title": "BR csound gunshot synthesis",
-      "url": null,
       "author": "BR",
-      "licence": "NONE",
+      "changes": "BR's original synthetic csound shots. Trimmed trailing silence only, then converted from 48 kHz 24-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing.",
       "download": null,
       "files": [
         "assets/audio/gunshot-akm-01.ogg",
@@ -369,22 +367,22 @@
         "assets/audio/gunshot-akm-pbs1-01.ogg",
         "assets/audio/gunshot-akm-pbs1-02.ogg"
       ],
-      "changes": "BR's original synthetic csound shots. Trimmed trailing silence only, then converted from 48 kHz 24-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
+      "licence": "NONE",
+      "title": "BR csound gunshot synthesis",
+      "url": null
     },
     {
-      "title": "BR M4 shot synthesis",
-      "url": null,
       "author": "BR",
-      "licence": "CC0-1.0",
+      "changes": "BR's original synthesised M4 shots. Trimmed trailing silence only, then converted from 48 kHz 16-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing.",
       "download": "m4unsup_single_sc_field_v2b.wav and m4sup1_single_sc_field_v2.wav",
       "files": ["assets/audio/gunshot-m4-01.ogg", "assets/audio/gunshot-m4-suppressed-01.ogg"],
-      "changes": "BR's original synthesised M4 shots. Trimmed trailing silence only, then converted from 48 kHz 16-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
+      "licence": "CC0-1.0",
+      "title": "BR M4 shot synthesis",
+      "url": null
     },
     {
-      "title": "Project-built low-poly hand-tool and content stand-ins",
-      "url": "https://github.com/roobie/skelly",
       "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps; no external asset source or texture is used.",
       "download": null,
       "files": [
         "assets/models/hand_saw.glb",
@@ -417,31 +415,31 @@
         "assets/models/glass_bulb.glb",
         "assets/models/glowstick.glb"
       ],
-      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps; no external asset source or texture is used."
+      "licence": "CC0-1.0",
+      "title": "Project-built low-poly hand-tool and content stand-ins",
+      "url": "https://github.com/roobie/skelly"
     },
     {
-      "title": "Heartbeat Sounds",
-      "url": "https://opengameart.org/content/heartbeat-sounds",
       "author": "bart",
-      "licence": "CC0-1.0",
+      "changes": "Converted the dry slow and fast recordings to mono Opus in Ogg containers; excluded the reverb variants; peak-normalized the existing recordings with gain only (slow +10.9 dB, fast +11 dB) to about −1 dBFS",
       "download": null,
       "files": ["assets/audio/heartbeat-slow-beat.ogg", "assets/audio/heartbeat-fast-beat.ogg"],
-      "changes": "Converted the dry slow and fast recordings to mono Opus in Ogg containers; excluded the reverb variants; peak-normalized the existing recordings with gain only (slow +10.9 dB, fast +11 dB) to about −1 dBFS"
+      "licence": "CC0-1.0",
+      "title": "Heartbeat Sounds",
+      "url": "https://opengameart.org/content/heartbeat-sounds"
     },
     {
-      "title": "BR project-recorded nope voice",
-      "url": "https://github.com/roobie/skelly",
       "author": "BR",
-      "licence": "CC0-1.0",
+      "changes": "Recorded by BR for the project; converted from 48 kHz stereo PCM WAV to 48 kHz mono Opus in an Ogg container without gain processing.",
       "download": null,
       "files": ["assets/audio/player-nope-01.ogg"],
-      "changes": "Recorded by BR for the project; converted from 48 kHz stereo PCM WAV to 48 kHz mono Opus in an Ogg container without gain processing."
+      "licence": "CC0-1.0",
+      "title": "BR project-recorded nope voice",
+      "url": "https://github.com/roobie/skelly"
     },
     {
-      "title": "Gungen standalone firearm attachments",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/attachmentExport.ts",
       "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "changes": "Exported by gungen from original project-built part geometry as standalone models at each mount base, +x forward and +y up.",
       "download": null,
       "files": [
         "assets/models/foregrip.glb",
@@ -457,7 +455,27 @@
         "assets/models/real_suppressor.glb",
         "assets/models/tactical_flashlight_mount.glb"
       ],
-      "changes": "Exported by gungen from original project-built part geometry as standalone models at each mount base, +x forward and +y up."
+      "licence": "CC0-1.0",
+      "title": "Gungen standalone firearm attachments",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/attachmentExport.ts"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Original project-built geometry exported by gungen. Moving assembly parts and the revolver metadata preserve the assembled rest pose for runtime composition; see gungen/docs/revolver-export.md.",
+      "download": null,
+      "files": ["assets/models/revolver.glb"],
+      "licence": "CC0-1.0",
+      "title": "Gungen .357 Magnum revolver export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-revolver.json"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Original project-built presentation geometry exported from sourced external dimensions. Unknown typical overall length uses the sourced maximum for presentation; the projectile and primer use the generic visual proxies in gungen/src/ammo/roundProfile.ts, roundProfiles.",
+      "download": null,
+      "files": ["assets/models/round-357_h_magnum.glb", "assets/models/case-357_h_magnum.glb"],
+      "licence": "CC0-1.0",
+      "title": "Gungen .357 Magnum cartridge exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/357-magnum.json"
     }
   ]
 }

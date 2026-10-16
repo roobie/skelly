@@ -46,4 +46,6 @@ A Gungen change to a gun Deadvox ships refreshes Deadvox's copy, its GLB and mod
 
 The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is a geometry/material estimate, not inventory weight or a product specification; see `src/gun/attachmentMass.ts#attachmentMassKg` and `docs/deferred-assertions.md`.
 
+Revolvers use independently mounted moving parts and a separate rotational export contract so the linear carrier contract stays focused; see `docs/revolver-export.md` and `src/gun/revolverExport.ts`, `RevolverMetadata`.
+
 Cross-project checks protect this boundary. Attachment typechecking and tests traverse Deadvox and Mobgen imports, so their aliases remain part of Gungen's check graph; see `tsconfig.json#paths` and `vite.config.ts#resolve.alias`.
