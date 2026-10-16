@@ -14,8 +14,25 @@ export interface Bone {
   readonly tail: Vec3;
 }
 
-export const MATERIALS = ['skin', 'bruise', 'shirt', 'pants', 'shoe', 'hair', 'eye', 'mouth', 'gore', 'bone'] as const;
+export const MATERIALS = [
+  'skin',
+  'bruise',
+  'shirt',
+  'pants',
+  'shoe',
+  'hair',
+  'eye',
+  'mouth',
+  'gore',
+  'bone',
+  'acid',
+] as const;
 export type Material = (typeof MATERIALS)[number];
+
+/** Materials a host may light per actor. Each glows only as brightly as the host says, so a body whose
+ * host gives these no level (a shambler's dark eyes) renders unlit. */
+export const GLOW_MATERIALS = ['eye', 'acid'] as const satisfies readonly Material[];
+export type GlowMaterial = (typeof GLOW_MATERIALS)[number];
 
 interface NoiseGate {
   /** noise3 is sampled at world position / scale (metres per noise cell). */

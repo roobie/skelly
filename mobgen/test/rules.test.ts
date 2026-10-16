@@ -21,6 +21,7 @@ const PALETTE: Record<Material, readonly [number, number, number]> = {
   mouth: [0, 0, 0],
   gore: [0, 0, 0],
   bone: [0, 0, 0],
+  acid: [0, 0, 0],
 };
 
 const GENEROUS: Budgets = { totalVoxels: { min: 1, max: 20 }, totalTriangles: { min: 1, max: 2000 }, groups: {} };

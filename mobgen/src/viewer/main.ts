@@ -43,6 +43,7 @@ import { type IdleStance, idlePose } from '../mob/idle.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '../mob/lookAt.ts';
 import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
+import { onHumanoidSkeleton } from '../mob/templates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
 // The viewer shows the dog shambler even though it is not in TEMPLATES (so Deadvox does not spawn it
@@ -231,7 +232,7 @@ const playDeath = (): void => {
     return;
   }
   const actor = current.walkActor;
-  if (current.template.bodyPlan !== 'humanoid') {
+  if (!onHumanoidSkeleton(current.template)) {
     deathBasePose =
       current.template.bodyPlan === 'dog'
         ? dogPose(current.realized, dogStance(current.genome, severedBones))
@@ -394,8 +395,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   } else {
     const extents = footRestExtents(realized.body.bones, realized.voxels);
     const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-    const legGeometry =
-      template.bodyPlan === 'humanoid' ? legGeometryFor(realized.body.bones, extents, 'L') : undefined;
+    const legGeometry = onHumanoidSkeleton(template) ? legGeometryFor(realized.body.bones, extents, 'L') : undefined;
     const params = genome.params as HumanoidParams;
     const walkActor: WalkActor = {
       bones: realized.body.bones,
@@ -407,7 +407,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
     // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
     let initialPose: Pose;
-    if (template.bodyPlan === 'humanoid') {
+    if (onHumanoidSkeleton(template)) {
       initialPose = idlePose(walkActor, currentStance(), idleTime);
     } else if (template.bodyPlan === 'dog') {
       // A fresh load starts whole; `severedCuts` is cleared below, so this pose is deliberately intact.

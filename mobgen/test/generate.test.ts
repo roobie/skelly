@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { generate, generateValid, realize, realizeLod, recommendedProfileFor } from '../src/core/generate.ts';
 import type { Genome } from '../src/core/template.ts';
 import { worldPosition } from '../src/core/voxelize.ts';
+import { ACID_PARAM_ORDER } from '../src/mob/acid.ts';
 import { HUMANOID_PARAM_ORDER } from '../src/mob/humanoid.ts';
 import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
@@ -51,9 +52,10 @@ describe('generate', () => {
 describe('genome checks', () => {
   const shambler = TEMPLATES.find((x) => x.name === 'shambler')!;
 
-  it('every template samples exactly the humanoid params (a misspelled override would otherwise be silently ignored)', () => {
+  it("every template samples exactly its body plan's params (a misspelled override would otherwise be silently ignored)", () => {
     for (const t of TEMPLATES) {
-      expect(Object.keys(t.params).sort()).toEqual([...HUMANOID_PARAM_ORDER].sort());
+      const order = t.bodyPlan === 'acid' ? ACID_PARAM_ORDER : HUMANOID_PARAM_ORDER;
+      expect(Object.keys(t.params).sort()).toEqual([...order].sort());
     }
   });
 

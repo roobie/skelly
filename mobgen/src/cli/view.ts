@@ -92,6 +92,7 @@ const MATERIAL_LETTER: Readonly<Record<Material, string>> = {
   mouth: 'm',
   gore: 'g',
   bone: 'B',
+  acid: 'a',
 };
 
 const HEAD_REGION_BONES = ['head', 'jaw'] as const;

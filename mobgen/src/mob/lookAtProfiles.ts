@@ -31,6 +31,12 @@ export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
     head: { yawDeg: 30, pitchDeg: 22 },
     turnRateDegPerSecond: 90,
   },
+  // The hunched, forward-held head has to pitch further up than the brute's to aim the spit.
+  acid: {
+    neck: { yawDeg: 22, pitchDeg: 24 },
+    head: { yawDeg: 32, pitchDeg: 28 },
+    turnRateDegPerSecond: 100,
+  },
   amalgam: {
     neck: { yawDeg: 20, pitchDeg: 16 },
     head: { yawDeg: 30, pitchDeg: 22 },
