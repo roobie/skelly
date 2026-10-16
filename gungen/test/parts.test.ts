@@ -569,7 +569,7 @@ describe('part library', () => {
     let gridStep = GRID;
     if (family.name === 'forend' || family.name === 'ar-charging-handle') {
       gridStep = GRID / 5;
-    } else if (['front-sight', 'rail-front-sight', 'ak-rear-sight'].includes(family.name)) {
+    } else if (['front-sight', 'rail-front-sight', 'ak-rear-sight', 'sporting-rear-sight'].includes(family.name)) {
       gridStep = GRID / 4;
     } else if (['frame', 'slide'].includes(family.name)) {
       gridStep = GRID / 2;
@@ -690,9 +690,43 @@ describe('part library', () => {
   });
 });
 
+it('sporting rear sight uses the AK open-notch leaves scaled to its sight line', () => {
+  const normalized = (family: string) => {
+    const def = FAMILIES[family]!.build({});
+    const [, top] = def.axes!.find((axis) => axis.kind === 'sight')!.origin;
+    return def.solids.map((solid) => {
+      if (solid.kind !== 'box') {
+        throw new Error('Open-notch leaves need box solids');
+      }
+      return {
+        center: solid.box.center.map((value, axis) => (axis === 1 ? value / top : value)),
+        half: solid.box.half.map((value, axis) => (axis === 1 ? value / top : value)),
+      };
+    });
+  };
+  const sporting = normalized('sporting-rear-sight');
+  expect(sporting.length).toBeGreaterThan(0);
+  expect(sporting).toEqual(normalized('ak-rear-sight'));
+});
+
+it('sporting front sight stays near the muzzle relative to each barrel length', () => {
+  const inset = Number(FAMILIES['front-sight']!.params.muzzleInsetRatio!.default);
+  for (const barrelSize of ['S', 'M', 'L']) {
+    const build = (frontSightStyle: string) =>
+      FAMILIES.barrel!.build({ length: barrelSize, bore: 'M', frontSightStyle });
+    const sporting = build('sporting');
+    const [muzzleX] = sporting.ports.find((port) => port.id === 'muzzle')!.pos;
+    const [sightX] = sporting.ports.find((port) => port.id === 'front-sight')!.pos;
+    const [arSightX] = build('ar').ports.find((port) => port.id === 'front-sight')!.pos;
+    expect(sightX).toBeGreaterThan(arSightX);
+    expect(sightX).toBeLessThan(muzzleX);
+    expect(Math.abs((muzzleX - sightX) / muzzleX - inset)).toBeLessThanOrEqual(GRID / muzzleX);
+  }
+});
+
 describe('tapered stock profile', () => {
-  const profile = (stockSize: 'M' | 'L') => {
-    const def = FAMILIES.stock!.build({ length: stockSize, style: 'tapered' });
+  const profile = (stockSize: 'M' | 'L', style = 'tapered') => {
+    const def = FAMILIES.stock!.build({ length: stockSize, style });
     const solids = def.solids.filter((solid) => solid.kind === 'extruded-polygon');
     const byId = (id: string) => {
       const solid = solids.find((candidate) => candidate.id === id);
@@ -729,6 +763,23 @@ describe('tapered stock profile', () => {
     return { min: Math.min(...ys), max: Math.max(...ys), height: Math.max(...ys) - Math.min(...ys) };
   };
   const degrees = (dx: number, dy: number) => (Math.atan2(Math.abs(dy), Math.abs(dx)) * 180) / Math.PI;
+
+  it('sporting stock shares the pump wrist and wood cells but has a shallower comb', () => {
+    const pump = profile('M');
+    const sporting = profile('M', 'sporting');
+    const combAngle = ({ byId }: ReturnType<typeof profile>): number => {
+      const body = byId('stock-comb');
+      const front = body.profile[2]!;
+      const rear = body.profile[3]!;
+      return degrees(front[0] - rear[0], front[1] - rear[1]);
+    };
+    expect(combAngle(sporting)).toBeLessThan(combAngle(pump));
+    expect(sporting.solids.map((solid) => solid.display?.role)).toEqual(
+      pump.solids.map((solid) => solid.display?.role),
+    );
+    expect(sporting.byId('grip').profile.map(([x]) => x)).toEqual(pump.byId('grip').profile.map(([x]) => x));
+    expect(sporting.byId('grip').z).toEqual(pump.byId('grip').z);
+  });
 
   for (const size of ['M', 'L'] as const) {
     it(`${size}: extruded stock profiles are valid`, () => {

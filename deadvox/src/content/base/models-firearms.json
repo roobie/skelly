@@ -3664,7 +3664,7 @@
       ],
       "file": "assets/models/rifle_hunting.glb",
       "grip": {
-        "at": [-0.2185, -0.037374999999999999, 0],
+        "at": [-0.21562500000000001, -0.054625, 0],
         "turn": [0, 0, 0]
       },
       "id": "rifle_hunting",

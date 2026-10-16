@@ -1,7 +1,7 @@
 {
   "id": "rifle_hunting",
   "file": "assets/models/rifle_hunting.glb",
-  "grip": { "at": [-0.2185, -0.037375, 0], "turn": [0, 0, 0] },
+  "grip": { "at": [-0.215625, -0.054625, 0], "turn": [0, 0, 0] },
   "sight": {
     "kind": "iron",
     "eye": [-0.17825, 0.04025, 0],

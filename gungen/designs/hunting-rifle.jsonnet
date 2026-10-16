@@ -9,7 +9,8 @@ base + {
     parts: { [id]: base.assembly.parts[id] for id in std.objectFields(base.assembly.parts) if id != 'sight' } + {
       lower: { family: 'lower', params: { layout: 'conventional', magazineWell: 'recessed' } },
       magazine: { family: 'magazine', params: { length: 'S', integral: 'yes' } },
-      'front-sight': { family: 'front-sight', params: { style: 'sporting' } },
+      stock: { family: 'stock', params: { length: 'M', style: 'sporting', combDegrees: '2', dropU: '2.5' } },
+      'front-sight': { family: 'front-sight', params: { style: 'sporting', muzzleInsetRatio: '0.05' } },
       'rear-sight': { family: 'sporting-rear-sight' },
     },
     connections: [c for c in base.assembly.connections if c.to != 'sight.base'] + [

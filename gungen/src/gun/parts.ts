@@ -40,6 +40,7 @@ import type {
   Solid,
   Vec2,
 } from '@skelly/engine/core/schema.ts';
+import huntingDesign from '../../designs/hunting-rifle.json' with { type: 'json' };
 import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
@@ -79,6 +80,8 @@ import { COMPACT_TRIGGER_PLATE, PUMP_FOREND_PROPORTIONS, TAPERED_STOCK_PROPORTIO
 import { taperedStockSolids } from './taperedStock.ts';
 
 const SIGHT_GRAIN = GRID / 4;
+const sportingStockParams = huntingDesign.assembly.parts.stock.params;
+const sportingFrontSightParams = huntingDesign.assembly.parts['front-sight'].params;
 
 export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
 
@@ -2759,8 +2762,12 @@ const gasStationX = (length: SizeClass): number => {
   return snapAkGrid(handguardLength * (1 + GAS_STATION_CLEARANCE) + GAS_STATION_HALF_LENGTH);
 };
 const akGasStationX = (length: SizeClass): number => akGasPortX(akBarrelLength(length));
-const frontSightPosition = (style: string, length: SizeClass, barrelEnd: number): number =>
-  style === 'ak' ? barrelEnd - AK_PROPORTIONS.frontSight.behindBarrelEndU : gasStationX(length);
+const frontSightPosition = (style: string, length: SizeClass, barrelEnd: number, muzzleInsetRatio: number): number => {
+  if (style === 'ak') {
+    return barrelEnd - AK_PROPORTIONS.frontSight.behindBarrelEndU;
+  }
+  return style === 'sporting' ? snapAkGrid(barrelEnd * (1 - muzzleInsetRatio)) : gasStationX(length);
+};
 const arHandguardLength = (length: SizeClass): number => gasStationX(length) - AR_FRONT_SIGHT_HALF_LENGTH;
 /** A plain handguard's reach along its barrel; on an AK it stops at the gas block. */
 const standardHandguardLength = (length: SizeClass, section: string | undefined): number => {
@@ -2846,6 +2853,10 @@ const barrel: PartFamily = {
     },
     handguardLength: { ...size, from: [{ port: 'clamp', param: 'length' }] },
     frontSightStyle: { ...choice('ar', 'ak', 'sporting'), from: [{ port: 'front-sight', param: 'style' }] },
+    frontSightMuzzleInsetRatio: {
+      ...choice(sportingFrontSightParams.muzzleInsetRatio),
+      from: [{ port: 'front-sight', param: 'muzzleInsetRatio' }],
+    },
     tubeLengthPercent: {
       values: PUMP_TUBE_LENGTH_PERCENTAGES,
       default: '75',
@@ -2923,7 +2934,16 @@ const barrel: PartFamily = {
           mount: 'sight-block',
           gender: 'female',
           size: bore,
-          pos: [frontSightPosition(params.frontSightStyle ?? 'ar', lengthClass, len), 0, 0],
+          pos: [
+            frontSightPosition(
+              params.frontSightStyle ?? 'ar',
+              lengthClass,
+              len,
+              Number(params.frontSightMuzzleInsetRatio ?? sportingFrontSightParams.muzzleInsetRatio),
+            ),
+            0,
+            0,
+          ],
           normal: NEG_X,
           up: Y,
         },
@@ -2982,6 +3002,7 @@ const frontSight: PartFamily = {
   params: {
     bore: { ...size, from: [{ port: 'base', param: 'bore' }] },
     style: choice('ar', 'ak', 'sporting'),
+    muzzleInsetRatio: choice(sportingFrontSightParams.muzzleInsetRatio),
   },
   build(params): PartDef {
     const radius = BARREL_RADIUS[cls(params, 'bore')];
@@ -3061,17 +3082,17 @@ const muzzleBead: PartFamily = {
   },
 };
 
+const openNotchLeafSolids = (topU: number): Solid[] => [
+  solid('leaf-left', [-SIGHT_GRAIN, 0, -1.125], [SIGHT_GRAIN, topU, -0.125]),
+  solid('leaf-right', [-SIGHT_GRAIN, 0, 0.125], [SIGHT_GRAIN, topU, 1.125]),
+];
+
 const sportingRearSight: PartFamily = {
   name: 'sporting-rear-sight',
   params: {},
   build: () => ({
     family: 'sporting-rear-sight',
-    solids: [
-      solid('base', [-0.5, 0, -1], [0.5, 0.5, 1]),
-      solid('notch-left', [-GRID, 0.5, -1], [GRID, 1.25, -GRID]),
-      solid('notch-right', [-GRID, 0.5, GRID], [GRID, 1.25, 1]),
-      solid('notch-bottom', [-GRID, 0.5, -GRID], [GRID, 1, GRID]),
-    ],
+    solids: openNotchLeafSolids(1),
     ports: [{ id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
     axes: [{ kind: 'sight', origin: [0, 1, 0], dir: X, eyeReliefU: 4 }],
     keepOuts: [],
@@ -3202,10 +3223,7 @@ const akRearSight: PartFamily = {
   build(): PartDef {
     return {
       family: 'sight',
-      solids: [
-        solid('leaf-left', [-SIGHT_GRAIN, 0, -1.125], [SIGHT_GRAIN, AK_REAR_SIGHT_NOTCH_TOP_U, -0.125]),
-        solid('leaf-right', [-SIGHT_GRAIN, 0, 0.125], [SIGHT_GRAIN, AK_REAR_SIGHT_NOTCH_TOP_U, 1.125]),
-      ],
+      solids: openNotchLeafSolids(AK_REAR_SIGHT_NOTCH_TOP_U),
       ports: [
         { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
@@ -4200,13 +4218,6 @@ export const magazine: PartFamily = {
   },
 };
 
-/**
- * straight: comb in line with the bore; needs a separate pistol grip.
- * sporting: comb dropped below the bore, with a wrist to hold. It clears a
- * bolt's travel and counts as a firing grip.
- * tapered: constant-width side profile, with a narrow wrist and taller butt.
- * tapered-sawed: the same front and grip, cut off just behind the grip.
- */
 export const M4_STOCK_GEOMETRY = {
   bufferTubeAcrossFlats: 2.5,
   bufferTubeBoreAcrossFlats: 1.5,
@@ -4315,6 +4326,8 @@ const stock: PartFamily = {
   params: {
     length: size,
     style: choice('straight', 'sporting', 'dropped', 'ak-buttstock', 'm4', 'tapered', 'tapered-sawed', 'thumbhole'),
+    combDegrees: choice(sportingStockParams.combDegrees),
+    dropU: choice(sportingStockParams.dropU),
   },
   build(params): PartDef {
     const tapered = params.style === 'tapered' || params.style === 'tapered-sawed';
@@ -4393,27 +4406,28 @@ const stock: PartFamily = {
         tags: [FIRING_GRIP],
       };
     }
-    if (params.style === 'sporting') {
+    if (tapered || params.style === 'sporting') {
+      const drop = params.style === 'sporting' ? Number(params.dropU ?? sportingStockParams.dropU) : 0;
+      const [gripX, gripY, gripZ] = TAPERED_STOCK_PROPORTIONS.holdPoint;
       return {
         family: 'stock',
-        solids: [
-          solid('wrist', [-6, -5, -1.5], [0, -1.5, 1.5]),
-          solid('body', [-len, -6, -1.5], [-6, -1.5, 1.5]),
-          solid('butt', [-len - 1, -8, -1.75], [-len, 0, 1.75]),
+        solids: taperedStockSolids({
+          length: cls(params, 'length'),
+          sawed: params.style === 'tapered-sawed',
+          ...(params.style === 'sporting'
+            ? { combDegrees: Number(params.combDegrees ?? sportingStockParams.combDegrees) }
+            : {}),
+        }).map((component) => translateSolid(component, [0, -drop, 0])),
+        ports: [port],
+        keepOuts: [],
+        axes: [
+          cheekDatum,
+          {
+            kind: 'firing-grip',
+            origin: [gripX, gripY - drop, gripZ],
+            dir: X,
+          },
         ],
-        ports: [port],
-        keepOuts: [],
-        axes: [cheekDatum],
-        tags: [FIRING_GRIP],
-      };
-    }
-    if (tapered) {
-      return {
-        family: 'stock',
-        solids: taperedStockSolids({ length: cls(params, 'length'), sawed: params.style === 'tapered-sawed' }),
-        ports: [port],
-        keepOuts: [],
-        axes: [cheekDatum, { kind: 'firing-grip', origin: TAPERED_STOCK_PROPORTIONS.holdPoint, dir: X }],
         tags: [FIRING_GRIP],
       };
     }

@@ -4,14 +4,14 @@ import { TAPERED_STOCK_PROPORTIONS as P } from './shotgunProportions.ts';
 import { hermite as curve, type StockContour, woodCell, woodRegion } from './stockWood.ts';
 
 const MERGE_GROUP = 'tapered-stock-wood';
-const combSlope = Math.tan((P.combDegrees * Math.PI) / 180);
-const top = (x: number): number => {
+const top = (x: number, combDegrees: number): number => {
   if (x >= P.gripX) {
     return curve(x, [0, P.combAtJointU, 0.4], [P.gripX, P.gripTopU, 0]);
   }
   if (x >= P.combCrestX) {
     return curve(x, [P.gripX, P.gripTopU, 0], [P.combCrestX, P.combCrestTopU, 0]);
   }
+  const combSlope = Math.tan((combDegrees * Math.PI) / 180);
   const straight = P.combCrestTopU + combSlope * (x - P.combCrestX);
   return x >= P.combStartX
     ? curve(x, [P.combCrestX, P.combCrestTopU, 0], [P.combStartX, straight, combSlope])
@@ -25,14 +25,22 @@ const arc = (x: number): number =>
 const arcEndSlope = arcDx / (arcRadius - arcDy);
 
 /** Same GRIP/JOINT/COMB roles, partitioned into convex cells for collision; finish merges their internal faces. */
-export const taperedStockSolids = ({ length, sawed }: { length: 'S' | 'M' | 'L'; sawed: boolean }): Solid[] => {
+export const taperedStockSolids = ({
+  length,
+  sawed,
+  combDegrees = P.combDegrees,
+}: {
+  length: 'S' | 'M' | 'L';
+  sawed: boolean;
+  combDegrees?: number;
+}): Solid[] => {
   const len = P.lengthU[length];
   const padLength = P.padLengthRatio * len;
   const height = P.buttHeightU[length];
   const rake = height * Math.tan((P.padPitchDegrees * Math.PI) / 180);
   const padTopX = -len + padLength;
   const padBottomX = padTopX + rake;
-  const heel = top(padTopX);
+  const heel = top(padTopX, combDegrees);
   const toe = heel - height;
   const bellySlope = (P.neckBottomU - toe) / (P.combStartX - padBottomX);
   const bottom = (x: number): number => {
@@ -61,7 +69,13 @@ export const taperedStockSolids = ({ length, sawed }: { length: 'S' | 'M' | 'L';
     }
     return curve(x, [P.gripX, widths.grip, 0], [P.combStartX, widths.joint, bodyWidthSlope]);
   };
-  const contour: StockContour = { top, bottom, halfWidth, segments: P.curveSegments, mergeGroup: MERGE_GROUP };
+  const contour: StockContour = {
+    top: (x) => top(x, combDegrees),
+    bottom,
+    halfWidth,
+    segments: P.curveSegments,
+    mergeGroup: MERGE_GROUP,
+  };
   const region = (role: string, span: readonly [number, number], breaks: readonly number[] = []): Solid[] =>
     woodRegion(contour, role, span, breaks);
   const hand = [
@@ -100,7 +114,7 @@ export const taperedStockSolids = ({ length, sawed }: { length: 'S' | 'M' | 'L';
       [
         [padBottomX, toe],
         [P.combStartX, P.neckBottomU],
-        [P.combStartX, top(P.combStartX)],
+        [P.combStartX, top(P.combStartX, combDegrees)],
         [padTopX, heel],
       ],
       [P.combStartX, widths.joint, padTopX, widths.butt],

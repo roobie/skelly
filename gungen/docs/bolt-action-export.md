@@ -3,6 +3,7 @@ read_if:
   - you change turn-bolt geometry, integral magazine fit or hunting-rifle exports
   - you change the shared manual-action model contract consumed by Deadvox
   - you regenerate the hunting rifle, its civilian cartridge or its optional scope
+  - you change the sporter's sights, tapered stock or design-owned silhouette tuning
 ---
 
 # Turn-bolt export
@@ -13,7 +14,9 @@ The hunting rifle must exist as a fitted Gungen assembly before Deadvox adds pla
 
 The rifle uses a separate civilian cartridge identity rather than silently sharing military ammunition. Deadvox's playable rifle content must keep its ammunition supply store-only. The shared standards drawing establishes dimensions, not cross-loading permission; unsupported measurements remain unknown. Rendering may use the sourced maximum loaded length when typical length is unknown without filling that unknown in the cartridge record. See `cartridges/308-winchester.jsonnet`, `cartridges/README.md`, and `src/ammo/roundProfile.ts`, `roundProfiles`.
 
-An integral magazine loaded singly through the open bolt distinguishes this sporter from detachable-box rifles and from the pump's closed-action loading. The design ships with fixed irons; the hunting scope is a separate attachment export so fitting an optic remains a player choice. The scope's geometry, magnification and reticle belong to Gungen content, not a special Deadvox optic path. See `src/gun/parts.ts`, `sportingRearSight`, `src/gun/optics.ts`, `OPTIC_TYPE_IDS`, and `src/gun/internalMagazine.ts`, `internalMagazineCapacity`.
+An integral magazine loaded singly through the open bolt distinguishes this sporter from detachable-box rifles and from the pump's closed-action loading. Fixed irons keep fitting the separately exported hunting scope a player choice. The scope's geometry, magnification and reticle belong to Gungen content, not a special Deadvox optic path. See `src/gun/optics.ts`, `OPTIC_TYPE_IDS`, and `src/gun/internalMagazine.ts`, `internalMagazineCapacity`.
+
+The silhouette follows the Remington 700 sporter pattern rather than a Scout: the front sight belongs near the muzzle, and the stock has a shallow drop. The rear sight shares the AK's open-notch leaf construction instead of a block pedestal. The stock shares the shotgun's tapered wood construction so the wrist remains hand-sized while the comb angle changes; its vertical seat still clears the bolt path. Design data owns the sporting proportions so visual tuning does not require editing geometry code. See `designs/hunting-rifle.jsonnet`, `src/gun/parts.ts`, `openNotchLeafSolids` and `frontSightPosition`, and `src/gun/taperedStock.ts`, `taperedStockSolids`.
 
 ## Geometry and motion boundary
 
