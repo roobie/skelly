@@ -165,6 +165,11 @@ export const TEMPORAL_FIELDS = [
   },
   { path: 'zombies.attack.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.attack.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'zombies.acidSpit.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'zombies.acidSpit.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'zombies.acidSpit.globMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  { path: 'zombies.acidSpit.puddle.lifetimeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'zombies.acidSpit.puddle.damagePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.downed.finishOff.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.downed.dismember.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
 ] as const satisfies readonly TemporalField[];

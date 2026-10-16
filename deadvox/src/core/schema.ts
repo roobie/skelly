@@ -1684,7 +1684,7 @@ const AcidSpitSchema = pipe(
     windupSimSeconds: PositiveSimSeconds,
     cooldownSimSeconds: PositiveSimSeconds,
     /** Fraction of the cooldown a spit cancelled by a hit costs. */
-    cancelCooldownFraction: Fraction,
+    cancelPenaltyFraction: Fraction,
     spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
     globMetresPerSimSecond: SimRate,
     moves: ZombieMovesSchema,

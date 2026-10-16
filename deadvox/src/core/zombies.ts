@@ -3420,7 +3420,7 @@ export class ZombieSystem {
     const spit = zombie.type.acidSpit;
     if (spit && zombie.spitWindup > 0) {
       zombie.spitWindup = 0;
-      zombie.spitWait = spit.cancelCooldownFraction * spit.cooldownSimSeconds;
+      zombie.spitWait = spit.cancelPenaltyFraction * spit.cooldownSimSeconds;
     }
   }
 

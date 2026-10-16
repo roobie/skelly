@@ -527,7 +527,7 @@ local figureSeeds = std.range(1, 8);
         "rangeBand": { "nearMetres": 4, "farMetres": 12 },
         "windupSimSeconds": 1.2,
         "cooldownSimSeconds": 5,
-        "cancelCooldownFraction": 0.5,
+        "cancelPenaltyFraction": 0.5,
         "spreadDegrees": 4,
         "globMetresPerSimSecond": 14,
         "moves": [

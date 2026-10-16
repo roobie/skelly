@@ -866,7 +866,7 @@
       "abilities": ["acidSpit"],
       "acidResistance": 1,
       "acidSpit": {
-        "cancelCooldownFraction": 0.5,
+        "cancelPenaltyFraction": 0.5,
         "cooldownSimSeconds": 5,
         "globMetresPerSimSecond": 14,
         "moves": [
