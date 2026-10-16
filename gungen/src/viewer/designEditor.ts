@@ -13,6 +13,7 @@ export interface DesignEditorState {
   readonly locks: DesignLocks;
   readonly status: DesignStatus;
   readonly calibre?: string;
+  readonly excludedAttachments?: readonly string[];
   readonly finish?: Readonly<Record<string, string>>;
   readonly origin?: DesignOrigin;
   /** Explicit values already present in a design file are all deliberate choices. */
@@ -81,6 +82,7 @@ export const editorStateFromDesign = (design: GunDesign, template: Template | un
   locks: design.locks,
   status: design.status,
   ...(design.calibre === undefined ? {} : { calibre: design.calibre }),
+  ...(design.excludedAttachments === undefined ? {} : { excludedAttachments: design.excludedAttachments }),
   ...(design.finish ? { finish: design.finish } : {}),
   ...(design.origin ? { origin: design.origin } : {}),
   chosenParams: Object.fromEntries(
@@ -371,6 +373,7 @@ export const saveDesign = (state: DesignEditorState, domain: Domain): SaveDesign
     format: 1,
     template: state.template.name,
     ...(state.calibre === undefined ? {} : { calibre: state.calibre }),
+    ...(state.excludedAttachments === undefined ? {} : { excludedAttachments: state.excludedAttachments }),
     assembly: chosenAssembly(state, domain),
     locks: state.locks,
     status: state.status,

@@ -192,6 +192,24 @@ it('keeps the sporting front post tip centred and visible between the rear notch
   }
 });
 
+it('removes a design-excluded attachment from both single and pair certificates', () => {
+  const asset = { id: 'exclusion_fixture', file: 'assets/models/exclusion_fixture.glb' as const };
+  const baseline = exportFileText(JSON.stringify({ ...hunting, excludedAttachments: [] }), asset);
+  if (!baseline.ok) {
+    throw new Error(baseline.message);
+  }
+  const excluded = baseline.modelEntry.compatibilityPairs?.[0]?.[0][1];
+  if (!excluded) {
+    throw new Error('Exclusion fixture needs an accepted attachment pair');
+  }
+  const restricted = exportFileText(JSON.stringify({ ...hunting, excludedAttachments: [excluded] }), asset);
+  if (!restricted.ok) {
+    throw new Error(restricted.message);
+  }
+  expect(Object.values(restricted.modelEntry.compatibility ?? {}).flat()).not.toContain(excluded);
+  expect(restricted.modelEntry.compatibilityPairs?.some((pair) => pair.some(([, id]) => id === excluded))).toBe(false);
+});
+
 it('exports integral capacity from the well, iron or fitted-optic sights, and a validated phased action', () => {
   const out = exportFileText(readFileSync('designs/hunting-rifle.json', 'utf8'), {
     id: 'fixture_hunting',
@@ -207,6 +225,7 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
   expect(model.slots?.magazine).toBeUndefined();
   expect(Object.values(model.compatibility ?? {}).some((allowed) => allowed.includes('optic-hunting-3-9x'))).toBe(true);
   expect(model.sight?.kind).toBe('iron');
+  expect(Object.values(model.compatibility ?? {}).flat()).not.toContain('optic-digital-thermal');
   expect(model.anchors?.loading_port).toBeDefined();
   const optic = exportGunGlb(
     scoped,

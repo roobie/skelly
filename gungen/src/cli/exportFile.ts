@@ -64,7 +64,13 @@ export type ExportFileResult =
   | { readonly ok: false; readonly message: string };
 
 type ReadAssemblyResult =
-  | { assembly: Assembly; warnings: string[]; appearance: AppearanceContext; calibre?: string }
+  | {
+      assembly: Assembly;
+      warnings: string[];
+      appearance: AppearanceContext;
+      calibre?: string;
+      excludedAttachments?: readonly string[];
+    }
   | { message: string };
 
 const readDesignAssembly = (text: string): ReadAssemblyResult => {
@@ -84,6 +90,9 @@ const readDesignAssembly = (text: string): ReadAssemblyResult => {
   }
   return {
     assembly: loaded.design.assembly,
+    ...(loaded.design.excludedAttachments === undefined
+      ? {}
+      : { excludedAttachments: loaded.design.excludedAttachments }),
     warnings: loaded.issues.map((issue) => `design issue (${issue.code}): ${issue.message}`),
     ...(loaded.design.calibre === undefined ? {} : { calibre: loaded.design.calibre }),
     appearance: {
@@ -150,6 +159,7 @@ export const exportFileText = (
   const result = exportGunGlb(read.assembly, asset, read.appearance, {
     ...exportMetadata,
     includeAttachmentCompatibility: true,
+    ...(read.excludedAttachments === undefined ? {} : { excludedAttachments: read.excludedAttachments }),
   });
   if (!result.ok) {
     return { ok: false, message: `export refused: ${JSON.stringify(result.error)}` };
