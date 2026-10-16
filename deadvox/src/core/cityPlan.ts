@@ -63,18 +63,39 @@ export const benchmarkCityGrid = (): CityGrid => ({
   templates: HAMLET_TEMPLATES.map((id) => ({ id, weight: 1 })),
 });
 
+/**
+ * A street prop names a template, or a map pool of templates whose procedural variant each placement draws
+ * from the world seed. An unknown name has no choices.
+ */
+const streetPropChoices = (registry: Registry, id: string): { id: string; weight: number }[] => {
+  const pool = registry.mapPools.get(id);
+  if (!pool) {
+    return registry.templates.has(id) ? [{ id, weight: 1 }] : [];
+  }
+  return pool.choices.map(({ ref, weight }) => {
+    if (ref.kind !== 'template') {
+      throw new Error(`street prop pool "${id}" needs template refs, not ${ref.kind} ${ref.id}`);
+    }
+    return { id: ref.id, weight };
+  });
+};
+
 const cityDecorationIssues = (registry: Registry, city: Omit<CityGrid, 'templates'>): [string, string][] => {
   const issues: [string, string][] = [];
   if (city.perimeter && !registry.blockIds.has(city.perimeter.block)) {
     issues.push(['.city.perimeter.block', `no block "${city.perimeter.block}"`]);
   }
   for (const id of city.streetProps ?? []) {
-    const prop = registry.templates.get(id);
-    if (
-      !prop ||
-      prop.size[0] + STAIR_BODY_HALF_WIDTH > city.street / 2 ||
-      prop.size[2] > Math.floor(city.blockZ / ((city.streetProps?.length ?? 0) + 1))
-    ) {
+    const choices = streetPropChoices(registry, id);
+    const fits = choices.every(({ id: templateId }) => {
+      const prop = registry.templates.get(templateId);
+      return (
+        prop !== undefined &&
+        prop.size[0] + STAIR_BODY_HALF_WIDTH <= city.street / 2 &&
+        prop.size[2] <= Math.floor(city.blockZ / ((city.streetProps?.length ?? 0) + 1))
+      );
+    });
+    if (choices.length === 0 || !fits) {
       issues.push(['.city.streetProps', `street prop "${id}" does not fit its lane`]);
     }
   }
@@ -417,12 +438,15 @@ const freezeGrid = (grid: CityGrid): Readonly<CityGrid> =>
   });
 
 const streetPropPlacements = (context: FillContext, cells: Cell[], pitchX: number, pitchZ: number): Placement[] => {
-  const { grid, floor } = context;
+  const { grid, floor, registry, seed } = context;
   const props = grid.streetProps ?? [];
   return cells.flatMap(([i, j]) =>
-    props.map((id, index) =>
+    props.map((prop, index) =>
       freezePlacement({
-        template: context.compiled({ id }, 1),
+        template: context.compiled(
+          pickWeighted(streetPropChoices(registry, prop), Rng.stream(seed, `city:${i},${j}/street-prop:${index}`))!,
+          1,
+        ),
         turn: 0,
         origin: [i * pitchX, floor, j * pitchZ + grid.street + (grid.blockZ * (index + 1)) / (props.length + 1)].map(
           Math.floor,

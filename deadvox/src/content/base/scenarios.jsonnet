@@ -37,7 +37,7 @@ local ladder = lab.entry.ladder;
       pad: 2, gap: 1, blend: 24,
       rows: 4,
       perimeter: { block: 'concrete', height: 8, thickness: 2 },
-      streetProps: ['gauntlet_car_wreck'],
+      streetProps: ['gauntlet_street_cars'],
       pool: 'gauntlet_city',
     },
   }],

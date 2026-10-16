@@ -131,7 +131,7 @@
         "pool": "gauntlet_city",
         "rows": 4,
         "street": 12,
-        "streetProps": ["gauntlet_car_wreck"]
+        "streetProps": ["gauntlet_street_cars"]
       },
       "composition": {
         "descents": [

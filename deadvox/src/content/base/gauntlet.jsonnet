@@ -74,7 +74,7 @@ local utilities = [
 ];
 {
   items: types.items,
-  mapPools: kits.mapPools,
+  mapPools: kits.mapPools + city.mapPools,
   blocks: tents.blocks + types.blocks,
   loot: types.loot + tents.loot,
   mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
