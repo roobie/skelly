@@ -10,6 +10,7 @@ read_if:
   - you're authoring or changing exterior door openings
   - you're authoring or changing furniture appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author decals or scenario outbreak age
+  - you author a scenario or move scenario rules from code into content
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
 ---
@@ -233,6 +234,43 @@ Keep type geometry separate from the pool, and the pool separate from the scenar
 Supply shops supplement the houses, while police stations and gun shops remain scarce. Their civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. Medical tents provide treatment supplies rather than a guaranteed full kit. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-city-building-types.libsonnet`, `src/content/base/gauntlet-city-medical.libsonnet`, and `src/core/loot.ts`, `lootTypeIssue`.
 
 Every shop shows a street cue that no house carries, and no two shop types share one, so a player walking the street can tell a shop from a house, and one kind of shop from another, before entering. The cue is built from blocks that only shop fronts use, on the street face and in the yard in front of it. A cue prop must never narrow what a standing player or shambler can walk: the yard cells in front of a door keep full standing headroom, so a prop that hangs over the yard goes above the standing body, not at head height. The rule is data-only, with no code special cases per shop type. See `src/content/base/gauntlet-city-building-types.libsonnet`, `shell`, and `test/cityKitPlan.test.ts`, "gauntlet shop fronts".
+
+## Scenarios
+
+A scenario is mod content: a mod must be able to express a scenario like the gauntlet in
+Jsonnet without a code edit. The scenario row must supply the values, such as counts,
+chances, densities, thresholds and authored placements, and must select code-owned
+mechanisms, as `../../PILLARS.md`, "Content forward compatibility" requires. Code keeps
+what a mod cannot safely or usefully restate: the body route oracle, the physical climb
+and reach certificates, spawn admission with its saved ledger, and the scenario run's win
+state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts`,
+`climbCertificate`; and `src/core/zombieSpawns.ts`, `ZombieSpawner`.
+
+- **Kind.** The row's `kind` selects the site mechanism through a dispatch table that owns
+  its keys. A new scenario of an existing kind is content alone; a new kind is a code
+  mechanism, because how a site is built and proved is geometry, not data.
+- **Route proof.** Each kind's code proves that its own routes are open, and the row
+  supplies the proof's counts and thresholds, such as how many leads a player may miss
+  while one stays reachable. The proof's shape is physics a mod cannot safely restate, while
+  how forgiving a scenario is belongs to its design. See `src/core/scenarioCertificate.ts`,
+  `scenarioCertificate`.
+- **Leads and landmarks.** They are lists in the row, not a fixed number, because how
+  many clues and landmarks a scenario has is design.
+- **Placement.** Where leads and landmarks go comes from the row, as anchors or placement
+  rules. Code resolves and validates them, so a scenario moves its clues without a code
+  edit and a bad placement fails validation.
+- **Goal text.** The words the goal shows when it refuses are content, as player-facing
+  wording belongs to the mod (#456).
+
+The gauntlet sweep tracked by #393 brings the gauntlet's code to these rules; until it
+lands, its kind selection, lead and landmark counts and positions, lead redundancy and
+goal refusal text stay fixed in code.
+
+A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
+definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules
+beyond data, such as triggers, timed events and conditional consequences, wait for the
+runtime-function format that `../../docs/decisions/0004-content-language.md` leaves open
+in #313, so no scenario grows a private rule language first.
 
 ## Recipes
 
