@@ -54,9 +54,22 @@ local shellClaim(layer) = [
     for x in std.range(0, 17)
   ]) for z in std.range(0, 15)
 ];
-local shell(id, style, context, windows) =
-  local layers = [wall, wall, windows, windows, closed, fascia, closed]; {
-  id: id, size: [18, 7, 16], style: style, lootContext: context, palette: palette,
+local put(layer, z, x, text) = [
+  if i == z
+  then std.substr(layer[i], 0, x) + text + std.substr(layer[i], x + std.length(text), std.length(layer[i]))
+  else layer[i]
+  for i in std.range(0, std.length(layer) - 1)
+];
+// A shop front is a two-row sign band over the door plus type props in the yard rows (z < 2) in
+// front of it; `fronts` holds [layer, z, x, text] overlays and `extra` the props' palette entries.
+local shell(id, style, context, windows, extra={}, fronts=[]) =
+  local base = [wall, wall, windows, windows, fascia, fascia, closed];
+  local layers = [
+    std.foldl(function(layer, f) if f[0] == y then put(layer, f[1], f[2], f[3]) else layer, fronts, base[y])
+    for y in std.range(0, 6)
+  ]; {
+  id: id, size: [18, 7, 16], style: style, lootContext: context,
+  palette: palette + { [key]: { role: 'trim', material: extra[key] } for key in std.objectFields(extra) },
   layers: layers,
   ownership: { layers: [shellClaim(layer) for layer in layers] },
   anchors: {}, ports: [],
@@ -97,35 +110,59 @@ local building(id, context, shellId, roomId) = {
   anchors: { entry: { kind: 'standing', at: [8, 1, 6] }, stock: { kind: 'standing', at: [8, 1, 12] } },
   access: { ground: 'floor_0', entrance: [8, 1, 6], storeys: [{ id: 'floor_0', floor: 1 }], stairs: [] },
 };
+local stoneSteps = { player: 'footstep_stone', shambler: 'shambler_step_stone' };
+local signBlock(id, name, color, extra={}) =
+  { id: id, name: name, color: color, solid: true, footsteps: stoneSteps, weatherable: false } + extra;
+local frontStyle(id, bindings) = { id: id, bindings: {
+  facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
+} + bindings };
+local yard(block) = { role: 'trim', block: block };
 {
   items: police.items,
   furniture: police.furniture,
+  blocks: [
+    signBlock('shop_blue', 'Shop paint (police blue)', '#2a5ad6'),
+    signBlock('shop_green', 'Shop paint (grocer green)', '#3f9e4a'),
+    signBlock('shop_orange', 'Shop paint (gun-shop orange)', '#e07b1a'),
+    signBlock('shop_yellow', 'Shop paint (hardware yellow)', '#f2c200'),
+    signBlock('shop_red', 'Shop paint (medical red)', '#d0312d'),
+    signBlock('shop_white', 'Shop paint (awning white)', '#f0ede4'),
+    signBlock('shop_produce', 'Produce crates', '#a8c840'),
+    signBlock('shop_grille', 'Shopfront grille', '#2b2d30', { opaque: false }),
+  ],
   mapStyles: [
-    { id: 'gauntlet_police', bindings: {
-      facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
-      sign: { role: 'trim', block: 'siding_blue' },
+    frontStyle('gauntlet_police', {
+      sign: yard('shop_blue'), post: yard('shop_blue'),
       partition: { role: 'shell', block: 'concrete' },
       floor: { role: 'interior_floor', block: 'concrete' },
       footing: { role: 'support', block: 'concrete' },
-    } },
-    { id: 'gauntlet_food_shop', bindings: {
-      facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
-      sign: { role: 'trim', block: 'plaster' },
-    } },
-    { id: 'gauntlet_gun_shop', bindings: {
-      facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
-      sign: { role: 'trim', block: 'siding_red' },
-    } },
-    { id: 'gauntlet_hardware_shop', bindings: {
-      facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
-      sign: { role: 'trim', block: 'hazard_yellow' },
-    } },
+    }),
+    frontStyle('gauntlet_food_shop', {
+      sign: yard('shop_green'), awning_a: yard('shop_green'), awning_b: yard('shop_white'),
+      produce: yard('shop_produce'),
+    }),
+    frontStyle('gauntlet_gun_shop', { sign: yard('shop_orange'), grille: yard('shop_grille'), bags: yard('sandbag') }),
+    frontStyle('gauntlet_hardware_shop', {
+      sign: yard('shop_yellow'), pipes: yard('galvanized'), lumber: yard('planks'),
+    }),
   ],
   mapPieces: [
-    shell('gauntlet_police_front', 'gauntlet_police', hunting, policeWindows),
-    shell('gauntlet_food_front', 'gauntlet_food_shop', residential, shopWindows),
-    shell('gauntlet_gun_front', 'gauntlet_gun_shop', hunting, shopWindows),
-    shell('gauntlet_hardware_front', 'gauntlet_hardware_shop', industrial, shopWindows),
+    shell('gauntlet_police_front', 'gauntlet_police', hunting, policeWindows, { l: 'post' }, [
+      [0, 1, 2, 'l'], [1, 1, 2, 'l'], [2, 1, 2, 'l'], [3, 1, 2, 'l'],
+      [0, 1, 13, 'l'], [1, 1, 13, 'l'], [2, 1, 13, 'l'], [3, 1, 13, 'l'],
+    ]),
+    shell('gauntlet_food_front', 'gauntlet_food_shop', residential, shopWindows, { a: 'awning_a', b: 'awning_b', p: 'produce' }, [
+      [4, 0, 1, 'ababababababab'], [4, 1, 1, 'ababababababab'],
+      [0, 1, 2, 'pp'], [0, 1, 12, 'pp'], [1, 1, 2, 'p'], [1, 1, 13, 'p'],
+    ]),
+    shell('gauntlet_gun_front', 'gauntlet_gun_shop', hunting, shopWindows, { k: 'grille', s: 'bags' }, [
+      [2, 2, 0, '###kkk#DD#kkk###'], [3, 2, 0, '###kkk#DD#kkk###'],
+      [0, 1, 1, 'sssss'], [0, 1, 12, 'sssss'], [1, 1, 1, 'ss'], [1, 1, 15, 'ss'],
+    ]),
+    shell('gauntlet_hardware_front', 'gauntlet_hardware_shop', industrial, shopWindows, { q: 'pipes', p: 'lumber' }, [
+      [0, 1, 2, 'qq'], [1, 1, 2, 'qq'], [2, 1, 2, 'qq'],
+      [0, 1, 12, 'pppp'], [1, 1, 12, 'pppp'],
+    ]),
     police.piece,
   ] + police.chairPieces + [
     room('gauntlet_food_aisles', residential, shopRows, shopTall, {

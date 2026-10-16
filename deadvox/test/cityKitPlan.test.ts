@@ -3,6 +3,7 @@ import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityPlan.ts';
 import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
+import { STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { ownershipCell } from '../src/core/templateOwnership.ts';
 import { type CompiledTemplate, compileAssembly, type PlacedPiece, placedPoint } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
@@ -532,5 +533,85 @@ describe('gauntlet door openings', () => {
       }
     }
     expect(doors).toBeGreaterThan(0);
+  });
+});
+
+const houseId = /^gauntlet_city_\d+/;
+
+// The yard rows in front of a shop door, where a player walks up from the street.
+const yardRows = 2;
+const shopIds = [
+  'gauntlet_police_station',
+  'gauntlet_food_store',
+  'gauntlet_gun_store',
+  'gauntlet_hardware_store',
+  'gauntlet_medical_site',
+];
+
+describe('gauntlet shop fronts', () => {
+  // The street face and the yard in front of it: the rows a player sees from the road.
+  const streetRows = 4;
+  const streetBlocks = (assemblyId: string): Set<string> => {
+    const { registry } = BUNDLED_CONTENT;
+    const seen = new Set<string>();
+    for (const seed of [1, 2, 3]) {
+      const compiled = compileAssembly(registry, registry.mapAssemblies.get(assemblyId)!, {
+        seed,
+        siteId: `shop-front:${assemblyId}`,
+      });
+      const [sx, sy, sz] = compiled.size;
+      const cells = sy * Math.min(streetRows, sz) * sx;
+      for (let i = 0; i < cells; i++) {
+        const x = i % sx;
+        const z = Math.floor(i / sx) % Math.min(streetRows, sz);
+        const y = Math.floor(i / (sx * Math.min(streetRows, sz)));
+        const id = registry.blocks[compiled.blocks[ownershipCell(compiled.size, [x, y, z])]!]?.id;
+        if (id && id !== 'air') {
+          seen.add(id);
+        }
+      }
+    }
+    return seen;
+  };
+
+  it('gives every shop a street face that carries blocks no house shows, and no two shops share them', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const houses = [...registry.mapAssemblies.keys()].filter((id) => houseId.test(id));
+    expect(houses.length).toBeGreaterThan(0);
+    const houseBlocks = new Set(houses.flatMap((id) => [...streetBlocks(id)]));
+    const marks = shopIds.map((id) => ({
+      id,
+      marks: [...streetBlocks(id)].filter((block) => !houseBlocks.has(block)),
+    }));
+    for (const { id, marks: own } of marks) {
+      expect(own.length, `${id} identifying blocks`).toBeGreaterThan(0);
+    }
+    const all = marks.flatMap(({ marks: own }) => own);
+    expect(new Set(all).size, 'a block identifies more than one shop type').toBe(all.length);
+  });
+
+  it('leaves a standing body of headroom over every walkable street-side cell of every shop', () => {
+    const { registry } = BUNDLED_CONTENT;
+    let walkable = 0;
+    for (const id of shopIds) {
+      for (const seed of [1, 2, 3]) {
+        const compiled = compileAssembly(registry, registry.mapAssemblies.get(id)!, { seed, siteId: `headroom:${id}` });
+        const solid = (x: number, y: number, z: number): boolean =>
+          registry.blocks[compiled.blocks[ownershipCell(compiled.size, [x, y, z])]!]?.solid === true;
+        const yard = Array.from({ length: Math.min(yardRows, compiled.size[2]) * compiled.size[0] }, (_, i) => ({
+          x: i % compiled.size[0],
+          z: Math.floor(i / compiled.size[0]),
+        })).filter(({ x, z }) => solid(x, 0, z) && !solid(x, 1, z));
+        walkable += yard.length;
+        const top = Math.min(compiled.size[1], Math.ceil(1 + STAIR_BODY_HEIGHT));
+        const blocked = yard.flatMap(({ x, z }) =>
+          Array.from({ length: top - 1 }, (_, i) => i + 1)
+            .filter((y) => solid(x, y, z))
+            .map((y) => `${x},${y},${z}`),
+        );
+        expect(blocked, `${id} seed ${seed} cells that block a standing body`).toEqual([]);
+      }
+    }
+    expect(walkable).toBeGreaterThan(0);
   });
 });

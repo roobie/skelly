@@ -2,6 +2,7 @@
   "templates": [
     {
       "id": "shed",
+      "maxStoreys": 1,
       "size": [8, 6, 6],
       "palette": {
         "=": "concrete",
@@ -574,6 +575,7 @@
     },
     {
       "id": "gas_station",
+      "maxStoreys": 1,
       "size": [16, 9, 26],
       "palette": {
         ".": "air",
