@@ -22,17 +22,17 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 **Telegraph before damage.** The spit has a wind-up the player can see and hear, like the amalgam's tentacle and every melee swing: the head pulls back, the chest sac glows brighter and a wet sound plays from the zombie's position. Without a telegraph, a ranged hit reads as random damage from off-screen. The wind-up sound is the type's attack sound. See `DESIGN.md`, "Amalgam body and damage", and `src/core/schema.ts`, `ZombieSchema`.
 
-**A hit during the wind-up cancels the spit.** The cancelled spit costs the zombie its cooldown. This makes fighting back an answer in itself, which suits an enemy meant to harass rather than to kill.
+**A hit during the wind-up cancels the spit.** This makes fighting back an answer in itself, which suits an enemy meant to harass rather than to kill.
 
 **Sight, not hearing, starts a spit.** A zombie spits only at a player it sees, from inside its range band and sight cone. Heard or remembered stimuli move it, as they move any zombie, but they never aim a spit, so breaking sight always stops the next one. See `src/core/zombies.ts`, `seesPlayer`.
 
-**Line of sight is checked at release.** The path from the mouth to the player's chest is tested against solids when the spit leaves. If something solid is in the way, there is no spit; the zombie keeps its cooldown. Ducking behind a wall during the wind-up is the main counter, and it must work. The amalgam's tentacle and the grenade use the same rule. See `src/core/zombies.ts`, `withinAttackReach`, and `src/core/explosive.ts`, `inSight`.
+**Line of sight is checked at release.** The path from the mouth to the player's chest is tested against solids when the spit leaves. If something solid is in the way, there is no spit and the cooldown is not spent. Ducking behind a wall during the wind-up is the main counter, and it must work. The amalgam's tentacle and the grenade use the same rule. See `src/core/zombies.ts`, `withinAttackReach`, and `src/core/explosive.ts`, `inSight`.
 
 **The glob is simulated.** The spit leaves as a glob that flies on an arc at a speed from content and hits the first thing it meets: a solid, a zombie body or the player. The player can sidestep a glob in flight, which makes the spit read as a thing in the world and gives a second chance after the wind-up. Thrown items have no in-flight simulation (`DESIGN.md`, "Held-item throws"), so the glob is a new owner of in-flight state, with its own collision.
 
 **Aim is seeded.** The glob aims where the player is at release, with a seeded spread from content, so replays and saves agree and a far spit can miss. See `DESIGN.md`, "Determinism".
 
-**A zombie in the way takes the acid.** A body the glob meets stops it, as it stops pellets and fragments, and that zombie takes the burn unless its type is immune to acid. Acid zombies are immune; shamblers are not. A crowd therefore shields the player and the spitter hurts its own crowd, so "use the crowd" is a real tactic, while a pack of spitters doesn't erode itself. Immunity is a per-type resistance to the acid kind in content, beside the existing per-region melee resistance, not a check on the acid zombie, so later tiers and other types choose it by data. See `src/core/zombies.ts`, `ZombieSystem.firePellets`, and `src/core/schema.ts`, `ZombieSchema`, `meleeDamageResistance`.
+**A zombie in the way takes the acid.** A body the glob meets stops it, as it stops pellets and fragments, and that zombie takes the burn unless its type is immune to acid. Acid zombies are immune; shamblers are not. A crowd therefore shields the player and takes the acid, so "use the crowd" stays a tactic. Immunity is a per-type resistance to the acid kind in content, beside the existing per-region melee resistance, not a check on the acid zombie, so later tiers and other types choose it by data. See `src/core/zombies.ts`, `ZombieSystem.firePellets`, and `src/core/schema.ts`, `ZombieSchema`, `meleeDamageResistance`.
 
 **The player is hit through the existing path.** A glob that lands is one localized hit on a region picked by the move's weighted `hitRegions`. Pain, shock, bleeding, worn-item wear and saves therefore keep their single owners, as landing injuries do. Hits are light and the cooldown long, so one spit hurts but rarely opens a serious wound. See `DESIGN.md`, "Landing injuries", and `DESIGN.md`, "Bleeding"; `src/core/zombies.ts`, `pickZombieHitRegion`; and `src/core/sim.ts`, `Simulation.hit`.
 
@@ -46,7 +46,7 @@ A glob that hits the ground leaves a short-lived puddle that burns the legs of a
 
 ## Movement
 
-The spitter keeps a shambler's senses, attention and modes. On sight, it moves until the player is inside its range band, stops, faces the player and spits each cooldown. It holds its ground between spits, closing again only when it loses sight or the player leaves the band. Holding still is the simplest behaviour that works without route planning, and it gives the player a stationary target to flank or shoot. See `DESIGN.md`, "Senses and AI".
+The spitter keeps a shambler's senses, attention and modes. On sight, it moves until the player is inside its range band, stops, faces the player and spits each cooldown. It holds its ground between spits, moving again only when it loses sight or the player moves beyond the band's far edge. Holding still is the simplest behaviour that works without route planning, and it gives the player a stationary target to flank or shoot. See `DESIGN.md`, "Senses and AI".
 
 ## Player counters
 
@@ -62,7 +62,7 @@ These must all work, because each is the reason the fight reads as more than tra
 
 ## Spawning
 
-Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab storey holds as many as its depth: one on the first storey, two on the second, and so on down. A fixed count reads as escalation the player can learn, unlike a chance per marker. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the rule needs a fixed per-storey count in that content. See `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so it never turns up in hamlets.
+Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab level holds as many acid zombies as its number. Until BR confirms it under d369, "level" is read as storey depth: one on the first storey, two on the second, and so on down. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the rule needs a fixed per-storey count in that content. See `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so it never turns up in hamlets.
 
 ## Saves and determinism
 
@@ -70,7 +70,7 @@ Wind-up progress, cooldown, the aim seed, every glob in flight and every puddle 
 
 ## Model
 
-The acid zombie gets its own mobgen body, built from the ground up, not a recoloured shambler: it starts a line, and later tiers grow from its shape. The silhouette must read as a spitter at its range band before it spits, so the player learns to pick it out of a crowd. It must show:
+The acid zombie gets its own mobgen body, built from the ground up, not a recoloured shambler. The silhouette must read as a spitter at its range band before it spits, so the player learns to pick it out of a crowd. It must show:
 
 - a bulky, hunched frame;
 - a swollen acid sac in the chest that glows green, and brightens during the wind-up;
