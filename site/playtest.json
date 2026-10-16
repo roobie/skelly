@@ -1,6 +1,7 @@
 {
   "en": {
     "analytics": "This site, the game included, loads Simple Analytics to count visits. It is anonymous, stores no cookies on your device, and gets none of your play metrics.",
+    "beginnerHeading": "Beginner mode",
     "beginnerHint": "Zombies are slower, weaker and notice less. A beginner-mode world is saved apart and continues only from this link.",
     "beginnerLink": "Play in beginner mode",
     "duration": "Play for as long as you like, in as many sittings as you like. Continue resumes a living survivor; death ends the run.",
@@ -10,16 +11,20 @@
     "feedbackLink": "the playtest feedback form",
     "metrics": "The game records play metrics only on your machine, in this browser.",
     "patch": "Patch",
+    "playHeading": "Playtest",
+    "playHint": "The playtest map as it is. Your world is saved in this browser.",
     "playLink": "Play the playtest map",
     "round": "Round",
     "sending": "Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.",
     "task": "Your task: survive and find the military camp.",
     "title": "Playtest",
+    "tutorialHeading": "Tutorial",
     "tutorialHint": "Learn the controls without changing your saved world.",
     "tutorialLink": "Practice tutorial (unsaved)"
   },
   "sv": {
     "analytics": "Den här webbplatsen, spelet inräknat, använder Simple Analytics för att räkna besök. Det är anonymt, sparar inga kakor på din enhet och får inte ta del av din speldata.",
+    "beginnerHeading": "Nybörjarläge",
     "beginnerHint": "Zombierna är långsammare, svagare och märker mindre. En värld i nybörjarläge sparas för sig och fortsätter bara från den här länken.",
     "beginnerLink": "Spela i nybörjarläge",
     "duration": "Spela så länge du vill, i så många omgångar du vill. Continue återupptar en överlevare som fortfarande lever; vid dödsfall tar omgången slut.",
@@ -29,11 +34,14 @@
     "feedbackLink": "formuläret för speltestet",
     "metrics": "Spelet sparar speldata bara på din dator, i den här webbläsaren.",
     "patch": "Patch",
+    "playHeading": "Speltest",
+    "playHint": "Speltestkartan som den är. Din värld sparas i den här webbläsaren.",
     "playLink": "Spela speltestkartan",
     "round": "Runda",
     "sending": "Du väljer själv om du vill skicka den: i F9-menyn sparar du din speldata, och en repris av ditt senaste spelande, som filer du kan bifoga till din återkoppling.",
     "task": "Ditt uppdrag: överlev och hitta militärlägret.",
     "title": "Speltest",
+    "tutorialHeading": "Introduktion",
     "tutorialHint": "Lär dig kontrollerna utan att ändra din sparade värld.",
     "tutorialLink": "Öva i introduktionen (sparas inte)"
   }
