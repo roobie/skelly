@@ -18,7 +18,7 @@ import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { HordeState, ZombieState } from './zombies.ts';
+import type { HordeState, ZombieState, ZombieSystemState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -118,6 +118,7 @@ interface WirePayload {
     zombieSystem: {
       nextEntityId: number;
       hordes: HordeState[];
+      acidGlobs: ZombieSystemState['acidGlobs'];
     };
     blockEntitiesNextUid: number;
     spawned: string[];
@@ -150,7 +151,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 48;
+export const SAVE_SCHEMA_VERSION = 49;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -227,6 +228,15 @@ const progression = obj({
 });
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
+const acidGlob = obj({
+  source: positiveInt,
+  type: str({ id: true }),
+  move: str({ id: true }),
+  pos: vec3,
+  velocity: vec3,
+  damage: nonNegative,
+  regionRoll: num({ min: 0, max: 0.999_999_999_999_999_9 }),
+});
 const bodyRegionValues = BODY_REGIONS;
 const body = obj({
   pos: vec3,
@@ -712,6 +722,7 @@ const wirePayloadSchema = obj({
     zombieSystem: obj({
       nextEntityId: positiveInt,
       hordes: arr(horde),
+      acidGlobs: arr(acidGlob),
     }),
     blockEntitiesNextUid: positiveInt,
     spawned: arr(str({ nonEmpty: true })),
@@ -1076,6 +1087,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       zombieSystem: {
         nextEntityId: snapshot.world.zombies.nextEntityId,
         hordes: [...snapshot.world.zombies.hordes],
+        acidGlobs: [...snapshot.world.zombies.acidGlobs],
       },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
       spawned: [...snapshot.world.spawned],
@@ -1519,6 +1531,9 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   if (grabbed) {
     check('climbable', grabbed.type, 'character.player.ladder.grabbedUid');
   }
+  for (const [index, glob] of snapshot.world.zombies.acidGlobs.entries()) {
+    check('zombie', glob.type, `world.zombies.acidGlobs[${index}].type`);
+  }
   for (const [index, savedZombie] of snapshot.world.zombies.zombies.entries()) {
     check('zombie', savedZombie.zombie.type, `world.zombies[${index}].type`);
   }
@@ -1530,6 +1545,14 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   }
   for (const [index, system] of snapshot.character.simulation.scheduler.systems.entries()) {
     check('scheduler', system.id, `character.simulation.scheduler.systems[${index}].id`);
+  }
+}
+
+function assertAcidGlobSources(state: ZombieSystemState): void {
+  for (const glob of state.acidGlobs) {
+    if (glob.source >= state.nextEntityId) {
+      throw new Error('Invalid acid glob source');
+    }
   }
 }
 
@@ -1553,6 +1576,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
           nextEntityId: positiveInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
           hordes: arr(horde),
+          acidGlobs: arr(acidGlob),
         }),
         spawned: arr(str({ nonEmpty: true })),
       }),
@@ -1578,6 +1602,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   assertAimState(snapshot.character.aim);
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   validateActionReferences(snapshot);
+  assertAcidGlobSources(snapshot.world.zombies);
   const hordes = new Map<string, HordeState>();
   for (const hordeState of snapshot.world.zombies.hordes) {
     if (hordes.has(hordeState.id)) {

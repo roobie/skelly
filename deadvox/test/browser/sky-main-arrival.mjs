@@ -14,6 +14,7 @@ export const mainSourceOverlays = [
   'game/worldSetup.ts',
   'game/engine.ts',
   'game/play.ts',
+  'render/playView.ts',
   'game/worldLoading.ts',
   'ui/worldLoading.ts',
   'render/skylight.ts',
@@ -141,7 +142,14 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
       { timeout: 60_000 },
     );
     await page.locator('#go').click();
-    for (const source of ['index.html', 'game/engine.ts', 'game/play.ts', 'game/streamer.ts', 'render/skylight.ts']) {
+    for (const source of [
+      'index.html',
+      'game/engine.ts',
+      'game/play.ts',
+      'render/playView.ts',
+      'game/streamer.ts',
+      'render/skylight.ts',
+    ]) {
       if (!appliedSources.has(source)) {
         throw new Error(`Main overlay was not applied: ${source}`);
       }

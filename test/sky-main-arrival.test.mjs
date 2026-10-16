@@ -8,6 +8,11 @@ it('main rendering overlays retain branch core API owners', () => {
   assert.ok(mainSourceOverlays.every((path) => !path.startsWith('core/')));
 });
 
+it('main overlays keep the play frame producer and consumer on the same revision', () => {
+  assert.ok(mainSourceOverlays.includes('game/play.ts'));
+  assert.ok(mainSourceOverlays.includes('render/playView.ts'));
+});
+
 it('main overlays accept the directory URL trailing separator and worker module query', () => {
   const root = resolve('fixture-root');
   const id = `${root}/src/worker/mesh.worker.ts?worker_file&type=module`;
