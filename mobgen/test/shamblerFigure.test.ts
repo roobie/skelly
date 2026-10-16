@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { cellIndex, worldPosition } from '../src/core/voxelize.ts';
 import {
   type BoneVoxelBox,
-  SHAMBLER_FIGURE_SEEDS,
   type ShamblerFigure,
   type ShamblerHitRegion,
   shamblerFigure,
 } from '../src/mob/shamblerFigure.ts';
+
+// Fixture seeds: Deadvox authors the shipped pool, and its own tests check those.
+const FIXTURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const REGION_BONES: Readonly<Record<ShamblerHitRegion, readonly string[]>> = {
   head: ['head', 'jaw'],
@@ -60,9 +62,8 @@ const voxelContainmentErrors = (figure: ShamblerFigure): string[] => {
 };
 
 describe('shared shambler hit-region figures', () => {
-  it('keeps the explicit figure pool valid and caches tight per-bone rest boxes', () => {
-    expect(Object.isFrozen(SHAMBLER_FIGURE_SEEDS)).toBe(true);
-    for (const seed of SHAMBLER_FIGURE_SEEDS) {
+  it('realizes valid figures and caches tight per-bone rest boxes', () => {
+    for (const seed of FIXTURE_SEEDS) {
       const figure = shamblerFigure(seed);
       expect(figure.genome.seed).toBe(seed);
       expect(shamblerFigure(seed)).toBe(figure);

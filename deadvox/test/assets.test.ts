@@ -63,8 +63,15 @@ describe('asset manifest', () => {
 describe('asset files', () => {
   const { manifest } = check(source());
 
-  it('passes when the listed files and the pack agree', () => {
-    expect(assetFileIssues('m', manifest, ['assets/manifest.json', 'assets/models/flashlight.glb'])).toEqual([]);
+  it('requires credits for runtime assets but not the manifest or Jsonnet authoring inputs', () => {
+    expect(
+      assetFileIssues('m', manifest, [
+        'assets/manifest.json',
+        'assets/manifest.jsonnet',
+        'assets/manifest.libsonnet',
+        'assets/models/flashlight.glb',
+      ]),
+    ).toEqual([]);
   });
 
   it('refuses a listed file that is missing, and a file no source lists', () => {

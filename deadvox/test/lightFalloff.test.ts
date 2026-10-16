@@ -1,6 +1,7 @@
 import { ShaderChunk } from 'three';
 import { describe, expect, it } from 'vitest';
 import { installNearFieldFalloff, NEAR_FIELD_M, withNearFieldFalloff } from '../src/render/lightFalloff.ts';
+import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
 
 // three.js's own source is the thing under test: the patch must find the line it replaces.
 describe('near-field light falloff', () => {
@@ -32,7 +33,7 @@ describe('near-field light falloff', () => {
   it('limits close-surface brightness variation for a fixture light', () => {
     const exposed = (albedo: number, d: number): number => {
       const window = (1 - (d / 20) ** 4) ** 2;
-      return ((5 / (d + NEAR_FIELD_M)) * window * albedo * 3) / Math.PI;
+      return ((CALIBRATED_BEAM_INTENSITY / (d + NEAR_FIELD_M)) * window * albedo * 3) / Math.PI;
     };
     // Close surfaces vary little: 0.5 m to 2 m is under 2x (a plain 1 / d would be 4x).
     expect(exposed(0.5, 0.5) / exposed(0.5, 2)).toBeLessThan(2);

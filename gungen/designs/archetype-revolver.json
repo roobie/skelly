@@ -1,41 +1,30 @@
 {
-  "format": 1,
-  "template": "revolver",
   "assembly": {
-    "name": "archetype-revolver",
-    "description": "Curated K/L-frame revolver with an aligned six-chamber cylinder.",
-    "root": "frame",
-    "parts": {
-      "frame": {
-        "family": "revolver-frame",
-        "params": {
-          "bore": "M",
-          "frameSize": "M",
-          "butt": "round"
-        }
-      },
-      "barrel": {
-        "family": "revolver-barrel",
-        "params": {
-          "length": "M",
-          "style": "classic"
-        }
-      },
-      "cylinder": {
-        "family": "revolver-cylinder",
-        "params": {
-          "chamberCount": "6",
-          "chamberIndex": "0"
-        }
-      },
-      "grip": {
-        "family": "revolver-grip",
-        "params": {
-          "length": "M"
-        }
-      }
-    },
     "connections": [
+      {
+        "from": "frame.crane",
+        "to": "crane.mount"
+      },
+      {
+        "from": "crane.cylinder",
+        "to": "cylinder.crane"
+      },
+      {
+        "from": "cylinder.ejector",
+        "to": "ejector.mount"
+      },
+      {
+        "from": "barrel.ejector",
+        "to": "ejector.barrel"
+      },
+      {
+        "from": "frame.hammer",
+        "to": "hammer.mount"
+      },
+      {
+        "from": "frame.trigger",
+        "to": "trigger.mount"
+      },
       {
         "from": "frame.barrel",
         "to": "barrel.frame"
@@ -52,11 +41,59 @@
         "from": "frame.grip-frame",
         "to": "grip.frame-joint"
       }
-    ]
+    ],
+    "description": "Curated K/L-frame revolver with an aligned six-chamber cylinder.",
+    "name": "archetype-revolver",
+    "parts": {
+      "barrel": {
+        "family": "revolver-barrel",
+        "params": {
+          "length": "M",
+          "style": "classic"
+        }
+      },
+      "crane": {
+        "family": "revolver-crane"
+      },
+      "cylinder": {
+        "family": "revolver-cylinder",
+        "params": {
+          "chamberCount": "6",
+          "chamberIndex": "0"
+        }
+      },
+      "ejector": {
+        "family": "revolver-ejector"
+      },
+      "frame": {
+        "family": "revolver-frame",
+        "params": {
+          "bore": "M",
+          "butt": "round",
+          "frameSize": "M"
+        }
+      },
+      "grip": {
+        "family": "revolver-grip",
+        "params": {
+          "length": "M"
+        }
+      },
+      "hammer": {
+        "family": "revolver-hammer"
+      },
+      "trigger": {
+        "family": "revolver-trigger"
+      }
+    },
+    "root": "frame"
   },
+  "calibre": "357-magnum",
+  "format": 1,
   "locks": {
-    "params": {},
-    "optionalParts": []
+    "optionalParts": [],
+    "params": {}
   },
-  "status": "published"
+  "status": "published",
+  "template": "revolver"
 }

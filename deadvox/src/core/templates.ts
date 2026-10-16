@@ -39,13 +39,15 @@ export function* cellsOf([sx, sy, sz]: readonly [number, number, number]): Gener
   }
 }
 
+type TemplateCells = Pick<TemplateDef, 'size' | 'layers'>;
+
 /** The character at a template cell, or undefined outside the layers. */
-const charAt = (template: TemplateDef, x: number, y: number, z: number): string | undefined => {
+const charAt = (template: TemplateCells, x: number, y: number, z: number): string | undefined => {
   const row = template.layers[y]?.[z] ?? '';
   return row.length === template.size[0] ? row[x] : [...row][x];
 };
 
-function* markedCells(template: TemplateDef, char: string): Generator<Vec3> {
+function* markedCells(template: TemplateCells, char: string): Generator<Vec3> {
   const [sx, sy, sz] = template.size;
   for (let y = 0; y < sy; y++) {
     for (let z = 0; z < sz; z++) {
@@ -64,7 +66,7 @@ function* markedCells(template: TemplateDef, char: string): Generator<Vec3> {
  * Returns the anchors, or why the marks don't split into whole pieces.
  */
 export const findPieces = (
-  template: TemplateDef,
+  template: TemplateCells,
   char: string,
   piece: Vec3,
 ): { anchors: Vec3[]; problem?: undefined } | { anchors?: undefined; problem: string } => {
@@ -94,9 +96,9 @@ export const findPieces = (
 };
 
 /** Actual door-lock occurrences, not unused palette declarations; shared by content and site checks. */
-export const templateLockIds = (registry: Registry, template: TemplateDef): string[] =>
+export const templateLockIds = (registry: Registry, template: TemplateDef | MapPieceDef): string[] =>
   Object.entries(template.palette).flatMap(([char, entry]) => {
-    if (typeof entry === 'string' || !entry.lock || !entry.furniture) {
+    if (typeof entry === 'string' || !('lock' in entry) || !entry.lock || !entry.furniture) {
       return [];
     }
     const furniture = registry.furniture.get(entry.furniture);
@@ -432,15 +434,43 @@ const traversalContract = (registry: Registry, template: CompiledTemplate): stri
   ]);
 };
 
+export const kitSlotChoices = (registry: Registry, slot: TemplateSlot): { ref: KitRef; weight: number }[] => {
+  if ((slot.choices === undefined) === (slot.pool === undefined)) {
+    throw new Error('needs exactly one of choices or pool');
+  }
+  if (slot.choices) {
+    return slot.choices;
+  }
+  const pool = registry.mapPools.get(slot.pool!);
+  if (!pool) {
+    throw new Error(`unknown map pool ${slot.pool}`);
+  }
+  return pool.choices.map(({ ref, weight, atLeast, atMost }) => {
+    if (atLeast !== undefined || atMost !== undefined) {
+      throw new Error(`slot pool ${pool.id} cannot carry atLeast or atMost`);
+    }
+    if (ref.kind === 'template') {
+      throw new Error(`slot pool ${pool.id} needs a piece or assembly, not template ${ref.id}`);
+    }
+    return { ref, weight };
+  });
+};
+
 const resolveSlot = (
   registry: Registry,
   assembly: TemplateAssembly,
   slot: TemplateSlot,
   context: AssemblyContext,
 ): Placement => {
-  const label = `${slotLabel(context, assembly, slot)} source=${contentPointer(registry, 'mapAssemblies', assembly.id)}`;
+  const label = `${slotLabel(context, assembly, slot)} source=${contentPointer(registry, 'mapAssemblies', assembly.id)}.slots[${assembly.slots.indexOf(slot)}]`;
+  let resolved: ReturnType<typeof kitSlotChoices>;
+  try {
+    resolved = kitSlotChoices(registry, slot);
+  } catch (error) {
+    throw new Error(`${label}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+  }
   const refKey = (ref: KitRef) => `${ref.kind}:${ref.id}${ref.style ? `@${ref.style}` : ''}`;
-  const choices = [...slot.choices].sort((a, b) => {
+  const choices = [...resolved].sort((a, b) => {
     const left = refKey(a.ref);
     const right = refKey(b.ref);
     if (left === right) {

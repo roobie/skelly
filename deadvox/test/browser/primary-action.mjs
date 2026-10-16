@@ -2089,7 +2089,7 @@ try {
     thrown <= throwFixture.distance + landingTolerance,
     `throw uses the tuned landing range (distance ${thrown})`,
   );
-  const loadedFirearm = await page.evaluate(async (moduleUrl) => {
+  const loadedFirearm = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);
     r.clearHand(r.off);
@@ -2108,14 +2108,14 @@ try {
     const spareShell = r.inventory.create(cartridge.id);
     r.setHand(r.dominant, firearm);
     r.setHand(r.off, shell);
-    const { SHELL_LOAD_SECONDS } = await import(moduleUrl);
+    const ShellLoadSeconds = definition.firearm.handling.shellLoadSimSeconds;
     const start = r.session.sim.time;
     const refusal = r.session.firearms.load(shell, start);
     if (refusal) {
       throw new Error(`Could not load firearm throw fixture: ${refusal}`);
     }
-    r.session.queue.tick(SHELL_LOAD_SECONDS);
-    r.session.firearms.advanceTo(start + SHELL_LOAD_SECONDS);
+    r.session.queue.tick(ShellLoadSeconds);
+    r.session.firearms.advanceTo(start + ShellLoadSeconds);
     const firearmState = structuredClone(firearm.firearm);
     if (!firearmState?.tube?.length) {
       throw new Error('Firearm throw fixture did not load its ammunition');
@@ -2130,7 +2130,7 @@ try {
       blockSize: r.scale.blockSize,
       chargeSimSeconds: registry.senses.get('player').light.throwChargeSimSeconds,
     };
-  }, firearmHandlingModule);
+  });
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
     return r.view.held.heldByHand.has(r.dominant);

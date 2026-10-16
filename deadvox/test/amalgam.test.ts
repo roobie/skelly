@@ -2,7 +2,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
-import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { carveAround, missingFlesh, protectedCoreCell } from '../src/core/amalgamCarving.ts';
@@ -22,8 +21,9 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { zombieFigure } from '../src/core/zombieFigure.ts';
+import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
 import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
@@ -177,6 +177,13 @@ const stepHeadingAlignment = (before: Vec3, after: Vec3, target: Vec3): number |
   const dz = target[2] - after[2];
   return (moveX * dx + moveZ * dz) / (movementLength * Math.hypot(dx, dz));
 };
+
+it('selects the amalgam content type by its model, not its id', () => {
+  const amalgam = amalgamTypeOf(registry.zombies)!;
+  const renamed = new Map([...registry.zombies].map(([id, type]) => [id === amalgam.id ? 'renamed' : id, type]));
+  expect(amalgam.model).toBe('amalgam');
+  expect(amalgamTypeOf(renamed)).toBe(amalgam);
+});
 
 const boundsOfPosedRegions = (regions: ReturnType<typeof posedAmalgamRegionBoxes>) => {
   const bounds = {
@@ -726,7 +733,16 @@ describe('amalgam body and combat seam', () => {
     expect(
       simulation.firePellets(
         projectileShot(
-          { calibre: 'test', pellets: 1, damage: 1, impulse: 0, rangeMetres: 50, diameterMm: 5 },
+          {
+            calibre: 'test',
+            pellets: 1,
+            damage: 1,
+            impulse: 0,
+            rangeMetres: 50,
+            diameterMm: 5,
+            loadSimSeconds: simSeconds(1),
+            stripSimSeconds: simSeconds(1),
+          },
           ray.origin,
           [ray.direction],
         ),
@@ -849,7 +865,7 @@ describe('amalgam body and combat seam', () => {
     const id = simulation.add(type, [0, 1, 0]);
     const state = structuredClone(simulation.snapshotState());
     const { zombie } = state.zombies.find((entry) => entry.id === id)!;
-    const unsupportedSeed = SHAMBLER_FIGURE_SEEDS.find((seed) => seed !== AMALGAM_FIGURE_SEED)!;
+    const unsupportedSeed = AMALGAM_FIGURE_SEED + 1;
     const unsupportedFigure = amalgamFigureForType(type, unsupportedSeed);
     zombie.figureSeed = unsupportedSeed;
     zombie.regions = Object.fromEntries(

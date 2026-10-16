@@ -6,7 +6,7 @@ import type { MapAssemblyDef } from '../../src/core/schema.ts';
 import { lootSourcesOf } from '../../src/core/site.ts';
 import { STAIR_BODY_HALF_WIDTH } from '../../src/core/stairFlight.ts';
 import { templateReachableStandingPositions } from '../../src/core/templateSpatial.ts';
-import { type CompiledTemplate, compileAssembly } from '../../src/core/templates.ts';
+import { type CompiledTemplate, compileAssembly, kitSlotChoices } from '../../src/core/templates.ts';
 
 export const cityBuildingDraws = (plan: CityPlan, grid: CityGrid, seed: number) => {
   const ordinals = new Map<string, number>();
@@ -76,13 +76,16 @@ export const buildingLootEvidence = (registry: Registry, template: CompiledTempl
 };
 
 export const buildingVariants = (registry: Registry, assembly: MapAssemblyDef): CompiledTemplate[] => {
-  const alternatives = Math.max(1, ...assembly.slots.map((slot) => slot.choices.length));
+  const alternatives = Math.max(1, ...assembly.slots.map((slot) => kitSlotChoices(registry, slot).length));
   return Array.from({ length: alternatives }, (_, variant) =>
     compileAssembly(
       registry,
       {
         ...assembly,
-        slots: assembly.slots.map((slot) => ({ ...slot, choices: [slot.choices[variant % slot.choices.length]!] })),
+        slots: assembly.slots.map(({ pool: _pool, ...slot }) => {
+          const choices = kitSlotChoices(registry, { ...slot, pool: _pool });
+          return { ...slot, choices: [choices[variant % choices.length]!] };
+        }),
       },
       { seed: 1, siteId: 'building_contract' },
     ),

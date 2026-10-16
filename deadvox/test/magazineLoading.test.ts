@@ -10,7 +10,7 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { itemActionsFor } from '../src/game/itemActions.ts';
-import { MagazineHandling, ROUND_LOAD_SIM_SECONDS, ROUND_STRIP_SIM_SECONDS } from '../src/game/magazineHandling.ts';
+import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { RELOAD_GESTURE_MS, ReloadInput } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -38,6 +38,8 @@ if (issues.length > 0) {
 
 const magazineType = 'magazine_akm_30';
 const roundType = 'cartridge_7_d_62x39';
+const ROUND_LOAD_SIM_SECONDS = registry.items.get(roundType)!.ammo!.loadSimSeconds;
+const ROUND_STRIP_SIM_SECONDS = registry.items.get(roundType)!.ammo!.stripSimSeconds;
 const otherCalibre = 'cartridge_5_d_56x45';
 /** A second cartridge type of the magazine's calibre, so feed order is observable. */
 const markedRound = 'test_marked_7_d_62x39';
