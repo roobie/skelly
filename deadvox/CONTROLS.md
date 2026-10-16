@@ -4,6 +4,7 @@ read_if:
   - you change input ownership, browser-native behavior or pointer actions
   - you change stances, firearm handling, throwing, treatment or long-action controls
   - you change how the HUD toggle or quickbar gestures work
+  - you diagnose native keyboard delivery or input refusal
 ---
 
 # Controls and input ownership
@@ -51,6 +52,10 @@ Bindings are origin-local browser-profile preferences, not saved-character or ac
 - BR decides the default best-pocket destination; the binding registry is authoritative for the configured choice and its displayed behavior.
 - Add lean and magazine-check inputs only when their mechanics exist and the full conflict model has been checked.
 - Whether matches strike alone remains open for BR.
+
+## Native key diagnostics
+
+Native delivery failures cannot be inferred from synthetic events or movement alone. Opt-in debug tracing keeps event admission and cancellation evidence together without collecting typed text. The bounded diagnostic buffer stays outside saved and replay state so observing a refusal cannot change simulation identity. See `src/game/inputBindings.ts`, `KeyboardInput`, and `src/debug/keyTrace.ts`, `KeyTrace`.
 
 ## Replay boundary
 
