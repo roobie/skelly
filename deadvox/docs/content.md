@@ -260,19 +260,26 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
 - **Route proof.** Each kind's code proves that its own routes are open, and the row
   supplies the proof's counts and thresholds, such as how many leads a player may miss
   while one stays reachable. The proof's shape is physics a mod cannot safely restate, while
-  how forgiving a scenario is belongs to its design. See `src/core/scenarioCertificate.ts`,
+  how forgiving a scenario is belongs to its design. Whether that redundancy sits with the
+  leads or in a block of its own waits on BR in #393. See `src/core/scenarioCertificate.ts`,
   `scenarioCertificate`.
+- **Street approach.** The street a kind's proof enters its site from is an authored
+  anchor, not derived from the site, so a scenario can approach from another side and
+  stay the same kind.
 - **Leads and landmarks.** They are lists in the row, not a fixed number, because how
   many clues and landmarks a scenario has is design.
-- **Placement.** Where leads and landmarks go comes from the row, as anchors or placement
-  rules. Code resolves and validates them, so a scenario moves its clues without a code
-  edit and a bad placement fails validation.
-- **Goal text.** The words the goal shows when it refuses are content, as player-facing
-  wording belongs to the mod (#456).
+- **Placement.** Leads and landmarks are placed by seeded rules in the row, not by fixed
+  positions. Clues then vary between runs, as the world does, and a rule survives a change
+  to the city plan that would strand a fixed position. Code resolves the rules and proves
+  them, because a seed that yields no valid placement would otherwise only show when a game
+  starts.
+- **Goal text.** The words the goal shows when it refuses live in a shared core-pack text
+  table (#456), not on the scenario row. Player-facing wording belongs to the mod, and the
+  same line copied to every place that shows it is debt.
 
 The gauntlet sweep tracked by #393 brings the gauntlet's code to these rules; until it
-lands, its lead and landmark counts and positions, lead redundancy and goal refusal text
-stay fixed in code.
+lands, its lead and landmark counts and positions, street approach, lead redundancy and goal
+refusal text stay fixed in code.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules
