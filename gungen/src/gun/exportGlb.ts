@@ -479,12 +479,7 @@ export const exportGunGlb = (
   const magazine = magazineSlotData(resolved);
   const revolver = revolverMetadata(resolved, metadata.cartridge);
   const compatibility = includeAttachmentCompatibility
-    ? Object.fromEntries(
-        Object.entries(attachmentCompatibility(assembly, attachmentSlotsData)).map(([slot, ids]) => [
-          slot,
-          ids.filter((id) => !excludedAttachments.includes(id)),
-        ]),
-      )
+    ? attachmentCompatibility(assembly, attachmentSlotsData, gunDomain, excludedAttachments)
     : undefined;
   const compatibilityPairs =
     compatibility === undefined
