@@ -1,0 +1,4 @@
+{
+  "panelEffect": "powered && authorized && !doorOpen ? \"open-door\" : \"none\"",
+  "sleepHealsPredicate": "recoveryPerGameHour > 0.0 && calories >= caloriesFloor && hydration >= hydrationFloor && (!hasCeiling || fatigue <= fatigueCeiling)"
+}

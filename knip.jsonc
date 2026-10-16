@@ -39,6 +39,7 @@
         "src/siteMapPage.ts!",
         "src/debug/vehicleSpike.ts!",
         "src/soundsPage.ts!",
+        "tools/bench-expressions.mjs",
         "tools/bench-rigid-body.mjs",
         "tools/bench-zombie-swings.mjs",
         "tools/ui-browser-contract.mjs",
