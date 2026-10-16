@@ -1,5 +1,5 @@
 local furniture = (import 'furniture.jsonnet').furniture;
-local disorder = import 'furniture-disorder.libsonnet';
+local disorder = import 'aftermath.libsonnet';
 local woodDoor = std.filter(function(f) f.id == 'wood_door', furniture)[0];
 local empty = [
   '..............', '..............', '..............', '..............',

@@ -234,7 +234,7 @@
     {
       "color": "#8b7355",
       "id": "chair_on_back",
-      "name": "Chair",
+      "name": "Chair on its back",
       "shape": [
         {
           "position": [0.12, 0.71999999999999997, 0],
@@ -266,7 +266,7 @@
     {
       "color": "#8b7355",
       "id": "chair_on_side",
-      "name": "Chair",
+      "name": "Chair on its side",
       "shape": [
         {
           "position": [1.0800000000000001, 0.12, 0.12],
@@ -294,6 +294,80 @@
         }
       ],
       "size": [2, 1, 1]
+    },
+    {
+      "color": "#9a7b4f",
+      "id": "crate_overturned",
+      "name": "Overturned crate",
+      "size": [2, 2, 2]
+    },
+    {
+      "color": "#8d7355",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 4],
+            "handlingSimSeconds": 0.80000000000000004
+          }
+        ]
+      },
+      "id": "shelf_fallen",
+      "loot": "shelf",
+      "name": "Fallen shelf",
+      "size": [2, 1, 4]
+    },
+    {
+      "color": "#8d7355",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 4],
+            "handlingSimSeconds": 0.80000000000000004
+          }
+        ]
+      },
+      "id": "shelf_on_side",
+      "loot": "shelf",
+      "name": "Shelf on its side",
+      "size": [4, 2, 1]
+    },
+    {
+      "appearance": {
+        "kind": "cabinet",
+        "surface": "wood"
+      },
+      "color": "#6e5037",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 8],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "id": "wardrobe_fallen",
+      "loot": "wardrobe",
+      "name": "Fallen wardrobe",
+      "size": [2, 1, 4]
+    },
+    {
+      "appearance": {
+        "kind": "cabinet",
+        "surface": "wood"
+      },
+      "color": "#6e5037",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 8],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "id": "wardrobe_on_side",
+      "loot": "wardrobe",
+      "name": "Wardrobe on its side",
+      "size": [4, 2, 1]
     },
     {
       "color": "#626d70",
