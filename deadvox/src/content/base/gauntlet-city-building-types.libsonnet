@@ -140,6 +140,8 @@ local yard(block) = { role: 'trim', block: block };
       sign: yard('shop_blue'), post: yard('shop_blue'),
       partition: { role: 'shell', block: 'concrete' },
       floor: { role: 'interior_floor', block: 'concrete' },
+      roofing_sheet: { role: 'interior_floor', block: 'concrete' },
+      roofing_slab: { role: 'interior_floor', block: 'concrete' },
       footing: { role: 'support', block: 'concrete' },
     }),
     frontStyle('gauntlet_food_shop', {

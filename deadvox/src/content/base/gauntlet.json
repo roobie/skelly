@@ -22865,6 +22865,14 @@
           "block": "shop_blue",
           "role": "trim"
         },
+        "roofing_sheet": {
+          "block": "concrete",
+          "role": "interior_floor"
+        },
+        "roofing_slab": {
+          "block": "concrete",
+          "role": "interior_floor"
+        },
         "sign": {
           "block": "shop_blue",
           "role": "trim"
