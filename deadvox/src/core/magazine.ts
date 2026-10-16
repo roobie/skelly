@@ -35,7 +35,8 @@ export const magazineWellCalibre = (registry: Registry, type: string): string | 
   if (!def?.firearm || def.firearm.pump || def.firearm.bolt) {
     return undefined;
   }
-  return def.model === undefined ? undefined : registry.models.get(def.model)?.calibre;
+  const model = def.model === undefined ? undefined : registry.models.get(def.model);
+  return model?.revolver ? undefined : model?.calibre;
 };
 
 /** Whether a magazine of this type fits the firearm's magazine slot: same calibre. */

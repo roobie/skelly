@@ -321,8 +321,17 @@ mechanics in the implementation rather than repeating the format here.
 Gauntlet uses ordinary survival rules, not a second mission runtime. Reserving
 the service campus makes its street approach constructible; knowing a clue never
 grants access. Independent notes give alternate ways to infer the destination.
-Physical perimeter walls enclose the core without an enforced world edge: ordinary
-movement, doors and destruction remain authoritative. City size, scarcity and
+The play area is closed by physical voxels, not an invisible wall: a continuous
+containment wall, with a sealed checkpoint gate where the central street meets it,
+so the limit is something the player can see and read. Ordinary movement, doors and
+destruction remain authoritative. An edge ring of buildings stands between the grid
+and the wall, backs to the wall and fronts inward across a perimeter street, so the
+wall has a lived-in face rather than an empty fence line. The wall and wire out-top
+a sprinting jump, body width included, from every ring building's full height,
+because a rooftop within reach would turn the wall into a step; the check reads the
+player's sprint jump from `src/game/player.ts`, `sprintJumpRise`. Sounds and crowds beyond the wall are a
+separate decision. See `src/core/cityPlan.ts`, `cityPerimeter`, `clearanceIssues`,
+`perimeterGaps` and `perimeterIssues`. City size, scarcity and
 pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
 remain outside #671's first version.
 
@@ -336,10 +345,14 @@ movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`
 `templates`.
 
 Marker-only population omits the ordinary settlement's wanderers and horde, making
-empty marker sets silently remove street pressure. Gauntlet therefore scales the
+empty marker sets silently remove street pressure. A scenario therefore scales the
 ordinary settlement policy by building groups, not by the reserved campus's empty
-area, while the lab retains its authored markers. This reuses population and spawn
-admission instead of inventing an enemy-density runtime. See `src/core/gauntlet.ts`,
+area, while authored markers stay separate. The policy is the scenario's
+`population` content, so any scenario tunes its street pressure without code.
+The gauntlet places one horde rather than one per building group, and stragglers
+carry more of the street pressure. This reuses population and spawn
+admission instead of inventing an enemy-density runtime. See `src/core/schema.ts`,
+`ScenarioSchema`; `src/content/base/scenarios.jsonnet`; `src/core/gauntlet.ts`,
 `gauntletPopulation`; `src/core/hamlet.ts`, `hamletZombieSpawns`; and
 `src/core/zombieSpawns.ts`, `ZombieSpawner`.
 
@@ -361,7 +374,12 @@ ladder owner's supported, body-clear entry and braced exit. Entry palette marker
 prevent later descents from being mistaken for the entrance. Whole-cell voxel
 queries prevent fractional sweep poses from reading an unrelated array slot.
 The plan freezes placement decisions; compiled template buffers remain
-compiler-owned inputs. Stamping never consumes the column index, because later
+compiler-owned inputs. Repeated buildings share immutable leaf compilation within
+one planning pass because recompiling the same leaf for each slot wastes startup
+work. Style bindings and per-slot provenance remain independent, and a later
+compilation must see registry edits rather than a process-wide cache. See
+`src/core/templates.ts`, `compileMapPiece`, and `src/core/cityPlan.ts`, `templateCompiler`.
+Stamping never consumes the column index, because later
 vertical chunks and furniture requests need the same complete plan. See `scenarioPlanIssues` in `src/core/cityPlan.ts`,
 `scenarioPortalIssues` in `src/core/scenarioPortal.ts`, and `templateBodySpace`
 in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`

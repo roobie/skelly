@@ -272,20 +272,37 @@ describe('furniture', () => {
     expect(meshes.every((mesh) => !Array.isArray(mesh.material))).toBe(true);
   });
 
-  it('renders a nonblocking readable sign as a thin board facing into the room', () => {
-    const entities = new BlockEntities(registry);
-    const board = entities.add({
-      type: 'medical_research_notice',
-      pos: [1, 2, 20],
-      size: [1, 2, 2],
-      facing: 'e',
-    })!;
-    const furniture = new FurnitureMeshes(BLOCK_SIZE);
-    furniture.sync(entities);
-    const mesh = furniture.group.children[0] as Mesh;
-    expect(mesh.scale.x).toBeLessThan(BLOCK_SIZE);
-    expect(mesh.scale.z).toBeGreaterThan(mesh.scale.x);
-    expect(mesh.position.x - mesh.scale.x / 2).toBeCloseTo(board.pos[0] * BLOCK_SIZE);
+  it('renders wall-mount shapes flush with the back face in every facing', () => {
+    const fixture = {
+      id: 'fixture_plaque',
+      name: 'Fixture plaque',
+      size: [1, 1, 1],
+      color: '#99794c',
+      mount: 'wall',
+      solid: false,
+      shape: [{ position: [0, 0, 0.875], size: [1, 1, 0.125] }],
+    };
+    const { registry: fixtureRegistry, issues } = buildRegistry([
+      { source: 'plaque-render-fixture.json', data: { furniture: [fixture] } },
+    ]);
+    expect(issues).toEqual([]);
+    for (const facing of ['n', 'e', 's', 'w'] as const) {
+      const entities = new BlockEntities(fixtureRegistry);
+      entities.add({ type: fixture.id, pos: [0, 0, 0], size: [1, 1, 1], facing });
+      const furniture = new FurnitureMeshes(BLOCK_SIZE);
+      furniture.sync(entities);
+      const mesh = furniture.group.children.find((child) => child.type === 'Mesh')!;
+      const bounds = new Box3().setFromObject(mesh);
+      const depthAxis = facing === 'n' || facing === 's' ? 'z' : 'x';
+      const faceAxis = depthAxis === 'z' ? 'x' : 'z';
+      expect(bounds.max[depthAxis] - bounds.min[depthAxis]).toBeCloseTo(0.125 * BLOCK_SIZE);
+      expect(bounds.max[faceAxis] - bounds.min[faceAxis]).toBeCloseTo(BLOCK_SIZE);
+      if (facing === 'n' || facing === 'w') {
+        expect(bounds.max[depthAxis]).toBeCloseTo(BLOCK_SIZE);
+      } else {
+        expect(bounds.min[depthAxis]).toBeCloseTo(0);
+      }
+    }
   });
 
   it('picks the closed HQ safe only through its visible door', () => {

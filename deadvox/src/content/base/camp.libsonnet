@@ -269,6 +269,11 @@ local campWallRunCrouchHole = campWallRun + {
       "size": [2, 2, 1],
       "color": "#a6936f",
       "solid": false,
+      "shape": [
+        { "position": [0, 1, 0.4], "size": [2, 1, 0.2] },
+        { "position": [0.2, 0, 0.4], "size": [0.2, 1, 0.2] },
+        { "position": [1.6, 0, 0.4], "size": [0.2, 1, 0.2] }
+      ],
       "readable": {
         "title": "Orders for the road",
         "text": "Hold the road and keep the clinic supplied. The medical site is under the camp's protection. Keep the armoury locked; its key stays with the officer."

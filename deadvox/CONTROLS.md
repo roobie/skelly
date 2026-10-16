@@ -4,6 +4,7 @@ read_if:
   - you change input ownership, browser-native behavior or pointer actions
   - you change stances, firearm handling, throwing, treatment or long-action controls
   - you change how the HUD toggle or quickbar gestures work
+  - you diagnose native keyboard delivery or input refusal
 ---
 
 # Controls and input ownership
@@ -17,7 +18,7 @@ A visible context owns attention: menus, reading, inventory and debug modals shi
 
 The browser keeps native text entry, IME, selection, clipboard and focus traversal. Deadvox does not duplicate a text editor or browser focus engine. The binding registry refuses Ctrl, Cmd/Meta and Alt as game modifiers because the browser and operating system own those shortcuts. Synthetic events do not prove immunity from desktop interception. In pointer-locked menus, the drawn cursor handles controls that native pointer lock cannot operate, such as range dragging.
 
-Physical key positions define bindings; labels follow the browser's keyboard layout. Rebinding must consider alternate bindings and held gates so a hidden conflict cannot steal movement or run two actions. See `BindingRegistry` and `bindingConflict` in `src/game/inputBindings.ts`.
+Physical key positions define bindings; labels follow the browser's keyboard layout. A modifier's own physical edge takes precedence over its aggregate flag because inconsistent edge flags must not disable unrelated movement. This does not authorize reconstructing other missing key events. Rebinding must consider alternate bindings and held gates so a hidden conflict cannot steal movement or run two actions. See `src/game/inputBindings.ts`, `KeyboardInput`, `BindingRegistry` and `bindingConflict`.
 
 The wheel is not a keyboard chord. In play it steps the wielded item's action; in a menu it scrolls the pane under the drawn cursor, including at the pane's edge. Elsewhere the game leaves it to the browser. See `src/ui/menuPointer.ts`, `mountMenuPointer`.
 
@@ -32,7 +33,7 @@ Bindings are origin-local browser-profile preferences, not saved-character or ac
 - **Slinging** uses the inventory wear/remove action; a quickbar tap draws or puts away a slung gun. Wielding another item may stow a sling-fitted long gun in a free shoulder slot. A separate sling key would duplicate existing routes. See `src/game/inputBindings.ts`, `inventory.wear`, and `src/core/options.ts`, `quickbarPutAway`.
 - **Downed bodies** use the same world-interaction tap/hold: tap finishes a body, hold dismembers it. The nearest-target rule applies to bodies and ground items. See `src/core/interactionPick.ts`, `pickInteractionTarget`.
 - **The main menu** opens through its menu binding; Escape releases pointer lock during play and toggles the menu after death. Escape is not rebindable. F10 belongs to the browser.
-- **Reload, rack, remove** share one rebindable action. Hold selects the fullest carried magazine that fits, even if it has fewer rounds than the fitted magazine. A double press racks; a tap followed by a held press removes a detachable magazine. A single tap does nothing. Classification waits for release or the hold threshold, so a quick double tap and a plain hold do not remove a magazine. A non-detachable firearm racks repeatedly while the reload action remains held. See `src/game/reloadInput.ts`, `ReloadInput`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
+- **Reload, rack, remove** share one rebindable action. Hold selects the fullest carried magazine that fits, even if it has fewer rounds than the fitted magazine. A double press racks; a tap followed by a held press removes a detachable magazine. A single tap does nothing. Classification waits for release or the hold threshold, so a quick double tap and a plain hold do not remove a magazine. A pump racks repeatedly while the reload action remains held. A revolver hold opens the crane, preserves live rounds while clearing cases, and loads loose rounds until release; release finishes the current step and closes the crane. Double press cocks a closed revolver or closes an open crane. Tap-then-hold deliberately dumps the cylinder and leaves it open. See `src/game/reloadInput.ts`, `ReloadInput`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
 - **Rest and sleep** have no dedicated keys. Use eligible furniture through world interaction; Wait is a character-screen button. The alarm's wake hour is a setting, not a sleep key. See `src/game/play.ts`, `startPlay`, and `src/game/rest.ts`, `RestController`.
 - **Use items** from the hand or quickbar. There is no dedicated inventory-use action. An ammunition box is wielded and activated to unpack. See `src/game/primaryAction.ts`, `selectPrimaryAction`.
 - **Handedness** is actor identity, not a chord swap or physical-slot migration. See [character-handedness](docs/character-handedness.md).
@@ -51,6 +52,10 @@ Bindings are origin-local browser-profile preferences, not saved-character or ac
 - BR decides the default best-pocket destination; the binding registry is authoritative for the configured choice and its displayed behavior.
 - Add lean and magazine-check inputs only when their mechanics exist and the full conflict model has been checked.
 - Whether matches strike alone remains open for BR.
+
+## Native key diagnostics
+
+Native delivery failures cannot be inferred from synthetic events or movement alone. Opt-in debug tracing keeps event admission and cancellation evidence together without collecting typed text. The bounded diagnostic buffer stays outside saved and replay state so observing a refusal cannot change simulation identity. See `src/game/inputBindings.ts`, `KeyboardInput`, and `src/debug/keyTrace.ts`, `KeyTrace`.
 
 ## Replay boundary
 

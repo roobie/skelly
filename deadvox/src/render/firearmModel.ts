@@ -4,9 +4,11 @@ import { Matrix4, type Object3D, Quaternion, Vector3 } from 'three';
 import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef } from '../core/content.ts';
 import { actionCycleSeconds, type FirearmAction, type FirearmMode } from '../core/firearmAction.ts';
-import type { FirearmCycleState } from '../core/firearmState.ts';
+import type { CylinderState } from '../core/firearmState.ts';
 import { heldAnchorOffset } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
+import type { FirearmCycleFrame } from '../game/firearmHandling.ts';
+import type { RevolverFrame } from '../game/revolverHandling.ts';
 
 export type { FirearmAction, FirearmMode } from '../core/firearmAction.ts';
 
@@ -18,6 +20,8 @@ export interface ActionPartPath {
   /** Travel in the node parent's local frame, including the exported stroke length. */
   readonly travel: Vector3;
   readonly turn?: { readonly pivot: Vector3; readonly axis: Vector3; readonly angleRadians: number };
+  readonly parentFromModel?: Matrix4;
+  readonly revolverPart?: keyof NonNullable<ModelDef['revolver']>;
 }
 
 export interface HeldActionPart {
@@ -29,6 +33,9 @@ export interface HeldActionPart {
   readonly travel: Vector3;
   readonly modes: readonly FirearmMode[];
   readonly nodeIndex: number;
+  readonly parentFromModel?: Matrix4;
+  readonly revolverPart?: keyof NonNullable<ModelDef['revolver']>;
+  readonly restMatrix: Matrix4;
 }
 
 export interface HeldModel {
@@ -58,13 +65,22 @@ export const actionPartPaths = (
   scene: Object3D,
   action: FirearmAction | undefined,
   parser: GLTFParser,
+  revolver?: ModelDef['revolver'],
 ): ActionPartPath[] => {
-  if (!action) {
-    return [];
-  }
   scene.updateMatrixWorld(true);
   const names = parser.json.nodes as readonly { name?: string }[];
-  return Object.entries(action.parts).map(([id, part]) => {
+  const definitions = revolver
+    ? (['crane', 'cylinder', 'ejector', 'hammer', 'trigger'] as const).map((key) => ({
+        id: key,
+        node: revolver[key].node,
+        axis: [0, 0, 0],
+        strokeMetres: 0,
+        modes: [] as FirearmMode[],
+        turn: undefined,
+        revolverPart: key,
+      }))
+    : Object.entries(action?.parts ?? {}).map(([id, part]) => ({ id, ...part, revolverPart: undefined }));
+  return definitions.map((part) => {
     const matches = names.flatMap((definition, index) => (definition.name === part.node ? [index] : []));
     if (matches.length !== 1) {
       throw new Error(`Action node ${part.node} needs exactly one glTF node`);
@@ -105,7 +121,15 @@ export const actionPartPaths = (
           angleRadians: part.turn.angleRadians,
         }
       : undefined;
-    return { id, path: [0, 0, 0, ...path], nodeIndex, modes: part.modes, travel, ...(turn ? { turn } : {}) };
+    return {
+      id: part.id,
+      path: [0, 0, 0, ...path],
+      nodeIndex,
+      modes: part.modes,
+      travel,
+      ...(turn ? { turn } : {}),
+      ...(part.revolverPart ? { revolverPart: part.revolverPart, parentFromModel } : {}),
+    };
   });
 };
 
@@ -120,7 +144,14 @@ export const cloneHeldModel = (prepared: Object3D, paths: readonly ActionPartPat
       }
       node = child;
     }
-    return { ...part, node, rest: node.position.clone(), restRotation: node.quaternion.clone() };
+    node.updateMatrix();
+    return {
+      ...part,
+      node,
+      rest: node.position.clone(),
+      restRotation: node.quaternion.clone(),
+      restMatrix: node.matrix.clone(),
+    };
   });
   return { root, parts };
 };
@@ -176,12 +207,7 @@ export const sampleActionTurn = (
 
 export const sampleActionPose = (
   action: FirearmAction,
-  frame:
-    | (Pick<FirearmCycleState, 'elapsed' | 'duration'> & {
-        mode: FirearmMode | 'load' | 'magazine';
-        actionOpen?: boolean;
-      })
-    | undefined,
+  frame: Pick<FirearmCycleFrame, 'mode' | 'elapsed' | 'duration' | 'actionOpen'> | undefined,
 ): { mode: FirearmMode | undefined; stroke: number; turn: number } => {
   if (frame?.actionOpen) {
     return { mode: 'hand', stroke: 1, turn: 1 };
@@ -262,7 +288,11 @@ export const rackCant = (
   model: ModelDef | undefined,
   hand: HandSide,
   frame:
-    | { readonly mode: FirearmMode | 'load' | 'magazine'; readonly elapsed: number; readonly duration?: number }
+    | {
+        readonly mode: FirearmMode | 'load' | 'magazine' | 'revolver';
+        readonly elapsed: number;
+        readonly duration?: number;
+      }
     | undefined,
   grip: { readonly x: number; readonly y: number },
 ): number => {
@@ -310,5 +340,92 @@ export const poseActionParts = (
       }
       part.node.position.addScaledVector(part.travel, stroke);
     }
+  }
+};
+
+const rotationAbout = (pivot: readonly number[], axis: readonly number[], angle: number): Matrix4 =>
+  new Matrix4()
+    .makeTranslation(pivot[0]!, pivot[1]!, pivot[2]!)
+    .multiply(new Matrix4().makeRotationAxis(new Vector3(...axis).normalize(), angle))
+    .multiply(new Matrix4().makeTranslation(-pivot[0]!, -pivot[1]!, -pivot[2]!));
+
+export const revolverOpenAmount = (
+  open: boolean,
+  step: RevolverFrame['step'] | undefined,
+  progress: number,
+): number => {
+  if (step === 'open') {
+    return progress;
+  }
+  if (step === 'close') {
+    return 1 - progress;
+  }
+  return open ? 1 : 0;
+};
+
+const hammerAmount = (cocked: boolean, step: RevolverFrame['step'] | undefined, progress: number): number => {
+  if (cocked) {
+    return 1;
+  }
+  if (step === 'cock') {
+    return progress;
+  }
+  return step === 'pull' ? Math.sin(progress * Math.PI) : 0;
+};
+
+const revolverMotion = (
+  data: NonNullable<ModelDef['revolver']>,
+  cylinder: CylinderState,
+  frame?: Pick<FirearmCycleFrame, 'elapsed' | 'duration' | 'revolver'>,
+): Record<'crane' | 'cylinder' | 'ejector' | 'hammer' | 'trigger', Matrix4> => {
+  const progress = smooth(Math.min(1, Math.max(0, (frame?.elapsed ?? 0) / (frame?.duration ?? 1))));
+  const step = frame?.revolver?.step;
+  const opening = revolverOpenAmount(cylinder.open, step, progress);
+  const crane = rotationAbout(data.crane.pivot, data.crane.axis, data.crane.openRadians * opening);
+  const pitch = (2 * Math.PI) / data.chambers;
+  const advance = step === 'cock' || step === 'pull' ? progress : 0;
+  const target = frame?.revolver?.chamber;
+  const aligned = cylinder.open && target !== undefined ? target : cylinder.aligned + advance;
+  const drum = rotationAbout(data.cylinder.centre, data.cylinder.axis, -aligned * pitch);
+  const hammer = hammerAmount(cylinder.cocked, step, progress);
+  const eject = step === 'eject' ? Math.sin(progress * Math.PI) : 0;
+  return {
+    crane,
+    cylinder: crane.clone().multiply(drum),
+    ejector: crane
+      .clone()
+      .multiply(
+        new Matrix4().makeTranslation(
+          ...(data.ejector.axis.map((value) => value * data.ejector.strokeMetres * eject) as [number, number, number]),
+        ),
+      ),
+    hammer: rotationAbout(data.hammer.pivot, data.hammer.axis, data.hammer.cockRadians * hammer),
+    trigger: rotationAbout(
+      data.trigger.pivot,
+      data.trigger.axis,
+      data.trigger.pullRadians * (step === 'pull' ? Math.sin(progress * Math.PI) : 0),
+    ),
+  };
+};
+
+export const poseRevolverParts = (
+  parts: readonly HeldActionPart[],
+  data: NonNullable<ModelDef['revolver']>,
+  cylinder: CylinderState,
+  frame?: Pick<FirearmCycleFrame, 'elapsed' | 'duration' | 'revolver'>,
+): void => {
+  const motion = revolverMotion(data, cylinder, frame);
+  for (const part of parts) {
+    const key = part.revolverPart;
+    if (!key || key === 'chambers' || !part.parentFromModel) {
+      continue;
+    }
+    const matrix = part.parentFromModel
+      .clone()
+      .multiply(motion[key])
+      .multiply(part.parentFromModel.clone().invert())
+      .multiply(part.restMatrix);
+    matrix.decompose(part.node.position, part.node.quaternion, part.node.scale);
+    part.node.updateMatrix();
   }
 };

@@ -727,6 +727,8 @@ try {
               return !session.queue.busy;
             case 'itemGone':
               return item === undefined;
+            case 'idle':
+              return !session.queue.busy;
             case 'tubeLoaded':
               return (item?.firearm?.tube?.length ?? 0) > 0;
             case 'chamberRound':
@@ -1059,8 +1061,95 @@ try {
     assert.equal(source.channels, 1);
     assert.ok(source.duration > 0);
   }
+  const revolverStock = await page.evaluate(() => {
+    const { session } = globalThis.pumpHandlingTest;
+    const inv = session.inventory;
+    const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
+    const stock = rack.pockets.flat().map(({ item }) => item);
+    const gun = stock.find((item) => inv.registry.models.get(inv.registry.items.get(item.type)?.model)?.revolver);
+    if (!gun) {
+      throw new Error('Debug range has no revolver');
+    }
+    const definition = inv.registry.items.get(gun.type);
+    const { calibre } = inv.registry.models.get(definition.model);
+    const ammo = stock.find((item) => inv.registry.items.get(item.type)?.ammo?.calibre === calibre);
+    if (!ammo) {
+      throw new Error('Debug range has no compatible loose revolver rounds');
+    }
+    return { gun: gun.uid, ammo: ammo.uid, tuning: definition.firearm.revolver };
+  });
+  await pressAction(page, 'ui.inventory-toggle');
+  await select(revolverStock.ammo);
+  await pressAction(page, 'inventory.best-pocket');
+  await waitForWork('idle', revolverStock.ammo);
+  await select(revolverStock.gun);
+  await pressAction(page, 'inventory.hands');
+  await waitForHands(revolverStock.gun);
+  await pressAction(page, 'ui.inventory-toggle');
+  await page.evaluate(() => globalThis.pumpManualFrames.enable());
+  const releaseRevolverReload = await holdAction(page, 'firearm.reload');
+  const revolverLoaded = await page.evaluate(
+    ({ gun, tuning, gesture }) => {
+      const maxFrames = Math.ceil((gesture / 1000 + tuning.openSimSeconds + tuning.loadSimSeconds) * 4 * 60);
+      return globalThis.pumpManualFrames.until(() => {
+        const { cylinder } = globalThis.pumpHandlingTest.session.inventory.itemByUid(gun).firearm;
+        return cylinder.open && cylinder.chambers.some((chamber) => chamber.state === 'round');
+      }, maxFrames);
+    },
+    { ...revolverStock, gesture: RELOAD_GESTURE_MS.hold },
+  );
+  await releaseRevolverReload();
+  assert.equal(revolverLoaded.reached, true, 'holding reload opens and inserts a revolver round');
+  const revolverClosed = await page.evaluate(
+    ({ gun, tuning }) =>
+      globalThis.pumpManualFrames.until(
+        () => {
+          const { session } = globalThis.pumpHandlingTest;
+          return !(session.queue.busy || session.inventory.itemByUid(gun).firearm.cylinder.open);
+        },
+        Math.ceil((tuning.loadSimSeconds + tuning.closeSimSeconds) * 4 * 60),
+      ),
+    revolverStock,
+  );
+  assert.equal(revolverClosed.reached, true, 'release closes the crane after the current step');
+  await page.mouse.down({ button: 'right' });
+  const readyRevolver = await page.evaluate(
+    (uid) => globalThis.pumpManualFrames.until(() => globalThis.pumpHandlingTest.session.firearms.isReady(uid), 120),
+    revolverStock.gun,
+  );
+  assert.equal(readyRevolver.reached, true);
+  await page.mouse.click(640, 450);
+  const revolverFired = await page.evaluate(
+    ({ gun, tuning }) =>
+      globalThis.pumpManualFrames.until(
+        () =>
+          globalThis.pumpHandlingTest.session.inventory
+            .itemByUid(gun)
+            .firearm.cylinder.chambers.some((chamber) => chamber.state === 'case'),
+        Math.ceil(tuning.doubleActionPullSimSeconds * 4 * 60) + 2,
+      ),
+    revolverStock,
+  );
+  await page.mouse.up({ button: 'right' });
+  assert.equal(revolverFired.reached, true, 'native ready click fires the partially loaded revolver');
+  const releaseRevolverTopUp = await holdAction(page, 'firearm.reload');
+  const revolverReloaded = await page.evaluate(
+    ({ gun, tuning, gesture }) =>
+      globalThis.pumpManualFrames.until(
+        () => {
+          const { cylinder } = globalThis.pumpHandlingTest.session.inventory.itemByUid(gun).firearm;
+          return cylinder.open && !cylinder.chambers.some((chamber) => chamber.state === 'case');
+        },
+        Math.ceil((gesture / 1000 + tuning.openSimSeconds + tuning.ejectSimSeconds + tuning.pickSimSeconds) * 4 * 60),
+      ),
+    { ...revolverStock, gesture: RELOAD_GESTURE_MS.hold },
+  );
+  await releaseRevolverTopUp();
+  assert.equal(revolverReloaded.reached, true, 'native top-up clears the fired case');
+  await page.evaluate(() => globalThis.pumpManualFrames.disable());
+  assert.deepEqual(errors, []);
   process.stdout.write(
-    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, errors })}\n`,
+    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, errors })}\n`,
   );
 } finally {
   await browser?.close();

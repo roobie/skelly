@@ -3,7 +3,7 @@ import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
 
-const LOADOUTS = ['ar', 'ak', 'pump', 'magazine', 'grenade'] as const;
+const LOADOUTS = ['ar', 'ak', 'pump', 'magazine', 'grenade', 'revolver', 'revolver-open'] as const;
 type LoadoutChoice = (typeof LOADOUTS)[number];
 const isLoadoutChoice = (choice: string | null): choice is LoadoutChoice =>
   (LOADOUTS as readonly (string | null)[]).includes(choice);
@@ -39,7 +39,9 @@ export const equipDebugLoadout = (
   if (!backpack) {
     throw new Error('Could not equip preview backpack');
   }
-  if (choice === 'pump') {
+  if (choice === 'revolver' || choice === 'revolver-open') {
+    equipRevolver(inventory, backpack, choice === 'revolver-open');
+  } else if (choice === 'pump') {
     equipPump(inventory, backpack);
   } else if (choice === 'magazine') {
     equipEmptyMagazine(inventory, backpack);
@@ -49,6 +51,33 @@ export const equipDebugLoadout = (
     equipRifles(inventory, backpack, choice);
   }
   return true;
+};
+
+const equipRevolver = (inventory: Inventory, backpack: Item, open: boolean): void => {
+  const definition = [...inventory.registry.items.values()].find((item) => item.firearm?.revolver);
+  const model = definition?.model ? inventory.registry.models.get(definition.model) : undefined;
+  const ammo = [...inventory.registry.items.values()].find((item) => item.ammo?.calibre === model?.calibre);
+  if (!(definition && model?.revolver && ammo)) {
+    throw new Error('No revolver preview content');
+  }
+  const gun = inventory.createFixture(definition.id);
+  const cylinder = gun.firearm!.cylinder!;
+  cylinder.open = open;
+  const loaded = open ? Math.ceil(cylinder.chambers.length / 2) : cylinder.chambers.length;
+  for (let index = 0; index < loaded; index++) {
+    cylinder.chambers[(cylinder.aligned + 1 + index) % cylinder.chambers.length] = {
+      state: 'round',
+      roundType: ammo.id,
+    };
+  }
+  if (
+    !(
+      inventory.add(gun, { kind: 'hand', side: dominantSide(inventory.character) }) &&
+      inventory.add(inventory.createFixture(ammo.id, ammo.stack ?? 1), { kind: 'pocket', owner: backpack, pocket: 0 })
+    )
+  ) {
+    throw new Error('Could not equip revolver preview loadout');
+  }
 };
 
 /** A grenade in the dominant hand to throw now and a couple packed to follow it. */

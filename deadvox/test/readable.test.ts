@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
+import { pickInteractionTarget } from '../src/core/interactionPick.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { useOption } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
@@ -24,7 +25,18 @@ const admit = (value: Readable) =>
       source: 'fixture.json',
       data: {
         items: [{ id: 'note', name: 'Note', category: 'book', weight: 5, size: [1, 1], readable: value }],
-        furniture: [{ id: 'sign', name: 'Sign', size: [2, 2, 1], color: '#99794c', readable: value }],
+        furniture: [
+          {
+            id: 'sign',
+            name: 'Sign',
+            size: [1, 1, 1],
+            color: '#99794c',
+            readable: value,
+            mount: 'wall',
+            solid: false,
+            shape: [{ position: [0, 0, 0.875], size: [1, 1, 0.125] }],
+          },
+        ],
         body: [{ ...BODY_TUNING_FIXTURE, id: 'player' }],
         compression: [{ id: 'player', caps: COMPRESSION_CAPS_FIXTURE }],
         senses: [TEST_SENSE_TUNING],
@@ -93,7 +105,7 @@ describe('authored readable text', () => {
     expect(owner.use(note)).toContain('hands');
     expect(shown).toHaveLength(1);
   });
-  it('admits only a live in-reach sign at the furniture command boundary', () => {
+  it('picks a wall-face plaque for reading and admits only its live in-reach owner', () => {
     const { registry, issues } = admit(readable);
     expect(issues).toEqual([]);
     const shown: Readonly<Readable>[] = [];
@@ -119,14 +131,29 @@ describe('authored readable text', () => {
       notice: () => undefined,
       onRead: (value) => shown.push(value),
     });
-    const sign = session.inventory.furnish({ type: 'sign', pos: [2, 0, 0], size: [2, 2, 1], facing: 'n' })!;
+    const sign = session.inventory.furnish({ type: 'sign', pos: [2, 0, 0], size: [1, 1, 1], facing: 'w' })!;
+    const target = pickInteractionTarget({
+      inventory: session.inventory,
+      entities: session.inventory.entities,
+      origin: [0.5, 0.5, 0.5],
+      direction: [1, 0, 0],
+      maxDistance: 4,
+      blockSize: 0.5,
+      worldSeed: 1,
+      isSolid: (x) => x === 3,
+      hasModel: () => false,
+    });
+    expect(target).toMatchObject({ kind: 'furniture', entity: sign });
+    if (target?.kind !== 'furniture') {
+      throw new Error('The wall-face plaque must own the interaction');
+    }
     const before = {
       time: session.sim.time,
       version: session.inventory.version,
       entities: session.inventory.entities.version,
     };
     expect(session.readFurniture({ ...sign })).toBe('It is no longer there');
-    expect(session.readFurniture(sign)).toBeUndefined();
+    expect(session.readFurniture(target.entity)).toBeUndefined();
     expect(shown).toEqual([readable]);
     expect({
       time: session.sim.time,

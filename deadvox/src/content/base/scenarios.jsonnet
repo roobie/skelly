@@ -37,6 +37,10 @@ local ladder = lab.entry.ladder;
       upper: [hatch[0] + 4, ground + 1, hatch[2] + 1],
       lower: [hatch[0], ladder[1], hatch[2] + 1],
     },
+    population: {
+      settlementPressure: true, authoredMarkers: true,
+      groupSize: 7, hordes: 1, roadsideOffset: 3, extraStragglers: 2,
+    },
     city: {
       blocksX: 1, blocksZ: 1,
       street: 12,
@@ -44,12 +48,24 @@ local ladder = lab.entry.ladder;
       blockZ: std.max(service.size[0], service.size[2]) + 24,
       pad: 2, gap: 1, blend: 24,
       rows: 4,
-      perimeter: { block: 'concrete', height: 8, thickness: 2 },
-      streetProps: ['gauntlet_car_wreck'],
+      perimeter: {
+        block: 'concrete', height: 12, thickness: 2,
+        wire: { block: 'chain_link', height: 2 },
+        lining: { assembly: 'gauntlet_perimeter_lining', pitch: 12 },
+        gate: { assembly: 'gauntlet_perimeter_gate' },
+      },
+      streetProps: ['gauntlet_street_cars'],
       pool: 'gauntlet_city',
+      ring: { pool: 'gauntlet_ring', setback: 7 },
     },
   }],
   mapPools: [{
+    id: 'gauntlet_ring',
+    choices: [
+      { ref: { kind: 'assembly', id: 'gauntlet_city_1' }, weight: 36 },
+      { ref: { kind: 'assembly', id: 'gauntlet_food_store' }, weight: 6 },
+    ],
+  }, {
     id: 'gauntlet_city',
     choices: [
       { ref: { kind: 'assembly', id: row.id, style: style.id }, weight: row.weight * style.share }

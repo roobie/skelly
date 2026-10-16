@@ -665,6 +665,27 @@ export interface KeyboardState {
   readonly context: InputContext;
   readonly debug: boolean;
 }
+export interface KeyTraceEntry {
+  readonly kind: 'down' | 'up' | 'context' | 'cancel' | 'focus' | 'blur' | 'visibility' | 'pointer-lock';
+  readonly at: number;
+  readonly context: InputContext;
+  readonly focus: 'editable' | 'other';
+  readonly hidden: boolean;
+  readonly pointerLocked: boolean;
+  readonly down: readonly string[];
+  readonly blocked: readonly string[];
+  readonly active: readonly { code: string; action: string }[];
+  readonly reason?: string;
+  readonly code?: string;
+  readonly repeat?: boolean;
+  readonly shiftKey?: boolean;
+  readonly ctrlKey?: boolean;
+  readonly altKey?: boolean;
+  readonly metaKey?: boolean;
+  readonly isComposing?: boolean;
+  readonly isTrusted?: boolean;
+  readonly accepted?: boolean;
+}
 export interface InputCommand {
   readonly action: string;
   readonly phase: 'down' | 'up';
@@ -747,6 +768,7 @@ export class KeyboardInput {
   private readonly active = new Map<string, string>();
   private state: KeyboardState = { context: 'title', debug: false };
   private removeListeners: (() => void) | undefined;
+  trace: ((entry: KeyTraceEntry) => void) | undefined;
   context: () => KeyboardState = () => this.state;
   command: (command: InputCommand) => void = () => undefined;
   cancelled: (preservePointer?: boolean, reason?: InputCancellationReason) => void = () => undefined;
@@ -760,6 +782,90 @@ export class KeyboardInput {
         this.cancel();
       }
     });
+  }
+  private traceCode(code: string): boolean {
+    return (
+      code.startsWith('Shift') ||
+      (!code.startsWith('Mouse') &&
+        this.registry.bindings.some(
+          (binding) =>
+            binding.id.startsWith('movement.') && this.registry.chords(binding.id).some((chord) => chord.code === code),
+        ))
+    );
+  }
+  private recordTrace(kind: KeyTraceEntry['kind'], detail: Partial<KeyTraceEntry> = {}): void {
+    if (!(this.trace && this.state.debug)) {
+      return;
+    }
+    const focus: KeyTraceEntry['focus'] = editable(document.activeElement) ? 'editable' : 'other';
+    const entry = {
+      kind,
+      at: performance.now(),
+      context: this.state.context,
+      focus,
+      hidden: document.hidden,
+      pointerLocked: Boolean(document.pointerLockElement),
+      down: [...this.down].filter((code) => this.traceCode(code)),
+      blocked: [...this.blocked].filter((code) => this.traceCode(code)),
+      active: [...this.active].filter(([code]) => this.traceCode(code)).map(([code, action]) => ({ code, action })),
+      ...detail,
+    };
+    if (entry.focus === 'editable') {
+      const { code: _code, ...redacted } = entry;
+      this.trace({ ...redacted, down: [], blocked: [], active: [] });
+    } else {
+      this.trace(entry);
+    }
+  }
+  private traceDown(event: KeyEvent, accepted: boolean, reason: string): boolean {
+    if (this.trace && this.state.debug && this.traceCode(event.code)) {
+      this.recordTrace('down', { ...this.traceEvent(event), accepted, reason });
+    }
+    return accepted;
+  }
+  private traceEvent(event: KeyEvent): Partial<KeyTraceEntry> {
+    return {
+      at: event.timeStamp,
+      code: event.code,
+      repeat: event.repeat,
+      shiftKey: event.shiftKey,
+      ctrlKey: event.ctrlKey,
+      altKey: event.altKey,
+      metaKey: event.metaKey,
+      isComposing: event.isComposing,
+      isTrusted: 'isTrusted' in event && event.isTrusted === true,
+    };
+  }
+  private unmatchedDown(event: KeyEvent, text: boolean, allowWhileEditing?: ReadonlySet<string>): boolean {
+    if (this.trace && this.state.debug) {
+      this.traceDown(event, false, this.unmatchedReason(event, text, allowWhileEditing));
+    }
+    return false;
+  }
+  private unmatchedReason(event: KeyEvent, text: boolean, allowWhileEditing?: ReadonlySet<string>): string {
+    let candidates = this.registry.bindings.filter((binding) =>
+      this.registry.chords(binding.id).some((chord) => chord.code === event.code),
+    );
+    const stages: readonly [string, (binding: Binding) => boolean][] = [
+      ['unbound', () => true],
+      ['context', (binding) => binding.contexts.includes(this.state.context)],
+      ['debug-only', (binding) => !binding.debug || this.state.debug],
+      ['editing', (binding) => !text || Boolean(binding.text || allowWhileEditing?.has(binding.id))],
+      [
+        'gate',
+        (binding) =>
+          binding.gate
+            ? this.held(binding.gate)
+            : !this.held('debug.gate') || binding.id === 'debug.gate' || binding.id === 'ui.main-menu-toggle',
+      ],
+    ];
+    for (const [reason, predicate] of stages) {
+      candidates = candidates.filter(predicate);
+      if (candidates.length === 0) {
+        return reason;
+      }
+    }
+    return 'modifiers';
   }
   held(action: string): boolean {
     return [...this.active.values()].includes(action);
@@ -778,6 +884,7 @@ export class KeyboardInput {
         this.active.set(code, action);
       }
       this.state = next;
+      this.recordTrace('context');
     }
   }
   cancel(keepGate = false, preservePointer = false, reason: InputCancellationReason = 'manual'): void {
@@ -788,6 +895,7 @@ export class KeyboardInput {
       this.blocked.add(code);
       this.active.delete(code);
     }
+    this.recordTrace('cancel', { reason });
     this.cancelled(preservePointer, reason);
   }
   pressForwarded(event: ForwardedKey): boolean {
@@ -803,6 +911,9 @@ export class KeyboardInput {
     this.active.delete(event.code);
     if (action) {
       this.command({ action, phase: 'up', at: event.timeStamp });
+    }
+    if (this.trace && this.traceCode(event.code)) {
+      this.recordTrace('up', this.traceEvent(event));
     }
     const modifier = modifierCodes[event.code];
     if (
@@ -851,17 +962,17 @@ export class KeyboardInput {
     this.sync();
     this.down.add(event.code);
     if (event.isComposing) {
-      return false;
+      return this.traceDown(event, false, 'composing');
     }
     if (this.capture) {
-      return this.capturePress(event);
+      return this.traceDown(event, this.capturePress(event), 'binding-capture');
     }
     if (browserEscape(event)) {
       this.escape();
       return false;
     }
     if (this.blocked.has(event.code) || REFUSED_MODIFIERS.some((modifier) => event[flags[modifier]])) {
-      return false;
+      return this.traceDown(event, false, this.blocked.has(event.code) ? 'blocked' : 'browser-modifier');
     }
     const gate = this.held('debug.gate');
     const matches = this.registry.bindings.filter(
@@ -891,18 +1002,16 @@ export class KeyboardInput {
                       .some((gateChord) => gateChord.code === code && gateChord.modifier === modifier),
                 );
               return (
+                modifierCodes[chord.code] === modifier ||
                 Boolean(event[flags[modifier]]) ===
-                (chord.modifier === modifier ||
-                  modifierCodes[chord.code] === modifier ||
-                  ownedHeldModifier ||
-                  Boolean(gateModifier))
+                  (chord.modifier === modifier || ownedHeldModifier || Boolean(gateModifier))
               );
             }),
         ),
     );
     const [selectedBinding] = matches;
     if (!selectedBinding) {
-      return false;
+      return this.unmatchedDown(event, text, allowWhileEditing);
     }
     if (!event.repeat || selectedBinding.repeat) {
       if (!this.active.has(event.code)) {
@@ -914,7 +1023,7 @@ export class KeyboardInput {
       this.command({ action: selectedBinding.id, phase: 'down', at: event.timeStamp });
       this.sync();
     }
-    return true;
+    return this.traceDown(event, true, 'accepted');
   }
   install(): () => void {
     if (this.removeListeners) {
@@ -926,10 +1035,12 @@ export class KeyboardInput {
     const keyDown = (event: KeyboardEvent) => {
       // Chrome owns DevTools shortcuts, but cancel their page default where the browser exposes a cancelable event.
       if (event.cancelable && chromeDevtoolsShortcut(event) && !editable(event.target) && !this.capture) {
+        this.traceDown(event, false, 'browser-shortcut');
         event.preventDefault();
         return;
       }
       if (debugControl(event.target) && nativeActivation(event) && !this.capture && !this.held('debug.gate')) {
+        this.traceDown(event, false, 'native-control');
         event.preventDefault();
         return;
       }
@@ -954,18 +1065,25 @@ export class KeyboardInput {
         event.stopPropagation();
       }
     };
-    const blur = () => this.cancel(false, false, 'window-blur');
+    const blur = () => {
+      this.recordTrace('blur');
+      this.cancel(false, false, 'window-blur');
+    };
+    const windowFocus = () => this.recordTrace('focus');
     const visibility = () => {
+      this.recordTrace('visibility');
       if (document.hidden) {
         this.cancel(false, false, 'document-hidden');
       }
     };
     const lock = () => {
+      this.recordTrace('pointer-lock');
       if (!document.pointerLockElement) {
         this.cancel(false, false, 'pointer-lock-lost');
       }
     };
     const focus = (event: FocusEvent) => {
+      this.recordTrace('focus', { focus: editable(event.target) ? 'editable' : 'other' });
       if (editable(event.target)) {
         this.cancel(true);
       }
@@ -980,6 +1098,7 @@ export class KeyboardInput {
     globalThis.addEventListener('keyup', keyUp, true);
     globalThis.addEventListener('mousedown', pointerCapture, true);
     globalThis.addEventListener('blur', blur);
+    globalThis.addEventListener('focus', windowFocus);
     globalThis.addEventListener('click', click, true);
     document.addEventListener('visibilitychange', visibility);
     document.addEventListener('pointerlockchange', lock);
@@ -989,6 +1108,7 @@ export class KeyboardInput {
       globalThis.removeEventListener('keyup', keyUp, true);
       globalThis.removeEventListener('mousedown', pointerCapture, true);
       globalThis.removeEventListener('blur', blur);
+      globalThis.removeEventListener('focus', windowFocus);
       globalThis.removeEventListener('click', click, true);
       document.removeEventListener('visibilitychange', visibility);
       document.removeEventListener('pointerlockchange', lock);

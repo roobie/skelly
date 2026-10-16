@@ -1,7 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, type InventoryState } from '../src/core/inventory.ts';
@@ -9,15 +6,10 @@ import type { Item } from '../src/core/items.ts';
 import { FirearmMechanics, type FirearmShotInput } from '../src/game/firearmHandling.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput } from '../src/game/reloadInput.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { chargedRifle, rifleAmmunition, settle } from './rifleFixture.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const pose = {
   feet: [0, 1, 0] as Vec3,
   eye: [0, 4, 0] as Vec3,

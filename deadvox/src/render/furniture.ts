@@ -15,7 +15,7 @@ import type { FurnitureDef } from '../core/schema.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
-import { workshopCar, workshopLift } from './workshopVehicle.ts';
+import { vehicleModel, workshopLift } from './workshopVehicle.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
 const INSET = 0.02;
@@ -130,14 +130,11 @@ export class FurnitureMeshes {
     if (def.id === 'workshop_lift') {
       return workshopLift(entity, this.blockSize);
     }
-    if (def.id === 'workshop_stripped_car') {
-      return workshopCar(entity, this.blockSize);
+    if (def.vehicle) {
+      return vehicleModel(entity, def.vehicle, this.blockSize);
     }
     if (def.door) {
       return this.door(entity, material, def);
-    }
-    if (def.readable && def.solid === false) {
-      return this.wallBoard(entity, material);
     }
     if (def.appearance) {
       return this.shaped(entity, def, this.material('#ffffff', true));
@@ -195,30 +192,6 @@ export class FurnitureMeshes {
     mesh.position.set((x + width / 2) * this.blockSize, y * this.blockSize, (z + depth / 2) * this.blockSize);
     mesh.rotation.y = { n: 0, e: -Math.PI / 2, s: Math.PI, w: Math.PI / 2 }[entity.facing];
     mesh.scale.setScalar(this.blockSize);
-    return mesh;
-  }
-
-  private wallBoard(entity: BlockEntity, material: MeshLambertMaterial): Mesh {
-    const s = this.blockSize;
-    const [x, y, z] = entity.pos;
-    const [w, h, d] = entity.size;
-    const alongX = entity.facing === 'n' || entity.facing === 's';
-    const thickness = s * 0.16;
-    const mesh = new Mesh(this.geometry, material);
-    mesh.scale.set(alongX ? w * s - INSET : thickness, h * s - INSET / 2, alongX ? thickness : d * s - INSET);
-    let boardX = (x + w / 2) * s;
-    if (entity.facing === 'e') {
-      boardX = x * s + thickness / 2;
-    } else if (entity.facing === 'w') {
-      boardX = (x + w) * s - thickness / 2;
-    }
-    let boardZ = (z + d / 2) * s;
-    if (entity.facing === 'n') {
-      boardZ = (z + d) * s - thickness / 2;
-    } else if (entity.facing === 's') {
-      boardZ = z * s + thickness / 2;
-    }
-    mesh.position.set(boardX, (y + h / 2) * s, boardZ);
     return mesh;
   }
 

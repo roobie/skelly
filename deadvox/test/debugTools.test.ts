@@ -1,10 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { stepBody } from '../src/core/physics.ts';
@@ -17,16 +14,11 @@ import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const FLOOR = (_x: number, y: number) => y === 0;
 const INTENT = { forward: 1, right: 0, jump: false, sprint: false, walk: false };

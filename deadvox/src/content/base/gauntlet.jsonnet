@@ -3,12 +3,18 @@ local city = import 'gauntlet-city.libsonnet';
 local kits = import 'gauntlet-city-kits.libsonnet';
 local types = import 'gauntlet-city-building-types.libsonnet';
 local tents = import 'gauntlet-city-medical.libsonnet';
+local perimeter = import 'gauntlet-city-perimeter.libsonnet';
 local rooms = import 'gauntlet-lab-rooms.libsonnet';
 local descents = import 'gauntlet-lab-descents.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local service = import 'gauntlet-service.libsonnet';
 local metal = '#707b7e';
 local button = std.filter(function(f) f.id == 'gauntlet_look_button', look.furniture)[0];
+local note = function(id, title, text) {
+  id: id, name: title, size: [2, 2, 1], color: '#dfd6b9', solid: false,
+  shape: [{ position: [0.1, 0.1, 0.8], size: [1.8, 1.8, 0.1] }],
+  readable: { title: title, text: text },
+};
 local emptyLoot = { usage: [], tier: 'Tier1' };
 local paper = function(id, title, model, text) {
   id: id, name: title, category: 'note', weight: 5, size: [1, 1],
@@ -92,7 +98,7 @@ local utilities = [
 ];
 {
   items: types.items + publicNotes,
-  mapPools: kits.mapPools,
+  mapPools: kits.mapPools + city.mapPools,
   blocks: tents.blocks + types.blocks,
   loot: types.loot + tents.loot,
   mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
@@ -105,6 +111,8 @@ local utilities = [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
     },
+    note('gauntlet_perimeter_notice', 'Notice', 'QUARANTINE ZONE'),
+    note('gauntlet_perimeter_gate_notice', 'Notice', 'NO ENTRY'),
     {
       id: 'gauntlet_water_tank', name: 'Square raised water tank', size: [6, 12, 6], color: metal,
       shape: [
@@ -125,5 +133,5 @@ local utilities = [
       ],
     },
   ],
-  templates: city.templates + utilities,
+  templates: city.templates + perimeter.templates + utilities,
 }

@@ -9,47 +9,47 @@ import {
   MeshPhongMaterial,
 } from 'three';
 import type { BlockEntity } from '../core/blockEntities.ts';
+import type { FurnitureDef } from '../core/content.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
-import { CATALOGUE } from '../vehicles/catalogue.ts';
+import { BLUEPRINTS, CATALOGUE } from '../vehicles/catalogue.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
 import { newInstance, type Paint, PartLibrary, VOXEL } from '../vehicles/model.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED } from '../vehicles/rangeRover.ts';
 import { GLASS, keyVoxel, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
 
-const partLibrary = new PartLibrary(CATALOGUE);
-const WORKSHOP_REMOVED: readonly string[] = [...STRIPPED_REMOVED, 'spare-wheel'];
-export const WORKSHOP_DISPLAY_CAR = newInstance(RANGE_ROVER, 'workshop-stripped-4x4', WORKSHOP_REMOVED);
+/** A furniture def's procedural variant of a vehicle: its blueprint, paint, dirt and absent parts. */
+export type VehicleLook = NonNullable<FurnitureDef['vehicle']>;
 
-const rgb = (paint: Paint, material: string): Rgb => {
+const partLibrary = new PartLibrary(CATALOGUE);
+const SEAM_DARKENING = 0.72;
+const GRIME = new Color('#4a3b2c');
+const GRIME_ON_PAINT = 0.65;
+const GRIME_ON_PARTS = 0.4;
+
+export const vehicleInstanceOf = (look: VehicleLook) => {
+  const blueprint = BLUEPRINTS[look.blueprint]!;
+  const seam = new Color(look.body).multiplyScalar(SEAM_DARKENING);
+  return {
+    ...newInstance(blueprint, `${look.blueprint}-${look.body}-${look.dirt}`, look.removed),
+    paint: { body: look.body, seam: `#${seam.getHexString()}` } satisfies Paint,
+  };
+};
+
+const rgb = (paint: Paint, dirt: number, material: string): Rgb => {
   const hex = material === 'paint' ? paint.body : (MATERIALS[material] ?? material);
   const color = new Color(material === 'seam' ? paint.seam : hex);
+  if (material !== GLASS) {
+    color.lerp(GRIME, dirt * (material === 'paint' || material === 'seam' ? GRIME_ON_PAINT : GRIME_ON_PARTS));
+  }
   return [color.r, color.g, color.b];
 };
 
-const vehicleGrid = (): VoxelGrid => {
-  const grid: VoxelGrid = new Map();
-  for (const fitting of WORKSHOP_DISPLAY_CAR.fittings) {
-    for (const [voxel, material] of partLibrary.placed(fitting).grid) {
-      grid.set(voxel, material);
-    }
-  }
-  return grid;
-};
-let cachedDisplay: { grid: VoxelGrid; solidBaseY: number } | undefined;
-const getDisplay = (): { grid: VoxelGrid; solidBaseY: number } => {
-  if (cachedDisplay === undefined) {
-    const grid = vehicleGrid();
-    cachedDisplay = {
-      grid,
-      solidBaseY: Math.min(
-        ...[...grid].flatMap(([voxel, material]) => (material === GLASS ? [] : [keyVoxel(voxel)[1] * VOXEL])),
-      ),
-    };
-  }
-  return cachedDisplay;
-};
+interface Display {
+  readonly solidBaseY: number;
+  readonly solidGeometry: BufferGeometry | undefined;
+  readonly clearGeometry: BufferGeometry | undefined;
+}
 
-const geometryOf = (buffers: MeshBuffers): BufferGeometry | undefined => {
+const geometryOf = (buffers: MeshBuffers, lattice: readonly [number, number, number]): BufferGeometry | undefined => {
   if (buffers.quads === 0) {
     return undefined;
   }
@@ -59,26 +59,40 @@ const geometryOf = (buffers: MeshBuffers): BufferGeometry | undefined => {
   geometry.setAttribute('color', new BufferAttribute(buffers.colors, 3));
   geometry.setIndex(new BufferAttribute(buffers.indices, 1));
   geometry.scale(VOXEL, VOXEL, VOXEL);
-  const [length, , width] = RANGE_ROVER.lattice;
+  const [length, , width] = lattice;
   geometry.translate((-length * 4 * VOXEL) / 2, 0, (-width * 4 * VOXEL) / 2);
   geometry.computeBoundingSphere();
   return geometry;
 };
 
-const vehicleGeometry = () => {
-  const { solid, clear } = meshGrid(
-    getDisplay().grid,
-    (material) => rgb(WORKSHOP_DISPLAY_CAR.paint, material),
-    (material) => material === GLASS,
-  );
-  return { solidGeometry: geometryOf(solid), clearGeometry: geometryOf(clear) };
-};
-let cachedVehicleGeometry: ReturnType<typeof vehicleGeometry> | undefined;
-const getVehicleGeometry = () => {
-  if (cachedVehicleGeometry === undefined) {
-    cachedVehicleGeometry = vehicleGeometry();
+const displays = new Map<string, Display>();
+const displayOf = (look: VehicleLook): Display => {
+  const key = JSON.stringify(look);
+  let display = displays.get(key);
+  if (display === undefined) {
+    const instance = vehicleInstanceOf(look);
+    const grid: VoxelGrid = new Map();
+    for (const fitting of instance.fittings) {
+      for (const [voxel, material] of partLibrary.placed(fitting).grid) {
+        grid.set(voxel, material);
+      }
+    }
+    const { solid, clear } = meshGrid(
+      grid,
+      (material) => rgb(instance.paint, look.dirt, material),
+      (material) => material === GLASS,
+    );
+    const { lattice } = BLUEPRINTS[look.blueprint]!;
+    display = {
+      solidBaseY: Math.min(
+        ...[...grid].flatMap(([voxel, material]) => (material === GLASS ? [] : [keyVoxel(voxel)[1] * VOXEL])),
+      ),
+      solidGeometry: geometryOf(solid, lattice),
+      clearGeometry: geometryOf(clear, lattice),
+    };
+    displays.set(key, display);
   }
-  return cachedVehicleGeometry;
+  return display;
 };
 
 const solidMaterial = new MeshLambertMaterial({ vertexColors: true });
@@ -109,17 +123,16 @@ const addBox = (group: Group, material: MeshLambertMaterial, blockSize: number, 
   group.add(mesh);
 };
 
-/** Renders the spike's 4×4 with its wheels and worked-on panels absent. */
-export const workshopCar = (entity: BlockEntity, blockSize = BLOCK_SIZE): Group => {
+/** Renders a furniture def's vehicle look, standing on its lowest solid voxel. */
+export const vehicleModel = (entity: BlockEntity, look: VehicleLook, blockSize = BLOCK_SIZE): Group => {
   const group = new Group();
-  const { solidBaseY } = getDisplay();
+  const { solidBaseY, solidGeometry, clearGeometry } = displayOf(look);
   group.position.set(
     (entity.pos[0] + entity.size[0] / 2) * blockSize,
     entity.pos[1] * blockSize - solidBaseY,
     (entity.pos[2] + entity.size[2] / 2) * blockSize,
   );
   group.rotation.y = Math.PI / 2;
-  const { solidGeometry, clearGeometry } = getVehicleGeometry();
   if (solidGeometry) {
     const mesh = new Mesh(solidGeometry, solidMaterial);
     mesh.castShadow = true;

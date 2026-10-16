@@ -29,6 +29,7 @@ import {
   union,
   boolean as vBoolean,
 } from 'valibot';
+import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { hasSegment } from './authoredTerrain.mjs';
 import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
@@ -39,6 +40,7 @@ import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
+import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import {
   gameHours,
@@ -328,6 +330,27 @@ const MeleeClassSchema = strictObject({
   speedMultiplier: Positive,
 });
 
+const RoundFeedPoseSchema = pipe(
+  strictObject({
+    pickupEnd: NonNegative,
+    approachEnd: NonNegative,
+    thumbEnd: NonNegative,
+    pickupSide: NonNegative,
+    pickupBelow: NonNegative,
+    pickupBack: NonNegative,
+    palmBelow: NonNegative,
+    palmBack: NonNegative,
+    thumbLift: NonNegative,
+    thumbTravel: NonNegative,
+  }),
+  check(
+    (pose) =>
+      pose.pickupEnd > 0 && pose.pickupEnd < pose.approachEnd && pose.approachEnd < pose.thumbEnd && pose.thumbEnd < 1,
+    'feed phases must increase strictly between zero and one',
+  ),
+);
+export type RoundFeedPoseTuning = InferOutput<typeof RoundFeedPoseSchema>;
+
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
   bolt: optional(vBoolean()),
@@ -343,6 +366,20 @@ const FirearmSchema = strictObject({
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
   /** Reload handling times at skill 0, before the firearms skill's reload factor. */
+  revolver: optional(
+    strictObject({
+      doubleActionPullSimSeconds: PositiveSimSeconds,
+      doubleActionDispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
+      recoverySimSeconds: PositiveSimSeconds,
+      openSimSeconds: PositiveSimSeconds,
+      ejectSimSeconds: PositiveSimSeconds,
+      pickSimSeconds: PositiveSimSeconds,
+      loadSimSeconds: PositiveSimSeconds,
+      loadPose: RoundFeedPoseSchema,
+      closeSimSeconds: PositiveSimSeconds,
+      cockSimSeconds: PositiveSimSeconds,
+    }),
+  ),
   handling: strictObject({
     /** Taking the fitted magazine out and drawing one in; required for a magazine-fed gun. */
     magazine: optional(
@@ -1027,6 +1064,7 @@ const FurnitureSchema = pipe(
     shotTarget: optional(literal(true)),
     scenarioGoal: optional(literal(true)),
     readable: optional(ReadableSchema),
+    mount: optional(literal('wall')),
     container: optional(ContainerSchema),
     /** The loot table rolled into its container when the chunk generates. */
     loot: optional(Id),
@@ -1052,6 +1090,23 @@ const FurnitureSchema = pipe(
     ),
     /** Render-only boxes in cell coordinates; gameplay continues to use the furniture cells. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
+    /** Rendered as this vehicle: a blueprint without the `removed` fittings, in `body` paint, `dirt` grimy (0 clean to 1 filthy). */
+    vehicle: optional(
+      pipe(
+        strictObject({
+          blueprint: string(),
+          body: Color,
+          dirt: Fraction,
+          removed: array(string()),
+        }),
+        check(({ blueprint }) => BLUEPRINTS[blueprint] !== undefined, 'unknown vehicle blueprint'),
+        check(
+          ({ blueprint, removed }) =>
+            removed.every((id) => BLUEPRINTS[blueprint]?.fittings.some((fitting) => fitting.id === id)),
+          'removed names a fitting the blueprint lacks',
+        ),
+      ),
+    ),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
     rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
     /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
@@ -1078,6 +1133,18 @@ const FurnitureSchema = pipe(
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
   check(({ climbable, solid }) => !climbable || solid === false, 'a climbable piece must not be solid'),
+  check(
+    ({ mount, size, shape, solid }) =>
+      !mount ||
+      (size.every((extent) => extent === 1) &&
+        solid === false &&
+        shape?.length === 1 &&
+        shape.every(
+          ({ position: [x, y, z], size: [w, h, d] }) =>
+            x === 0 && y === 0 && w === 1 && h === 1 && d < 1 && z + d === 1,
+        )),
+    'a wall mount needs a non-solid single-cell shape spanning its face, thin and flush with its back',
+  ),
 );
 
 // ---- loot tables ----
@@ -1432,7 +1499,6 @@ const MapPoolSchema = strictObject({
       }),
     ),
     minLength(1),
-    maxLength(32),
     check(
       (rows) => rows.every(({ atLeast, atMost }) => atLeast === undefined || atMost === undefined || atLeast <= atMost),
       'atLeast must not exceed atMost',
@@ -1447,7 +1513,7 @@ const MapPoolSchema = strictObject({
 
 const ScenarioSchema = strictObject({
   id: Id,
-  kind: literal('gauntlet'),
+  kind: picklist(SCENARIO_KINDS),
   outbreakAgeGameHours: PositiveGameHours,
   decalLimit: pipe(Count, maxValue(4096)),
   body: Id,
@@ -1482,6 +1548,19 @@ const ScenarioSchema = strictObject({
     upper: CellPosition,
     lower: CellPosition,
   }),
+  /** The ordinary buildings' street pressure; authored markers are separate from it. */
+  population: strictObject({
+    settlementPressure: vBoolean(),
+    authoredMarkers: vBoolean(),
+    /** Ordinary buildings per street group; each group gets roadside stragglers. */
+    groupSize: pipe(Count, minValue(1), maxValue(64)),
+    /** Hordes in the whole city, each on a different seeded street group. */
+    hordes: pipe(Count, maxValue(16)),
+    /** Metres each side of a street's centreline where stragglers stand. */
+    roadsideOffset: pipe(Count, minValue(1), maxValue(32)),
+    /** Stragglers added to each group on top of its hamlet-sized count. */
+    extraStragglers: pipe(Count, maxValue(16)),
+  }),
   city: strictObject({
     blocksX: pipe(Count, minValue(1), maxValue(4)),
     blocksZ: pipe(Count, minValue(1), maxValue(4)),
@@ -1504,8 +1583,16 @@ const ScenarioSchema = strictObject({
         block: Id,
         height: pipe(Count, minValue(1), maxValue(32)),
         thickness: pipe(Count, minValue(2), maxValue(8)),
+        /** Solid wire fence on top of the wall. */
+        wire: optional(strictObject({ block: Id, height: pipe(Count, minValue(1), maxValue(8)) })),
+        /** Assembly set against the wall's inside face every `pitch` blocks, facing inward. */
+        lining: optional(strictObject({ assembly: Id, pitch: pipe(Count, minValue(2), maxValue(64)) })),
+        /** Assembly set against the wall where the central street meets it. */
+        gate: optional(strictObject({ assembly: Id })),
       }),
     ),
+    /** One row of buildings around the grid, backs to the wall and fronts to the outermost street. */
+    ring: optional(strictObject({ pool: Id, setback: pipe(Count, minValue(1), maxValue(64)) })),
     streetProps: optional(pipe(array(Id), maxLength(16))),
     pool: Id,
   }),

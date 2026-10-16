@@ -2,8 +2,11 @@
   en: {
     round: 'Round',
     title: 'Playtest',
+    patch: 'Patch',
     task: 'Your task: survive and find the military camp.',
     playLink: 'Play the playtest map',
+    beginnerLink: 'Play in beginner mode',
+    beginnerHint: 'Zombies are slower, weaker and notice less. A beginner-mode world is saved apart and continues only from this link.',
     duration: 'Play for as long as you like, in as many sittings as you like. Continue resumes a living survivor; death ends the run.',
     metrics: 'The game records play metrics only on your machine, in this browser.',
     sending: 'Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.',
@@ -18,8 +21,11 @@
   sv: {
     round: 'Runda',
     title: 'Speltest',
+    patch: 'Patch',
     task: 'Ditt uppdrag: överlev och hitta militärlägret.',
     playLink: 'Spela speltestkartan',
+    beginnerLink: 'Spela i nybörjarläge',
+    beginnerHint: 'Zombierna är långsammare, svagare och märker mindre. En värld i nybörjarläge sparas för sig och fortsätter bara från den här länken.',
     duration: 'Spela så länge du vill, i så många omgångar du vill. Continue återupptar en överlevare som fortfarande lever; vid dödsfall tar omgången slut.',
     metrics: 'Spelet sparar speldata bara på din dator, i den här webbläsaren.',
     sending: 'Du väljer själv om du vill skicka den: i F9-menyn sparar du din speldata, och en repris av ditt senaste spelande, som filer du kan bifoga till din återkoppling.',

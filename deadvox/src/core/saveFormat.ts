@@ -330,7 +330,20 @@ itemSchema = obj({
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(
     obj({
-      chamber: enumeration(['empty', 'round', 'case']),
+      chamber: opt(enumeration(['empty', 'round', 'case'])),
+      cylinder: opt(
+        obj({
+          chambers: arr(
+            union(
+              obj({ state: enumeration(['empty', 'case']) }),
+              obj({ state: enumeration(['round']), roundType: str({ id: true }) }),
+            ),
+          ),
+          aligned: nonNegativeInt,
+          open: bool,
+          cocked: bool,
+        }),
+      ),
       roundType: opt(str({ id: true })),
       tube: opt(arr(str({ id: true }))),
       actionOpen: opt(bool),
@@ -1437,6 +1450,11 @@ function validateItemContentReferences(
     if (item.firearm?.roundType) {
       check('item', item.firearm.roundType, `${path}.firearm.roundType`);
     }
+    item.firearm?.cylinder?.chambers.forEach((chamber, index) => {
+      if (chamber.state === 'round') {
+        check('item', chamber.roundType, `${path}.firearm.cylinder.chambers[${index}].roundType`);
+      }
+    });
     item.firearm?.tube?.forEach((type, index) => {
       check('item', type, `${path}.firearm.tube[${index}]`);
     });

@@ -1,22 +1,14 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { dominantSide, offSide } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveContentKind } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const scale = makeScale(0.5);
 const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'block') {

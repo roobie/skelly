@@ -1,7 +1,9 @@
+import { PLAYER, sprintJumpRise } from '../game/player.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_TEMPLATES } from './hamlet.ts';
 import { hash3, pickWeighted, Rng } from './random.ts';
+import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
 import type { MapPoolDef, ScenarioDef } from './schema.ts';
@@ -26,11 +28,17 @@ interface PoolRef {
 }
 type PoolChoice = Readonly<PoolRef & { weight: number; atLeast?: number; atMost?: number }>;
 const rowKey = ({ id, style }: PoolRef): string => `${id}@${style ?? ''}`;
-export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps'> & {
+export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps' | 'ring'> & {
   readonly pool?: string | undefined;
   readonly templates: readonly PoolChoice[];
   readonly streetProps?: readonly string[] | undefined;
+  readonly ring?: Readonly<{ pool: string; setback: number; templates: readonly PoolChoice[] }> | undefined;
 };
+type CityShape = Pick<
+  ScenarioDef['city'],
+  'blocksX' | 'blocksZ' | 'street' | 'blockX' | 'blockZ' | 'pad' | 'rows' | 'perimeter'
+> & { readonly ring?: Readonly<{ setback: number }> | undefined };
+type Perimeter = NonNullable<ScenarioDef['city']['perimeter']>;
 type Cell = readonly [number, number];
 interface Portal {
   readonly upper: Readonly<Vec3>;
@@ -40,7 +48,10 @@ interface Portal {
 export interface CityPlan {
   readonly grid: Readonly<CityGrid>;
   readonly floor: number;
+  /** Everything the wall encloses. */
   readonly bounds: Rect;
+  /** The street grid inside `bounds`, without the edge ring. */
+  readonly core: Rect;
   readonly placements: readonly Placement[];
   readonly structures: readonly BlockBox[];
   readonly service: Placement | undefined;
@@ -63,63 +74,248 @@ export const benchmarkCityGrid = (): CityGrid => ({
   templates: HAMLET_TEMPLATES.map((id) => ({ id, weight: 1 })),
 });
 
-const cityDecorationIssues = (registry: Registry, city: Omit<CityGrid, 'templates'>): [string, string][] => {
+export const cityRowDepth = (grid: Pick<CityShape, 'blockZ' | 'pad' | 'rows' | 'street'>): number =>
+  Math.floor((grid.blockZ - 2 * grid.pad - ((grid.rows ?? 2) / 2 - 1) * grid.street) / (grid.rows ?? 2));
+
+/** The street grid alone: every cell's street and block, out to the street along each edge. */
+const cityCore = (grid: CityShape): Rect => {
+  const pitchX = grid.street + grid.blockX;
+  const pitchZ = grid.street + grid.blockZ;
+  return {
+    x0: -grid.blocksX * pitchX,
+    z0: -grid.blocksZ * pitchZ,
+    x1: grid.blocksX * pitchX + grid.street,
+    z1: grid.blocksZ * pitchZ + grid.street,
+  };
+};
+
+/** The area the wall encloses: the grid plus the edge ring's row and its setback from the wall. */
+const cityBounds = (grid: CityShape): Rect => {
+  const core = cityCore(grid);
+  const grow = grid.ring ? cityRowDepth(grid) + grid.ring.setback : 0;
+  return { x0: core.x0 - grow, z0: core.z0 - grow, x1: core.x1 + grow, z1: core.z1 + grow };
+};
+
+/** The wall as boxes: full-length west and east, and north and south between them, with no gap for the street. */
+const cityPerimeter = (registry: Registry, perimeter: Perimeter, bounds: Rect, floor: number): BlockBox[] => {
+  const { height, thickness, block, wire } = perimeter;
+  const structures: BlockBox[] = [];
+  const top = floor + height + 1;
+  const walls: [Vec3, Vec3][] = [
+    [
+      [bounds.x0 - thickness, floor - thickness, bounds.z0 - thickness],
+      [bounds.x0, top, bounds.z1 + thickness],
+    ],
+    [
+      [bounds.x1, floor - thickness, bounds.z0 - thickness],
+      [bounds.x1 + thickness, top, bounds.z1 + thickness],
+    ],
+    [
+      [bounds.x0, floor - thickness, bounds.z0 - thickness],
+      [bounds.x1, top, bounds.z0],
+    ],
+    [
+      [bounds.x0, floor - thickness, bounds.z1],
+      [bounds.x1, top, bounds.z1 + thickness],
+    ],
+  ];
+  for (const [min, max] of walls) {
+    structures.push({ min, max, block: registry.blockIds.get(block)! });
+    if (wire) {
+      structures.push({
+        min: [min[0], top, min[2]],
+        max: [max[0], top + wire.height, max[2]],
+        block: registry.blockIds.get(wire.block)!,
+      });
+    }
+  }
+  return structures;
+};
+
+/** Spans of each side of `bounds` the wall leaves open somewhere below its full height. */
+export const perimeterGaps = (
+  structures: readonly BlockBox[],
+  bounds: Rect,
+  floor: number,
+  height: number,
+): string[] => {
+  const sides = [
+    { name: 'west', normal: 0, probe: bounds.x0 - 1, lo: bounds.z0, hi: bounds.z1 },
+    { name: 'east', normal: 0, probe: bounds.x1, lo: bounds.z0, hi: bounds.z1 },
+    { name: 'north', normal: 2, probe: bounds.z0 - 1, lo: bounds.x0, hi: bounds.x1 },
+    { name: 'south', normal: 2, probe: bounds.z1, lo: bounds.x0, hi: bounds.x1 },
+  ] as const;
+  const gaps: string[] = [];
+  for (const { name, normal, probe, lo, hi } of sides) {
+    const tangent = 2 - normal;
+    const spans = structures
+      .filter(
+        (box) =>
+          box.min[normal] <= probe &&
+          probe < box.max[normal] &&
+          box.min[1] <= floor &&
+          box.max[1] >= floor + height + 1,
+      )
+      .map((box) => [box.min[tangent]!, box.max[tangent]!] as const)
+      .sort((a, b) => a[0] - b[0]);
+    let cursor = lo;
+    for (const [from, to] of spans) {
+      if (from > cursor) {
+        gaps.push(`${name} side is open from ${cursor} to ${Math.min(from, hi)}`);
+      }
+      cursor = Math.max(cursor, to);
+    }
+    if (cursor < hi) {
+      gaps.push(`${name} side is open from ${cursor} to ${hi}`);
+    }
+  }
+  return gaps;
+};
+
+/**
+ * A street prop names a template, or a map pool of templates whose procedural variant each placement draws
+ * from the world seed. An unknown name has no choices.
+ */
+const streetPropChoices = (registry: Registry, id: string): { id: string; weight: number }[] => {
+  const pool = registry.mapPools.get(id);
+  if (!pool) {
+    return registry.templates.has(id) ? [{ id, weight: 1 }] : [];
+  }
+  return pool.choices.map(({ ref, weight }) => {
+    if (ref.kind !== 'template') {
+      throw new Error(`street prop pool "${id}" needs template refs, not ${ref.kind} ${ref.id}`);
+    }
+    return { id: ref.id, weight };
+  });
+};
+
+const cityDecorationIssues = (registry: Registry, city: ScenarioDef['city']): [string, string][] => {
   const issues: [string, string][] = [];
-  if (city.perimeter && !registry.blockIds.has(city.perimeter.block)) {
-    issues.push(['.city.perimeter.block', `no block "${city.perimeter.block}"`]);
+  const { perimeter, ring } = city;
+  if (ring && !perimeter) {
+    issues.push(['.city.ring', 'an edge ring needs a perimeter wall to back onto']);
+  }
+  if (perimeter) {
+    issues.push(...perimeterIssues(registry, city, perimeter));
   }
   for (const id of city.streetProps ?? []) {
-    const prop = registry.templates.get(id);
-    if (
-      !prop ||
-      prop.size[0] + STAIR_BODY_HALF_WIDTH > city.street / 2 ||
-      prop.size[2] > Math.floor(city.blockZ / ((city.streetProps?.length ?? 0) + 1))
-    ) {
+    const kitRef = registry.mapPools.get(id)?.choices.find(({ ref }) => ref.kind !== 'template');
+    if (kitRef) {
+      issues.push(['.city.streetProps', `street prop pool "${id}" needs template refs, not ${kitRef.ref.kind}`]);
+      continue;
+    }
+    const choices = streetPropChoices(registry, id);
+    const fits = choices.every(({ id: templateId }) => {
+      const prop = registry.templates.get(templateId);
+      return (
+        prop !== undefined &&
+        prop.size[0] + STAIR_BODY_HALF_WIDTH <= city.street / 2 &&
+        prop.size[2] <= Math.floor(city.blockZ / ((city.streetProps?.length ?? 0) + 1))
+      );
+    });
+    if (choices.length === 0 || !fits) {
       issues.push(['.city.streetProps', `street prop "${id}" does not fit its lane`]);
     }
   }
   return issues;
 };
 
-const cityPerimeter = (registry: Registry, grid: CityGrid, floor: number, bounds: Rect): BlockBox[] => {
-  if (!grid.perimeter) {
-    return [];
+const dressingIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {
+  const issues: [string, string][] = [];
+  const depth = cityRowDepth(city);
+  const { ring } = city;
+  const dressings = [
+    {
+      field: 'lining',
+      id: perimeter.lining?.assembly,
+      fits: (size: readonly number[]) =>
+        size[0]! <= (perimeter.lining?.pitch ?? 0) && size[2]! <= (ring ? ring.setback : city.street),
+    },
+    {
+      field: 'gate',
+      id: perimeter.gate?.assembly,
+      fits: (size: readonly number[]) =>
+        size[0]! <= city.street && size[2]! <= (ring ? ring.setback + depth : city.blockZ),
+    },
+  ];
+  for (const { field, id, fits } of dressings) {
+    const dressing = id === undefined ? undefined : (registry.mapAssemblies.get(id) ?? registry.templates.get(id));
+    if (id !== undefined && !dressing) {
+      issues.push([`.city.perimeter.${field}`, `no assembly or template "${id}"`]);
+    } else if (dressing && !fits(dressing.size)) {
+      issues.push([`.city.perimeter.${field}`, `"${id}" does not fit beside the wall`]);
+    }
   }
-  const { height, thickness, block } = grid.perimeter;
-  const structures: BlockBox[] = [];
-  const box = (min: Vec3, max: Vec3) => structures.push({ min, max, block: registry.blockIds.get(block)! });
-  box(
-    [bounds.x0 - thickness, floor - thickness, bounds.z0 - thickness],
-    [bounds.x0, floor + height + 1, bounds.z1 + thickness],
-  );
-  box(
-    [bounds.x1, floor - thickness, bounds.z0 - thickness],
-    [bounds.x1 + thickness, floor + height + 1, bounds.z1 + thickness],
-  );
-  for (const z of [bounds.z0 - thickness, bounds.z1]) {
-    box([bounds.x0, floor - thickness, z], [0, floor + height + 1, z + thickness]);
-    box([grid.street, floor - thickness, z], [bounds.x1, floor + height + 1, z + thickness]);
-  }
-  return structures;
+  return issues;
 };
 
-/** The scenario's city with its named pool resolved to weighted building ids. */
-export const cityGridOf = (registry: Registry, city: ScenarioDef['city']): CityGrid => {
-  const { pool, ...grid } = city;
-  const choices = registry.mapPools.get(pool)?.choices;
-  if (!choices) {
-    throw new Error(`Missing city pool "${pool}"`);
+/** A sprint jump from the roof edge must still be below the wall-plus-wire top where it crosses the wall. */
+const clearanceIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {
+  const { ring } = city;
+  const wallTop = perimeter.height + 1 + (perimeter.wire?.height ?? 0);
+  const setback = ring ? ring.setback : city.street + city.pad;
+  const run = setback * BLOCK_SIZE - 2 * PLAYER.halfWidth;
+  const arcTop = (roof: number) => roof + sprintJumpRise(run) / BLOCK_SIZE;
+  const choices = registry.mapPools.get(ring?.pool ?? city.pool)?.choices ?? [];
+  return choices.flatMap(({ ref }) => {
+    const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id);
+    return building && arcTop(building.size[1]) >= wallTop
+      ? [
+          [
+            ring ? '.city.ring.setback' : '.city.pad',
+            `a jump from the roof of "${ref.id}" clears the wall; lower the building or widen the setback`,
+          ] as [string, string],
+        ]
+      : [];
+  });
+};
+
+const perimeterIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {
+  const blocks = [perimeter.block, ...(perimeter.wire ? [perimeter.wire.block] : [])];
+  const issues: [string, string][] = blocks
+    .filter((block) => !registry.blockIds.has(block))
+    .map((block) => ['.city.perimeter', `no block "${block}"`]);
+  issues.push(...dressingIssues(registry, city, perimeter), ...clearanceIssues(registry, city, perimeter));
+  if (blocks.every((block) => registry.blockIds.has(block))) {
+    const bounds = cityBounds(city);
+    for (const gap of perimeterGaps(cityPerimeter(registry, perimeter, bounds, 0), bounds, 0, perimeter.height)) {
+      issues.push(['.city.perimeter', gap]);
+    }
   }
+  return issues;
+};
+
+const choicesOf = (
+  choices: readonly {
+    ref: { id: string; style?: string | undefined };
+    weight: number;
+    atLeast?: number | undefined;
+    atMost?: number | undefined;
+  }[],
+): PoolChoice[] =>
+  choices.map(({ ref, weight, atLeast, atMost }) => ({
+    id: ref.id,
+    ...(ref.style ? { style: ref.style } : {}),
+    weight,
+    ...(atLeast === undefined ? {} : { atLeast }),
+    ...(atMost === undefined ? {} : { atMost }),
+  }));
+
+/** The scenario's city with its named pools resolved to weighted building ids. */
+export const cityGridOf = (registry: Registry, city: ScenarioDef['city']): CityGrid => {
+  const { pool, ring, ...grid } = city;
+  const resolve = (id: string) => {
+    const choices = registry.mapPools.get(id)?.choices;
+    if (!choices) {
+      throw new Error(`Missing city pool "${id}"`);
+    }
+    return choicesOf(choices);
+  };
   return {
     ...grid,
     pool,
-    templates: choices.map(({ ref, weight, atLeast, atMost }) => ({
-      id: ref.id,
-      ...(ref.style ? { style: ref.style } : {}),
-      weight,
-      ...(atLeast === undefined ? {} : { atLeast }),
-      ...(atMost === undefined ? {} : { atMost }),
-    })),
+    templates: resolve(pool),
+    ...(ring ? { ring: { ...ring, templates: resolve(ring.pool) } } : {}),
   };
 };
 
@@ -142,41 +338,60 @@ const guaranteedSlots = (city: ScenarioDef['city'], incidental: number): number 
   return blocks * ((city.rows ?? 2) - (incidental > 0 ? 1 : 0));
 };
 
-const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
-  const { city } = scenario;
-  const pool = registry.mapPools.get(city.pool);
-  if (!pool) {
-    return [['.city.pool', `no map pool "${city.pool}"`]];
-  }
-  const grid = { ...city, templates: [] };
-  const required = pool.choices.reduce((sum, { atLeast }) => sum + (atLeast ?? 0), 0);
-  const slots = guaranteedSlots(city, scenario.composition?.incidentalTemplates.length ?? 0);
-  const quotaIssues: [string, string][] =
-    required > slots
-      ? [['.city.pool', `pool "${pool.id}" needs ${required} quota buildings but the grid guarantees only ${slots}`]]
-      : [];
-  const rowIssues = pool.choices.flatMap(({ ref }, index): [string, string][] => {
-    const at = `.city.pool.choices[${index}].ref`;
-    const { id } = ref;
+/** Building slots the edge ring always has: one per cell along each side. */
+const ringSlots = (city: ScenarioDef['city']): number => 4 * (city.blocksX + city.blocksZ);
+
+const poolRowIssues = (
+  registry: Registry,
+  pool: MapPoolDef,
+  at: string,
+  fit: { along: number; depth: number },
+): [string, string][] =>
+  pool.choices.flatMap(({ ref }, index): [string, string][] => {
+    const choiceAt = `${at}.choices[${index}].ref`;
     if (ref.kind === 'piece') {
-      return [[at, `city pool "${pool.id}" needs a template or assembly, not piece "${id}"`]];
+      return [[choiceAt, `city pool "${pool.id}" needs a template or assembly, not piece "${ref.id}"`]];
     }
-    if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
-      return [[at, `ambiguous template and assembly "${id}"`]];
+    if (registry.templates.has(ref.id) && registry.mapAssemblies.has(ref.id)) {
+      return [[choiceAt, `ambiguous template and assembly "${ref.id}"`]];
     }
-    const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(id);
+    const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id);
     if (!building) {
-      return [[at, `no ${ref.kind} "${id}" in pool "${pool.id}"`]];
+      return [[choiceAt, `no ${ref.kind} "${ref.id}" in pool "${pool.id}"`]];
     }
     const styleIssue = poolStyleIssue(registry, ref);
     if (styleIssue) {
-      return [[`${at}.style`, styleIssue]];
+      return [[`${choiceAt}.style`, styleIssue]];
     }
-    return building.size[0] > city.blockX - 2 * city.pad || building.size[2] > cityRowDepth(grid)
-      ? [[at, `${ref.kind} "${id}" does not fit the reserved row`]]
+    return building.size[0] > fit.along || building.size[2] > fit.depth
+      ? [[choiceAt, `${ref.kind} "${ref.id}" does not fit the reserved row`]]
       : [];
   });
-  return [...quotaIssues, ...rowIssues];
+
+const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
+  const { city } = scenario;
+  const depth = cityRowDepth(city);
+  const pools = [
+    {
+      at: '.city.pool',
+      id: city.pool,
+      slots: guaranteedSlots(city, scenario.composition?.incidentalTemplates.length ?? 0),
+    },
+    ...(city.ring ? [{ at: '.city.ring.pool', id: city.ring.pool, slots: ringSlots(city) }] : []),
+  ];
+  return pools.flatMap(({ at, id, slots }): [string, string][] => {
+    const pool = registry.mapPools.get(id);
+    if (!pool) {
+      return [[at, `no map pool "${id}"`]];
+    }
+    const required = pool.choices.reduce((sum, { atLeast }) => sum + (atLeast ?? 0), 0);
+    const quotaIssues: [string, string][] =
+      required > slots
+        ? [[at, `pool "${pool.id}" needs ${required} quota buildings but the grid guarantees only ${slots}`]]
+        : [];
+    const along = (at === '.city.ring.pool' ? Math.min(city.blockX, city.blockZ) : city.blockX) - 2 * city.pad;
+    return [...quotaIssues, ...poolRowIssues(registry, pool, at, { along, depth })];
+  });
 };
 
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
@@ -184,7 +399,13 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
   if (!registry.blockIds.has('asphalt')) {
     issues.push(['.city', 'city needs asphalt content']);
   }
-  const { city, serviceTemplate } = scenario;
+  const { city, serviceTemplate, population } = scenario;
+  if (population.roadsideOffset * 2 >= city.street) {
+    issues.push([
+      '.population.roadsideOffset',
+      'stragglers must stand inside the street on both sides of its centreline',
+    ]);
+  }
   const width = city.blockX - 2 * city.pad;
   issues.push(...cityDecorationIssues(registry, city), ...cityPoolIssues(registry, scenario));
   const template = registry.templates.get(serviceTemplate);
@@ -261,6 +482,7 @@ const compilePoolTemplate = (registry: Registry, id: string, storeys: number) =>
 
 const templateCompiler = (registry: Registry, seed: number) => {
   const cache = new Map<string, ReturnType<typeof compileTemplate>>();
+  const pieceCache = new Map<string, ReturnType<typeof compileTemplate>>();
   return ({ id, style }: PoolRef, storeys: number, siteId = 'dimensions') => {
     const assembly = registry.mapAssemblies.get(id);
     if (assembly && registry.templates.has(id)) {
@@ -270,7 +492,7 @@ const templateCompiler = (registry: Registry, seed: number) => {
     let template = cache.get(key);
     if (!template) {
       template = assembly
-        ? compileAssembly(registry, assembly, { seed, siteId, ...(style ? { style } : {}) })
+        ? compileAssembly(registry, assembly, { seed, siteId, pieceCache, ...(style ? { style } : {}) })
         : compilePoolTemplate(registry, id, storeys);
       cache.set(key, template);
     }
@@ -291,9 +513,6 @@ interface FillContext {
   /** Quota buildings the current pass must place at the earliest slot where each fits. */
   forced: PoolRef[];
 }
-export const cityRowDepth = (grid: CityGrid): number =>
-  Math.floor((grid.blockZ - 2 * grid.pad - ((grid.rows ?? 2) / 2 - 1) * grid.street) / (grid.rows ?? 2));
-
 export const cityRowStart = (grid: CityGrid, row: number): number =>
   grid.street + grid.pad + Math.floor(row / 2) * (2 * cityRowDepth(grid) + grid.street);
 
@@ -412,27 +631,194 @@ export const servicePlacement = ({
     turn,
   });
 
+const freezeChoices = (choices: readonly PoolChoice[]) =>
+  Object.freeze(choices.map((choice) => Object.freeze({ ...choice })));
+
 const freezeGrid = (grid: CityGrid): Readonly<CityGrid> =>
   Object.freeze({
     ...grid,
-    templates: Object.freeze(grid.templates.map((choice) => Object.freeze({ ...choice }))),
-    ...(grid.perimeter ? { perimeter: Object.freeze({ ...grid.perimeter }) } : {}),
+    templates: freezeChoices(grid.templates),
+    ...(grid.perimeter
+      ? {
+          perimeter: Object.freeze({
+            ...grid.perimeter,
+            ...(grid.perimeter.wire ? { wire: Object.freeze({ ...grid.perimeter.wire }) } : {}),
+            ...(grid.perimeter.lining ? { lining: Object.freeze({ ...grid.perimeter.lining }) } : {}),
+            ...(grid.perimeter.gate ? { gate: Object.freeze({ ...grid.perimeter.gate }) } : {}),
+          }),
+        }
+      : {}),
+    ...(grid.ring ? { ring: Object.freeze({ ...grid.ring, templates: freezeChoices(grid.ring.templates) }) } : {}),
     ...(grid.streetProps ? { streetProps: Object.freeze([...grid.streetProps]) } : {}),
   });
 
+/** Inward-facing quarter turn for each wall: the template front faces north at turn 0. */
+const SIDES = [
+  { side: 'north', turn: 2, alongX: true },
+  { side: 'south', turn: 0, alongX: true },
+  { side: 'west', turn: 1, alongX: false },
+  { side: 'east', turn: 3, alongX: false },
+] as const;
+
+/** Where a building of footprint `[fx, fz]` stands against a wall's inside face, `at` blocks along the wall. */
+type Side = (typeof SIDES)[number];
+type Extent = readonly [number, number];
+
+const againstWall = (
+  { side, bounds, setback }: { side: Side['side']; bounds: Rect; setback: number },
+  { y, at, extent: [fx, fz] }: { y: number; at: number; extent: Extent },
+): Vec3 => {
+  const origins: Record<Side['side'], Vec3> = {
+    north: [at, y, bounds.z0 + setback],
+    south: [at, y, bounds.z1 - setback - fz],
+    west: [bounds.x0 + setback, y, at],
+    east: [bounds.x1 - setback - fx, y, at],
+  };
+  return origins[side];
+};
+
+/** The row of buildings along one cell of one wall, backs to the wall and fronts to the outermost street. */
+const fillRingCell = (
+  context: FillContext,
+  wall: { bounds: Rect; setback: number },
+  { side, turn, alongX, sideIndex }: Side & { sideIndex: number },
+  index: number,
+): Placement[] => {
+  const { seed, floor, grid, registry, compiled, maxStoreys, counts } = context;
+  const depth = cityRowDepth(grid);
+  const pitch = grid.street + (alongX ? grid.blockX : grid.blockZ);
+  const end = (index + 1) * pitch - grid.pad;
+  const placements: Placement[] = [];
+  let at = index * pitch + grid.street + grid.pad;
+  for (let k = 0; ; k++) {
+    const fits = (ref: PoolRef) => {
+      const [fx, fz] = footprint({ template: compiled(ref, 1), origin: [0, 0, 0], turn });
+      return (alongX ? fx : fz) <= end - at && (alongX ? fz : fx) <= depth;
+    };
+    const building = chooseBuilding(context, fits, false, `city:ring:${side}:${index}/building:${k}/type`);
+    if (!building) {
+      return placements;
+    }
+    counts.set(rowKey(building), (counts.get(rowKey(building)) ?? 0) + 1);
+    const limit = Math.min(maxStoreys, registry.templates.get(building.id)?.maxStoreys ?? maxStoreys);
+    const storeys = 1 + Math.floor(hash3(seed, index, sideIndex + 5000, k + 1000) * limit);
+    const template = compiled(building, storeys, `city:ring:${side}:${index}/building:${k}`);
+    const extent = footprint({ template, origin: [0, 0, 0], turn });
+    const origin = againstWall({ side, ...wall }, { y: groundedY(template, floor), at, extent });
+    placements.push(freezePlacement({ template, origin, turn }));
+    at += (alongX ? extent[0] : extent[1]) + grid.gap;
+  }
+};
+
+/** One row of buildings per side of the grid. */
+const fillRing = (context: FillContext, bounds: Rect, setback: number): Placement[] =>
+  SIDES.flatMap((side, sideIndex) => {
+    const cells = side.alongX ? context.grid.blocksX : context.grid.blocksZ;
+    return Array.from({ length: 2 * cells }, (_, n) =>
+      fillRingCell(context, { bounds, setback }, { ...side, sideIndex }, n - cells),
+    ).flat();
+  });
+
+/** Stands a wall dressing against the wall's inside face; `at` gives its position along the wall from its footprint. */
+const standAtWall = (
+  context: FillContext,
+  bounds: Rect,
+  side: Side,
+  { id, siteId, at }: { id: string; siteId: string; at: (extent: Extent) => number },
+): { placement: Placement; extent: Extent } => {
+  const template = context.compiled({ id }, 1, siteId);
+  const extent = footprint({ template, origin: [0, 0, 0], turn: side.turn });
+  const origin = againstWall(
+    { side: side.side, bounds, setback: 0 },
+    { y: groundedY(template, context.floor), at: at(extent), extent },
+  );
+  return { placement: freezePlacement({ template, origin, turn: side.turn }), extent };
+};
+
+/** Lining along one wall's inside face, leaving the gate's span clear on walls the gate stands in. */
+const liningPlacements = (
+  context: FillContext,
+  bounds: Rect,
+  side: Side,
+  { lining, gated }: { lining: NonNullable<Perimeter['lining']>; gated: boolean },
+): Placement[] => {
+  const [lo, hi] = side.alongX ? [bounds.x0, bounds.x1] : [bounds.z0, bounds.z1];
+  const extentAt = (k: number) =>
+    footprint({
+      template: context.compiled({ id: lining.assembly }, 1, `perimeter:${side.side}:${k}`),
+      origin: [0, 0, 0],
+      turn: side.turn,
+    });
+  const inset = extentAt(0)[side.alongX ? 1 : 0];
+  const placements: Placement[] = [];
+  for (let k = 0, at = lo + inset; ; k++, at += lining.pitch) {
+    const [fx, fz] = extentAt(k);
+    const along = side.alongX ? fx : fz;
+    if (at + along > hi - inset) {
+      return placements;
+    }
+    if (!(gated && at < context.grid.street && at + along > 0)) {
+      const siteId = `perimeter:${side.side}:${k}`;
+      placements.push(standAtWall(context, bounds, side, { id: lining.assembly, siteId, at: () => at }).placement);
+    }
+  }
+};
+
+/** The gate where the central street meets the wall, and the lining along each wall's inside face. */
+const wallPlacements = (context: FillContext, bounds: Rect, { gate, lining }: Perimeter): Placement[] => [
+  ...SIDES.filter(({ alongX }) => gate && alongX).map(
+    (side) =>
+      standAtWall(context, bounds, side, {
+        id: gate!.assembly,
+        siteId: `perimeter:gate:${side.side}`,
+        at: ([fx]) => Math.floor((context.grid.street - fx) / 2),
+      }).placement,
+  ),
+  ...(lining
+    ? SIDES.flatMap((side) =>
+        liningPlacements(context, bounds, side, { lining, gated: gate !== undefined && side.alongX }),
+      )
+    : []),
+];
+
 const streetPropPlacements = (context: FillContext, cells: Cell[], pitchX: number, pitchZ: number): Placement[] => {
-  const { grid, floor } = context;
+  const { grid, floor, registry, seed } = context;
   const props = grid.streetProps ?? [];
   return cells.flatMap(([i, j]) =>
-    props.map((id, index) =>
+    props.map((prop, index) =>
       freezePlacement({
-        template: context.compiled({ id }, 1),
+        template: context.compiled(
+          pickWeighted(streetPropChoices(registry, prop), Rng.stream(seed, `city:${i},${j}/street-prop:${index}`))!,
+          1,
+        ),
         turn: 0,
         origin: [i * pitchX, floor, j * pitchZ + grid.street + (grid.blockZ * (index + 1)) / (props.length + 1)].map(
           Math.floor,
         ) as Vec3,
       }),
     ),
+  );
+};
+
+const ringPlacements = (context: FillContext, bounds: Rect, scenario?: ScenarioDef): Placement[] => {
+  const { ring } = context.grid;
+  if (!ring) {
+    return [];
+  }
+  const ringContext: FillContext = {
+    ...context,
+    grid: { ...context.grid, templates: ring.templates, pool: ring.pool },
+    counts: new Map(),
+    forced: [],
+  };
+  return fillWithQuotas(
+    ringContext,
+    (forced) => {
+      ringContext.counts = new Map();
+      ringContext.forced = forced;
+      return fillRing(ringContext, bounds, ring.setback);
+    },
+    scenario ? `scenario:${scenario.id}:ring` : 'ring',
   );
 };
 
@@ -494,18 +880,20 @@ export const buildCityPlan = ({
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
   const spawn: Vec3 = [grid.street / 2, floor + 1, grid.street / 2];
-  const bounds = {
-    x0: -grid.blocksX * pitchX,
-    z0: -grid.blocksZ * pitchZ,
-    x1: grid.blocksX * pitchX + grid.street,
-    z1: grid.blocksZ * pitchZ + grid.street,
-  };
-  placements.push(...streetPropPlacements(context, cells, pitchX, pitchZ));
-  const structures = cityPerimeter(registry, grid, floor, bounds);
+  const core = cityCore(grid);
+  const bounds = cityBounds(grid);
+  const { perimeter } = grid;
+  placements.push(
+    ...ringPlacements(context, bounds, scenario),
+    ...streetPropPlacements(context, cells, pitchX, pitchZ),
+    ...(perimeter ? wallPlacements(context, bounds, perimeter) : []),
+  );
+  const structures = perimeter ? cityPerimeter(registry, perimeter, bounds, floor) : [];
   return Object.freeze({
     grid: freezeGrid(grid),
     floor,
     bounds: Object.freeze(bounds),
+    core: Object.freeze(core),
     structures: Object.freeze(
       structures.map((box) => {
         Object.freeze(box.min);

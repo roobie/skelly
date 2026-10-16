@@ -25,6 +25,10 @@
       "output": "deadvox/src/content/base/compression.json"
     },
     {
+      "source": "deadvox/src/content/base/furniture-playtest.jsonnet",
+      "output": "deadvox/src/content/base/furniture-playtest.json"
+    },
+    {
       "source": "deadvox/src/content/base/furniture.jsonnet",
       "output": "deadvox/src/content/base/furniture.json"
     },
@@ -63,6 +67,10 @@
     {
       "source": "deadvox/src/content/base/items-playtest.jsonnet",
       "output": "deadvox/src/content/base/items-playtest.json"
+    },
+    {
+      "source": "deadvox/src/content/base/items-revolver.jsonnet",
+      "output": "deadvox/src/content/base/items-revolver.json"
     },
     {
       "source": "deadvox/src/content/base/items-slice2-content.jsonnet",
@@ -131,6 +139,10 @@
     {
       "source": "deadvox/src/content/base/senses.jsonnet",
       "output": "deadvox/src/content/base/senses.json"
+    },
+    {
+      "source": "deadvox/src/content/base/sounds-revolver.jsonnet",
+      "output": "deadvox/src/content/base/sounds-revolver.json"
     },
     {
       "source": "deadvox/src/content/base/templates-cabins.jsonnet",

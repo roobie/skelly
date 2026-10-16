@@ -9,5 +9,8 @@ test-results/
 # Git worktrees for agents (see AGENTS.md).
 .claude/worktrees/
 
+# The lead's role skill: a symlink into the untracked team repo under .agent-mail/bin.
+.claude/skills/role-lead
+
 # Host-local mise settings (e.g. AGENT_MAIL_ROOT).
 mise.local.toml
