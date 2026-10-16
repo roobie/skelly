@@ -26,6 +26,7 @@ const own = buildRegistry([
           id: 'fixture_paper',
           name: 'Fixture paper',
           category: 'note',
+          stack: 2,
           weight: 5,
           size: [1, 1],
           economy: { usage: ['Residential'], tiers: ['Tier1'] },
@@ -197,7 +198,7 @@ it('discovers a designated paper only after a completed pickup into player owner
   const at: Vec3 = [8, 1, 8];
   const { session } = fixture(undefined, undefined, undefined, [at]);
   const { inventory, queue } = session;
-  const paper = inventory.create('fixture_paper');
+  const paper = inventory.create('fixture_paper', 2);
   const elsewhere: Vec3 = [9, 1, 8];
   expect(inventory.add(paper, { kind: 'pile', pos: elsewhere })).toBe(true);
   expect(queue.enqueue(paper, { kind: 'hand', side: 'right' }).ok).toBe(true);
@@ -206,10 +207,11 @@ it('discovers a designated paper only after a completed pickup into player owner
   expect(queue.enqueue(paper, { kind: 'pile', pos: at }).ok).toBe(true);
   expect(queue.tick(queue.remaining).failed).toEqual([]);
   expect(session.scenarioRun!.discovery.clueRead).toBeNull();
-  expect(queue.enqueue(paper, { kind: 'hand', side: 'right' }).ok).toBe(true);
+  expect(queue.enqueue(paper, { kind: 'hand', side: 'right' }, 1).ok).toBe(true);
   expect(session.scenarioRun!.discovery.clueRead).toBeNull();
   expect(queue.tick(queue.remaining).failed).toEqual([]);
-  expect(inventory.hands.right).toBe(paper);
+  expect(inventory.hands.right).toMatchObject({ type: paper.type, count: 1 });
+  expect(inventory.locate(paper)?.kind).toBe('pile');
   expect(session.scenarioRun!.discovery.clueRead).not.toBeNull();
   expect(session.scenarioRun!.firstFurnitureReadAtGameTimestamp).toBeNull();
 });

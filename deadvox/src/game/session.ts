@@ -785,10 +785,14 @@ export const createSession = (options: SessionOptions) => {
       } else if (move.from.kind === 'furniture') {
         source = move.from.entity.pos;
       }
+      const { target } = move;
+      const carriedPocket =
+        target.kind === 'pocket' && [...inventory.carriedTree()].some(({ item }) => item === target.owner);
+      const acquired = target.kind === 'hand' || target.kind === 'worn' || carriedPocket;
       if (
         source &&
         registry.items.get(move.item.type)?.readable &&
-        [...inventory.carriedTree()].some(({ item }) => item === move.item) &&
+        acquired &&
         options.discovery?.clues.some((at) => at.every((value, axis) => value === source[axis]))
       ) {
         scenarioRun?.discover('clueRead', sim.calendar);
