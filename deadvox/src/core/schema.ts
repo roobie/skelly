@@ -1719,6 +1719,19 @@ const ZombieSchema = strictObject({
       check(({ acid }) => acid.idle <= acid.windup, 'acid glow must not dim during the wind-up'),
     ),
   ),
+  /** Presentation-only acid: drool dripping from the jaw while alive and the sac bursting on death
+   * (`docs/acid-zombie.md`, "Model"). The simulation never reads it. */
+  acidEffects: optional(
+    strictObject({
+      color: Color,
+      drips: strictObject({ perSecond: NonNegative, sizeMetres: Positive }),
+      deathBurst: strictObject({
+        droplets: pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more')),
+        speedMetresPerSecond: Positive,
+        sizeMetres: Positive,
+      }),
+    }),
+  ),
   /** Mobgen figure seeds an individual of this type is drawn from. Every model but the amalgam, whose figure seed is fixed, defines them. */
   figureSeeds: optional(
     pipe(
@@ -2338,6 +2351,14 @@ const SECTION_DESCRIPTOR = {
         check(
           (types) => types.every(zombieAcidSpitMatchesAbility),
           'acidSpit tunables must match the acidSpit ability',
+        ),
+        check(
+          (types) => types.every((zombie) => zombie.model !== 'amalgam' || zombie.acidSpit === undefined),
+          'an amalgam has no jaw to spit acid from',
+        ),
+        check(
+          (types) => types.every((zombie) => zombie.model === 'acid' || zombie.acidEffects === undefined),
+          'only the acid model grows the sac that acidEffects drips and bursts from',
         ),
       ),
     ),

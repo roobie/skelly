@@ -522,6 +522,11 @@ local figureSeeds = std.range(1, 8);
       "name": "Acid zombie",
       "model": "acid",
       "glow": { "eye": 1.5, "acid": { "idle": 0.5, "windup": 2.5 } },
+      "acidEffects": {
+        "color": "#9ad21e",
+        "drips": { "perSecond": 1.5, "sizeMetres": 0.012 },
+        "deathBurst": { "droplets": 24, "speedMetresPerSecond": 3.5, "sizeMetres": 0.02 }
+      },
       "authoredOnly": true,
       "acidResistance": 1,
       "abilities": ["acidSpit"],

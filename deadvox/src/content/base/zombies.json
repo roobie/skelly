@@ -864,6 +864,18 @@
     },
     {
       "abilities": ["acidSpit"],
+      "acidEffects": {
+        "color": "#9ad21e",
+        "deathBurst": {
+          "droplets": 24,
+          "sizeMetres": 0.02,
+          "speedMetresPerSecond": 3.5
+        },
+        "drips": {
+          "perSecond": 1.5,
+          "sizeMetres": 0.012
+        }
+      },
       "acidResistance": 1,
       "acidSpit": {
         "cancelPenaltyFraction": 0.5,
