@@ -14,7 +14,7 @@ It is the first tier of an evolution line of acid enemies, and the line lives in
 
 ## Ability, not type
 
-`acidSpit` is a general ability component, not acid-zombie code. Any type that lists it in `abilities` spits, and its tunables live in that type's content: range band, wind-up, cooldown, spread, glob speed, hit moves and puddle. Later tiers of the line reuse it by data alone, with harder numbers. Validation rejects a type that lists `acidSpit` without its tunables, and tunables on a type that doesn't list it. See `DESIGN.md`, "Types are data"; `PILLARS.md`, "Content forward compatibility"; and `src/core/schema.ts`, `ZombieSchema` and `ZOMBIE_ABILITIES`.
+`acidSpit` is a general ability component, not acid-zombie code. Any type that lists it in `abilities` spits, and its tunables live in that type's content: range band, wind-up, cooldown, the cooldown fraction a cancel costs, spread, glob speed, hit moves and puddle. Later tiers of the line reuse it by data alone, with harder numbers. Validation rejects a type that lists `acidSpit` without its tunables, and tunables on a type that doesn't list it. See `DESIGN.md`, "Types are data"; `PILLARS.md`, "Content forward compatibility"; and `src/core/schema.ts`, `ZombieSchema` and `ZOMBIE_ABILITIES`.
 
 The spitter still has an ordinary `attack` for when the player reaches it. A spitter with no melee would make closing in risk-free, and the counter would collapse into "run up and hit it".
 
@@ -22,7 +22,7 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 **Telegraph before damage.** The spit has a wind-up the player can see and hear, like the amalgam's tentacle and every melee swing: the head pulls back, the chest sac glows brighter and a wet sound plays from the zombie's position. Without a telegraph, a ranged hit reads as random damage from off-screen. The wind-up sound is the type's attack sound. See `DESIGN.md`, "Amalgam body and damage", and `src/core/schema.ts`, `ZombieSchema`.
 
-**A hit during the wind-up cancels the spit.** This makes fighting back an answer in itself, which suits an enemy meant to harass rather than to kill.
+**A hit during the wind-up cancels the spit.** A cancelled spit costs part of the cooldown, as a fraction in content, because that fraction decides how often a harassing spitter can fire while the player fights back. Cancelling makes fighting back an answer in itself, which suits an enemy meant to harass rather than to kill.
 
 **Sight, not hearing, starts a spit.** A zombie spits only at a player it sees, from inside its range band and sight cone. Heard or remembered stimuli move it, as they move any zombie, but they never aim a spit, so breaking sight always stops the next one. See `src/core/zombies.ts`, `seesPlayer`.
 
@@ -62,7 +62,7 @@ These must all work, because each is the reason the fight reads as more than tra
 
 ## Spawning
 
-Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab level holds as many acid zombies as its number. Until BR confirms it under d369, "level" is read as storey depth: one on the first storey, two on the second, and so on down. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the rule needs a fixed per-storey count in that content. See `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so it never turns up in hamlets.
+Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab storey holds as many acid zombies as its depth: one on the intake storey, two on research, and so on down. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the rule needs a fixed per-storey count in that content. See `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so it never turns up in hamlets.
 
 ## Saves and determinism
 
