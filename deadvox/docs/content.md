@@ -91,17 +91,23 @@ alternatives, so one compiled buffer per storey count serves every building that
 it; only assemblies resolve per location. See `src/core/cityPlan.ts`, `buildCityPlan`
 and `templateCompiler`.
 
-A ref carries the style: a slot choice's `ref` or a map pool row's `ref` may name a map
-style, and every piece beneath it takes its palette from that style instead of its own.
-The whole building therefore shares one facade treatment, so floor and roof edges cannot
-become unrelated stripes, and a mod adds a style by adding a style definition and a pool
-row, with no new piece ids. The brick-to-concrete ratio is the weights of two rows of the
-same building and style; a mod changes the ratio by overriding the pool. An unknown style
-fails validation at the row's source path, and compiling a slot ref with one throws with
-the slot path. A style on a ref that is not an assembly is an issue too, because only an
-assembly's pieces resolve through it. See `src/core/schema.ts`, `KitRefSchema`,
-`PoolRefSchema` and `MapPoolSchema`; `src/core/templates.ts`, `compileKitRef`; and
-`src/core/cityPlan.ts`, `cityPoolIssues`. Decoration must stay outside reserved roof and street circulation:
+A slot may take its alternatives from a map pool instead of inline choices, so a mod
+changes one weight with a small pool override rather than re-authoring the assembly.
+Pool-sourced alternatives must preserve the same spatial contract as inline ones.
+Slot pools name pieces or assemblies and cannot carry city quotas: a single slot has
+no per-site count to satisfy. City pools name templates or assemblies instead. See
+`src/core/schema.ts`, `KitSlotSchema`, `PoolRefSchema` and `MapPoolSchema`;
+`src/core/templates.ts`, `kitSlotChoices` and `resolveSlot`; and `src/core/mapKit.ts`,
+`mapKitIssues`.
+
+A ref may carry a style, inherited by every piece beneath it so floor and roof edges
+share the facade treatment. Styles and pool rows can change the mix without new piece
+ids. Unknown styles fail validation and slot compilation retains the slot path.
+City template refs cannot carry styles because literal templates have no role palette;
+slot piece and assembly refs can. See `src/core/schema.ts`, `KitRefSchema`;
+`src/core/templates.ts`, `compileKitRef`; and `src/core/cityPlan.ts`, `cityPoolIssues`.
+
+Decoration must stay outside reserved roof and street circulation:
 tuning its frequency must not seal a ladder landing or entrance. The cellar street
 course keeps the street-side `=` footing solid so the yard and entrance stand on it, and
 leaves the interior to the floor piece (`gauntlet_city_floor_lower`, `floor_inside`
