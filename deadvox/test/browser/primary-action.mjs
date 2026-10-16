@@ -1598,7 +1598,8 @@ try {
   assert.deepEqual(first.swings[0], { result: true, profile: loadout.profile, hand: 'left' });
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), loadout.uid);
   await finishedSwing();
-  await page.evaluate(() => {
+  await page.evaluate(async (magazineUrl) => {
+    const { magazineWellCalibre } = await import(magazineUrl);
     const r = globalThis.primaryActionTest;
     const defs = [...r.inventory.registry.items.values()];
     const light = defs.find((def) => def.light && !def.twoHanded);
@@ -1622,13 +1623,13 @@ try {
           def.ammo
         ),
     );
-    const gun = defs.find((def) => def.firearm && !def.firearm.pump);
+    const gun = defs.find((def) => def.firearm && magazineWellCalibre(r.inventory.registry, def.id));
     if (!(light && tool && inert && gun)) {
       throw new Error('Missing hand-action fixture capabilities');
     }
     r.types = { light: light.id, tool: tool.id, profile: tool.weapon.melee.type, inert: inert.id, gun: gun.id };
     r.clearHand(r.dominant);
-  });
+  }, magazineModule);
   // Fixture creation and placement stay with Inventory, never its hand map.
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
