@@ -993,19 +993,21 @@ const checkRecipes = (registry: Registry, report: Report) => {
 };
 
 const checkKeys = (registry: Registry, report: Report) => {
-  const doorLocks = new Set(
-    [...registry.templates.values()].flatMap((template) => templateLockIds(registry, template)),
-  );
+  const sources = [
+    ...[...registry.templates.values()].map((definition) => ({ section: 'templates' as const, definition })),
+    ...[...registry.mapPieces.values()].map((definition) => ({ section: 'mapPieces' as const, definition })),
+  ];
+  const doorLocks = new Set(sources.flatMap(({ definition }) => templateLockIds(registry, definition)));
   const keyLocks = new Set([...registry.items.values()].flatMap((item) => (item.key ? [item.key.lock] : [])));
   for (const item of registry.items.values()) {
     if (item.key && !doorLocks.has(item.key.lock)) {
       report('items', item.id, '.key.lock', `no door has lock "${item.key.lock}"`);
     }
   }
-  for (const template of registry.templates.values()) {
-    for (const lock of new Set(templateLockIds(registry, template))) {
+  for (const { section, definition } of sources) {
+    for (const lock of new Set(templateLockIds(registry, definition))) {
       if (!keyLocks.has(lock)) {
-        report('templates', template.id, '.palette', `no key names lock "${lock}"`);
+        report(section, definition.id, '.palette', `no key names lock "${lock}"`);
       }
     }
   }

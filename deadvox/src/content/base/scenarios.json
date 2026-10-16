@@ -92,7 +92,7 @@
         },
         {
           "atLeast": 1,
-          "atMost": 2,
+          "atMost": 1,
           "ref": {
             "id": "gauntlet_police_station",
             "kind": "assembly"
