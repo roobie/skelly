@@ -6,6 +6,7 @@
         sidewaysSpeedScale: 0.7,
         backwardSpeedScale: 0.5,
       },
+      chestEyeFraction: 0.62,
       crouch: {
         speedMetresPerSimSecond: 1,
         hearingRangeScale: 0.5,

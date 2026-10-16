@@ -2011,6 +2011,8 @@ const SenseSchema = strictObject({
     sidewaysSpeedScale: Fraction,
     backwardSpeedScale: Fraction,
   }),
+  /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
+  chestEyeFraction: Fraction,
   crouch: strictObject({
     speedMetresPerSimSecond: SimRate,
     hearingRangeScale: Fraction,

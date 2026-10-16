@@ -91,10 +91,14 @@ describe('acid spit', () => {
 
     const heard = harness(() => sensed(PLAYER_POS, 'sprinting'), WALL);
     const hearing = spawn(heard);
+    const modes = new Set<string>();
     for (let frame = 0; frame < 300; frame++) {
       heard.system.tick(1 / 60);
+      modes.add(hearing.zombie.mode);
       expect(hearing.zombie.spitWindup).toBe(0);
     }
+    expect(modes).toContain('investigate');
+    expect(modes).not.toContain('chase');
     expect(heard.sounds).not.toContain(ACID.sounds.attack);
   });
 
@@ -147,6 +151,29 @@ describe('acid spit', () => {
     h.setSolid(WALL);
     frames(h.system, WIND_FRAMES);
     expect(h.releases).toHaveLength(0);
+    expect(zombie.spitWait).toBe(0);
+  });
+
+  it('lets low cover that clears a standing chest block a crouched one, so a crouched player draws no spit', () => {
+    const level: Vec3 = [0, 1, 0];
+    const lowCover: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === Math.floor(inBand / 2) && y === 2);
+    const stance = (crouching: boolean) => () => ({
+      ...sensed(level),
+      crouching,
+      eyeHeightMetres: PLAYER.eye - (crouching ? TEST_SENSE_TUNING.crouch.eyeDropMetres : 0),
+    });
+
+    const standing = harness(stance(false), lowCover);
+    spawn(standing);
+    frames(standing.system, WIND_FRAMES + 5);
+    expect(standing.releases).toHaveLength(1);
+
+    const crouched = harness(stance(true), lowCover);
+    const { zombie } = spawn(crouched);
+    frames(crouched.system, 10);
+    expect(zombie.spitWindup).toBeGreaterThan(0);
+    frames(crouched.system, WIND_FRAMES);
+    expect(crouched.releases).toHaveLength(0);
     expect(zombie.spitWait).toBe(0);
   });
 

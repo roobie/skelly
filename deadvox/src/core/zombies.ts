@@ -822,13 +822,16 @@ const spitOrigin = (zombiePos: Vec3, blockSize: number): Vec3 => [
   zombiePos[2],
 ];
 
+/** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
+const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
+  const metres =
+    player.eyeHeightMetres === undefined ? PLAYER_CHEST_METRES : player.eyeHeightMetres * tuning.chestEyeFraction;
+  return [player.pos[0], player.pos[1] + metres / blockSize, player.pos[2]];
+};
+
 /** The mouth-to-chest line at release, by the same rule as a melee strike. */
-const spitLineClear = ({ zombiePos, playerPos, blockSize, isSolid }: Omit<AttackReachProbe, 'zombie'>): boolean =>
-  clearLine(
-    spitOrigin(zombiePos, blockSize),
-    [playerPos[0], playerPos[1] + PLAYER_CHEST_METRES / blockSize, playerPos[2]],
-    isSolid,
-  );
+const spitLineClear = (zombiePos: Vec3, chest: Vec3, blockSize: number, isSolid: SolidAt): boolean =>
+  clearLine(spitOrigin(zombiePos, blockSize), chest, isSolid);
 
 /** What a released spit hands the simulation: the glob's start, its seeded direction and the hit moves it carries. */
 export interface AcidSpitRelease {
@@ -2915,12 +2918,12 @@ export class ZombieSystem {
       if (zombie.spitWindup > 0) {
         return;
       }
-      if (!spitLineClear({ zombiePos: pos, playerPos: player.pos, blockSize, isSolid })) {
+      const chest = spitChest(player, this.options.tuning, blockSize);
+      if (!spitLineClear(pos, chest, blockSize, isSolid)) {
         return;
       }
       zombie.spitWait = spit.cooldownSimSeconds;
       const origin = spitOrigin(pos, blockSize);
-      const chest: Vec3 = [player.pos[0], player.pos[1] + PLAYER_CHEST_METRES / blockSize, player.pos[2]];
       const spread = (zombie.spitRng.range(-1, 1) * spit.spreadDegrees * Math.PI) / 180;
       const toPlayer = sub(chest, origin);
       const heading = headingAt(angleOf(toPlayer) + spread);
