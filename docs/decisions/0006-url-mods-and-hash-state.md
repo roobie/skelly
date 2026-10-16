@@ -115,15 +115,16 @@ once at startup. Its bounds:
 - A byte limit in trusted startup configuration under `deadvox/src/config`, like the
   browser-mod intake limit, checked before parsing.
 - A fixed nesting depth, and keys and value types checked against one schema.
-- An unknown key or a value of the wrong type is a visible startup error naming the key.
-  A typo must not silently produce a different view.
+- An unknown key or a value of the wrong type is reported, naming the key, as Question 8
+  decides.
 
 Keys are of two kinds. **Start keys** (the seed, if Question 1 puts it here, radius,
 actors, decals, debug) apply at page load, and changing them reloads the page. **Live
 keys** (camera, look switches, weathering tuning, interaction ray) apply on a
 `hashchange` without reloading.
 
-Write-back moves from the query to the hash, and Question 6 decides which keys it covers.
+Any write-back moves from the query to the hash, and Question 6 decides which keys it
+covers.
 Whatever it writes goes through `history.replaceState` with the throttling and change
 thresholds the camera already uses, so moving the camera or a slider never adds history
 entries. Write-back keeps every other key as given and writes keys in a fixed order, so
@@ -201,16 +202,23 @@ adding a browser stage.
    that are gated on debug read it from the hash. `deadvox/src/game/tutorial.ts`,
    `tutorialUrl`, carries radius and actors in the hash instead of clearing it.
    `deadvox/test/browser/gauntlet-flow.mjs` and `deadvox/test/browser/save-storage.mjs`
-   drop route-fixture and save-lock-holder, which nothing in the game reads.
+   drop route-fixture and save-lock-holder, which nothing in the game reads. Under
+   Question 1b the seed moves to the hash here, and under Question 11b so do the bench
+   parameters, each with the scripts and the New world link that use it.
 3. **Debug presets to demo mods.** Loadouts, wounds, skill levels, the debug backpack, site,
    time, storeys, density and the weathering profile leave the query for demo mods, with
    the playtest publisher and CI workflows that use them. The voice-size probe in
    `deadvox/src/game/shamblerAudio.ts` gates on the started layout instead of the site
-   parameter.
+   parameter. `deadvox/src/game/tutorial.ts` stops detecting the tutorial through
+   `site=tutorial`: under Question 7a the tutorial becomes a bundled mod and is detected
+   from the loaded start row, and under Question 7b it gets its own query switch. Under
+   Question 1a or 1c the seed moves into the start row here, with the hash override under
+   1a; under Question 11c the bench scenarios become demo mods here.
 4. **Player options and rejection.** Handedness and graphics leave the URL. Kept separate
-   because it adds options UI, which slices 1 to 3 do not need. With every moved
-   parameter gone, the entry starts rejecting unknown parameters as "Where each parameter
-   goes" describes.
+   because it adds options UI, which slices 1 to 3 do not need. The entry starts
+   rejecting unknown parameters as "Where each parameter goes" describes only once every
+   parameter this ADR or a BR answer moves has left the query, with the scripts that use
+   it.
 
 If Question 9 reorders the slices, the rejection still lands in whichever slice is last.
 
