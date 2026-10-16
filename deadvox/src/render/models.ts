@@ -170,7 +170,7 @@ export class ModelLibrary {
       loader.load(
         url,
         (gltf) => {
-          const actionParts = actionPartPaths(gltf.scene, def.action, gltf.parser);
+          const actionParts = actionPartPaths(gltf.scene, def.action, gltf.parser, def.revolver);
           hideSlotNodes(def, gltf.scene, gltf.parser);
           this.ready.set(def.id, { ...prepareModel(def, gltf.scene), actionParts });
           this.version += 1;

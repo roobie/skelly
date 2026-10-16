@@ -838,7 +838,12 @@ export const createSession = (options: SessionOptions) => {
         const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'hit');
         character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
       }
-      // Other firearms' shot sounds are the player's presentation cue (play.ts, `firearmShotSound`).
+      if (firearm.firearm?.cylinder) {
+        playPlayerSound(registry.items.get(firearm.type)!.firearm!.shotSound, time, {
+          sourceLabel: registry.items.get(firearm.type)!.name,
+          noiseRadiusScale: firearms.noiseFactorFor(firearm),
+        });
+      }
       if (registry.items.get(firearm.type)?.firearm?.pump) {
         playPlayerSound('shotgun_blast', time, {
           sourceLabel: 'pump shotgun',

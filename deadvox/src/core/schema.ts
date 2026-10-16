@@ -329,6 +329,27 @@ const MeleeClassSchema = strictObject({
   speedMultiplier: Positive,
 });
 
+const RoundFeedPoseSchema = pipe(
+  strictObject({
+    pickupEnd: NonNegative,
+    approachEnd: NonNegative,
+    thumbEnd: NonNegative,
+    pickupSide: NonNegative,
+    pickupBelow: NonNegative,
+    pickupBack: NonNegative,
+    palmBelow: NonNegative,
+    palmBack: NonNegative,
+    thumbLift: NonNegative,
+    thumbTravel: NonNegative,
+  }),
+  check(
+    (pose) =>
+      pose.pickupEnd > 0 && pose.pickupEnd < pose.approachEnd && pose.approachEnd < pose.thumbEnd && pose.thumbEnd < 1,
+    'feed phases must increase strictly between zero and one',
+  ),
+);
+export type RoundFeedPoseTuning = InferOutput<typeof RoundFeedPoseSchema>;
+
 // A pump feeds item-owned shells from its exported tube; other firearms feed from a fitted magazine (`magazineWellCalibre`).
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
@@ -343,6 +364,20 @@ const FirearmSchema = strictObject({
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
   /** Reload handling times at skill 0, before the firearms skill's reload factor. */
+  revolver: optional(
+    strictObject({
+      doubleActionPullSimSeconds: PositiveSimSeconds,
+      doubleActionDispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
+      recoverySimSeconds: PositiveSimSeconds,
+      openSimSeconds: PositiveSimSeconds,
+      ejectSimSeconds: PositiveSimSeconds,
+      pickSimSeconds: PositiveSimSeconds,
+      loadSimSeconds: PositiveSimSeconds,
+      loadPose: RoundFeedPoseSchema,
+      closeSimSeconds: PositiveSimSeconds,
+      cockSimSeconds: PositiveSimSeconds,
+    }),
+  ),
   handling: strictObject({
     /** One shell into the tube; required for a pump. */
     shellLoadSimSeconds: optional(PositiveSimSeconds),

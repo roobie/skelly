@@ -32,8 +32,18 @@ interface FirearmLanding {
   seed: number;
 }
 
+type CylinderChamber = { state: 'empty' | 'case' } | { state: 'round'; roundType: string };
+
+export interface CylinderState {
+  chambers: CylinderChamber[];
+  aligned: number;
+  open: boolean;
+  cocked: boolean;
+}
+
 export interface FirearmState {
-  chamber: 'empty' | 'round' | 'case';
+  chamber?: 'empty' | 'round' | 'case';
+  cylinder?: CylinderState;
   /** The chambered cartridge's item type, present exactly when the chamber holds a round. */
   roundType?: string | undefined;
   /** A pump's tube: cartridge item types in feed order. Magazine-fed firearms feed from their magazine slot. */
@@ -47,9 +57,10 @@ export interface FirearmState {
 
 /** No live state is advanced or cancelled by a snapshot. */
 export const snapshotFirearm = (state: FirearmState): FirearmState => {
-  const { chamber, roundType, tube, landings, pendingCase, cycle, readying } = state;
+  const { chamber, cylinder, roundType, tube, landings, pendingCase, cycle, readying } = state;
   return {
-    chamber,
+    ...(chamber === undefined ? {} : { chamber }),
+    ...(cylinder === undefined ? {} : { cylinder: structuredClone(cylinder) }),
     ...(roundType === undefined ? {} : { roundType }),
     ...(tube === undefined ? {} : { tube: [...tube] }),
     ...(landings === undefined ? {} : { landings: structuredClone(landings) }),
@@ -98,9 +109,48 @@ const assertCycleState = (cycle: FirearmCycleState | undefined): void => {
   }
 };
 
+const assertCylinderState = (state: FirearmState): void => {
+  const cylinder = state.cylinder!;
+  if (
+    state.chamber !== undefined ||
+    state.roundType !== undefined ||
+    state.tube !== undefined ||
+    state.pendingCase !== undefined ||
+    state.cycle !== undefined
+  ) {
+    throw new Error('Cylinder has competing ammunition owners');
+  }
+  if (
+    !Array.isArray(cylinder.chambers) ||
+    cylinder.chambers.length === 0 ||
+    cylinder.chambers.length > 64 ||
+    !Number.isInteger(cylinder.aligned) ||
+    cylinder.aligned < 0 ||
+    cylinder.aligned >= cylinder.chambers.length ||
+    typeof cylinder.open !== 'boolean' ||
+    typeof cylinder.cocked !== 'boolean' ||
+    (cylinder.open && cylinder.cocked)
+  ) {
+    throw new Error('Invalid firearm cylinder');
+  }
+  for (const chamber of cylinder.chambers) {
+    if (!(chamber && ['empty', 'case', 'round'].includes(chamber.state))) {
+      throw new Error('Invalid cylinder chamber');
+    }
+    if (
+      chamber.state === 'round' ? typeof chamber.roundType !== 'string' || !chamber.roundType : 'roundType' in chamber
+    ) {
+      throw new Error('Invalid cylinder cartridge');
+    }
+  }
+};
+
 /** Coupled chamber/cycle constraints shared by direct inventory restore and save decoding. */
 export const assertFirearmState = (state: FirearmState): void => {
-  if (!['empty', 'round', 'case'].includes(state.chamber)) {
+  const { cylinder } = state;
+  if (cylinder) {
+    assertCylinderState(state);
+  } else if (!['empty', 'round', 'case'].includes(state.chamber!)) {
     throw new Error('Invalid firearm chamber');
   }
   if ((state.chamber === 'case') !== (state.pendingCase !== undefined)) {

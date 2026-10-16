@@ -39,6 +39,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.ammo.loadSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.ammo.stripSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.firearm.handling.shellLoadSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  ...['close', 'cock', 'doubleActionPull', 'eject', 'load', 'open', 'pick', 'recovery'].map((step) => ({
+    path: `items.firearm.revolver.${step}SimSeconds`,
+    clock: 'Sim' as const,
+    unit: 'Seconds' as const,
+    dimension: 'duration' as const,
+  })),
   { path: 'items.firearm.handling.magazine.removeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.firearm.handling.magazine.insertSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.light.burnTimeGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
