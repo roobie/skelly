@@ -3,7 +3,8 @@
     {
       "id": "sample_note",
       "name": "Placeholder note",
-      "category": "book",
+      "category": "note",
+      "model": "paper_sheet",
       "weight": 5,
       "size": [1, 1],
       "description": "A clearly marked prototype reading sample, not playtest lore.",

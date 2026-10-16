@@ -876,6 +876,30 @@ function validateVersion(version: SaveVersionComponents): void {
   }
 }
 
+export function contentPackDifferences(
+  saved: SaveVersionComponents['contentPacks'],
+  running: SaveVersionComponents['contentPacks'],
+): string[] {
+  const differences: string[] = [];
+  for (const pack of saved) {
+    const loaded = running.find(({ id }) => id === pack.id);
+    if (!loaded) {
+      differences.push(`Missing mod: ${pack.id}`);
+    } else if (loaded.version !== pack.version || loaded.canonicalHash !== pack.canonicalHash) {
+      differences.push(`Different mod: ${pack.id}`);
+    }
+  }
+  for (const pack of running) {
+    if (!saved.some(({ id }) => id === pack.id)) {
+      differences.push(`Additional mod: ${pack.id}`);
+    }
+  }
+  if (differences.length === 0 && saved.some((pack, index) => pack.id !== running[index]?.id)) {
+    differences.push('Different mod order');
+  }
+  return differences;
+}
+
 function versionDifferences(saved: SaveVersionComponents, running: SaveVersionComponents): string[] {
   const differences: string[] = [];
   if (saved.simulationHash !== running.simulationHash) {
@@ -890,10 +914,8 @@ function versionDifferences(saved: SaveVersionComponents, running: SaveVersionCo
     differences.push(`generator versions differ for ${changedGenerators.join(', ')}`);
   }
   if (canonicalStringify(saved.contentPacks) !== canonicalStringify(running.contentPacks)) {
-    const describePacks = (packs: SaveVersionComponents['contentPacks']) =>
-      packs.map((pack) => `${pack.id}@${pack.version}#${pack.canonicalHash}`).join(', ');
     differences.push(
-      `content packs differ (saved [${describePacks(saved.contentPacks)}], running [${describePacks(running.contentPacks)}])`,
+      `content packs differ: ${contentPackDifferences(saved.contentPacks, running.contentPacks).join('; ')}`,
     );
   }
   if (differences.length === 0) {
@@ -931,8 +953,13 @@ export interface ActiveBundledMod {
   data: unknown;
 }
 
+export interface ActiveBrowserMod extends ActiveBundledMod {
+  version: string;
+}
+
 export async function currentSaveVersionIdentity(
   bundledMods: readonly ActiveBundledMod[] = [],
+  browserMods: readonly ActiveBrowserMod[] = [],
 ): Promise<SaveVersionIdentity> {
   const components = structuredClone(defaultVersion());
   const packs = await Promise.all(
@@ -944,7 +971,14 @@ export async function currentSaveVersionIdentity(
         canonicalHash: await sha256(canonicalBytes(mod.data)),
       })),
   );
-  components.contentPacks.push(...packs);
+  const browserPacks = await Promise.all(
+    browserMods.map(async (mod) => ({
+      id: `browser.${mod.id}`,
+      version: mod.version,
+      canonicalHash: await sha256(canonicalBytes(mod.data)),
+    })),
+  );
+  components.contentPacks.push(...packs, ...browserPacks);
   validateVersion(components);
   return {
     digest: await versionDigest(components),

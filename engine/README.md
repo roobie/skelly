@@ -17,4 +17,4 @@ Assemblies are graphs rather than trees because one part may need to fit against
 
 Engine's consumer-facing checks live in Gungen's test suite because exercising the shared package through its consumer verifies the boundary in use. The import and domain-neutrality guard is `gungen/test/engineImportBoundary.test.ts`, "engine import boundary".
 
-Revolute `PartMotion` remains deferred, not rejected: bolt-handle lift and FAL handle fold are tracked by #648.
+A motion may turn about a local pivot before translating so consumers can describe coupled rotation and travel without putting domain-specific action phases in the engine. See `src/core/schema.ts`, `PartMotion`, and `src/core/motion.ts`, `motionTransform`. FAL handle fold remains deferred under #648.

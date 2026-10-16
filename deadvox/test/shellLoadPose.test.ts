@@ -29,7 +29,7 @@ it('the physical support hand feeds a shell toward the port from the load job cl
   const ammo = definitions.find((definition) => definition.ammo?.calibre === sourceModel?.calibre && definition.model);
   const carrier = definitions.find((definition) => definition.wearable?.slot === 'back' && definition.container);
   const figure = [...registry.figures.values()].find((definition) => definition.palette);
-  if (!(pump && sourceModel?.action && sourceModel.tube && ammo && carrier && figure)) {
+  if (!(pump && sourceModel?.action && sourceModel.internalMagazine && ammo && carrier && figure)) {
     throw new Error('Missing load-pose fixture capabilities');
   }
   const model = structuredClone(sourceModel);

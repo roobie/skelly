@@ -33,6 +33,7 @@ import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
@@ -182,6 +183,7 @@ const ITEM_CATEGORIES = [
   'ammo',
   'material',
   'book',
+  'note',
   'misc',
 ] as const;
 
@@ -658,10 +660,17 @@ const ActionCycleSchema = pipe(
     rearwardSimSeconds: PositiveSimSeconds,
     dwellSimSeconds: SimSeconds,
     forwardSimSeconds: PositiveSimSeconds,
+    unlockSimSeconds: optional(PositiveSimSeconds),
+    lockSimSeconds: optional(PositiveSimSeconds),
   }),
   check(
     (cycle) =>
-      cycle.rearwardSimSeconds + cycle.dwellSimSeconds + cycle.forwardSimSeconds <= cycle.durationSimSeconds + 1e-9,
+      (cycle.unlockSimSeconds ?? 0) +
+        cycle.rearwardSimSeconds +
+        cycle.dwellSimSeconds +
+        cycle.forwardSimSeconds +
+        (cycle.lockSimSeconds ?? 0) <=
+      cycle.durationSimSeconds + 1e-9,
     'cycle phases must fit within durationSimSeconds',
   ),
 );
@@ -671,6 +680,16 @@ const ActionPartSchema = strictObject({
   node: pipe(string(), nonEmpty('must not be empty')),
   axis: UnitVector,
   strokeMetres: Positive,
+  turn: optional(
+    strictObject({
+      pivot: Point,
+      axis: UnitVector,
+      angleRadians: pipe(
+        number(),
+        check((angle) => angle !== 0, 'turn angle must not be zero'),
+      ),
+    }),
+  ),
   /** References shared timelines; modes not listed keep this node at home. */
   modes: pipe(
     array(picklist(['fire', 'hand'])),
@@ -697,6 +716,17 @@ const ActionSchema = pipe(
   check(
     (action) => Object.values(action.parts).every((part) => part.modes.every((mode) => action[mode] !== undefined)),
     'moving part modes must reference a declared timeline',
+  ),
+  check(
+    (action) =>
+      Object.values(action.parts).every(
+        (part) =>
+          !part.turn ||
+          part.modes.every(
+            (mode) => action[mode]?.unlockSimSeconds !== undefined && action[mode]?.lockSimSeconds !== undefined,
+          ),
+      ),
+    'turning parts need unlock and lock phases in every referenced timeline',
   ),
   check(
     (action) => (action.fire === undefined) === (action.roundsPerSimMinute === undefined),
@@ -881,8 +911,8 @@ const ModelSchema = pipe(
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
     capacity: optional(MagazineCapacity),
-    /** Integral tube, loaded singly through anchors.loading_port; no box round-pose column. */
-    tube: optional(strictObject({ capacity: MagazineCapacity })),
+    /** Integral magazine, loaded singly through anchors.loading_port; no box round-pose column. */
+    internalMagazine: optional(strictObject({ capacity: MagazineCapacity })),
     rounds: optional(array(MagazineRoundSchema)),
     /**
      * Where the hand holds it, and how it's turned there (degrees about x, y and z, in
@@ -953,10 +983,10 @@ const ModelSchema = pipe(
     'optic sight metadata needs an ocular opening diameter',
   ),
   check(
-    ({ tube, calibre, anchors, capacity, rounds }) =>
-      tube === undefined ||
+    ({ internalMagazine, calibre, anchors, capacity, rounds }) =>
+      internalMagazine === undefined ||
       (calibre !== undefined && anchors?.loading_port !== undefined && capacity === undefined && rounds === undefined),
-    'tube metadata needs calibre/loading_port and cannot carry a box round column',
+    'internal magazine metadata needs calibre/loading_port and cannot carry a box round column',
   ),
 );
 
@@ -1147,6 +1177,36 @@ const OwnershipSchema = strictObject({
   /** '.' leaves terrain alone, S claims occupancy, A excavates, R reserves empty circulation. */
   layers: array(array(pipe(string(), regex(/^[.SAR]*$/)))),
 });
+const DecalVariantSchema = strictObject({
+  sizeMetres: tuple([Positive, Positive]),
+  color: Color,
+  agedColor: Color,
+  opacity: Fraction,
+  agedOpacity: Fraction,
+  ageingGameHours: PositiveGameHours,
+  noiseScale: Positive,
+  edgeRaggedness: Fraction,
+  /** Normalized line segments, each [x0, y0, x1, y1, width]. */
+  strokes: pipe(
+    array(
+      pipe(
+        tuple([Fraction, Fraction, Fraction, Fraction, Fraction]),
+        check(([x0, y0, x1, y1, width]) => width > 0 && (x0 !== x1 || y0 !== y1), 'needs a nonzero stroke'),
+      ),
+    ),
+    maxLength(64),
+  ),
+});
+export const DecalSchema = strictObject({
+  kind: picklist(Object.keys(DECAL_KINDS) as DecalKind[]),
+  at: tuple([number(), number(), number()]),
+  door: optional(tuple([number(), number(), number()])),
+  normal: picklist(['n', 'e', 's', 'w', 'up', 'down']),
+  rotation: number(),
+  variants: pipe(array(DecalVariantSchema), nonEmpty(), maxLength(32)),
+});
+export type DecalDef = InferOutput<typeof DecalSchema>;
+
 const TemplateSchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
@@ -1158,6 +1218,7 @@ const TemplateSchema = strictObject({
   palette: record(Char, union([Id, PaletteThingSchema])),
   /** Layers from the bottom up; each is rows along z of characters along x. */
   layers: array(array(string())),
+  decals: optional(pipe(array(DecalSchema), maxLength(128))),
   /** Explicit floors and flights, never stress-test repetitions. Floor heights are feet heights in blocks. */
   access: optional(TemplateAccessSchema),
   ownership: optional(OwnershipSchema),
@@ -1194,6 +1255,7 @@ const MapPieceSchema = strictObject({
   style: Id,
   palette: record(Char, union([strictObject({ role: MaterialRole, material: Id }), PaletteThingSchema])),
   layers: array(array(string())),
+  decals: optional(pipe(array(DecalSchema), maxLength(128))),
   ownership: OwnershipSchema,
   anchors: record(Id, KitAnchorSchema),
   ports: array(KitPortSchema),
@@ -1389,13 +1451,18 @@ const MapPoolSchema = strictObject({
 const ScenarioSchema = strictObject({
   id: Id,
   kind: literal('gauntlet'),
+  outbreakAgeGameHours: PositiveGameHours,
+  decalLimit: pipe(Count, maxValue(4096)),
   body: Id,
   compression: Id,
   serviceTemplate: Id,
   composition: optional(
     strictObject({
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
-      leads: tuple([Id, Id]),
+      leads: tuple([
+        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
+        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
+      ]),
       landmarks: tuple([Id, Id]),
       incidentalTemplates: pipe(array(Id), minLength(1), maxLength(32)),
       objective: CellPosition,

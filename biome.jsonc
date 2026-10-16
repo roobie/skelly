@@ -1,4 +1,4 @@
-// Repo-wide lint and format config. Pillar (README.md): as much static analysis and
+// Repo-wide lint and format config. Pillar (PILLARS.md): as much static analysis and
 // as strict formatting as the tools allow. Every stable rule is on as an error; each
 // opt-out below says why. Nursery (unstable) rules are left out.
 {

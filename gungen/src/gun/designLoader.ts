@@ -1,9 +1,10 @@
 import type { Design, DesignIssue, DesignLoadResult } from '@skelly/engine/core/design.ts';
 import type { DesignLoadInputs } from '@skelly/engine/core/designLoader.ts';
 import { loadDesign, loadDesignValue } from '@skelly/engine/core/designLoader.ts';
-import { describeValue } from '@skelly/engine/core/parseAssembly.ts';
+import { describeValue, parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
 import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import type { Template } from '@skelly/engine/core/template.ts';
+import { boltCalibreIssue, isBoltAssembly, withBoltCalibre } from './boltCartridge.ts';
 import { gunDomain } from './domain.ts';
 import { GUN_FINISH_SLOTS, GUN_PALETTE } from './palette.ts';
 import { GUN_PREFABS } from './prefabs.ts';
@@ -36,6 +37,10 @@ const calibreIssues = (
 ): readonly DesignIssue[] => {
   if (calibre === undefined) {
     return [];
+  }
+  if (isBoltAssembly(design.assembly)) {
+    const message = boltCalibreIssue(calibre);
+    return message ? [{ code: 'template-choice', path: 'calibre', message }] : [];
   }
   const mappings = template.variantParams ?? [];
   if (mappings.length === 0) {
@@ -111,7 +116,10 @@ export const loadGunDesignValue = (
   },
 ): GunDesignLoadResult => {
   const calibre = isRecord(raw) && typeof raw.calibre === 'string' ? raw.calibre : undefined;
-  const loaded = loadDesignValue(raw, {
+  const parsed = isRecord(raw) && isRecord(raw.assembly) ? parseAssemblyJson(JSON.stringify(raw.assembly)) : undefined;
+  const calibrated =
+    parsed?.ok && isRecord(raw) ? { ...raw, assembly: withBoltCalibre(parsed.assembly, calibre) } : raw;
+  const loaded = loadDesignValue(calibrated, {
     ...inputs,
     validateDesign: (candidate, resolved) => calibreIssues(calibre, candidate, inputs.template, resolved),
   });

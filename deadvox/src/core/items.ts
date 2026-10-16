@@ -440,7 +440,11 @@ const assertAmmunition = (registry: Registry, type: string, state: FirearmState)
     return;
   }
   const model = def.model ? registry.models.get(def.model) : undefined;
-  if (!(state.tube && model?.tube) || state.tube.length > model.tube.capacity || state.cycle?.mode === 'fire') {
+  if (
+    !(state.tube && model?.internalMagazine) ||
+    state.tube.length > model.internalMagazine.capacity ||
+    state.cycle?.mode === 'fire'
+  ) {
     throw new Error('Invalid exported pump tube state');
   }
   if ((state.chamber === 'round') !== (state.roundType !== undefined)) {

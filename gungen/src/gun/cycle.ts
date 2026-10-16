@@ -91,6 +91,9 @@ export interface CycleTimeline {
   readonly rearwardSeconds: number;
   readonly dwellSeconds: number;
   readonly forwardSeconds: number;
+  readonly unlockSeconds?: number;
+  readonly lockSeconds?: number;
+  readonly turnAt?: (seconds: number) => number;
   readonly ejectAt: number;
   readonly ejectDirection: Vec3;
   readonly holdOpenOnEmpty: boolean;
@@ -195,6 +198,68 @@ export interface AutomaticCycleMotion extends CycleMotion {
 
 /** Manual pump tuning estimates: both legs are hand-driven, not a gas stroke or spring return. */
 const PUMP_HAND_TIMING = { rearwardSeconds: 0.5, dwellSeconds: 0.15, forwardSeconds: 0.5, restSeconds: 0.35 };
+
+/** Visual hand timing estimates, including lifting and closing the turn bolt. */
+const BOLT_HAND_TIMING = {
+  unlockSeconds: 0.25,
+  rearwardSeconds: 0.45,
+  dwellSeconds: 0.15,
+  forwardSeconds: 0.45,
+  lockSeconds: 0.25,
+  restSeconds: 0.35,
+};
+
+export const boltCycleMotion = (motion: PartMotion, metresPerUnit: number, ejectAt: number): CycleMotion => {
+  const { unlockSeconds, rearwardSeconds, dwellSeconds, forwardSeconds, lockSeconds, restSeconds } = BOLT_HAND_TIMING;
+  const strokeUnits = length(sub(motion.end, motion.start));
+  if (!(strokeUnits > 0 && metresPerUnit > 0 && ejectAt > 0 && ejectAt < 1)) {
+    throw new Error('Bolt stroke must clear the ejection port');
+  }
+  const drawEnd = unlockSeconds + rearwardSeconds;
+  const pushStart = drawEnd + dwellSeconds;
+  const pushEnd = pushStart + forwardSeconds;
+  const durationSeconds = pushEnd + lockSeconds + restSeconds;
+  const ejectDirection = unit([0.12, 0.24, 0.96]);
+  const timeAt = (seconds: number) => ((seconds % durationSeconds) + durationSeconds) % durationSeconds;
+  return {
+    strokeUnits,
+    strokeMetres: strokeUnits * metresPerUnit,
+    ejectAt,
+    ejectDirection,
+    holdOpenOnEmpty: false,
+    hand: {
+      mode: 'hand',
+      durationSeconds,
+      unlockSeconds,
+      rearwardSeconds,
+      dwellSeconds,
+      forwardSeconds,
+      lockSeconds,
+      ejectAt,
+      ejectDirection,
+      holdOpenOnEmpty: false,
+      at: (seconds) => {
+        const time = timeAt(seconds);
+        if (time < unlockSeconds) {
+          return 0;
+        }
+        if (time < drawEnd) {
+          return minimumJerk((time - unlockSeconds) / rearwardSeconds);
+        }
+        if (time < pushStart) {
+          return 1;
+        }
+        return 1 - minimumJerk((time - pushStart) / forwardSeconds);
+      },
+      turnAt: (seconds) => {
+        const time = timeAt(seconds);
+        return time < unlockSeconds
+          ? minimumJerk(time / unlockSeconds)
+          : 1 - minimumJerk((time - pushEnd) / lockSeconds);
+      },
+    },
+  };
+};
 
 export const pumpCycleMotion = (motion: PartMotion, metresPerUnit: number): CycleMotion => {
   const strokeUnits = length(sub(motion.end, motion.start));

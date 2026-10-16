@@ -52,6 +52,7 @@ const authoredLayoutIds = () =>
     .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
 
 const intentionallyUnofferedDeadvoxParams = {
+  decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',
   mods: 'An opt-in browser-mod preview pending save identity in #633, not a launcher option.',
   skyRoute:
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',

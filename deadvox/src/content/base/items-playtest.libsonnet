@@ -20,7 +20,8 @@
     {
       "id": "evacuation_note",
       "name": "Folded evacuation note",
-      "category": "book",
+      "category": "note",
+      "model": "folded_note",
       "weight": 5,
       "size": [1, 1],
       "description": "A folded note from the kitchen; readable in hand.",
@@ -35,6 +36,7 @@
       "category": "book",
       "weight": 350,
       "size": [2, 2],
+      "model": "notebook",
       "readable": {
         "title": "Hunter's logbook",
         "text": "The deer ran straight at the fence instead of away from us. The dogs won't go near the creek. Something is wrong with the animals. Mike says his place down the ridge road has fuel and a radio. I'm heading there at first light."
@@ -55,6 +57,7 @@
       "category": "book",
       "weight": 5,
       "size": [1, 1],
+      "model": "notebook",
       "readable": {
         "title": "Sampling intake log",
         "text": "The community hall became a temporary viral-sampling site after the first fever cases. We record each swab and compare the progression of symptoms; there is no treatment protocol yet. The military camp sends the sealed kits and replacement supplies. Keep the ward notes with the samples."

@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you dispatch, build, review or merge a change and need its steps
+  - you dispatch, build, review or merge a change and need its steps or merge checks
   - you create or maintain a slice checklist, including surveys and milestone records
   - you record a decision by BR and need to know where it goes
   - you plan refactoring, a maintainability survey or a slice retrospective
@@ -31,7 +31,7 @@ This document owns roles, decision gates and slice coordination. Project princip
    commit and says whether the worktree is clean.
 4. **Spec check, then code review:** the lead checks the report against the spec, then has the
    code reviewer review the commit. The review includes the principles section of
-   `docs/principles-review-skill.md` and applies `README.md`, "Zero drift". The lead forwards
+   `docs/principles-review-skill.md` and applies `PILLARS.md`, "Zero drift". The lead forwards
    accepted must-fix and should-fix findings. A false doc is a defect and a FIX.
 5. **BR's verdict:** anything judged by eye, ear or feel waits for BR (below). This runs in
    parallel with the code review.
@@ -41,13 +41,46 @@ This document owns roles, decision gates and slice coordination. Project princip
    That needs all of these:
    - a SHIP review;
    - green CI on the head commit;
-   - a clean merge with main;
+   - a clean merge with main and the merge checks below;
    - no BR gate left: a first look, an in-game approval or a "do not merge before" note.
 
-   Otherwise BR merges. The grant covers docs PRs. Docs-only PRs get the zero-drift
+   Otherwise BR merges. The grant exists because BR is often away and waiting for BR's merge
+   stalled work that was otherwise done. It covers docs PRs. Docs-only PRs get the zero-drift
    workflow too, so green CI on the head commit applies to them as well.
-7. **Clean up after the merge:** remove the worktree, stop its dev server, and delete the remote
-   branch.
+7. **After the merge:** accept every round the PR carries and withdraw superseded drafts, so
+   the tracker matches main. Close each issue the PR completed with a comment, since PRs cite
+   issues without closing keywords. Tick the slice checklist where its workflow could not
+   (below). Check main's push-only workflows, such as the pages deploy, because no PR run
+   covers them. Remove the worktree, stop its dev server, and delete the remote branch.
+
+## Merge checks
+
+A clean `git merge-tree` result says no textual conflict, not that the merge is right. Each
+check below catches a failure it misses.
+
+- **When main moves,** re-check every open PR's merge with main, before opening it and again
+  before calling it ready. A conflict goes back to the builder to merge main in.
+- **Two open PRs touching one hunk:** decide which merges first and say so on both. Note a
+  semantic conflict (a format one branch changes and the other uses) on both PRs, since
+  neither merge shows it.
+- **Trial merge** when both sides touched the same files, or when the PR last merged main
+  before other merges landed: build the merge result in a detached worktree and run the
+  subproject's typecheck and suite there. CI proves only the main it ran against; if a newer
+  main merge touches the same area, ask for a fresh run.
+- **Merge-loss scan** for a round that resolved a conflicted main merge. That the head equals
+  its merge result proves nothing, because a wrong resolution is part of that result. For each
+  file the PR touches, list main's added lines that `git diff main..<head>` deletes and main's
+  deleted lines the head restores. A hit in JSON or a Tiled map is often formatting; confirm
+  it with a semantic compare before calling it a loss.
+- **Closing keywords** (`Closes`, `Fixes`, `Resolves`) in the PR body name only issues the PR
+  completes, never another open PR. GitHub closes each target on merge, so a wrong target
+  closes open work.
+- **Save envelope version:** when a deadvox PR bumps `SAVE_SCHEMA_VERSION`, its value must
+  exceed main's at merge. Two PRs bumping to the same number would otherwise give two
+  envelopes one number. When to bump is in `deadvox/docs/decisions/0002-saves.md`.
+- **No rerun of a failed deadvox run:** its required check stays red after a failed attempt
+  (`docs/browser-ci.md`). Comment the failure's disposition on the PR, then close and reopen
+  it for a fresh run, so the PR records why the earlier failure doesn't count.
 
 ## Bound every run
 
@@ -89,7 +122,11 @@ The lead reconciles cases the workflow cannot update. Slice 3's checklist is #29
   free number, delete the superseded ADR and repoint every reference. Name the
   superseded ADR in the changing commit message.
 - Mail and chat transport rulings; a tracked doc or ADR owns the current rule and its
-  reason before merge.
+  reason before merge. A review checks that the reason is in the doc, not only in the commit
+  message.
+- A docs PR records only what BR decided. Proposals stay in the discussion issue, and a
+  brief or note that mixes BR's words with the writer's labels which is which, so an
+  addition is never recorded as BR's rule.
 
 ## Continuous consolidation
 

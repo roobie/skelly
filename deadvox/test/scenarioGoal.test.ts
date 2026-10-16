@@ -21,6 +21,18 @@ const own = buildRegistry([
   {
     source: 'goal-fixture',
     data: {
+      items: [
+        {
+          id: 'fixture_paper',
+          name: 'Fixture paper',
+          category: 'note',
+          stack: 2,
+          weight: 5,
+          size: [1, 1],
+          economy: { usage: ['Residential'], tiers: ['Tier1'] },
+          readable: { title: 'Fixture lead', text: 'Fixture destination' },
+        },
+      ],
       furniture: [
         {
           id: 'fixture_goal',
@@ -40,11 +52,17 @@ if (own.issues.length > 0) {
 const registry = {
   ...BUNDLED_CONTENT.registry,
   furniture: new Map([...BUNDLED_CONTENT.registry.furniture, ...own.registry.furniture]),
+  items: new Map([...BUNDLED_CONTENT.registry.items, ...own.registry.items]),
 };
 const profile = [...registry.scenarios.values()][0]!;
 const objective: Vec3 = [8, 1, 6];
 const worldOptions = { blockSize: 0.5, site: profile.id, storeys: 1, density: null };
-const fixture = (restore?: Readonly<SaveSnapshot>, spawn: Vec3 = [8.5, 1, 8.5], designated: Vec3 = objective) => {
+const fixture = (
+  restore?: Readonly<SaveSnapshot>,
+  spawn: Vec3 = [8.5, 1, 8.5],
+  designated: Vec3 = objective,
+  clues: Vec3[] = [objective],
+) => {
   const world = new World();
   const chunk = new Chunk(0, 0, 0);
   for (let x = 0; x < 16; x++) {
@@ -62,7 +80,7 @@ const fixture = (restore?: Readonly<SaveSnapshot>, spawn: Vec3 = [8.5, 1, 8.5], 
     scenario: profile,
     objective: designated,
     discovery: {
-      clues: [objective],
+      clues,
       landmarks: [],
       building: { min: [7, 1, 5], max: [10, 5, 9] },
       entrance: { min: [7, 1, 5], max: [10, 5, 9] },
@@ -174,6 +192,28 @@ it('records only a designated public lead, not any nearby readable furniture, as
   expect(f.session.scenarioRun!.discovery.clueRead).toBeNull();
   expect(f.session.readFurniture(f.entity)).toBeUndefined();
   expect(f.session.scenarioRun!.discovery.clueRead).not.toBeNull();
+});
+
+it('discovers a designated paper only after a completed pickup into player ownership', () => {
+  const at: Vec3 = [8, 1, 8];
+  const { session } = fixture(undefined, undefined, undefined, [at]);
+  const { inventory, queue } = session;
+  const paper = inventory.create('fixture_paper', 2);
+  const elsewhere: Vec3 = [9, 1, 8];
+  expect(inventory.add(paper, { kind: 'pile', pos: elsewhere })).toBe(true);
+  expect(queue.enqueue(paper, { kind: 'hand', side: 'right' }).ok).toBe(true);
+  expect(queue.tick(queue.remaining).failed).toEqual([]);
+  expect(session.scenarioRun!.discovery.clueRead).toBeNull();
+  expect(queue.enqueue(paper, { kind: 'pile', pos: at }).ok).toBe(true);
+  expect(queue.tick(queue.remaining).failed).toEqual([]);
+  expect(session.scenarioRun!.discovery.clueRead).toBeNull();
+  expect(queue.enqueue(paper, { kind: 'hand', side: 'right' }, 1).ok).toBe(true);
+  expect(session.scenarioRun!.discovery.clueRead).toBeNull();
+  expect(queue.tick(queue.remaining).failed).toEqual([]);
+  expect(inventory.hands.right).toMatchObject({ type: paper.type, count: 1 });
+  expect(inventory.locate(paper)?.kind).toBe('pile');
+  expect(session.scenarioRun!.discovery.clueRead).not.toBeNull();
+  expect(session.scenarioRun!.firstFurnitureReadAtGameTimestamp).toBeNull();
 });
 
 it('keeps discovery observations distinct from generic reads and ladder use across completion and restore', () => {

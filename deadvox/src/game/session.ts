@@ -780,6 +780,24 @@ export const createSession = (options: SessionOptions) => {
       ),
     (move) => {
       awardInventoryPractice();
+      let source: Readonly<Vec3> | undefined;
+      if (move.from.kind === 'pile') {
+        source = move.from.pile.pos;
+      } else if (move.from.kind === 'furniture') {
+        source = move.from.entity.pos;
+      }
+      const { target } = move;
+      const carriedPocket =
+        target.kind === 'pocket' && [...inventory.carriedTree()].some(({ item }) => item === target.owner);
+      const acquired = target.kind === 'hand' || target.kind === 'worn' || carriedPocket;
+      if (
+        source &&
+        registry.items.get(move.item.type)?.readable &&
+        acquired &&
+        options.discovery?.clues.some((at) => at.every((value, axis) => value === source[axis]))
+      ) {
+        scenarioRun?.discover('clueRead', sim.calendar);
+      }
       options.audio.onMoveComplete?.(move, sim.time);
     },
   );

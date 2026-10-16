@@ -195,7 +195,7 @@ const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
 ];
 
 const scenarioDiscovery = (site: Engine['site']) =>
-  site instanceof CitySite ? discoveryForPlan(site.plan) : undefined;
+  site instanceof CitySite ? discoveryForPlan(site.plan, site.registry) : undefined;
 
 const scenarioObjective = (site: Engine['site']): Readonly<Vec3> | undefined =>
   site instanceof CitySite ? site.plan.composition?.objective : undefined;

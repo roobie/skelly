@@ -124,17 +124,6 @@
       "size": [3, 2, 2]
     },
     {
-      "color": "#b8b5a5",
-      "id": "camp_closing_note",
-      "name": "Playtest closing note",
-      "readable": {
-        "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing.",
-        "title": "A note for the next visitor"
-      },
-      "size": [2, 2, 1],
-      "solid": false
-    },
-    {
       "color": "#a6936f",
       "id": "camp_orders",
       "name": "Camp orders board",
@@ -185,6 +174,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
       "id": "camp_supply_manifest",
+      "model": "notebook",
       "name": "Military supply manifest",
       "readable": {
         "text": "SUPPLY RECORD — COMMUNITY HEALTH SITE\n\nAntibiotics, sampling kits and dressings were sent to the clinic. Keep the ward stocked and the pharmacy secured. The road remains under military protection.",
@@ -209,16 +199,33 @@
       "weight": 10
     },
     {
-      "category": "book",
+      "category": "note",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
       "id": "camp_hq_safe_note",
+      "model": "paper_sheet",
       "name": "Officer's note",
       "readable": {
         "text": "The reserve safe is locked. Its key is in the radio desk drawer downstairs. The suppressor in the safe is for the next patrol taking the north road.",
         "title": "Note to the relief officer"
+      },
+      "size": [1, 1],
+      "weight": 5
+    },
+    {
+      "category": "note",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "camp_closing_note",
+      "model": "folded_note",
+      "name": "Playtest closing note",
+      "readable": {
+        "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing.",
+        "title": "A note for the next visitor"
       },
       "size": [1, 1],
       "weight": 5
@@ -389,8 +396,8 @@
           "#......AA..H.......#",
           "#............AA....#",
           "#............AA....#",
-          "#..NN..............#",
-          "#..................#",
+          "#..NNN.............#",
+          "#..NNN.............#",
           "####################"
         ],
         [
@@ -403,8 +410,8 @@
           "#......AA..H.......#",
           "#............AA....#",
           "#............AA....#",
-          "#..NN..............#",
-          "#..................#",
+          "#..NNN.............#",
+          "#..NNN.............#",
           "####################"
         ],
         [
@@ -474,7 +481,9 @@
           "furniture": "ladder"
         },
         "N": {
-          "furniture": "camp_closing_note"
+          "facing": "n",
+          "furniture": "field_desk",
+          "loot": "d41_empty"
         },
         "R": {
           "furniture": "rifle_rack"

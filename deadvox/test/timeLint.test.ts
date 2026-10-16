@@ -5,6 +5,7 @@ import {
   compareRuntimeTemporalCounts,
   mixedArithmeticFindings,
   runtimeTemporalCounts,
+  temporalCatalogueFindings,
   temporalNameFindings,
 } from '../tools/time-lint.mjs';
 
@@ -57,6 +58,25 @@ describe('time lint boundary and naming rules', () => {
       'hour',
       'minute',
     ]);
+  });
+
+  it('catalogues action phases in standalone model records and packs without allowing unknown phases', () => {
+    const action = {
+      hand: { durationSimSeconds: 1, unlockSimSeconds: 0.1, lockSimSeconds: 0.1 },
+      fire: { durationSimSeconds: 1, unlockSimSeconds: 0.1, lockSimSeconds: 0.1 },
+      roundsPerSimMinute: 60,
+    };
+    for (const [file, data] of [
+      ['fixture.model.json', { action }],
+      ['fixture-pack.json', { models: [{ action }] }],
+    ] as const) {
+      expect(temporalCatalogueFindings([file], () => JSON.stringify(data))).toEqual([]);
+      const unknown = { ...action, hand: { ...action.hand, fixtureSimSeconds: 1 } };
+      const invalid = file.endsWith('.model.json') ? { action: unknown } : { models: [{ action: unknown }] };
+      const findings = temporalCatalogueFindings([file], () => JSON.stringify(invalid));
+      expect(findings).toHaveLength(1);
+      expect(findings[0]).toContain('fixtureSimSeconds');
+    }
   });
 
   it('rejects arithmetic that combines branded clocks', () => {

@@ -104,7 +104,12 @@ local building(id, context, shellId, roomId) = {
     slot('ground', 'gauntlet_city_ground', [0, 0, 0], [18, 1, 16]),
     slot('front', shellId, [0, 1, 0], [18, 7, 16]),
     slot('stockroom', roomId, [1, 1, 3], [14, 7, 12]),
-    slot('roof', 'gauntlet_city_roof', [0, 8, 0], [18, 1, 16]),
+    slot('roof', 'gauntlet_city_roof_sheet', [0, 8, 0], [18, 1, 16]) + {
+      choices: [
+        { ref: { kind: 'piece', id: 'gauntlet_city_roof_sheet' }, weight: 3 },
+        { ref: { kind: 'piece', id: 'gauntlet_city_roof_slab' }, weight: 2 },
+      ],
+    },
   ],
   joins: [], ports: [],
   anchors: { entry: { kind: 'standing', at: [8, 1, 6] }, stock: { kind: 'standing', at: [8, 1, 12] } },
@@ -135,6 +140,8 @@ local yard(block) = { role: 'trim', block: block };
       sign: yard('shop_blue'), post: yard('shop_blue'),
       partition: { role: 'shell', block: 'concrete' },
       floor: { role: 'interior_floor', block: 'concrete' },
+      roofing_sheet: { role: 'interior_floor', block: 'concrete' },
+      roofing_slab: { role: 'interior_floor', block: 'concrete' },
       footing: { role: 'support', block: 'concrete' },
     }),
     frontStyle('gauntlet_food_shop', {

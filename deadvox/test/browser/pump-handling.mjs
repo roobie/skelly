@@ -217,7 +217,7 @@ try {
       throw new Error('Native pump loadout has no sealed box');
     }
     const { count: payload, item: payloadType } = inv.registry.items.get(box.type).unpack;
-    const { capacity } = inv.registry.models.get(inv.registry.items.get(gun.type).model).tube;
+    const { capacity } = inv.registry.models.get(inv.registry.items.get(gun.type).model).internalMagazine;
     // Count the initial loadout separately from the box payload.
     const carried = [...inv.items()]
       .filter(

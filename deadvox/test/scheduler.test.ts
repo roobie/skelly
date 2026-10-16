@@ -58,6 +58,20 @@ describe('Scheduler', () => {
     expect(scheduler.time).toBeCloseTo(0.3, 9);
   });
 
+  it('never moves time back when a tick ends within epsilon past the advance target', () => {
+    const scheduler = new Scheduler();
+    let inTick = 0;
+    scheduler.register({
+      id: 'needs',
+      rate: 1,
+      tick: () => {
+        inTick = scheduler.time;
+      },
+    });
+    scheduler.advance(1 - 5e-10);
+    expect(scheduler.time).toBeGreaterThanOrEqual(inTick);
+  });
+
   it('rejects a system registered twice', () => {
     const scheduler = new Scheduler();
     scheduler.register({ id: 'needs', rate: 1, tick: () => undefined });

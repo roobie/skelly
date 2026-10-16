@@ -178,41 +178,41 @@ describe('piles with models', () => {
   });
 });
 
-it('loads the curated pump through preparation and resolves separate movers by glTF node index, not sanitized name', async () => {
-  const def = registry.models.get('shotgun_pump')!;
-  const gltf = await parseGlb(readFileSync(`${BASE}/${def.file}`));
-  expect(def.tube?.capacity).toBeGreaterThan(0);
-  expect(def.calibre).toBeDefined();
-  expect(
-    [...registry.items.values()].some((item) => item.ammo?.calibre === def.calibre),
-    'the pump calibre resolves to an ammunition item',
-  ).toBe(true);
-  expect(def.action?.fire).toBeUndefined();
-  expect(def.grip?.turn).toEqual([0, 0, 0]);
-  expect(def.sight?.kind).toBe('iron');
-  expect(def.sight?.direction[0]).toBeGreaterThan(0);
-  for (const part of Object.values(def.action!.parts)) {
-    const index = gltf.parser.json.nodes.findIndex((node: { name?: string }) => node.name === part.node);
-    expect(index).toBeGreaterThanOrEqual(0);
-    let found = false;
-    gltf.scene.traverse((object) => {
-      if (gltf.parser.associations.get(object)?.nodes === index) {
-        found = true;
-        expect(object.name).not.toBe(part.node); // Three.js strips the colon.
+it('prepares integral-magazine manual exports and binds movers by glTF node index, not sanitized name', async () => {
+  const models = [...registry.models.values()].filter(
+    (model) => model.internalMagazine && model.action && !model.action.fire,
+  );
+  expect(models.length).toBeGreaterThan(0);
+  await Promise.all(
+    models.map(async (def) => {
+      const gltf = await parseGlb(readFileSync(`${BASE}/${def.file}`));
+      expect(def.internalMagazine!.capacity).toBeGreaterThan(0);
+      expect(def.calibre).toBeDefined();
+      expect(def.sight?.kind).toBe('iron');
+      expect(def.sight?.direction[0]).toBeGreaterThan(0);
+      for (const part of Object.values(def.action!.parts)) {
+        const index = gltf.parser.json.nodes.findIndex((node: { name?: string }) => node.name === part.node);
+        expect(index).toBeGreaterThanOrEqual(0);
+        let found = false;
+        gltf.scene.traverse((object) => {
+          if (gltf.parser.associations.get(object)?.nodes === index) {
+            found = true;
+            expect(object.name).not.toBe(part.node);
+          }
+        });
+        expect(found, part.node).toBe(true);
+        expect(part.modes).toEqual(['hand']);
+        expect(part.strokeMetres).toBeGreaterThan(0);
       }
-    });
-    expect(found, part.node).toBe(true);
-    expect(part.modes).toEqual(['hand']);
-    expect(part.strokeMetres).toBe(0.063_25);
-  }
-  const raw = new Box3().setFromObject(gltf.scene);
-  expect(def.anchors!.muzzle![0]).toBeCloseTo(raw.max.x, 5);
-  const prepared = prepareModel(def, gltf.scene);
-  const ground = new Box3().setFromObject(prepared.ground);
-  expect(ground.min.y).toBeCloseTo(0, 9);
-  expect(ground.max.x - ground.min.x).toBeCloseTo(raw.max.x - raw.min.x, 9);
-  const held = new Box3().setFromObject(prepared.held);
-  expect(held.isEmpty()).toBe(false);
+      const raw = new Box3().setFromObject(gltf.scene);
+      expect(def.anchors!.muzzle![0]).toBeCloseTo(raw.max.x, 5);
+      const prepared = prepareModel(def, gltf.scene);
+      const ground = new Box3().setFromObject(prepared.ground);
+      expect(ground.min.y).toBeCloseTo(0, 9);
+      expect(ground.max.x - ground.min.x).toBeCloseTo(raw.max.x - raw.min.x, 9);
+      expect(new Box3().setFromObject(prepared.held).isEmpty()).toBe(false);
+    }),
+  );
 });
 
 describe('model forms', () => {
