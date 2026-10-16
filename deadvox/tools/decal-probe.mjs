@@ -140,8 +140,8 @@ try {
         visibility: document.visibilityState,
       };
     });
-    if (!(hardware.timer && /Intel.*530/i.test(hardware.renderer)) || /llvmpipe|SwiftShader/i.test(hardware.renderer)) {
-      throw new Error(`Expected reference Intel HD530: ${JSON.stringify(hardware)}`);
+    if (!hardware.timer || /llvmpipe|SwiftShader/i.test(hardware.renderer)) {
+      throw new Error(`Expected hardware WebGL with timer queries: ${JSON.stringify(hardware)}`);
     }
     if (trial < 2 || variant === 'off') {
       await page.screenshot({ path: join(output, `${variant}.png`) });
