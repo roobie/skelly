@@ -1,10 +1,12 @@
 // Presentation-only action-cycle controls. Timelines and motion profiles stay in the gun domain module.
 
+import { applyDir, applyPoint } from '@skelly/engine/core/math.ts';
 import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import {
   ArrowHelper,
   type Group,
   type Material,
+  Matrix4,
   type Mesh,
   type MeshStandardMaterial,
   type Object3D,
@@ -27,7 +29,32 @@ interface Mover {
   readonly meshes: readonly { readonly mesh: Mesh; readonly base: readonly number[] }[];
   readonly world: readonly [number, number, number];
   readonly modes: readonly CycleMode[];
+  readonly turn?: {
+    readonly pivot: readonly [number, number, number];
+    readonly axis: readonly [number, number, number];
+    readonly angleRadians: number;
+  };
 }
+
+const poseMover = (mover: Mover, timeline: CycleTimeline, phase: number, fraction: number) => {
+  const active = mover.modes.includes(timeline.mode);
+  const movement = active ? fraction : 0;
+  const turn = new Matrix4();
+  if (mover.turn && active) {
+    const { pivot, axis, angleRadians } = mover.turn;
+    turn
+      .makeTranslation(...pivot)
+      .multiply(new Matrix4().makeRotationAxis(new Vector3(...axis), angleRadians * (timeline.turnAt?.(phase) ?? 0)))
+      .multiply(new Matrix4().makeTranslation(-pivot[0], -pivot[1], -pivot[2]));
+  }
+  for (const { mesh, base } of mover.meshes) {
+    mesh.matrix.fromArray(base as number[]).premultiply(turn);
+    mesh.matrix.elements[12]! += mover.world[0] * movement;
+    mesh.matrix.elements[13]! += mover.world[1] * movement;
+    mesh.matrix.elements[14]! += mover.world[2] * movement;
+    mesh.matrixWorldNeedsUpdate = true;
+  }
+};
 
 export interface CycleView {
   bind: (solids: Group, resolved: Resolved, action: ResolvedGunAction | undefined) => void;
@@ -112,19 +139,12 @@ export const createCycleView = (): CycleView => {
     const phase = phaseTime();
     const fraction = timeline.at(phase, emptyBox.checked);
     for (const mover of movers) {
-      const movement = mover.modes.includes(timeline.mode) ? fraction : 0;
-      for (const { mesh, base } of mover.meshes) {
-        mesh.matrix.fromArray(base as number[]);
-        mesh.matrix.elements[12] = base[12]! + mover.world[0] * movement;
-        mesh.matrix.elements[13] = base[13]! + mover.world[1] * movement;
-        mesh.matrix.elements[14] = base[14]! + mover.world[2] * movement;
-        mesh.matrixWorldNeedsUpdate = true;
-      }
+      poseMover(mover, timeline, phase, fraction);
     }
     scrub.max = String(Math.max(1, Math.round(timeline.durationSeconds * 1000)));
     scrub.value = String(Math.round(phase * 1000));
     const ejection =
-      timeline.mode === 'fire' || boundAction?.kind === 'pump'
+      timeline.mode === 'fire' || boundAction?.kind === 'pump' || boundAction?.kind === 'bolt'
         ? ` · case exits at ${(timeline.ejectAt * 100).toFixed(0)}% toward [${timeline.ejectDirection.map((value) => value.toFixed(2)).join(', ')}]`
         : ' · hand cycle has no case ejection';
     readout.textContent = `${phase.toFixed(3)} s · carrier ${(fraction * strokeUnits).toFixed(2)} u (${(fraction * strokeUnits * millimetresPerUnit).toFixed(0)} mm)${ejection}`;
@@ -161,7 +181,7 @@ export const createCycleView = (): CycleView => {
   };
 
   const drawEjectionArrow = (solids: Group, action: ResolvedGunAction, cycle: CycleTimeline) => {
-    if (cycle.mode !== 'fire' && action.kind !== 'pump') {
+    if (cycle.mode !== 'fire' && action.kind !== 'pump' && action.kind !== 'bolt') {
       return;
     }
     const point = action.ejection;
@@ -221,6 +241,15 @@ export const createCycleView = (): CycleView => {
       meshes: meshesOf(solids, part.id).map((mesh) => ({ mesh, base: basePose(mesh) })),
       world: part.travel,
       modes: part.modes,
+      ...(part.def.motion?.turn
+        ? {
+            turn: {
+              pivot: applyPoint(part.placed, part.def.motion.turn.pivot),
+              axis: applyDir(part.placed, part.def.motion.turn.axis),
+              angleRadians: part.def.motion.turn.angleRadians,
+            },
+          }
+        : {}),
     }));
 
     // Fire/hand switches rebind the same resolved geometry. Its full-stroke

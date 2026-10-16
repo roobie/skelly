@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { applyPoint } from '@skelly/engine/core/math.ts';
+import { motionTransform } from '@skelly/engine/core/motion.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
-import type { Mesh } from 'three';
+import { type Mesh, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -52,6 +55,53 @@ const stubControls = (): Record<string, Control> => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('action cycle viewer', () => {
+  it('turns the bolt before drawing it and returns both phases to the canonical pose', () => {
+    const controls = stubControls();
+    const { assembly } = JSON.parse(readFileSync('designs/hunting-rifle.json', 'utf8'));
+    const resolved = resolve(assembly, gunDomain);
+    const action = resolveGunAction(resolved)!;
+    const knob = action.parts.knob!;
+    const layers = buildLayers(validate(assembly, gunDomain), []);
+    try {
+      let mesh: Mesh | undefined;
+      layers.solids.traverse((object) => {
+        if (object.userData.part === knob.id && (object as Mesh).isMesh) {
+          mesh ??= object as Mesh;
+        }
+      });
+      if (!mesh) {
+        throw new Error('Bolt knob mesh is missing');
+      }
+      const view = createCycleView();
+      view.bind(layers.solids, resolved, action);
+      expect(controls['cycle-mode']!.value).toBe('hand');
+      const { hand } = action.cycle;
+      const drawEnd = hand.unlockSeconds! + hand.rearwardSeconds;
+      const lockEnd = drawEnd + hand.dwellSeconds + hand.forwardSeconds + hand.lockSeconds!;
+      for (const [seconds, draw, turn] of [
+        [hand.unlockSeconds!, 0, 1],
+        [drawEnd, 1, 1],
+        [lockEnd, 0, 0],
+      ]) {
+        controls['cycle-scrub']!.value = String(seconds! * 1000);
+        controls['cycle-scrub']!.dispatchEvent(new Event('input'));
+        const expected = motionTransform(knob.placed, knob.def.motion!, draw!, turn!);
+        for (const point of [
+          [0, 0, 0],
+          [1, 0, 0],
+        ] as const) {
+          const actual = new Vector3(...point).applyMatrix4(mesh.matrix).toArray();
+          applyPoint(expected, point).forEach((coordinate, axis) => {
+            expect(actual[axis]).toBeCloseTo(coordinate, 8);
+          });
+        }
+      }
+    } finally {
+      for (const group of Object.values(layers)) {
+        disposeGroup(group);
+      }
+    }
+  });
   it('moves the real AR handle with the hand stroke but keeps it home during firing', () => {
     const controls = stubControls();
     const assembly = loadFixture('archetype-ar');

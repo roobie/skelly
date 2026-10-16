@@ -25,10 +25,26 @@ const signedVolume = (positions: Float32Array, indices: Uint32Array): number => 
   return volume;
 };
 
+it('uses the sourced maximum as a visual envelope without inventing an unknown typical length', () => {
+  const fixture: MetallicCartridge = {
+    ...cartridge,
+    overallLength: { ...cartridge.overallLength, typical: { value: null, cite: null } },
+  };
+  const profile = roundProfiles(fixture);
+  expect(maximum(profile.bullet, 0)).toBe(fixture.overallLength.max.value);
+  expect(fixture.overallLength.typical.value).toBeNull();
+});
+
 describe('5.56x45 round profile estimate', () => {
   it('keeps bullet length unsourced and uses the named seating-depth assumption only for the model', () => {
-    expect(natoCartridge.payload.length.min.value).toBeNull();
-    const profile = roundProfiles(natoCartridge);
+    const fixture: MetallicCartridge = {
+      ...natoCartridge,
+      payload: {
+        ...natoCartridge.payload,
+        length: { ...natoCartridge.payload.length, min: { value: null, cite: null } },
+      },
+    };
+    const profile = roundProfiles(fixture);
     const assumedBase =
       natoCartridge.case.length.value! - ASSUMED_BULLET_SEATING_DEPTH_CALIBRES * natoCartridge.payload.diameter.value!;
     expect(maximum(profile.bullet, 0)).toBeCloseTo(natoCartridge.overallLength.typical.value!, 6);
@@ -45,8 +61,12 @@ describe('7.62x39 round profiles', () => {
   });
 
   it('leaves the fired case open with a constant, declared wall thickness', () => {
-    const mouth = profiles.firedCase.filter(([axial]) => axial === 38.7);
-    expect(mouth.map(([, radius]) => radius)).toEqual([4.3, 4.3 - CASE_WALL_MM]);
+    const mouth = profiles.firedCase.filter(([axial]) => axial === cartridge.case.length.value);
+    const radius =
+      cartridge.case.body.type === 'bottleneck'
+        ? cartridge.case.body.neck.diameterAtMouth.value! / 2
+        : cartridge.case.body.diameterAtMouth.value! / 2;
+    expect(mouth.map(([, transverse]) => transverse)).toEqual([radius, radius - CASE_WALL_MM]);
     expect(profiles.firedCase.at(-1)![1]).toBe(0);
   });
 

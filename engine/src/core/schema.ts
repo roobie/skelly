@@ -141,8 +141,16 @@ interface Axis {
   readonly eyeReliefU?: number;
 }
 
+export interface PartTurn {
+  readonly pivot: Vec3;
+  readonly axis: Vec3;
+  readonly angleRadians: number;
+}
+
 export interface PartMotion {
   readonly kind: 'linear';
+  /** Rotation about a local pivot before translation; translation reverses before the turn returns. */
+  readonly turn?: PartTurn;
   /** Local unit direction of travel from the start point to the end point. */
   readonly axis: Vec3;
   readonly start: Vec3;

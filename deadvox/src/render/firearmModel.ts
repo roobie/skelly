@@ -210,7 +210,7 @@ export const rackCant = (
   grip: { readonly x: number; readonly y: number },
 ): number => {
   if (
-    !(model?.tube && model.grip && model.anchors?.ejection && model.anchors.loading_port && model.action) ||
+    !(model?.internalMagazine && model.grip && model.anchors?.ejection && model.anchors.loading_port && model.action) ||
     frame?.mode !== 'hand'
   ) {
     return 0;

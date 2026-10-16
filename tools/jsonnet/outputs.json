@@ -1,6 +1,10 @@
 {
   "files": [
     {
+      "source": "deadvox/src/content/base/assets/manifest.jsonnet",
+      "output": "deadvox/src/content/base/assets/manifest.json"
+    },
+    {
       "source": "deadvox/src/content/base/blocks.jsonnet",
       "output": "deadvox/src/content/base/blocks.json"
     },
@@ -163,6 +167,14 @@
     {
       "source": "deadvox/test/fixtures/mods/browser-mod.jsonnet",
       "output": "deadvox/test/fixtures/mods/browser-mod.json"
+    },
+    {
+      "source": "gungen/cartridges/308-winchester.jsonnet",
+      "output": "gungen/cartridges/308-winchester.json"
+    },
+    {
+      "source": "gungen/designs/hunting-rifle.jsonnet",
+      "output": "gungen/designs/hunting-rifle.json"
     },
     {
       "source": "site/playtest.jsonnet",

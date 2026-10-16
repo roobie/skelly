@@ -386,7 +386,7 @@ export class FirearmMechanics {
     if (reason) {
       return reason;
     }
-    if (pump && !firearmHandlingFor(item, this.inventory.registry).model.tube) {
+    if (pump && !firearmHandlingFor(item, this.inventory.registry).model.internalMagazine) {
       return 'No exported tube data for this gun';
     }
     // Automatic motion will feed before the next cadence deadline. fire() rejects overlapping cycles;
@@ -775,13 +775,13 @@ export class FirearmMechanics {
       return reason;
     }
     const data = firearmHandlingFor(gun, this.inventory.registry);
-    if (!(data.model.tube && data.model.anchors?.loading_port)) {
+    if (!(data.model.internalMagazine && data.model.anchors?.loading_port)) {
       return 'No exported loading port/tube';
     }
     if (!ammoMatchesCalibre(ammo.type, data.calibre, this.inventory.registry)) {
       return 'Wrong ammunition';
     }
-    return (gun.firearm?.tube?.length ?? 0) >= data.model.tube.capacity ? 'Tube is full' : undefined;
+    return (gun.firearm?.tube?.length ?? 0) >= data.model.internalMagazine.capacity ? 'Tube is full' : undefined;
   }
 
   load(ammo: Item, time: number): string | undefined {
@@ -792,7 +792,7 @@ export class FirearmMechanics {
     const gun = this.heldPump()!;
     this.queue.enqueueAction(
       LOAD_ACTION,
-      `Load shell ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.tube!.capacity}`,
+      `Load shell ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.internalMagazine!.capacity}`,
       SHELL_LOAD_SECONDS * this.handlingFactor('reloadDuration'),
       { uid: gun.uid, ammoUid: ammo.uid },
     );
@@ -932,7 +932,7 @@ export class FirearmMechanics {
     const state = item.firearm!;
     return [
       `Chamber: ${{ round: '00 buck shell', case: 'fired hull — rack before firing', empty: 'empty' }[state.chamber]}`,
-      `Tube: ${state.tube!.length}/${firearmHandlingFor(item, this.inventory.registry).model.tube!.capacity} shells`,
+      `Tube: ${state.tube!.length}/${firearmHandlingFor(item, this.inventory.registry).model.internalMagazine!.capacity} shells`,
     ];
   }
 
