@@ -36,6 +36,7 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
+import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
@@ -1465,7 +1466,7 @@ const MapPoolSchema = strictObject({
 
 const ScenarioSchema = strictObject({
   id: Id,
-  kind: literal('gauntlet'),
+  kind: picklist(SCENARIO_KINDS),
   outbreakAgeGameHours: PositiveGameHours,
   decalLimit: pipe(Count, maxValue(4096)),
   body: Id,
