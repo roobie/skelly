@@ -112,6 +112,7 @@ try {
     });
     await page.addInitScript(installTiming);
     const url = new URL(variant === 'main' ? baselineUrl : headUrl);
+    url.searchParams.set('freeze', '1');
     if (variant === 'off') {
       url.searchParams.set('decals', '0');
     }
@@ -122,9 +123,6 @@ try {
       {},
       { timeout: 90_000 },
     );
-    await page.keyboard.down('F2');
-    await page.keyboard.press('Numpad5');
-    await page.keyboard.up('F2');
     // Dirty fringe chunks are intentionally left pending outside the mesh radius; only in-radius holes must drain.
     await page.waitForFunction(
       () => document.querySelector('#debug-readout')?.textContent.includes('· 0 holes'),
