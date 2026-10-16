@@ -56,7 +56,11 @@
       }
     },
     "gungen": {
-      "entry": ["index.html!"],
+      "entry": [
+        "index.html!",
+        // The traced table has no consumer until g67's first build round imports it; remove this entry then.
+        "src/gun/compactSmgProportions.ts!"
+      ],
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
     "engine": {
