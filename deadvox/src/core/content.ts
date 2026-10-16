@@ -1124,6 +1124,11 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
       }
     });
   }
+  for (const tuning of registry.ui.values()) {
+    if (!registry.sounds.has(tuning.refusalSound)) {
+      report('ui', tuning.id, '.refusalSound', `no sound event "${tuning.refusalSound}"`);
+    }
+  }
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }

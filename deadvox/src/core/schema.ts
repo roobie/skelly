@@ -222,6 +222,8 @@ const UiTuningSchema = strictObject({
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
+  /** The sound event played when the player tries an action that cannot be completed. */
+  refusalSound: picklist(SOUND_EVENT_IDS),
 });
 
 const SaveTuningSchema = strictObject({
