@@ -29,6 +29,33 @@ The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
 and `evaluateMods`. Bundled core-pack fragments remain content files rather than
 independent mods; see `src/game/bundledContent.ts`, `buildBundledContent`.
 
+The pre-start panel rejects invalid files whole and keeps their diagnostics visible.
+An enabled invalid file blocks Start rather than silently starting a different world;
+disabling it permits startup with the remaining content, including the base pack alone.
+See `src/ui/modsPanel.ts`, `chooseMods`, and `src/game/browserMods.ts`, `evaluateMods`.
+The intake byte limit belongs to trusted startup configuration in
+`src/config/browser-mods.jsonnet`, not to a selected mod: admission must bound a file
+before parsing or trusting its definitions.
+
+Browser selections persist as one atomic IndexedDB record, including source text,
+order and enabled state. An unavailable or failed store leaves the panel with no mods
+loaded and a visible storage error, never a partially restored selection. See
+`src/game/modStorage.ts`, `ModStorage`, and `src/ui/modsPanel.ts`, `chooseMods`.
+
+Each admitted browser mod contributes its explicit identity, version and canonical
+content hash to the save's ordered pack identity. An omitted mod version denotes the
+initial version; changing content still changes its hash. Delivery names and JSON
+object key order are not identity. Selection order is identity because later files
+can override earlier definitions; disabled files are not admitted packs. Continue
+refuses missing, changed, additional or reordered packs rather than resuming a world
+under different definitions. See `src/game/browserMods.ts`, `evaluateMods`, and
+`src/core/saveFormat.ts`, `currentSaveVersionIdentity` and `contentPackDifferences`.
+Preserved-save notices name pack differences with the mod's own id, without its
+internal browser namespace. Raw decoder diagnostics do not belong in that notice:
+an ordinary game update is not a mod problem. See `src/ui/saveController.ts`,
+`SaveController.inspectOtherNamespaces`, and `../INTERFACE.md`, "Text".
+The panel remains opt-in pending BR's decision about making it the default entry.
+
 ## Bundled mods
 
 A bundled mod ships with the game but is applied only when asked, with `?mods=` and

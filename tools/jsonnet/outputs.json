@@ -1,6 +1,10 @@
 {
   "files": [
     {
+      "source": "deadvox/src/config/browser-mods.jsonnet",
+      "output": "deadvox/src/config/browser-mods.json"
+    },
+    {
       "source": "deadvox/src/content/base/assets/manifest.jsonnet",
       "output": "deadvox/src/content/base/assets/manifest.json"
     },
