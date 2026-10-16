@@ -74,11 +74,13 @@ const cityAlternatives = function* (everyStyle = false) {
       yield {
         building,
         style,
-        compiled: compileAssembly(selected, selected.mapAssemblies.get(building.id)!, {
-          seed: 1,
-          siteId: 'route_witness',
-          ...(style ? { style } : {}),
-        }),
+        variant,
+        compile: () =>
+          compileAssembly(selected, selected.mapAssemblies.get(building.id)!, {
+            seed: 1,
+            siteId: 'route_witness',
+            ...(style ? { style } : {}),
+          }),
       };
     }
   }
@@ -133,7 +135,7 @@ it('a pool row styles every facade piece of its building, whichever way each slo
     new Set(Object.values(registry.mapStyles.get(style)!.bindings).map(({ block }) => registry.blockIds.get(block)!));
   const styles = new Set<string>();
   let checkedForeign = 0;
-  for (const { building, style, compiled } of cityAlternatives(true)) {
+  for (const { building, style, compile } of cityAlternatives(true)) {
     if (!style) {
       continue;
     }
@@ -146,7 +148,7 @@ it('a pool row styles every facade piece of its building, whichever way each slo
         .filter((block) => !(own.has(block) || literal.has(block))),
     );
     checkedForeign += foreign.size;
-    const used = new Set(compiled.blocks);
+    const used = new Set(compile().blocks);
     expect(
       [...foreign].filter((block) => used.has(block)),
       `${building.id}@${style}: blocks bound only by another style`,
@@ -161,16 +163,24 @@ it('a pool row styles every facade piece of its building, whichever way each slo
 });
 
 it('city buildings leave no sealed owned air below grade that nothing can stand in or reach', () => {
-  for (const { building, compiled } of cityAlternatives()) {
+  let cellar = false;
+  for (const { building, compile } of cityAlternatives()) {
+    const compiled = compile();
+    cellar ||= Object.values(compiled.anchors!).some(
+      (anchor) => anchor.kind === 'standing' && anchor.at[1] < compiled.access!.entrance[1],
+    );
     expect(sealedBelowGrade(compiled), `${building.id}: sealed owned air`).toBeUndefined();
   }
+  expect(cellar, 'city pool exercises below-grade standing space').toBe(true);
 });
 
-it('city building alternatives keep cellars and street approaches reachable through owned body space', () => {
-  const { registry } = BUNDLED_CONTENT;
-  let cellar = false;
-  for (const { building, compiled } of cityAlternatives()) {
+// Separate cases keep added buildings and slot alternatives from sharing one deadline.
+for (const { building, variant, compile } of cityAlternatives()) {
+  it(`${building.id} alternative ${variant} keeps cellars and street approaches reachable through owned body space`, () => {
+    const { registry } = BUNDLED_CONTENT;
+    const compiled = compile();
     const targets = Object.values(compiled.anchors!).filter((anchor) => anchor.kind === 'standing');
+    expect(targets.length, 'standing route witnesses').toBeGreaterThan(0);
     const entry = compiled.access!.entrance;
     const doors = new Set(
       compiled.pieces
@@ -190,10 +200,8 @@ it('city building alternatives keep cellars and street approaches reachable thro
       );
     const outward = reachable(entry);
     for (const target of targets) {
-      cellar ||= target.at[1] < entry[1];
       expect(outward.has(target.at.join(',')), `${building.id}: entry`).toBe(true);
       expect(reachable(target.at).has(entry.join(',')), `${building.id}: return`).toBe(true);
     }
-  }
-  expect(cellar).toBe(true);
-});
+  });
+}

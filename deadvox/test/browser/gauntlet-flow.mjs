@@ -3,7 +3,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract.
 // biome-ignore-all lint/performance/noAwaitInLoops: route segments and save boundaries run in order.
 import assert from 'node:assert/strict';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction } from './input-actions.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const gauntletLoading = async (browser, baseUrl) => {
@@ -137,16 +137,30 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const w = globalThis.gauntletWitness;
       const { engine, session, input } = w;
       const { placedPieces } = await import('/src/core/templates.ts');
+      const { furnitureSurfacePosition } = await import('/src/core/furnitureSurface.ts');
       const { IDLE } = await import('/src/game/session.ts');
-      const clue = placedPieces(engine.site.plan.composition.leads[0]).find(
-        (piece) => engine.registry.furniture.get(piece.furniture)?.readable,
-      );
+      const [clue] = placedPieces(engine.site.plan.composition.leads[0]);
       if (!clue) {
         throw new Error('No public clue');
       }
       w.manual = true;
       const oldIntent = input.intent;
       input.intent = () => IDLE;
+      const walkBeside = (entity, at) => {
+        const standing = [entity.pos[0] - 1, at[2] + 0.5];
+        const distance = () => Math.hypot(standing[0] - session.body.pos[0], standing[1] - session.body.pos[2]);
+        const frames = Math.ceil((distance() / 2 + 3) * 60);
+        input.intent = () => ({ ...IDLE, forward: 1, walk: true });
+        for (let n = 0; n < frames && distance() >= 0.04; n++) {
+          input.yaw = Math.atan2(session.body.pos[0] - standing[0], session.body.pos[2] - standing[1]);
+          input.pitch = 0;
+          session.frame(1 / 60);
+        }
+        input.intent = () => IDLE;
+        if (distance() >= 0.04) {
+          throw new Error('Could not walk beside the public-paper support');
+        }
+      };
       try {
         for (let n = 0; n < 60; n++) {
           session.frame(1 / 60);
@@ -155,21 +169,35 @@ export const gauntletFlow = async (browser, baseUrl) => {
         if (!entity) {
           throw new Error('Public lead not streamed at start');
         }
-        const at = entity.pos.map((v, axis) => v + entity.size[axis] / 2);
-        const origin = w.eye();
-        const [dx, dy, dz] = at.map((v, axis) => v - origin[axis]);
-        input.yaw = Math.atan2(-dx, -dz);
-        input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-        if (w.lookedAt() !== entity) {
-          throw new Error('Public lead not visible from ordinary start');
+        const at = furnitureSurfacePosition(entity);
+        const pile = [...session.inventory.piles.values()].find((value) =>
+          value.pos.every((v, axis) => v === at[axis]),
+        );
+        const paper = pile?.items.find(({ item }) => engine.registry.items.get(item.type)?.readable)?.item;
+        if (!paper) {
+          throw new Error('Public paper not on its support');
         }
+        walkBeside(entity, at);
+        const pickup = session.queue.enqueue(paper, { kind: 'hand', side: 'right' });
+        if (!pickup.ok) {
+          throw new Error(pickup.reason);
+        }
+        const completed = session.queue.tick(session.queue.remaining);
+        if (completed.failed.length > 0 || session.inventory.hands.right !== paper) {
+          throw new Error('Ordinary public-paper pickup failed');
+        }
+        session.quickbar.assign(0, paper);
       } finally {
         input.intent = oldIntent;
         w.manual = false;
       }
     });
-    await pressAction(page, 'world.interact');
-    await page.locator('#reading').waitFor({ state: 'visible' });
+    const releasePaper = await holdAction(page, 'quickbar.use.1');
+    try {
+      await page.locator('#reading').waitFor({ state: 'visible' });
+    } finally {
+      await releasePaper();
+    }
     assert.ok((await page.locator('.reading-text').innerText()).trim().length > 0);
     const before = await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun);
     assert.notEqual(before.discovery.clueRead, null);

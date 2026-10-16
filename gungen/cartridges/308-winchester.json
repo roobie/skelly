@@ -1,0 +1,229 @@
+{
+  "aliases": [
+    {
+      "cite": {
+        "locator": "Tab. I, sheet title",
+        "source": "cip308"
+      },
+      "name": "308 Win."
+    }
+  ],
+  "case": {
+    "body": {
+      "diameterAtHead": {
+        "cite": {
+          "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P1",
+          "source": "cip308",
+          "verbatim": "P1 = 11.96"
+        },
+        "value": 11.960000000000001
+      },
+      "diameterAtShoulderStart": {
+        "basic": true,
+        "cite": {
+          "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P2",
+          "source": "cip308",
+          "verbatim": "P2 1)* = 11.53 -0.20"
+        },
+        "tolerance": {
+          "minus": 0.20000000000000001
+        },
+        "value": 11.529999999999999
+      },
+      "neck": {
+        "diameterAtBase": {
+          "basic": true,
+          "cite": {
+            "locator": "Tab. I, CARTRIDGE MAXI, Collar: H1",
+            "source": "cip308",
+            "verbatim": "H1* = 8.72"
+          },
+          "value": 8.7200000000000006
+        },
+        "diameterAtMouth": {
+          "cite": {
+            "locator": "Tab. I, CARTRIDGE MAXI, Collar: H2",
+            "source": "cip308",
+            "verbatim": "H2 1) = 8.72"
+          },
+          "value": 8.7200000000000006
+        }
+      },
+      "shoulder": {
+        "angle": {
+          "basic": true,
+          "cite": {
+            "locator": "Tab. I, CARTRIDGE MAXI, Junction Cone: α",
+            "source": "cip308",
+            "verbatim": "α* = 40°"
+          },
+          "note": "Read from the C.I.P. drawing; the sheet has no symbol legend",
+          "value": 40
+        },
+        "endPosition": {
+          "cite": {
+            "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L2",
+            "source": "cip308",
+            "verbatim": "L2 1) = 43.48 -0.20"
+          },
+          "tolerance": {
+            "minus": 0.20000000000000001
+          },
+          "value": 43.479999999999997
+        },
+        "startPosition": {
+          "cite": {
+            "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L1",
+            "source": "cip308",
+            "verbatim": "L1 1) = 39.62 -0.20"
+          },
+          "tolerance": {
+            "minus": 0.20000000000000001
+          },
+          "value": 39.619999999999997
+        }
+      },
+      "type": "bottleneck"
+    },
+    "bodyStart": {
+      "cite": {
+        "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E",
+        "source": "cip308",
+        "verbatim": "E = 3.85"
+      },
+      "note": "Read from the C.I.P. drawing; the sheet has no symbol legend",
+      "value": 3.8500000000000001
+    },
+    "head": {
+      "extractorGroove": {
+        "bevelAngle": {
+          "cite": {
+            "locator": "Tab. I, CARTRIDGE MAXI, Case Head: δ",
+            "source": "cip308",
+            "verbatim": "δ = 36°"
+          },
+          "note": "Read from the C.I.P. drawing; the sheet has no symbol legend",
+          "value": 36
+        },
+        "diameter": {
+          "cite": {
+            "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E1",
+            "source": "cip308",
+            "verbatim": "E1 = 10.39"
+          },
+          "value": 10.390000000000001
+        },
+        "width": {
+          "cite": {
+            "locator": "Tab. I, CARTRIDGE MAXI, Case Head: e min",
+            "source": "cip308",
+            "verbatim": "e min = 1.40"
+          },
+          "value": 1.3999999999999999
+        }
+      },
+      "type": "rimless"
+    },
+    "length": {
+      "cite": {
+        "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L3",
+        "source": "cip308",
+        "verbatim": "L3 1) = 51.18"
+      },
+      "value": 51.18
+    },
+    "materials": [],
+    "primer": {
+      "designation": {
+        "cite": null,
+        "note": "The C.I.P. sheet does not specify a primer designation",
+        "value": null
+      },
+      "diameter": {
+        "cite": null,
+        "note": "The C.I.P. sheet does not give primer-pocket dimensions",
+        "value": null
+      },
+      "options": []
+    },
+    "rim": {
+      "diameter": {
+        "cite": {
+          "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R1",
+          "source": "cip308",
+          "verbatim": "R1 = 12.01"
+        },
+        "value": 12.01
+      },
+      "thickness": {
+        "cite": {
+          "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R",
+          "source": "cip308",
+          "verbatim": "R = 1.37"
+        },
+        "note": "Read from the C.I.P. drawing; the sheet has no symbol legend",
+        "value": 1.3700000000000001
+      }
+    }
+  },
+  "designation": ".308 Winchester",
+  "format": 1,
+  "id": "308-winchester",
+  "kind": "metallic",
+  "notes": [
+    "Civilian cartridge identity using the C.I.P. 308 Win. cartridge-maximum drawing shared with the frame-sizing reference. Separate identity does not authorize cross-loading with 7.62x51.",
+    "Unsupported primer, material and projectile-length data remain unknown in the governing record."
+  ],
+  "overallLength": {
+    "max": {
+      "cite": {
+        "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L6",
+        "source": "cip308",
+        "verbatim": "L6 = 71.12"
+      },
+      "value": 71.120000000000005
+    },
+    "typical": {
+      "cite": null,
+      "note": "The governing drawing gives a maximum, not a typical loaded length.",
+      "value": null
+    }
+  },
+  "payload": {
+    "diameter": {
+      "cite": {
+        "locator": "Tab. I, CARTRIDGE MAXI, Projectile: G1",
+        "source": "cip308",
+        "verbatim": "G1 1) = 7.85"
+      },
+      "value": 7.8499999999999996
+    },
+    "length": {
+      "max": {
+        "cite": null,
+        "note": "The C.I.P. sheet does not give bullet length",
+        "value": null
+      },
+      "min": {
+        "cite": null,
+        "note": "The C.I.P. sheet does not give bullet length",
+        "value": null
+      }
+    },
+    "type": "bullet",
+    "variants": []
+  },
+  "primarySource": "cip308",
+  "relatedTo": [],
+  "sources": {
+    "cip308": {
+      "body": "C.I.P.",
+      "reliability": "standard",
+      "retrieved": "2026-10-08",
+      "revision": "sheet Date 84-06-14, Revision 08-09-23",
+      "sha256": "428efd5c2ffdda8fd7844d870523fa2df40f60a1810b3a2f175eba0c26ccadef",
+      "title": "C.I.P. TDCC Tab. I, 308 Win.: cartridge maximum dimensions",
+      "url": "https://bobp.cip-bobp.org/uploads/tdcc/tab-i/tabical-en-page125.pdf"
+    }
+  }
+}

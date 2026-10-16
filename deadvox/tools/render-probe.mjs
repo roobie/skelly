@@ -4,7 +4,10 @@
 // Headless render probe: see the game without a display.
 //
 //   node tools/render-probe.mjs <url> [--out shot.png] [--wait ms]
-//                               [--scan cyan,magenta|none] [--window x,y,w,h]
+//                               [--scan cyan,magenta|none] [--window x,y,w,h] [--click selector]
+//
+// --click presses the element matching the given selector (for example the start control `#go`)
+// once it is enabled, so a `cam=` pose renders in the world instead of on the start screen.
 //
 // Opens <url> in Playwright Chromium on SwiftShader (software WebGL), waits, screenshots,
 // and scans the screenshot's pixels. It prints the WebGL renderer string, filtered console
@@ -44,7 +47,7 @@ import { launchChromium } from '../test/browser/chromium.mjs';
 import { browserStageUrl } from '../test/browser/stage-mode.mjs';
 
 const USAGE =
-  'usage: node tools/render-probe.mjs <url> [--out shot.png] [--wait ms] [--scan cyan,magenta|none] [--window x,y,w,h]';
+  'usage: node tools/render-probe.mjs <url> [--out shot.png] [--wait ms] [--scan cyan,magenta|none] [--window x,y,w,h] [--click selector]';
 const NOISE = /Lit is in dev mode|MobActorMeshes|\[vite\] (connecting|connected)/;
 const SCAN_KINDS = ['cyan', 'magenta'];
 const MAX_WINDOW_PIXELS = 4096;
@@ -86,10 +89,20 @@ const OPTION_HANDLERS = {
       usage(`--window must cover 1..${MAX_WINDOW_PIXELS} pixels`);
     }
   },
+  '--click': (target, value) => {
+    target.click = value;
+  },
 };
 
 const parseArgs = (argv) => {
-  const opts = { url: undefined, out: undefined, wait: 25_000, scan: [...SCAN_KINDS], window: undefined };
+  const opts = {
+    url: undefined,
+    out: undefined,
+    wait: 25_000,
+    scan: [...SCAN_KINDS],
+    window: undefined,
+    click: undefined,
+  };
   const rest = [...argv];
   while (rest.length > 0) {
     const arg = rest.shift();
@@ -232,6 +245,16 @@ try {
   } catch (error) {
     console.error(`navigation failed: ${error.message.split('\n')[0]}`);
     process.exit(1);
+  }
+  if (opts.click) {
+    await page.waitForFunction(
+      (selector) => document.querySelector(selector)?.getAttribute('aria-disabled') !== 'true',
+      opts.click,
+      {
+        timeout: NAV_TIMEOUT_MS,
+      },
+    );
+    await page.click(opts.click);
   }
   await page.waitForTimeout(opts.wait);
   const png = await page.screenshot({ path: out, timeout: SCREENSHOT_TIMEOUT_MS });

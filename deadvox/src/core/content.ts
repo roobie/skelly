@@ -888,6 +888,30 @@ const checkTemplates = (registry: Registry, report: Report) => {
   }
 };
 
+const checkSiteGeneration = (registry: Registry, report: Report) => {
+  for (const entry of registry.siteGeneration.values()) {
+    const { terrain, trees, ...single } = entry.palette;
+    const blocks: [string, string][] = [
+      ...Object.entries(terrain).map(([key, name]): [string, string] => [`.palette.terrain.${key}`, name]),
+      ...Object.entries(trees).map(([key, name]): [string, string] => [`.palette.trees.${key}`, name]),
+      ...Object.entries(single).map(([key, name]): [string, string] => [`.palette.${key}`, name]),
+      ['.hamlet.hedge', entry.hamlet.hedge],
+    ];
+    for (const [path, name] of blocks) {
+      if (!registry.blockIds.has(name)) {
+        report('siteGeneration', entry.id, path, `no block "${name}"`);
+      }
+    }
+    for (const side of ['northSide', 'southSide'] as const) {
+      for (const id of entry.hamlet[side]) {
+        if (!registry.templates.has(id)) {
+          report('siteGeneration', entry.id, `.hamlet.${side}`, `no template "${id}"`);
+        }
+      }
+    }
+  }
+};
+
 const checkZombies = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const zombie of registry.zombies.values()) {
@@ -1143,6 +1167,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
+  checkSiteGeneration(registry, report);
   for (const issue of mapKitIssues(registry)) {
     report(issue.section, issue.id, issue.path, issue.message);
   }

@@ -1,9 +1,9 @@
 // Gun-owned discovery and coupling. Consumers choose a presentation mode, not instance names.
 import { partNodeName } from '@skelly/engine/core/glb.ts';
-import { applyDir, applyPoint, sub, type Transform, type Vec3 } from '@skelly/engine/core/math.ts';
+import { applyDir, applyPoint, invert, length, sub, type Transform, type Vec3 } from '@skelly/engine/core/math.ts';
 import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import type { PartDef } from '@skelly/engine/core/schema.ts';
-import { type CycleMode, type CycleMotion, cycleMotion, pumpCycleMotion } from './cycle.ts';
+import { boltCycleMotion, type CycleMode, type CycleMotion, cycleMotion, pumpCycleMotion } from './cycle.ts';
 import { localEjectionPoint } from './ejection.ts';
 
 interface ActionPart {
@@ -18,7 +18,7 @@ interface ActionPart {
 }
 
 export interface ResolvedGunAction {
-  readonly kind: 'ar' | 'ak' | 'pump';
+  readonly kind: 'ar' | 'ak' | 'pump' | 'bolt';
   readonly carrier: ActionPart;
   readonly parts: Readonly<Record<string, ActionPart>>;
   readonly receiverId: string;
@@ -58,7 +58,18 @@ const coupledParts = (
   carrier: ActionPart,
 ): Record<string, ActionPart> => {
   const parts: Record<string, ActionPart> = { carrier };
-  const pairing = { ar: ['handle', 'ar-charging-handle'], ak: undefined, pump: ['forend', 'forend'] }[kind];
+  if (kind === 'bolt') {
+    for (const family of ['bolt-handle-arm', 'bolt-handle-knob']) {
+      const entry = Object.entries(resolved.assembly.parts).find(([, part]) => part.family === family);
+      const mover = entry && actionPart(resolved, entry[0], ['hand']);
+      if (mover) {
+        parts[family === 'bolt-handle-arm' ? 'arm' : 'knob'] = mover;
+      }
+    }
+  }
+  const pairing = { ar: ['handle', 'ar-charging-handle'], ak: undefined, pump: ['forend', 'forend'], bolt: undefined }[
+    kind
+  ];
   if (pairing) {
     const entry = [...resolved.defs].find(([, def]) => def.family === pairing[1]);
     const mover = entry && actionPart(resolved, entry[0], ['hand']);
@@ -76,10 +87,10 @@ export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefi
   }
   const [id] = entry;
   const kind = resolved.params.get(id)?.pattern?.value;
-  if (kind !== 'ar' && kind !== 'ak' && kind !== 'pump') {
+  if (kind !== 'ar' && kind !== 'ak' && kind !== 'pump' && kind !== 'bolt') {
     return undefined;
   }
-  const carrier = actionPart(resolved, id, kind === 'pump' ? ['hand'] : ['fire', 'hand']);
+  const carrier = actionPart(resolved, id, kind === 'pump' || kind === 'bolt' ? ['hand'] : ['fire', 'hand']);
   const receiverId = carrierReceiver(resolved, id);
   const receiver = receiverId && resolved.defs.get(receiverId);
   const placed = receiverId && resolved.placed.get(receiverId);
@@ -87,16 +98,24 @@ export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefi
     return undefined;
   }
   const local = localEjectionPoint(receiver);
+  const port = receiver.keepOuts.find(({ id: volumeId }) => volumeId === 'ejection');
+  const carrierHome = applyPoint(invert(placed), carrier.placed.t);
+  const boltEjectAt = port ? (carrierHome[0] - (port.box.center[0] - port.box.half[0])) / length(carrier.travel) : 0;
+  let cycle: CycleMotion;
+  if (kind === 'bolt') {
+    cycle = boltCycleMotion(carrier.def.motion!, resolved.domain.units.metresPerUnit, boltEjectAt);
+  } else if (kind === 'pump') {
+    cycle = pumpCycleMotion(carrier.def.motion!, resolved.domain.units.metresPerUnit);
+  } else {
+    cycle = cycleMotion(kind, carrier.def.motion!, resolved.domain.units.metresPerUnit);
+  }
   return {
     kind,
     carrier,
     parts: coupledParts(resolved, kind, carrier),
     receiverId,
     ...(local ? { ejection: applyPoint(placed, local) } : {}),
-    cycle:
-      kind === 'pump'
-        ? pumpCycleMotion(carrier.def.motion!, resolved.domain.units.metresPerUnit)
-        : cycleMotion(kind, carrier.def.motion!, resolved.domain.units.metresPerUnit),
+    cycle,
   };
 };
 

@@ -1,5 +1,5 @@
 // Base terrain and construction blocks. Ground-contact events are authored per block even when several
-// blocks share a surface (`README.md`, "Content forward compatibility"); the compiled JSON spells each pair out.
+// blocks share a surface (`PILLARS.md`, "Content forward compatibility"); the compiled JSON spells each pair out.
 local footstepEvents = {
   grass: { player: 'footstep_grass', shambler: 'shambler_step_grass' },
   mud: { player: 'footstep_mud', shambler: 'shambler_step_mud' },

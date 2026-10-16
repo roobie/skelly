@@ -13,12 +13,12 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
+import { sitePalette } from '../src/core/sitePalette.ts';
 import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
-import { terrainBlockIds } from '../src/core/worldgen.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
@@ -100,7 +100,7 @@ it('validates weathering profile bounds without pinning authored tuning', () => 
 it('weathering applies to authored construction, not terrain or vegetation', () => {
   const vegetation = base.find(({ source }) => source === 'vegetation.json')!.data as ContentFile;
   const vegetationIds = (vegetation.blocks ?? []).map(({ id }) => baseRegistry.blockIds.get(id)!);
-  const terrainIds = Object.values(terrainBlockIds((id) => baseRegistry.blockIds.get(id)!));
+  const terrainIds = Object.values(sitePalette(baseRegistry).terrain);
   const naturalIds = [...vegetationIds, ...terrainIds];
   const naturalIdSet = new Set(naturalIds);
   const builtIds = baseRegistry.blocks.map((_, id) => id).filter((id) => id !== 0 && !naturalIdSet.has(id));
@@ -863,6 +863,26 @@ describe('content', () => {
     expect(result.registry.items.has('book_reference_fixture')).toBe(false);
   });
 
+  it('rejects a site palette that names a missing block or template', () => {
+    const edited = structuredClone(base);
+    const entry = (edited.find(({ source }) => source === 'site-generation.json')!.data as ContentFile)
+      .siteGeneration![0]!;
+    entry.palette.terrain.rock = 'no_such_block';
+    entry.hamlet.northSide = ['no_such_template'];
+    const { issues } = buildRegistry(edited);
+    expect(issues.map(({ path, message }) => `${path}: ${message}`)).toEqual(
+      expect.arrayContaining([
+        'siteGeneration[0].palette.terrain.rock: no block "no_such_block"',
+        'siteGeneration[0].hamlet.northSide: no template "no_such_template"',
+      ]),
+    );
+  });
+
+  it('rejects a registry without site generation when a site palette is read', () => {
+    const { registry } = buildRegistry([]);
+    expect(() => sitePalette(registry)).toThrow('Missing site generation content');
+  });
+
   it('rejects placement loot without a container and retains the same loot when a pocket exists', () => {
     const source = 'test/fixtures/content/loot-override-no-container.json';
     const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;
@@ -877,6 +897,20 @@ describe('content', () => {
     // Only the container changes: shape/references and actual marked placement stay identical.
     const control = structuredClone(data);
     control.furniture![0]!.container = { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] };
+    // Reachability reads the hamlet template pools from site generation, so the fixture supplies them.
+    control.blocks = [{ id: 'fixture_block', name: 'Fixture block', color: '#888888', solid: true }];
+    control.siteGeneration = [
+      {
+        ...(base.find((file) => file.source === 'site-generation.json')!.data as ContentFile).siteGeneration![0]!,
+        palette: {
+          terrain: { grass: 'fixture_block', dirt: 'fixture_block', rock: 'fixture_block', sand: 'fixture_block' },
+          paving: 'fixture_block',
+          trees: { trunk: 'fixture_block', branch: 'fixture_block', leaves: 'fixture_block' },
+          leafLitter: 'fixture_block',
+        },
+        hamlet: { hedge: 'fixture_block', northSide: ['shed'], southSide: ['shed'] },
+      },
+    ];
     const { registry, issues } = buildRegistry([{ source, data: control }]);
     expect(issues).toEqual([]);
     expect(checkReachability(registry).found.has('review_only_item')).toBe(true);

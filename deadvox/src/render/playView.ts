@@ -24,6 +24,7 @@ import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CaseEffects } from './caseEffects.ts';
+import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
@@ -122,6 +123,8 @@ type PlayViewEngine = Readonly<
     | 'isSolid'
     | 'entities'
     | 'skylight'
+    | 'site'
+    | 'scenario'
   >
 >;
 
@@ -153,6 +156,18 @@ export const createPlayView = (
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
   const gore = new Gore(s, config.seed);
+  const decals =
+    engine.scenario && config.authoredDecals
+      ? new AuthoredDecals(engine.site?.authoredPlacements ?? [], {
+          seed: config.seed,
+          blockSize: s,
+          ageGameSeconds: engine.scenario.outbreakAgeGameHours,
+          limit: engine.scenario.decalLimit,
+        })
+      : undefined;
+  if (decals) {
+    scene.add(decals.mesh);
+  }
   const itemThrows = new ItemThrows(registry, models, s, config.seed);
   const targetCell = config.debug
     ? (block: Vec3) => {
@@ -168,6 +183,7 @@ export const createPlayView = (
     piles.dispose();
     caseEffects.dispose();
     gore.dispose();
+    decals?.dispose();
     impactEffects.dispose();
     itemThrows.dispose();
     blastFlashes.dispose();
@@ -299,6 +315,7 @@ export const createPlayView = (
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
       furniture.sync(entities);
+      decals?.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));
       zombieMeshes.setCamera?.(camera);

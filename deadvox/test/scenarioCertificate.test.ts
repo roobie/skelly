@@ -1,3 +1,4 @@
+import { deepStrictEqual } from 'node:assert/strict';
 import { describe, expect, it, vi } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import type { Chunk } from '../src/core/chunk.ts';
@@ -11,8 +12,9 @@ import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
+import { sitePalette } from '../src/core/sitePalette.ts';
 import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
-import { generateChunk, terrainBlockIds } from '../src/core/worldgen.ts';
+import { generateChunk } from '../src/core/worldgen.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 
@@ -22,6 +24,10 @@ if (!profile) {
   throw new Error('Missing composed scenario');
 }
 const COMPOSED_LADDER = /composed ladder/;
+// The heavy cases are CPU-bound, so their timeouts scale with the simulated work and leave headroom for a shared
+// CPU, instead of vitest's flat default (#792).
+const WALK_MS_PER_STOREY = 4800;
+const GAUNTLET_SITE_MS = 7200;
 const scale = makeScale(0.5);
 const grid = cityGridOf(registry, profile.city);
 const base = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
@@ -161,18 +167,22 @@ describe('final composed body-route certificate', () => {
     );
   }
 
-  it('rejects an obstruction stamped after the service portal was locally certified', () => {
-    const original = CitySite.prototype.stamp;
-    const stamp = vi.spyOn(CitySite.prototype, 'stamp').mockImplementation(function (this: CitySite, chunk: Chunk) {
-      original.call(this, chunk);
-      obstruct(chunk, this.plan.portal!.lower);
-    });
-    try {
-      expect(() => new GauntletSite({ seed: 9, registry, scale, scenario: profile })).toThrow(COMPOSED_LADDER);
-    } finally {
-      stamp.mockRestore();
-    }
-  });
+  it(
+    'rejects an obstruction stamped after the service portal was locally certified',
+    () => {
+      const original = CitySite.prototype.stamp;
+      const stamp = vi.spyOn(CitySite.prototype, 'stamp').mockImplementation(function (this: CitySite, chunk: Chunk) {
+        original.call(this, chunk);
+        obstruct(chunk, this.plan.portal!.lower);
+      });
+      try {
+        expect(() => new GauntletSite({ seed: 9, registry, scale, scenario: profile })).toThrow(COMPOSED_LADDER);
+      } finally {
+        stamp.mockRestore();
+      }
+    },
+    GAUNTLET_SITE_MS,
+  );
 
   it('rejects a shaft-neighbor obstruction in the final furnished production lab', () => {
     const [descent] = base.composition!.descents;
@@ -260,55 +270,63 @@ describe('final composed body-route certificate', () => {
   });
 });
 
-it('resolves production service ownership, furnished loot and terrain stamps independently of chunk request order', () => {
-  const first = siteOf();
-  const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile }));
-  const composition = first.plan.composition!;
-  const points = [
-    first.plan.portal!.upper,
-    first.plan.portal!.lower,
-    composition.objective,
-    ...composition.descents.flatMap(({ upper, lower, ladder }) => [upper, lower, ladder]),
-    ...composition.resources.map(({ at }) => at),
-  ];
-  const cells = new Map(
-    points.map((point) => {
+const stampProbePoints = [
+  base.portal!.upper,
+  base.portal!.lower,
+  base.composition!.objective,
+  ...base.composition!.descents.flatMap(({ upper, lower, ladder }) => [upper, lower, ladder]),
+  ...base.composition!.resources.map(({ at }) => at),
+];
+const stampProbeCells = [
+  ...new Map(
+    stampProbePoints.map((point) => {
       const cell = point.map(toChunk) as Vec3;
       return [cell.join(','), cell] as const;
     }),
-  );
-  expect(cells.size).toBeGreaterThan(1);
-  const service = first.plan.service!.template;
-  expect(service.provenance!.some((owner) => owner && owner.slotPath.split('/').length > 2)).toBe(true);
-  const selected = (site: CitySite) => ({
-    origin: site.plan.service!.origin,
-    turn: site.plan.service!.turn,
-    provenance: site.plan.service!.template.provenance,
-  });
-  const before = structuredClone(selected(first));
-  const request = (site: CitySite, order: readonly Vec3[]) => {
-    const terrain = {
-      seed: site.seed,
-      scale,
-      surface: site.surface,
-      blocks: terrainBlockIds((id) => registry.blockIds.get(id)!),
+  ).values(),
+];
+
+it(
+  'resolves production service ownership, furnished loot and terrain stamps independently of chunk request order',
+  () => {
+    const first = siteOf();
+    const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile }));
+    expect(stampProbeCells.length).toBeGreaterThan(1);
+    const service = first.plan.service!.template;
+    expect(service.provenance!.some((owner) => owner && owner.slotPath.split('/').length > 2)).toBe(true);
+    const selected = (site: CitySite) => ({
+      origin: site.plan.service!.origin,
+      turn: site.plan.service!.turn,
+      provenance: site.plan.service!.template.provenance,
+    });
+    const before = structuredClone(selected(first));
+    const request = (site: CitySite, order: readonly Vec3[]) => {
+      const terrain = {
+        seed: site.seed,
+        scale,
+        surface: site.surface,
+        blocks: sitePalette(registry).terrain,
+      };
+      return new Map(
+        order.map((cell) => {
+          const chunk = generateChunk(terrain, cell);
+          site.stamp(chunk);
+          return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
+        }),
+      );
     };
-    return new Map(
-      order.map((cell) => {
-        const chunk = generateChunk(terrain, cell);
-        site.stamp(chunk);
-        return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
-      }),
-    );
-  };
-  const forward = request(first, [...cells.values()]);
-  const backward = request(second, [...cells.values()].reverse());
-  for (const key of cells.keys()) {
-    expect(backward.get(key)).toEqual(forward.get(key));
-  }
-  expect(selected(first)).toEqual(before);
-  expect(selected(second)).toEqual(before);
-});
+    const forward = request(first, stampProbeCells);
+    const backward = request(second, [...stampProbeCells].reverse());
+    // Native deep equality avoids matcher traversal overhead on dense chunk and provenance arrays.
+    for (const cell of stampProbeCells) {
+      const key = cell.join(',');
+      deepStrictEqual(backward.get(key), forward.get(key), `chunk ${key}`);
+    }
+    deepStrictEqual(selected(first), before, 'forward selection remains unchanged');
+    deepStrictEqual(selected(second), before, 'backward selection matches the original');
+  },
+  stampProbeCells.length * 2 * 1000,
+);
 
 it(
   'walks substituted rooms and closed lids, opens descents, returns alive and activates the objective from the goal-face save',
@@ -317,7 +335,7 @@ it(
     const plan = candidatePlan(base.candidates[0]!, 1, selected.template, substitutedRegistry);
     traverseScenario(new CitySite(selected.seed, substitutedRegistry, scale, plan), profile, scale);
   },
-  profile.composition!.storeys.length * 2000,
+  profile.composition!.storeys.length * WALK_MS_PER_STOREY,
 );
 
 describe('lab threat by depth', () => {

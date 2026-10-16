@@ -20,6 +20,9 @@ export interface TemporalField {
 
 /** Authored temporal schema fields; the lint rule checks this catalogue against schemas and base content. */
 export const TEMPORAL_FIELDS = [
+  { path: 'scenarios.outbreakAgeGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
+  { path: 'templates.decals[].variants[].ageingGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
+  { path: 'mapPieces.decals[].variants[].ageingGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'items.container.pockets[].handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.door.handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.container.pockets[].handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
@@ -54,10 +57,14 @@ export const TEMPORAL_FIELDS = [
   { path: 'models.action.fire.rearwardSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.action.fire.dwellSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.action.fire.forwardSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'models.action.fire.unlockSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'models.action.fire.lockSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.action.hand.durationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.action.hand.rearwardSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.action.hand.dwellSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.action.hand.forwardSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'models.action.hand.unlockSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'models.action.hand.lockSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.action.roundsPerSimMinute', clock: 'Sim', unit: 'PerMinute', dimension: 'rate' },
   { path: 'sounds.minIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.training.practicePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },

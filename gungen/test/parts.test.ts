@@ -33,8 +33,11 @@ import { runSweeps, sweepGroup } from './sweeps.ts';
  */
 const ARRAY_SAMPLED_KEYS = ['receiver', 'barrel', 'handguard', 'sight'] as const;
 const ARRAY_STRENGTH = 3;
+// Cartridge selection is covered by boltExport.test.ts rather than multiplying unrelated mechanism combinations.
 const withoutHandleStyle = (family: PartFamily) =>
-  Object.fromEntries(Object.entries(family.params).filter(([name]) => name !== 'handleStyle'));
+  Object.fromEntries(
+    Object.entries(family.params).filter(([name]) => name !== 'handleStyle' && name !== 'boltCalibre'),
+  );
 
 /**
  * Interactions the array is known to miss, as explicit cases. `receiver`'s shell coordinates depend
@@ -54,6 +57,7 @@ const EXPLICIT_CASES: Readonly<Record<string, readonly Record<string, string>[]>
       boltHandleProfile: 'standard',
       rail: 'full',
       magazineWell: 'standard',
+      integral: 'no',
     },
   ],
 };

@@ -31,12 +31,12 @@ depth to the change; a small PR doesn't skip coverage.
 Each lens cites its owning doc and section. Read the rule there at review time;
 the skill keeps no second copy.
 
-1. **Engineering pillars and repository rules:** `README.md`, "Pillars"; `README.md`, "Static analysis"; `README.md`, "Maintainability"; `AGENTS.md`, "Project stage"; `AGENTS.md`, "No host-specific information in tracked files"; `AGENTS.md`, "Dependency age".
-2. **Subproject pillars and content ownership:** `README.md`, "Content forward compatibility", and each subproject's own pillars,
+1. **Engineering pillars and repository rules:** `PILLARS.md`, "Pillars"; `PILLARS.md`, "Static analysis"; `PILLARS.md`, "Maintainability"; `AGENTS.md`, "Project stage"; `AGENTS.md`, "No host-specific information in tracked files"; `AGENTS.md`, "Dependency age".
+2. **Subproject pillars and content ownership:** `PILLARS.md`, "Content forward compatibility", and each subproject's own pillars,
    such as `deadvox/DESIGN.md`, "Pillars", whose "Depth through data" covers
    deadvox code that owns a decision belonging to content; for performance,
    `deadvox/DESIGN.md`, "Performance and scale"; for authored data, `docs/jsonnet.md`, "Jsonnet authoring"; and `docs/PROCESS.md`, "Continuous consolidation", for ownership and duplicated decisions.
-3. **Zero drift and docs:** `README.md`, "Zero drift"; `AGENTS.md`, "Zero drift";
+3. **Zero drift and docs:** `PILLARS.md`, "Zero drift"; `AGENTS.md`, "Zero drift";
    `docs/PROCESS.md`, "The life of a change", step 4.
 4. **Tests:** `AGENTS.md`, "Tests". From "Before pushing: tiered checks", a review
    checks what it can see: a red CI job is fixed in the next push, and no
@@ -67,7 +67,7 @@ Delegate unambiguous patterns to scripts. A passing checker is evidence only for
 the constraint it checks, not for the principle. Content-id literals and closed
 unions are not violations by themselves: fixtures and structural discriminants
 may use them. Judge content identities versus mechanism selectors and engine
-structure under `README.md`, "Content forward compatibility"; no separate
+structure under `PILLARS.md`, "Content forward compatibility"; no separate
 allowlist or scanner is required to assess the rule.
 
 Coders don't run the skill as a pre-push check; `AGENTS.md`, "Before pushing: tiered checks", lists none. Add one only if reviews show misses a coder could have
@@ -96,7 +96,7 @@ one of:
 - **not assessed**, only when the lens's rule isn't settled yet; the report names
   the item that settles it. This never blocks the merge, and the lens is listed
   as open. Content forward compatibility is settled and must be assessed when
-  applicable (`README.md`, "Content forward compatibility").
+  applicable (`PILLARS.md`, "Content forward compatibility").
 
 Each finding states:
 
@@ -114,7 +114,7 @@ fix), is a FIX. For example, deadvox code that decides one item's behaviour, a
 decision `deadvox/DESIGN.md`, "Pillars"; `deadvox/DESIGN.md`, "Depth through data", gives to content,
 is a FIX. A violation of a settled rule is a real defect in the sense of
 `AGENTS.md`, "Tests", whose FIX threshold the review applies. The rules' owners
-also set what blocks: `AGENTS.md`, "Tests"; `AGENTS.md`, "Zero drift"; `README.md`, "Zero drift"; and `docs/PROCESS.md`, "The life of a change", step 4. Anything else is
+also set what blocks: `AGENTS.md`, "Tests"; `AGENTS.md`, "Zero drift"; `PILLARS.md`, "Zero drift"; and `docs/PROCESS.md`, "The life of a change", step 4. Anything else is
 listed and doesn't block.
 
 For a settled rule, missing evidence is not a status. The reviewer gets it before
