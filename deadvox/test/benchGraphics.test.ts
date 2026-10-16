@@ -20,6 +20,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
     smallSunMap: toggle,
     fastCamo: toggle,
     coarseWeathering: toggle,
+    cachedSurfaceNoise: toggle,
   };
   const { registry } = buildRegistry([
     { source: 'fixture', data: { graphics: [{ id: CORE_CONTENT_IDS.coreGraphics, ...tuning }] } },

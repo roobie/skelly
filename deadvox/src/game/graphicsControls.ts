@@ -12,7 +12,11 @@ import { readGraphicsSettings, writeGraphicsSettings } from './graphicsSettings.
 interface GraphicsTargets {
   mood?: { setRenderScale: (value: number) => void; setBloomScale: (value: number) => void };
   shadows?: { setSmallSunMap: (value: boolean) => void };
-  meshes: { setFastCamo: (value: boolean) => void; setCoarseWeathering: (value: boolean) => void };
+  meshes: {
+    setFastCamo: (value: boolean) => void;
+    setCoarseWeathering: (value: boolean) => void;
+    setCachedSurfaceNoise: (value: boolean) => void;
+  };
 }
 
 export class GraphicsControls {
@@ -73,5 +77,6 @@ export class GraphicsControls {
     this.targets.shadows?.setSmallSunMap(values.smallSunMap);
     this.targets.meshes.setFastCamo(values.fastCamo);
     this.targets.meshes.setCoarseWeathering(values.coarseWeathering);
+    this.targets.meshes.setCachedSurfaceNoise(values.cachedSurfaceNoise);
   }
 }
