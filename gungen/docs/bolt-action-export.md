@@ -29,4 +29,6 @@ Pump tubes and integral rifle wells use the same neutral model record because lo
 
 Generated model records stay separate from authored handling constructors so an asset refresh cannot flatten tunable content. The refresh path preserves Deadvox-owned model fields; see `src/cli/refreshDeadvoxFirearms.ts`. Content compilation shares the source boundary so the manifest and bundled entries cannot silently diverge.
 
-Acceptance includes Deadvox validation and model preparation, not just a successful Gungen export. The property checks are in `test/boltExport.test.ts` and `deadvox/test/models.test.ts`; synchronization of credited firearm assets is checked by `test/gungen-deadvox-contract.test.mjs`.
+Export storage must not change time semantics, so standalone model records use the pack's temporal catalogue rather than a second allowlist; see `deadvox/src/core/temporalFields.ts`, `TEMPORAL_FIELDS`, and `deadvox/tools/time-lint.mjs`, `temporalCatalogueFindings`.
+
+Acceptance includes Deadvox validation and model preparation, not just a successful Gungen export. The property checks are in `test/boltExport.test.ts` and `deadvox/test/models.test.ts`; synchronization of credited guns, ammunition and standalone optics is checked by `test/gungen-deadvox-contract.test.mjs` because each can silently drift from its source.

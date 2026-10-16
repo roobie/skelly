@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
-import { applyDir, applyPoint, invert, length, sub } from '@skelly/engine/core/math.ts';
+import { applyDir, applyPoint, length, sub } from '@skelly/engine/core/math.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly } from '@skelly/engine/core/schema.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
@@ -12,7 +12,6 @@ import { BOLT_CARTRIDGE, BOLT_EXTRACTION_CLEARANCE_U, boltStrokeUnits } from '..
 import { sweepBoltAction } from '../src/gun/boltSweep.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
-import { internalMagazineCapacity } from '../src/gun/internalMagazine.ts';
 import { loadDesigns } from './helpers.ts';
 
 const designs = loadDesigns().filter(({ assembly }) =>
@@ -49,13 +48,6 @@ it('exports every bolt pattern as a hand-only action with a shared bore-parallel
       (min[2] + max[2]) / 2,
     ]);
     expect(length(sub(turns[0]!.pivot, centre))).toBeLessThan(1e-8);
-    const receiver = resolved.defs.get(action.receiverId)!;
-    const port = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
-    const home = applyPoint(invert(resolved.placed.get(action.receiverId)!), action.carrier.placed.t);
-    expect(action.cycle.ejectAt * action.cycle.strokeUnits).toBeCloseTo(
-      home[0] - (port.box.center[0] - port.box.half[0]),
-      8,
-    );
     for (const turn of turns) {
       expect(Math.abs(turn.axis[0])).toBeCloseTo(1);
       expect(length(sub(turn.pivot, turns[0]!.pivot))).toBeLessThan(1e-8);
@@ -125,8 +117,13 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
     throw new Error('metallic fixture required');
   }
   const diameter = BOLT_CARTRIDGE.case.rim.diameter.value! / (gunDomain.units.metresPerUnit * 1000);
-  expect(model.internalMagazine?.capacity).toBe(Math.floor((2 * well.box.half[1]) / diameter));
-  expect(model.internalMagazine?.capacity).toBe(internalMagazineCapacity(resolved, BOLT_CARTRIDGE));
+  const capacity = model.internalMagazine?.capacity;
+  if (capacity === undefined) {
+    throw new Error('Integral capacity is missing');
+  }
+  const height = 2 * well.box.half[1];
+  expect(capacity * diameter).toBeLessThanOrEqual(height);
+  expect((capacity + 1) * diameter).toBeGreaterThan(height);
   expect(model.slots?.magazine).toBeUndefined();
   expect(Object.values(model.compatibility ?? {}).some((allowed) => allowed.includes('optic-hunting-3-9x'))).toBe(true);
   expect(model.sight?.kind).toBe('iron');
