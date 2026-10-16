@@ -239,7 +239,7 @@ Every shop shows a street cue that no house carries, and no two shop types share
 
 A scenario is mod content: a mod must be able to express a scenario like the gauntlet in
 Jsonnet without a code edit. The scenario row must supply the values, such as counts,
-chances, densities, thresholds and authored anchors, and must select code-owned
+chances, densities, thresholds and authored placements, and must select code-owned
 mechanisms, as `../../PILLARS.md`, "Content forward compatibility" requires. Code keeps
 what a mod cannot safely or usefully restate: the body route oracle, the physical climb
 and reach certificates, spawn admission with its saved ledger, and the scenario run's win
@@ -256,9 +256,9 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   `scenarioCertificate`.
 - **Leads and landmarks.** They are lists in the row, not a fixed number, because how
   many clues and landmarks a scenario has is design.
-- **Placement.** The row places leads and landmarks by anchors on the city plan. Code
-  resolves anchors to positions and derives each template's size bound from its anchor,
-  so a scenario moves its clues without a code edit and a bad anchor fails validation.
+- **Placement.** Where leads and landmarks go comes from the row, as anchors or placement
+  rules. Code resolves and validates them, so a scenario moves its clues without a code
+  edit and a bad placement fails validation.
 - **Goal text.** The words the goal shows when it refuses are content, as player-facing
   wording belongs to the mod (#456).
 
