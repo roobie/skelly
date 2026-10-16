@@ -41,12 +41,12 @@ local publicNotes = [
 local utilities = [
   {
     id: 'gauntlet_public_memo', size: [2, 3, 2], lootContext: { usage: ['Industrial'], tier: 'Tier1' },
-    palette: { '=': 'concrete', F: { furniture: 'crate', loot: 'd41_empty' } },
+    palette: { '=': 'asphalt', F: { furniture: 'crate', loot: 'd41_empty' } },
     layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
     id: 'gauntlet_public_directions', size: [2, 3, 2], lootContext: { usage: ['Industrial'], tier: 'Tier1' },
-    palette: { '=': 'concrete', F: { furniture: 'crate', loot: 'd41_empty' } },
+    palette: { '=': 'asphalt', F: { furniture: 'crate', loot: 'd41_empty' } },
     layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
