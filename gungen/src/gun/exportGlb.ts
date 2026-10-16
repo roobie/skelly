@@ -27,6 +27,7 @@ import {
   attachmentSlots,
   withAttachmentInstanceAppearances,
 } from './attachments.ts';
+import { boltCalibreIssue, isBoltAssembly, withBoltCalibre } from './boltCartridge.ts';
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { eulerXyzDegrees, gripTurn, toFileAxes } from './exportFrame.ts';
@@ -416,6 +417,9 @@ const integralCapacity = (resolved: Resolved, cartridge: Cartridge | undefined):
     : internalMagazineCapacity(resolved, cartridge);
 };
 
+const boltMetadataIssue = (assembly: Assembly, cartridge: Cartridge | undefined): string | undefined =>
+  cartridge && isBoltAssembly(assembly) ? boltCalibreIssue(cartridge.id) : undefined;
+
 /**
  * Exports a gun assembly: core writes the GLB, then this adapter selects gun anchors and builds the Deadvox entry.
  * Structural anchors are emitted independently of optional cartridge metadata.
@@ -427,7 +431,13 @@ export const exportGunGlb = (
   options: GunExportOptions = {},
 ): GunExportResult => {
   const { includeAttachmentCompatibility = false, ...metadata } = options;
-  const resolved = withAttachmentInstanceAppearances(resolve(assembly, gunDomain));
+  const message = boltMetadataIssue(assembly, metadata.cartridge);
+  if (message) {
+    return { ok: false, error: { code: 'structure-issues', issues: [{ rule: 'structure', message, parts: [] }] } };
+  }
+  const resolved = withAttachmentInstanceAppearances(
+    resolve(withBoltCalibre(assembly, metadata.cartridge?.id), gunDomain),
+  );
   // Broken assemblies get the core writer's structure report before anchor selection.
   if (resolved.issues.length > 0 || resolved.placed.size < Object.keys(assembly.parts).length) {
     const probe = exportGlb({ resolved, palette: GUN_PALETTE, appearance, asset });

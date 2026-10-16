@@ -185,6 +185,10 @@
       "output": "gungen/cartridges/357-magnum.json"
     },
     {
+      "source": "gungen/cartridges/catalogue/bolt.jsonnet",
+      "output": "gungen/cartridges/catalogue/bolt.json"
+    },
+    {
       "source": "gungen/designs/archetype-revolver.jsonnet",
       "output": "gungen/designs/archetype-revolver.json"
     },

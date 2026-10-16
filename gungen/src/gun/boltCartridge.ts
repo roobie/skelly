@@ -1,16 +1,73 @@
 import { GRID } from '@skelly/engine/core/conventions.ts';
-import cartridgeJson from '../../cartridges/308-winchester.json' with { type: 'json' };
+import type { Assembly, ParamSpec } from '@skelly/engine/core/schema.ts';
+import catalogue from '../../cartridges/catalogue/bolt.json' with { type: 'json' };
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { formatCartridgeParseError, parseCartridge } from '../ammo/parseCartridge.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
 
-const parsed = parseCartridge(cartridgeJson);
-if (!parsed.ok) {
-  throw new Error(formatCartridgeParseError(parsed.error));
-}
-export const BOLT_CARTRIDGE = parsed.cartridge;
+const cartridges = new Map<string, Cartridge>(
+  catalogue.cartridges.map((raw) => {
+    const parsed = parseCartridge(raw);
+    if (!parsed.ok) {
+      throw new Error(formatCartridgeParseError(parsed.error));
+    }
+    return [parsed.cartridge.id, parsed.cartridge];
+  }),
+);
+
+export const boltCalibreIssue = (calibre: string): string | undefined => {
+  const cartridge = cartridges.get(calibre);
+  if (!cartridge) {
+    return `unsupported bolt calibre "${calibre}": no cartridge in the bolt catalogue`;
+  }
+  if (
+    cartridge.kind !== 'metallic' ||
+    cartridge.overallLength.max.value === null ||
+    cartridge.case.rim.diameter.value === null
+  ) {
+    return `unsupported bolt calibre "${calibre}": requires sourced metallic overall length and rim diameter`;
+  }
+  return undefined;
+};
+
+export const boltCartridge = (calibre = catalogue.defaultCalibre): Cartridge => {
+  const issue = boltCalibreIssue(calibre);
+  if (issue) {
+    throw new Error(issue);
+  }
+  return cartridges.get(calibre)!;
+};
+
+export const boltCalibreParam: ParamSpec = {
+  values: [...cartridges.keys()],
+  default: catalogue.defaultCalibre,
+};
+
+const boltFamilies = new Set(['receiver', 'bolt-carrier', 'bolt-handle-arm', 'bolt-handle-knob', 'lower', 'magazine']);
+export const isBoltAssembly = (assembly: Assembly): boolean =>
+  Object.values(assembly.parts).some(
+    (part) =>
+      (part.family === 'receiver' && part.params?.action === 'bolt') ||
+      (part.family === 'bolt-carrier' && part.params?.pattern === 'bolt'),
+  );
+
+export const withBoltCalibre = (assembly: Assembly, calibre: string | undefined): Assembly => {
+  if (calibre === undefined || !isBoltAssembly(assembly) || boltCalibreIssue(calibre)) {
+    return assembly;
+  }
+  return {
+    ...assembly,
+    parts: Object.fromEntries(
+      Object.entries(assembly.parts).map(([id, part]) => [
+        id,
+        boltFamilies.has(part.family) ? { ...part, params: { ...part.params, boltCalibre: calibre } } : part,
+      ]),
+    ),
+  };
+};
+
 /** Visual extraction allowance, not a manufacturing tolerance. */
-export const BOLT_EXTRACTION_CLEARANCE_U = 2 * GRID;
+export const BOLT_EXTRACTION_CLEARANCE_U = catalogue.extractionClearanceGridSteps * GRID;
 export const boltStrokeUnits = (cartridge: Cartridge): number => {
   if (cartridge.kind !== 'metallic' || cartridge.overallLength.max.value === null) {
     throw new Error('Bolt travel needs a sourced metallic cartridge overall length');
@@ -20,21 +77,22 @@ export const boltStrokeUnits = (cartridge: Cartridge): number => {
     GRID
   );
 };
-export const BOLT_ACTION_TRAVEL_U = boltStrokeUnits(BOLT_CARTRIDGE);
 /** Estimated integral-well wall and follower reserve. */
-export const BOLT_MAGAZINE_WALL_U = GRID;
-export const BOLT_MAGAZINE_RESERVE_U = 2 * GRID;
-export const boltMagazineSection = () => {
-  if (BOLT_CARTRIDGE.kind !== 'metallic' || BOLT_CARTRIDGE.case.rim.diameter.value === null) {
-    throw new Error('Integral well requires a sourced cartridge rim');
+export const BOLT_MAGAZINE_WALL_U = catalogue.magazineWallGridSteps * GRID;
+export const BOLT_MAGAZINE_RESERVE_U = catalogue.magazineReserveGridSteps * GRID;
+export const boltMagazineSection = (cartridge: Cartridge) => {
+  if (
+    cartridge.kind !== 'metallic' ||
+    cartridge.overallLength.max.value === null ||
+    cartridge.case.rim.diameter.value === null
+  ) {
+    throw new Error('Integral well requires sourced cartridge length and rim');
   }
   const mmPerUnit = METRES_PER_UNIT * 1000;
   return {
     depth:
-      Math.ceil(BOLT_CARTRIDGE.overallLength.max.value! / mmPerUnit / (2 * GRID)) * (2 * GRID) +
-      2 * BOLT_MAGAZINE_WALL_U,
+      Math.ceil(cartridge.overallLength.max.value / mmPerUnit / (2 * GRID)) * (2 * GRID) + 2 * BOLT_MAGAZINE_WALL_U,
     width:
-      Math.ceil(BOLT_CARTRIDGE.case.rim.diameter.value / mmPerUnit / (2 * GRID)) * (2 * GRID) +
-      2 * BOLT_MAGAZINE_WALL_U,
+      Math.ceil(cartridge.case.rim.diameter.value / mmPerUnit / (2 * GRID)) * (2 * GRID) + 2 * BOLT_MAGAZINE_WALL_U,
   };
 };
