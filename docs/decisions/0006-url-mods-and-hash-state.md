@@ -29,8 +29,8 @@ mods. See `deadvox/src/game/bundledMods.ts`, `selectBundledMods`, and
 The game reads nothing from the URL hash, and the camera rewrites the query. See
 `deadvox/src/debug/camUrl.ts`, `camUrl`.
 
-The project owes no backwards compatibility. See `AGENTS.md`, "Project stage: pre-pre-alpha,
-no backwards compatibility".
+The project owes no backwards compatibility. See
+`AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
 
 ## Decision
 
@@ -53,8 +53,8 @@ Add a start-state section to the mod schema, alongside the sections in
 `deadvox/src/core/schema.ts`, `SECTION_DESCRIPTOR`. Its row describes a new game: the site
 layout and its storeys and density, the start time of day, the kit, wounds and skill
 levels. The core mod carries the default row, so `startingLoadout` and the layout's start
-time move from code into `deadvox/src/content/base`, as `PILLARS.md`, "Content forward
-compatibility" asks for tunables.
+time move from code into `deadvox/src/content/base`. Tunables belong in content; see
+`PILLARS.md`, "Content forward compatibility".
 
 The start row replaces whole, by id, like every other definition, so the existing merge in
 `deadvox/src/core/content.ts`, `buildRegistry`, needs no new rule. A demo mod that wants
@@ -162,7 +162,7 @@ builds a game URL from a mod list, a hash object and harness switches, so the fo
 in one place. Each slice moves the scripts it touches to the helper, and the entry's
 rejection of unknown parameters makes any missed script fail in CI rather than test the
 wrong world. The workflows in `.github/workflows/deadvox-browser.yml`,
-`tools/publish-playtest.mjs` and `test/site-launcher.test.mjs` move in the slice that
+`deadvox/tools/publish-playtest.mjs` and `test/site-launcher.test.mjs` move in the slice that
 removes the parameters they use.
 
 ## Slices
