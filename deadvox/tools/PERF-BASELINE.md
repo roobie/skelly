@@ -3,6 +3,7 @@ read_if:
   - you're collecting or comparing a real-GPU Deadvox performance baseline
   - you're changing the performance harness or interpreting its evidence
   - you're deciding whether a rejected measurement can support a performance claim
+  - you're reducing main-thread inventory or collision work without changing simulation rules
 ---
 
 # Real-GPU baseline
@@ -47,3 +48,13 @@ See `deadvox/tools/perf-baseline-stats.mjs`, `summarize`, for the JSON summary c
 Raw warm frames accompany each summary, enabling different aggregation without repeating
 the expensive hardware run. Compare repeat spreads as well as pooled results; no automatic
 pass/fail claim substitutes for the operator's fidelity approval.
+
+## Simulation CPU reductions
+
+Prefer excluding impossible work to retaining mutable simulation projections. Inventory ownership,
+light power and terrain edits must be visible immediately, without a second invalidation protocol.
+See `deadvox/src/core/lights.ts`, `inventoryLightSources`, and `deadvox/src/core/physics.ts`,
+`moveTerrainAxis`. Equivalence fixtures compare pruned exposure to the full item tree and terrain-only
+movement to the generic obstacle path; see `deadvox/test/lightPool.test.ts` and
+`deadvox/test/physics.test.ts`. Performance evidence belongs outside the repository, not in timing
+assertions that depend on the execution host.

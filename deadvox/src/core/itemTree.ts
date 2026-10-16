@@ -115,7 +115,9 @@ export function* walkItemTree<Node extends NodeShape<Node>, Pile, Entity>(
 ): Generator<TreeEntry<Node, Pile, Entity>> {
   for (const root of roots) {
     yield root;
-    yield* walkItemTree<Node, Pile, Entity>([...slotChildren(root), ...workChildren(root), ...pocketChildren(root)]);
+    if (root.item.slots || root.item.work || root.item.pockets) {
+      yield* walkItemTree<Node, Pile, Entity>([...slotChildren(root), ...workChildren(root), ...pocketChildren(root)]);
+    }
   }
 }
 
