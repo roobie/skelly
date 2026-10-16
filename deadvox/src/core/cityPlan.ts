@@ -640,6 +640,20 @@ export const servicePlacement = ({
     turn,
   });
 
+const startPlacement = (context: FillContext, scenario?: ScenarioDef): Placement | undefined => {
+  const definition = scenario?.composition?.start;
+  if (!definition) {
+    return undefined;
+  }
+  return servicePlacement({
+    template: startTemplate(context.registry, definition.template, context.seed, `scenario:${scenario!.id}:start`),
+    floor: context.floor,
+    grid: context.grid,
+    cell: definition.cell,
+    turn: 0,
+  });
+};
+
 const freezeChoices = (choices: readonly PoolChoice[]) =>
   Object.freeze(choices.map((choice) => Object.freeze({ ...choice })));
 
@@ -873,15 +887,7 @@ export const buildCityPlan = ({
           turn: Rng.stream(seed, `scenario:${scenario.id}:service-turn`).int(0, 3) as Turn,
         })
       : undefined;
-  const start = scenario?.composition
-    ? servicePlacement({
-        template: startTemplate(registry, scenario.composition.start.template, seed, `scenario:${scenario.id}:start`),
-        floor,
-        grid,
-        cell: scenario.composition.start.cell,
-        turn: 0,
-      })
-    : undefined;
+  const start = startPlacement(context, scenario);
   const composition =
     service && scenario && start ? composeScenario(registry, scenario, service, { floor, start }) : undefined;
   const fillCells = (forced: PoolRef[]): Placement[] => {
