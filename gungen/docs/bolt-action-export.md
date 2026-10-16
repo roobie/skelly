@@ -17,7 +17,7 @@ An integral magazine loaded singly through the open bolt distinguishes this spor
 
 ## Geometry and motion boundary
 
-The shared bolt-pattern family uses the sourced hunting-cartridge envelope rather than a fixed travel class. Extraction clearance, well walls and follower reserve are labelled visual estimates; they are not manufacturing specifications. Well capacity counts the rounds that fit the resolved cavity, not a nominal capacity label. See `src/gun/boltCartridge.ts`, `boltStrokeUnits`, and `src/gun/internalMagazine.ts`, `internalMagazineCapacity`.
+Cartridge identity must not silently select a different action envelope: modded bolt designs must either size from their selected cartridge or report a validation issue. The bolt catalogue owns cartridge admission and visual extraction, wall and follower estimates; these are not manufacturing specifications. See `cartridges/catalogue/bolt.jsonnet`, `src/gun/boltCartridge.ts`, `boltCalibreIssue`, and `src/gun/internalMagazine.ts`, `internalMagazineCapacity`.
 
 The carrier, arm and knob share one turn about the carrier's longitudinal centreline. Each part stores that pivot and bore-parallel axis in its own local frame, while the export transforms them into the model frame. The handle profile supplies the lift angle. The receiver relief leaves room for the handle root, and the rail height follows the turned neck's clearance at the rail edge, rather than allowing collisions by family exemption. Continuous clearance is certified for the coupled body and handle over both the lift arc and the lifted draw, including fixed optic geometry; interval displacement bounds prevent narrow collisions between samples from being missed. See `src/gun/parts.ts`, `boltTurn`, and `src/gun/boltSweep.ts`, `sweepBoltAction`.
 
@@ -27,7 +27,7 @@ Pump tubes and integral rifle wells use the same neutral model record because lo
 
 ## Regeneration and acceptance
 
-Generated model records stay separate from authored handling constructors so an asset refresh cannot flatten tunable content. The refresh path preserves Deadvox-owned model fields; see `src/cli/refreshDeadvoxFirearms.ts`. Content compilation shares the source boundary so the manifest and bundled entries cannot silently diverge.
+Generated model records stay separate from authored handling constructors so an asset refresh cannot flatten tunable content. Refresh companions must follow the exported calibre and certified attachment compatibility rather than assuming the shipped hunting equipment; see `src/cli/boltCompanionExports.ts`, `boltCompanionExports`. The refresh path preserves Deadvox-owned model fields; see `src/cli/refreshDeadvoxFirearms.ts`. Content compilation shares the source boundary so the manifest and bundled entries cannot silently diverge.
 
 Export storage must not change time semantics, so standalone model records use the pack's temporal catalogue rather than a second allowlist; see `deadvox/src/core/temporalFields.ts`, `TEMPORAL_FIELDS`, and `deadvox/tools/time-lint.mjs`, `temporalCatalogueFindings`.
 

@@ -6,10 +6,13 @@ import type { Assembly } from '@skelly/engine/core/schema.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../../deadvox/src/core/content.ts';
+import { boltCompanionExports } from '../src/cli/boltCompanionExports.ts';
 import { exportFileText } from '../src/cli/exportFile.ts';
+import { readCartridge } from '../src/cli/readCartridge.ts';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
-import { BOLT_CARTRIDGE, BOLT_EXTRACTION_CLEARANCE_U, boltStrokeUnits } from '../src/gun/boltCartridge.ts';
+import { BOLT_EXTRACTION_CLEARANCE_U, boltCartridge, boltStrokeUnits } from '../src/gun/boltCartridge.ts';
 import { sweepBoltAction } from '../src/gun/boltSweep.ts';
+import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { loadDesigns } from './helpers.ts';
@@ -17,6 +20,7 @@ import { loadDesigns } from './helpers.ts';
 const designs = loadDesigns().filter(({ assembly }) =>
   Object.values(assembly.parts).some((part) => part.params?.pattern === 'bolt'),
 );
+const BOLT_CARTRIDGE = boltCartridge();
 const hunting = JSON.parse(readFileSync('designs/hunting-rifle.json', 'utf8'));
 const scoped: Assembly = {
   ...hunting.assembly,
@@ -92,6 +96,57 @@ it('derives travel from the cartridge even beyond the old class stroke', () => {
     expect(action.cycle.strokeUnits).toBeCloseTo(boltStrokeUnits(BOLT_CARTRIDGE));
   }
 });
+
+it('sizes a bolt design action and integral well from its selected calibre', () => {
+  const selected = readCartridge('338-lapua-magnum');
+  if (!(selected.ok && selected.cartridge)) {
+    throw new Error('missing alternate cartridge fixture');
+  }
+  const loaded = loadGunDesign(JSON.stringify({ ...hunting, calibre: selected.cartridge.id }));
+  if (!loaded.ok) {
+    throw new Error(loaded.error.message);
+  }
+  expect(loaded.issues.filter(({ path }) => path === 'calibre')).toEqual([]);
+  const resolved = resolve(loaded.design.assembly, gunDomain);
+  const action = resolveGunAction(resolved)!;
+  expect(action.cycle.strokeUnits).toBe(boltStrokeUnits(selected.cartridge));
+  const original = resolve(hunting.assembly, gunDomain);
+  const well = (value: typeof resolved) =>
+    [...value.defs.values()].flatMap((def) => def.keepOuts).find(({ id }) => id === 'internal-magazine-well')!.box;
+  expect(well(resolved).half[0]).toBeGreaterThan(well(original).half[0]);
+  const exported = exportFileText(JSON.stringify({ ...hunting, calibre: selected.cartridge.id }), {
+    id: 'alternate_bolt',
+    file: 'assets/models/alternate_bolt.glb',
+  });
+  if (!exported.ok) {
+    throw new Error(exported.message);
+  }
+  const companions = boltCompanionExports(exported.modelEntry, [
+    { id: 'optic_high_mag_5_25x', file: 'assets/models/optic_high_mag_5_25x.glb' },
+    { id: 'optic_red_dot', file: 'assets/models/optic_red_dot.glb' },
+  ]).map(({ modelEntry }) => modelEntry);
+  const selectedCalibre = selected.cartridge.id;
+  expect(companions.filter(({ calibre }) => calibre === selectedCalibre)).toHaveLength(2);
+  expect(companions.some(({ id }) => id === 'optic_high_mag_5_25x')).toBe(true);
+  expect(companions.some(({ id }) => id === 'optic_red_dot')).toBe(false);
+});
+
+it.each(['missing-test-cartridge', '12-gauge-00-buck'])(
+  'reports unsupported bolt calibre %s at the design boundary',
+  (calibre) => {
+    const loaded = loadGunDesign(JSON.stringify({ ...hunting, calibre }));
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) {
+      throw new Error(loaded.error.message);
+    }
+    expect(loaded.issues.some((issue) => issue.path === 'calibre' && issue.message.includes(calibre))).toBe(true);
+    const out = exportFileText(JSON.stringify({ ...hunting, calibre }), {
+      id: 'unsupported_bolt',
+      file: 'assets/models/unsupported_bolt.glb',
+    });
+    expect(out.ok).toBe(false);
+  },
+);
 
 it('certifies the whole handle arc and draw against fixed geometry including the hunting scope', () => {
   for (const assembly of [...designs.map((design) => design.assembly), scoped]) {
