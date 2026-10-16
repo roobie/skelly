@@ -1,4 +1,4 @@
-import { buildCityPlan, cityGridOf, scenarioPlanIssues } from './cityPlan.ts';
+import { buildCityPlan, type CityGrid, cityGridOf, scenarioPlanIssues } from './cityPlan.ts';
 import { CitySite } from './citySite.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -8,7 +8,7 @@ import type { Scale } from './scale.ts';
 import { scenarioCertificate } from './scenarioCertificate.ts';
 import type { ScenarioDef } from './schema.ts';
 import type { HordeSpawn, ZombieSpawn } from './site.ts';
-import { footprint, placedSpawns } from './templates.ts';
+import { footprint, type Placement, placedSpawns } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
 export class GauntletSite extends CitySite {
@@ -66,6 +66,24 @@ export class GauntletSite extends CitySite {
   }
 }
 
+const groupRoad = (group: Placement[], grid: CityGrid) => {
+  const first = group[0]!;
+  const [, depth] = footprint(first);
+  const frontage = group.filter(
+    (placement) => placement.origin[2] === first.origin[2] && placement.turn === first.turn,
+  );
+  const z =
+    first.turn === 0
+      ? first.origin[2] - grid.pad - grid.street / 2
+      : first.origin[2] + depth + grid.pad + grid.street / 2;
+  return {
+    x0: Math.min(...frontage.map((placement) => placement.origin[0])),
+    x1: Math.max(...frontage.map((placement) => placement.origin[0] + footprint(placement)[0])),
+    z0: z - grid.street / 2,
+    z1: z + grid.street / 2,
+  };
+};
+
 const gauntletPopulation = (
   site: CitySite,
   { id: scenarioId, population }: ScenarioDef,
@@ -94,21 +112,7 @@ const gauntletPopulation = (
   );
   for (const start of starts) {
     const group = ordinary.slice(start, start + groupSize);
-    const first = group[0]!;
-    const [, depth] = footprint(first);
-    const frontage = group.filter(
-      (placement) => placement.origin[2] === first.origin[2] && placement.turn === first.turn,
-    );
-    const z =
-      first.turn === 0
-        ? first.origin[2] - grid.pad - grid.street / 2
-        : first.origin[2] + depth + grid.pad + grid.street / 2;
-    const road = {
-      x0: Math.min(...frontage.map((placement) => placement.origin[0])),
-      x1: Math.max(...frontage.map((placement) => placement.origin[0] + footprint(placement)[0])),
-      z0: z - grid.street / 2,
-      z1: z + grid.street / 2,
-    };
+    const road = groupRoad(group, grid);
     const seed = Math.floor(hash3(site.seed, start, 0, 601) * 0x7f_ff_ff_ff);
     for (const spawn of hamletZombieSpawns(seed, road, group.flatMap(placedSpawns), {
       roadHeightAt: () => floor,
