@@ -1,13 +1,14 @@
 local circulation = import 'gauntlet-lab-circulation.libsonnet';
 local equipment = import 'gauntlet-lab-equipment.libsonnet';
 local descents = import 'gauntlet-lab-descents.libsonnet';
+local threat = import 'gauntlet-lab-threat.libsonnet';
 local context = { usage: ['Industrial', 'Medical'], tier: 'Tier1' };
 local slot = function(id, kind, ref, at, size) { id: id, at: at, size: size, turn: 0, choices: [{ ref: { kind: kind, id: ref }, weight: 1 }] };
 local room = function(id, shell, first, second) equipment.room('gauntlet_lab_' + id, 'gauntlet_lab_shell' + shell, first, second);
 local placedRoom = function(id, ref, at) slot(id, 'assembly', 'gauntlet_lab_' + ref, at, [18, 8, 14]);
 local storey = function(id, rooms, entry=false) {
   id: 'gauntlet_lab_storey_' + id, size: [72, 8, 64], lootContext: context,
-  slots: (if entry then [if s.id == 'cross_south' then s + { choices: [{ ref: { kind: 'piece', id: 'gauntlet_lab_entry_cross' }, weight: 1 }] } else s for s in circulation.slots] else circulation.slots) + rooms,
+  slots: (if entry then [if s.id == 'cross_south' then s + { choices: [{ ref: { kind: 'piece', id: 'gauntlet_lab_entry_cross' }, weight: 1 }] } else s for s in circulation.slots] else circulation.slots) + rooms + threat.slots(id, rooms),
   joins: [], ports: [], anchors: {},
 };
 local cabinetShape = [
@@ -42,7 +43,7 @@ local cabinetShape = [
     { id: 'gauntlet_look_pump', name: 'Prototype pressure plant', size: [4, 4, 3], color: '#738981', shape: [{ position: [0, 0, 0], size: [4, 0.4, 3] }, { position: [0.3, 0.4, 0.3], size: [1.2, 3.6, 2.4] }, { position: [2.5, 0.4, 0.3], size: [1.2, 3.6, 2.4] }] },
     { id: 'gauntlet_look_culture', name: 'Prototype culture apparatus', size: [4, 4, 2], color: '#91a978', shape: [{ position: [0, 0, 0], size: [4, 0.4, 2] }, { position: [0.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [1.7, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [3.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }] },
   ],
-  mapPieces: circulation.mapPieces + equipment.mapPieces,
+  mapPieces: circulation.mapPieces + equipment.mapPieces + threat.mapPieces,
   mapAssemblies: [
     room('intake_outgoing', '_outgoing', 'bench', 'bench'), room('records', '', 'archive', 'archive'), room('clinic', '', 'exam', 'bench'),
     room('cold_store', '', 'cold_store', 'cold_store'), room('workshop', '', 'bench', 'pump'), room('utilities', '', 'pump', 'pump'),

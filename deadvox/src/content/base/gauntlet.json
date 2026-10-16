@@ -3090,6 +3090,474 @@
           "id": "south_east",
           "size": [18, 8, 14],
           "turn": 0
+        },
+        {
+          "at": [16, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
         }
       ]
     },
@@ -3477,6 +3945,481 @@
           ],
           "id": "south_east",
           "size": [18, 8, 14],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "north_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "north_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "north_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "middle_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "middle_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "middle_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "south_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "south_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "south_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 4
+            }
+          ],
+          "id": "south_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_east_threat_2",
+          "size": [1, 1, 1],
           "turn": 0
         }
       ]
@@ -3866,6 +4809,502 @@
           "id": "south_east",
           "size": [18, 8, 14],
           "turn": 0
+        },
+        {
+          "at": [16, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "north_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "north_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "north_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "north_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "middle_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "middle_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "middle_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "south_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "south_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "south_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "south_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "south_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 5
+            }
+          ],
+          "id": "south_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
         }
       ]
     },
@@ -4254,6 +5693,789 @@
           "id": "south_east",
           "size": [18, 8, 14],
           "turn": 0
+        },
+        {
+          "at": [16, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "north_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "north_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "north_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "north_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "north_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "north_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "north_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "north_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "middle_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "middle_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "middle_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "middle_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "middle_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "south_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "south_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "south_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "south_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "south_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
         }
       ]
     },
@@ -4641,6 +6863,915 @@
           ],
           "id": "south_east",
           "size": [18, 8, 14],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "north_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "middle_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 31],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "middle_east_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_west_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_west_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_west_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [39, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_middle_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [31, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_middle_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_middle_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_east_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [54, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_east_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "south_east_threat_2",
+          "size": [1, 1, 1],
           "turn": 0
         }
       ]
@@ -11587,10 +14718,10 @@
             "SRRRRRRRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
-            "RR....RRRRRRRRRRRR",
+            "RR....RRRRRRR.RRRR",
+            "RRRRRRRRRRRR.RRRRR",
             "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRR....RRR",
+            "RRRR.RRRRRR....RRR",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRRRRRRRRS",
@@ -11882,10 +15013,10 @@
             "SRRRRRRRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
-            "RR....RRRRRRRRRRRR",
+            "RR....RRRRRRR.RRRR",
+            "RRRRRRR...RR.RRRRR",
             "RRRRRRR...RRRRRRRR",
-            "RRRRRRR...RRRRRRRR",
-            "RRRRRRRRRRR....RRR",
+            "RRRR.RRRRRR....RRR",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRRRRRRRRS",
@@ -12177,10 +15308,10 @@
             "SRRRRRRRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
-            "RR....RRRRRRRRRRRR",
+            "RR....RRRRRRR.RRRR",
+            "RRRRRRRR...R.RRRRR",
             "RRRRRRRR...RRRRRRR",
-            "RRRRRRRR...RRRRRRR",
-            "RRRRRRRRRRR....RRR",
+            "RRRR.RRRRRR....RRR",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRRRRRRRRS",
@@ -12472,10 +15603,10 @@
             "SRRRRRRRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
-            "RR....RRRRRRRRRRRR",
+            "RR....RRRRRRR.RRRR",
+            "RRRRRRRRRRRR.RRRRR",
             "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRR....RRR",
+            "RRRR.RRRRRR....RRR",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRRRRRRRRS",
@@ -12767,10 +15898,10 @@
             "SRRRRRRRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
             "SR....RRRRRRRRRRRS",
-            "RR....RRRRRRRRRRRR",
+            "RR....RRRRRRR.RRRR",
+            "RRRRRRRRRRRR.RRRRR",
             "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRR....RRR",
+            "RRRR.RRRRRR....RRR",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRR....RRS",
             "SRRRRRRRRRRRRRRRRS",
@@ -13293,6 +16424,102 @@
       },
       "ports": [],
       "size": [4, 5, 3],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_marker_crawler_60",
+      "layers": [["Z"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["R"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "Z": {
+          "chance": 0.59999999999999998,
+          "spawn": "crawler"
+        }
+      },
+      "ports": [],
+      "size": [1, 1, 1],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_marker_none",
+      "layers": [["."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["R"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        }
+      },
+      "ports": [],
+      "size": [1, 1, 1],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_marker_runner_60",
+      "layers": [["Z"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["R"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "Z": {
+          "chance": 0.59999999999999998,
+          "spawn": "runner"
+        }
+      },
+      "ports": [],
+      "size": [1, 1, 1],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_marker_shambler_60",
+      "layers": [["Z"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["R"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "Z": {
+          "chance": 0.59999999999999998,
+          "spawn": "shambler"
+        }
+      },
+      "ports": [],
+      "size": [1, 1, 1],
       "style": "concrete_lab"
     },
     {

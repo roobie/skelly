@@ -358,6 +358,15 @@ vertical chunks and furniture requests need the same complete plan. See `scenari
 in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `src/core/ladders.ts`, `ladderOutward`.
 
+Lab threat grows with depth so descending feels like going deeper into a failing
+facility, not repeating one room. Each storey authors weighted marker rows, and each
+room kind sets how many of its marker cells are live; breach and quarantine rooms are
+densest. Crawlers and runners appear only below the containment storey. The rows are
+slot choices, so a mod retunes a storey by overriding data. The amalgam is withheld
+because its validated body is taller than a storey. See
+`src/content/base/gauntlet-lab-threat.libsonnet`, `rows` and `kinds`; and
+`test/scenarioCertificate.test.ts`, "lab threat by depth".
+
 One owned assembly supplies the service facade and underground campus, so the
 playable world and visual inspection cannot diverge into separate geometry.
 Fixed resources must remain available independently of incidental loot.

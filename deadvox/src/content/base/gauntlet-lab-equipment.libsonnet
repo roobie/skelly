@@ -1,4 +1,10 @@
 local room = (import 'gauntlet-lab-rooms.libsonnet').mapPieces[0];
+local threat = import 'gauntlet-lab-threat.libsonnet';
+// Layer 1 leaves each threat marker cell unclaimed for the marker piece to claim.
+local punch = function(claims) [
+  std.join('', [if std.length([1 for c in threat.cells if c[0] == x && c[2] == z]) > 0 then '.' else claims[z][x] for x in std.range(0, std.length(claims[z]) - 1)])
+  for z in std.range(0, std.length(claims) - 1)
+];
 local walls = room.layers[3];
 local bayClaims = [
   'SSSSSSSRRRRSSSSSSS', 'SRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRS', 'SR....RRRRRRRRRRRS',
@@ -49,7 +55,7 @@ local outgoingEastClaims = [
   'SSSSSSSSSSSSSSSSSS', 'SSSSSSSSSSSSSSSSSS',
 ];
 local shell = room + { id: 'gauntlet_lab_shell', layers: [room.layers[0], walls, walls, walls, walls, walls, walls, walls],
-  ownership: { layers: [room.ownership.layers[0], bayClaims, bayClaims, bayClaims, bayClaims, bayClaims, room.ownership.layers[3], room.ownership.layers[3]] },
+  ownership: { layers: [room.ownership.layers[0], punch(bayClaims), bayClaims, bayClaims, bayClaims, bayClaims, room.ownership.layers[3], room.ownership.layers[3]] },
   anchors: { circulation: { kind: 'standing', at: [9, 1, 11] } }, ports: [],
 };
 local empty = ['....', '....', '....'];
@@ -74,10 +80,10 @@ local furnished = function(id, shellId, first, second) {
 {
   room: furnished,
   mapPieces: [shell,
-    shell + { id: 'gauntlet_lab_shell_incoming', ownership: { layers: [room.ownership.layers[0], incomingClaims, incomingClaims, incomingClaims, incomingClaims, incomingClaims, (import 'gauntlet-lab-descents.libsonnet').mapPieces[0].ownership.layers[3], (import 'gauntlet-lab-descents.libsonnet').mapPieces[0].ownership.layers[3]] } },
-    shell + { id: 'gauntlet_lab_shell_incoming_east', ownership: { layers: [room.ownership.layers[0], incomingEastClaims, incomingEastClaims, incomingEastClaims, incomingEastClaims, incomingEastClaims, incomingEastTop, incomingEastTop] } },
-    shell + { id: 'gauntlet_lab_shell_outgoing', layers: [outgoingFloor, walls, walls, walls, walls, walls, walls, walls], ownership: { layers: [outgoingClaims, bayClaims, bayClaims, bayClaims, bayClaims, bayClaims, room.ownership.layers[3], room.ownership.layers[3]] } },
-    shell + { id: 'gauntlet_lab_shell_outgoing_east', layers: [outgoingEastFloor, walls, walls, walls, walls, walls, walls, walls], ownership: { layers: [outgoingEastClaims, bayClaims, bayClaims, bayClaims, bayClaims, bayClaims, room.ownership.layers[3], room.ownership.layers[3]] } },
+    shell + { id: 'gauntlet_lab_shell_incoming', ownership: { layers: [room.ownership.layers[0], punch(incomingClaims), incomingClaims, incomingClaims, incomingClaims, incomingClaims, (import 'gauntlet-lab-descents.libsonnet').mapPieces[0].ownership.layers[3], (import 'gauntlet-lab-descents.libsonnet').mapPieces[0].ownership.layers[3]] } },
+    shell + { id: 'gauntlet_lab_shell_incoming_east', ownership: { layers: [room.ownership.layers[0], punch(incomingEastClaims), incomingEastClaims, incomingEastClaims, incomingEastClaims, incomingEastClaims, incomingEastTop, incomingEastTop] } },
+    shell + { id: 'gauntlet_lab_shell_outgoing', layers: [outgoingFloor, walls, walls, walls, walls, walls, walls, walls], ownership: { layers: [outgoingClaims, punch(bayClaims), bayClaims, bayClaims, bayClaims, bayClaims, room.ownership.layers[3], room.ownership.layers[3]] } },
+    shell + { id: 'gauntlet_lab_shell_outgoing_east', layers: [outgoingEastFloor, walls, walls, walls, walls, walls, walls, walls], ownership: { layers: [outgoingEastClaims, punch(bayClaims), bayClaims, bayClaims, bayClaims, bayClaims, room.ownership.layers[3], room.ownership.layers[3]] } },
     equipment('bench', 'gauntlet_look_bench', [two, two, empty, empty, empty], [twoClaims, twoClaims, emptyClaims, emptyClaims, emptyClaims]),
     equipment('console', 'gauntlet_look_console', [two, two, empty, empty, empty], [twoClaims, twoClaims, emptyClaims, emptyClaims, emptyClaims]),
     equipment('archive', 'gauntlet_look_archive', [two, two, two, two, two], [twoClaims, twoClaims, twoClaims, twoClaims, twoClaims]),
