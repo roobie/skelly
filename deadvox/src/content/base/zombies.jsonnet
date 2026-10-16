@@ -515,6 +515,37 @@ local figureSeeds = std.range(1, 8);
       "dismember": { "chance": 0.15, "headOnKillChance": 0.25 },
       "abilities": [],
       "loot": "shambler_pockets"
+    },
+    // Placeholder shambler body until the m7 spitter model; `docs/acid-zombie.md` owns what the type must show.
+    $.zombies[0] + {
+      "id": "acid_zombie",
+      "name": "Acid zombie",
+      "authoredOnly": true,
+      "acidResistance": 1,
+      "abilities": ["acidSpit"],
+      "acidSpit": {
+        "rangeBand": { "nearMetres": 4, "farMetres": 12 },
+        "windupSimSeconds": 1.2,
+        "cooldownSimSeconds": 5,
+        "cancelCooldownFraction": 0.5,
+        "spreadDegrees": 4,
+        "globMetresPerSimSecond": 14,
+        "moves": [
+          {
+            "id": "spit",
+            "weight": 1,
+            "damage": 6,
+            "damageKind": "acid",
+            "hitRegions": [
+              { "region": "torso", "weight": 5 },
+              { "region": "head", "weight": 2 },
+              { "region": "leftArm", "weight": 1 },
+              { "region": "rightArm", "weight": 1 }
+            ]
+          }
+        ],
+        "puddle": { "lifetimeSimSeconds": 8, "radiusMetres": 0.8, "damagePerSimSecond": 2 }
+      }
     }
   ]
 }

@@ -354,6 +354,30 @@ describe('content', () => {
     ).toBe(true);
   });
 
+  it('rejects an acidSpit ability without tunables and tunables without the ability', () => {
+    const zombieFile = base.find(({ source }) => source === 'zombies.json')!;
+    const issuesFor = (edit: (acid: { abilities: string[]; acidSpit?: unknown }) => void) => {
+      const data = structuredClone(zombieFile.data) as {
+        zombies: { id: string; abilities: string[]; acidSpit?: unknown }[];
+      };
+      edit(data.zombies.find(({ id }) => id === 'acid_zombie')!);
+      return validateContent({ source: zombieFile.source, data }).map(({ message }) => message);
+    };
+    const mismatch = 'acidSpit tunables must match the acidSpit ability';
+
+    expect(issuesFor(() => undefined)).not.toContain(mismatch);
+    expect(
+      issuesFor((acid) => {
+        delete acid.acidSpit;
+      }),
+    ).toContain(mismatch);
+    expect(
+      issuesFor((acid) => {
+        acid.abilities = [];
+      }),
+    ).toContain(mismatch);
+  });
+
   it('keeps runner attack damage within the shambler damage ceilings', () => {
     const shambler = baseRegistry.zombies.get('shambler')!;
     const runner = baseRegistry.zombies.get('runner')!;
