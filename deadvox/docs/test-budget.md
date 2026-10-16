@@ -4,6 +4,7 @@ read_if:
   - you're revisiting a cut after a budget overrun or related defect
   - you're measuring suite growth between milestones
   - you're changing content-scaling route or chunk-order test work
+  - you're changing base-registry fixture construction or its isolation
 ---
 
 # Default Deadvox unit-suite reductions
@@ -24,6 +25,12 @@ Revisit a cut only when an issue reports a related defect or suite overrun; rest
 Isolate city route alternatives so content additions do not accumulate into one timing failure and failures identify the affected alternative. See `test/cityKitRoutes.test.ts`, `cityAlternatives`.
 
 For production chunk-order checks, native deep equality avoids matcher traversal dominating generation and stamping without weakening full-data comparisons. A workload-scaled deadline avoids coupling content growth to a fixed allowance. See `test/scenarioCertificate.test.ts`, `stampProbeCells`.
+
+## Base-registry fixtures
+
+Gameplay tests need validated content, not repeated admission of the same base pack during every file's import. Build that fixture once per run and deserialize a fresh object graph for each caller; do not share mutable registries or disable file isolation. See `test/baseRegistrySetup.ts`, `setup` and `test/baseRegistry.ts`, `baseRegistry`. The serialized fixture belongs to the run-owned temporary directory so concurrent runs cannot reuse stale content. Watch reruns rebuild it before tests execute.
+
+Content-admission and overlay tests still build their own inputs. Fixture fidelity and nested mutation isolation are checked separately in `test/baseRegistry.test.ts`; no gameplay assertion is removed when a file switches fixture construction.
 
 ## Milestone growth
 

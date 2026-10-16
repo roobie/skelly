@@ -1,21 +1,13 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { PlaytestMarks } from '../src/core/site.ts';
 import { PlaytestObserver } from '../src/game/playtestObserver.ts';
 import { SessionMetrics } from '../src/game/playtestTools.ts';
 import type { Session } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 
 const runFurnitureChain = (startsInFurniture: boolean, metrics = new SessionMetrics(1), marks?: PlaytestMarks) => {
   const inventory = new Inventory(registry);
