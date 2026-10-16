@@ -23,6 +23,7 @@ read_if:
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're changing loaded-distance simulation or the horde representation
   - you're restructuring the per-tick zombie simulation
+  - you're authoring decals or scenario outbreak age
   - you're changing bleeding cues
   - you change landing injuries or their content tuning
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
@@ -67,7 +68,7 @@ for project operation.
 
 ## The game in one paragraph
 
-You are alone in a quarantined region some weeks after an outbreak. The world is
+You are alone in a quarantined region after an outbreak; the scenario determines how long afterward. The world is
 real-time and open, as in DayZ: you walk, sneak, loot, fight and run, and the
 dead never stop wandering. Your survival depends on depth, as in
 Cataclysm: DDA: what you carry, and in which pocket; what you can craft from
@@ -1032,7 +1033,10 @@ application rather than weapon-class special cases. See `ZombieSchema` in
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps
   the stains it fell with. Blood shares scene lighting rather than glowing over
-  it, so darkness hides stains and carried light can reveal them. A player's
+  it, so darkness hides stains and carried light can reveal them. Authored blood,
+  scorch and paint follow the same presentation-only rule; their age comes from the
+  scenario, not a fixed outbreak timeline. See `docs/content.md`, "Authored decals".
+  A player's
   bleeding drips from the affected region as the avatar is drawn in each view; in
   first person, droplets enter view only when looking down or near the screen edge.
   The HUD shows blood level and active regions, and the worst wound reaching a

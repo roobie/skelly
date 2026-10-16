@@ -7,10 +7,7 @@
 
 import { HASH31_GLSL } from './surfacePatterns.ts';
 
-export const BLOOD_STAIN_FRAGMENT_DECLARATIONS = /* glsl */ `
-varying float vCrowdBloodiness;
-varying vec3 vCrowdLocal;
-varying float vCrowdBone;
+export const STAIN_NOISE_GLSL = /* glsl */ `
 ${HASH31_GLSL}
 
 float stainNoise(vec3 p) {
@@ -28,6 +25,13 @@ float stainNoise(vec3 p) {
   return mix(low, high, f.z);
 }
 
+`;
+
+export const BLOOD_STAIN_FRAGMENT_DECLARATIONS = /* glsl */ `
+varying float vCrowdBloodiness;
+varying vec3 vCrowdLocal;
+varying float vCrowdBone;
+${STAIN_NOISE_GLSL}
 // How strongly a point is stained, 0 to 1. Two octaves of value noise make blotches about 20 cm across with
 // ragged edges. The smoothstep spreads the noise's bell-shaped values roughly evenly over 0 to 1, so with the
 // bloodiness as the threshold the stained share follows it: none at 0, nearly all of the body at 1. Inside a

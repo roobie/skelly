@@ -1,19 +1,16 @@
 import { expect, test, vi } from 'vitest';
-import { evaluateMods, MAX_MOD_BYTES } from '../src/game/browserMods.ts';
+import { MAX_MOD_BYTES } from '../src/game/browserMods.ts';
 import { readPaste } from '../src/ui/modsPanel.ts';
 import fixture from './fixtures/mods/browser-mod.json' with { type: 'json' };
 
 const url = 'https://example.test/mod.json';
 const text = JSON.stringify(fixture);
 
-test('URL and pasted JSON share ordinary mod admission', async () => {
+test('URL and pasted JSON reach mod admission as unchanged payloads', async () => {
   const fetchMod = vi.fn<typeof fetch>().mockResolvedValueOnce(new Response(text));
   const result = await readPaste(` ${url} `, fetchMod);
   expect(fetchMod).toHaveBeenCalledWith(url, { credentials: 'omit' });
   expect(result).toEqual({ name: url, text });
-  const accepted = evaluateMods([{ source: result.name, text: result.text, enabled: true }]);
-  expect(accepted.canStart).toBe(true);
-  expect(accepted.content.registry.items.get(fixture.items[0]!.id)?.name).toBe(fixture.items[0]!.name);
   expect(await readPaste(text, fetchMod)).toEqual({ name: 'pasted.json', text });
   expect(fetchMod).toHaveBeenCalledOnce();
 });
@@ -53,10 +50,7 @@ test('URL intake cancels streamed overflow before requesting another chunk', asy
   expect(pulls).toBe(2);
 });
 
-test('malformed URL content is refused by mod admission', async () => {
+test('malformed URL content passes intake unchanged for mod admission to refuse', async () => {
   const fetchMod = vi.fn<typeof fetch>().mockResolvedValueOnce(new Response('{'));
-  const invalid = await readPaste(url, fetchMod);
-  const result = evaluateMods([{ source: invalid.name, text: invalid.text, enabled: true }]);
-  expect(result.canStart).toBe(false);
-  expect(result.issues.get(url)?.length).toBeGreaterThan(0);
+  expect(await readPaste(url, fetchMod)).toEqual({ name: url, text: '{' });
 });

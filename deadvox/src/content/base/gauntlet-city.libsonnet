@@ -1,3 +1,4 @@
+local decals = import 'decals.libsonnet';
 {
   furniture: [{
     id: 'gauntlet_car_wreck', name: 'Placeholder car wreck',
@@ -14,6 +15,7 @@
   templates: [{
     id: 'gauntlet_car_wreck', size: [5, 3, 10],
     lootContext: { usage: [], tier: 'Tier1' },
+    decals: [decals.scorch([4.8, 1, 3])],
     palette: { '=': 'concrete', W: { furniture: 'gauntlet_car_wreck' } },
     layers: [
       ['=====', '=====', '=====', '=====', '=====', '=====', '=====', '=====', '=====', '====='],

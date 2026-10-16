@@ -9,6 +9,7 @@ read_if:
   - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you're authoring or changing exterior door openings
   - you're authoring or changing furniture appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
+  - you author decals or scenario outbreak age
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
 ---
@@ -99,6 +100,10 @@ Weathering is a render-only content choice, not saved world state. Named profile
 ## Content test registries
 
 Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`. Unrelated contract fixtures may author common-supply metadata through `test/economyFixtures.ts`, `buildFixtureRegistry`; admission tests must use raw sources so the fixture builder cannot conceal missing metadata.
+
+Transport tests check the fetched payload and stream limits rather than rebuilding the
+playable pack at each asynchronous step. Admission and malformed-JSON rejection belong
+to `test/browserMods.test.ts`; keeping that owner avoids load-sensitive transport timeouts.
 
 ## Authored structures and sites
 
@@ -267,6 +272,33 @@ Choose the structural appearance in content through `src/core/schema.ts`, `Furni
 Use `deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
 
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
+
+## Authored decals
+
+Decals are presentation-only surface marks, not furniture or blocks. They cannot change
+collision, sight, searching or saves: their placements derive from content. They share
+scene lighting so darkness hides them and carried light reveals them. Authored marks
+are needed for beats furniture cannot carry, such as a blood trail leading into a room.
+Keep them sparse rather than covering every surface.
+
+Scenario content owns time since the outbreak because different scenarios may be days,
+months or years afterward. The gauntlet authors months, so blood reads dried rather
+than fresh. Definitions own the ageing response instead of a renderer-wide age default.
+See `src/core/schema.ts`, `DecalSchema` and `ScenarioSchema`; the closed kind dispatch
+is `src/core/decalKinds.ts`, `DECAL_KINDS`.
+
+Templates and kit pieces own surface placements independently of occupied cells. A door
+attachment names its ordinary upright door anchor so the mark follows that panel without
+owning door state. Size, palette, stroke geometry, seeded variants and ageing live in
+`src/content/base/decals.libsonnet`; the scenario owns the count cap, and validation
+reports a service template whose decals exceed it so the renderer never truncates the
+marks authors placed first (`scenarioPlanIssues` in `src/core/cityPlan.ts`). See
+`src/core/templates.ts`, `placedDecals`, and `src/render/decals.ts`, `AuthoredDecals`.
+The renderer batches authored marks and shares stain noise with body blood. Use
+`decals=0` in a review URL to compare without the marks; it does not alter the world.
+For hardware review use `tools/decal-probe.mjs` with matching posed head and main
+URLs and an evidence directory. Exclusive paired trials distinguish decal cost from
+whole-scene variation; screenshots also need operator judgment.
 
 ## Furniture action noise
 

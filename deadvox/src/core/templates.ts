@@ -11,7 +11,16 @@ import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import type { LootContext } from './loot.ts';
 import { pickWeighted, Rng } from './random.ts';
-import type { DoorLockDef, KitAnchor, KitPort, KitRef, MapAssemblyDef, MapPieceDef, TemplateAccess } from './schema.ts';
+import type {
+  DecalDef,
+  DoorLockDef,
+  KitAnchor,
+  KitPort,
+  KitRef,
+  MapAssemblyDef,
+  MapPieceDef,
+  TemplateAccess,
+} from './schema.ts';
 import { constructFlight } from './stairFlight.ts';
 import { compileOwnership, ownershipCell } from './templateOwnership.ts';
 
@@ -149,6 +158,7 @@ export interface CompiledTemplate {
   readonly ports?: readonly KitPort[];
   readonly pieces: readonly Piece[];
   readonly spawns: readonly SpawnMarker[];
+  readonly decals?: readonly DecalDef[];
   readonly access?: TemplateAccess;
   /** The support layer of the declared ground floor, relative to the lowest template layer. */
   readonly groundLayer?: number;
@@ -206,6 +216,19 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
   return { pieces, spawns };
 };
 
+const checkDecalDoors = (registry: Registry, template: TemplateDef, pieces: readonly Piece[]): void => {
+  for (const decal of template.decals ?? []) {
+    if (!decal.door) {
+      continue;
+    }
+    const piece = pieces.find((candidate) => candidate.pos.every((v, axis) => v === decal.door![axis]));
+    const door = piece && registry.furniture.get(piece.furniture)?.door;
+    if (!door || door.hatch) {
+      throw new Error(`${template.id}: decal attachment needs an upright door anchor`);
+    }
+  }
+};
+
 /** Resolves a template's palette against the registry. The validator has already checked it. */
 export const compileTemplate = (
   registry: Registry,
@@ -215,6 +238,7 @@ export const compileTemplate = (
   const [sx, sy, sz] = template.size;
   const blocks = new Uint16Array(sx * sy * sz);
   const { pieces, spawns } = compileMarkers(registry, template);
+  checkDecalDoors(registry, template, pieces);
   for (const [x, y, z] of cellsOf(template.size)) {
     const entry = template.palette[charAt(template, x, y, z) ?? ''];
     blocks[x + sx * (z + sz * y)] = typeof entry === 'string' ? registry.blockIds.get(entry)! : 0;
@@ -234,6 +258,7 @@ export const compileTemplate = (
     ...compileOwnership(template, blocks, pieces, source),
     pieces,
     spawns,
+    ...(template.decals ? { decals: template.decals } : {}),
     ...(template.access ? { access: template.access, groundLayer: (groundLayer ?? 1) - 1 } : {}),
   };
 };
@@ -361,6 +386,7 @@ export const compileMapPiece = (
     lootContext: piece.lootContext,
     size: piece.size,
     layers: piece.layers,
+    ...(piece.decals ? { decals: piece.decals } : {}),
     palette,
     ownership: piece.ownership,
   };
@@ -691,6 +717,7 @@ export const compileAssembly = (
     ...composeAssemblyVoxels(assembly, resolved, context),
     pieces: resolved.flatMap(({ placement }) => placedPieces(placement)),
     spawns: resolved.flatMap(({ placement }) => placedSpawns(placement)),
+    decals: resolved.flatMap(({ placement }) => placedDecals(placement)),
     ...(assembly.access ? { access: assembly.access, groundLayer: (ground?.floor ?? 1) - 1 } : {}),
   };
 };
@@ -792,6 +819,23 @@ export const placedPoint = ({ template, origin, turn }: Placement, [x, y, z]: Ve
   return [origin[0] + u + 0.5, origin[1] + y, origin[2] + v + 0.5];
 };
 
+export const placedDecals = (placement: Placement): DecalDef[] =>
+  (placement.template.decals ?? []).map((decal) => ({
+    ...decal,
+    at: placedPoint(placement, decal.at),
+    ...(decal.door
+      ? {
+          door: placedPieces(placement)[
+            placement.template.pieces.findIndex((piece) => piece.pos.every((v, axis) => v === decal.door![axis]))
+          ]!.pos,
+        }
+      : {}),
+    normal: decal.normal === 'up' || decal.normal === 'down' ? decal.normal : turnFacing(decal.normal, placement.turn),
+    rotation:
+      decal.rotation +
+      ((Number(decal.normal === 'down') - Number(decal.normal === 'up')) * placement.turn * Math.PI) / 2,
+  }));
+
 export const placedSpawns = ({ template, origin, turn }: Placement): SpawnMarker[] =>
   template.spawns.map((spawn) => {
     const [x, z] = turned(template.size, turn, spawn.pos[0], spawn.pos[2]);
@@ -829,6 +873,13 @@ export const stackTemplate = (template: CompiledTemplate, storeys: number): Comp
     );
   }
   return {
+    decals: Array.from({ length: storeys }, (_, k) =>
+      (template.decals ?? []).map((decal) => ({
+        ...decal,
+        at: [decal.at[0], decal.at[1] + k * perStorey, decal.at[2]] as Vec3,
+        ...(decal.door ? { door: [decal.door[0], decal.door[1] + k * perStorey, decal.door[2]] as Vec3 } : {}),
+      })),
+    ).flat(),
     id: `${template.id}×${storeys}`,
     lootContext: template.lootContext,
     size: [sx, height, sz],
