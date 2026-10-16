@@ -23,11 +23,12 @@ const observation = {
   enforce: 'pre',
   transform(code, id) {
     if (id.endsWith('/src/game/worldSetup.ts')) {
-      const marker = 'new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario })';
+      // The scenario as it enters kind dispatch, so the fixture holds whichever site the kind builds.
+      const marker = 'const scenario = registry.scenarios.get(config.site);';
       assert(code.includes(marker), 'scenario population fixture admission point exists');
       return code.replace(
         marker,
-        "new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario: new URLSearchParams(location.search).get('route-fixture') === '1' ? { ...scenario, population: { ...scenario.population, settlementPressure: false, authoredMarkers: false } } : scenario })",
+        "const scenario = ((found) => found && new URLSearchParams(location.search).get('route-fixture') === '1' ? { ...found, population: { ...found.population, settlementPressure: false, authoredMarkers: false } } : found)(registry.scenarios.get(config.site));",
       );
     }
     if (id.endsWith('/src/ui/saveController.ts')) {

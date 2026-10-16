@@ -234,7 +234,13 @@ Keep type geometry separate from the pool, and the pool separate from the scenar
 
 Supply shops supplement the houses, while police stations and gun shops remain scarce. Their civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. Medical tents provide treatment supplies rather than a guaranteed full kit. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-city-building-types.libsonnet`, `src/content/base/gauntlet-city-medical.libsonnet`, and `src/core/loot.ts`, `lootTypeIssue`.
 
+The edge ring is a second pool on the city, `city.ring`, with a setback from the wall. Its slots go through the same weighted choice and quotas as the grid, so a ring pool is authored and validated like the city pool, and a ring naming a missing pool fails validation with its path. The ring pool's quotas are checked against the ring's own slots, and the city pool's guaranteed slots leave ring slots out. A ring needs a perimeter to back onto. The ring reuses ordinary buildings, so population takes ring spawns from template markers, not the street-frontage groups that give the grid its settlement pressure; a ring building has no street frontage to group by.
+
 Every shop shows a street cue that no house carries, and no two shop types share one, so a player walking the street can tell a shop from a house, and one kind of shop from another, before entering. The cue is built from blocks that only shop fronts use, on the street face and in the yard in front of it. A cue prop must never narrow what a standing player or shambler can walk: the yard cells in front of a door keep full standing headroom, so a prop that hangs over the yard goes above the standing body, not at head height. The rule is data-only, with no code special cases per shop type. See `src/content/base/gauntlet-city-building-types.libsonnet`, `shell`, and `test/cityKitPlan.test.ts`, "gauntlet shop fronts".
+
+### City perimeter
+
+The wall is content: block, height, thickness and optional wire on `city.perimeter`, and optional `lining` and `gate` assemblies. The wall is one closed loop, including across the central street, because a gap at the street would be the one way out and the loop check fails any open span. The lining (barriers and notices) repeats along the inside foot and the gate dresses the street crossing; both are authored templates or assemblies that must fit beside the wall, and notice text follows `INTERFACE.md`, "Text" and faces inward. The gate is solid for movement, so the central street ends at it. A ring building's roof is reachable by its ladder, so the wall plus wire must out-top a sprinting jump from the top of every building in the ring pool, measured at its full height including rooftop fittings, so it over-reports rather than under-reports. The run is the setback minus the body's width on both sides (the city pool's setback is the street plus pad), and a run too short for the sprint to reach its apex is bounded by the apex, because a slower jump peaks at the wall. The check reads the jump from the player's sprint speed, take-off speed and body width, so it follows tuning, and fails with the path of the lever, `.city.ring.setback` (`.city.pad` without a ring), when the arc clears the wall and wire. Tall roofs within jump reach would turn the wall into a step, so the ring pool holds low buildings only; raising the wall would change the look, so the pool and the setback are the levers. See `src/core/cityPlan.ts`, `clearanceIssues`, `perimeterGaps` and `perimeterIssues`, `src/game/player.ts`, `PLAYER` and `sprintJumpRise`, and `src/content/base/gauntlet-city-perimeter.libsonnet`.
 
 ## Scenarios
 
@@ -249,23 +255,32 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
 
 - **Kind.** The row's `kind` selects the site mechanism through a dispatch table that owns
   its keys. A new scenario of an existing kind is content alone; a new kind is a code
-  mechanism, because how a site is built and proved is geometry, not data.
+  mechanism, because how a site is built and proved is geometry, not data. See
+  `src/core/scenarioKinds.ts`, `SCENARIO_KINDS`; and `src/game/worldSetup.ts`,
+  `SCENARIO_SITES`.
 - **Route proof.** Each kind's code proves that its own routes are open, and the row
   supplies the proof's counts and thresholds, such as how many leads a player may miss
   while one stays reachable. The proof's shape is physics a mod cannot safely restate, while
-  how forgiving a scenario is belongs to its design. See `src/core/scenarioCertificate.ts`,
+  how forgiving a scenario is belongs to its design. Whether that redundancy sits with the
+  leads or in a block of its own waits on BR in #393. See `src/core/scenarioCertificate.ts`,
   `scenarioCertificate`.
+- **Street approach.** The street a kind's proof enters its site from is an authored
+  anchor, not derived from the site, so a scenario can approach from another side and
+  stay the same kind.
 - **Leads and landmarks.** They are lists in the row, not a fixed number, because how
   many clues and landmarks a scenario has is design.
-- **Placement.** Where leads and landmarks go comes from the row, as anchors or placement
-  rules. Code resolves and validates them, so a scenario moves its clues without a code
-  edit and a bad placement fails validation.
-- **Goal text.** The words the goal shows when it refuses are content, as player-facing
-  wording belongs to the mod (#456).
+- **Placement.** Leads and landmarks are placed by seeded rules in the row, not by fixed
+  positions. Clues then vary between runs, as the world does, and a rule survives a change
+  to the city plan that would strand a fixed position. Code resolves the rules and proves
+  them, because a seed that yields no valid placement would otherwise only show when a game
+  starts.
+- **Goal text.** The words the goal shows when it refuses live in a shared core-pack text
+  table (#456), not on the scenario row. Player-facing wording belongs to the mod, and the
+  same line copied to every place that shows it is debt.
 
 The gauntlet sweep tracked by #393 brings the gauntlet's code to these rules; until it
-lands, its kind selection, lead and landmark counts and positions, lead redundancy and
-goal refusal text stay fixed in code.
+lands, its lead and landmark counts and positions, street approach, lead redundancy and goal
+refusal text stay fixed in code.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules

@@ -413,6 +413,10 @@ const checkFirearmHandling = (
   registry: Registry,
   report: Report,
 ): void => {
+  const model = item.model ? registry.models.get(item.model) : undefined;
+  if (Boolean(model?.revolver) !== Boolean(firearm.revolver)) {
+    report('items', item.id, '.firearm.revolver', 'revolver model and handling tuning must be present together');
+  }
   if (firearm.pump && firearm.handling.shellLoadSimSeconds === undefined) {
     report('items', item.id, '.firearm.handling.shellLoadSimSeconds', 'a pump firearm needs a shell load time');
   }

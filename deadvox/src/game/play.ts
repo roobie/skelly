@@ -739,7 +739,12 @@ export const startPlay = (
       return undefined;
     }
     const action = selectPrimaryAction(inventory);
-    if (throwingStance || action.kind !== 'firearm' || registry.items.get(action.item.type)?.firearm?.pump) {
+    if (
+      throwingStance ||
+      action.kind !== 'firearm' ||
+      registry.items.get(action.item.type)?.firearm?.pump ||
+      action.item.firearm?.cylinder
+    ) {
       return undefined;
     }
     return action.item;
@@ -820,7 +825,9 @@ export const startPlay = (
           if (
             !(
               debugTools?.buildOn ||
-              (action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
+              (action.kind === 'firearm' &&
+                !registry.items.get(action.item.type)?.firearm?.pump &&
+                !action.item.firearm?.cylinder)
             )
           ) {
             performHandUse(dominantSide(inventory.character));
@@ -1951,6 +1958,7 @@ export const startPlay = (
       remove: () => admit('firearm.remove', ladder() ?? target.remove(sim.time)),
       ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
       cancelLoad: target.cancelLoad,
+      ...(target.releaseLoad ? { releaseLoad: () => target.releaseLoad!(sim.time) } : {}),
     };
   };
 
@@ -2758,7 +2766,7 @@ export const startPlay = (
     if (!fired) {
       return false;
     }
-    if (registry.items.get(item.type)?.firearm?.pump) {
+    if (registry.items.get(item.type)?.firearm?.pump || item.firearm?.cylinder) {
       return true;
     }
     const shot = firearmShotEmission(registry, item, firearms.noiseFactorFor(item));

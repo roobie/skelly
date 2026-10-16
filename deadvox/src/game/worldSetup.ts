@@ -11,6 +11,7 @@ import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn } from '.
 import { blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
+import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
 import { sitePalette } from '../core/sitePalette.ts';
@@ -240,6 +241,11 @@ export const buildDebugTestHouseSite = (
 ): DebugTestHouseSite | undefined =>
   config.site === 'testHouse' && config.debug && house ? new DebugTestHouseSite(config, registry, house) : undefined;
 
+/** One site factory per scenario kind; the `Record` type makes a new kind fail to compile until it has one. */
+const SCENARIO_SITES: Record<ScenarioKind, (options: ConstructorParameters<typeof GauntletSite>[0]) => Site> = {
+  gauntlet: (options) => new GauntletSite(options),
+};
+
 /**
  * The hamlet or the city, if the config asks for one and content has what it needs.
  * Otherwise (other block sizes, broken content) the world has the test house.
@@ -247,7 +253,7 @@ export const buildDebugTestHouseSite = (
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
   const scenario = registry.scenarios.get(config.site);
   if (scenario) {
-    return new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario });
+    return SCENARIO_SITES[scenario.kind]({ seed: config.seed, registry, scale: config.scale, scenario });
   }
   const layout = registry.layouts.get(config.site);
   if (layout) {

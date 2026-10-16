@@ -5,6 +5,25 @@
         {
           "ref": {
             "id": "gauntlet_city_1",
+            "kind": "assembly"
+          },
+          "weight": 36
+        },
+        {
+          "ref": {
+            "id": "gauntlet_food_store",
+            "kind": "assembly"
+          },
+          "weight": 6
+        }
+      ],
+      "id": "gauntlet_ring"
+    },
+    {
+      "choices": [
+        {
+          "ref": {
+            "id": "gauntlet_city_1",
             "kind": "assembly",
             "style": "brick_townhouse"
           },
@@ -125,10 +144,25 @@
         "pad": 2,
         "perimeter": {
           "block": "concrete",
-          "height": 8,
-          "thickness": 2
+          "gate": {
+            "assembly": "gauntlet_perimeter_gate"
+          },
+          "height": 12,
+          "lining": {
+            "assembly": "gauntlet_perimeter_lining",
+            "pitch": 12
+          },
+          "thickness": 2,
+          "wire": {
+            "block": "chain_link",
+            "height": 2
+          }
         },
         "pool": "gauntlet_city",
+        "ring": {
+          "pool": "gauntlet_ring",
+          "setback": 7
+        },
         "rows": 4,
         "street": 12,
         "streetProps": ["gauntlet_street_cars"]

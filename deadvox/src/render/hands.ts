@@ -50,6 +50,7 @@ import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../cor
 import type { OpticLensFrame, OpticViewSettings } from '../core/opticView.ts';
 import { opticViewSettings, projectLensAperture } from '../core/opticView.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
+import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { HELD_DISPLAY_KIND } from '../core/schema.ts';
 import { createCompass } from './compass.ts';
 import {
@@ -58,7 +59,9 @@ import {
   type HeldActionPart,
   magazineMotion,
   poseActionParts,
+  poseRevolverParts,
   rackGrip,
+  revolverOpenAmount,
   sampleActionStroke,
 } from './firearmModel.ts';
 import { grabPose } from './grabPose.ts';
@@ -103,7 +106,8 @@ const THUMB_PRESS_WRIST: Vec3 = [-0.05, 0.012, 0.01];
 
 export interface HeldFirearmPose {
   readonly uid: number;
-  readonly mode: FirearmMode | 'load' | 'magazine';
+  readonly mode: FirearmMode | 'load' | 'magazine' | 'revolver';
+  readonly revolver?: import('../game/revolverHandling.ts').RevolverFrame;
   readonly elapsed: number;
   readonly duration?: number;
   readonly roundType?: string;
@@ -165,7 +169,8 @@ export class HeldItems {
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
   private readonly compasses = new Map<number, ReturnType<typeof createCompass>>();
-  private readonly firearmParts = new Map<number, { action: FirearmAction; parts: readonly HeldActionPart[] }>();
+  private readonly firearmParts = new Map<number, { action?: FirearmAction; parts: readonly HeldActionPart[] }>();
+  private readonly cylinderRounds = new Map<number, { key: string; group: Group }>();
   private readonly pumpModels = new Map<number, ModelDef>();
   /** Each held gun's magazine slot, with what is really fitted there (`DESIGN.md`, "Piles and item models"). */
   private readonly magazineSlots = new Map<number, ComposedSlot>();
@@ -286,11 +291,12 @@ export class HeldItems {
     this.view.updateMatrixWorld(true);
     this.poseRummage(renderPose, handling);
     this.poseMagazineLoad(handling);
+    this.poseRevolverHands(firearmPoses);
     for (const compass of this.compasses.values()) {
       compass.update(main.rotation.y);
     }
     for (const [side, arm] of this.arms) {
-      this.updateArmChain(side, arm);
+      this.updateArmChain(side, arm, this.revolverGripFrame(side, firearmPoses));
     }
     this.view.updateMatrixWorld(true);
   }
@@ -754,17 +760,40 @@ export class HeldItems {
   }
 
   private poseFirearms(frames: readonly HeldFirearmPose[]): void {
-    for (const [uid, { action, parts }] of this.firearmParts) {
-      const frame = frames.find((entry) => entry.uid === uid);
-      const mode = frame?.mode === 'fire' || frame?.mode === 'hand' ? frame.mode : undefined;
-      const stroke = frame && mode ? sampleActionStroke(action, mode, frame.elapsed, frame.duration) : 0;
-      poseActionParts(parts, mode, stroke);
-      this.updatePump(uid, frame, stroke);
-      const held = this.shown.get(uid);
-      if (held && !this.pumpModels.has(uid)) {
-        const magazineGrip = this.poseMagazine(uid, frame);
-        this.reachOffHand(uid, held, mode === 'hand' ? this.rackHandGrip(held, action, parts, frame!) : magazineGrip);
-      }
+    for (const [uid, data] of this.firearmParts) {
+      this.poseFirearm(
+        uid,
+        data,
+        frames.find((entry) => entry.uid === uid),
+      );
+    }
+  }
+
+  private poseFirearm(
+    uid: number,
+    { action, parts }: { action?: FirearmAction; parts: readonly HeldActionPart[] },
+    frame: HeldFirearmPose | undefined,
+  ): void {
+    const item = this.inventory.itemByUid(uid);
+    const modelId = item && defOf(this.inventory.registry, item.type).model;
+    const definition = modelId ? this.inventory.registry.models.get(modelId) : undefined;
+    if (definition?.revolver && item?.firearm?.cylinder) {
+      poseRevolverParts(parts, definition.revolver, item.firearm.cylinder, frame);
+      this.updateRevolver(item, definition, frame);
+      return;
+    }
+    const mode = frame?.mode === 'fire' || frame?.mode === 'hand' ? frame.mode : undefined;
+    const stroke = frame && mode && action ? sampleActionStroke(action, mode, frame.elapsed, frame.duration) : 0;
+    poseActionParts(parts, mode, stroke);
+    this.updatePump(uid, frame, stroke);
+    const held = this.shown.get(uid);
+    if (held && !this.pumpModels.has(uid)) {
+      const magazineGrip = this.poseMagazine(uid, frame);
+      this.reachOffHand(
+        uid,
+        held,
+        mode === 'hand' && action ? this.rackHandGrip(held, action, parts, frame!) : magazineGrip,
+      );
     }
   }
 
@@ -864,6 +893,97 @@ export class HeldItems {
       held.updateMatrixWorld(true);
       arm.position.lerp(held.worldToLocal(grip.point.clone()), grip.reach);
     }
+  }
+
+  private cylinderRoundGroup(item: Item, model: ModelDef): Group {
+    const roundModels = item.firearm!.cylinder!.chambers.map((chamber) => {
+      if (chamber.state === 'empty') {
+        return null;
+      }
+      if (chamber.state === 'round') {
+        return defOf(this.inventory.registry, chamber.roundType).model;
+      }
+      return [...this.inventory.registry.models.values()].find(
+        (candidate) => candidate.calibre === model.calibre && candidate.id.startsWith('case_'),
+      )?.id;
+    });
+    const key = `${this.models?.version}:${roundModels.join(',')}`;
+    const current = this.cylinderRounds.get(item.uid);
+    if (current?.key === key) {
+      return current.group;
+    }
+    current?.group.removeFromParent();
+    const group = new Group();
+    roundModels.forEach((id, index) => {
+      const object = id ? this.models?.part(id) : undefined;
+      if (object) {
+        object.userData.chamber = index;
+        group.add(object);
+      }
+    });
+    heldModelFrame(this.shown.get(item.uid)!).add(group);
+    this.cylinderRounds.set(item.uid, { key, group });
+    return group;
+  }
+
+  private updateRevolver(item: Item, model: ModelDef, frame: HeldFirearmPose | undefined): void {
+    const cylinder = item.firearm!.cylinder!;
+    const data = model.revolver!;
+    const target = frame?.revolver?.chamber ?? cylinder.aligned;
+    const progress = Math.min(1, (frame?.elapsed ?? 0) / (frame?.duration ?? 1));
+    const opening = revolverOpenAmount(cylinder.open, frame?.revolver?.step, progress);
+    for (const object of this.cylinderRoundGroup(item, model).children) {
+      object.position.set(
+        ...revolverChamberPoint(
+          data,
+          Number(object.userData.chamber),
+          cylinder.open ? target : cylinder.aligned,
+          opening,
+        ),
+      );
+      object.quaternion.setFromAxisAngle(new Vector3(...data.crane.axis), data.crane.openRadians * opening);
+    }
+  }
+
+  private poseRevolverHands(frames: readonly HeldFirearmPose[]): void {
+    for (const item of Object.values(this.inventory.hands)) {
+      const modelId = item && defOf(this.inventory.registry, item.type).model;
+      const model = modelId ? this.inventory.registry.models.get(modelId) : undefined;
+      if (item?.firearm?.cylinder && model?.revolver) {
+        this.revolverLoadingHand(
+          item,
+          model,
+          frames.find((frame) => frame.uid === item.uid),
+        );
+      }
+    }
+  }
+
+  private revolverGripFrame(side: HandSide, frames: readonly HeldFirearmPose[]): Object3D | undefined {
+    const loading = frames.find((frame) => frame.revolver?.step === 'load');
+    return loading && !this.inventory.hands[side] ? this.shown.get(loading.uid) : undefined;
+  }
+
+  private revolverLoadingHand(item: Item, model: ModelDef, frame: HeldFirearmPose | undefined): void {
+    const held = this.shown.get(item.uid)!;
+    const side = this.inventory.hands.right?.uid === item.uid ? 'left' : 'right';
+    const cylinder = item.firearm!.cylinder!;
+    const target = frame?.revolver?.chamber ?? cylinder.aligned;
+    const point = revolverChamberPoint(model.revolver!, target, target, cylinder.open ? 1 : 0);
+    const port = modelToView(model, point.map((value, index) => value - model.grip!.at[index]!) as Vec3);
+    const arm = this.arms.get(side);
+    held.updateWorldMatrix(true, false);
+    const rest = arm?.parent ? (held.worldToLocal(arm.getWorldPosition(new Vector3())).toArray() as Vec3) : undefined;
+    const tuning = defOf(this.inventory.registry, item.type).firearm!.revolver!.loadPose;
+    const feed =
+      frame?.revolver?.step === 'load' && rest
+        ? shellLoadPose(rest, port, side, { ...frame, feed: tuning })
+        : undefined;
+    const reaching = feed?.wrist ?? (frame?.revolver?.step === 'pick' ? port : undefined);
+    if (arm?.parent && reaching && !this.inventory.hands[side]) {
+      arm.position.copy(arm.parent.worldToLocal(held.localToWorld(new Vector3(...reaching))));
+    }
+    this.poseLoadingShell(item.uid, held, frame?.roundType, feed);
   }
 
   private updatePump(uid: number, frame: HeldFirearmPose | undefined, stroke: number): void {
@@ -1045,6 +1165,7 @@ export class HeldItems {
     this.view.add(this.torso, this.opticWindow);
     this.shown.clear();
     this.firearmParts.clear();
+    this.cylinderRounds.clear();
     this.pumpModels.clear();
     this.magazineSlots.clear();
     this.incomingMagazines.clear();
@@ -1117,7 +1238,7 @@ export class HeldItems {
     this.arms.clear();
   }
 
-  private updateArmChain(side: HandSide, arm: Group): void {
+  private updateArmChain(side: HandSide, arm: Group, gripFrame: Object3D | undefined): void {
     const sleeve = arm.children[0] as Mesh;
     const forearm = arm.children[1] as Mesh;
     const palm = arm.children[2] as Mesh;
@@ -1154,7 +1275,13 @@ export class HeldItems {
     placeFirstPersonSegment(sleeve, shoulder, elbow, { width: sleeve.scale.x, depth: sleeve.scale.z });
     placeFirstPersonSegment(forearm, elbow, wrist, { width: forearm.scale.x, depth: forearm.scale.z });
     palm.position.copy(wrist);
-    palm.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), wrist.clone().sub(elbow).normalize());
+    if (gripFrame) {
+      palm.quaternion.copy(
+        arm.getWorldQuaternion(new Quaternion()).invert().multiply(gripFrame.getWorldQuaternion(new Quaternion())),
+      );
+    } else {
+      palm.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), wrist.clone().sub(elbow).normalize());
+    }
   }
 
   private addArm(side: HandSide, grip: Vec3, parent: Group = this.torso, parentOrigin: Vec3 = [0, 0, 0]): void {
@@ -1235,20 +1362,27 @@ export class HeldItems {
         heldModelFrame(model.root).add(seat);
         this.magazineSeats.set(item.uid, { seat, tiltRadians: MathUtils.degToRad(top.tilt) });
       }
-      const action = this.inventory.registry.models.get(def.model!)?.action;
-      if (model.slots.magazine) {
-        this.magazineSlots.set(item.uid, model.slots.magazine);
-      }
-      if (action) {
-        this.firearmParts.set(item.uid, { action, parts: model.parts });
-        const definition = this.inventory.registry.models.get(def.model!)!;
-        if (definition.internalMagazine) {
-          this.pumpModels.set(item.uid, definition);
-        }
-      }
+      this.registerFirearmModel(item.uid, this.inventory.registry.models.get(def.model!)!, model);
       return model.root;
     }
     return this.fallbackShape(item, def);
+  }
+
+  private registerFirearmModel(
+    uid: number,
+    definition: ModelDef,
+    model: NonNullable<ReturnType<ModelLibrary['heldLook']>>,
+  ): void {
+    const { action } = definition;
+    if (model.slots.magazine) {
+      this.magazineSlots.set(uid, model.slots.magazine);
+    }
+    if (action || definition.revolver) {
+      this.firearmParts.set(uid, { ...(action ? { action } : {}), parts: model.parts });
+      if (definition.internalMagazine) {
+        this.pumpModels.set(uid, definition);
+      }
+    }
   }
 
   private fallbackShape(item: Item, def: ReturnType<typeof defOf>): Object3D {

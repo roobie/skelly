@@ -2,7 +2,7 @@
 // cells and can be rotated; a container's pockets are grids. Identical, stateless
 // items stack up to their type's limit.
 
-import type { ItemDef, Registry } from './content.ts';
+import type { ItemDef, ModelDef, Registry } from './content.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { copyOrigin, type ItemOrigin, sameOrigin } from './itemOrigin.ts';
@@ -341,6 +341,17 @@ export class ItemFactory {
     if (def.firearm?.pump) {
       item.firearm = { chamber: 'empty', tube: [] };
     }
+    const model = def.model ? registry.models.get(def.model) : undefined;
+    if (def.firearm && model?.revolver) {
+      item.firearm = {
+        cylinder: {
+          chambers: Array.from({ length: model.revolver.chambers }, () => ({ state: 'empty' })),
+          aligned: 0,
+          open: false,
+          cocked: false,
+        },
+      };
+    }
     initializeFittedSlots(this, registry, item, def);
     if (magazineSpec(registry, type)) {
       item.cartridges = [];
@@ -402,9 +413,28 @@ const assertMagazineFedChamber = (registry: Registry, type: string, state: Firea
   }
 };
 
+const assertCylinderAmmunition = (registry: Registry, model: ModelDef, state: FirearmState): void => {
+  if (!state.cylinder || state.cylinder.chambers.length !== model.revolver!.chambers) {
+    throw new Error('Cylinder chamber count does not match exported model');
+  }
+  for (const chamber of state.cylinder.chambers) {
+    if (chamber.state === 'round' && defOf(registry, chamber.roundType).ammo?.calibre !== model.calibre) {
+      throw new Error('Cylinder ammunition calibre mismatch');
+    }
+  }
+};
+
 /** Content-coupled constraints checked when rebuilding items from a decoded snapshot. */
 const assertAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
   const def = defOf(registry, type);
+  const revolverModel = def.model ? registry.models.get(def.model) : undefined;
+  if (revolverModel?.revolver) {
+    assertCylinderAmmunition(registry, revolverModel, state);
+    return;
+  }
+  if (state.cylinder) {
+    throw new Error('Cylinder state needs a revolver model');
+  }
   if (!def.firearm?.pump) {
     assertMagazineFedChamber(registry, type, state);
     return;
@@ -540,18 +570,25 @@ export const weightOf = (registry: Registry, item: Item): number =>
 
 const ammunitionWeight = (registry: Registry, item: Item): number => {
   const state = item.firearm;
-  if (!state?.tube) {
+  if (!state) {
     return 0;
   }
-  const rounds = [...state.tube, ...(state.roundType ? [state.roundType] : [])];
+  const rounds = [
+    ...(state.tube ?? []),
+    ...(state.roundType ? [state.roundType] : []),
+    ...(state.cylinder?.chambers.flatMap((chamber) => (chamber.state === 'round' ? [chamber.roundType] : [])) ?? []),
+  ];
   const modelId = defOf(registry, item.type).model;
   const calibre = modelId ? registry.models.get(modelId)?.calibre : undefined;
   const hull =
-    state.chamber === 'case'
+    state.chamber === 'case' || state.cylinder?.chambers.some((chamber) => chamber.state === 'case')
       ? [...registry.items.values()].find((def) => {
           const model = def.model ? registry.models.get(def.model) : undefined;
           return model?.id.startsWith('case_') && model.calibre === calibre;
         })
       : undefined;
-  return rounds.reduce((sum, type) => sum + defOf(registry, type).weight, hull?.weight ?? 0);
+  return rounds.reduce(
+    (sum, type) => sum + defOf(registry, type).weight,
+    (hull?.weight ?? 0) * (state.cylinder?.chambers.filter((chamber) => chamber.state === 'case').length ?? 1),
+  );
 };

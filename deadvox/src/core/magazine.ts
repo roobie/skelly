@@ -29,13 +29,14 @@ export const magazineSpec = (registry: Registry, type: string): MagazineSpec | u
   return { calibre: model.calibre, capacity: model.capacity };
 };
 
-/** The calibre a magazine-fed firearm takes: every firearm but the pump feeds from a magazine slot. */
+/** The calibre a magazine-fed firearm takes. */
 export const magazineWellCalibre = (registry: Registry, type: string): string | undefined => {
   const def = registry.items.get(type);
   if (!def?.firearm || def.firearm.pump) {
     return undefined;
   }
-  return def.model === undefined ? undefined : registry.models.get(def.model)?.calibre;
+  const model = def.model === undefined ? undefined : registry.models.get(def.model);
+  return model?.revolver ? undefined : model?.calibre;
 };
 
 /** Whether a magazine of this type fits the firearm's magazine slot: same calibre. */

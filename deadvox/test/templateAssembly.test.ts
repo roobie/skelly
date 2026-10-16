@@ -3,6 +3,7 @@ import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { MapPieceDef } from '../src/core/schema.ts';
 import {
+  type AssemblyContext,
   compileAssembly,
   compileMapPiece,
   placedBlockAt,
@@ -173,6 +174,29 @@ it('rejects alternatives that change reserved circulation', () => {
   expect(() => compileAssembly(registry, assembly('fixture_contract', [2, 1, 1], [room]), context)).toThrow(
     DIFFERENT_RESERVATIONS,
   );
+});
+
+it('shares leaf buffers within a compilation without sharing slot provenance or style bindings', () => {
+  const definition = piece('repeated', '#.', 'SR');
+  const registry = registryOf(definition);
+  registry.mapStyles.set('alternate', {
+    id: 'alternate',
+    bindings: {
+      ...registry.mapStyles.get('fixture_style')!.bindings,
+      shell: { role: 'shell', block: 'fixture_floor' },
+    },
+  });
+  const shared: AssemblyContext = { ...context, pieceCache: new Map() };
+  const first = compileMapPiece(registry, definition, { ...shared, slotPath: 'first' });
+  const second = compileMapPiece(registry, definition, { ...shared, slotPath: 'second' });
+  expect(second.blocks).toBe(first.blocks);
+  expect(first.provenance![0]!.owner).toBe('first');
+  expect(second.provenance![0]!.owner).toBe('second');
+  expect(second.provenance![0]).not.toBe(first.provenance![0]);
+  const alternate = compileMapPiece(registry, definition, { ...shared, style: 'alternate' });
+  expect(alternate.blocks[0]).toBe(registry.blockIds.get('fixture_floor'));
+  expect(first.blocks[0]).toBe(registry.blockIds.get('fixture_shell'));
+  expect(compileMapPiece(registry, definition, context).blocks).not.toBe(first.blocks);
 });
 
 it('rejects a child outside its delegated slot', () => {

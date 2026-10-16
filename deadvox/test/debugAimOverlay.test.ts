@@ -1,8 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { type LineBasicMaterial, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
@@ -10,16 +7,11 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { DebugAimOverlay } from '../src/debug/aimOverlay.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;

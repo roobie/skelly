@@ -40,6 +40,7 @@ import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
+import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import {
   gameHours,
@@ -329,6 +330,27 @@ const MeleeClassSchema = strictObject({
   speedMultiplier: Positive,
 });
 
+const RoundFeedPoseSchema = pipe(
+  strictObject({
+    pickupEnd: NonNegative,
+    approachEnd: NonNegative,
+    thumbEnd: NonNegative,
+    pickupSide: NonNegative,
+    pickupBelow: NonNegative,
+    pickupBack: NonNegative,
+    palmBelow: NonNegative,
+    palmBack: NonNegative,
+    thumbLift: NonNegative,
+    thumbTravel: NonNegative,
+  }),
+  check(
+    (pose) =>
+      pose.pickupEnd > 0 && pose.pickupEnd < pose.approachEnd && pose.approachEnd < pose.thumbEnd && pose.thumbEnd < 1,
+    'feed phases must increase strictly between zero and one',
+  ),
+);
+export type RoundFeedPoseTuning = InferOutput<typeof RoundFeedPoseSchema>;
+
 // A pump feeds item-owned shells from its exported tube; other firearms feed from a fitted magazine (`magazineWellCalibre`).
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
@@ -343,6 +365,20 @@ const FirearmSchema = strictObject({
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
   /** Reload handling times at skill 0, before the firearms skill's reload factor. */
+  revolver: optional(
+    strictObject({
+      doubleActionPullSimSeconds: PositiveSimSeconds,
+      doubleActionDispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
+      recoverySimSeconds: PositiveSimSeconds,
+      openSimSeconds: PositiveSimSeconds,
+      ejectSimSeconds: PositiveSimSeconds,
+      pickSimSeconds: PositiveSimSeconds,
+      loadSimSeconds: PositiveSimSeconds,
+      loadPose: RoundFeedPoseSchema,
+      closeSimSeconds: PositiveSimSeconds,
+      cockSimSeconds: PositiveSimSeconds,
+    }),
+  ),
   handling: strictObject({
     /** One shell into the tube; required for a pump. */
     shellLoadSimSeconds: optional(PositiveSimSeconds),
@@ -1480,7 +1516,7 @@ const MapPoolSchema = strictObject({
 
 const ScenarioSchema = strictObject({
   id: Id,
-  kind: literal('gauntlet'),
+  kind: picklist(SCENARIO_KINDS),
   outbreakAgeGameHours: PositiveGameHours,
   decalLimit: pipe(Count, maxValue(4096)),
   body: Id,
@@ -1550,8 +1586,16 @@ const ScenarioSchema = strictObject({
         block: Id,
         height: pipe(Count, minValue(1), maxValue(32)),
         thickness: pipe(Count, minValue(2), maxValue(8)),
+        /** Solid wire fence on top of the wall. */
+        wire: optional(strictObject({ block: Id, height: pipe(Count, minValue(1), maxValue(8)) })),
+        /** Assembly set against the wall's inside face every `pitch` blocks, facing inward. */
+        lining: optional(strictObject({ assembly: Id, pitch: pipe(Count, minValue(2), maxValue(64)) })),
+        /** Assembly set against the wall where the central street meets it. */
+        gate: optional(strictObject({ assembly: Id })),
       }),
     ),
+    /** One row of buildings around the grid, backs to the wall and fronts to the outermost street. */
+    ring: optional(strictObject({ pool: Id, setback: pipe(Count, minValue(1), maxValue(64)) })),
     streetProps: optional(pipe(array(Id), maxLength(16))),
     pool: Id,
   }),

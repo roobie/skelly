@@ -297,6 +297,7 @@ describe('content-owned city building types', () => {
     registry.templates.set('disabled', { ...house, id: 'disabled' });
     const grid = {
       ...scenario.city,
+      ring: undefined,
       templates: [
         { id: house.id, weight: 1 },
         { id: 'weighted_b', weight: 3 },
@@ -336,6 +337,7 @@ describe('content-owned city building types', () => {
     const seed = 73;
     const tailGrid = {
       ...scenario.city,
+      ring: undefined,
       blockX: 13,
       templates: [
         { id: house.id, weight: 9 },
@@ -442,15 +444,21 @@ describe('content-owned city building types', () => {
     for (const scenario of scenarios) {
       expect(scenarioPlanIssues(registry, scenario)).toEqual([]);
       const city = cityGridOf(registry, scenario.city);
-      const enabled = city.templates.filter(({ weight }) => weight > 0);
+      const enabled = [...city.templates, ...(city.ring?.templates ?? [])].filter(({ weight }) => weight > 0);
       expect(enabled.length).toBeGreaterThan(0);
-      const plan = buildCityPlan({ seed: 1, registry, grid: { ...city, streetProps: [] }, floor: 0 });
+      const { perimeter: _wall, ...open } = city;
+      const plan = buildCityPlan({
+        seed: 1,
+        registry,
+        grid: { ...open, ...(city.ring ? { ring: city.ring } : {}), streetProps: [] },
+        floor: 0,
+      });
       expect(plan.placements.length).toBeGreaterThan(0);
       expect(plan.placements.every(({ template }) => enabled.some(({ id }) => id === template.id))).toBe(true);
     }
     const buildings = scenarios.flatMap((scenario) =>
-      cityGridOf(registry, scenario.city)
-        .templates.filter(({ weight }) => weight > 0)
+      [...cityGridOf(registry, scenario.city).templates, ...(cityGridOf(registry, scenario.city).ring?.templates ?? [])]
+        .filter(({ weight }) => weight > 0)
         .flatMap(({ id }) => buildingVariants(registry, registry.mapAssemblies.get(id)!)),
     );
     expect(buildings.length).toBeGreaterThan(0);

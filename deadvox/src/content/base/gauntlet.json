@@ -2088,6 +2088,40 @@
       "size": [1, 1, 1]
     },
     {
+      "color": "#dfd6b9",
+      "id": "gauntlet_perimeter_notice",
+      "name": "Notice",
+      "readable": {
+        "text": "QUARANTINE ZONE",
+        "title": "Notice"
+      },
+      "shape": [
+        {
+          "position": [0.10000000000000001, 0.10000000000000001, 0.80000000000000004],
+          "size": [1.8, 1.8, 0.10000000000000001]
+        }
+      ],
+      "size": [2, 2, 1],
+      "solid": false
+    },
+    {
+      "color": "#dfd6b9",
+      "id": "gauntlet_perimeter_gate_notice",
+      "name": "Notice",
+      "readable": {
+        "text": "NO ENTRY",
+        "title": "Notice"
+      },
+      "shape": [
+        {
+          "position": [0.10000000000000001, 0.10000000000000001, 0.80000000000000004],
+          "size": [1.8, 1.8, 0.10000000000000001]
+        }
+      ],
+      "size": [2, 2, 1],
+      "solid": false
+    },
+    {
       "color": "#707b7e",
       "id": "gauntlet_water_tank",
       "name": "Square raised water tank",
@@ -2250,6 +2284,11 @@
           "weight": 1
         },
         {
+          "condition": [0.40000000000000002, 0.80000000000000004],
+          "item": "revolver_357",
+          "weight": 1
+        },
+        {
           "nothing": true,
           "weight": 2
         }
@@ -2259,6 +2298,58 @@
     },
     {
       "entries": [
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "revolver_357",
+          "weight": 2
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "pump_shotgun",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 1
+        }
+      ],
+      "id": "gauntlet_police_sidearms",
+      "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "count": [3, 12],
+          "item": "cartridge_357_h_magnum",
+          "weight": 3
+        },
+        {
+          "item": "cartridge_box_357_h_magnum",
+          "weight": 2
+        },
+        {
+          "item": "shotshell_box",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ],
+      "id": "gauntlet_police_ammunition",
+      "rolls": [1, 2]
+    },
+    {
+      "entries": [
+        {
+          "count": [2, 6],
+          "item": "cartridge_357_h_magnum",
+          "weight": 2
+        },
+        {
+          "item": "cartridge_box_357_h_magnum",
+          "weight": 1
+        },
         {
           "count": [2, 5],
           "item": "shell_12_gauge_00_buck",
@@ -25952,7 +26043,7 @@
         },
         "A": {
           "furniture": "crate",
-          "loot": "gauntlet_ammunition"
+          "loot": "gauntlet_police_ammunition"
         },
         "B": {
           "furniture": "gauntlet_cell_bars"
@@ -25969,7 +26060,7 @@
         },
         "G": {
           "furniture": "range_rack",
-          "loot": "gauntlet_civilian_guns"
+          "loot": "gauntlet_police_sidearms"
         },
         "L": {
           "facing": "e",
@@ -33155,6 +33246,53 @@
         }
       },
       "size": [4, 5, 9]
+    },
+    {
+      "id": "gauntlet_perimeter_lining",
+      "layers": [
+        ["........", "HJJJJJJH", "HJJJJJJH"],
+        ["........", "HJJJJJJH", "HJJJJJJH"],
+        ["........", "........", "...FF..."],
+        ["........", "........", "...FF..."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": "air",
+        "C": "chain_link",
+        "F": {
+          "furniture": "gauntlet_perimeter_notice"
+        },
+        "H": "hazard_yellow",
+        "J": "concrete"
+      },
+      "size": [8, 4, 3]
+    },
+    {
+      "id": "gauntlet_perimeter_gate",
+      "layers": [
+        ["............", "............", "JJ........JJ", "JJCCCCCCCCJJ"],
+        ["............", "............", "JJ...FF...JJ", "JJCCCCCCCCJJ"],
+        ["............", "............", "JJ...FF...JJ", "JJCCCCCCCCJJ"],
+        ["............", "............", "JJ........JJ", "JJCCCCCCCCJJ"],
+        ["............", "............", "HHHHHHHHHHHH", "HHHHHHHHHHHH"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": "air",
+        "C": "chain_link",
+        "F": {
+          "furniture": "gauntlet_perimeter_gate_notice"
+        },
+        "H": "hazard_yellow",
+        "J": "concrete"
+      },
+      "size": [12, 5, 4]
     },
     {
       "id": "gauntlet_public_memo",

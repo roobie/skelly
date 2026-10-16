@@ -3,6 +3,8 @@ import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
 import { loadPlaytestText } from '../../../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../../../site/playtestLanguage.js';
 
+// Bumped by each published patch; see `docs/playtest-run.md`, "Frozen round publication".
+const PATCH = 1;
 const language = applyPlaytestLanguage(navigator.languages, location.search);
 const text = await loadPlaytestText(fetch, new URL('../../../site/playtest.json', import.meta.url), language);
 
@@ -12,7 +14,7 @@ const app = text
         <img class="site-logo" src="./assets/deadvox-survival-logo.webp" alt="Deadvox Survival" />
       </header>
       <section class="card playtest-card" lang=${language} aria-labelledby="round-title">
-        <h1 id="round-title" class="eyebrow">Deadvox · ${text.round} 1 ${text.title}</h1>
+        <h1 id="round-title" class="eyebrow">Deadvox · ${text.round} 1 ${text.title} · ${text.patch} ${PATCH}</h1>
         <p class="round-intro">${text.task}</p>
         <ul>
           <li>${text.duration}</li>
@@ -24,8 +26,10 @@ const app = text
         </ul>
         <p>
           <a class="playtest-action" href="{{PLAY_URL}}">${text.playLink}</a>
+          <a class="beginner-action" href="{{PLAY_URL}}&mods=beginner">${text.beginnerLink}</a>
           <a class="tutorial-action" href="{{PLAY_URL}}&tutorial=1">${text.tutorialLink}</a>
         </p>
+        <p>${text.beginnerHint}</p>
         <p>${text.tutorialHint}</p>
       </section>
       <footer><a href="https://roobie.github.io/skelly/">skelly projects</a></footer>

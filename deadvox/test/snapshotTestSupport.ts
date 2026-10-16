@@ -1,10 +1,8 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { worldSolid } from '../src/core/collision.ts';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
@@ -22,15 +20,10 @@ import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { withPlayerBodyTuning } from './simulationFixture.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 
 export { registry };
 export const registryWithPlayerBodyTuning = (body: BodyTuningDef): Registry => withPlayerBodyTuning(registry, body);
