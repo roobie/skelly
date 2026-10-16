@@ -95,6 +95,55 @@ const storage = () => {
 };
 
 describe('keyboard registry', () => {
+  it('accepts a physical Shift down with a false Shift flag so strafe remains available', () => {
+    const keyboard = new KeyboardInput(
+      new BindingRegistry(
+        [
+          ...fixture,
+          {
+            id: 'fixture.strafe',
+            description: 'Fixture strafe',
+            contexts: ['play'],
+            commands: [{ id: 'fixture.strafe', kind: 'held-state' }],
+            defaults: [{ code: 'KeyD' }],
+          },
+        ],
+        storage(),
+      ),
+    );
+    keyboard.context = () => ({ context: 'play', debug: false });
+    keyboard.press(event('KeyW'));
+    keyboard.press(event('ShiftLeft', { shiftKey: true }));
+    keyboard.release(event('ShiftLeft', { shiftKey: true }));
+    keyboard.press(event('KeyW', { repeat: true }));
+    const sprintAccepted = keyboard.press(event('ShiftLeft', { shiftKey: false }));
+    keyboard.press(event('KeyW', { repeat: true, shiftKey: true }));
+    const strafeAccepted = keyboard.press(event('KeyD', { shiftKey: true }));
+    expect({
+      sprintAccepted,
+      strafeAccepted,
+      forward: keyboard.held('fixture.move'),
+      sprint: keyboard.held('fixture.sprint'),
+      strafe: keyboard.held('fixture.strafe'),
+    }).toEqual({ sprintAccepted: true, strafeAccepted: true, forward: true, sprint: true, strafe: true });
+  });
+  it('does not revive a held Shift with a false flag through the menu', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
+    let context: InputContext = 'play';
+    keyboard.context = () => ({ context, debug: false });
+    expect(keyboard.press(event('ShiftLeft', { shiftKey: true }))).toBe(true);
+    context = 'menu';
+    keyboard.sync();
+    expect(keyboard.held('fixture.sprint')).toBe(false);
+    expect(keyboard.press(event('ShiftLeft', { repeat: true, shiftKey: false }))).toBe(false);
+    context = 'play';
+    keyboard.sync();
+    expect(keyboard.press(event('ShiftLeft', { repeat: true, shiftKey: false }))).toBe(false);
+    expect(keyboard.held('fixture.sprint')).toBe(false);
+    keyboard.release(event('ShiftLeft'));
+    expect(keyboard.press(event('ShiftLeft', { shiftKey: true }))).toBe(true);
+    expect(keyboard.held('fixture.sprint')).toBe(true);
+  });
   it('redacts movement codes from the debug trace while text entry has focus', () => {
     const bindings = new BindingRegistry(
       [
