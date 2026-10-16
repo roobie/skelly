@@ -12,12 +12,13 @@ import { gameMinutes } from '../src/core/time.ts';
 const base = 'src/content/base';
 const itemSource = (file: string, ids: readonly string[]) => {
   const data = JSON.parse(readFileSync(join(base, file), 'utf8')) as {
-    items: { id: string; salvage?: unknown }[];
+    items: { id: string; salvage?: unknown; salvageTimeGameMinutes?: unknown }[];
   };
   data.items = data.items.filter(({ id }) => ids.includes(id));
   for (const item of data.items) {
     if (item.id === 'portable_radio') {
       item.salvage = undefined;
+      item.salvageTimeGameMinutes = undefined;
     }
   }
   return { source: file, data };
@@ -29,7 +30,12 @@ const fixtureBuild = buildRegistry([
   itemSource('items-tools.json', ['kitchen_knife']),
   itemSource('items-other.json', ['portable_radio', 'scrap_metal']),
   { source: 'models-melee.json', data: JSON.parse(readFileSync(join(base, 'models-melee.json'), 'utf8')) as unknown },
-  { source: 'recipes.json', data: { skills: recipes.skills.filter(({ id }) => id === 'crafting') } },
+  {
+    source: 'recipes.json',
+    data: {
+      skills: recipes.skills.filter(({ id }) => id === 'crafting').map(({ startingRecipes: _, ...skill }) => skill),
+    },
+  },
 ]);
 if (fixtureBuild.issues.length > 0) {
   throw new Error(`Invalid disassembly fixture: ${JSON.stringify(fixtureBuild.issues)}`);
@@ -67,6 +73,7 @@ describe('authored disassembly yields', () => {
     testRegistry.items.set('portable_radio', {
       ...radio,
       salvage: undefined,
+      salvageTimeGameMinutes: undefined,
       disassembly: {
         timeGameMinutes: gameMinutes(1),
         skill: 'crafting',

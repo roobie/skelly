@@ -18,7 +18,7 @@ import type { Vec3 } from './coords.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
   disassemblyOutputs,
-  SALVAGE_DURATION,
+  disassemblyWorkTime,
   sameDisassemblyOutputs,
   validDisassemblyToolLevels,
 } from './disassembly.ts';
@@ -1575,11 +1575,10 @@ const validateDisassemblyWorkItem = (
   if (!source) {
     throw new Error('Invalid disassembly work payload');
   }
-  const duration = source.disassembly ? source.disassembly.timeGameMinutes : SALVAGE_DURATION;
-  const hasDisassembly = Boolean(source.disassembly || source.salvage);
-  if (!hasDisassembly) {
+  if (!(source.disassembly || source.salvage)) {
     throw new Error('Invalid disassembly work payload');
   }
+  const duration = disassemblyWorkTime(source);
   if (!validDisassemblyToolLevels(source, work.toolLevels)) {
     throw new Error('Invalid disassembly work payload');
   }

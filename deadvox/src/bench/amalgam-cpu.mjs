@@ -10,6 +10,7 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
 import { makeScale } from '../core/scale.ts';
 import { testedBricks } from '../core/solidBricks.ts';
+import { amalgamTypeOf } from '../core/zombieFigure.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
 
 const args = process.argv.slice(2);
@@ -45,7 +46,7 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
 const scale = makeScale(0.5);
-const type = registry.zombies.get('amalgam');
+const type = amalgamTypeOf(registry.zombies);
 const envelope = amalgamCollisionEnvelope(amalgamFigureForType(type, AMALGAM_FIGURE_SEED), scale.blockSize);
 const dt = 1 / 60;
 const ticks = 75;

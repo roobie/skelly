@@ -1,7 +1,8 @@
 import { ShaderChunk } from 'three';
 import { describe, expect, it } from 'vitest';
-import { FLASHLIGHT_DECAY, FLASHLIGHT_INTENSITY } from '../src/render/flashlight.ts';
+import { FLASHLIGHT_DECAY } from '../src/render/flashlight.ts';
 import { installNearFieldFalloff, NEAR_FIELD_M, withNearFieldFalloff } from '../src/render/lightFalloff.ts';
+import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
 
 // three.js's own source is the thing under test: the patch must find the line it replaces.
 describe('near-field light falloff', () => {
@@ -33,7 +34,7 @@ describe('near-field light falloff', () => {
   it('keeps a white block at 1 m under white and a grey at 10 m near 0.15, after exposure 3', () => {
     const exposed = (albedo: number, d: number): number => {
       const window = (1 - (d / 20) ** 4) ** 2;
-      return ((FLASHLIGHT_INTENSITY / (d + NEAR_FIELD_M) ** FLASHLIGHT_DECAY) * window * albedo * 3) / Math.PI;
+      return ((CALIBRATED_BEAM_INTENSITY / (d + NEAR_FIELD_M) ** FLASHLIGHT_DECAY) * window * albedo * 3) / Math.PI;
     };
     expect(exposed(0.9, 1)).toBeLessThanOrEqual(0.9);
     expect(exposed(0.9, 0.5)).toBeLessThan(1);

@@ -2,12 +2,13 @@ import { buildCityPlan, cityGridOf, scenarioPlanIssues } from './cityPlan.ts';
 import { CitySite } from './citySite.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import { HAMLET_TEMPLATES, hamletHordeSpawn, hamletZombieSpawns, ordinaryHamletSpawnWeights } from './hamlet.ts';
+import { hamletHordeSpawn, hamletZombieSpawns, ordinaryHamletSpawnWeights } from './hamlet.ts';
 import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import { scenarioCertificate } from './scenarioCertificate.ts';
 import type { ScenarioDef } from './schema.ts';
 import type { HordeSpawn, ZombieSpawn } from './site.ts';
+import { hamletTemplateIds } from './sitePalette.ts';
 import { footprint, placedSpawns } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
@@ -84,8 +85,9 @@ const gauntletPopulation = (
     columns.set(key, column);
   };
   // Scale the ordinary settlement population by buildings, not by empty reserved-campus area.
-  for (let start = 0; settlementPressure && start < ordinary.length; start += HAMLET_TEMPLATES.length) {
-    const group = ordinary.slice(start, start + HAMLET_TEMPLATES.length);
+  const perGroup = hamletTemplateIds(site.registry).length;
+  for (let start = 0; settlementPressure && start < ordinary.length; start += perGroup) {
+    const group = ordinary.slice(start, start + perGroup);
     const first = group[0]!;
     const [, depth] = footprint(first);
     const frontage = group.filter(

@@ -15,6 +15,7 @@ import { raycast, type SolidAt } from '../core/raycast.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
+import { amalgamTypeOf, figureSeedPool } from '../core/zombieFigure.ts';
 import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
@@ -185,8 +186,9 @@ export const createPlayView = (
   const zombieMeshes: ZombieRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
+          figureSeeds: figureSeedPool(registry.zombies),
           includeAmalgam: true,
-          amalgamType: registry.zombies.get('amalgam'),
+          amalgamType: amalgamTypeOf(registry.zombies),
           onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (zombie) => gore.severity(zombie),
         })

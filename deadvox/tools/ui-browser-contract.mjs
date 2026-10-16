@@ -295,7 +295,11 @@ try {
     await loaded;
     const probe = frame.contentDocument.querySelector('.inv-option');
     const measure = (tuning) => {
-      const { registry, issues } = buildRegistry([{ source: 'ui-probe.json', data: { ui: [{ id: 'core', ...tuning }] } }]);
+      const sound = { id: 'player_nope', variants: ['assets/audio/nope.ogg'], gain: 0.5, pitchJitter: [1, 1], gainJitter: [1, 1], minIntervalSimSeconds: 0.75, category: 'body', noise: { enabled: false, radiusMetres: 1 } };
+      const { registry, issues } = buildRegistry([
+        { source: 'ui-probe-sounds.json', data: { sounds: [sound] } },
+        { source: 'ui-probe.json', data: { ui: [{ id: 'core', refusalSound: sound.id, ...tuning }] } },
+      ]);
       if (issues.length) throw new Error('Invalid UI probe fixture: ' + JSON.stringify(issues));
       applyUiTokens(registry, frame.contentDocument.documentElement);
       const style = frame.contentWindow.getComputedStyle(probe);

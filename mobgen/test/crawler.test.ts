@@ -5,11 +5,12 @@ import { boneTransforms } from '../src/core/pose.ts';
 import { posedVoxelSurfaceBounds } from '../src/core/voxelBounds.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../src/mob/crawler.ts';
 import { HIT_FLINCH } from '../src/mob/reactions.ts';
-import { SHAMBLER_FIGURE_SEEDS } from '../src/mob/shamblerFigure.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const crawler = TEMPLATES.find((template) => template.name === 'crawler')!;
+// Fixture seeds: Deadvox authors the shipped pool, so this file keeps its own.
+const SHAMBLER_FIGURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 const SHAMBLER_SEED_SET = new Set<number>(SHAMBLER_FIGURE_SEEDS);
 const CRAWLER_SWEEP_SEEDS = Array.from({ length: 64 }, (_, index) => index + 1).filter(
   (seed) => !SHAMBLER_SEED_SET.has(seed),

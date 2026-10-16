@@ -6,10 +6,11 @@ import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { raycast } from './raycast.ts';
 import { INVENTORY_CHEST, INVENTORY_REACH } from './reach.ts';
 import { makeScale } from './scale.ts';
+import { sitePalette } from './sitePalette.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { footprint } from './templates.ts';
 import { World } from './world.ts';
-import { generateChunk, terrainBlockIds } from './worldgen.ts';
+import { generateChunk } from './worldgen.ts';
 
 const key = (point: readonly number[]) => point.join(',');
 
@@ -61,7 +62,7 @@ export class ScenarioRouteSpace {
     this.terrain = {
       seed: site.seed,
       scale: makeScale(HAMLET_BLOCK_SIZE),
-      blocks: terrainBlockIds((id) => site.registry.blockIds.get(id)!),
+      blocks: sitePalette(site.registry).terrain,
       surface: site.surface,
     };
     this.solid = worldSolid(this.world, site.registry, this.entities);

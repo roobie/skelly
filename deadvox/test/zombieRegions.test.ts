@@ -5,13 +5,15 @@ import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { idlePose } from '@mobgen/mob/idle.ts';
-import { SHAMBLER_FIGURE_SEEDS, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 
 type Vec3 = [number, number, number];
 const BLOCK = 0.5;
+// Fixture seeds: these cases test geometry, not which seeds the content authors.
+const SHAMBLER_FIGURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 const REGION_BONES: Record<ZombieRegion, readonly string[]> = {
   head: ['head', 'jaw'],
   torso: ['pelvis', 'spine', 'chest', 'neck'],

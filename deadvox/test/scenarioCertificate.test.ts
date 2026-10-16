@@ -11,8 +11,9 @@ import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
+import { sitePalette } from '../src/core/sitePalette.ts';
 import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
-import { generateChunk, terrainBlockIds } from '../src/core/worldgen.ts';
+import { generateChunk } from '../src/core/worldgen.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 
@@ -295,7 +296,7 @@ it(
         seed: site.seed,
         scale,
         surface: site.surface,
-        blocks: terrainBlockIds((id) => registry.blockIds.get(id)!),
+        blocks: sitePalette(registry).terrain,
       };
       return new Map(
         order.map((cell) => {

@@ -7,6 +7,7 @@ import type { Registry } from './content.ts';
 import { CHUNK, toChunk } from './coords.ts';
 import type { Scale } from './scale.ts';
 import { type FurnitureSpawn, grow, type Rect, rectDistance } from './site.ts';
+import { sitePalette } from './sitePalette.ts';
 import type { Facing } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
@@ -73,7 +74,7 @@ export class HandlingRange {
       return value;
     };
     this.blocks = {
-      asphalt: block('asphalt'),
+      asphalt: sitePalette(registry).paving,
       planks: block('planks'),
       hazard: block('hazard_yellow'),
       brick: block('brick'),
