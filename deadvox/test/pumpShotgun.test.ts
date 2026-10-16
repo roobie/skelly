@@ -25,7 +25,6 @@ import {
   type FirearmShotEffect,
   type FirearmTrajectory,
   firearmHandlingFor,
-  SHELL_LOAD_SECONDS,
 } from '../src/game/firearmHandling.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
@@ -41,6 +40,7 @@ const { registry, issues } = buildRegistry(
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
+const SHELL_LOAD_SECONDS = registry.items.get('pump_shotgun')!.firearm!.handling.shellLoadSimSeconds!;
 const shellType = 'shell_12_gauge_00_buck';
 const hullType = 'spent_case_12_h_gauge_h_00_h_buck';
 const pose = {

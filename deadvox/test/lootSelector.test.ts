@@ -3,7 +3,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
-import { gamePerHour } from '../src/core/time.ts';
+import { gamePerHour, simSeconds } from '../src/core/time.ts';
 
 const context = { usage: ['Medical'], tier: 'Tier2' } as const;
 const itemDefinition = (id: string, usage: string[], tiers: string[]) => ({
@@ -110,7 +110,7 @@ describe('central loot selection', () => {
         radius: 1,
         seenFrom: 1,
         color: '#ffffff',
-        power: { battery: 'wrong_usage', chargePerGameHour: gamePerHour(1) },
+        power: { battery: 'wrong_usage', chargePerGameHour: gamePerHour(1), swapSimSeconds: simSeconds(1) },
       },
     });
     expect(selectLootType(registry, point(), [{ type: host.id, weight: 1 }], Rng.stream(5, 'child'))).toBeUndefined();
