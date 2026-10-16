@@ -13,6 +13,17 @@ export interface TerrainBlocks {
 }
 
 /**
+ * Only for the main-arrival stage's overlay of main's world setup; code reads `sitePalette` instead.
+ * @public
+ */
+export const terrainBlockIds = (id: (name: string) => number): TerrainBlocks => ({
+  grass: id('grass'),
+  dirt: id('dirt'),
+  stone: id('rock'),
+  sand: id('sand'),
+});
+
+/**
  * Changes to the natural ground, such as flattened lots and roads. Both are pure
  * functions of the column, so any chunk can be generated on its own.
  */
