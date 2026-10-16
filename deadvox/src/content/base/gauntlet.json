@@ -499,23 +499,6 @@
       "size": [1, 1, 1]
     },
     {
-      "color": "#dfd6b9",
-      "id": "gauntlet_maintenance_memo",
-      "name": "Ventilation invoice",
-      "readable": {
-        "text": "Accounts queried the extra ducting again. The low brick service building beside the square water tank and yellow delivery frame has paired narrow exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.\n\nStreet → service building → rear apron\n                           paired exhausts → hatch\n",
-        "title": "Ventilation invoice"
-      },
-      "shape": [
-        {
-          "position": [0.10000000000000001, 0.10000000000000001, 0.80000000000000004],
-          "size": [1.8, 1.8, 0.10000000000000001]
-        }
-      ],
-      "size": [2, 2, 1],
-      "solid": false
-    },
-    {
       "color": "#707b7e",
       "id": "gauntlet_water_tank",
       "name": "Square raised water tank",
@@ -612,6 +595,22 @@
       "readable": {
         "text": "Deliver instruments to the low brick service store beside the yellow loading frame. Do not leave them at a utility cabinet or a lone duct riser. Walk around to the rear apron, find the pair of narrow exhausts, and use the inspection hatch beside them. The lid is unlocked; the ladder below reaches the intake floor. Return by the same hatch when the shift ends.\n",
         "title": "Delivery instructions"
+      },
+      "size": [1, 1],
+      "weight": 5
+    },
+    {
+      "category": "note",
+      "economy": {
+        "tiers": ["Tier1"],
+        "usage": ["Industrial"]
+      },
+      "id": "gauntlet_maintenance_memo",
+      "model": "paper_sheet",
+      "name": "Ventilation invoice",
+      "readable": {
+        "text": "Accounts queried the extra ducting again. The low brick service building beside the square water tank and yellow delivery frame has paired narrow exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.\n\nStreet → service building → rear apron\n                           paired exhausts → hatch\n",
+        "title": "Ventilation invoice"
       },
       "size": [1, 1],
       "weight": 5
@@ -9767,7 +9766,7 @@
           "turn": 0
         },
         {
-          "at": [39, 43, 38],
+          "at": [39, 41, 38],
           "choices": [
             {
               "ref": {
@@ -9778,7 +9777,7 @@
             }
           ],
           "id": "memo",
-          "size": [2, 2, 1],
+          "size": [2, 2, 2],
           "turn": 0
         },
         {
@@ -22866,22 +22865,23 @@
     {
       "anchors": {},
       "id": "gauntlet_service_memo",
-      "layers": [["FF"], ["FF"]],
+      "layers": [["FF", "FF"], ["FF", "FF"]],
       "lootContext": {
         "tier": "Tier1",
         "usage": ["Industrial", "Medical"]
       },
       "ownership": {
-        "layers": [["SS"], ["SS"]]
+        "layers": [["SS", "SS"], ["SS", "SS"]]
       },
       "palette": {
         "F": {
           "facing": "n",
-          "furniture": "gauntlet_maintenance_memo"
+          "furniture": "crate",
+          "loot": "d41_empty"
         }
       },
       "ports": [],
-      "size": [2, 2, 1],
+      "size": [2, 2, 2],
       "style": "service_brick"
     },
     {

@@ -129,6 +129,10 @@
     {
       "file": "assets/models/folded_note.glb",
       "id": "folded_note"
+    },
+    {
+      "file": "assets/models/notebook.glb",
+      "id": "notebook"
     }
   ]
 }

@@ -1205,7 +1205,7 @@ export class HeldItems {
   private syncOffhandArm(side: HandSide, heldAt: Vec3, modelId: string | undefined, held: Group): void {
     const otherSide: HandSide = side === 'right' ? 'left' : 'right';
     const model = modelId ? this.inventory.registry.models.get(modelId) : undefined;
-    if (model?.tube && model.anchors?.support) {
+    if (model?.internalMagazine && model.anchors?.support) {
       const support = heldAnchorOffset(model, 'support');
       const offhandGrip: Vec3 = support.map((value, index) => value + heldAt[index]!) as Vec3;
       this.addArm(otherSide, offhandGrip, held, heldAt);
@@ -1242,7 +1242,7 @@ export class HeldItems {
       if (action) {
         this.firearmParts.set(item.uid, { action, parts: model.parts });
         const definition = this.inventory.registry.models.get(def.model!)!;
-        if (definition.tube) {
+        if (definition.internalMagazine) {
           this.pumpModels.set(item.uid, definition);
         }
       }

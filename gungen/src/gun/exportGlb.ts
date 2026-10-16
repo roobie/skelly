@@ -27,10 +27,12 @@ import {
   attachmentSlots,
   withAttachmentInstanceAppearances,
 } from './attachments.ts';
+import { boltCalibreIssue, isBoltAssembly, withBoltCalibre } from './boltCartridge.ts';
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { eulerXyzDegrees, gripTurn, toFileAxes } from './exportFrame.ts';
 import { exportGunGeometry as exportGlb } from './glbWriter.ts';
+import { internalMagazineCapacity } from './internalMagazine.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { type RevolverMetadata, revolverMetadata } from './revolverExport.ts';
@@ -47,6 +49,7 @@ interface ActionPartMetadata {
   readonly strokeMetres: number;
   /** Shared timelines this node follows; other modes leave it at home. */
   readonly modes: readonly CycleMode[];
+  readonly turn?: { readonly pivot: Vec3; readonly axis: Vec3; readonly angleRadians: number };
 }
 
 interface CycleMetadata {
@@ -54,6 +57,8 @@ interface CycleMetadata {
   readonly rearwardSimSeconds: number;
   readonly dwellSimSeconds: number;
   readonly forwardSimSeconds: number;
+  readonly unlockSimSeconds?: number;
+  readonly lockSimSeconds?: number;
 }
 
 interface GunActionMetadata {
@@ -88,8 +93,8 @@ export interface DeadvoxModelEntry {
   readonly calibre?: string;
   /** Present on magazine entries; one local pose per round slot, top to bottom. */
   readonly capacity?: number;
-  /** Integral tube capacity in shells; unlike a detached box magazine, no round-pose column. */
-  readonly tube?: { readonly capacity: number };
+  /** Integral capacity; unlike a detached box magazine, no round-pose column. */
+  readonly internalMagazine?: { readonly capacity: number };
   readonly rounds?: readonly { readonly at: Vec3; readonly tilt: number }[];
   readonly action?: GunActionMetadata;
   readonly revolver?: RevolverMetadata;
@@ -123,7 +128,7 @@ interface GunExportOptions extends GunExportMetadata {
 
 interface GunModelEntryOptions extends GunExportMetadata {
   readonly handling?: GunActionExport;
-  readonly tubeCapacity?: number;
+  readonly internalCapacity?: number;
 }
 
 export type GunAssetIdentity = GlbAssetIdentity;
@@ -152,6 +157,8 @@ const cycleMetadata = (cycle: CycleTimeline): CycleMetadata => ({
   rearwardSimSeconds: cycle.rearwardSeconds,
   dwellSimSeconds: cycle.dwellSeconds,
   forwardSimSeconds: cycle.forwardSeconds,
+  ...(cycle.unlockSeconds === undefined ? {} : { unlockSimSeconds: cycle.unlockSeconds }),
+  ...(cycle.lockSeconds === undefined ? {} : { lockSimSeconds: cycle.lockSeconds }),
 });
 
 const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
@@ -168,6 +175,18 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
         axis: toFileAxes(part.axis),
         strokeMetres: round6(length(part.travel) * resolved.domain.units.metresPerUnit),
         modes: part.modes,
+        ...(part.def.motion?.turn
+          ? {
+              turn: {
+                pivot: modelPoint(
+                  applyPoint(part.placed, part.def.motion.turn.pivot),
+                  resolved.domain.units.metresPerUnit,
+                ),
+                axis: toFileAxes(applyDir(part.placed, part.def.motion.turn.axis)),
+                angleRadians: part.def.motion.turn.angleRadians,
+              },
+            }
+          : {}),
       },
     ]),
   );
@@ -290,7 +309,7 @@ const magazineSlotData = (resolved: Resolved): NonNullable<DeadvoxModelEntry['sl
   const [partId, instance] =
     Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'magazine') ?? [];
   const transform = partId && resolved.placed.get(partId);
-  if (!(partId && instance && transform)) {
+  if (!(partId && instance && transform) || resolved.params.get(partId)?.integral?.value === 'yes') {
     return undefined;
   }
   return {
@@ -385,9 +404,21 @@ export const createGunModelEntry = ({
       : {}),
     ...(calibre === undefined ? {} : { calibre }),
     ...(handling ? { action: handling.action } : {}),
-    ...(options.tubeCapacity === undefined ? {} : { tube: { capacity: options.tubeCapacity } }),
+    ...(options.internalCapacity === undefined ? {} : { internalMagazine: { capacity: options.internalCapacity } }),
   };
 };
+
+const integralCapacity = (resolved: Resolved, cartridge: Cartridge | undefined): number | undefined => {
+  if (!cartridge) {
+    return undefined;
+  }
+  return cartridge.kind === 'shotshell'
+    ? tubeMagazineCapacity(resolved, cartridge)
+    : internalMagazineCapacity(resolved, cartridge);
+};
+
+const boltMetadataIssue = (assembly: Assembly, cartridge: Cartridge | undefined): string | undefined =>
+  cartridge && isBoltAssembly(assembly) ? boltCalibreIssue(cartridge.id) : undefined;
 
 /**
  * Exports a gun assembly: core writes the GLB, then this adapter selects gun anchors and builds the Deadvox entry.
@@ -400,7 +431,13 @@ export const exportGunGlb = (
   options: GunExportOptions = {},
 ): GunExportResult => {
   const { includeAttachmentCompatibility = false, ...metadata } = options;
-  const resolved = withAttachmentInstanceAppearances(resolve(assembly, gunDomain));
+  const message = boltMetadataIssue(assembly, metadata.cartridge);
+  if (message) {
+    return { ok: false, error: { code: 'structure-issues', issues: [{ rule: 'structure', message, parts: [] }] } };
+  }
+  const resolved = withAttachmentInstanceAppearances(
+    resolve(withBoltCalibre(assembly, metadata.cartridge?.id), gunDomain),
+  );
   // Broken assemblies get the core writer's structure report before anchor selection.
   if (resolved.issues.length > 0 || resolved.placed.size < Object.keys(assembly.parts).length) {
     const probe = exportGlb({ resolved, palette: GUN_PALETTE, appearance, asset });
@@ -417,8 +454,7 @@ export const exportGunGlb = (
     return result;
   }
   const handling = buildActionExport(resolved);
-  const tubeCapacity =
-    metadata.cartridge?.kind === 'shotshell' ? tubeMagazineCapacity(resolved, metadata.cartridge) : undefined;
+  const internalCapacity = integralCapacity(resolved, metadata.cartridge);
   const {
     units: { metresPerUnit },
   } = resolved.domain;
@@ -429,7 +465,7 @@ export const exportGunGlb = (
     options: {
       ...metadata,
       ...(handling ? { handling } : {}),
-      ...(tubeCapacity === undefined ? {} : { tubeCapacity }),
+      ...(internalCapacity === undefined ? {} : { internalCapacity }),
     },
     sight: sightMetadata(resolved),
   });

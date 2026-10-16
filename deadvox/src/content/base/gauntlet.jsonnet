@@ -7,12 +7,8 @@ local rooms = import 'gauntlet-lab-rooms.libsonnet';
 local descents = import 'gauntlet-lab-descents.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local service = import 'gauntlet-service.libsonnet';
-local memo = std.filter(function(f) f.id == 'gauntlet_look_memo', look.furniture)[0];
 local metal = '#707b7e';
 local button = std.filter(function(f) f.id == 'gauntlet_look_button', look.furniture)[0];
-local note = function(id, title, text) memo + {
-  id: id, name: title, readable: { title: title, text: text },
-};
 local emptyLoot = { usage: [], tier: 'Tier1' };
 local paper = function(id, title, model, text) {
   id: id, name: title, category: 'note', weight: 5, size: [1, 1],
@@ -28,6 +24,12 @@ local publicNotes = [
   |||),
   paper('gauntlet_public_directions', 'Delivery instructions', 'folded_note', |||
     Deliver instruments to the low brick service store beside the yellow loading frame. Do not leave them at a utility cabinet or a lone duct riser. Walk around to the rear apron, find the pair of narrow exhausts, and use the inspection hatch beside them. The lid is unlocked; the ladder below reaches the intake floor. Return by the same hatch when the shift ends.
+  |||),
+  paper('gauntlet_maintenance_memo', 'Ventilation invoice', 'paper_sheet', |||
+    Accounts queried the extra ducting again. The low brick service building beside the square water tank and yellow delivery frame has paired narrow exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.
+
+    Street → service building → rear apron
+                               paired exhausts → hatch
   |||),
 ];
 local utilities = [
@@ -103,12 +105,6 @@ local utilities = [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
     },
-    note('gauntlet_maintenance_memo', 'Ventilation invoice', |||
-      Accounts queried the extra ducting again. The low brick service building beside the square water tank and yellow delivery frame has paired narrow exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.
-
-      Street → service building → rear apron
-                                 paired exhausts → hatch
-    |||),
     {
       id: 'gauntlet_water_tank', name: 'Square raised water tank', size: [6, 12, 6], color: metal,
       shape: [

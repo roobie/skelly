@@ -41,7 +41,7 @@ local small = function(id, size, furniture, layers, claims, facing='n') {
       ownership: { layers: [doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, roofClaims] }, anchors: {}, ports: [],
     },
     small('gauntlet_service_exhaust', [4, 8, 2], 'gauntlet_look_exhaust', [['FFFF', 'FFFF'], ['FFFF', 'FFFF'], ['FFFF', 'FFFF'], ['FFFF', 'FFFF'], ['FFFF', 'FFFF'], ['FFFF', 'FFFF'], ['FFFF', 'FFFF'], ['FFFF', 'FFFF']], [['SSSS', 'SSSS'], ['SSSS', 'SSSS'], ['SSSS', 'SSSS'], ['SSSS', 'SSSS'], ['SSSS', 'SSSS'], ['SSSS', 'SSSS'], ['SSSS', 'SSSS'], ['SSSS', 'SSSS']]),
-    small('gauntlet_service_memo', [2, 2, 1], 'gauntlet_maintenance_memo', [['FF'], ['FF']], [['SS'], ['SS']]),
+    small('gauntlet_service_memo', [2, 2, 2], 'crate', [['FF', 'FF'], ['FF', 'FF']], [['SS', 'SS'], ['SS', 'SS']]) + { palette: { F: { furniture: 'crate', facing: 'n', loot: 'd41_empty' } } },
     small('gauntlet_service_bench', [4, 2, 2], 'gauntlet_look_bench', [['FFFF', 'FFFF'], ['FFFF', 'FFFF']], [['SSSS', 'SSSS'], ['SSSS', 'SSSS']]),
     small('gauntlet_service_hatch', [3, 1, 2], 'roof_hatch', [['FFF', 'FFF']], [['SSS', 'SSS']], 'w'),
     {
@@ -60,7 +60,7 @@ local small = function(id, size, furniture, layers, claims, facing='n') {
       slot('apron', 'piece', 'gauntlet_service_apron', [41, 41, 38], [7, 8, 4]),
       slot('service_shell', 'piece', 'gauntlet_service_shell', [24, 41, 24], [24, 8, 14]),
       slot('exhausts', 'piece', 'gauntlet_service_exhaust', [28, 41, 38], [4, 8, 2]),
-      slot('memo', 'piece', 'gauntlet_service_memo', [39, 43, 38], [2, 2, 1]),
+      slot('memo', 'piece', 'gauntlet_service_memo', [39, 41, 38], [2, 2, 2]),
       slot('resource_bench', 'piece', 'gauntlet_service_bench', [33, 41, 42], [4, 2, 2]),
     ] + [slot(s.id + '_floor', 'piece', if s.id == 'cross_south' then 'gauntlet_service_hatch_floor' else s.choices[0].ref.id + '_surface_floor', [s.at[0], 40, s.at[2]], [s.size[0], 1, s.size[2]]) for s in circulation.slots] + [
       slot('north_west_floor', 'piece', 'gauntlet_service_room_floor', [4, 40, 4], [18, 1, 14]),

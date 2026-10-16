@@ -647,10 +647,17 @@ const ActionCycleSchema = pipe(
     rearwardSimSeconds: PositiveSimSeconds,
     dwellSimSeconds: SimSeconds,
     forwardSimSeconds: PositiveSimSeconds,
+    unlockSimSeconds: optional(PositiveSimSeconds),
+    lockSimSeconds: optional(PositiveSimSeconds),
   }),
   check(
     (cycle) =>
-      cycle.rearwardSimSeconds + cycle.dwellSimSeconds + cycle.forwardSimSeconds <= cycle.durationSimSeconds + 1e-9,
+      (cycle.unlockSimSeconds ?? 0) +
+        cycle.rearwardSimSeconds +
+        cycle.dwellSimSeconds +
+        cycle.forwardSimSeconds +
+        (cycle.lockSimSeconds ?? 0) <=
+      cycle.durationSimSeconds + 1e-9,
     'cycle phases must fit within durationSimSeconds',
   ),
 );
@@ -660,6 +667,16 @@ const ActionPartSchema = strictObject({
   node: pipe(string(), nonEmpty('must not be empty')),
   axis: UnitVector,
   strokeMetres: Positive,
+  turn: optional(
+    strictObject({
+      pivot: Point,
+      axis: UnitVector,
+      angleRadians: pipe(
+        number(),
+        check((angle) => angle !== 0, 'turn angle must not be zero'),
+      ),
+    }),
+  ),
   /** References shared timelines; modes not listed keep this node at home. */
   modes: pipe(
     array(picklist(['fire', 'hand'])),
@@ -686,6 +703,17 @@ const ActionSchema = pipe(
   check(
     (action) => Object.values(action.parts).every((part) => part.modes.every((mode) => action[mode] !== undefined)),
     'moving part modes must reference a declared timeline',
+  ),
+  check(
+    (action) =>
+      Object.values(action.parts).every(
+        (part) =>
+          !part.turn ||
+          part.modes.every(
+            (mode) => action[mode]?.unlockSimSeconds !== undefined && action[mode]?.lockSimSeconds !== undefined,
+          ),
+      ),
+    'turning parts need unlock and lock phases in every referenced timeline',
   ),
   check(
     (action) => (action.fire === undefined) === (action.roundsPerSimMinute === undefined),
@@ -870,8 +898,8 @@ const ModelSchema = pipe(
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
     capacity: optional(MagazineCapacity),
-    /** Integral tube, loaded singly through anchors.loading_port; no box round-pose column. */
-    tube: optional(strictObject({ capacity: MagazineCapacity })),
+    /** Integral magazine, loaded singly through anchors.loading_port; no box round-pose column. */
+    internalMagazine: optional(strictObject({ capacity: MagazineCapacity })),
     rounds: optional(array(MagazineRoundSchema)),
     /**
      * Where the hand holds it, and how it's turned there (degrees about x, y and z, in
@@ -942,10 +970,10 @@ const ModelSchema = pipe(
     'optic sight metadata needs an ocular opening diameter',
   ),
   check(
-    ({ tube, calibre, anchors, capacity, rounds }) =>
-      tube === undefined ||
+    ({ internalMagazine, calibre, anchors, capacity, rounds }) =>
+      internalMagazine === undefined ||
       (calibre !== undefined && anchors?.loading_port !== undefined && capacity === undefined && rounds === undefined),
-    'tube metadata needs calibre/loading_port and cannot carry a box round column',
+    'internal magazine metadata needs calibre/loading_port and cannot carry a box round column',
   ),
 );
 

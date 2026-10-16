@@ -203,6 +203,7 @@ const fail = (error: GlbExportError): GlbExportResult => ({ ok: false, error });
 const motionMetadata = (motion: NonNullable<PartDef['motion']>) => ({
   kind: motion.kind,
   axis: motion.axis,
+  ...(motion.turn ? { turn: motion.turn } : {}),
   // biome-ignore lint/complexity/useLiteralKeys: preserve legacy GLB keys without core domain identifiers.
   ['rest']: motion.start,
   // biome-ignore lint/complexity/useLiteralKeys: preserve legacy GLB keys without core domain identifiers.

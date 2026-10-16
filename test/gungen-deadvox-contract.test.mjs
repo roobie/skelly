@@ -5,8 +5,10 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { buildRegistry } from '../deadvox/src/core/content.ts';
 import { namedNodes } from '../deadvox/src/render/firearmModel.ts';
+import { parseCartridgeJson } from '../gungen/src/ammo/parseCartridge.ts';
 import { exportFileText } from '../gungen/src/cli/exportFile.ts';
 import { exportAttachmentGlb } from '../gungen/src/gun/attachmentExport.ts';
+import { exportCartridgeModels } from '../gungen/src/gun/cartridgeExport.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 
@@ -18,13 +20,13 @@ const DEADVOX_BASE = join(ROOT, 'deadvox/src/content/base');
 const FIREARM_CONTENT = JSON.parse(readFileSync(join(DEADVOX_BASE, 'models-firearms.json'), 'utf8'));
 // The asset manifest credits each exported gun to its gungen design, so a new export joins the sync check with its credit.
 const DESIGN_SOURCE = /\/gungen\/designs\/([^/]+\.json)$/;
+const CARTRIDGE_SOURCE = /\/gungen\/cartridges\/[^/]+\.json$/;
 const MODEL_FILE = /^assets\/models\/([^/]+)\.glb$/;
-const EXPORTED_GUNS = JSON.parse(readFileSync(join(DEADVOX_BASE, 'assets/manifest.json'), 'utf8')).sources.flatMap(
-  ({ url, files }) => {
-    const design = typeof url === 'string' ? DESIGN_SOURCE.exec(url)?.[1] : undefined;
-    return design ? files.map((file) => ({ design, file, modelId: MODEL_FILE.exec(file)?.[1] })) : [];
-  },
-);
+const ASSET_SOURCES = JSON.parse(readFileSync(join(DEADVOX_BASE, 'assets/manifest.json'), 'utf8')).sources;
+const EXPORTED_GUNS = ASSET_SOURCES.flatMap(({ url, files }) => {
+  const design = typeof url === 'string' ? DESIGN_SOURCE.exec(url)?.[1] : undefined;
+  return design ? files.map((file) => ({ design, file, modelId: MODEL_FILE.exec(file)?.[1] })) : [];
+});
 const omitDeadvoxOwnedFields = ({ chargingHandleDegrees: _chargingHandleDegrees, ...model }) => model;
 const glbJson = (bytes) =>
   JSON.parse(
@@ -83,6 +85,26 @@ const exportDifference = (actual, expected, path = '$') => {
   }
   return Object.is(actual, expected) ? null : `${path} differs`;
 };
+const modelSyncDifference = ({ glb, modelEntry }, source) => {
+  const { id, file } = modelEntry;
+  const committed = FIREARM_CONTENT.models.find((model) => model.id === id);
+  if (!committed) {
+    return `missing Deadvox model ${id}`;
+  }
+  const difference = exportDifference(omitDeadvoxOwnedFields(committed), modelEntry);
+  if (difference) {
+    return `${id} differs from ${source}: ${difference}`;
+  }
+  // Node versions round linear colours in the last bit; geometry still compares byte for byte.
+  const committedGlb = readFileSync(join(DEADVOX_BASE, file));
+  const exportedGlb = Buffer.from(glb);
+  const glbDifference = exportDifference(glbJson(committedGlb), glbJson(exportedGlb));
+  if (glbDifference) {
+    return `${file} differs from ${source}: ${glbDifference}`;
+  }
+  return glbBinary(committedGlb).equals(glbBinary(exportedGlb)) ? null : `${file} geometry differs from ${source}`;
+};
+
 const loadExports = () =>
   readdirSync(DESIGNS)
     .filter((file) => file.endsWith('.json') && !file.startsWith('look-'))
@@ -120,28 +142,42 @@ describe('gungen exports satisfy deadvox model validation', () => {
       assert.ok(modelId, `${design}: ${file} is not a Deadvox model file`);
       const result = exportFileText(readFileSync(join(DESIGNS, design), 'utf8'), { id: modelId, file });
       assert.ok(result.ok, `${design}: ${result.ok ? '' : result.message}`);
-      const firearm = FIREARM_CONTENT.models.find(({ id }) => id === modelId);
-      assert.ok(firearm, `missing Deadvox firearm model ${modelId}`);
-      const difference = exportDifference(omitDeadvoxOwnedFields(firearm), result.modelEntry);
-      assert.equal(
-        difference,
-        null,
-        `${modelId} differs from gungen's export outside Deadvox-owned fields${difference ? `: ${difference}` : ''}`,
-      );
-      // Node versions round the exported linear colours differently in the last bit, so the GLB's JSON is compared
-      // with the entry's tolerance and only its binary geometry byte for byte.
-      const committedGlb = readFileSync(join(DEADVOX_BASE, file));
-      const exportedGlb = Buffer.from(result.glb);
-      const glbDifference = exportDifference(glbJson(committedGlb), glbJson(exportedGlb));
-      assert.equal(
-        glbDifference,
-        null,
-        `${file} differs from gungen's export of ${design}${glbDifference ? `: ${glbDifference}` : ''}`,
-      );
-      assert.ok(
-        glbBinary(committedGlb).equals(glbBinary(exportedGlb)),
-        `${file} geometry differs from gungen's export of ${design}`,
-      );
+      assert.equal(modelSyncDifference(result, design), null);
+    }
+  });
+
+  it('keeps credited round and case exports synchronized with their cartridge sources', () => {
+    const sources = ASSET_SOURCES.filter(({ url }) => typeof url === 'string' && CARTRIDGE_SOURCE.test(url));
+    assert.ok(sources.length > 0, 'the manifest credits no cartridge exports');
+    for (const { url, files } of sources) {
+      const cartridgeFile = url.slice(url.lastIndexOf('/') + 1);
+      const parsed = parseCartridgeJson(readFileSync(join(ROOT, 'gungen/cartridges', cartridgeFile), 'utf8'));
+      assert.ok(parsed.ok, `${cartridgeFile}: ${JSON.stringify(parsed)}`);
+      const exported = exportCartridgeModels(parsed.cartridge);
+      assert.ok(exported.ok, `${cartridgeFile}: ${JSON.stringify(exported.error)}`);
+      assert.ok(files.length > 0, `${cartridgeFile} credits no model files`);
+      for (const file of files) {
+        const model = Object.values(exported.models).find(({ modelEntry }) => modelEntry.file === file);
+        assert.ok(model, `${file} is not produced by ${cartridgeFile}`);
+        assert.equal(modelSyncDifference(model, cartridgeFile), null);
+      }
+    }
+  });
+
+  it('keeps standalone optic exports synchronized with the credited optic catalogue', () => {
+    const sources = ASSET_SOURCES.filter(
+      ({ url }) => typeof url === 'string' && url.endsWith('/gungen/src/gun/optics.ts'),
+    );
+    assert.ok(sources.length > 0, 'the manifest credits no standalone optic catalogue exports');
+    for (const { files } of sources) {
+      assert.ok(files.length > 0, 'the optic source credits no model files');
+      for (const file of files) {
+        const id = MODEL_FILE.exec(file)?.[1];
+        assert.ok(id, `invalid optic model file ${file}`);
+        const exported = exportAttachmentGlb(id.replaceAll('_', '-'), { id, file });
+        assert.ok(exported.ok, JSON.stringify(exported.error));
+        assert.equal(modelSyncDifference(exported, 'optic catalogue'), null);
+      }
     }
   });
 

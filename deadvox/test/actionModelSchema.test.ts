@@ -50,12 +50,12 @@ describe('optional action model metadata', () => {
     expect(registry.models.get('lamp')?.anchors?.ejection).toEqual([-0.05, 0.02, 0.03]);
   });
 
-  it('admits a hand-only integral tube but rejects modes without timelines and box round columns', () => {
+  it('admits a hand-only integral magazine but rejects modes without timelines and box round columns', () => {
     const model = {
       ...baseModel,
       calibre: '12-gauge-00-buck',
       anchors: Object.fromEntries([['loading_port', [0, -0.04, 0]]]),
-      tube: { capacity: 4 },
+      internalMagazine: { capacity: 4 },
       action: {
         parts: {
           carrier: { node: 'bolt-carrier:bolt-carrier', axis: [-1, 0, 0], strokeMetres: 0.063_25, modes: ['hand'] },
@@ -75,7 +75,7 @@ describe('optional action model metadata', () => {
     ).toContain('moving part modes must reference a declared timeline');
     expect(
       build({ ...model, capacity: 1, rounds: [{ at: [0, 0, 0], tilt: 0 }] }).issues.map(({ message }) => message),
-    ).toContain('tube metadata needs calibre/loading_port and cannot carry a box round column');
+    ).toContain('internal magazine metadata needs calibre/loading_port and cannot carry a box round column');
   });
 
   it('leaves action fields optional for existing model entries', () => {

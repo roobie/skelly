@@ -10,6 +10,7 @@ local book(id, name, weight, readingGameMinutes, recipes, text) = {
   category: 'book',
   weight: weight,
   size: [2, 2],
+  model: 'notebook',
   book: { title: name, recipes: recipes, readingGameMinutes: readingGameMinutes },
   readable: { title: name, text: text },
 };
@@ -205,6 +206,7 @@ local spentCase(id, name, weight, description, model) = {
       category: 'book',
       weight: 300,
       size: [2, 2],
+      model: 'notebook',
       description: 'Water-stained. Someone underlined things.',
     },
     {

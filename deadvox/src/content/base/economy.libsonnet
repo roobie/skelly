@@ -13,7 +13,7 @@ local notSpawnable = [
   'shambler_left_leg', 'shambler_right_leg',
 ];
 local commonItems = [
-  'camp_armoury_key', 'camp_supply_manifest', 'camp_hq_safe_key', 'camp_hq_safe_note',
+  'camp_armoury_key', 'camp_supply_manifest', 'camp_hq_safe_key', 'camp_hq_safe_note', 'camp_closing_note',
   'optic_digital_thermal', 'optic_fixed_prism_4x', 'optic_high_mag_5_25x', 'optic_holographic',
   'optic_lpvo_1_6x', 'optic_mini_reflex', 'optic_tube_dot', 'rail_front_sight', 'real_suppressor',
   'tactical_flashlight_mount', 'weapon_sling', 'foregrip', 'frag_grenade',
