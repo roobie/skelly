@@ -6,7 +6,7 @@ import process from 'node:process';
 // biome-ignore lint/correctness/noUnresolvedImports: Playwright re-exports Chromium from playwright-core at runtime
 import { chromium } from 'playwright';
 
-const [headUrl, output, baselineUrl] = process.argv.slice(2);
+const [headUrl, output, baselineUrl, mode] = process.argv.slice(2);
 if (!(headUrl && output && baselineUrl)) {
   throw new Error(
     'usage: node tools/decal-probe.mjs <head-url-with-pose> <output-directory> <main-url-with-same-pose>',
@@ -96,7 +96,10 @@ const installTiming = () => {
 const browser = await chromium.launch({ headless: false });
 const rows = [];
 try {
-  for (const [trial, variant] of ['main', 'on', 'on', 'main', 'main', 'on', 'off'].entries()) {
+  for (const [trial, variant] of (mode === 'screens'
+    ? ['on', 'off']
+    : ['main', 'on', 'on', 'main', 'main', 'on', 'off']
+  ).entries()) {
     // biome-ignore lint/performance/noAwaitInLoops: GPU trials must be exclusive, never concurrent
     const context = await browser.newContext({ viewport: { width: 1672, height: 832 }, deviceScaleFactor: 1.5 });
     const page = await context.newPage();
@@ -122,6 +125,12 @@ try {
     await page.keyboard.down('F2');
     await page.keyboard.press('Numpad5');
     await page.keyboard.up('F2');
+    await page.waitForFunction(
+      // biome-ignore lint/performance/useTopLevelRegex: Playwright serializes this callback into the browser without module scope
+      () => /chunks\s+\d+\s+meshed,\s+0\s+pending/.test(document.body.textContent),
+      {},
+      { timeout: 90_000 },
+    );
     await page.waitForTimeout(6000);
     const hardware = await page.evaluate(() => {
       const gl = document.querySelector('#view canvas').getContext('webgl2');
@@ -138,6 +147,15 @@ try {
     }
     if (trial < 2 || variant === 'off') {
       await page.screenshot({ path: join(output, `${variant}.png`) });
+    }
+    if (mode === 'screens') {
+      if (errors.length > 0) {
+        throw new Error(JSON.stringify(errors));
+      }
+      rows.push({ trial, variant, url: url.href, hardware, errors });
+      await writeFile(join(output, 'screenshots.json'), JSON.stringify(rows, null, 2));
+      await context.close();
+      continue;
     }
     await page.evaluate(() => {
       const t = globalThis.decalProbe;

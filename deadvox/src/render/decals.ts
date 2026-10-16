@@ -6,7 +6,7 @@ import type { DecalDef } from '../core/schema.ts';
 import { type Placement, placedDecals } from '../core/templates.ts';
 import type { GameSeconds } from '../core/time.ts';
 import { STAIN_NOISE_GLSL } from './bloodStain.ts';
-import { withHeightFog } from './heightFog.ts';
+import { patchHeightFog } from './heightFog.ts';
 
 const faceNormals = {
   n: [0, 0, -1],
@@ -146,10 +146,11 @@ export class AuthoredDecals {
           diffuseColor.a *= vDecalLook.x;
         `,
         );
+      patchHeightFog(shader);
     };
     this.basePositions = Float32Array.from(positions);
     this.baseNormals = Float32Array.from(normalValues);
-    this.mesh = new Mesh(geometry, withHeightFog(material));
+    this.mesh = new Mesh(geometry, material);
     this.mesh.receiveShadow = true;
     this.mesh.name = 'authored-decals';
   }

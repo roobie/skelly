@@ -1,3 +1,4 @@
+import { ShaderLib } from 'three';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
 import { BlockEntities, panelFor } from '../src/core/blockEntities.ts';
@@ -100,6 +101,27 @@ it('batches marks with content-owned ageing and count budget', () => {
   fresh.dispose();
   old.dispose();
   disabled.dispose();
+});
+
+it('keeps the ragged stain mask and per-mark opacity when adding scene fog', () => {
+  const registry = fixture();
+  const compiled = compileTemplate(registry, { ...template(), decals: [decal()] });
+  const rendered = new AuthoredDecals([{ template: compiled, origin: [0, 0, 0], turn: 0 }], {
+    seed: 1,
+    blockSize: 0.5,
+    ageGameSeconds: gameHours(0),
+    limit: 1,
+  });
+  const shader = {
+    uniforms: {},
+    vertexShader: ShaderLib.lambert.vertexShader,
+    fragmentShader: ShaderLib.lambert.fragmentShader,
+  };
+  rendered.mesh.material.onBeforeCompile(shader as never, null as never);
+  expect(shader.fragmentShader).toContain('discard;');
+  expect(shader.fragmentShader).toContain('diffuseColor.a *= vDecalLook.x');
+  expect(shader.uniforms).toHaveProperty('uHeightFog');
+  rendered.dispose();
 });
 
 it('a turned door mark appears with its loaded owner and follows the ordinary panel', () => {
