@@ -260,17 +260,21 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
 - **Route proof.** Each kind's code proves that its own routes are open, and the row
   supplies the proof's counts and thresholds, such as how many leads a player may miss
   while one stays reachable. The proof's shape is physics a mod cannot safely restate, while
-  how forgiving a scenario is belongs to its design. Whether that redundancy sits with the
-  leads or in a block of its own waits on BR in #393. See `src/core/scenarioCertificate.ts`,
-  `scenarioCertificate`.
+  how forgiving a scenario is belongs to its design. The lead redundancy sits with the
+  leads, beside what it counts. Only leads reached by different routes count toward it,
+  because two leads behind one blocked street fail together and would overstate how
+  forgiving the scenario is. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`.
 - **Start.** The gauntlet starts on an authored roof with several authored ways down, each
   trading speed against safety or noise, so leaving the roof is the first decision. They
   are authored to keep the first version simple. Every route proof roots at the start, so
   the rooftop start lands in #393 before seeded placement, and the proofs are rebuilt
   around their root once, not twice. The template's climb proof covers the roof and ways
   down; each world's route proof still runs from the roof, because the seeded city around
-  the building can block the foot of a way down. A threat waiting at that foot is
-  allowed.
+  the building can block the foot of a way down. At least two ways down stay open in
+  every world, so one blocked way never leaves a single forced exit and leaving the roof
+  stays a choice. The foot of a way down need not be kept clear. The start building
+  stands away from the perimeter wall, so its roof cannot become a jump over it and the
+  ring's clearance check need not cover it.
 - **Street approach.** The street a kind's proof enters its site from is an authored
   anchor, not derived from the site, so a scenario can approach from another side and
   stay the same kind. Under a rooftop start the anchor need not sit at the foot of a way
