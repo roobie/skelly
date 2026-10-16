@@ -727,8 +727,6 @@ try {
               return !session.queue.busy;
             case 'itemGone':
               return item === undefined;
-            case 'idle':
-              return !session.queue.busy;
             case 'tubeLoaded':
               return (item?.firearm?.tube?.length ?? 0) > 0;
             case 'chamberRound':
