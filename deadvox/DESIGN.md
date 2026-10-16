@@ -370,7 +370,12 @@ ladder owner's supported, body-clear entry and braced exit. Entry palette marker
 prevent later descents from being mistaken for the entrance. Whole-cell voxel
 queries prevent fractional sweep poses from reading an unrelated array slot.
 The plan freezes placement decisions; compiled template buffers remain
-compiler-owned inputs. Stamping never consumes the column index, because later
+compiler-owned inputs. Repeated buildings share immutable leaf compilation within
+one planning pass because recompiling the same leaf for each slot wastes startup
+work. Style bindings and per-slot provenance remain independent, and a later
+compilation must see registry edits rather than a process-wide cache. See
+`src/core/templates.ts`, `compileMapPiece`, and `src/core/cityPlan.ts`, `templateCompiler`.
+Stamping never consumes the column index, because later
 vertical chunks and furniture requests need the same complete plan. See `scenarioPlanIssues` in `src/core/cityPlan.ts`,
 `scenarioPortalIssues` in `src/core/scenarioPortal.ts`, and `templateBodySpace`
 in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`

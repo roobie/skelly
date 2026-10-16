@@ -450,6 +450,7 @@ const compilePoolTemplate = (registry: Registry, id: string, storeys: number) =>
 
 const templateCompiler = (registry: Registry, seed: number) => {
   const cache = new Map<string, ReturnType<typeof compileTemplate>>();
+  const pieceCache = new Map<string, ReturnType<typeof compileTemplate>>();
   return ({ id, style }: PoolRef, storeys: number, siteId = 'dimensions') => {
     const assembly = registry.mapAssemblies.get(id);
     if (assembly && registry.templates.has(id)) {
@@ -459,7 +460,7 @@ const templateCompiler = (registry: Registry, seed: number) => {
     let template = cache.get(key);
     if (!template) {
       template = assembly
-        ? compileAssembly(registry, assembly, { seed, siteId, ...(style ? { style } : {}) })
+        ? compileAssembly(registry, assembly, { seed, siteId, pieceCache, ...(style ? { style } : {}) })
         : compilePoolTemplate(registry, id, storeys);
       cache.set(key, template);
     }
