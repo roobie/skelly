@@ -20,7 +20,8 @@
     {
       "id": "evacuation_note",
       "name": "Folded evacuation note",
-      "category": "book",
+      "category": "note",
+      "model": "folded_note",
       "weight": 5,
       "size": [1, 1],
       "description": "A folded note from the kitchen; readable in hand.",

@@ -209,12 +209,13 @@
       "weight": 10
     },
     {
-      "category": "book",
+      "category": "note",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
       "id": "camp_hq_safe_note",
+      "model": "paper_sheet",
       "name": "Officer's note",
       "readable": {
         "text": "The reserve safe is locked. Its key is in the radio desk drawer downstairs. The suppressor in the safe is for the next patrol taking the north road.",
