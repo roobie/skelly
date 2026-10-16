@@ -29,6 +29,7 @@ import {
   union,
   boolean as vBoolean,
 } from 'valibot';
+import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { hasSegment } from './authoredTerrain.mjs';
 import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
@@ -1053,6 +1054,23 @@ const FurnitureSchema = pipe(
     ),
     /** Render-only boxes in cell coordinates; gameplay continues to use the furniture cells. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
+    /** Rendered as this vehicle: a blueprint without the `removed` fittings, in `body` paint, `dirt` grimy (0 clean to 1 filthy). */
+    vehicle: optional(
+      pipe(
+        strictObject({
+          blueprint: string(),
+          body: Color,
+          dirt: Fraction,
+          removed: array(string()),
+        }),
+        check(({ blueprint }) => BLUEPRINTS[blueprint] !== undefined, 'unknown vehicle blueprint'),
+        check(
+          ({ blueprint, removed }) =>
+            removed.every((id) => BLUEPRINTS[blueprint]?.fittings.some((fitting) => fitting.id === id)),
+          'removed names a fitting the blueprint lacks',
+        ),
+      ),
+    ),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
     rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
     /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
@@ -1433,7 +1451,6 @@ const MapPoolSchema = strictObject({
       }),
     ),
     minLength(1),
-    maxLength(32),
     check(
       (rows) => rows.every(({ atLeast, atMost }) => atLeast === undefined || atMost === undefined || atLeast <= atMost),
       'atLeast must not exceed atMost',
