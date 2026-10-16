@@ -58,9 +58,15 @@ local ladder = lab.entry.ladder;
   }, {
     id: 'gauntlet_city',
     choices: [
-      { ref: { kind: 'assembly', id: 'gauntlet_city_1' }, weight: 36 },
-      { ref: { kind: 'assembly', id: 'gauntlet_city_2' }, weight: 30 },
-      { ref: { kind: 'assembly', id: 'gauntlet_city_3' }, weight: 18 },
+      { ref: { kind: 'assembly', id: row.id, style: style.id }, weight: row.weight * style.share }
+      for row in [
+        { id: 'gauntlet_city_1', weight: 36 },
+        { id: 'gauntlet_city_2', weight: 30 },
+        { id: 'gauntlet_city_3', weight: 18 },
+        { id: 'gauntlet_city_cellar', weight: 12 },
+      ]
+      for style in [{ id: 'brick_townhouse', share: 0.75 }, { id: 'concrete_townhouse', share: 0.25 }]
+    ] + [
       { ref: { kind: 'assembly', id: 'gauntlet_food_store' }, weight: 6, atMost: 3 },
       { ref: { kind: 'assembly', id: 'gauntlet_hardware_store' }, weight: 4, atMost: 2 },
       { ref: { kind: 'assembly', id: 'gauntlet_medical_site' }, weight: 3, atMost: 2 },

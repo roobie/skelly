@@ -1,3 +1,4 @@
+local variants = import 'gauntlet-city-variants.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
 local doors = import 'gauntlet-city-doors.libsonnet';
 local palette = {
@@ -29,13 +30,13 @@ local doorWall = [
   '#..............#..', '#..............#..', '#..............#..', '################..',
 ];
 local doorMask = [
-  'AAAAAAAAAAAAAAAAAA', 'AAAAAAAAAAAAAAAAAA', 'SSSSSSSSSSSSSSSSAA', 'S..............SAA',
+  '..................', '..................', 'SSSSSSSSSSSSSSSSAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SSA', 'S..............SSA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'SSSSSSSSSSSSSSSSAA',
 ];
 local doorWallMask = [
-  'AAAAAAAAAAAAAAAAAA', 'AAAAAAAAAAAAAAAAAA', 'SSSSSSS..SSSSSSSAA', 'S..............SAA',
+  '..................', '..................', 'SSSSSSS..SSSSSSSAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SSA', 'S..............SSA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'SSSSSSSSSSSSSSSSAA',
@@ -47,7 +48,7 @@ local doorWindows = [
   '#..............#..', '#..............#..', '#..............#..', '#####......#####..',
 ];
 local doorWindowMask = [
-  'AAAAAAAAAAAAAAAAAA', 'AAAAAAAAAAAAAAAAAA', 'SSSSAAS..SAASSSSAA', 'S..............SAA',
+  '..................', '..................', 'SSSSAAS..SAASSSSAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SSA', 'S..............SSA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'SSSSSAAAAAASSSSSAA',
@@ -59,7 +60,7 @@ local windows = [
   '#..............#..', '#..............#..', '#..............#..', '#####......#####..',
 ];
 local windowClaims = [
-  'AAAAAAAAAAAAAAAAAA', 'AAAAAAAAAAAAAAAAAA', 'SSSSAASSSSAASSSSAA', 'S..............SAA',
+  '..................', '..................', 'SSSSAASSSSAASSSSAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SSA', 'S..............SSA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'SSSSSAAAAAASSSSSAA',
@@ -162,7 +163,7 @@ local lowerSlots = [
   slot('floor_shell', 'gauntlet_city_floor_shell', [0, 8, 0], [18, 1, 16]),
   slot('floor_inside', 'gauntlet_city_floor_lower', [1, 8, 3], [14, 1, 12]),
 ];
-{
+local kit = {
   mapPieces: doors.mapPieces + [
     {
       id: 'gauntlet_city_ground', size: [18, 1, 16], style: 'brick_townhouse',
@@ -316,4 +317,5 @@ local lowerSlots = [
     anchors: { entry: { kind: 'standing', at: [8, 1, 8] } },
     access: { ground: 'floor_0', entrance: [8, 1, 8], storeys: [{ id: 'floor_0', floor: 1 }], stairs: [] },
   }],
-}
+};
+variants(kit)

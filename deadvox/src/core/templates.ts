@@ -321,6 +321,7 @@ export interface AssemblyContext {
   readonly siteId: string;
   readonly slotPath?: string;
   readonly ancestors?: readonly string[];
+  readonly style?: string;
 }
 
 export const contentPointer = (registry: Registry, section: string, id: string): string => {
@@ -334,9 +335,10 @@ export const compileMapPiece = (
   context?: AssemblyContext,
 ): CompiledTemplate => {
   const source = contentPointer(registry, 'mapPieces', piece.id);
-  const style = registry.mapStyles.get(piece.style);
+  const styleId = context?.style ?? piece.style;
+  const style = registry.mapStyles.get(styleId);
   if (!style) {
-    throw new Error(`${source}: missing style ${piece.style}`);
+    throw new Error(`${source}: missing style ${styleId}`);
   }
   const palette: TemplateDef['palette'] = {};
   for (const [char, entry] of Object.entries(piece.palette)) {
@@ -373,7 +375,11 @@ export const compileMapPiece = (
   };
 };
 
-const compileKitRef = (registry: Registry, ref: KitRef, context: AssemblyContext): CompiledTemplate => {
+const compileKitRef = (registry: Registry, ref: KitRef, inherited: AssemblyContext): CompiledTemplate => {
+  const context = ref.style ? { ...inherited, style: ref.style } : inherited;
+  if (ref.style && !registry.mapStyles.has(ref.style)) {
+    throw new Error(`seed=${context.seed} slot=${context.slotPath}: unknown style ${ref.style}`);
+  }
   if (ref.kind === 'piece') {
     const piece = registry.mapPieces.get(ref.id);
     if (!piece) {
@@ -433,7 +439,7 @@ const resolveSlot = (
   context: AssemblyContext,
 ): Placement => {
   const label = `${slotLabel(context, assembly, slot)} source=${contentPointer(registry, 'mapAssemblies', assembly.id)}`;
-  const refKey = (ref: KitRef) => `${ref.kind}:${ref.id}`;
+  const refKey = (ref: KitRef) => `${ref.kind}:${ref.id}${ref.style ? `@${ref.style}` : ''}`;
   const choices = [...slot.choices].sort((a, b) => {
     const left = refKey(a.ref);
     const right = refKey(b.ref);

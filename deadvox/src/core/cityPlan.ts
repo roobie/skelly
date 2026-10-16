@@ -4,7 +4,7 @@ import { HAMLET_TEMPLATES } from './hamlet.ts';
 import { hash3, pickWeighted, Rng } from './random.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
-import type { ScenarioDef } from './schema.ts';
+import type { MapPoolDef, ScenarioDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { BlockBox } from './structure.ts';
@@ -20,13 +20,17 @@ import {
 } from './templates.ts';
 
 export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
-const SINGLE_STOREY = new Set(['gas_station', 'shed']);
-type Choice = Readonly<{ id: string; weight: number; atLeast?: number; atMost?: number }>;
+interface PoolRef {
+  readonly id: string;
+  readonly style?: string | undefined;
+}
+type PoolChoice = Readonly<PoolRef & { weight: number; atLeast?: number; atMost?: number }>;
+const rowKey = ({ id, style }: PoolRef): string => `${id}@${style ?? ''}`;
 export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps' | 'ring'> & {
   readonly pool?: string | undefined;
-  readonly templates: readonly Choice[];
+  readonly templates: readonly PoolChoice[];
   readonly streetProps?: readonly string[] | undefined;
-  readonly ring?: Readonly<{ pool: string; setback: number; templates: readonly Choice[] }> | undefined;
+  readonly ring?: Readonly<{ pool: string; setback: number; templates: readonly PoolChoice[] }> | undefined;
 };
 type CityShape = Pick<
   ScenarioDef['city'],
@@ -241,9 +245,17 @@ const perimeterIssues = (registry: Registry, city: ScenarioDef['city'], perimete
   return issues;
 };
 
-const choicesOf = (choices: readonly { ref: { id: string }; weight: number; atLeast?: number | undefined; atMost?: number | undefined }[]): Choice[] =>
+const choicesOf = (
+  choices: readonly {
+    ref: { id: string; style?: string | undefined };
+    weight: number;
+    atLeast?: number | undefined;
+    atMost?: number | undefined;
+  }[],
+): PoolChoice[] =>
   choices.map(({ ref, weight, atLeast, atMost }) => ({
     id: ref.id,
+    ...(ref.style ? { style: ref.style } : {}),
     weight,
     ...(atLeast === undefined ? {} : { atLeast }),
     ...(atMost === undefined ? {} : { atMost }),
@@ -265,6 +277,19 @@ export const cityGridOf = (registry: Registry, city: ScenarioDef['city']): CityG
     templates: resolve(pool),
     ...(ring ? { ring: { ...ring, templates: resolve(ring.pool) } } : {}),
   };
+};
+
+const poolStyleIssue = (
+  registry: Registry,
+  { kind, id, style }: MapPoolDef['choices'][number]['ref'],
+): string | undefined => {
+  if (!style) {
+    return undefined;
+  }
+  if (kind !== 'assembly') {
+    return `style "${style}" needs an assembly, not template "${id}"`;
+  }
+  return registry.mapStyles.has(style) ? undefined : `no style "${style}"`;
 };
 
 /** Building slots every plan has: each row of each non-service block holds at least one building. */
@@ -301,6 +326,10 @@ const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, str
       const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id);
       if (!building) {
         return [[choiceAt, `no ${ref.kind} "${ref.id}" in pool "${pool.id}"`]];
+      }
+      const styleIssue = poolStyleIssue(registry, ref);
+      if (styleIssue) {
+        return [[`${choiceAt}.style`, styleIssue]];
       }
       const ringed = at === '.city.ring.pool';
       const along = ringed ? Math.min(city.blockX, city.blockZ) : city.blockX;
@@ -380,25 +409,27 @@ const cityCells = (grid: CityGrid): Cell[] => {
   return cells;
 };
 
+const compilePoolTemplate = (registry: Registry, id: string, storeys: number) => {
+  const definition = registry.templates.get(id);
+  if (!definition) {
+    throw new Error(`Missing city template or assembly "${id}"`);
+  }
+  return stackTemplate(compileTemplate(registry, definition), storeys);
+};
+
 const templateCompiler = (registry: Registry, seed: number) => {
   const cache = new Map<string, ReturnType<typeof compileTemplate>>();
-  return (id: string, storeys: number, siteId = 'dimensions') => {
+  return ({ id, style }: PoolRef, storeys: number, siteId = 'dimensions') => {
     const assembly = registry.mapAssemblies.get(id);
     if (assembly && registry.templates.has(id)) {
       throw new Error(`Ambiguous city template and assembly "${id}"`);
     }
-    const key = assembly ? JSON.stringify([id, siteId]) : JSON.stringify([id, storeys]);
+    const key = assembly ? JSON.stringify([id, siteId, style]) : JSON.stringify([id, storeys]);
     let template = cache.get(key);
     if (!template) {
-      if (assembly) {
-        template = compileAssembly(registry, assembly, { seed, siteId });
-      } else {
-        const definition = registry.templates.get(id);
-        if (!definition) {
-          throw new Error(`Missing city template or assembly "${id}"`);
-        }
-        template = stackTemplate(compileTemplate(registry, definition), storeys);
-      }
+      template = assembly
+        ? compileAssembly(registry, assembly, { seed, siteId, ...(style ? { style } : {}) })
+        : compilePoolTemplate(registry, id, storeys);
       cache.set(key, template);
     }
     return template;
@@ -409,13 +440,14 @@ interface FillContext {
   seed: number;
   floor: number;
   grid: CityGrid;
+  registry: Registry;
   maxStoreys: number;
   incidentalTemplates: readonly string[];
   compiled: ReturnType<typeof templateCompiler>;
-  /** Buildings placed so far in the current pass, by pool id. */
+  /** Buildings placed so far in the current pass, by pool row (`rowKey`). */
   counts: Map<string, number>;
   /** Quota buildings the current pass must place at the earliest slot where each fits. */
-  forced: string[];
+  forced: PoolRef[];
 }
 export const cityRowStart = (grid: CityGrid, row: number): number =>
   grid.street + grid.pad + Math.floor(row / 2) * (2 * cityRowDepth(grid) + grid.street);
@@ -425,25 +457,27 @@ const groundedY = (template: Placement['template'], floor: number): number => fl
 /** The next slot's building: a forced quota choice that fits, else the weighted draw over rows under their `atMost`. */
 const chooseBuilding = (
   context: FillContext,
-  fits: (id: string) => boolean,
+  fits: (ref: PoolRef) => boolean,
   incidental: boolean,
   stream: string,
-): string | undefined => {
+): PoolRef | undefined => {
   const { seed, grid, counts, forced } = context;
   const open = grid.templates.filter(
-    (choice) => (counts.get(choice.id) ?? 0) < (choice.atMost ?? Number.POSITIVE_INFINITY),
+    (choice) => (counts.get(rowKey(choice)) ?? 0) < (choice.atMost ?? Number.POSITIVE_INFINITY),
   );
-  const pool = incidental ? context.incidentalTemplates.map((id) => ({ id, weight: 1 })) : open;
+  const pool: readonly (PoolRef & { weight: number })[] = incidental
+    ? context.incidentalTemplates.map((id) => ({ id, weight: 1 }))
+    : open;
   const selected = pickWeighted(pool, Rng.stream(seed, stream));
-  const forcedAt = incidental ? -1 : forced.findIndex((id) => fits(id));
+  const forcedAt = incidental ? -1 : forced.findIndex((ref) => fits(ref));
   if (forcedAt >= 0) {
     return forced.splice(forcedAt, 1)[0];
   }
-  return selected && fits(selected.id) ? selected.id : open.find((choice) => choice.weight > 0 && fits(choice.id))?.id;
+  return selected && fits(selected) ? selected : open.find((choice) => choice.weight > 0 && fits(choice));
 };
 
 const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
-  const { seed, floor, grid, compiled, maxStoreys, counts } = context;
+  const { seed, floor, grid, registry, compiled, maxStoreys, counts } = context;
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
   const end = (i + 1) * pitchX - grid.pad;
@@ -451,19 +485,19 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
   let x = i * pitchX + grid.street + grid.pad;
   const placements: Placement[] = [];
   for (let k = 0; ; k++) {
-    const fits = (name: string) => footprint({ template: compiled(name, 1), origin: [0, 0, 0], turn })[0] <= end - x;
+    const fits = ({ id, style }: PoolRef) =>
+      footprint({ template: compiled({ id, style }, 1), origin: [0, 0, 0], turn })[0] <= end - x;
     const incidental = k === 0 && row === 0 && context.incidentalTemplates.length > 0;
-    const buildingId = chooseBuilding(context, fits, incidental, `city:${i},${j}/row:${row}/building:${k}/type`);
-    if (!buildingId) {
+    const building = chooseBuilding(context, fits, incidental, `city:${i},${j}/row:${row}/building:${k}/type`);
+    if (!building) {
       break;
     }
-    if (!(incidental && context.incidentalTemplates.includes(buildingId))) {
-      counts.set(buildingId, (counts.get(buildingId) ?? 0) + 1);
+    if (!(incidental && context.incidentalTemplates.includes(building.id))) {
+      counts.set(rowKey(building), (counts.get(rowKey(building)) ?? 0) + 1);
     }
-    const storeys = SINGLE_STOREY.has(buildingId)
-      ? 1
-      : 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * maxStoreys);
-    const template = compiled(buildingId, storeys, `city:${i},${j}/row:${row}/building:${k}`);
+    const limit = Math.min(maxStoreys, registry.templates.get(building.id)?.maxStoreys ?? maxStoreys);
+    const storeys = 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * limit);
+    const template = compiled(building, storeys, `city:${i},${j}/row:${row}/building:${k}`);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const bank = j * pitchZ + cityRowStart(grid, row);
     const z = row % 2 === 0 ? bank : bank + 2 * cityRowDepth(grid) - depth;
@@ -473,38 +507,38 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
   return placements;
 };
 
-const quotaShortfalls = ({ grid, counts }: FillContext): string[] =>
-  grid.templates.flatMap(({ id, atLeast }) =>
-    Array.from({ length: Math.max(0, (atLeast ?? 0) - (counts.get(id) ?? 0)) }, () => id),
+const quotaShortfalls = ({ grid, counts }: FillContext): PoolChoice[] =>
+  grid.templates.flatMap((choice) =>
+    Array.from({ length: Math.max(0, (choice.atLeast ?? 0) - (counts.get(rowKey(choice)) ?? 0)) }, () => choice),
   );
 
 /**
  * Retries force every row that has fallen short so far, so a retry never drops an earlier row. It stops once the
  * quotas are met or a retry would force no new row, so it is bounded by the quota rows, never a search, and loud.
  */
-const fillWithQuotas = (context: FillContext, fill: (forced: string[]) => Placement[], site: string): Placement[] => {
+const fillWithQuotas = (context: FillContext, fill: (forced: PoolRef[]) => Placement[], site: string): Placement[] => {
   let placements = fill([]);
   const forcedRows = new Set<string>();
   for (;;) {
-    const short = new Set(quotaShortfalls(context));
-    if ([...short].every((id) => forcedRows.has(id))) {
+    const short = new Set(quotaShortfalls(context).map(rowKey));
+    if ([...short].every((key) => forcedRows.has(key))) {
       break;
     }
-    for (const id of short) {
-      forcedRows.add(id);
+    for (const key of short) {
+      forcedRows.add(key);
     }
     placements = fill(
-      context.grid.templates.flatMap(({ id, atLeast }) =>
-        forcedRows.has(id) ? Array.from({ length: atLeast ?? 0 }, () => id) : [],
+      context.grid.templates.flatMap((choice) =>
+        forcedRows.has(rowKey(choice)) ? Array.from({ length: choice.atLeast ?? 0 }, () => choice) : [],
       ),
     );
   }
   const [unmet] = quotaShortfalls(context);
   if (unmet) {
     throw new Error(
-      `Pool "${context.grid.pool ?? 'city'}" quota unmet: could not place "${unmet}" at site ${site} (needs ${
-        context.grid.templates.find((choice) => choice.id === unmet)?.atLeast
-      }, placed ${context.counts.get(unmet) ?? 0})`,
+      `Pool "${context.grid.pool ?? 'city'}" quota unmet: could not place "${unmet.id}" at site ${site} (needs ${
+        unmet.atLeast
+      }, placed ${context.counts.get(rowKey(unmet)) ?? 0})`,
     );
   }
   return placements;
@@ -533,7 +567,8 @@ export const servicePlacement = ({
     turn,
   });
 
-const freezeChoices = (choices: readonly Choice[]) => Object.freeze(choices.map((choice) => Object.freeze({ ...choice })));
+const freezeChoices = (choices: readonly PoolChoice[]) =>
+  Object.freeze(choices.map((choice) => Object.freeze({ ...choice })));
 
 const freezeGrid = (grid: CityGrid): Readonly<CityGrid> =>
   Object.freeze({
@@ -577,7 +612,7 @@ const againstWall = (side: (typeof SIDES)[number]['side'], bounds: Rect, y: numb
 
 /** One row of buildings per side of the grid, backs to the wall and fronts to the outermost street. */
 const fillRing = (context: FillContext, bounds: Rect, setback: number): Placement[] => {
-  const { seed, floor, grid, compiled, maxStoreys, counts } = context;
+  const { seed, floor, grid, registry, compiled, maxStoreys, counts } = context;
   const depth = cityRowDepth(grid);
   const placements: Placement[] = [];
   for (const [sideIndex, { side, turn, alongX }] of SIDES.entries()) {
@@ -587,19 +622,18 @@ const fillRing = (context: FillContext, bounds: Rect, setback: number): Placemen
       const end = (index + 1) * pitch - grid.pad;
       let at = index * pitch + grid.street + grid.pad;
       for (let k = 0; ; k++) {
-        const fits = (name: string) => {
-          const [fx, fz] = footprint({ template: compiled(name, 1), origin: [0, 0, 0], turn });
+        const fits = (ref: PoolRef) => {
+          const [fx, fz] = footprint({ template: compiled(ref, 1), origin: [0, 0, 0], turn });
           return (alongX ? fx : fz) <= end - at && (alongX ? fz : fx) <= depth;
         };
-        const buildingId = chooseBuilding(context, fits, false, `city:ring:${side}:${index}/building:${k}/type`);
-        if (!buildingId) {
+        const building = chooseBuilding(context, fits, false, `city:ring:${side}:${index}/building:${k}/type`);
+        if (!building) {
           break;
         }
-        counts.set(buildingId, (counts.get(buildingId) ?? 0) + 1);
-        const storeys = SINGLE_STOREY.has(buildingId)
-          ? 1
-          : 1 + Math.floor(hash3(seed, index, sideIndex + 5000, k + 1000) * maxStoreys);
-        const template = compiled(buildingId, storeys, `city:ring:${side}:${index}/building:${k}`);
+        counts.set(rowKey(building), (counts.get(rowKey(building)) ?? 0) + 1);
+        const limit = Math.min(maxStoreys, registry.templates.get(building.id)?.maxStoreys ?? maxStoreys);
+        const storeys = 1 + Math.floor(hash3(seed, index, sideIndex + 5000, k + 1000) * limit);
+        const template = compiled(building, storeys, `city:ring:${side}:${index}/building:${k}`);
         const extent = footprint({ template, origin: [0, 0, 0], turn });
         placements.push(
           freezePlacement({ template, origin: againstWall(side, bounds, groundedY(template, floor), at, setback, extent), turn }),
@@ -616,7 +650,7 @@ const wallPlacements = (context: FillContext, bounds: Rect, perimeter: Perimeter
   const { floor, grid, compiled } = context;
   const placements: Placement[] = [];
   const stand = (id: string, siteId: string, side: (typeof SIDES)[number], at: (extent: readonly [number, number]) => number) => {
-    const template = compiled(id, 1, siteId);
+    const template = compiled({ id }, 1, siteId);
     const extent = footprint({ template, origin: [0, 0, 0], turn: side.turn });
     placements.push(
       freezePlacement({
@@ -633,11 +667,11 @@ const wallPlacements = (context: FillContext, bounds: Rect, perimeter: Perimeter
   }
   for (const side of SIDES.filter(() => lining)) {
     const [lo, hi] = side.alongX ? [bounds.x0, bounds.x1] : [bounds.z0, bounds.z1];
-    const inset = footprint({ template: compiled(lining!.assembly, 1, `perimeter:${side.side}:0`), origin: [0, 0, 0], turn: side.turn })[
+    const inset = footprint({ template: compiled({ id: lining!.assembly }, 1, `perimeter:${side.side}:0`), origin: [0, 0, 0], turn: side.turn })[
       side.alongX ? 1 : 0
     ];
     for (let k = 0, at = lo + inset; ; k++, at += lining!.pitch) {
-      const [fx, fz] = footprint({ template: compiled(lining!.assembly, 1, `perimeter:${side.side}:${k}`), origin: [0, 0, 0], turn: side.turn });
+      const [fx, fz] = footprint({ template: compiled({ id: lining!.assembly }, 1, `perimeter:${side.side}:${k}`), origin: [0, 0, 0], turn: side.turn });
       const along = side.alongX ? fx : fz;
       if (at + along > hi - inset) {
         break;
@@ -656,7 +690,7 @@ const streetPropPlacements = (context: FillContext, cells: Cell[], pitchX: numbe
   return cells.flatMap(([i, j]) =>
     props.map((id, index) =>
       freezePlacement({
-        template: context.compiled(id, 1),
+        template: context.compiled({ id }, 1),
         turn: 0,
         origin: [i * pitchX, floor, j * pitchZ + grid.street + (grid.blockZ * (index + 1)) / (props.length + 1)].map(
           Math.floor,
@@ -690,6 +724,7 @@ export const buildCityPlan = ({
     seed,
     floor,
     grid,
+    registry,
     maxStoreys: scenario ? 1 : maxStoreys,
     incidentalTemplates: scenario?.composition?.incidentalTemplates ?? [],
     compiled: templateCompiler(registry, seed),
@@ -699,7 +734,7 @@ export const buildCityPlan = ({
   const service =
     scenario && serviceBlock
       ? servicePlacement({
-          template: context.compiled(scenario.serviceTemplate, 1, `scenario:${scenario.id}:service`),
+          template: context.compiled({ id: scenario.serviceTemplate }, 1, `scenario:${scenario.id}:service`),
           floor,
           grid,
           cell: serviceBlock,
@@ -707,7 +742,7 @@ export const buildCityPlan = ({
         })
       : undefined;
   const composition = service && scenario ? composeScenario(registry, scenario, service, floor) : undefined;
-  const fillCells = (forced: string[]): Placement[] => {
+  const fillCells = (forced: PoolRef[]): Placement[] => {
     context.counts = new Map();
     context.forced = forced;
     return cells.flatMap(([i, j]) =>
