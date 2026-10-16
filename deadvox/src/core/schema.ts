@@ -6,6 +6,7 @@
 import {
   array,
   check,
+  finite,
   type InferOutput,
   integer,
   literal,
@@ -372,6 +373,14 @@ const AmmoSchema = strictObject({
   stripSimSeconds: PositiveSimSeconds,
 });
 
+export const BeamSpillSchema = strictObject({
+  /** Off keeps the tunables authored but renders the plain cone; a mod or `torchspill=1` turns it on. */
+  enabled: vBoolean(),
+  radiusRatio: pipe(number(), finite(), minValue(1 + Number.EPSILON)),
+  intensity: pipe(number(), finite(), minValue(0), maxValue(1 - Number.EPSILON)),
+});
+export type BeamSpill = InferOutput<typeof BeamSpillSchema>;
+
 const LightSchema = strictObject({
   /** Metres it lights up. */
   radius: Positive,
@@ -393,6 +402,8 @@ const LightSchema = strictObject({
       angleDegrees: pipe(Positive, maxValue(180, 'must be at most 180')),
       /** Share of the cone, from its edge inward, over which the beam fades to dark; the rest is the hotspot. */
       penumbra: pipe(number(), minValue(0, 'must be at least 0'), maxValue(1, 'must be at most 1')),
+      decay: NonNegative,
+      spill: optional(BeamSpillSchema),
     }),
   ),
   burning: optional(
