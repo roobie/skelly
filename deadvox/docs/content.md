@@ -2,6 +2,7 @@
 read_if:
   - you author or change Deadvox content sources or their build pipeline
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
+  - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot

@@ -41,7 +41,7 @@ if (showMods) {
   startupScreen.hidden = true;
   modsScreen.hidden = false;
 }
-const bundled = selectBundledMods(bundledModIdsFromUrl(params));
+const bundled = selectBundledMods(showMods ? [] : bundledModIdsFromUrl(params));
 const content = showMods ? await chooseMods(modsScreen) : bundled.content;
 startupScreen.hidden = false;
 applyUiTokens(content.registry, document.documentElement);

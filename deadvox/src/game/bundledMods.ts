@@ -102,6 +102,5 @@ export const selectBundledMods = (
   for (const list of result.issues.values()) {
     issues.push(...list);
   }
-  issues.push(...result.content.issues.filter((issue) => !issues.includes(issue)));
   return { content: result.content, admitted, issues };
 };
