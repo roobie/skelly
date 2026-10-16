@@ -1,3 +1,4 @@
+import { deepStrictEqual } from 'node:assert/strict';
 import { describe, expect, it, vi } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import type { Chunk } from '../src/core/chunk.ts';
@@ -308,12 +309,13 @@ it(
     };
     const forward = request(first, stampProbeCells);
     const backward = request(second, [...stampProbeCells].reverse());
+    // Native deep equality avoids matcher traversal overhead on dense chunk and provenance arrays.
     for (const cell of stampProbeCells) {
       const key = cell.join(',');
-      expect(backward.get(key)).toEqual(forward.get(key));
+      deepStrictEqual(backward.get(key), forward.get(key), `chunk ${key}`);
     }
-    expect(selected(first)).toEqual(before);
-    expect(selected(second)).toEqual(before);
+    deepStrictEqual(selected(first), before, 'forward selection remains unchanged');
+    deepStrictEqual(selected(second), before, 'backward selection matches the original');
   },
   stampProbeCells.length * 2 * 1000,
 );

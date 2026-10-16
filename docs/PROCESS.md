@@ -31,7 +31,7 @@ This document owns roles, decision gates and slice coordination. Project princip
    commit and says whether the worktree is clean.
 4. **Spec check, then code review:** the lead checks the report against the spec, then has the
    code reviewer review the commit. The review includes the principles section of
-   `docs/principles-review-skill.md` and applies `README.md`, "Zero drift". The lead forwards
+   `docs/principles-review-skill.md` and applies `PILLARS.md`, "Zero drift". The lead forwards
    accepted must-fix and should-fix findings. A false doc is a defect and a FIX.
 5. **BR's verdict:** anything judged by eye, ear or feel waits for BR (below). This runs in
    parallel with the code review.

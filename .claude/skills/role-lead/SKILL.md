@@ -122,7 +122,7 @@ A brief stands alone, so a reset agent can act on it:
   directory lands in the main checkout;
 - the heavy-run offload text that `.agent-mail/HOST.md` names;
 - a new worktree runs `npm run setup` before its first push (`AGENTS.md`, "Installing check dependencies");
-- tunables go in content (`README.md`, "Content forward compatibility"), even where a design
+- tunables go in content (`PILLARS.md`, "Content forward compatibility"), even where a design
   note calls them named constants; the brief says so;
 - the CI step: cite the head's run IDs, pending is fine, don't wait; the lead checks green
   before merging. An idle coder whose last word is "CI pending" gets the result and a nudge;
