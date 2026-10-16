@@ -1,6 +1,7 @@
 import type { CityPlan } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import { placedPieces } from './templates.ts';
 
 export const DISCOVERY_EVENTS = [
@@ -54,11 +55,7 @@ export const discoveryForPlan = (plan: CityPlan, registry: Registry): ScenarioDi
           }
           return source.items
             .filter((item) => registry.items.get(item.item)?.readable)
-            .map((item) =>
-              item.placement === 'surface'
-                ? ([piece.pos[0], piece.pos[1] + piece.size[1], piece.pos[2]] as Vec3)
-                : piece.pos,
-            );
+            .map((item) => (item.placement === 'surface' ? furnitureSurfacePosition(piece) : piece.pos));
         }),
       ];
     }),

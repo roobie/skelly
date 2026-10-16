@@ -137,6 +137,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const w = globalThis.gauntletWitness;
       const { engine, session, input } = w;
       const { placedPieces } = await import('/src/core/templates.ts');
+      const { furnitureSurfacePosition } = await import('/src/core/furnitureSurface.ts');
       const { IDLE } = await import('/src/game/session.ts');
       const [clue] = placedPieces(engine.site.plan.composition.leads[0]);
       if (!clue) {
@@ -153,7 +154,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         if (!entity) {
           throw new Error('Public lead not streamed at start');
         }
-        const at = [entity.pos[0], entity.pos[1] + entity.size[1], entity.pos[2]];
+        const at = furnitureSurfacePosition(entity);
         const pile = [...session.inventory.piles.values()].find((value) =>
           value.pos.every((v, axis) => v === at[axis]),
         );
