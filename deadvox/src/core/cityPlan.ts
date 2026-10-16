@@ -1,4 +1,4 @@
-import { sprintJumpRise } from '../game/player.ts';
+import { PLAYER, sprintJumpRise } from '../game/player.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_TEMPLATES } from './hamlet.ts';
@@ -228,15 +228,16 @@ const clearanceIssues = (registry: Registry, city: ScenarioDef['city'], perimete
   const { ring } = city;
   const wallTop = perimeter.height + 1 + (perimeter.wire?.height ?? 0);
   const setback = ring ? ring.setback : city.street + city.pad;
-  const arcTop = (roof: number) => roof + sprintJumpRise(setback * BLOCK_SIZE) / BLOCK_SIZE;
+  const run = setback * BLOCK_SIZE - 2 * PLAYER.halfWidth;
+  const arcTop = (roof: number) => roof + sprintJumpRise(run) / BLOCK_SIZE;
   const choices = registry.mapPools.get(ring?.pool ?? city.pool)?.choices ?? [];
   return choices.flatMap(({ ref }) => {
     const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id);
     return building && arcTop(building.size[1]) >= wallTop
       ? [
           [
-            '.city.perimeter.clearance',
-            `a jump from the roof of "${ref.id}" clears the wall; lower the building or raise the setback`,
+            ring ? '.city.ring.setback' : '.city.pad',
+            `a jump from the roof of "${ref.id}" clears the wall; lower the building or widen the setback`,
           ] as [string, string],
         ]
       : [];

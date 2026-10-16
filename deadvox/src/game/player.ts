@@ -22,8 +22,15 @@ export const PLAYER = {
 /** m/s². Heavier than Earth's; it makes jumps feel snappy. */
 const GRAVITY = 28;
 
-/** Metres a sprinting jump has risen above its take-off point after running `run` metres from it. */
+/**
+ * Metres a sprinting jump has risen above its take-off point after covering `run` metres of clear
+ * ground, edge of the body to the obstacle. With no run left, the body can still jump straight up
+ * against the obstacle, so that is the standing apex.
+ */
 export const sprintJumpRise = (run: number): number => {
+  if (run <= 0) {
+    return PLAYER.jump ** 2 / (2 * GRAVITY);
+  }
   const t = run / PLAYER.sprint;
   return PLAYER.jump * t - (GRAVITY * t * t) / 2;
 };

@@ -49,7 +49,7 @@ local ladder = lab.entry.ladder;
       },
       streetProps: ['gauntlet_car_wreck'],
       pool: 'gauntlet_city',
-      ring: { pool: 'gauntlet_ring', setback: 6 },
+      ring: { pool: 'gauntlet_ring', setback: 7 },
     },
   }],
   mapPools: [{

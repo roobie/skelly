@@ -161,7 +161,7 @@
         "pool": "gauntlet_city",
         "ring": {
           "pool": "gauntlet_ring",
-          "setback": 6
+          "setback": 7
         },
         "rows": 4,
         "street": 12,

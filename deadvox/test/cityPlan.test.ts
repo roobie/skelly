@@ -329,6 +329,7 @@ describe('one finished city plan', () => {
 
   it.each([
     { wall: 3, reports: true },
+    { wall: 4, reports: true },
     { wall: 6, reports: false },
   ])(
     'checks a roof jump against a wall $wall blocks high at the ring setback (reports: $reports)',
@@ -341,7 +342,7 @@ describe('one finished city plan', () => {
       };
       const { registry: admitted } = buildRegistry(fixtureScenarioSources(fixtureScenario()));
       const paths = scenarioPlanIssues(admitted, scenario).map(([path]) => path);
-      expect(paths.includes('.city.perimeter.clearance')).toBe(reports);
+      expect(paths.includes('.city.ring.setback')).toBe(reports);
     },
   );
 
