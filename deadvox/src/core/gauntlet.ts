@@ -21,15 +21,11 @@ export class GauntletSite extends CitySite {
     registry,
     scale,
     scenario,
-    settlementPressure = scenario.population.settlementPressure,
-    authoredMarkers = scenario.population.authoredMarkers,
   }: {
     seed: number;
     registry: Registry;
     scale: Scale;
     scenario: ScenarioDef;
-    settlementPressure?: boolean;
-    authoredMarkers?: boolean;
   }) {
     const issues = scenarioPlanIssues(registry, scenario);
     if (issues.length > 0) {
@@ -52,7 +48,7 @@ export class GauntletSite extends CitySite {
       throw new Error(certificate.issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
     }
     this.scenario = scenario;
-    const population = gauntletPopulation(this, scenario, settlementPressure, authoredMarkers);
+    const population = gauntletPopulation(this, scenario);
     this.population = population.zombies;
     this.hordes = population.hordes;
   }
@@ -84,12 +80,10 @@ const groupRoad = (group: Placement[], grid: CityGrid) => {
   };
 };
 
-const gauntletPopulation = (
-  site: CitySite,
-  { id: scenarioId, population }: ScenarioDef,
-  settlementPressure: boolean,
-  authoredMarkers: boolean,
-) => {
+const groupStarts = (count: number, size: number) =>
+  Array.from({ length: Math.ceil(count / size) }, (_, i) => i * size);
+
+const gauntletPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
@@ -102,10 +96,19 @@ const gauntletPopulation = (
     columns.set(key, column);
   };
   // Scale the ordinary settlement population by buildings, not by empty reserved-campus area.
-  const { groupSize, hordes: hordeCount, roadsideOffset, extraStragglers } = population;
-  const starts: number[] = [];
-  for (let start = 0; settlementPressure && start < ordinary.length; start += groupSize) {
-    starts.push(start);
+  const {
+    groupSize,
+    hordes: hordeCount,
+    roadsideOffset,
+    extraStragglers,
+    settlementPressure,
+    authoredMarkers,
+  } = population;
+  const starts = settlementPressure ? groupStarts(ordinary.length, groupSize) : [];
+  if (settlementPressure && hordeCount > starts.length) {
+    throw new Error(
+      `.population.hordes: ${hordeCount} hordes asked for, but the city has ${starts.length} street groups`,
+    );
   }
   const hordeStarts = new Set(
     [...starts].sort((a, b) => hash3(site.seed, a, 0, 602) - hash3(site.seed, b, 0, 602)).slice(0, hordeCount),

@@ -221,15 +221,19 @@ describe('one finished city plan', () => {
       }
     });
 
-    it('adds the configured extra stragglers to every street group', () => {
+    it('adds more stragglers when the scenario asks for extras', () => {
       const base = populationOf({ extraStragglers: 0 }).spawns.length;
       expect(populationOf({ extraStragglers: 3 }).spawns.length).toBeGreaterThan(base);
     });
 
-    it('drops the ordinary settlement crowd when settlement pressure is off', () => {
+    it('leaves no zombies or hordes when settlement pressure and authored markers are both off', () => {
       const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
       expect(spawns).toEqual([]);
       expect(hordes).toEqual([]);
+    });
+
+    it('rejects more hordes than the city has street groups', () => {
+      expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
     });
   });
 
