@@ -7,6 +7,7 @@ export interface AcidGlobState {
   pos: Vec3;
   velocity: Vec3;
   damage: number;
+  puddleDamagePerSimSecond: number;
   regionRoll: number;
 }
 

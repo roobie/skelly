@@ -1,4 +1,5 @@
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
+import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
 import {
   carveAround,
   centralCell,
@@ -504,6 +505,7 @@ export interface ZombieSystemState {
   zombies: { id: number; zombie: ZombieState }[];
   hordes: HordeState[];
   acidGlobs: AcidGlobState[];
+  acidPuddles: AcidPuddleState[];
 }
 
 export interface VocalNoise {
@@ -1575,6 +1577,11 @@ export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
   private globs: { state: AcidGlobState; type: ZombieDef }[] = [];
+  private puddles: { state: AcidPuddleState; type: ZombieDef }[] = [];
+
+  get acidPuddles(): readonly Readonly<AcidPuddleState>[] {
+    return this.puddles.map(({ state }) => state);
+  }
 
   get acidGlobs(): readonly Readonly<AcidGlobState>[] {
     return this.globs.map(({ state }) => state);
@@ -1734,6 +1741,7 @@ export class ZombieSystem {
       zombies: [...this.store.entries()].map(([id, zombie]) => snapshotZombie(id, zombie)),
       hordes: [...this.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
       acidGlobs: this.globs.map(({ state }) => ({ ...state, pos: [...state.pos], velocity: [...state.velocity] })),
+      acidPuddles: this.puddles.map(({ state }) => ({ ...state, pos: [...state.pos] })),
     });
   }
 
@@ -1741,6 +1749,18 @@ export class ZombieSystem {
     if (this.store.size > 0) {
       throw new Error('Zombie state restores only into an empty entity store');
     }
+    const puddles = state.acidPuddles.map((puddle) => {
+      const type = resolveType(puddle.type);
+      if (
+        !(type?.acidSpit && validVec3State(puddle.pos) && Number.isFinite(puddle.remainingSimSeconds)) ||
+        puddle.remainingSimSeconds <= 0 ||
+        !Number.isFinite(puddle.damagePerSimSecond) ||
+        puddle.damagePerSimSecond < 0
+      ) {
+        throw new Error('Invalid acid puddle state');
+      }
+      return { state: { ...puddle, pos: copy(puddle.pos) }, type: type! };
+    });
     const globs = state.acidGlobs.map((glob) => {
       const type = resolveType(glob.type);
       const valid =
@@ -1752,6 +1772,8 @@ export class ZombieSystem {
         validVec3State(glob.velocity) &&
         Number.isFinite(glob.damage) &&
         glob.damage >= 0 &&
+        Number.isFinite(glob.puddleDamagePerSimSecond) &&
+        glob.puddleDamagePerSimSecond >= 0 &&
         Number.isFinite(glob.regionRoll) &&
         glob.regionRoll >= 0 &&
         glob.regionRoll < 1;
@@ -1874,6 +1896,7 @@ export class ZombieSystem {
     );
     this.store.restore(entries, state.nextEntityId);
     this.globs = globs;
+    this.puddles = puddles;
     this.hordes.clear();
     for (const horde of state.hordes ?? []) {
       if (!validHordeSnapshotState(horde, this.hordes.has(horde.id), resolveType)) {
@@ -3003,6 +3026,7 @@ export class ZombieSystem {
           pos: copy(origin),
           velocity: [aim[0] * speed, aim[1] * speed + 0.5 * gravity * flightSeconds, aim[2] * speed],
           damage: modified('attack.damage', move.damage, zombie),
+          puddleDamagePerSimSecond: modified('attack.damage', spit.puddle.damagePerSimSecond, zombie),
           regionRoll: zombie.spitRng.next(),
         },
       });
@@ -3116,6 +3140,7 @@ export class ZombieSystem {
       this.tickFrozen(dt, entries);
       return;
     }
+    this.tickAcidPuddles(dt, player);
     this.tickAcidGlobs(dt, player);
     const dayState = this.options.dayPhase();
     const { blockSize, isSolid } = this.options;
@@ -3160,6 +3185,58 @@ export class ZombieSystem {
     }
     this.separateZombieBodies(entries, dt, player);
     this.emitFootsteps(entries, groundedAtTickStart, player, blockSize);
+  }
+
+  private tickAcidPuddles(dt: number, player: PlayerSense): void {
+    for (const { state: puddle, type } of this.puddles) {
+      const radius = type.acidSpit!.puddle.radiusMetres / this.options.blockSize;
+      const damage = puddle.damagePerSimSecond * Math.min(dt, puddle.remainingSimSeconds);
+      if (player.body && feetInAcidPuddle(player.body, puddle, radius) && damage > 0) {
+        for (const region of ['leftLeg', 'rightLeg'] as const) {
+          this.options.onAcidPlayerHit?.({
+            damage: damage / 2,
+            kind: 'acid',
+            hitRegions: [{ region, weight: 1 }],
+            regionRoll: 0,
+            sourceName: type.name,
+          });
+        }
+      }
+      this.burnZombieFeet(puddle, radius, damage);
+      puddle.remainingSimSeconds = Math.max(0, puddle.remainingSimSeconds - dt);
+    }
+    this.puddles = this.puddles.filter(({ state }) => state.remainingSimSeconds > 0);
+  }
+
+  private burnZombieFeet(puddle: Readonly<AcidPuddleState>, radius: number, damage: number): void {
+    for (const [id, zombie] of this.store.entries()) {
+      const burn = acidDamageToZombie(zombie.type, damage);
+      if (burn <= 0 || !feetInAcidPuddle(zombie.body, puddle, radius)) {
+        continue;
+      }
+      const legs = (Object.keys(zombie.regions) as ZombieHitRegion[]).filter((region) =>
+        ['leftLeg', 'rightLeg'].includes(zombieRegionClass(region)),
+      );
+      for (const region of legs) {
+        if (zombie.regions[region]! <= 0) {
+          continue;
+        }
+        this.applyMeleeHit({
+          id,
+          zombie,
+          region,
+          cell: undefined,
+          origin: puddle.pos,
+          direction: [0, 1, 0],
+          distanceMetres: 0,
+          weapon: projectileWeapon(burn / legs.length, 0, 0),
+          damageType: 'blunt',
+          damageOverride: burn / legs.length,
+          isFist: false,
+          projectile: true,
+        });
+      }
+    }
   }
 
   private tickAcidGlobs(dt: number, player: PlayerSense): void {
@@ -3218,6 +3295,15 @@ export class ZombieSystem {
         }
       }
     } else if (contact.normal[1] > 0) {
+      this.puddles.push({
+        type,
+        state: {
+          type: type.id,
+          pos: copy(position),
+          remainingSimSeconds: spit.puddle.lifetimeSimSeconds,
+          damagePerSimSecond: state.puddleDamagePerSimSecond,
+        },
+      });
       this.options.onAcidGroundImpact?.({
         position: copy(position),
         source: state.source,

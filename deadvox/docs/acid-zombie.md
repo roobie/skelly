@@ -42,7 +42,7 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 ## Puddles
 
-A glob that hits the ground leaves a short-lived puddle that burns the legs of anyone standing in it. The glob's ground-contact boundary is `src/core/zombies.ts`, `AcidGroundImpact`. Ground becomes terrain to read, and a missed spit still denies space. Its lifetime, size and burn rate are content. Acid immunity covers puddles too, so a spitter can stand in its own acid. A puddle is simulation state, not a decal.
+A missed spit still denies space, making ground terrain to read. The burn is continuous, scaled by time spent in the puddle and split equally between both legs; injury and wear resolve every simulation step. The footprint is a flat disk at impact height, burns only feet on that supporting surface, does not spread, and has no special case for water. Acid immunity covers puddles too, so a spitter can stand in its own acid. See `src/core/zombies.ts`, `ZombieSystem.tickAcidPuddles`, and `src/core/acidPuddle.ts`, `feetInAcidPuddle`. Lifetime, size and burn rate belong to content; see `src/core/schema.ts`, `AcidSpitSchema`. Puddles are saved simulation state rather than decals; see `src/core/zombies.ts`, `ZombieSystemState`.
 
 ## Movement
 
