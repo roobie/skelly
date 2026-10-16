@@ -91,6 +91,28 @@ alternatives, so one compiled buffer per storey count serves every building that
 it; only assemblies resolve per location. See `src/core/cityPlan.ts`, `buildCityPlan`
 and `templateCompiler`.
 
+A ref carries the style: a slot choice's `ref` or a map pool row's `ref` may name a map
+style, and every piece beneath it takes its palette from that style instead of its own.
+The whole building therefore shares one facade treatment, so floor and roof edges cannot
+become unrelated stripes, and a mod adds a style by adding a style definition and a pool
+row, with no new piece ids. The brick-to-concrete ratio is the weights of two rows of the
+same building and style; a mod changes the ratio by overriding the pool. An unknown style
+fails validation at the row's source path, and compiling a slot ref with one throws with
+the slot path. A style on a ref that is not an assembly is an issue too, because only an
+assembly's pieces resolve through it. See `src/core/schema.ts`, `KitRefSchema`,
+`PoolRefSchema` and `MapPoolSchema`; `src/core/templates.ts`, `compileKitRef`; and
+`src/core/cityPlan.ts`, `cityPoolIssues`. Decoration must stay outside reserved roof and street circulation:
+tuning its frequency must not seal a ladder landing or entrance. The cellar street
+course keeps the street-side `=` footing solid so the yard and entrance stand on it, and
+leaves the interior to the floor piece (`gauntlet_city_floor_lower`, `floor_inside`
+slot) and the stair owners; only the stair hole belongs to the stairs. See
+`src/content/base/gauntlet-city-variants.libsonnet`, `dressed`;
+`src/content/base/gauntlet-city-decor.libsonnet`, `rooftop`;
+`src/content/base/gauntlet-city-yards.libsonnet`, `yard`; and
+`src/content/base/gauntlet-city-cellars.libsonnet`, `street`. A route may pass through
+an unlocked door but never through a wall, a window or furniture. The fixture mod in `test/fixtures/jsonnet/concrete-style-mod.jsonnet`
+exercises the ordinary whole-definition style override boundary.
+
 City placement honours the authored ground storey so a cellar stays underground
 rather than lifting the building above the street. Ordinary buildings and the service
 campus share this alignment rule; see `src/core/cityPlan.ts`, `groundedY`.
