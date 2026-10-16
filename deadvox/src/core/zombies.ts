@@ -848,10 +848,17 @@ export const acidSpitWindupProgress = (zombie: Zombie): number => {
   return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
 };
 
-/** A spitter that sees the player from inside its far edge stands and faces; it closes in only beyond that edge. */
+/** A spitter that sees the player inside its range band stands and faces; outside the band it closes in. */
 const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
   const { zombie, type, sees, metresToTarget, dt } = scratch;
-  if (type.acidSpit && zombie.mode === 'chase' && sees && metresToTarget <= type.acidSpit.rangeBand.farMetres) {
+  const band = type.acidSpit?.rangeBand;
+  if (
+    band &&
+    zombie.mode === 'chase' &&
+    sees &&
+    metresToTarget >= band.nearMetres &&
+    metresToTarget <= band.farMetres
+  ) {
     scratch.moving = false;
     steer(zombie, toward, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
@@ -2895,6 +2902,7 @@ export class ZombieSystem {
     } else if (
       zombie.mode === 'chase' &&
       zombie.attackWait <= 0 &&
+      zombie.spitWindup <= 0 &&
       (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie.severed)) &&
       withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
     ) {

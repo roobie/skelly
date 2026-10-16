@@ -193,6 +193,45 @@ describe('acid spit', () => {
     expect(approaching.zombie.body.pos[0]).toBeLessThan(before - 0.5);
   });
 
+  it('finishes a winding-up spit point-blank and starts no melee wind-up until after the release', () => {
+    let playerX = 0;
+    const h = harness(() => sensed([playerX, 2, 0]));
+    const { zombie } = spawn(h);
+    frames(h.system, 10);
+    expect(zombie.spitWindup).toBeGreaterThan(0);
+
+    playerX = zombie.body.pos[0] - ACID.attack.reach / 2 / BLOCK_SIZE;
+    for (let frame = 0; frame < WIND_FRAMES && h.releases.length === 0; frame++) {
+      h.system.tick(1 / 60);
+      expect(zombie.attackWindup).toBe(0);
+    }
+    expect(h.releases).toHaveLength(1);
+
+    frames(h.system, 5);
+    expect(zombie.attackWindup).toBeGreaterThan(0);
+  });
+
+  it('closes in to melee in the pocket inside the near edge and holds ground once back in the band', () => {
+    const pocketMetres = (SPIT.rangeBand.nearMetres + ACID.attack.reach) / 2;
+    const pocket = harness(() => sensed(PLAYER_POS));
+    const closing = spawn(pocket, pocketMetres / BLOCK_SIZE);
+    const [before] = closing.zombie.body.pos;
+    frames(pocket.system, 30);
+    expect(closing.zombie.body.pos[0]).toBeLessThan(before - 0.25);
+    expect(closing.zombie.spitWindup).toBe(0);
+
+    let playerX = 0;
+    const regained = harness(() => sensed([playerX, 2, 0]));
+    const returning = spawn(regained, pocketMetres / BLOCK_SIZE);
+    frames(regained.system, 30);
+    playerX = returning.zombie.body.pos[0] - inBand;
+    frames(regained.system, 2);
+    const [held] = returning.zombie.body.pos;
+    frames(regained.system, 30);
+    expect(returning.zombie.body.pos[0]).toBeCloseTo(held, 1);
+    expect(returning.zombie.spitWindup + regained.releases.length).toBeGreaterThan(0);
+  });
+
   it('round-trips mid-wind-up state so the restored zombie releases the same aim', () => {
     const h = harness(() => sensed(PLAYER_POS));
     const { id, zombie } = spawn(h);

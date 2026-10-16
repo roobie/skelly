@@ -46,7 +46,12 @@ A glob that hits the ground leaves a short-lived puddle that burns the legs of a
 
 ## Movement
 
-The spitter keeps a shambler's senses, attention and modes. On sight, it moves until the player is inside its range band, stops, faces the player and spits each cooldown. It holds its ground between spits, moving again only when it loses sight or the player moves beyond the band's far edge. Holding still is the simplest behaviour that works without route planning, and it gives the player a stationary target to flank or shoot. See `DESIGN.md`, "Senses and AI".
+The spitter keeps a shambler's senses, attention and modes. On sight, it moves until the player is inside its range band, stops, faces the player and spits each cooldown. Holding still is the simplest behaviour that works without route planning, and it gives the player a stationary target to flank or shoot. See `DESIGN.md`, "Senses and AI".
+
+- **Inside the band** it holds its ground between spits.
+- **Beyond the far edge, or out of sight,** it moves again.
+- **Inside the near edge but outside melee reach,** it closes in to melee like a shambler until the player leaves that gap. Once the player is back in the band, it goes back to holding ground and spitting.
+- **A spit and a melee wind-up never run together.** A winding-up spit blocks a melee wind-up from starting, and a melee wind-up blocks a spit from starting. A spit already winding up fires at whatever range, even point-blank, and melee waits until after it. Rushing a winding-up spitter is punished.
 
 ## Player counters
 
