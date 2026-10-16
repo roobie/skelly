@@ -67,10 +67,13 @@ describe('quickbarViewModel', () => {
   });
 
   it('renders an item left in furniture as an empty slot', () => {
-    const { inv, cupboard, beans } = kitchen();
-    inv.entities.markSearched(cupboard);
+    const { inv, hoodie, cupboard } = kitchen();
+    const matches = inv.create('matches');
+    inv.add(matches, { kind: 'pocket', owner: hoodie, pocket: 0 });
     const bar = new Quickbar();
-    bar.assign(3, beans);
+    bar.assign(3, matches);
+    inv.entities.markSearched(cupboard);
+    expect(inv.move(matches, { kind: 'furniture', entity: cupboard, pocket: 0 }).ok).toBe(true);
     const vm = quickbarViewModel(bar, inv);
     expect(vm.slots[3]).toMatchObject({ filled: false, where: '' });
   });

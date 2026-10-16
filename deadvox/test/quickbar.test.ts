@@ -7,6 +7,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { chargeOf } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
+import { applyReplayActionPayload, type ReplayCommandOwners } from '../src/game/replayCommands.ts';
 import { Survival } from '../src/game/survival.ts';
 import { Simulation } from './simulationFixture.ts';
 
@@ -142,6 +143,20 @@ describe('non-owning item bindings', () => {
     expect(quickbar.resolve(1, inventory)).toBeUndefined();
     expect(quickbar.resolve(2, inventory)).toBeUndefined();
     expect(quickbar.snapshotState(inventory).every((uid) => uid === null)).toBe(true);
+  });
+
+  it('refuses to assign an item that is not on the person and keeps the slot binding', () => {
+    const { inventory, quickbar } = runtime();
+    const held = inventory.create('flashlight');
+    const onFloor = inventory.create('rag');
+    expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(inventory.add(onFloor, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    quickbar.assign(0, held);
+    const owners = { inventory, quickbar } as unknown as ReplayCommandOwners;
+    const reason = applyReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: onFloor.uid }, owners);
+    expect(reason).toBeTruthy();
+    expect(quickbar.resolve(0, inventory)).toBe(held);
+    expect(quickbar.snapshotState(inventory)).not.toContain(onFloor.uid);
   });
 
   it('restores a saved binding to an item no longer on the person as empty', () => {

@@ -6,7 +6,7 @@ export const QUICKBAR_SLOTS = 5;
 /**
  * Non-owning UID bindings; Inventory is the sole authority for live items.
  * A binding survives only while its item is on the person, so every route off the
- * person (drop, throw, merge, ruin, a container left behind) clears it here.
+ * person clears it here, whatever the route.
  */
 export class Quickbar {
   private readonly bindings: (number | null)[] = new Array(QUICKBAR_SLOTS).fill(null);
