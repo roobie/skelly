@@ -70,7 +70,7 @@ describe('owned hatch/ladder portal fixtures', () => {
     const terrain = {
       seed: 73,
       scale,
-      blocks: { grass: solidId, dirt: solidId, stone: solidId, sand: solidId },
+      blocks: { grass: solidId, dirt: solidId, rock: solidId, sand: solidId },
       surface: { height: () => floor, top: () => solidId },
       stamp: (chunk: Parameters<typeof stampPlacement>[0]) => site.stamp(chunk),
     };

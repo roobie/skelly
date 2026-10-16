@@ -36,6 +36,7 @@ export interface GameConfig {
    * scene), or the stress-test city.
    */
   site: SiteName;
+  authoredDecals: boolean;
   /** The city's tallest buildings, in storeys (`?storeys=N`). */
   storeys: number;
   /** Fixed occupancy override (`?density=0..1`); null selects the frozen seeded field. */
@@ -73,6 +74,7 @@ export const makeConfig = (
     start: SPAWN_TIME,
     debug: false,
     site: 'hamlet',
+    authoredDecals: true,
     storeys: 1,
     density: null,
     weatheringProfileId: DEFAULT_WEATHERING_PROFILE_ID,
@@ -208,6 +210,7 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
     content,
   );
   Object.assign(config, siteFromUrl(params, 'hamlet', content.registry));
+  config.authoredDecals = params.get('decals') !== '0';
   const layoutTime = content.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
   const requestedTime = params.get('time');
   config.start =

@@ -8,16 +8,9 @@ import { type BlockBox, stampChunk } from './structure.ts';
 export interface TerrainBlocks {
   grass: number;
   dirt: number;
-  stone: number;
+  rock: number;
   sand: number;
 }
-
-export const terrainBlockIds = (id: (name: string) => number): TerrainBlocks => ({
-  grass: id('grass'),
-  dirt: id('dirt'),
-  stone: id('rock'),
-  sand: id('sand'),
-});
 
 /**
  * Changes to the natural ground, such as flattened lots and roads. Both are pure
@@ -122,7 +115,7 @@ const blockAt = ({ blocks, scale }: Terrain, y: number, h: number, top: number):
     }
     return h * scale.blockSize < BEACH_BELOW_M ? blocks.sand : blocks.grass;
   }
-  return y > h - DIRT_DEPTH_M / scale.blockSize ? blocks.dirt : blocks.stone;
+  return y > h - DIRT_DEPTH_M / scale.blockSize ? blocks.dirt : blocks.rock;
 };
 
 export const generateChunk = (terrain: Terrain, [cx, cy, cz]: Vec3, column = columnSurface(terrain, cx, cz)): Chunk => {
@@ -131,7 +124,7 @@ export const generateChunk = (terrain: Terrain, [cx, cy, cz]: Vec3, column = col
   const y0 = cy * CHUNK;
   // Entirely below the dirt layer of every column: all stone, no per-block writes.
   if (y0 + CHUNK - 1 <= Math.min(...heights) - DIRT_DEPTH_M / scale.blockSize) {
-    return new Chunk(cx, cy, cz, blocks.stone);
+    return new Chunk(cx, cy, cz, blocks.rock);
   }
   const chunk = new Chunk(cx, cy, cz);
   for (let lz = 0; lz < CHUNK; lz++) {

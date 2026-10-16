@@ -31,6 +31,7 @@ import {
   type Site,
   type ZombieSpawn,
 } from './site.ts';
+import { sitePalette } from './sitePalette.ts';
 import { type Placement, placedSpawns, stampPlacement } from './templates.ts';
 import {
   forestDensityAt,
@@ -310,6 +311,7 @@ export class AuthoredSite implements Site {
       );
     });
     this.treeIndex = new TreeIndex(this.trees);
+    const litter = sitePalette(registry).leafLitter;
     this.surface = {
       height,
       top: (x, z) => {
@@ -317,7 +319,7 @@ export class AuthoredSite implements Site {
         if (track) {
           return registry.blockIds.get(track.surface);
         }
-        return leafLitterAt(this.treeIndex.at(x, z), x, z) ? registry.blockIds.get('leaf_litter') : undefined;
+        return leafLitterAt(this.treeIndex.at(x, z), x, z) ? litter : undefined;
       },
     };
     const markers = this.placements.flatMap(placedSpawns).map((marker) => ({

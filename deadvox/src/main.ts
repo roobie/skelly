@@ -42,7 +42,8 @@ if (showMods) {
   modsScreen.hidden = false;
 }
 const bundled = selectBundledMods(showMods ? [] : bundledModIdsFromUrl(params));
-const content = showMods ? await chooseMods(modsScreen) : bundled.content;
+const browserSelection = showMods ? await chooseMods(modsScreen) : undefined;
+const content = browserSelection?.content ?? bundled.content;
 startupScreen.hidden = false;
 applyUiTokens(content.registry, document.documentElement);
 const saveStatus = document.getElementById('save-status')!;
@@ -197,7 +198,7 @@ if (bench === 'report') {
     });
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
-    const saveController = new SaveController(backend, bundled.admitted);
+    const saveController = new SaveController(backend, bundled.admitted, browserSelection?.admitted);
     startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
       Object.assign(globalThis, {

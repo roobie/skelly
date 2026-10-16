@@ -6,16 +6,17 @@ import { blockColors, blockId, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { GauntletSite } from '../core/gauntlet.ts';
-import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
+import { HAMLET_BLOCK_SIZE, Hamlet } from '../core/hamlet.ts';
 import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn } from '../core/loot.ts';
 import { blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
+import { sitePalette } from '../core/sitePalette.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
-import { type Surface, terrainBlockIds, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
+import { type Surface, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
@@ -258,11 +259,7 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
   if (config.site === 'forest') {
     return new Forest(config.seed, registry, config.scale, config.density);
   }
-  const buildable =
-    config.scale.blockSize === HAMLET_BLOCK_SIZE &&
-    registry.blockIds.has('asphalt') &&
-    HAMLET_TEMPLATES.every((t) => registry.templates.has(t));
-  if (!buildable || config.site === 'testHouse') {
+  if (config.scale.blockSize !== HAMLET_BLOCK_SIZE || config.site === 'testHouse') {
     return undefined;
   }
   return config.site === 'city'
@@ -280,7 +277,6 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const { registry, issues } = config.content;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
   const { seed, scale } = config;
-  const id = (name: string) => blockId(registry, name);
 
   const house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined;
   const built = buildDebugWeatheringTestSite(config, registry) ?? siteForReviewMap(config, registry, house);
@@ -298,7 +294,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     world,
     meshes,
     seed,
-    terrain: terrainBlockIds(id),
+    terrain: sitePalette(registry).terrain,
     colors: blockColors(registry),
     patterns: blockPatterns(registry),
     weatherable: blockWeatherability(registry),

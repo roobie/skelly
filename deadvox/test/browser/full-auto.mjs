@@ -67,8 +67,24 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
-    const probe = { shots: [], sources: [], peak: 0, released: false, laserVisibleAfterFire: false, event: 'gunshot' };
+    const probe = {
+      shots: [],
+      shotFrames: [],
+      frame: 0,
+      sources: [],
+      peak: 0,
+      released: false,
+      laserVisibleAfterFire: false,
+      event: 'gunshot',
+    };
     globalThis.fullAutoProbe = probe;
+    // A voice starts in a microtask after the frame that fired its shot, and microtasks drain before the next
+    // animation frame, so shot and start share this count. A deferred or batched start does not.
+    const countFrame = () => {
+      probe.frame += 1;
+      requestAnimationFrame(countFrame);
+    };
+    requestAnimationFrame(countFrame);
     const gun = (record) => record.event === probe.event;
     const makeSource = AudioContext.prototype.createBufferSource;
     AudioContext.prototype.createBufferSource = function () {
@@ -78,6 +94,8 @@ try {
         event: probe.sourceEvent,
         gain: null,
         starts: [],
+        simStarts: [],
+        startFrames: [],
         stops: [],
         ramps: [],
         disconnected: false,
@@ -102,6 +120,8 @@ try {
       const start = source.start.bind(source);
       source.start = (...args) => {
         record.starts.push(this.currentTime);
+        record.simStarts.push(globalThis.fullAutoRuntime?.session.sim.time);
+        record.startFrames.push(probe.frame);
         const result = start(...args);
         probe.peak = Math.max(
           probe.peak,
@@ -182,6 +202,7 @@ try {
       const admitted = fire.call(this, input);
       if (admitted) {
         globalThis.fullAutoProbe.shots.push(input.simTime);
+        globalThis.fullAutoProbe.shotFrames.push(globalThis.fullAutoProbe.frame);
       }
       return admitted;
     };
@@ -587,6 +608,7 @@ try {
   );
   await page.evaluate(() => {
     globalThis.fullAutoProbe.shots = [];
+    globalThis.fullAutoProbe.shotFrames = [];
     globalThis.fullAutoProbe.released = false;
   });
   await page.mouse.down();
@@ -600,11 +622,14 @@ try {
   );
   const native = await page.evaluate(() => ({
     shots: globalThis.fullAutoProbe.shots,
+    shotFrames: globalThis.fullAutoProbe.shotFrames,
     peak: globalThis.fullAutoProbe.peak,
     records: globalThis.fullAutoProbe.sources
       .filter((record) => record.event === globalThis.fullAutoProbe.event)
-      .map(({ starts, stops, ramps, disconnected, gainDisconnected }) => ({
+      .map(({ starts, simStarts, startFrames, stops, ramps, disconnected, gainDisconnected }) => ({
         starts,
+        simStarts,
+        startFrames,
         stops,
         ramps,
         disconnected,
@@ -615,11 +640,20 @@ try {
   assert.equal(native.records.length, 32 + 27, 'native source starts equal warm-up plus accepted shots');
   assert.ok(native.records.every(({ starts }) => starts.length === 1));
   const burst = native.records.slice(32);
-  const nativeSpan = burst.at(-1).starts[0] - burst[0].starts[0];
-  assert.ok(
-    nativeSpan >= 1.85 && nativeSpan <= 2.1,
-    `native two-second burst span ${nativeSpan}s (1.95s attack span, <=150ms scheduling allowance)`,
-  );
+  // Voices start immediately on the audio clock, so its span is wall time under CI load. Bind each
+  // native start to its shot instead: never before it on the simulation clock, and in the same animation
+  // frame as it (a frame can fire two shots, so no sim-time upper bound is stable).
+  assert.equal(native.shotFrames.length, 27);
+  burst.forEach(({ starts, simStarts, startFrames }, index) => {
+    assert.ok(
+      simStarts[0] >= native.shots[index] - 1e-9,
+      `native start ${index} begins no earlier than its shot on the simulation clock`,
+    );
+    assert.equal(startFrames[0], native.shotFrames[index], `native start ${index} begins in its shot's frame`);
+    if (index > 0) {
+      assert.ok(starts[0] >= burst[index - 1].starts[0], `native start ${index} follows start ${index - 1}`);
+    }
+  });
   await page.waitForFunction(() => !globalThis.fullAutoRuntime.inventory.hands.right.firearm?.landings?.length);
   const persistentCases = await page.evaluate(
     () =>
@@ -733,7 +767,7 @@ try {
   );
   assert.deepEqual(errors, []);
   process.stdout.write(
-    `full-auto native WebAudio passed: 27 shots/2s at 800rpm, 27 cases, release stops, ${native.records.length} starts, ${nativeSpan.toFixed(3)}s native attack span, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,
+    `full-auto native WebAudio passed: 27 shots/2s at 800rpm, 27 cases, release stops, ${native.records.length} starts, native starts in their shots' frames, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,
   );
 } catch (error) {
   const page = browser?.contexts()[0]?.pages()[0];

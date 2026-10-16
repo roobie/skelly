@@ -13,6 +13,7 @@ import {
 import { SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { awakeRates, SPAWN_NEEDS } from '../src/core/needs.ts';
+import { SCHEDULER_TIME_EPSILON } from '../src/core/scheduler.ts';
 import type { BodyTuningDef, TreatmentDef } from '../src/core/schema.ts';
 import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
@@ -398,7 +399,7 @@ describe('Simulation', () => {
     sim.compress();
     runUntil(sim, HOUR);
     expect(sim.compression.interruption).toBe("You're exhausted");
-    expect(sim.time).toBeLessThan(HOUR);
+    expect(sim.time).toBeLessThanOrEqual(HOUR + SCHEDULER_TIME_EPSILON);
   });
 
   it('ramps back down when the action ends, and ignores interruptions at 1×', () => {

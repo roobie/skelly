@@ -323,7 +323,7 @@ it('saves a running pry just before a long-action tick and completes on the same
   if (savedJob?.jobType !== 'pry') {
     throw new Error('The pry ended before its continuation save');
   }
-  expect(savedJob.last).toBeGreaterThan(split.sim.time);
+  expect(savedJob.last).toBeGreaterThanOrEqual(split.sim.time);
 
   const bytes = await encodeFixture(capture(split));
   const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });

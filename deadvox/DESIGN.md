@@ -23,6 +23,7 @@ read_if:
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're changing loaded-distance simulation or the horde representation
   - you're restructuring the per-tick zombie simulation
+  - you're authoring decals or scenario outbreak age
   - you're changing bleeding cues
   - you change landing injuries or their content tuning
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
@@ -67,7 +68,7 @@ for project operation.
 
 ## The game in one paragraph
 
-You are alone in a quarantined region some weeks after an outbreak. The world is
+You are alone in a quarantined region after an outbreak; the scenario determines how long afterward. The world is
 real-time and open, as in DayZ: you walk, sneak, loot, fight and run, and the
 dead never stop wandering. Your survival depends on depth, as in
 Cataclysm: DDA: what you carry, and in which pocket; what you can craft from
@@ -165,6 +166,12 @@ rate conversions use named helpers, and content rates use the Game clock so
 clock-ratio tuning does not retune content. See `src/core/time.ts`,
 `src/core/temporalFields.ts`, and the `lint:time` contract in
 `deadvox/tools/time-lint.mjs`.
+
+Advancing never moves Sim time back; only a seek can. A system tick may end up to the scheduler's epsilon
+past an advance's target, and a Game timestamp recorded inside that tick (a
+scenario completion) must still be at or before the calendar a save derives
+from the final Sim time; validation compares them exactly. See
+`src/core/scheduler.ts`, `Scheduler.advance`.
 
 Keep the custom time lint boundary current when simulation dependencies or
 field names change. Gungen's internal estimates are outside that lint; exported
@@ -1032,7 +1039,10 @@ application rather than weapon-class special cases. See `ZombieSchema` in
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps
   the stains it fell with. Blood shares scene lighting rather than glowing over
-  it, so darkness hides stains and carried light can reveal them. A player's
+  it, so darkness hides stains and carried light can reveal them. Authored blood,
+  scorch and paint follow the same presentation-only rule; their age comes from the
+  scenario, not a fixed outbreak timeline. See `docs/content.md`, "Authored decals".
+  A player's
   bleeding drips from the affected region as the avatar is drawn in each view; in
   first person, droplets enter view only when looking down or near the screen edge.
   The HUD shows blood level and active regions, and the worst wound reaching a
@@ -1438,9 +1448,9 @@ simulation fingerprint because it can change a world without changing a simulati
 call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
 
 Whole-definition overrides keep composition in the authoring language rather than
-creating a second patch language. Browser Jsonnet, mod persistence and uploaded
-assets remain follow-up work in #633. The preview panel is opt-in while
-that save boundary is unfinished; see `src/ui/modsPanel.ts`, `chooseMods`.
+creating a second patch language. Browser Jsonnet and uploaded assets remain
+follow-up work in #633. The panel remains opt-in pending BR's entry-flow decision;
+see `src/ui/modsPanel.ts`, `chooseMods`.
 
 Remote intake shares local admission so a host cannot bypass the content contract.
 Browser-owned fetching keeps credentials and cross-origin permission with their
@@ -1458,7 +1468,9 @@ see `src/game/browserMods.ts`, `readMod` and `evaluateMods`.
 A save records the base pack's identity, and a save made with different base content
 is refused rather than migrated until v1.0 beta
 (`../AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
-Browser mods never enter the save's pack list; their save identity is #633. See
+Browser mods join the ordered save-pack identity so changing a selection cannot
+silently resume a different world. Selection persistence is atomic so a storage
+failure cannot load half a set. See `docs/content.md`, "Browser mod identity", and
 `src/core/saveFormat.ts`, `versionDifferences`.
 
 Import voxel-editor work (MagicaVoxel, vengi) only when a building outgrows curated
