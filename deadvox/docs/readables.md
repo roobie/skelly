@@ -9,6 +9,10 @@ read_if:
 
 Items and furniture may carry immutable authored text. Each distinct note or sign is its own content type; copies share the text, and saves keep the existing type reference rather than duplicating prose or per-copy reading state. Keep authored text plain and render it as text nodes, never HTML. `npm run validate` owns the field checks; see `src/core/schema.ts`, `ReadableSchema`.
 
+Loose paper uses the `note` category; manuals and logs remain books. Keeping them separate lets content tune carrying weight, stacking and loot eligibility without treating a sheet as a manual. Paper item models show paper rather than a standing furniture block, so the object looks portable. See `src/core/schema.ts`, `ItemSchema`, and `src/content/base/models-items.jsonnet`.
+
+Gauntlet street leads are paper items left on a crate or bench at the junction. Use fixed-loot surface placement: furniture raises the paper into view without adding a ground-placement mechanism. Each lead's text remains independently useful and its location spatially separate. Picking up its readable item counts as clue discovery; possession does not authorize the route. See `src/content/base/scenarios.jsonnet`, `composition`, and `src/core/scenarioDiscovery.ts`, `discoveryForPlan`.
+
 A readable-only note does not consume or change the item. Do not combine readable with food or light: Read wins over Eat or Switch, so this is an authoring constraint, not a validation rejection. An item with a book component may use both: the book owns timed recipe learning, while the readable owns the paper text. Readable-only notes use the held quickbar route; books also support held primary use. There is no inventory Read command. Opening a readable-only note is instantaneous; the live world continues while it is read. See `src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`.
 
 The world-interaction action opens a sign through ordinary furniture reach and identity checks. Door interaction has priority over readable text, which has priority over container access. A readable/container hybrid opens for reading through F; inventory access remains ordinary.

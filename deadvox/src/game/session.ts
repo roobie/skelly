@@ -779,6 +779,20 @@ export const createSession = (options: SessionOptions) => {
       ),
     (move) => {
       awardInventoryPractice();
+      let source: Readonly<Vec3> | undefined;
+      if (move.from.kind === 'pile') {
+        source = move.from.pile.pos;
+      } else if (move.from.kind === 'furniture') {
+        source = move.from.entity.pos;
+      }
+      if (
+        source &&
+        registry.items.get(move.item.type)?.readable &&
+        [...inventory.carriedTree()].some(({ item }) => item === move.item) &&
+        options.discovery?.clues.some((at) => at.every((value, axis) => value === source[axis]))
+      ) {
+        scenarioRun?.discover('clueRead', sim.calendar);
+      }
       options.audio.onMoveComplete?.(move, sim.time);
     },
   );

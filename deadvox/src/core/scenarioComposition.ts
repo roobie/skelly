@@ -49,12 +49,17 @@ const extraTemplateIssues = (
     if ([template.size[0], template.size[2]].some((extent) => extent > city.street / 2 - 1)) {
       issues.push([path, 'public lead must fit beside its street junction']);
     }
-    const { pieces } = compileTemplate(registry, template);
-    if (!pieces.some((piece) => registry.furniture.get(piece.furniture)?.readable)) {
+    const compiled = compileTemplate(registry, template);
+    const { pieces } = compiled;
+    const fixedLoot = scenario.composition!.leads[index]!.fixedLoot ?? [];
+    issues.push(
+      ...placementLootIssues({ registry, context: template.lootContext }, compiled, fixedLoot, `${path}.fixedLoot`),
+    );
+    const readableItem = fixedLoot.some((source) =>
+      source.items.some((item) => registry.items.get(item.item)?.readable),
+    );
+    if (!(readableItem || pieces.some((piece) => registry.furniture.get(piece.furniture)?.readable))) {
       issues.push([path, 'public lead needs an ordinary readable source']);
-    }
-    if (pieces.some((piece) => registry.furniture.get(piece.furniture)?.solid !== false)) {
-      issues.push([path, 'public leads must leave the reserved street body envelope clear']);
     }
   } else if (kind === 'landmarks') {
     if (
@@ -129,7 +134,8 @@ export const scenarioCompositionIssues = (
     '.composition.fixedLoot',
   );
   for (const kind of ['leads', 'landmarks', 'incidentalTemplates'] as const) {
-    composition[kind].forEach((id, index) => {
+    composition[kind].forEach((ref, index) => {
+      const id = typeof ref === 'string' ? ref : ref.template;
       issues.push(...extraTemplateIssues(registry, scenario, service, { id, index, kind }));
     });
   }
@@ -147,13 +153,16 @@ export const scenarioSources = (registry: Registry) => {
         .map(({ ref }) => ref.id),
       ...(scenario.composition
         ? [
-            ...scenario.composition.leads,
+            ...scenario.composition.leads.map((lead) => lead.template),
             ...scenario.composition.landmarks,
             ...scenario.composition.incidentalTemplates,
           ]
         : []),
     ]),
-    fixedLoot: scenarios.flatMap((scenario) => scenario.composition?.fixedLoot ?? []),
+    fixedLoot: scenarios.flatMap((scenario) => [
+      ...(scenario.composition?.fixedLoot ?? []),
+      ...(scenario.composition?.leads.flatMap((lead) => lead.fixedLoot ?? []) ?? []),
+    ]),
   };
 };
 
@@ -185,8 +194,8 @@ export const composeScenario = (
   const { city } = scenario;
   const side = Math.max(service.template.size[0], service.template.size[2]);
   const leads = Object.freeze([
-    placement(authored.leads[0], [Math.floor(city.street / 2) + 1, floor, Math.floor(city.street / 2) + 1]),
-    placement(authored.leads[1], [
+    placement(authored.leads[0].template, [Math.floor(city.street / 2) + 1, floor, Math.floor(city.street / 2) + 1]),
+    placement(authored.leads[1].template, [
       Math.floor(city.street / 2) + 1,
       floor,
       -city.blocksZ * (city.street + city.blockZ) + Math.floor(city.street / 2) + 1,
@@ -212,7 +221,10 @@ export const composeScenario = (
   return Object.freeze({
     leads,
     landmarks,
-    lootSources: Object.freeze([Object.freeze({ placement: service, fixedLoot })]),
+    lootSources: Object.freeze([
+      Object.freeze({ placement: service, fixedLoot }),
+      ...leads.map((lead, index) => Object.freeze({ placement: lead, fixedLoot: authored.leads[index]!.fixedLoot })),
+    ]),
     objective: furnitureAnchor(authored.objective),
     objectiveFace: point(authored.objectiveFace),
     retreat: point(authored.retreat),

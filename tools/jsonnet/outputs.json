@@ -105,6 +105,10 @@
       "output": "deadvox/src/content/base/models-firearms.json"
     },
     {
+      "source": "deadvox/src/content/base/models-items.jsonnet",
+      "output": "deadvox/src/content/base/models-items.json"
+    },
+    {
       "source": "deadvox/src/content/base/readables.jsonnet",
       "output": "deadvox/src/content/base/readables.json"
     },

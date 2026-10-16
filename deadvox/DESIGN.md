@@ -410,7 +410,7 @@ never authorize the route. These are construction guarantees, not proof of clue
 interpretation or survival balance. Those judgments remain the integrated play
 gate on #671.
 
-Discovery observations distinguish designated public-lead reads, landmark and
+Discovery observations distinguish designated public-lead reads or readable-item pickups, landmark and
 building proximity, reachable entrance hatch encounters/open state, and accepted
 travel through the entry ladder envelope. Generic furniture reads or other ladder
 travel cannot stand in for this funnel. Missing events are missing observations,
@@ -636,7 +636,11 @@ quickbar use.
 ### Piles and item models
 
 Ground items form piles. A modeled item keeps its own look in the pile; an item
-without a model is shown as a generic bundle. Spent cases read as loose debris,
+without a model is shown as a generic bundle. Portable papers use flat paper models,
+not standing furniture, so their appearance agrees with ordinary pickup and carrying.
+Author item models at rest in metres, with the long side along x. See
+`src/content/base/models-items.jsonnet` and `docs/readables.md`.
+Spent cases read as loose debris,
 not stacked material. See `PILE_DISPLAY_KIND` in `src/core/schema.ts`.
 
 Pile meshes and presentation endpoints use the same current display projection.
