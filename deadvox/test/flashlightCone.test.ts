@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from 'node:fs';
 import { compileFunction } from 'node:vm';
 import {
   MathUtils,
@@ -14,7 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
-import { type BeamSpill, BeamSpillSchema } from '../src/core/schema.ts';
+import { type BeamSpill, BeamSpillSchema, type ContentFile } from '../src/core/schema.ts';
 import { HeldItems } from '../src/render/hands.ts';
 
 let Flashlight: typeof import('../src/render/flashlight.ts').Flashlight;
@@ -214,6 +215,17 @@ describe('flashlight cone', () => {
     expect(spillSwitchFromSearch('?torchspill=0')).toBe(false);
     expect(spillSwitchFromSearch('')).toBeUndefined();
     expect(spillSwitchFromSearch('?torchspill=maybe')).toBeUndefined();
+  });
+
+  it('no base beam ships with spill enabled', () => {
+    const base = 'src/content/base';
+    const enabled = readdirSync(base)
+      .filter((file) => file.endsWith('.json'))
+      .flatMap((file) => {
+        const content = JSON.parse(readFileSync(`${base}/${file}`, 'utf8')) as ContentFile;
+        return (content.items ?? []).filter((item) => item.light?.beam?.spill?.enabled).map((item) => item.id);
+      });
+    expect(enabled).toEqual([]);
   });
 
   it('rejects malformed profiles at the shared content boundary', () => {
