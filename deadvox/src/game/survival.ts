@@ -434,9 +434,25 @@ export class Survival {
         igniter.charges = (chargeOf(registry, igniter) ?? 0) - cost;
       }
       this.lit = light.on && defOf(registry, light.type).light!.beam !== undefined ? light : undefined;
+      this.fallBackToWornBeam();
       this.inventory.version += 1;
     }
     return reason;
+  }
+
+  /** An on worn light must not stay dark because the active light went out, so it takes over. */
+  private fallBackToWornBeam(): void {
+    if (this.lit) {
+      return;
+    }
+    const { registry } = this.inventory;
+    for (const { item, location } of this.inventory.items()) {
+      const spec = defOf(registry, item.type).light;
+      if (item.on && location.kind === 'worn' && spec?.wornSwitch === true && spec.beam !== undefined) {
+        this.lit = item;
+        return;
+      }
+    }
   }
 
   /** Turns off a light without discarding its remaining burn. */
@@ -449,6 +465,7 @@ export class Survival {
     this.inventory.version += 1;
     if (this.lit === item) {
       this.lit = undefined;
+      this.fallBackToWornBeam();
     }
   }
 
@@ -482,6 +499,7 @@ export class Survival {
     }
     if (this.lit === item) {
       this.lit = undefined;
+      this.fallBackToWornBeam();
     }
     const reason = `The ${defOf(registry, item.type).name.toLowerCase()} died`;
     this.hooks.notice(reason);

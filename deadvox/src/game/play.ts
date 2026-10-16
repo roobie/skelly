@@ -1902,7 +1902,7 @@ export const startPlay = (
   const wornLightInput = new PressHoldInput<string>({
     holdRealMs: () => wornLightToggleHoldRealSeconds * 1000,
     tap: () => undefined,
-    hold: () => refusalReason(survival.toggleWornLights()),
+    hold: () => toggleWornLights(),
   });
   const toggleHud = (): void => {
     hudOptions.shown = !hudOptions.shown;
@@ -2278,6 +2278,9 @@ export const startPlay = (
       case 'item.throw.cancel':
         cancelItemThrow();
         return true;
+      case 'light.worn-toggle':
+        toggleWornLights();
+        return true;
       default:
         return dispatchReplayQuickbar(action);
     }
@@ -2475,6 +2478,19 @@ export const startPlay = (
       throwingStance = false;
       cancelItemThrow();
     }
+  }
+
+  function toggleWornLights(): void {
+    if (!replayPlayer) {
+      inputRecorder?.queueAction('light.worn-toggle', 'down', inputContext());
+      pendingPlayerTickActions.enqueue(toggleWornLightsNow);
+      return;
+    }
+    toggleWornLightsNow();
+  }
+
+  function toggleWornLightsNow(): void {
+    refusalReason(survival.toggleWornLights());
   }
 
   function dropHeldItemForThrowingStance(): void {

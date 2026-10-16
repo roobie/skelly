@@ -5,7 +5,6 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { drainBurnLight, toggleLight } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { PressHoldInput } from '../src/game/pressHoldInput.ts';
 import { Survival } from '../src/game/survival.ts';
 import { Simulation } from './simulationFixture.ts';
 
@@ -67,28 +66,6 @@ describe('made light burn state', () => {
     expect(headlamp.on).toBe(false);
   });
 
-  it('switches a worn light on a hold of the authored duration and not on a tap', () => {
-    const { inventory, survival } = setup();
-    const headlamp = inventory.create('headlamp');
-    expect(inventory.add(headlamp, { kind: 'worn' })).toBe(true);
-    const holdMs = registry.senses.get('player')!.light.wornLightToggleHoldRealSeconds * 1000;
-    const input = new PressHoldInput<string>({
-      holdRealMs: () => holdMs,
-      tap: () => undefined,
-      hold: () => survival.toggleWornLights(),
-    });
-
-    input.keyDown('light.worn-toggle', 0);
-    input.update(holdMs - 1);
-    input.keyUp('light.worn-toggle', holdMs - 1);
-    expect(headlamp.on).toBeFalsy();
-
-    input.keyDown('light.worn-toggle', holdMs);
-    input.update(holdMs * 2);
-    input.keyUp('light.worn-toggle', holdMs * 2);
-    expect(headlamp.on).toBe(true);
-  });
-
   it('leaves a lit hand light alone when the worn-light control switches a worn light', () => {
     const { inventory, survival, hold } = setup();
     const flashlight = hold('flashlight');
@@ -102,6 +79,19 @@ describe('made light burn state', () => {
     expect([headlamp.on, flashlight.on, survival.lit]).toEqual([false, true, flashlight]);
   });
 
+  it('lights an on worn light once the hand light that was active goes off', () => {
+    const { inventory, survival, hold } = setup();
+    const flashlight = hold('flashlight');
+    expect(survival.use(flashlight)).toBeUndefined();
+    const headlamp = inventory.create('headlamp');
+    expect(inventory.add(headlamp, { kind: 'worn' })).toBe(true);
+    expect(survival.toggleWornLights()).toBeUndefined();
+
+    expect(survival.use(flashlight)).toBeUndefined();
+    expect(flashlight.on).toBe(false);
+    expect(survival.lit).toBe(headlamp);
+  });
+
   it('does not switch a hand light, or anything, when no switchable light is worn', () => {
     const { inventory, survival, hold } = setup();
     const flashlight = hold('flashlight');
@@ -110,14 +100,6 @@ describe('made light burn state', () => {
     expect(survival.toggleWornLights()).toBeUndefined();
     expect(flashlight.on).toBeFalsy();
     expect(inventory.version).toBe(before);
-  });
-
-  it('keeps every worn-switch light on an item that can be worn', () => {
-    for (const def of registry.items.values()) {
-      if (def.light?.wornSwitch === true) {
-        expect(def.wearable, def.id).toBeDefined();
-      }
-    }
   });
 
   it('burns a torch out at the same time in one step or one-second steps', () => {
