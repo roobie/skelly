@@ -516,10 +516,12 @@ local figureSeeds = std.range(1, 8);
       "abilities": [],
       "loot": "shambler_pockets"
     },
-    // Placeholder shambler body until the m7 spitter model; `docs/acid-zombie.md` owns what the type must show.
+    // Shambler stats and senses on its own body; `docs/acid-zombie.md` owns what the type must show.
     $.zombies[0] + {
       "id": "acid_zombie",
       "name": "Acid zombie",
+      "model": "acid",
+      "glow": { "eye": 1.5, "acid": { "idle": 0.5, "windup": 2.5 } },
       "authoredOnly": true,
       "acidResistance": 1,
       "abilities": ["acidSpit"],

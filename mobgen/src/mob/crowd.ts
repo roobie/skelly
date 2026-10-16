@@ -11,6 +11,7 @@
 // actor's row: a row-major 3x4 affine matrix, r0 r1 r2 tx | r3 r4 r5 ty | r6 r7 r8 tz (no perspective row —
 // every transform here is rigid).
 
+import { GLOW_MATERIALS, type GlowMaterial, type Material } from '../core/body.ts';
 import type { MutableTransform } from '../core/pose.ts';
 
 export interface CrowdTextureLayout {
@@ -79,6 +80,25 @@ export const packBloodiness = (
 ): void => {
   data[crowdMaskTexelIndex(layout, slot) + 1] = Math.min(1, Math.max(0, bloodiness));
 };
+
+/** Packs how brightly `slot`'s glowing materials shine into its mask texel's blue and alpha channels, in
+ * GLOW_MATERIALS order; CROWD_BEGIN_VERTEX picks a vertex's level by its crowdGlowCode. A reused row keeps
+ * the last value written, so every packer writes it, zero for a body that does not glow. */
+export const packGlow = (
+  data: Float32Array,
+  layout: CrowdTextureLayout,
+  slot: number,
+  glow: Readonly<Record<GlowMaterial, number>>,
+): void => {
+  const index = crowdMaskTexelIndex(layout, slot) + 2;
+  for (const [offset, material] of GLOW_MATERIALS.entries()) {
+    data[index + offset] = Math.max(0, glow[material]);
+  }
+};
+
+/** A vertex's `glowMaterial` attribute: 0 for a material that never glows, else 1 + its GLOW_MATERIALS index. */
+export const crowdGlowCode = (material: Material): number =>
+  (GLOW_MATERIALS as readonly Material[]).indexOf(material) + 1;
 
 /** Whether the texture mask says `boneIndex` was severed. The shader applies the same word/bit split in
  * crowdBoneSevered; this helper lets the maintained CPU contract tests inspect the packed representation. */
@@ -179,8 +199,10 @@ uniform float crowdBonesPerSlot;
 attribute float crowdSlot;
 attribute float boneIndex;
 attribute float neighbourBone;
+attribute float glowMaterial;
 varying float vCrowdGore;
 varying float vCrowdBloodiness;
+varying float vCrowdGlow;
 varying vec3 vCrowdLocal;
 varying float vCrowdBone;
 
@@ -226,6 +248,16 @@ float crowdBloodiness( float slot ) {
 	return texelFetch( crowdBoneTexture, ivec2( int( crowdBonesPerSlot ) * 3, int( slot ) ), 0 ).y;
 
 }
+
+// Glow: blue and alpha hold each glowing material's level (packGlow); glowMaterial picks one (crowdGlowCode).
+// Geometry without the attribute reads 0 and stays unlit.
+float crowdGlow( float slot, float material ) {
+
+	if ( material < 0.5 ) return 0.0;
+	vec4 word = texelFetch( crowdBoneTexture, ivec2( int( crowdBonesPerSlot ) * 3, int( slot ) ), 0 );
+	return material < 1.5 ? word.z : word.w;
+
+}
 `;
 
 // Computed independently in each replacement (rather than sharing one `crowdM` local) since
@@ -239,6 +271,7 @@ vec3 transformed = ( crowdM * vec4( position, 1.0 ) ).xyz;
 vCrowdGore = crowdBoneSevered( crowdSlot, neighbourBone ) ? 1.0 : 0.0;
 // Bone-local, so anything shaded from it stays put on the body as it moves.
 vCrowdBloodiness = crowdBloodiness( crowdSlot );
+vCrowdGlow = crowdGlow( crowdSlot, glowMaterial );
 vCrowdLocal = position;
 vCrowdBone = boneIndex;
 `;
@@ -250,6 +283,13 @@ vec3 objectNormal = mat3( crowdNormalM ) * normal;
 
 export const CROWD_FRAGMENT_DECLARATIONS = /* glsl */ `
 varying float vCrowdGore;
+varying float vCrowdGlow;
+`;
+
+// Patched in after <emissivemap_fragment>: a glowing voxel emits its own lit colour, so it reads in the
+// dark and its hue stays the palette's.
+export const CROWD_EMISSIVE_FRAGMENT = /* glsl */ `
+totalEmissiveRadiance += diffuseColor.rgb * vCrowdGlow;
 `;
 
 // Patched in after <color_fragment> (where three applies the per-vertex colour, vColor, to diffuseColor —

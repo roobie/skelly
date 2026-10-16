@@ -4,6 +4,7 @@ import type { Realized } from '@mobgen/core/generate.ts';
 import { type Mat3, type Vec3 as MobVec3, mat3ToQuat, quatToMat3 } from '@mobgen/core/math.ts';
 import { type BoneMesh, meshBones } from '@mobgen/core/mesh.ts';
 import { materialOf, shadeOf, worldPosition } from '@mobgen/core/voxelize.ts';
+import { crowdGlowCode } from '@mobgen/mob/crowd.ts';
 import { BufferAttribute, BufferGeometry, type Color, type Group, Mesh, MeshLambertMaterial } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import { type Quaternion, type RigidBody, type RigidWorld, stepRigidBody } from '../core/rigidBody.ts';
@@ -65,6 +66,7 @@ export const mergeBoneMeshes = (
   // bone's own index — dismemberment's gore effect (crowd.ts) tints a face whose neighbour has just been
   // severed but this bone hasn't.
   const neighbourBoneAttr = new Float32Array(vertexCount);
+  const glowMaterialAttr = new Float32Array(vertexCount);
   const indices = new Uint32Array(indexCount);
 
   let vertexOffset = 0;
@@ -75,10 +77,15 @@ export const mergeBoneMeshes = (
     normals.set(mesh.normals, vertexOffset * 3);
     colors.set(vertexColorsFrom(mesh.colors, palette), vertexOffset * 3);
     boneIndexAttr.fill(boneIndex, vertexOffset, vertexOffset + vertices);
+    glowMaterialAttr.set(
+      Array.from(mesh.colors, (byte) => crowdGlowCode(materialOf(byte))),
+      vertexOffset,
+    );
     for (let v = 0; v < vertices; v++) {
       const inner = carved !== undefined && mesh.neighbourBone[v] === carved.neighbour;
       neighbourBoneAttr[vertexOffset + v] = inner ? CARVED_NEIGHBOUR : mesh.neighbourBone[v]!;
       if (inner) {
+        glowMaterialAttr[vertexOffset + v] = 0;
         colors[(vertexOffset + v) * 3] = carved.color.r;
         colors[(vertexOffset + v) * 3 + 1] = carved.color.g;
         colors[(vertexOffset + v) * 3 + 2] = carved.color.b;
@@ -97,6 +104,7 @@ export const mergeBoneMeshes = (
   geometry.setAttribute('color', new BufferAttribute(colors, 3));
   geometry.setAttribute('boneIndex', new BufferAttribute(boneIndexAttr, 1));
   geometry.setAttribute('neighbourBone', new BufferAttribute(neighbourBoneAttr, 1));
+  geometry.setAttribute('glowMaterial', new BufferAttribute(glowMaterialAttr, 1));
   geometry.setIndex(new BufferAttribute(indices, 1));
   geometry.computeBoundingSphere();
   return geometry;

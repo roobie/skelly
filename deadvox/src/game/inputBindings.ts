@@ -205,6 +205,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugRow('debug.spawn-runner', 'Spawn runner', 'Numpad1'),
   debugRow('debug.spawn-crawler', 'Spawn crawler', 'Numpad2'),
   debugRow('debug.spawn-amalgam', 'Spawn amalgam', 'Numpad4'),
+  debugRow('debug.spawn-acid-zombie', 'Spawn acid zombie', 'Numpad6'),
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes', 'KeyY'),
   debugRow('debug.freeze-shamblers', 'Freeze shamblers', 'KeyO'),
   debugRow('debug.review-map-toggle', 'Review map', 'KeyM', ['play', 'noclip', 'review-map']),

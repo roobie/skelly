@@ -30,7 +30,8 @@ export const MATERIALS = [
 export type Material = (typeof MATERIALS)[number];
 
 /** Materials a host may light per actor. Each glows only as brightly as the host says, so a body whose
- * host gives these no level (a shambler's dark eyes) renders unlit. */
+ * host gives these no level (a shambler's dark eyes) renders unlit. At most two: the crowd texture has two
+ * free channels for their levels (see mob/crowd.ts, packGlow). */
 export const GLOW_MATERIALS = ['eye', 'acid'] as const satisfies readonly Material[];
 export type GlowMaterial = (typeof GLOW_MATERIALS)[number];
 

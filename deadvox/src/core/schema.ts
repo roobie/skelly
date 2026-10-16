@@ -1636,7 +1636,7 @@ export type ZombieRegions = Record<string, number>;
 
 const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
 
-const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'amalgam']);
+const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'amalgam', 'acid']);
 
 const ZOMBIE_ABILITIES = [
   'grab',
@@ -1706,6 +1706,14 @@ const ZombieSchema = strictObject({
   model: ZOMBIE_MODEL,
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
+  /** How brightly the model's glowing materials light (see `mobgen/src/core/body.ts`, `GLOW_MATERIALS`); omitted
+   * is unlit. The acid level rises from idle to windup with the spit's wind-up (`docs/acid-zombie.md`, "Model"). */
+  glow: optional(
+    pipe(
+      strictObject({ eye: NonNegative, acid: strictObject({ idle: NonNegative, windup: NonNegative }) }),
+      check(({ acid }) => acid.idle <= acid.windup, 'acid glow must not dim during the wind-up'),
+    ),
+  ),
   /** Mobgen figure seeds an individual of this type is drawn from. Every model but the amalgam, whose figure seed is fixed, defines them. */
   figureSeeds: optional(
     pipe(

@@ -66,6 +66,7 @@ import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
   CROWD_COLOR_FRAGMENT,
+  CROWD_EMISSIVE_FRAGMENT,
   CROWD_FRAGMENT_DECLARATIONS,
   CROWD_VERTEX_DECLARATIONS,
   type CrowdPlacement,
@@ -74,6 +75,7 @@ import {
   crowdTextureLayout,
   packBloodiness,
   packCrowdBoneMatrix,
+  packGlow,
   packSeveredMask,
 } from '@mobgen/mob/crowd.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '@mobgen/mob/dismember.ts';
@@ -126,6 +128,7 @@ import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from '.
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
+import { type GlowLevels, UNLIT, zombieGlow } from './zombieGlow.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
  * variable. `dispose`/`setCamera`/`zombieDied` are optional: ZombieMeshes has none of them (see
@@ -427,7 +430,7 @@ export interface MobActorMeshesOptions {
   readonly bloodiness?: (zombie: Zombie) => number;
 }
 
-type ActorModel = 'shambler' | 'runner' | 'crawler' | 'amalgam';
+type ActorModel = 'shambler' | 'runner' | 'crawler' | 'amalgam' | 'acid';
 interface BuiltActorVariant {
   model: ActorModel;
   figureSeed: number;
@@ -576,8 +579,8 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     const templatesByModel = new Map([...TEMPLATES, amalgamTemplate].map((template) => [template.name, template]));
     const modelIds: readonly ActorModel[] = options.includeAmalgam
-      ? ['shambler', 'runner', 'crawler', 'amalgam']
-      : ['shambler', 'runner', 'crawler'];
+      ? ['shambler', 'runner', 'crawler', 'acid', 'amalgam']
+      : ['shambler', 'runner', 'crawler', 'acid'];
 
     const t0 = performance.now();
     const built = buildActorVariants(modelIds, options.figureSeeds.slice(0, poolSize), options.amalgamType);
@@ -615,10 +618,12 @@ export class MobActorMeshes implements ZombieRenderer {
         .replace('#include <begin_vertex>', CROWD_BEGIN_VERTEX)
         .replace('#include <beginnormal_vertex>', CROWD_BEGINNORMAL_VERTEX);
       shader.fragmentShader =
-        `${CROWD_FRAGMENT_DECLARATIONS}\n${BLOOD_STAIN_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`.replace(
-          '#include <color_fragment>',
-          `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}\n${BLOOD_STAIN_COLOR_FRAGMENT}`,
-        );
+        `${CROWD_FRAGMENT_DECLARATIONS}\n${BLOOD_STAIN_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`
+          .replace(
+            '#include <color_fragment>',
+            `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}\n${BLOOD_STAIN_COLOR_FRAGMENT}`,
+          )
+          .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${CROWD_EMISSIVE_FRAGMENT}`);
     };
 
     // The shadow pass draws with a depth material, which would leave every actor in its bind pose: this
@@ -1642,8 +1647,8 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   /** FK from `pose`, then packs every bone at `globalRow`: severed bones get a zero matrix (hidden — see
-   * packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask and the
-   * bloodiness too, even when nothing is severed or bloodied, so a reused row never goes stale. Shared by
+   * packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask, the
+   * bloodiness and the glow too, even when nothing is severed, bloodied or lit, so a reused row never goes stale. Shared by
    * packPose (a live zombie) and packCorpse; packDebris packs its own inverse (only the carried subtree is
    * real) directly, since the two cases share little beyond "call packCrowdBoneMatrix or packZeroBone". */
   private packSkeleton(
@@ -1654,10 +1659,11 @@ export class MobActorMeshes implements ZombieRenderer {
       placement: CrowdPlacement;
       severedIndices: ReadonlySet<number>;
       bloodiness: number;
+      glow: GlowLevels;
       transforms?: ReadonlyMap<string, Transform>;
     },
   ): void {
-    const { pose, placement, severedIndices, bloodiness, transforms } = frame;
+    const { pose, placement, severedIndices, bloodiness, glow, transforms } = frame;
     if (transforms) {
       for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
         const source = transforms.get(variant.realized.body.bones[bone]!.id)!;
@@ -1681,6 +1687,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     packSeveredMask(this.textureData, this.layout, globalRow, severedIndices);
     packBloodiness(this.textureData, this.layout, globalRow, bloodiness);
+    packGlow(this.textureData, this.layout, globalRow, glow);
   }
 
   private observePerceptionTime(state: ZombieRenderState, zombie: Zombie): void {
@@ -1779,7 +1786,12 @@ export class MobActorMeshes implements ZombieRenderer {
       presentationSimSeconds: frame.presentationSimSeconds,
     });
     const severedIndices = this.indicesFor(variant, severedBoneIds(variant, zombie.severed));
-    this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices, bloodiness: this.bloodiness(zombie) });
+    this.packSkeleton(state.globalRow, variant, {
+      ...posed,
+      severedIndices,
+      bloodiness: this.bloodiness(zombie),
+      glow: zombieGlow(zombie),
+    });
     state.lastPose = posed.pose;
     state.lastPlacement = posed.placement;
   }
@@ -1802,6 +1814,7 @@ export class MobActorMeshes implements ZombieRenderer {
       placement: crowdPlacement,
       severedIndices,
       bloodiness: this.bloodiness(zombie),
+      glow: zombieGlow(zombie),
     });
     state.lastPlacement = crowdPlacement;
   }
@@ -1828,6 +1841,7 @@ export class MobActorMeshes implements ZombieRenderer {
       placement: crowdPlacement,
       severedIndices,
       bloodiness: corpse.bloodiness,
+      glow: UNLIT,
     });
   }
 
@@ -1876,6 +1890,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     packSeveredMask(this.textureData, this.layout, d.globalRow, hidden);
     packBloodiness(this.textureData, this.layout, d.globalRow, d.bloodiness);
+    packGlow(this.textureData, this.layout, d.globalRow, UNLIT);
   }
 
   private zombiePoseBounds(zombie: Zombie, placement: { worldPos: Vec3 }): { center: Vector3; radius: number } {
