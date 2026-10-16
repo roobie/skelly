@@ -529,6 +529,30 @@ const cellCoords = (dims: Voxels['dims'], idx: number): readonly [number, number
   return [i, j, k];
 };
 
+interface PaintedVoxel {
+  readonly p: Vec3;
+  readonly material: Material;
+  readonly owner: string;
+}
+
+const paintCovers = (paint: Feature, { p, material, owner }: PaintedVoxel, seed: number): boolean => {
+  if (evalShape(paint.shape, p) > 0) {
+    return false;
+  }
+  if (paint.onto && !paint.onto.includes(material)) {
+    return false;
+  }
+  if (paint.ownerOnly && paint.bone !== owner) {
+    return false;
+  }
+  if (!paint.noise) {
+    return true;
+  }
+  return (
+    noise3(p[0] / paint.noise.scale, p[1] / paint.noise.scale, p[2] / paint.noise.scale, seed) < paint.noise.threshold
+  );
+};
+
 /** A filled voxel's material: the owning bone's nearest add feature (or exposed bone, if marrow was
  * carved), then every paint feature that covers it, in Body.features order. Shade comes from low-
  * frequency noise mixed with a per-voxel hash, so neighbouring voxels tend to agree and faces merge. */
@@ -539,22 +563,9 @@ const paintMaterial = (grid: Grid, body: Body, ctx: MaterialContext, idx: number
   const boneMaterialIndex = MATERIALS.indexOf('bone');
   let matIdx = grid.exposedBone[idx] ? boneMaterialIndex : nearestMaterial(ctx.addByBone.get(bone.id) ?? [], p);
   for (const paint of ctx.paints) {
-    if (evalShape(paint.shape, p) > 0) {
-      continue;
+    if (paintCovers(paint, { p, material: MATERIALS[matIdx]!, owner: bone.id }, ctx.seed)) {
+      matIdx = MATERIALS.indexOf(paint.material);
     }
-    if (paint.onto && !paint.onto.includes(MATERIALS[matIdx]!)) {
-      continue;
-    }
-    if (paint.ownerOnly && paint.bone !== bone.id) {
-      continue;
-    }
-    if (paint.noise) {
-      const n = noise3(p[0] / paint.noise.scale, p[1] / paint.noise.scale, p[2] / paint.noise.scale, ctx.seed);
-      if (n >= paint.noise.threshold) {
-        continue;
-      }
-    }
-    matIdx = MATERIALS.indexOf(paint.material);
   }
   const coarse = noise3(p[0] / 0.12, p[1] / 0.12, p[2] / 0.12, ctx.seed);
   const fine = noise3(i * 3.1, j * 3.1, k * 3.1, ctx.seed ^ 0x9e_37_79_b9);
