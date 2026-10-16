@@ -86,6 +86,11 @@ const cityDecorationIssues = (registry: Registry, city: Omit<CityGrid, 'template
     issues.push(['.city.perimeter.block', `no block "${city.perimeter.block}"`]);
   }
   for (const id of city.streetProps ?? []) {
+    const kitRef = registry.mapPools.get(id)?.choices.find(({ ref }) => ref.kind !== 'template');
+    if (kitRef) {
+      issues.push(['.city.streetProps', `street prop pool "${id}" needs template refs, not ${kitRef.ref.kind}`]);
+      continue;
+    }
     const choices = streetPropChoices(registry, id);
     const fits = choices.every(({ id: templateId }) => {
       const prop = registry.templates.get(templateId);

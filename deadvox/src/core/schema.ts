@@ -1412,7 +1412,6 @@ const MapPoolSchema = strictObject({
       }),
     ),
     minLength(1),
-    maxLength(128),
     check(
       (rows) => rows.every(({ atLeast, atMost }) => atLeast === undefined || atMost === undefined || atLeast <= atMost),
       'atLeast must not exceed atMost',

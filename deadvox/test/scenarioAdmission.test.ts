@@ -61,6 +61,56 @@ describe('scenario admission', () => {
     expect(rejected.registry.scenarios.has(profile.id)).toBe(false);
   });
 
+  describe('street prop pools', () => {
+    const withPool = (choices: { kind: 'template' | 'piece'; id: string }[], laneProp?: { width: number }) => {
+      const profile = fixtureScenario();
+      profile.city.streetProps = ['fixture_prop_pool'];
+      const sources = fixtureScenarioSources(profile);
+      const data = sources[0]!.data as {
+        templates: ReturnType<typeof fixtureService>[];
+        mapPools?: { id: string; choices: { ref: { kind: string; id: string }; weight: number }[] }[];
+      };
+      data.templates.push({
+        id: 'fixture_pool_prop',
+        size: [laneProp?.width ?? 1, 1, 1],
+        lootContext: fixtureService().lootContext,
+        palette: { '=': 'fixture_solid' },
+        layers: [['='.repeat(laneProp?.width ?? 1)]],
+      });
+      data.mapPools = [
+        ...(data.mapPools ?? []),
+        { id: 'fixture_prop_pool', choices: choices.map((ref) => ({ ref, weight: 1 })) },
+      ];
+      return { profile, sources };
+    };
+
+    it('reports a kit ref in a street prop pool as an issue instead of throwing', () => {
+      const { profile, sources } = withPool([
+        { kind: 'template', id: 'fixture_pool_prop' },
+        { kind: 'piece', id: 'fixture_pool_piece' },
+      ]);
+      const rejected = buildRegistry(sources);
+      expect(rejected.issues.some((issue) => issue.path.endsWith('.city.streetProps'))).toBe(true);
+      expect(rejected.registry.scenarios.has(profile.id)).toBe(false);
+    });
+
+    it('rejects a street prop pool when any one choice does not fit the lane', () => {
+      const { profile, sources } = withPool([{ kind: 'template', id: 'fixture_pool_prop' }], {
+        width: fixtureScenario().city.street,
+      });
+      const rejected = buildRegistry(sources);
+      expect(rejected.issues.some((issue) => issue.path.endsWith('.city.streetProps'))).toBe(true);
+      expect(rejected.registry.scenarios.has(profile.id)).toBe(false);
+    });
+
+    it('admits a street prop pool whose every choice fits the lane', () => {
+      const { profile, sources } = withPool([{ kind: 'template', id: 'fixture_pool_prop' }]);
+      const admitted = buildRegistry(sources);
+      expect(admitted.issues).toEqual([]);
+      expect(admitted.registry.scenarios.has(profile.id)).toBe(true);
+    });
+  });
+
   it('rejects bounds that cannot preserve the reserved apron under every service turn', () => {
     const profile = fixtureScenario();
     profile.city.blockZ = profile.city.pad * 2 + fixtureService().size[2];
