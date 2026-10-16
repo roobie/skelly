@@ -22,12 +22,14 @@ export class GauntletSite extends CitySite {
     scale,
     scenario,
     settlementPressure = true,
+    labMarkers = true,
   }: {
     seed: number;
     registry: Registry;
     scale: Scale;
     scenario: ScenarioDef;
     settlementPressure?: boolean;
+    labMarkers?: boolean;
   }) {
     const issues = scenarioPlanIssues(registry, scenario);
     if (issues.length > 0) {
@@ -50,7 +52,7 @@ export class GauntletSite extends CitySite {
       throw new Error(certificate.issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
     }
     this.scenario = scenario;
-    const population = gauntletPopulation(this, scenario.id, settlementPressure);
+    const population = gauntletPopulation(this, scenario.id, settlementPressure, labMarkers);
     this.population = population.zombies;
     this.hordes = population.hordes;
   }
@@ -64,7 +66,7 @@ export class GauntletSite extends CitySite {
   }
 }
 
-const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressure: boolean) => {
+const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressure: boolean, labMarkers: boolean) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
@@ -107,7 +109,8 @@ const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressu
       hamletHordeSpawn(seed, road, () => floor, `scenario:${scenarioId}:horde:${start}`),
     );
   }
-  for (const marker of site.placements.filter((placement) => !ordinary.includes(placement)).flatMap(placedSpawns)) {
+  const authored = labMarkers ? site.placements.filter((placement) => !ordinary.includes(placement)) : [];
+  for (const marker of authored.flatMap(placedSpawns)) {
     if (Rng.stream(site.seed, `scenario:${scenarioId}:spawn:${marker.pos.join(',')}`).chance(marker.chance)) {
       append(zombies, { type: marker.zombie, pos: marker.pos, ...(marker.window ? { window: marker.window } : {}) });
     }

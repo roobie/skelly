@@ -336,11 +336,13 @@ admission instead of inventing an enemy-density runtime. See `src/core/gauntlet.
 `gauntletPopulation`; `src/core/hamlet.ts`, `hamletZombieSpawns`; and
 `src/core/zombieSpawns.ts`, `ZombieSpawner`.
 
-The route/save browser flow proves connectivity and persistence, not balance. Its
-test-only admission selects authored-marker pressure before world construction,
-including on reload, so settlement crowds cannot turn that proof into a balance
-trial. Damage, collision, lab encounters and the dead-survivor barrier remain
-ordinary rules; default play keeps settlement pressure. See `src/core/gauntlet.ts`,
+The route/save browser flow proves connectivity and persistence, not balance or
+combat. Its test-only admission omits settlement crowds and the lab's authored
+markers before world construction, including on reload, so neither can turn that
+proof into an encounter trial: a scripted walker would only stall on a chasing
+zombie. The body and rules stay ordinary: damage, collision and the dead-survivor
+barrier apply, and default play keeps both populations; lab encounters are judged
+in play. See `src/core/gauntlet.ts`,
 `GauntletSite`; `test/browser/save-controller-regressions.mjs`, `observation`; and
 `test/browser/gauntlet-flow.mjs`, `gauntletFlow`.
 
