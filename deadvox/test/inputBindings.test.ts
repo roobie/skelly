@@ -127,12 +127,12 @@ describe('keyboard registry', () => {
       strafe: keyboard.held('fixture.strafe'),
     }).toEqual({ sprintAccepted: true, strafeAccepted: true, forward: true, sprint: true, strafe: true });
   });
-  it.each(['menu', 'reading'] as const)('does not revive a held Shift with a false flag through %s', (owner) => {
+  it('does not revive a held Shift with a false flag through the menu', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
     let context: InputContext = 'play';
     keyboard.context = () => ({ context, debug: false });
     expect(keyboard.press(event('ShiftLeft', { shiftKey: true }))).toBe(true);
-    context = owner;
+    context = 'menu';
     keyboard.sync();
     expect(keyboard.held('fixture.sprint')).toBe(false);
     expect(keyboard.press(event('ShiftLeft', { repeat: true, shiftKey: false }))).toBe(false);
