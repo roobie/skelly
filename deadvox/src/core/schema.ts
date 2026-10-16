@@ -1500,6 +1500,19 @@ const ScenarioSchema = strictObject({
     upper: CellPosition,
     lower: CellPosition,
   }),
+  /** The ordinary buildings' street pressure; authored markers are separate from it. */
+  population: strictObject({
+    settlementPressure: vBoolean(),
+    authoredMarkers: vBoolean(),
+    /** Ordinary buildings per street group; each group gets roadside stragglers. */
+    groupSize: pipe(Count, minValue(1), maxValue(64)),
+    /** Hordes in the whole city, each on a different seeded street group. */
+    hordes: pipe(Count, maxValue(16)),
+    /** Metres each side of a street's centreline where stragglers stand. */
+    roadsideOffset: pipe(Count, minValue(1), maxValue(32)),
+    /** Stragglers added to each group on top of its hamlet-sized count. */
+    extraStragglers: pipe(Count, maxValue(16)),
+  }),
   city: strictObject({
     blocksX: pipe(Count, minValue(1), maxValue(4)),
     blocksZ: pipe(Count, minValue(1), maxValue(4)),

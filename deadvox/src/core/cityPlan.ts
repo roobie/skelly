@@ -210,7 +210,13 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
   if (!registry.blockIds.has('asphalt')) {
     issues.push(['.city', 'city needs asphalt content']);
   }
-  const { city, serviceTemplate } = scenario;
+  const { city, serviceTemplate, population } = scenario;
+  if (population.roadsideOffset * 2 >= city.street) {
+    issues.push([
+      '.population.roadsideOffset',
+      'stragglers must stand inside the street on both sides of its centreline',
+    ]);
+  }
   const width = city.blockX - 2 * city.pad;
   issues.push(...cityDecorationIssues(registry, city), ...cityPoolIssues(registry, scenario));
   const template = registry.templates.get(serviceTemplate);
