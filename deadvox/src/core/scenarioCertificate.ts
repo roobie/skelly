@@ -4,6 +4,7 @@ import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import type { ScenarioComposition } from './scenarioComposition.ts';
 import { ScenarioRouteSpace } from './scenarioRoute.ts';
+import type { StartDescent } from './scenarioStart.ts';
 import { type Placement, placedPieces } from './templates.ts';
 
 export interface ScenarioCertificate {
@@ -16,6 +17,7 @@ class Certificate {
   readonly issues: [string, string][] = [];
   readonly origins = new Map<number, Readonly<Vec3>>();
   readonly links: [number, number][] = [];
+  readonly startFeet: Readonly<Vec3>[] = [];
   readonly site: CitySite;
   readonly composition: ScenarioComposition;
 
@@ -42,8 +44,7 @@ class Certificate {
     const service = plan.service!;
     const { street, pad } = plan.grid;
     const corner: Vec3 = [service.origin[0] - pad - street / 2, plan.floor + 1, service.origin[2] - pad - street / 2];
-    const elbow: Vec3 = [corner[0], plan.spawn[1], plan.spawn[2]];
-    if (!(this.space.sweep(plan.spawn, elbow) && this.space.sweep(elbow, corner))) {
+    if (!this.startFeet.some((foot) => this.space.path(foot, corner))) {
       this.fail('.route.street', 'reserved street component has unsupported or obstructed body space');
     }
     this.connected(corner, plan.portal!.upper, '.portal.upper');
@@ -77,8 +78,8 @@ class Certificate {
     return this.space.entities.at(...(point as Vec3));
   }
 
-  ladder(descent: ClimbLink, path: string): void {
-    const issue = climbCertificate(
+  climbIssue(descent: ClimbLink): string | undefined {
+    return climbCertificate(
       {
         entities: this.space.entities,
         entityAt: (point) => this.entityAt(point),
@@ -89,6 +90,10 @@ class Certificate {
       },
       descent,
     );
+  }
+
+  ladder(descent: ClimbLink, path: string): void {
+    const issue = this.climbIssue(descent);
     if (issue) {
       this.fail(path, issue);
     }
@@ -96,6 +101,62 @@ class Certificate {
     const lower = this.floorLink(descent.lower, path);
     if (upper && lower && !issue) {
       this.links.push([descent.upper[1], descent.lower[1]]);
+    }
+  }
+
+  startDescent(descent: StartDescent): boolean {
+    const { start } = this.composition;
+    const walking = { steps: true, placement: start.placement };
+    if (!this.space.path(this.site.plan.spawn, descent.upper, { placement: start.placement })) {
+      return false;
+    }
+    switch (descent.kind) {
+      case 'ladder':
+        return this.climbIssue(descent) === undefined;
+      case 'stairs': {
+        const hatch = this.entityAt(descent.hatch);
+        return Boolean(
+          hatch &&
+            this.space.entities.defOf(hatch).door?.hatch &&
+            !hatch.lock?.locked &&
+            this.space.path(descent.upper, descent.lower, walking),
+        );
+      }
+      case 'drop':
+        return (
+          descent.edge[1] === descent.upper[1] &&
+          Math.hypot(descent.edge[0] - descent.upper[0], descent.edge[2] - descent.upper[2]) <= 1 &&
+          descent.landing[1] < descent.edge[1] &&
+          descent.landing[0] === descent.edge[0] &&
+          descent.landing[2] === descent.edge[2] &&
+          this.space.sweep(descent.upper, descent.edge, false) &&
+          this.space.sweep(descent.edge, descent.landing, false) &&
+          Boolean(this.space.path(descent.landing, descent.lower, walking))
+        );
+      default:
+        throw new Error(`Unsupported start descent ${JSON.stringify(descent)}`);
+    }
+  }
+
+  start(): void {
+    const { start } = this.composition;
+    const open = start.descents.map((descent) => this.startDescent(descent));
+    for (const [index, accessible] of open.entries()) {
+      const foot = start.descents[index]!.lower;
+      if (accessible && !this.startFeet.some((point) => point.join(',') === foot.join(','))) {
+        this.startFeet.push(foot);
+      }
+    }
+    if (this.startFeet.length < start.minimumOpenDescents) {
+      this.fail('.composition.start.descents', 'not enough roof-rooted ways down remain open');
+      open.forEach((accessible, index) => {
+        if (!accessible) {
+          this.fail(
+            `.composition.start.descents[${index}]`,
+            'way down is obstructed or disconnected from the roof spawn',
+          );
+        }
+      });
     }
   }
 
@@ -189,7 +250,7 @@ class Certificate {
       return entity && this.space.visibleReach(nearby, entity);
     });
     const accessible =
-      this.space.sweep(plan.spawn, corner) &&
+      this.startFeet.some((foot) => this.space.path(foot, corner)) &&
       this.space.sweep(corner, nearby) &&
       this.space.standing(nearby) &&
       visible;
@@ -200,6 +261,7 @@ class Certificate {
   }
 
   run(): ScenarioCertificate {
+    this.start();
     this.street();
     this.floors();
     this.ladder(this.site.plan.portal!, '.portal');
@@ -220,6 +282,19 @@ class Certificate {
     return { space: this.space, issues: this.issues };
   }
 }
+
+export const scenarioStartCertificate = (site: CitySite): ScenarioCertificate => {
+  const { composition } = site.plan;
+  if (!composition) {
+    return {
+      space: new ScenarioRouteSpace(site),
+      issues: [['.composition', 'scenario needs its final composed route metadata']],
+    };
+  }
+  const certificate = new Certificate(site, composition);
+  certificate.start();
+  return { space: certificate.space, issues: certificate.issues };
+};
 
 export const scenarioCertificate = (site: CitySite): ScenarioCertificate => {
   const { composition, service, portal } = site.plan;

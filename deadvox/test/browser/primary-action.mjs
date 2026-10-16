@@ -387,7 +387,17 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const minimumHoldSimSeconds = r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds;
       const quickbarSlot = 0;
       r.quickbar.assign(quickbarSlot, offItem);
-      return { mainUid: mainItem.uid, offUid: offItem.uid, minimumHoldSimSeconds, quickbarSlot };
+      const headlamp = r.inventory.create('headlamp');
+      if (!r.inventory.add(headlamp, { kind: 'worn' })) {
+        throw new Error('Could not wear the replay fixture headlamp');
+      }
+      return {
+        mainUid: mainItem.uid,
+        offUid: offItem.uid,
+        headlampUid: headlamp.uid,
+        minimumHoldSimSeconds,
+        quickbarSlot,
+      };
     });
     await page.evaluate((offUid) => {
       const r = globalThis.primaryActionTest;
@@ -423,6 +433,12 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.quickbarTapCommitObservation = undefined;
       r.quickbarTapTickObservation = undefined;
     }, fixture.quickbarSlot);
+    const releaseWornLight = await holdAction(page, 'light.worn-toggle');
+    await page.waitForFunction(
+      (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
+      fixture.headlampUid,
+    );
+    await releaseWornLight();
     const releaseThrow = await mouseCharge(page);
     await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
     const chargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -496,6 +512,11 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     const artifact = JSON.parse(replayText);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
+    assert.equal(
+      artifact.actions.filter(({ action }) => action === 'light.worn-toggle').length,
+      1,
+      'one worn-light hold records one toggle',
+    );
     assert.equal(artifact.startState.throwingStance, true, 'the exported segment starts in throwing stance');
     const throwActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.throw');
     assert.equal(artifact.actions.filter(({ action }) => action === 'quickbar.tap.1').length, 1);
@@ -574,6 +595,11 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         hands: [],
       },
       'replay throws the off-hand item before dropping the remaining held item',
+    );
+    assert.equal(
+      await page.evaluate((uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on, fixture.headlampUid),
+      true,
+      'replay switches the worn headlamp on as the recording did',
     );
     assert.deepEqual(
       replayThrowOutcome.offLocation,

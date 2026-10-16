@@ -3,6 +3,7 @@ read_if:
   - you're changing an area with a lesson below
   - you're troubleshooting an input, browser, save, rendering or resource-lifetime problem
   - you're changing save-worker timeout policy or interpreting its request diagnostics
+  - you're sizing browser-stage budgets after adding pixel captures
   - you've solved a hard problem and need to preserve its reason
 ---
 
@@ -20,7 +21,9 @@ Before gameplay or debug commands, browser stages must wait for world readiness 
 
 Local pixel fixtures should load only the terrain needed by their observation. A nearby dropped-light check does not earn the cost of a distant view ring; full-ring readiness makes that unrelated work part of startup. Keep the pixel oracle and completed-readiness boundary intact rather than lengthening the wait. See `test/browser/primary-action-pixel.mjs`, `measureGlowstickFloor`.
 
-Keep Playwright's managed launch path and isolated profiles: desktop keyring initialization and DevTools discovery have delayed custom launches, while unrelated resource load is not a game readiness contract. Do not warm up a request, retry a failed stage or raise its timeout. See `test/browser/chromium.mjs`, `launchChromium`, and `test/browser/save-storage.mjs`, `trackPageNavigation`.
+Keep Playwright's managed launch path and isolated profiles: desktop keyring initialization and DevTools discovery have delayed custom launches, while unrelated resource load is not a game readiness contract. Do not warm up a request, retry a failed stage or lengthen its readiness wait to hide a launch problem. See `test/browser/chromium.mjs`, `launchChromium`, and `test/browser/save-storage.mjs`, `trackPageNavigation`.
+
+Pixel readbacks can dominate a software-rendered stage even when individual frames remain comparable. When adding captures, compare the same phases against a green control and scale only the added work's share of the stage budget, rounding up to the workflow's time unit. Do not treat the total stage duration as proof of a rendering regression, or enlarge a budget to hide one. Keep capture timings separate from readiness so later failures remain attributable; see `test/browser/stairs.mjs`, `lightingCellarProofs` and `timePhase`.
 
 ## Persistence requests
 
@@ -36,7 +39,7 @@ Admit and commit seeded sound choice, cooldown and hearing stimulus in the simul
 
 ## Item ownership
 
-Hands, worn slots and container/pile/furniture trees own items. Quickbar bindings and selected lights hold UIDs and resolve them through inventory; they are not aliases that require lifetime cleanup. At snapshot boundaries validate saved references rather than repairing malformed data. See `src/core/itemTree.ts`, `walkItemTree`, and `src/core/inventory.ts`, `Inventory.itemByUid`.
+Hands, worn slots and container/pile/furniture trees own items. Quickbar bindings and selected lights hold UIDs and resolve them through inventory; they are not aliases that require lifetime cleanup; a quickbar binding resolves only among carried items (`deadvox/INTERACTIONS.md`, "Ownership"). At snapshot boundaries validate saved light references rather than repairing malformed data. See `src/core/itemTree.ts`, `walkItemTree`, and `src/core/inventory.ts`, `Inventory.itemByUid`.
 
 ## Save-storage deadlines
 

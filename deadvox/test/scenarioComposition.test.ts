@@ -15,15 +15,18 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { fixtureLootContext } from './economyFixtures.ts';
-import { fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
+import { fixtureScenario, fixtureScenarioSources, fixtureService, fixtureStart } from './fixtures/scenario.ts';
 
 const fixture = () => {
   const profile = fixtureScenario();
   profile.city.street = 8;
   const service = fixtureService();
+  service.size[1] = 12;
+  service.layers = service.layers.slice(0, service.size[1]);
   service.palette.C = { furniture: 'fixture_crate' };
   service.layers[1]![2] = '..C.....==';
   profile.composition = {
+    start: fixtureStart(),
     fixedLoot: [
       {
         at: [2, 1, 2],
@@ -82,7 +85,10 @@ describe('authored scenario composition', () => {
     const compiled = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
     for (const turn of [0, 1, 2, 3] as const) {
       const service = servicePlacement({ template: compiled, floor: 32, grid, cell: [-1, 0], turn });
-      const composition = composeScenario(registry, profile, service, 32)!;
+      const composition = composeScenario(registry, profile, service, {
+        floor: 32,
+        start: base.composition!.start.placement,
+      })!;
       const site = new CitySite(7, registry, makeScale(0.5), {
         ...base,
         service,

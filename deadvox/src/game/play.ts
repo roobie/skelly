@@ -278,6 +278,7 @@ const pinDescription = (state: PinState | undefined): string[] => (state ? [PIN_
 const isGestureAction = (action: string): boolean =>
   action === 'firearm.reload' ||
   action === 'player.throw' ||
+  action === 'light.worn-toggle' ||
   action === 'world.interact' ||
   action.startsWith('quickbar.use.');
 
@@ -674,6 +675,7 @@ export const startPlay = (
     throwChargeSimSeconds,
     throwMinimumHoldSimSeconds,
     throwStanceDropHoldRealSeconds,
+    wornLightToggleHoldRealSeconds,
     throwArmSpeedMetresPerRealSecond,
     throwArmEnergyJoules,
   } = playerSenseTuning.light;
@@ -1897,6 +1899,11 @@ export const startPlay = (
     tap: () => completeWorldInteraction('pocket'),
     hold: () => completeWorldInteraction('wield'),
   });
+  const wornLightInput = new PressHoldInput<string>({
+    holdRealMs: () => wornLightToggleHoldRealSeconds * 1000,
+    tap: () => undefined,
+    hold: () => toggleWornLights(),
+  });
   const toggleHud = (): void => {
     hudOptions.shown = !hudOptions.shown;
     writeHudOptions(hudOptions);
@@ -1913,6 +1920,7 @@ export const startPlay = (
     quickbarInput.cancel();
     throwStanceInput.cancel();
     interactInput.cancel();
+    wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
   });
@@ -2092,6 +2100,9 @@ export const startPlay = (
       case 'player.throw':
         withUnlockedInput(() => throwStanceInput.keyDown(action, at));
         break;
+      case 'light.worn-toggle':
+        withUnlockedInput(() => wornLightInput.keyDown(action, at));
+        break;
       case 'hand.use-off':
         if (!replayPlayer) {
           input.useOff();
@@ -2134,6 +2145,9 @@ export const startPlay = (
     if (action === 'player.throw') {
       throwStanceInput.keyUp(action, at);
     }
+    if (action === 'light.worn-toggle') {
+      wornLightInput.keyUp(action, at);
+    }
     if (slot !== undefined) {
       quickbarInput.keyUp(slot, at);
     }
@@ -2162,6 +2176,7 @@ export const startPlay = (
     throwStanceInput.cancel();
     quickbarInput.cancel();
     interactInput.cancel();
+    wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
   };
@@ -2262,6 +2277,9 @@ export const startPlay = (
         return true;
       case 'item.throw.cancel':
         cancelItemThrow();
+        return true;
+      case 'light.worn-toggle':
+        toggleWornLights();
         return true;
       default:
         return dispatchReplayQuickbar(action);
@@ -2460,6 +2478,19 @@ export const startPlay = (
       throwingStance = false;
       cancelItemThrow();
     }
+  }
+
+  function toggleWornLights(): void {
+    if (!replayPlayer) {
+      inputRecorder?.queueAction('light.worn-toggle', 'down', inputContext());
+      pendingPlayerTickActions.enqueue(toggleWornLightsNow);
+      return;
+    }
+    toggleWornLightsNow();
+  }
+
+  function toggleWornLightsNow(): void {
+    refusalReason(survival.toggleWornLights());
   }
 
   function dropHeldItemForThrowingStance(): void {
@@ -3413,10 +3444,12 @@ export const startPlay = (
     if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead || actionRefusal) {
       quickbarInput.cancel();
       interactInput.cancel();
+      wornLightInput.cancel();
       interactionPressTarget = undefined;
     } else {
       quickbarInput.update(now);
       interactInput.update(now);
+      wornLightInput.update(now);
     }
     throwStanceInput.update(now);
     updateBackquoteGesture(backquoteGesture, now);

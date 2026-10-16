@@ -1,7 +1,7 @@
 ---
 read_if:
   - you author or change structured game data in any subproject
-  - you change the shared Jsonnet compiler or its import and validation rules
+  - you change the shared Jsonnet compiler, its formatter, or its import and validation rules
   - you add build-specific content or a Jsonnet module
   - you author map features or decide what belongs in a map template
   - you check which generated map features still require curated migration
@@ -16,6 +16,7 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 - Keep maps edited in Tiled as `.tmj`; compilation must not overwrite editor-owned data. Use `.tmj.jsonnet` only for maps not edited in Tiled. See `deadvox/maps/README.md`.
 - Add structured sources only under the compiler's declared `SOURCE_ROOTS`, preserving each consumer's expected output format. See `tools/jsonnet/compile.mjs`, `SOURCE_ROOTS`.
 - Keep exporter-written JSON outside the Jsonnet source manifest so a refresh has one writer; the exporter owns its output rather than a second authored source.
+- Do not impose a subprocess capture limit on trusted formatter output: growing a content document must not fail because of the process API's default buffer. See `tools/jsonnet/compile.mjs`, `formatJson`.
 - Deadvox core-pack data is authored under `deadvox/src/content/base` and consumed through `deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `deadvox/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
 - Build-specific settings must be explicit top-level arguments, not hidden environment inputs, so identical sources produce identical output.
 

@@ -1217,6 +1217,7 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 1 | Runner | Fast, fragile |
 | 1 | Screamer | Weak, but its scream pulls in the horde |
 | 1 | Bloater | Bursts into a noxious cloud |
+| 1 | Acid zombie | Spits acid from a distance; the first ranged enemy and first of the acid evolution line, lab storeys only. See `deadvox/docs/acid-zombie.md`, "Acid zombie" |
 | 2 | Brute | Big, knocks you back, breaks doors |
 | 2 | Soldier | Armoured; carries ordinary kit at the military camp |
 | 2 | Hazmat | Resists acid and fire (from lab sites) |

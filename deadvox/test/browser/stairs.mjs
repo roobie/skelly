@@ -605,7 +605,7 @@ try {
     const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
     assert.equal(raisedOutdoor, 1);
     const lightProof = await timePhase('cellar-dark-beam-pixels', async () => {
-      const dark = await shot('cellar-dark', true);
+      const dark = await timePhase('cellar-dark-capture', () => shot('cellar-dark', true));
       await page.evaluate(() => {
         const { session } = globalThis.stairsWitness;
         for (const side of ['left', 'right']) {
@@ -630,10 +630,50 @@ try {
       await mouse5();
       await page.waitForTimeout(700);
       assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left.on), true);
-      const lit = await shot('cellar-beam', true);
-      const proof = { dark: await luminance(dark), beam: await luminance(lit) };
+      const lit = await timePhase('cellar-hand-capture', () => shot('cellar-beam', true));
+      await page.evaluate(() => {
+        const { session } = globalThis.stairsWitness;
+        const previous = session.inventory.worn.head;
+        if (previous && !session.inventory.consume(previous, previous.count)) {
+          throw new Error('Could not clear fixture head slot');
+        }
+        const headlamp = session.inventory.create('headlamp');
+        if (!session.inventory.add(headlamp, { kind: 'worn' })) {
+          throw new Error('Could not wear fixture headlamp');
+        }
+        const reason = session.survival.toggleWornLights();
+        if (reason) {
+          throw new Error(reason);
+        }
+      });
+      await page.waitForFunction(
+        () =>
+          globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
+            .length === 2,
+      );
+      const both = await timePhase('cellar-combined-capture', () => shot('cellar-both-beams', true));
+      await page.evaluate(() => {
+        const { session } = globalThis.stairsWitness;
+        const reason = session.survival.use(session.inventory.hands.left);
+        if (reason) {
+          throw new Error(reason);
+        }
+      });
+      await page.waitForFunction(
+        () =>
+          globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
+            .length === 1,
+      );
+      const worn = await timePhase('cellar-worn-capture', () => shot('cellar-worn-beam', true));
+      const proof = {
+        dark: await luminance(dark),
+        beam: await luminance(lit),
+        worn: await luminance(worn),
+        both: await luminance(both),
+      };
       assert.ok(proof.dark < 15, JSON.stringify(proof));
       assert.ok(proof.beam > proof.dark + 10, JSON.stringify(proof));
+      assert.ok(proof.both > Math.max(proof.beam, proof.worn), JSON.stringify(proof));
       return proof;
     });
     return { lightProof, raisedOutdoor };

@@ -54,6 +54,54 @@ describe('made light burn state', () => {
     expect(headlamp.on).toBe(false);
   });
 
+  it('switches a worn headlamp on and off with the worn-light control', () => {
+    const { inventory, survival } = setup();
+    const headlamp = inventory.create('headlamp');
+    expect(inventory.add(headlamp, { kind: 'worn' })).toBe(true);
+
+    expect(survival.toggleWornLights()).toBeUndefined();
+    expect(headlamp.on).toBe(true);
+    expect(survival.lit).toBe(headlamp);
+    expect(survival.toggleWornLights()).toBeUndefined();
+    expect(headlamp.on).toBe(false);
+  });
+
+  it('leaves a lit hand light alone when the worn-light control switches a worn light', () => {
+    const { inventory, survival, hold } = setup();
+    const flashlight = hold('flashlight');
+    expect(survival.use(flashlight)).toBeUndefined();
+    const headlamp = inventory.create('headlamp');
+    expect(inventory.add(headlamp, { kind: 'worn' })).toBe(true);
+
+    expect(survival.toggleWornLights()).toBeUndefined();
+    expect([headlamp.on, flashlight.on, survival.lit]).toEqual([true, true, flashlight]);
+    expect(survival.toggleWornLights()).toBeUndefined();
+    expect([headlamp.on, flashlight.on, survival.lit]).toEqual([false, true, flashlight]);
+  });
+
+  it('lights an on worn light once the hand light that was active goes off', () => {
+    const { inventory, survival, hold } = setup();
+    const flashlight = hold('flashlight');
+    expect(survival.use(flashlight)).toBeUndefined();
+    const headlamp = inventory.create('headlamp');
+    expect(inventory.add(headlamp, { kind: 'worn' })).toBe(true);
+    expect(survival.toggleWornLights()).toBeUndefined();
+
+    expect(survival.use(flashlight)).toBeUndefined();
+    expect(flashlight.on).toBe(false);
+    expect(survival.lit).toBe(headlamp);
+  });
+
+  it('does not switch a hand light, or anything, when no switchable light is worn', () => {
+    const { inventory, survival, hold } = setup();
+    const flashlight = hold('flashlight');
+    const before = inventory.version;
+
+    expect(survival.toggleWornLights()).toBeUndefined();
+    expect(flashlight.on).toBeFalsy();
+    expect(inventory.version).toBe(before);
+  });
+
   it('burns a torch out at the same time in one step or one-second steps', () => {
     const torch = registry.items.get('torch')!.light!;
     const duration = torch.burnTimeGameHours!;

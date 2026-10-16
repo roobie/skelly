@@ -27,6 +27,8 @@
         throwChargeSimSeconds: 1.25,
         throwMinimumHoldSimSeconds: 0.3,
         throwStanceDropHoldRealSeconds: 0.5,
+        wornLightToggleHoldRealSeconds: 0.5,
+        renderedBeamLimit: 2,
         throwArmSpeedMetresPerRealSecond: 9,
         throwArmEnergyJoules: 60,
       },
