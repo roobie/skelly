@@ -1,20 +1,12 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldSolid } from '../src/core/collision.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { type BrickOut, brickHas, type SolidBricks, worldBricks } from '../src/core/solidBricks.ts';
 import { World } from '../src/core/world.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const SOLID = registry.blocks.findIndex((block, id) => id > 0 && block?.solid === true);
 
 /** Each block of brick (bx, by, bz): where it is, whether `isSolid` says solid, and whether the brick does. */

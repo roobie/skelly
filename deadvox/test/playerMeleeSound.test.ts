@@ -1,20 +1,12 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const seed = 73;
 
 it('keeps the struck shambler body pitch on player melee hits', () => {

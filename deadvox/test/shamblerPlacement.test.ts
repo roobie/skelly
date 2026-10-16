@@ -1,18 +1,10 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, findShamblerBenchPlayer, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
 import { createHeadlessShamblerWorld } from '../src/bench/shamblerWorld.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { createPlayerBody } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 
 describe('shared shambler benchmark placement', () => {
   it('uses the browser placement path for seed 1 N=10 and clears hamlet terrain and furniture', () => {

@@ -1,8 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import {
@@ -14,16 +11,11 @@ import {
 import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const player = () => createPlayerBody(SCALE, 0, 1, 0);
 

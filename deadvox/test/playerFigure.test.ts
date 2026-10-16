@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   BoxGeometry,
   DirectionalLight,
@@ -20,7 +18,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { HOLD } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
@@ -39,14 +36,9 @@ import {
   PLAYER_BODY_REAR_OFFSET,
   PlayerMeshes,
 } from '../src/render/playerFigure.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const scale = makeScale(0.5);
 const { palette } = registry.figures.get('player')!;
 

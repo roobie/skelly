@@ -208,5 +208,6 @@ export default defineConfig({
   test: {
     ...TEST_POOL,
     include: ['test/**/*.test.ts'],
+    globalSetup: ['test/baseRegistrySetup.ts'],
   },
 });

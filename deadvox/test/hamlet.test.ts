@@ -1,7 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { HAMLET, Hamlet, hamletZombieSpawns } from '../src/core/hamlet.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -9,14 +6,9 @@ import { hamletTemplateIds } from '../src/core/sitePalette.ts';
 import { cellsOf } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const scale = makeScale(0.5);
 const id = (name: string) => registry.blockIds.get(name)!;
 
