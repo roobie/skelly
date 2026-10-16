@@ -741,9 +741,12 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (entry.furniture !== undefined && !furniture) {
     found.push(['.furniture', `no furniture "${entry.furniture}"`]);
   }
-  const problem = furniture && findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n')).problem;
-  if (problem) {
-    found.push(['.furniture', problem]);
+  const pieces = furniture && findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n'));
+  if (pieces?.problem) {
+    found.push(['.furniture', pieces.problem]);
+  }
+  if (furniture?.mount === 'wall') {
+    found.push(...wallMountIssues(registry, template, entry, pieces?.anchors ?? []));
   }
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
@@ -766,6 +769,26 @@ const solidTemplateBlock = (
   }
   const index = registry.blockIds.get(id);
   return index !== undefined && registry.blocks[index]?.solid ? id : undefined;
+};
+
+const wallMountIssues = (
+  registry: Registry,
+  template: TemplateDef,
+  entry: PaletteThing,
+  anchors: readonly (readonly [number, number, number])[],
+): [string, string][] => {
+  const back: Record<NonNullable<PaletteThing['facing']>, readonly [number, number]> = {
+    n: [0, 1],
+    e: [-1, 0],
+    s: [0, -1],
+    w: [1, 0],
+  };
+  const [dx, dz] = back[entry.facing ?? 'n'];
+  return anchors.flatMap(([x, y, z]): [string, string][] =>
+    solidTemplateBlock(registry, template, [...(template.layers[y]?.[z + dz] ?? '')][x + dx])
+      ? []
+      : [['.furniture', `wall mount at [${x}, ${y}, ${z}] needs a solid block behind its back face`]],
+  );
 };
 
 const boundaryWallAt = (

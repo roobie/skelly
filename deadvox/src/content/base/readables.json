@@ -8,6 +8,20 @@
         "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION\n\nThis is a sample of readable furniture. The hamlet signs and actual directions will be authored later.",
         "title": "Placeholder — a wooden sign"
       },
+      "shape": [
+        {
+          "position": [0, 1, 0.40000000000000002],
+          "size": [2, 2, 0.20000000000000001]
+        },
+        {
+          "position": [0.20000000000000001, 0, 0.40000000000000002],
+          "size": [0.20000000000000001, 1, 0.20000000000000001]
+        },
+        {
+          "position": [1.6000000000000001, 0, 0.40000000000000002],
+          "size": [0.20000000000000001, 1, 0.20000000000000001]
+        }
+      ],
       "size": [2, 3, 1]
     }
   ],

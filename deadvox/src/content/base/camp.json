@@ -131,6 +131,20 @@
         "text": "Hold the road and keep the clinic supplied. The medical site is under the camp's protection. Keep the armoury locked; its key stays with the officer.",
         "title": "Orders for the road"
       },
+      "shape": [
+        {
+          "position": [0, 1, 0.40000000000000002],
+          "size": [2, 1, 0.20000000000000001]
+        },
+        {
+          "position": [0.20000000000000001, 0, 0.40000000000000002],
+          "size": [0.20000000000000001, 1, 0.20000000000000001]
+        },
+        {
+          "position": [1.6000000000000001, 0, 0.40000000000000002],
+          "size": [0.20000000000000001, 1, 0.20000000000000001]
+        }
+      ],
       "size": [2, 2, 1],
       "solid": false
     },

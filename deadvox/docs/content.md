@@ -8,7 +8,7 @@ read_if:
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you're authoring or changing exterior door openings
-  - you're authoring or changing furniture appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
+  - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author decals or scenario outbreak age
   - you author a scenario or move scenario rules from code into content
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
@@ -303,6 +303,8 @@ Debug descriptions are fixture-scoped so showcase stock cannot define production
 ## Furniture visual shapes
 
 Visual furniture detail must not change occupied cells or expose hidden contents. Collision, rest, search, and line of sight keep their existing authorities, so a visual refinement cannot change gameplay.
+
+Wall mounting is an explicit content contract because text alone cannot distinguish a hung plaque from a freestanding board. Reject unsupported mount kinds and missing hosts rather than rendering an apparently attached object in empty space. Keep plaque dimensions and board legs in content shapes instead of renderer guesses. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/content.ts`, `checkPaletteThing`; and `src/content/base/furniture-playtest.jsonnet`, `plaque`.
 
 Container appearance belongs to its definition rather than an ID switch or a guess from dimensions: similarly sized furniture can serve different purposes. Keep procedural detail inside the cell envelope so handles do not promise reach outside the pickable fixture. Definition-owned appearance also keeps empty and unsearched containers visually indistinguishable. See `src/core/schema.ts`, `FurnitureSchema`; `src/render/furnitureDetail.ts`, `furnitureDetail`; and `src/render/furniture.ts`, `FurnitureMeshes`.
 
