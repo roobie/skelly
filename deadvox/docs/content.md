@@ -281,12 +281,13 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   so the run opens with an overview and a descent. The roof stands above every other
   city building, including seeded pool choices, rather than merely above its neighbours
   in one world. Several authored ways down trade speed against safety or noise, so
-  leaving the roof is the first decision. Authored routes keep the first version simple. Every route proof roots at the start, so
-  the rooftop start lands in #393 before seeded placement, and the proofs are rebuilt
-  around their root once, not twice. The template's climb proof covers the roof and ways
-  down; each world's route proof still runs from the roof, because the seeded city around
-  the building can block the foot of a way down. At least two ways down stay open in
-  every world, so one blocked way never leaves a single forced exit and leaving the roof
+  leaving the roof is the first decision. Authored routes keep the first version simple.
+  Every route proof roots at the start, so the rooftop start lands in #393 before seeded
+  placement, and the proofs are rebuilt around their root once, not twice. The template's
+  climb proof covers the roof and ways down; each world's route proof still runs from the
+  roof, because the seeded city around the building can block the foot of a way down.
+  At least two ways down stay open in every world, so one blocked way never leaves a
+  single forced exit and leaving the roof
   stays a choice. The foot of a way down need not be kept clear. The start building
   needs the same roof-clearance proof as a ring building, so it cannot become a jump
   over the wall, whether or not the city has a ring. See `src/core/scenarioStart.ts`,

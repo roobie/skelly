@@ -21,6 +21,8 @@ const fixture = () => {
   const profile = fixtureScenario();
   profile.city.street = 8;
   const service = fixtureService();
+  service.size[1] = 12;
+  service.layers = service.layers.slice(0, service.size[1]);
   service.palette.C = { furniture: 'fixture_crate' };
   service.layers[1]![2] = '..C.....==';
   profile.composition = {
