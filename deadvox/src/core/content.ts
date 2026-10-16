@@ -417,8 +417,17 @@ const checkFirearmHandling = (
   if (Boolean(model?.revolver) !== Boolean(firearm.revolver)) {
     report('items', item.id, '.firearm.revolver', 'revolver model and handling tuning must be present together');
   }
-  if (firearm.pump && firearm.handling.shellLoadSimSeconds === undefined) {
-    report('items', item.id, '.firearm.handling.shellLoadSimSeconds', 'a pump firearm needs a shell load time');
+  if ((firearm.pump || firearm.bolt) && firearm.roundLoadSimSeconds === undefined) {
+    report('items', item.id, '.firearm.roundLoadSimSeconds', 'an integral-magazine firearm needs a round load time');
+  }
+  if (
+    firearm.bolt &&
+    (firearm.pump ||
+      !model?.internalMagazine ||
+      !model.anchors?.loading_port ||
+      !Object.values(model.action?.parts ?? {}).some((part) => part.turn))
+  ) {
+    report('items', item.id, '.firearm.bolt', 'a bolt firearm needs a turning action and integral loading port');
   }
   if (magazineWellCalibre(registry, item.id) !== undefined && firearm.handling.magazine === undefined) {
     report('items', item.id, '.firearm.handling.magazine', 'a magazine-fed firearm needs magazine handling times');

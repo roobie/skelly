@@ -2109,7 +2109,7 @@ try {
     const spareShell = r.inventory.create(cartridge.id);
     r.setHand(r.dominant, firearm);
     r.setHand(r.off, shell);
-    const ShellLoadSeconds = definition.firearm.handling.shellLoadSimSeconds;
+    const ShellLoadSeconds = definition.firearm.roundLoadSimSeconds;
     const start = r.session.sim.time;
     const refusal = r.session.firearms.load(shell, start);
     if (refusal) {

@@ -107,6 +107,26 @@
   ],
   "items": [
     {
+      id: 'cartridge_308_h_winchester', name: '.308 Winchester cartridge',
+      category: 'ammo', weight: 24, size: [1, 1], stack: 20,
+      model: 'round_308_h_winchester',
+      ammo: {
+        calibre: '308-winchester', pellets: 1, diameterMm: 7.82,
+        damage: 65, impulse: 2.5, rangeMetres: 700, headDamageMultiplier: 2,
+        loadSimSeconds: 0.8, stripSimSeconds: 0.5,
+      },
+    },
+    {
+      id: 'cartridge_box_308_h_winchester', name: 'Sealed .308 Winchester box (20)',
+      category: 'ammo', weight: 520, size: [2, 1],
+      unpack: { item: 'cartridge_308_h_winchester', count: 20, simSeconds: 1.2 },
+    },
+    {
+      id: 'spent_case_308_h_winchester', name: 'Spent .308 Winchester case',
+      category: 'misc', weight: 10, size: [1, 1], stack: 50,
+      model: 'case_308_h_winchester',
+    },
+    {
       "id": "cartridge_5_d_56x45",
       "name": "5.56×45 cartridge",
       "category": "ammo",

@@ -6,10 +6,25 @@ local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSi
 {
   "items": [
     {
+      id: 'rifle_hunting', name: 'Hunting rifle', category: 'weapon',
+      description: '.308 Winchester bolt-action rifle with an internal magazine.',
+      model: 'rifle_hunting', size: [2, 8], twoHanded: true, weight: 3200,
+      firearm: {
+        bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
+        recoilKickRadians: 0.025, dispersionRadians: 0.006,
+        shotSound: 'gunshot', suppressedShotSound: 'gunshot_m4_suppressed',
+        skillZeroHandling: {
+          singleShot: { recoilKickScale: 6, recoilRecoveryScale: 0.5, variance: 20 },
+          automaticFollowup: { recoilKickScale: 12, recoilRecoveryScale: 0.25, variance: 40 },
+        },
+      },
+    },
+    {
       "category": "weapon",
       "description": "12-gauge pump shotgun. The tube holds four shells, with one more in the chamber.",
       "firearm": {
-        "handling": { "shellLoadSimSeconds": 0.9 },
+        "handling": {},
+        "roundLoadSimSeconds": 0.9,
         "dispersionRadians": 0,
         "pump": true,
         "recoilKickRadians": 0.035,

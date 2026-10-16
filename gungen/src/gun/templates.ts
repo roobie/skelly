@@ -379,13 +379,16 @@ const huntingRifle: Template = {
       .filter(({ id }) => id !== 'sight')
       .map((slot) => {
         if (slot.id === 'receiver') {
-          return { ...slot, params: { ...slot.params, bore: 'M' } };
+          return { ...slot, params: { ...slot.params, bore: 'M', section: 'sporter' } };
         }
         if (slot.id === 'magazine') {
-          return { ...slot, params: { ...slot.params, integral: 'yes' } };
+          return { ...slot, params: { ...slot.params, integral: 'yes', wellBody: 'sporter' } };
         }
         if (slot.id === 'lower') {
           return { ...slot, params: { layout: 'conventional', magazineWell: 'recessed' } };
+        }
+        if (slot.id === 'bolt-carrier') {
+          return { ...slot, params: { ...slot.params, handleProfile: 'sporter' } };
         }
         if (slot.id === 'stock') {
           return { ...slot, params: { length: 'M', style: 'sporting' } };
@@ -399,7 +402,7 @@ const huntingRifle: Template = {
   connections: [
     ...boltRifle.connections,
     { from: 'barrel.front-sight', to: 'front-sight.base' },
-    { from: 'receiver.rear-sight', to: 'rear-sight.base' },
+    { from: 'barrel.rear-sight', to: 'rear-sight.base' },
   ],
 };
 

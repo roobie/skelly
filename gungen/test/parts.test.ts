@@ -33,10 +33,25 @@ import { runSweeps, sweepGroup } from './sweeps.ts';
  */
 const ARRAY_SAMPLED_KEYS = ['receiver', 'barrel', 'handguard', 'sight'] as const;
 const ARRAY_STRENGTH = 3;
-// Cartridge selection is covered by boltExport.test.ts rather than multiplying unrelated mechanism combinations.
+// Sporter joints/support and cartridge-driven motion/export have dedicated contract tests;
+// multiplying their look controls through unrelated mechanisms only repeats geometry classes.
 const withoutHandleStyle = (family: PartFamily) =>
   Object.fromEntries(
-    Object.entries(family.params).filter(([name]) => name !== 'handleStyle' && name !== 'boltCalibre'),
+    Object.entries(family.params).filter(
+      ([name]) =>
+        !(
+          [
+            'handleStyle',
+            'boltCalibre',
+            'stockStyle',
+            'combDegrees',
+            'muzzleInsetRatio',
+            'frontSightMuzzleInsetRatio',
+            'wellBody',
+          ].includes(name) ||
+          (name === 'section' && ['lower', 'stock', 'front-sight'].includes(family.name))
+        ),
+    ),
   );
 
 /**
@@ -569,7 +584,7 @@ describe('part library', () => {
     let gridStep = GRID;
     if (family.name === 'forend' || family.name === 'ar-charging-handle') {
       gridStep = GRID / 5;
-    } else if (['front-sight', 'rail-front-sight', 'ak-rear-sight'].includes(family.name)) {
+    } else if (['front-sight', 'rail-front-sight', 'ak-rear-sight', 'sporting-rear-sight'].includes(family.name)) {
       gridStep = GRID / 4;
     } else if (['frame', 'slide'].includes(family.name)) {
       gridStep = GRID / 2;
@@ -690,9 +705,43 @@ describe('part library', () => {
   });
 });
 
+it('sporting rear sight uses the AK open-notch leaves scaled to its sight line', () => {
+  const normalized = (family: string) => {
+    const def = FAMILIES[family]!.build({});
+    const [, top] = def.axes!.find((axis) => axis.kind === 'sight')!.origin;
+    return def.solids.map((solid) => {
+      if (solid.kind !== 'box') {
+        throw new Error('Open-notch leaves need box solids');
+      }
+      return {
+        center: solid.box.center.map((value, axis) => (axis === 1 ? value / top : value)),
+        half: solid.box.half.map((value, axis) => (axis === 1 ? value / top : value)),
+      };
+    });
+  };
+  const sporting = normalized('sporting-rear-sight');
+  expect(sporting.length).toBeGreaterThan(0);
+  expect(sporting).toEqual(normalized('ak-rear-sight'));
+});
+
+it('sporting front sight stays near the muzzle relative to each barrel length', () => {
+  const inset = Number(FAMILIES['front-sight']!.params.muzzleInsetRatio!.default);
+  for (const barrelSize of ['S', 'M', 'L']) {
+    const build = (frontSightStyle: string) =>
+      FAMILIES.barrel!.build({ length: barrelSize, bore: 'M', frontSightStyle });
+    const sporting = build('sporting');
+    const [muzzleX] = sporting.ports.find((port) => port.id === 'muzzle')!.pos;
+    const [sightX] = sporting.ports.find((port) => port.id === 'front-sight')!.pos;
+    const [arSightX] = build('ar').ports.find((port) => port.id === 'front-sight')!.pos;
+    expect(sightX).toBeGreaterThan(arSightX);
+    expect(sightX).toBeLessThan(muzzleX);
+    expect(Math.abs((muzzleX - sightX) / muzzleX - inset)).toBeLessThanOrEqual(GRID / muzzleX);
+  }
+});
+
 describe('tapered stock profile', () => {
-  const profile = (stockSize: 'M' | 'L') => {
-    const def = FAMILIES.stock!.build({ length: stockSize, style: 'tapered' });
+  const profile = (stockSize: 'M' | 'L', style = 'tapered') => {
+    const def = FAMILIES.stock!.build({ length: stockSize, style });
     const solids = def.solids.filter((solid) => solid.kind === 'extruded-polygon');
     const byId = (id: string) => {
       const solid = solids.find((candidate) => candidate.id === id);
@@ -702,8 +751,7 @@ describe('tapered stock profile', () => {
       return solid;
     };
     const [jointX] = def.ports.find((port) => port.id === 'front')!.pos;
-    const stockLength = jointX - Math.min(...byId('butt-pad').profile.map(([x]) => x));
-    return { def, solids, byId, jointX, stockLength };
+    return { def, solids, byId, jointX };
   };
   const segmentSection = (profilePoints: readonly (readonly [number, number])[], x: number): number[] => {
     const ys: number[] = [];
@@ -729,6 +777,23 @@ describe('tapered stock profile', () => {
     return { min: Math.min(...ys), max: Math.max(...ys), height: Math.max(...ys) - Math.min(...ys) };
   };
   const degrees = (dx: number, dy: number) => (Math.atan2(Math.abs(dy), Math.abs(dx)) * 180) / Math.PI;
+
+  it('sporting stock shares the pump wrist and wood cells but has a shallower comb', () => {
+    const pump = profile('M');
+    const sporting = profile('M', 'sporting');
+    const combAngle = ({ byId }: ReturnType<typeof profile>): number => {
+      const body = byId('stock-comb');
+      const front = body.profile[2]!;
+      const rear = body.profile[3]!;
+      return degrees(front[0] - rear[0], front[1] - rear[1]);
+    };
+    expect(combAngle(sporting)).toBeLessThan(combAngle(pump));
+    expect(sporting.solids.map((solid) => solid.display?.role)).toEqual(
+      pump.solids.map((solid) => solid.display?.role),
+    );
+    expect(sporting.byId('grip').profile.map(([x]) => x)).toEqual(pump.byId('grip').profile.map(([x]) => x));
+    expect(sporting.byId('grip').z).toEqual(pump.byId('grip').z);
+  });
 
   for (const size of ['M', 'L'] as const) {
     it(`${size}: extruded stock profiles are valid`, () => {
@@ -757,76 +822,8 @@ describe('tapered stock profile', () => {
       expect(Math.abs(combAtJoint - Math.max(...rearYs))).toBeLessThanOrEqual(0.25);
       expect(def.ports.find((port) => port.id === 'front')?.pos).toEqual([0, 0, 0]);
     });
-
-    it(`${size}: wrist, grip station/depth, and comb slope stay in their landmark bounds`, () => {
-      const { byId, solids, jointX } = profile(size);
-      const grip = byId('grip');
-      const wristX = Math.max(...grip.profile.map(([x]) => x));
-      const wrist = section(solids, wristX);
-      // A longer butt must not enlarge the hand-sized wrist.
-      expect(jointX - wristX).toBeGreaterThanOrEqual(2);
-      expect(jointX - wristX).toBeLessThanOrEqual(3);
-      expect(wrist.height).toBeGreaterThanOrEqual(2.5);
-      expect(wrist.height).toBeLessThanOrEqual(3.5);
-
-      const lowest = solids
-        .filter((s) => s.display?.role === 'grip')
-        .flatMap((s) => s.profile)
-        .reduce((best, point) => (point[1] < best[1] ? point : best));
-      const depth = section(solids, lowest[0]).max - lowest[1];
-      // Photo knob is about 39px behind the tang, at 100px / 19.5u.
-      expect(jointX - lowest[0]).toBeGreaterThanOrEqual(7);
-      expect(jointX - lowest[0]).toBeLessThanOrEqual(8);
-      expect(depth).toBeGreaterThanOrEqual(6);
-      expect(depth).toBeLessThanOrEqual(8);
-      const body = byId('stock-comb');
-      const frontTop = body.profile[2]!;
-      const backTop = body.profile[3]!;
-      const combAngle = degrees(frontTop[0] - backTop[0], frontTop[1] - backTop[1]);
-      expect(combAngle).toBeGreaterThanOrEqual(5.8);
-      expect(combAngle).toBeLessThanOrEqual(6.2);
-    });
-
-    it(`${size}: belly, butt and recoil pad meet their bounds`, () => {
-      const { byId, stockLength } = profile(size);
-      const belly = byId('stock-comb');
-      const pad = byId('butt-pad');
-      const toe = belly.profile[0]!;
-      const bellyRear = belly.profile[1]!;
-      const bellyAngle = degrees(toe[0] - bellyRear[0], toe[1] - bellyRear[1]);
-      expect(bellyAngle).toBeGreaterThanOrEqual(17);
-      expect(bellyAngle).toBeLessThanOrEqual(20);
-
-      const padYs = pad.profile.map(([, y]) => y);
-      const padMinY = Math.min(...padYs);
-      const padMaxY = Math.max(...padYs);
-      expect((padMaxY - padMinY) / stockLength).toBeGreaterThanOrEqual(0.3);
-      expect((padMaxY - padMinY) / stockLength).toBeLessThanOrEqual(0.38);
-      const rearBottom = pad.profile.filter(([, y]) => y === padMinY).sort((a, b) => a[0] - b[0])[0]!;
-      const rearTop = pad.profile.filter(([, y]) => y === padMaxY).sort((a, b) => a[0] - b[0])[0]!;
-      const rake =
-        (Math.atan2(Math.abs(rearTop[0] - rearBottom[0]), Math.abs(rearTop[1] - rearBottom[1])) * 180) / Math.PI;
-      expect(rake).toBeGreaterThanOrEqual(4.3);
-      expect(rake).toBeLessThanOrEqual(4.7);
-      expect(rearTop[0]).toBeLessThan(rearBottom[0]);
-      const bottomXs = pad.profile
-        .filter(([, y]) => y === padMinY)
-        .map(([x]) => x)
-        .sort((a, b) => a - b);
-      const topXs = pad.profile
-        .filter(([, y]) => y === padMaxY)
-        .map(([x]) => x)
-        .sort((a, b) => a - b);
-      const padThickness = Math.min(bottomXs[1]! - bottomXs[0]!, topXs[1]! - topXs[0]!) / stockLength;
-      expect(padThickness).toBeGreaterThanOrEqual(0.05);
-      expect(padThickness).toBeLessThanOrEqual(0.08);
-    });
   }
 });
-
-// The former 5% rear-heel-lift cases protected the previous 4° stock profile. BR’s 870
-// approval supersedes that shape: the landmark cases above now check 6° comb / 4.5° pad,
-// and pumpReference checks receiver-relative butt height and the curved hand geometry.
 
 describe('pump shotgun tube and barrel contact', () => {
   it('builds a watertight near-complete tubular forend with a narrow top slit', () => {

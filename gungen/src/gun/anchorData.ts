@@ -8,6 +8,7 @@ import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
 import { localEjectionPoint } from './ejection.ts';
 import { FIRING_GRIP } from './parts.ts';
 import { REVOLVER_GRIP_RAKE_DEGREES } from './revolver.ts';
+import { sporterSupport } from './sporter.ts';
 
 const X: Vec3 = [1, 0, 0];
 const Y: Vec3 = [0, 1, 0];
@@ -147,7 +148,12 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
       return position && part.tags?.includes(FIRING_GRIP) ? { hold: frameAt(position) } : {};
     },
   },
-  handguard: { anchors: (_params, part) => undersideSupport(part, 0.6) },
+  handguard: {
+    anchors: (params, part) =>
+      params.section === 'sporter'
+        ? { support: frameAt(sporterSupport(part.ports.find((port) => port.id === 'front')!.pos[0])) }
+        : undersideSupport(part, 0.6),
+  },
   forend: { anchors: (_params, part) => undersideSupport(part, 0.5) },
   lower: {
     anchors: (_params, part) => {

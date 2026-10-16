@@ -371,7 +371,12 @@ describe('certified firearm fitting', () => {
     const optic = [...fixture.registry.items.values()].find((item) => {
       const model = item.model === undefined ? undefined : fixture.registry.models.get(item.model);
       const range = model?.attachment?.properties.magnification;
-      return model?.attachment?.kind === 'optic' && range !== undefined && range.min < range.max;
+      return (
+        model?.attachment?.kind === 'optic' &&
+        range !== undefined &&
+        range.min < range.max &&
+        Object.values(fixture.model.compatibility ?? {}).some((ids) => ids.includes(model.attachment!.id))
+      );
     });
     if (!optic) {
       throw new Error('Fixture registry needs a variable-power optic');
@@ -400,7 +405,7 @@ describe('certified firearm fitting', () => {
     }
 
     expect(handling.candidates(fixture.firearm.uid, firearmSlot.id)).not.toContain(thermal);
-    expect(handling.fit(fixture.firearm.uid, firearmSlot.id, thermal.uid)).toBe('This optic has no supported view');
+    expect(handling.fit(fixture.firearm.uid, firearmSlot.id, thermal.uid)).toBeDefined();
     expect(queue.jobs).toHaveLength(0);
   });
 

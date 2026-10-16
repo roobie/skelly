@@ -17,6 +17,8 @@ export interface FirearmCycleState {
   duration?: number;
   ejected: boolean;
   forwardSounded?: boolean;
+  phase?: 'open' | 'close';
+  preserveRound?: boolean;
 }
 
 interface FirearmRaiseState {
@@ -46,8 +48,11 @@ export interface FirearmState {
   cylinder?: CylinderState;
   /** The chambered cartridge's item type, present exactly when the chamber holds a round. */
   roundType?: string | undefined;
-  /** A pump's tube: cartridge item types in feed order. Magazine-fed firearms feed from their magazine slot. */
+  /** Integral magazine cartridges in feed order; detachable magazines own their own cartridges. */
   tube?: string[];
+  /** Top-up must not spend magazine capacity on the chamber's extracted round. */
+  retainedRoundType?: string | undefined;
+  actionOpen?: boolean;
   /** Ejected items awaiting their simulation-clock landings. */
   landings?: FirearmLanding[] | undefined;
   pendingCase?: PendingCase | undefined;
@@ -57,12 +62,15 @@ export interface FirearmState {
 
 /** No live state is advanced or cancelled by a snapshot. */
 export const snapshotFirearm = (state: FirearmState): FirearmState => {
-  const { chamber, cylinder, roundType, tube, landings, pendingCase, cycle, readying } = state;
+  const { chamber, cylinder, roundType, retainedRoundType, tube, actionOpen, landings, pendingCase, cycle, readying } =
+    state;
   return {
     ...(chamber === undefined ? {} : { chamber }),
     ...(cylinder === undefined ? {} : { cylinder: structuredClone(cylinder) }),
     ...(roundType === undefined ? {} : { roundType }),
     ...(tube === undefined ? {} : { tube: [...tube] }),
+    ...(retainedRoundType === undefined ? {} : { retainedRoundType }),
+    ...(actionOpen === undefined ? {} : { actionOpen }),
     ...(landings === undefined ? {} : { landings: structuredClone(landings) }),
     ...(pendingCase === undefined ? {} : { pendingCase: structuredClone(pendingCase) }),
     ...(cycle === undefined || cycle.mode === 'hand' ? {} : { cycle: structuredClone(cycle) }),
@@ -103,7 +111,9 @@ const assertCycleState = (cycle: FirearmCycleState | undefined): void => {
       cycle.elapsed < 0 ||
       (cycle.duration !== undefined && (!Number.isFinite(cycle.duration) || cycle.duration <= 0)) ||
       typeof cycle.ejected !== 'boolean' ||
-      (cycle.forwardSounded !== undefined && typeof cycle.forwardSounded !== 'boolean'))
+      (cycle.forwardSounded !== undefined && typeof cycle.forwardSounded !== 'boolean') ||
+      (cycle.phase !== undefined && (cycle.mode !== 'hand' || !['open', 'close'].includes(cycle.phase))) ||
+      (cycle.preserveRound !== undefined && (typeof cycle.preserveRound !== 'boolean' || cycle.phase !== 'open')))
   ) {
     throw new Error('Invalid firearm cycle');
   }
@@ -115,6 +125,7 @@ const assertCylinderState = (state: FirearmState): void => {
     state.chamber !== undefined ||
     state.roundType !== undefined ||
     state.tube !== undefined ||
+    state.retainedRoundType !== undefined ||
     state.pendingCase !== undefined ||
     state.cycle !== undefined
   ) {
@@ -145,6 +156,21 @@ const assertCylinderState = (state: FirearmState): void => {
   }
 };
 
+const assertOpenActionState = (state: FirearmState): void => {
+  if (
+    state.retainedRoundType !== undefined &&
+    (typeof state.retainedRoundType !== 'string' || !state.retainedRoundType || !state.actionOpen)
+  ) {
+    throw new Error('A retained round needs an open bolt');
+  }
+  if (state.actionOpen !== undefined && typeof state.actionOpen !== 'boolean') {
+    throw new Error('Invalid firearm action-open state');
+  }
+  if (state.actionOpen && state.chamber !== 'empty') {
+    throw new Error('An open action needs an empty chamber');
+  }
+};
+
 /** Coupled chamber/cycle constraints shared by direct inventory restore and save decoding. */
 export const assertFirearmState = (state: FirearmState): void => {
   const { cylinder } = state;
@@ -159,6 +185,7 @@ export const assertFirearmState = (state: FirearmState): void => {
   if ((state.roundType !== undefined) !== (state.chamber === 'round')) {
     throw new Error('A loaded chamber needs exactly one cartridge type');
   }
+  assertOpenActionState(state);
   assertFirearmExtras(state);
   const { cycle } = state;
   assertCycleState(cycle);

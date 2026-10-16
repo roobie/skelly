@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Box3, Group, type Object3D, Vector3 } from 'three';
+import { Box3, Group, type Object3D, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import firearmContent from '../src/content/base/models-firearms.json' with { type: 'json' };
@@ -13,6 +13,7 @@ import {
   magazineMotion,
   poseActionParts,
   sampleActionStroke,
+  sampleActionTurn,
 } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
 
@@ -24,6 +25,52 @@ const load = (model: ModelDef = ar) => {
 };
 
 describe('exported firearm presentation', () => {
+  it('turns the exported bolt knob before drawing it by the exported stroke and resets from rest', async () => {
+    const bolt = firearmContent.models.find(
+      (candidate) => 'action' in candidate && Object.values(candidate.action.parts).some((part) => 'turn' in part),
+    ) as ModelDef;
+    const action = bolt.action!;
+    const gltf = await load(bolt);
+    const paths = actionPartPaths(gltf.scene, action, gltf.parser);
+    const clone = cloneHeldModel(prepareModel(bolt, gltf.scene).held, paths);
+    const knob = clone.parts.find((part) => part.id === 'knob')!;
+    expect(knob).toBeDefined();
+    clone.root.updateMatrixWorld(true);
+    const scene = clone.root.children[0]!.children[0]!.children[0]!;
+    const rest = scene.worldToLocal(knob.node.getWorldPosition(new Vector3()));
+    const definition = action.parts.knob!;
+    const rotation = new Quaternion().setFromAxisAngle(
+      new Vector3(...definition.turn!.axis),
+      definition.turn!.angleRadians,
+    );
+    const turned = rest
+      .clone()
+      .sub(new Vector3(...definition.turn!.pivot))
+      .applyQuaternion(rotation)
+      .add(new Vector3(...definition.turn!.pivot));
+    expect(turned.distanceTo(rest)).toBeGreaterThan(0);
+    const unlock = action.hand.unlockSimSeconds!;
+    for (const [time, stroke] of [
+      [unlock, 0],
+      [unlock + action.hand.rearwardSimSeconds, 1],
+    ] as const) {
+      poseActionParts(
+        clone.parts,
+        'hand',
+        sampleActionStroke(action, 'hand', time),
+        sampleActionTurn(action, 'hand', time),
+      );
+      clone.root.updateMatrixWorld(true);
+      const actual = scene.worldToLocal(knob.node.getWorldPosition(new Vector3()));
+      const expected = turned
+        .clone()
+        .addScaledVector(new Vector3(...definition.axis), definition.strokeMetres * stroke);
+      expect(actual.distanceTo(expected)).toBeCloseTo(0, 8);
+    }
+    poseActionParts(clone.parts, undefined, 0);
+    expect(knob.node.position.equals(knob.rest)).toBe(true);
+    expect(knob.node.quaternion.angleTo(knob.restRotation)).toBeCloseTo(0);
+  });
   it('uses the actual AK rear-notch top as the ADS sight datum', async () => {
     const gltf = await load(ak);
     gltf.scene.updateMatrixWorld(true);

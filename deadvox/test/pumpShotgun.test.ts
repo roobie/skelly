@@ -40,7 +40,7 @@ const { registry, issues } = buildRegistry(
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
-const SHELL_LOAD_SECONDS = registry.items.get('pump_shotgun')!.firearm!.handling.shellLoadSimSeconds!;
+const SHELL_LOAD_SECONDS = registry.items.get('pump_shotgun')!.firearm!.roundLoadSimSeconds!;
 const shellType = 'shell_12_gauge_00_buck';
 const hullType = 'spent_case_12_h_gauge_h_00_h_buck';
 const pose = {

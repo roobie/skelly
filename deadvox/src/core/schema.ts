@@ -351,9 +351,10 @@ const RoundFeedPoseSchema = pipe(
 );
 export type RoundFeedPoseTuning = InferOutput<typeof RoundFeedPoseSchema>;
 
-// A pump feeds item-owned shells from its exported tube; other firearms feed from a fitted magazine (`magazineWellCalibre`).
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
+  bolt: optional(vBoolean()),
+  roundLoadSimSeconds: optional(PositiveSimSeconds),
   /** Shot presentation event; every firearm selects one, so a new gun needs no code edit. */
   shotSound: picklist(SOUND_EVENT_IDS),
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
@@ -380,8 +381,6 @@ const FirearmSchema = strictObject({
     }),
   ),
   handling: strictObject({
-    /** One shell into the tube; required for a pump. */
-    shellLoadSimSeconds: optional(PositiveSimSeconds),
     /** Taking the fitted magazine out and drawing one in; required for a magazine-fed gun. */
     magazine: optional(
       strictObject({

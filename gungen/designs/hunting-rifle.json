@@ -42,7 +42,7 @@
         "to": "front-sight.base"
       },
       {
-        "from": "receiver.rear-sight",
+        "from": "barrel.rear-sight",
         "to": "rear-sight.base"
       }
     ],
@@ -58,6 +58,7 @@
       "bolt-carrier": {
         "family": "bolt-carrier",
         "params": {
+          "handleProfile": "sporter",
           "pattern": "bolt"
         }
       },
@@ -70,6 +71,7 @@
       "front-sight": {
         "family": "front-sight",
         "params": {
+          "muzzleInsetRatio": "0.05",
           "style": "sporting"
         }
       },
@@ -87,7 +89,8 @@
         "family": "magazine",
         "params": {
           "integral": "yes",
-          "length": "S"
+          "length": "S",
+          "wellBody": "sporter"
         }
       },
       "rear-sight": {
@@ -98,12 +101,14 @@
         "params": {
           "action": "bolt",
           "bore": "M",
-          "feed": "top"
+          "feed": "top",
+          "section": "sporter"
         }
       },
       "stock": {
         "family": "stock",
         "params": {
+          "combDegrees": "2",
           "length": "M",
           "style": "sporting"
         }
