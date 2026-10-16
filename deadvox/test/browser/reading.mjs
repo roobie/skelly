@@ -437,6 +437,7 @@ try {
       Math.abs(sleepProgress.offset / sleepProgress.circumference - (1 - sleepProgress.percent / 100)) < 0.001,
       'sleep onset ring follows simulation-owned progress',
     );
+    await page.screenshot({ path: resolve(artifacts, 'sleep-onset-ring.png') });
     await page.waitForFunction((uid) => {
       const { session } = globalThis.readingWitness;
       return (
