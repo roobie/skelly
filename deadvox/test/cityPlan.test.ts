@@ -224,17 +224,17 @@ describe('one finished city plan', () => {
 
     // Each case builds the whole city and certifies it again, though only the population differs. Zero and two cover
     // "none" and "distinct streets"; the bundled single horde is already asserted above.
-    const HORDE_CASES = [0, 2];
+    const hordeCases = [0, 2];
     it(
       'places exactly the horde count the scenario asks for, on different streets',
       () => {
-        for (const hordes of HORDE_CASES) {
+        for (const hordes of hordeCases) {
           const placed = populationOf({ hordes }).hordes;
           expect(placed).toHaveLength(hordes);
           expect(new Set(placed.map(({ id }) => id)).size).toBe(hordes);
         }
       },
-      HORDE_CASES.length * GAUNTLET_SITE_MS,
+      hordeCases.length * GAUNTLET_SITE_MS,
     );
 
     it('adds more stragglers when the scenario asks for extras', () => {
