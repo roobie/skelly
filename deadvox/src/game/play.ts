@@ -739,7 +739,7 @@ export const startPlay = (
       return undefined;
     }
     const action = selectPrimaryAction(inventory);
-    if (throwingStance || action.kind !== 'firearm' || registry.items.get(action.item.type)?.firearm?.pump) {
+    if (throwingStance || action.kind !== 'firearm' || !firearmHandlingFor(action.item, registry).action.fire) {
       return undefined;
     }
     return action.item;
@@ -820,7 +820,7 @@ export const startPlay = (
           if (
             !(
               debugTools?.buildOn ||
-              (action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
+              (action.kind === 'firearm' && firearmHandlingFor(action.item, registry).action.fire !== undefined)
             )
           ) {
             performHandUse(dominantSide(inventory.character));

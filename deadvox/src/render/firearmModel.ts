@@ -1,25 +1,31 @@
 // glTF names belong to the parser, not Object3D.name (Three.js sanitizes colons).
 // Child-index paths carry the association into independent held clones without name lookup.
-import { Matrix4, type Object3D, Vector3 } from 'three';
+import { Matrix4, type Object3D, Quaternion, Vector3 } from 'three';
 import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef } from '../core/content.ts';
 import { actionCycleSeconds, type FirearmAction, type FirearmMode } from '../core/firearmAction.ts';
+import type { FirearmCycleState } from '../core/firearmState.ts';
 import { heldAnchorOffset } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 
 export type { FirearmAction, FirearmMode } from '../core/firearmAction.ts';
 
 export interface ActionPartPath {
+  readonly id: string;
   readonly path: readonly number[];
   readonly nodeIndex: number;
   readonly modes: readonly FirearmMode[];
   /** Travel in the node parent's local frame, including the exported stroke length. */
   readonly travel: Vector3;
+  readonly turn?: { readonly pivot: Vector3; readonly axis: Vector3; readonly angleRadians: number };
 }
 
 export interface HeldActionPart {
+  readonly id: string;
   readonly node: Object3D;
   readonly rest: Vector3;
+  readonly restRotation: Quaternion;
+  readonly turn?: { readonly pivot: Vector3; readonly axis: Vector3; readonly angleRadians: number };
   readonly travel: Vector3;
   readonly modes: readonly FirearmMode[];
   readonly nodeIndex: number;
@@ -58,7 +64,7 @@ export const actionPartPaths = (
   }
   scene.updateMatrixWorld(true);
   const names = parser.json.nodes as readonly { name?: string }[];
-  return Object.values(action.parts).map((part) => {
+  return Object.entries(action.parts).map(([id, part]) => {
     const matches = names.flatMap((definition, index) => (definition.name === part.node ? [index] : []));
     if (matches.length !== 1) {
       throw new Error(`Action node ${part.node} needs exactly one glTF node`);
@@ -92,7 +98,14 @@ export const actionPartPaths = (
       current = parent;
     }
     // prepareModel's held → turned → offset → cloned scene wrappers.
-    return { path: [0, 0, 0, ...path], nodeIndex, modes: part.modes, travel };
+    const turn = part.turn
+      ? {
+          pivot: new Vector3(...part.turn.pivot).applyMatrix4(parentFromModel),
+          axis: new Vector3(...part.turn.axis).transformDirection(parentFromModel),
+          angleRadians: part.turn.angleRadians,
+        }
+      : undefined;
+    return { id, path: [0, 0, 0, ...path], nodeIndex, modes: part.modes, travel, ...(turn ? { turn } : {}) };
   });
 };
 
@@ -107,7 +120,7 @@ export const cloneHeldModel = (prepared: Object3D, paths: readonly ActionPartPat
       }
       node = child;
     }
-    return { ...part, node, rest: node.position.clone() };
+    return { ...part, node, rest: node.position.clone(), restRotation: node.quaternion.clone() };
   });
   return { root, parts };
 };
@@ -125,8 +138,11 @@ export const sampleActionStroke = (
   }
   const baseDuration = actionCycleSeconds(action, mode);
   const effectiveDuration = duration ?? baseDuration;
-  const time = (elapsed * cycle.durationSimSeconds) / effectiveDuration;
+  const time = (elapsed * cycle.durationSimSeconds) / effectiveDuration - (cycle.unlockSimSeconds ?? 0);
   if (elapsed < 0 || elapsed >= effectiveDuration) {
+    return 0;
+  }
+  if (time <= 0) {
     return 0;
   }
   if (time < cycle.rearwardSimSeconds) {
@@ -137,6 +153,47 @@ export const sampleActionStroke = (
     return 1;
   }
   return Math.max(0, 1 - (time - returnAt) / cycle.forwardSimSeconds);
+};
+
+export const sampleActionTurn = (
+  action: FirearmAction,
+  mode: FirearmMode,
+  elapsed: number,
+  duration?: number,
+): number => {
+  const cycle = action[mode];
+  if (
+    !(cycle?.unlockSimSeconds && cycle.lockSimSeconds) ||
+    elapsed < 0 ||
+    elapsed >= (duration ?? actionCycleSeconds(action, mode))
+  ) {
+    return 0;
+  }
+  const time = (elapsed * cycle.durationSimSeconds) / (duration ?? actionCycleSeconds(action, mode));
+  const lockAt = cycle.unlockSimSeconds + cycle.rearwardSimSeconds + cycle.dwellSimSeconds + cycle.forwardSimSeconds;
+  return Math.max(0, Math.min(1, time / cycle.unlockSimSeconds, 1 - (time - lockAt) / cycle.lockSimSeconds));
+};
+
+export const sampleActionPose = (
+  action: FirearmAction,
+  frame:
+    | (Pick<FirearmCycleState, 'elapsed' | 'duration'> & {
+        mode: FirearmMode | 'load' | 'magazine';
+        actionOpen?: boolean;
+      })
+    | undefined,
+): { mode: FirearmMode | undefined; stroke: number; turn: number } => {
+  if (frame?.actionOpen) {
+    return { mode: 'hand', stroke: 1, turn: 1 };
+  }
+  if (frame?.mode === 'fire' || frame?.mode === 'hand') {
+    return {
+      mode: frame.mode,
+      stroke: sampleActionStroke(action, frame.mode, frame.elapsed, frame.duration),
+      turn: sampleActionTurn(action, frame.mode, frame.elapsed, frame.duration),
+    };
+  }
+  return { mode: undefined, stroke: 0, turn: 0 };
 };
 
 const smooth = (value: number): number => value * value * (3 - 2 * value);
@@ -240,10 +297,17 @@ export const poseActionParts = (
   parts: readonly HeldActionPart[],
   mode: FirearmMode | undefined,
   stroke: number,
+  turn = 0,
 ): void => {
   for (const part of parts) {
     part.node.position.copy(part.rest);
+    part.node.quaternion.copy(part.restRotation);
     if (mode && part.modes.includes(mode)) {
+      if (part.turn) {
+        const rotation = new Quaternion().setFromAxisAngle(part.turn.axis, part.turn.angleRadians * turn);
+        part.node.position.sub(part.turn.pivot).applyQuaternion(rotation).add(part.turn.pivot);
+        part.node.quaternion.premultiply(rotation);
+      }
       part.node.position.addScaledVector(part.travel, stroke);
     }
   }

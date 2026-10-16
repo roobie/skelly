@@ -38,7 +38,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.unpack.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.ammo.loadSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.ammo.stripSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
-  { path: 'items.firearm.handling.shellLoadSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'items.firearm.roundLoadSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.firearm.handling.magazine.removeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.firearm.handling.magazine.insertSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.light.burnTimeGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },

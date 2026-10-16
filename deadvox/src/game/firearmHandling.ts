@@ -6,7 +6,7 @@ import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
-import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
+import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../core/firearmAttachments.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
 import {
@@ -25,7 +25,7 @@ import { defOf, type Item } from '../core/items.ts';
 import { settleOnWorld } from '../core/itemThrow.ts';
 import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
-import { type dropTarget, stowTarget } from '../core/options.ts';
+import { type dropTarget, playerPockets, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
@@ -40,10 +40,12 @@ const CASE_FLIGHT_SECONDS = 0.48;
 const COCK_ACTION = 'firearm.cock';
 const LOAD_ACTION = 'firearm.load';
 const MAGAZINE_ACTION = 'firearm.magazine';
+const STRIP_ACTION = 'firearm.strip';
 const TRAINING_ACTIONS: ReadonlySet<string> = new Set([
   COCK_ACTION,
   LOAD_ACTION,
   MAGAZINE_ACTION,
+  STRIP_ACTION,
   MAGAZINE_LOAD_ACTION,
 ]);
 export const isFirearmTrainingAction = (job: Job): boolean =>
@@ -224,6 +226,7 @@ export interface FirearmCycleFrame {
   readonly elapsed: number;
   readonly duration?: number;
   readonly roundType?: string;
+  readonly actionOpen?: boolean;
   /** A magazine job: the share of it spent taking the fitted magazine out, and the model of the one going in. */
   readonly magazine?: { readonly removeShare: number; readonly incoming?: string };
 }
@@ -243,6 +246,7 @@ interface CaseLanding {
 export class FirearmMechanics {
   /** Numeric ownership references only. Chamber/cycle data lives on the inventory item. */
   private readonly active = new Set<number>();
+  private observedAtSimSeconds = 0;
   private readonly raising = new Set<number>();
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
@@ -350,19 +354,42 @@ export class FirearmMechanics {
       const gun = typeof params.uid === 'number' ? inventory.itemByUid(params.uid) : undefined;
       const ammo = typeof params.ammoUid === 'number' ? inventory.itemByUid(params.ammoUid) : undefined;
       if (!(gun && ammo && this.held(gun.uid))) {
-        return 'Shotgun or shell is no longer held/carried';
+        return 'I no longer have the gun or ammunition';
       }
       const reason = this.loadReason(ammo, true);
       if (reason) {
         return reason;
       }
       if (!inventory.consume(ammo, 1)) {
-        return 'Shell is no longer carried';
+        return 'I no longer have that round';
       }
       gun.firearm!.tube!.push(ammo.type);
       return undefined;
     });
     queue.registerAction(MAGAZINE_ACTION, (params) => this.completeMagazineChange(params.uid, params.magazineUid));
+    queue.registerAction(STRIP_ACTION, (params): string | undefined => {
+      const gun = typeof params.uid === 'number' ? inventory.itemByUid(params.uid) : undefined;
+      const type = gun?.firearm?.tube?.[0];
+      if (!(gun && type && this.held(gun.uid) && gun.firearm?.actionOpen)) {
+        return 'I cannot reach a round';
+      }
+      const round = inventory.create(type);
+      const destination = playerPockets(inventory).find(
+        ({ owner, pocket }) => inventory.planAdd(round, { kind: 'pocket', owner, pocket }).ok,
+      );
+      const placed =
+        destination &&
+        inventory.add(round, {
+          kind: 'pocket',
+          owner: destination.owner,
+          pocket: destination.pocket,
+        });
+      if (!placed) {
+        return 'I have no room for that round';
+      }
+      gun.firearm.tube!.shift();
+      return undefined;
+    });
   }
 
   private held(uid: number): boolean {
@@ -379,7 +406,7 @@ export class FirearmMechanics {
     if (!item) {
       return 'Firearm is no longer carried';
     }
-    const pump = this.isPump(item);
+    const pump = this.isIntegral(item);
     const reason = exportedActionReason(item, this.inventory.registry, pump ? 'hand' : 'fire');
     if (reason) {
       return reason;
@@ -390,6 +417,9 @@ export class FirearmMechanics {
     // Automatic motion will feed before the next cadence deadline. fire() rejects overlapping cycles;
     // only an idle empty chamber is a persistent refusal that should stop that cadence.
     const state = item.firearm;
+    if (state?.actionOpen) {
+      return 'The bolt is open';
+    }
     if (state?.cycle || state?.chamber === 'round') {
       return;
     }
@@ -543,7 +573,7 @@ export class FirearmMechanics {
   }
 
   fire(input: FirearmShotInput): boolean {
-    const pump = this.isPump(input.item);
+    const pump = this.isIntegral(input.item);
     if (!input.ready || input.sprinting || !this.held(input.item.uid) || this.queue.busy) {
       return false;
     }
@@ -608,7 +638,11 @@ export class FirearmMechanics {
     state.chamber = 'case';
     state.roundType = undefined;
     state.pendingCase = { ...emission, seed };
-    const pellets = pelletShotFromBasis({ ammo, origin: shotOrigin, basis: shotBasis, seed: input.seed, key: shotKey });
+    const pellets = this.isPump(item)
+      ? pelletShotFromBasis({ ammo, origin: shotOrigin, basis: shotBasis, seed: input.seed, key: shotKey })
+      : projectileShot(ammo, shotOrigin, [
+          coneDirection(shotBasis, data.dispersionRadians, Rng.stream(input.seed, `firearm-dispersion:${shotKey}`)),
+        ]);
     this.onShot(pellets, input.simTime, item);
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: pellets.directions }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
@@ -693,8 +727,21 @@ export class FirearmMechanics {
     return defOf(this.inventory.registry, item.type).firearm?.pump === true;
   }
 
+  private isBolt(item: Item): boolean {
+    return defOf(this.inventory.registry, item.type).firearm?.bolt === true;
+  }
+
+  private isIntegral(item: Item): boolean {
+    return this.isPump(item) || this.isBolt(item);
+  }
+
   private heldPump(): Item | undefined {
-    return Object.values(this.inventory.hands).find((item) => item && this.isPump(item));
+    return Object.values(this.inventory.hands).find((item) => item && this.isIntegral(item));
+  }
+
+  unloadsByRacking(uid: number): boolean {
+    const gun = this.inventory.itemByUid(uid);
+    return gun !== undefined && this.isPump(gun);
   }
 
   private carried(item: Item): boolean {
@@ -715,7 +762,7 @@ export class FirearmMechanics {
     return (this.heldPump() ?? this.heldMagazineFed())?.uid;
   }
 
-  /** A magazine change takes one press; a pump loads one shell per press-and-hold step. */
+  /** A magazine change takes one press; integral magazines load one round per hold step. */
   reloadsInOneAction(uid: number): boolean {
     return this.heldMagazineFed()?.uid === uid;
   }
@@ -745,25 +792,48 @@ export class FirearmMechanics {
       .map(({ item }) => item)
       .filter((item) => this.carried(item) && ammoMatchesCalibre(item.type, calibre, this.inventory.registry))
       .sort((a, b) => a.uid - b.uid);
-    return shell ? this.load(shell, time) : 'No loose compatible shells are carried';
+    if (
+      !shell ||
+      (gun.firearm?.tube?.length ?? 0) >=
+        firearmHandlingFor(gun, this.inventory.registry).model.internalMagazine!.capacity
+    ) {
+      if (this.isBolt(gun) && gun.firearm?.actionOpen) {
+        this.cock(gun.uid, time);
+      }
+      return shell ? 'The magazine is full' : 'I have no matching loose rounds';
+    }
+    return this.load(shell, time);
   }
 
   cancelLoad(uid: number): void {
     const job = this.queue.jobs.find(
       (entry) => entry.kind === 'action' && entry.jobType === LOAD_ACTION && entry.params.uid === uid,
     );
+    const gun = this.inventory.itemByUid(uid);
     if (job) {
       this.queue.cancelJob(job);
+      if (gun && this.isBolt(gun) && gun.firearm?.cycle?.phase === 'open') {
+        const opening = this.queue.jobs.find(
+          (entry) => entry.kind === 'action' && entry.jobType === COCK_ACTION && entry.params.uid === uid,
+        );
+        if (opening) {
+          this.queue.cancelJob(opening);
+        }
+        gun.firearm.cycle = undefined;
+        this.retire(gun);
+      }
+    } else if (gun && this.isBolt(gun) && gun.firearm?.actionOpen && !gun.firearm.cycle) {
+      this.cock(uid, this.observedAtSimSeconds);
     }
   }
 
   loadReason(ammo: Item, completing = false): string | undefined {
     const gun = this.heldPump();
     if (!gun) {
-      return 'Hold a pump shotgun first';
+      return 'I am not holding an integral-magazine gun';
     }
     if (!(this.inventory.itemByUid(ammo.uid) === ammo && this.carried(ammo))) {
-      return 'Carry the shells first';
+      return 'I do not have those rounds';
     }
     if ((!completing && this.queue.busy) || gun.firearm?.cycle) {
       return 'Already handling something';
@@ -779,7 +849,10 @@ export class FirearmMechanics {
     if (!ammoMatchesCalibre(ammo.type, data.calibre, this.inventory.registry)) {
       return 'Wrong ammunition';
     }
-    return (gun.firearm?.tube?.length ?? 0) >= data.model.internalMagazine.capacity ? 'Tube is full' : undefined;
+    const returning = this.isBolt(gun) && !gun.firearm?.actionOpen && gun.firearm?.chamber === 'round' ? 1 : 0;
+    return (gun.firearm?.tube?.length ?? 0) + returning >= data.model.internalMagazine.capacity
+      ? 'The magazine is full'
+      : undefined;
   }
 
   load(ammo: Item, time: number): string | undefined {
@@ -788,11 +861,13 @@ export class FirearmMechanics {
       return reason;
     }
     const gun = this.heldPump()!;
+    if (this.isBolt(gun) && !gun.firearm?.actionOpen) {
+      this.startHandCycle(gun, time, 'open', true);
+    }
     this.queue.enqueueAction(
       LOAD_ACTION,
-      `Load shell ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.internalMagazine!.capacity}`,
-      defOf(this.inventory.registry, gun.type).firearm!.handling.shellLoadSimSeconds! *
-        this.handlingFactor('reloadDuration'),
+      `Load round ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.internalMagazine!.capacity}`,
+      defOf(this.inventory.registry, gun.type).firearm!.roundLoadSimSeconds! * this.handlingFactor('reloadDuration'),
       { uid: gun.uid, ammoUid: ammo.uid },
     );
     this.onSound('shotgun_insert', undefined, time);
@@ -817,6 +892,24 @@ export class FirearmMechanics {
 
   /** Takes the fitted magazine out to a pocket or the ground: tap, then hold R (`CONTROLS.md`, "Reload, rack, remove"). */
   removeMagazine(uid: number, time: number): string | undefined {
+    const integral = this.heldPump();
+    if (integral?.uid === uid && this.isBolt(integral)) {
+      if (this.queue.busy || integral.firearm?.cycle) {
+        return 'My hands are busy';
+      }
+      if (!integral.firearm?.actionOpen) {
+        this.startHandCycle(integral, time, 'open');
+      }
+      for (const type of integral.firearm!.tube!) {
+        this.queue.enqueueAction(
+          STRIP_ACTION,
+          'Remove round',
+          defOf(this.inventory.registry, type).ammo!.stripSimSeconds * this.handlingFactor('reloadDuration'),
+          { uid },
+        );
+      }
+      return undefined;
+    }
     const gun = this.heldMagazineFed();
     if (gun?.uid !== uid) {
       return 'This firearm has no magazine to remove';
@@ -925,8 +1018,15 @@ export class FirearmMechanics {
         `Magazine: ${spec ? `${magazine.cartridges!.length}/${spec.capacity}` : 'none'}`,
       ];
     }
-    if (!this.isPump(item)) {
+    if (!this.isIntegral(item)) {
       return [];
+    }
+    if (this.isBolt(item)) {
+      return [
+        `Bolt: ${item.firearm?.actionOpen ? 'open' : 'closed'}`,
+        `Chamber: ${this.chamberWords(item)}`,
+        `Magazine: ${item.firearm?.tube?.length ?? 0}/${firearmHandlingFor(item, this.inventory.registry).model.internalMagazine!.capacity}`,
+      ];
     }
     const state = item.firearm!;
     return [
@@ -949,11 +1049,26 @@ export class FirearmMechanics {
       return reason;
     }
     const item = this.inventory.itemByUid(uid)!;
+    this.startHandCycle(item, time, this.isBolt(item) && item.firearm?.actionOpen ? 'close' : undefined);
+    return undefined;
+  }
+
+  private startHandCycle(item: Item, time: number, phase?: 'open' | 'close', preserveRound = false): void {
+    const { uid } = item;
     const data = firearmHandlingFor(item, this.inventory.registry);
     const pump = this.isPump(item);
     const state: FirearmState = item.firearm ?? { chamber: 'empty' };
-    const duration = actionCycleSeconds(data.action, 'hand') * this.handlingFactor('rackDuration');
-    state.cycle = { mode: 'hand', startedAt: time, elapsed: 0, duration, ejected: false };
+    const baseDuration = actionPhaseSeconds(data.action, 'hand', phase);
+    const duration = baseDuration * this.handlingFactor('rackDuration');
+    state.cycle = {
+      mode: 'hand',
+      startedAt: time,
+      elapsed: 0,
+      duration,
+      ejected: phase === 'close',
+      ...(phase ? { phase } : {}),
+      ...(preserveRound ? { preserveRound } : {}),
+    };
     item.firearm = state;
     this.active.add(uid);
     this.queue.enqueueAction(
@@ -963,7 +1078,6 @@ export class FirearmMechanics {
       { uid },
     );
     this.onSound(pump ? 'shotgun_rack_back' : 'rifle_charge', undefined, time);
-    return undefined;
   }
 
   pauseTo(time: number): void {
@@ -977,6 +1091,7 @@ export class FirearmMechanics {
   }
 
   advanceTo(time: number): void {
+    this.observedAtSimSeconds = time;
     for (const uid of this.active) {
       this.advanceItem(uid, time);
     }
@@ -1066,16 +1181,14 @@ export class FirearmMechanics {
       const item = this.inventory.itemByUid(uid);
       const cycle = item?.firearm?.cycle;
       if (item && cycle) {
-        return [
-          {
-            uid,
-            mode: cycle.mode,
-            elapsed: cycle.elapsed,
-            duration:
-              cycle.duration ??
-              actionCycleSeconds(firearmHandlingFor(item, this.inventory.registry).action, cycle.mode),
-          },
-        ];
+        return [this.actionFrame(item, cycle)];
+      }
+      if (item?.firearm?.actionOpen) {
+        const job = this.jobFrame(item);
+        if (job.length > 0) {
+          return job;
+        }
+        return [this.actionFrame(item)];
       }
       return item ? this.jobFrame(item) : [];
     });
@@ -1087,7 +1200,12 @@ export class FirearmMechanics {
     if (!(job?.kind === 'action' && job.params.uid === gun.uid)) {
       return [];
     }
-    const clock = { uid: gun.uid, elapsed: job.elapsed, duration: job.duration };
+    const clock = {
+      uid: gun.uid,
+      elapsed: job.elapsed,
+      duration: job.duration,
+      actionOpen: gun.firearm?.actionOpen ?? false,
+    };
     if (job.jobType === MAGAZINE_ACTION) {
       return [{ ...clock, mode: 'magazine', magazine: this.magazineMotion(gun, job.params.magazineUid) }];
     }
@@ -1098,6 +1216,21 @@ export class FirearmMechanics {
     return ammo ? [{ ...clock, mode: 'load', roundType: ammo.type }] : [];
   }
 
+  private actionFrame(item: Item, cycle?: FirearmCycleState): FirearmCycleFrame {
+    const { action } = firearmHandlingFor(item, this.inventory.registry);
+    const mode = cycle?.mode ?? 'hand';
+    const full = actionCycleSeconds(action, mode);
+    const base = actionPhaseSeconds(action, mode, cycle?.phase);
+    const scale = (cycle?.duration ?? base) / base;
+    const offset = !cycle || cycle.phase === 'close' ? actionOpenSeconds(action) * scale : 0;
+    return {
+      uid: item.uid,
+      mode,
+      elapsed: (cycle?.elapsed ?? 0) + offset,
+      duration: full * scale,
+    };
+  }
+
   private advanceCycle(item: Item, elapsed: number): string | undefined {
     const state = item.firearm!;
     const { cycle } = state;
@@ -1106,7 +1239,8 @@ export class FirearmMechanics {
     }
     const data = firearmHandlingFor(item, this.inventory.registry);
     const duration = cycle.duration ?? actionCycleSeconds(data.action, cycle.mode);
-    const timeScale = duration / actionCycleSeconds(data.action, cycle.mode);
+    const base = actionPhaseSeconds(data.action, cycle.mode, cycle.phase);
+    const timeScale = duration / base;
     cycle.elapsed = Math.max(cycle.elapsed, elapsed);
     this.rackForwardCue(item, data, cycle, timeScale);
     if (!cycle.ejected && cycle.elapsed + 1e-9 >= ejectSeconds(data.action, cycle.mode) * timeScale) {
@@ -1115,9 +1249,17 @@ export class FirearmMechanics {
         return reason; // Revalidate before clearing ammo; a changed drop cannot lose it.
       }
       cycle.ejected = true;
+      if (this.isBolt(item)) {
+        state.actionOpen = true;
+      }
     }
     if (cycle.elapsed + 1e-9 >= duration) {
-      this.feed(item, state);
+      if (cycle.phase !== 'open') {
+        this.feed(item, state);
+        if (this.isBolt(item)) {
+          state.actionOpen = false;
+        }
+      }
       state.cycle = undefined;
       this.retire(item);
     }
@@ -1137,15 +1279,24 @@ export class FirearmMechanics {
       return this.ejectCase(item, state, data);
     }
     if (state.chamber === 'round' && state.roundType !== undefined) {
+      if (state.cycle?.preserveRound) {
+        if (!state.tube || state.tube.length >= data.model.internalMagazine!.capacity) {
+          return 'The magazine is full';
+        }
+        state.tube.unshift(state.roundType);
+        state.chamber = 'empty';
+        state.roundType = undefined;
+        return undefined;
+      }
       return this.ejectLive(item, state, data);
     }
     state.chamber = 'empty';
     return undefined;
   }
 
-  /** The action closes on the next round: the pump's tube, else the fitted magazine's top round. */
+  /** The action closes on the integral or fitted magazine's top round. */
   private feed(item: Item, state: FirearmState): void {
-    const source = this.isPump(item) ? state.tube : item.slots?.magazine?.cartridges;
+    const source = this.isIntegral(item) ? state.tube : item.slots?.magazine?.cartridges;
     state.roundType = source?.shift();
     state.chamber = state.roundType ? 'round' : 'empty';
   }
@@ -1283,7 +1434,8 @@ export class FirearmMechanics {
   private ejectionAt(state: FirearmState, data: FirearmHandlingData): number {
     const cycle = state.cycle!;
     const duration = cycle.duration ?? actionCycleSeconds(data.action, cycle.mode);
-    const timeScale = duration / actionCycleSeconds(data.action, cycle.mode);
+    const base = cycle.phase === 'open' ? actionOpenSeconds(data.action) : actionCycleSeconds(data.action, cycle.mode);
+    const timeScale = duration / base;
     return cycle.startedAt + ejectSeconds(data.action, cycle.mode) * timeScale;
   }
 

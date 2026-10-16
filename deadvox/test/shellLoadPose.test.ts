@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Group, Mesh, PerspectiveCamera, Vector3 } from 'three';
+import { Box3, Group, Mesh, type Object3D, PerspectiveCamera, Vector3 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -8,8 +9,9 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldAnchorOffset } from '../src/core/heldPose.ts';
 import { Inventory, SIDES } from '../src/core/inventory.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
+import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
+import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
 
 const base = 'src/content/base';
 const { registry, issues } = buildRegistry(
@@ -22,9 +24,61 @@ if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
 
-it('the physical support hand feeds a shell toward the port from the load job clock and resets without owning gameplay', () => {
+it('the firing hand follows the exported bolt knob rather than moving the support hand', async () => {
+  const rifle = [...registry.items.values()].find((item) => item.firearm?.bolt)!;
+  const model = registry.models.get(rifle.model!)!;
+  const bytes = readFileSync(`src/content/base/${model.file}`);
+  const gltf = await new GLTFLoader().parseAsync(
+    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    '',
+  );
+  const paths = actionPartPaths(gltf.scene, model.action, gltf.parser);
+  const prepared = prepareModel(model, gltf.scene);
+  for (const side of SIDES) {
+    const inventory = new Inventory(registry);
+    const gun = inventory.create(rifle.id);
+    expect(inventory.add(gun, { kind: 'hand', side })).toBe(true);
+    let knob: Object3D | undefined;
+    const models = {
+      version: 0,
+      heldLook: () => {
+        const clone = cloneHeldModel(prepared.held, paths);
+        knob = clone.parts.find((part) => part.id === 'knob')!.node;
+        return { ...clone, slots: {} };
+      },
+    } as unknown as ModelLibrary;
+    const held = new HeldItems(inventory, models, registry.figures.get('player')!.palette);
+    const queue = new HandlingQueue(inventory);
+    const mechanics = new FirearmMechanics(inventory, queue, {
+      blockSize: 0.5,
+      pose: () => undefined,
+      onEjection: () => undefined,
+    });
+    const camera = new PerspectiveCamera();
+    try {
+      held.update(camera, undefined, 0, { firearms: [] });
+      expect(mechanics.cock(gun.uid, 0)).toBeUndefined();
+      for (const dt of [model.action!.hand.unlockSimSeconds!, model.action!.hand.rearwardSimSeconds]) {
+        expect(queue.tick(dt).failed).toEqual([]);
+        mechanics.advanceTo(dt);
+        const before = inventory.snapshotState();
+        held.update(camera, undefined, 0, { firearms: mechanics.frames() });
+        expect(inventory.snapshotState()).toEqual(before);
+        const wrist = held.warmUpTarget.scene
+          .getObjectByName(`first-person-arm-${side}`)!
+          .getObjectByName('grip-anchor')!;
+        const centre = new Box3().setFromObject(knob!).getCenter(new Vector3());
+        expect(wrist.getWorldPosition(new Vector3()).distanceTo(centre)).toBeCloseTo(0, 7);
+      }
+    } finally {
+      held.dispose();
+    }
+  }
+});
+
+const loadPoseContent = (kind: 'pump' | 'bolt') => {
   const definitions = [...registry.items.values()];
-  const pump = definitions.find((definition) => definition.firearm?.pump && definition.model);
+  const pump = definitions.find((definition) => definition.firearm?.[kind] && definition.model);
   const sourceModel = pump?.model ? registry.models.get(pump.model) : undefined;
   const ammo = definitions.find((definition) => definition.ammo?.calibre === sourceModel?.calibre && definition.model);
   const carrier = definitions.find((definition) => definition.wearable?.slot === 'back' && definition.container);
@@ -38,7 +92,7 @@ it('the physical support hand feeds a shell toward the port from the load job cl
   model.roll = 0;
   model.hold = undefined;
   model.anchors = { ...model.anchors, support: [0.3, 0, 0] };
-  model.anchors.loading_port = [0, -0.03, 0];
+  model.anchors.loading_port = [0, kind === 'bolt' ? 0.03 : -0.03, 0];
   const content = {
     ...registry,
     models: new Map(registry.models).set(model.id, model),
@@ -47,7 +101,13 @@ it('the physical support hand feeds a shell toward the port from the load job cl
       .set('load-fixture-shell', { ...ammo, id: 'load-fixture-shell', size: [1, 1] as [number, number], weight: 0.03 })
       .set('load-fixture-carrier', { ...carrier, id: 'load-fixture-carrier' }),
   };
-  for (const holdingSide of SIDES) {
+  return { content, model, figure };
+};
+
+it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) => ({ kind, holdingSide }))))(
+  'the physical support hand feeds a $kind round for the $holdingSide slot from the job clock without owning gameplay',
+  ({ kind, holdingSide }) => {
+    const { content, model, figure } = loadPoseContent(kind);
     // A left-slot gun on a right-dominant actor distinguishes placement from role preference.
     const character = new Character(content);
     const inventory = new Inventory(content, undefined, undefined, character);
@@ -111,6 +171,10 @@ it('the physical support hand feeds a shell toward the port from the load job cl
       const rest = update();
       expect(rest.wrist.distanceTo(rest.port)).toBeGreaterThan(0);
       expect(mechanics.load(shells, 0)).toBeUndefined();
+      if (kind === 'bolt') {
+        expect(queue.tick(queue.jobs[0]!.duration).failed).toEqual([]);
+        expect(gun.firearm?.actionOpen).toBe(true);
+      }
       const { duration } = queue.jobs[0]!;
       expect(update().wrist.distanceTo(rest.wrist)).toBeCloseTo(0);
       queue.tick(duration / 2);
@@ -121,6 +185,10 @@ it('the physical support hand feeds a shell toward the port from the load job cl
       expect((scene.getObjectByName('load-gun-probe-mesh') as Mesh | undefined)?.receiveShadow).toBe(true);
       expect((scene.getObjectByName('load-shell-probe-mesh') as Mesh | undefined)?.receiveShadow).toBe(true);
       const shellPosition = shell!.getWorldPosition(new Vector3());
+      if (kind === 'bolt') {
+        const direction = new Vector3(1, 0, 0).transformDirection(shell!.matrixWorld);
+        expect(direction.dot(feeding.port.clone().sub(shellPosition).normalize())).toBeCloseTo(1);
+      }
       // Reprojection cannot advance the insertion or perturb an attached support arm.
       expect(update().wrist.distanceTo(feeding.wrist)).toBeCloseTo(0);
       queue.cancel();
@@ -152,5 +220,5 @@ it('the physical support hand feeds a shell toward the port from the load job cl
     } finally {
       held.dispose();
     }
-  }
-});
+  },
+);

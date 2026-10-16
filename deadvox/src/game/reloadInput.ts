@@ -50,6 +50,7 @@ export const reloadTarget = (
     readonly cock: (uid: number, time: number) => string | undefined;
     readonly removeMagazine: (uid: number, time: number) => string | undefined;
     readonly stillLoaded: (uid: number) => boolean;
+    readonly unloadsByRacking?: (uid: number) => boolean;
   },
   magazines: ReloadOwner,
 ): ReloadTarget | undefined => {
@@ -62,8 +63,9 @@ export const reloadTarget = (
       load: (time) => firearms.loadNext(gun, time),
       rack: (time) => firearms.cock(gun, time),
       remove: (time) => firearms.removeMagazine(gun, time),
-      // A magazine change is one action; only a gun loaded round by round unloads by racking.
-      ...(oneAction ? {} : { stillLoaded: () => firearms.stillLoaded(gun) }),
+      ...(oneAction || firearms.unloadsByRacking?.(gun) === false
+        ? {}
+        : { stillLoaded: () => firearms.stillLoaded(gun) }),
       cancelLoad: () => firearms.cancelLoad(gun),
     };
   }

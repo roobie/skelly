@@ -338,8 +338,8 @@ export class ItemFactory {
     if (def.container) {
       item.pockets = def.container.pockets.map(() => []);
     }
-    if (def.firearm?.pump) {
-      item.firearm = { chamber: 'empty', tube: [] };
+    if (def.firearm?.pump || def.firearm?.bolt) {
+      item.firearm = { chamber: 'empty', tube: [], ...(def.firearm.bolt ? { actionOpen: false } : {}) };
     }
     initializeFittedSlots(this, registry, item, def);
     if (magazineSpec(registry, type)) {
@@ -405,7 +405,10 @@ const assertMagazineFedChamber = (registry: Registry, type: string, state: Firea
 /** Content-coupled constraints checked when rebuilding items from a decoded snapshot. */
 const assertAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
   const def = defOf(registry, type);
-  if (!def.firearm?.pump) {
+  if ((state.actionOpen !== undefined || state.cycle?.phase !== undefined) && !def.firearm?.bolt) {
+    throw new Error('Action-open state needs a bolt firearm');
+  }
+  if (!(def.firearm?.pump || def.firearm?.bolt)) {
     assertMagazineFedChamber(registry, type, state);
     return;
   }
@@ -415,14 +418,14 @@ const assertAmmunition = (registry: Registry, type: string, state: FirearmState)
     state.tube.length > model.internalMagazine.capacity ||
     state.cycle?.mode === 'fire'
   ) {
-    throw new Error('Invalid exported pump tube state');
+    throw new Error('Invalid exported integral magazine state');
   }
   if ((state.chamber === 'round') !== (state.roundType !== undefined)) {
-    throw new Error('Pump chamber needs exactly one real cartridge');
+    throw new Error('Integral-magazine chamber needs exactly one real cartridge');
   }
   for (const round of [...state.tube, ...(state.roundType ? [state.roundType] : [])]) {
     if (defOf(registry, round).ammo?.calibre !== model.calibre) {
-      throw new Error('Pump ammunition calibre mismatch');
+      throw new Error('Integral-magazine ammunition calibre mismatch');
     }
   }
 };
