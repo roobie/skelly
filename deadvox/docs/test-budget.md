@@ -28,7 +28,7 @@ For production chunk-order checks, native deep equality avoids matcher traversal
 
 ## Base-registry fixtures
 
-Gameplay tests need validated content, not repeated admission of the same base pack during every file's import. Build that fixture once per run and deserialize a fresh object graph for each caller; do not share mutable registries or disable file isolation. See `test/baseRegistrySetup.ts`, `setup` and `test/baseRegistry.ts`, `baseRegistry`. The serialized fixture belongs to the run-owned temporary directory so concurrent runs cannot reuse stale content. Watch reruns rebuild it before tests execute.
+Gameplay tests need validated content, not repeated admission of the same base pack during every file's import. Build that fixture once per run and deserialize a fresh object graph for each caller; do not share mutable registries or disable file isolation. See `test/baseRegistrySetup.ts`, `setup` and `test/baseRegistry.ts`, `baseRegistry`. Run-owned temporary storage prevents concurrent runs from replacing each other's content or interrupting a snapshot read.
 
 Content-admission and overlay tests still build their own inputs. Fixture fidelity and nested mutation isolation are checked separately in `test/baseRegistry.test.ts`; no gameplay assertion is removed when a file switches fixture construction.
 
