@@ -3,6 +3,7 @@ read_if:
   - you're reviewing why the default Deadvox unit suite was reduced
   - you're revisiting a cut after a budget overrun or related defect
   - you're measuring suite growth between milestones
+  - you're changing content-scaling route or chunk-order test work
 ---
 
 # Default Deadvox unit-suite reductions
@@ -17,6 +18,12 @@ The suite keeps its worker policy and timeout rules; reductions target repeated 
 - Save/scheduler fixture reductions also retain `test/snapshot-continuation.test.ts`, "detects omission of simulation, world, scheduler, inventory, and audio state". These named tests protect the properties for which incidental full-world fixture coverage was removed.
 
 Revisit a cut only when an issue reports a related defect or suite overrun; restore the case that protects that property and link the trigger. Do not broaden fixtures or assert drifting content to compensate.
+
+## Content-scaling route checks
+
+Isolate city route alternatives so content additions do not accumulate into one timing failure and failures identify the affected alternative. See `test/cityKitRoutes.test.ts`, `cityAlternatives`.
+
+For production chunk-order checks, native deep equality avoids matcher traversal dominating generation and stamping without weakening full-data comparisons. A workload-scaled deadline avoids coupling content growth to a fixed allowance. See `test/scenarioCertificate.test.ts`, `stampProbeCells`.
 
 ## Milestone growth
 
