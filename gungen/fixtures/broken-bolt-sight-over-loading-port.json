@@ -1,7 +1,7 @@
 {
   "name": "broken-bolt-sight-over-loading-port",
   "description": "A compact optic's physical foot roofs the top-loading opening: it lacks receiver support and obstructs the loading footprint. Replacing only its type with lpvo-1-6x restores the valid paired-foot baseline.",
-  "expect": ["keep-out", "optic-mount-fit"],
+  "expect": ["connection-contact", "keep-out", "optic-mount-fit"],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "bolt", "feed": "top", "bore": "M" } },

@@ -173,7 +173,10 @@ class Certificate {
       .furnitureIn(toChunk(placement.origin[0]), toChunk(placement.origin[2]))
       .filter(
         (spawn) =>
-          this.site.registry.furniture.get(spawn.spec.type)?.readable &&
+          (this.site.registry.furniture.get(spawn.spec.type)?.readable ||
+            [...spawn.loot, ...(spawn.surfaceLoot ?? [])].some(
+              (item) => this.site.registry.items.get(item.type)?.readable,
+            )) &&
           spawn.spec.pos[0] >= placement.origin[0] &&
           spawn.spec.pos[0] < placement.origin[0] + placement.template.size[0] &&
           spawn.spec.pos[2] >= placement.origin[2] &&

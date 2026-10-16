@@ -15,16 +15,32 @@ local note = function(id, title, text) memo + {
   id: id, name: title, readable: { title: title, text: text },
 };
 local emptyLoot = { usage: [], tier: 'Tier1' };
+local paper = function(id, title, model, text) {
+  id: id, name: title, category: 'note', weight: 5, size: [1, 1],
+  model: model, economy: { usage: ['Industrial'], tiers: ['Tier1'] },
+  readable: { title: title, text: text },
+};
+local publicNotes = [
+  paper('gauntlet_public_memo', 'Maintenance route', 'paper_sheet', |||
+    The service store is on the block with the square raised water tank. Go around the low brick building to the rear apron. The two tall, narrow exhausts stand together there; the inspection hatch beside them opens onto the maintenance ladder. The office is not the basement access.
+
+    Square raised water tank → low brick store
+                               rear apron → paired exhausts → hatch
+  |||),
+  paper('gauntlet_public_directions', 'Delivery instructions', 'folded_note', |||
+    Deliver instruments to the low brick service store beside the yellow loading frame. Do not leave them at a utility cabinet or a lone duct riser. Walk around to the rear apron, find the pair of narrow exhausts, and use the inspection hatch beside them. The lid is unlocked; the ladder below reaches the intake floor. Return by the same hatch when the shift ends.
+  |||),
+];
 local utilities = [
   {
-    id: 'gauntlet_public_memo', size: [2, 3, 1], lootContext: emptyLoot,
-    palette: { '=': 'concrete', F: { furniture: 'gauntlet_public_memo' } },
-    layers: [['=='], ['FF'], ['FF']],
+    id: 'gauntlet_public_memo', size: [2, 3, 2], lootContext: { usage: ['Industrial'], tier: 'Tier1' },
+    palette: { '=': 'concrete', F: { furniture: 'crate', loot: 'd41_empty' } },
+    layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
-    id: 'gauntlet_public_directions', size: [2, 3, 1], lootContext: emptyLoot,
-    palette: { '=': 'concrete', F: { furniture: 'gauntlet_public_directions' } },
-    layers: [['=='], ['FF'], ['FF']],
+    id: 'gauntlet_public_directions', size: [2, 3, 2], lootContext: { usage: ['Industrial'], tier: 'Tier1' },
+    palette: { '=': 'concrete', F: { furniture: 'crate', loot: 'd41_empty' } },
+    layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
     id: 'gauntlet_water_tank', size: [6, 13, 6], lootContext: emptyLoot,
@@ -74,7 +90,7 @@ local utilities = [
   },
 ];
 {
-  items: types.items,
+  items: types.items + publicNotes,
   mapPools: kits.mapPools,
   blocks: tents.blocks + types.blocks,
   loot: types.loot + tents.loot,
@@ -95,15 +111,6 @@ local utilities = [
 
       Street → service building → rear apron
                                  paired exhausts → hatch
-    |||),
-    note('gauntlet_public_memo', 'Maintenance route', |||
-      The service store is on the block with the square raised water tank. Go around the low brick building to the rear apron. The two tall, narrow exhausts stand together there; the inspection hatch beside them opens onto the maintenance ladder. The office is not the basement access.
-
-      Square raised water tank → low brick store
-                                 rear apron → paired exhausts → hatch
-    |||),
-    note('gauntlet_public_directions', 'Delivery instructions', |||
-      Deliver instruments to the low brick service store beside the yellow loading frame. Do not leave them at a utility cabinet or a lone duct riser. Walk around to the rear apron, find the pair of narrow exhausts, and use the inspection hatch beside them. The lid is unlocked; the ladder below reaches the intake floor. Return by the same hatch when the shift ends.
     |||),
     {
       id: 'gauntlet_water_tank', name: 'Square raised water tank', size: [6, 12, 6], color: metal,

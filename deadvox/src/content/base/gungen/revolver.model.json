@@ -1,10 +1,7 @@
 {
   "id": "revolver",
   "file": "assets/models/revolver.glb",
-  "grip": {
-    "at": [-0.12075, -0.094875, 0],
-    "turn": [0, 0, 0]
-  },
+  "grip": { "at": [-0.12075, -0.094875, 0], "turn": [0, 0, 0] },
   "sight": {
     "kind": "iron",
     "eye": [-0.069, 0.020125, 0],
@@ -13,9 +10,7 @@
     "eyeReliefMetres": 0.046
   },
   "muzzleDirection": [1, 0, 4.898587196589413e-16],
-  "anchors": {
-    "muzzle": [0.12075, 0, 0]
-  },
+  "anchors": { "muzzle": [0.12075, 0, 0] },
   "calibre": "357-magnum",
   "revolver": {
     "chambers": 6,
@@ -60,8 +55,6 @@
       "up": [0, 1, 0]
     }
   ],
-  "compatibility": {
-    "barrel.muzzle.0": []
-  },
+  "compatibility": { "barrel.muzzle.0": [] },
   "compatibilityPairs": []
 }

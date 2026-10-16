@@ -63,7 +63,10 @@ const fixture = (
   const modelId = content.items.get('pump_shotgun')!.model!;
   const model = content.models.get(modelId)!;
   const capacity = 3;
-  const testContent = { ...content, models: new Map(content.models).set(modelId, { ...model, tube: { capacity } }) };
+  const testContent = {
+    ...content,
+    models: new Map(content.models).set(modelId, { ...model, internalMagazine: { capacity } }),
+  };
   const inventory = new Inventory(testContent);
   const gun = inventory.create('pump_shotgun');
   const bag = inventory.create('hiking_backpack');

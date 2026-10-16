@@ -54,6 +54,7 @@ const EXPLICIT_CASES: Readonly<Record<string, readonly Record<string, string>[]>
       boltHandleProfile: 'standard',
       rail: 'full',
       magazineWell: 'standard',
+      integral: 'no',
     },
   ],
 };

@@ -381,6 +381,16 @@ describe('content-owned city building types', () => {
     expect(scenarioPlanIssues(registry, scenario)).toContainEqual(['.city.pool', 'no map pool "no_such_pool"']);
   });
 
+  it('reports a service template whose decals exceed the scenario decal limit', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const limitIssues = (decalLimit: number) =>
+      [...registry.scenarios.values()].flatMap((scenario) =>
+        scenarioPlanIssues(registry, { ...scenario, decalLimit }).filter(([path]) => path === '.decalLimit'),
+      );
+    expect(limitIssues(0).length).toBeGreaterThan(0);
+    expect(limitIssues(1_000_000)).toEqual([]);
+  });
+
   it('reports a pool ref that names no building of its kind, or one that does not fit', () => {
     const scenario = fixtureScenario();
     const refAt = (kind: 'template' | 'assembly', id: string) => {

@@ -382,7 +382,7 @@
     },
     {
       "author": "Skelly contributors",
-      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps; no external asset source or texture is used.",
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps and loose and folded paper; no external asset source or texture is used.",
       "download": null,
       "files": [
         "assets/models/hand_saw.glb",
@@ -413,7 +413,9 @@
         "assets/models/scrap_foregrip.glb",
         "assets/models/hinge_set.glb",
         "assets/models/glass_bulb.glb",
-        "assets/models/glowstick.glb"
+        "assets/models/glowstick.glb",
+        "assets/models/paper_sheet.glb",
+        "assets/models/folded_note.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Project-built low-poly hand-tool and content stand-ins",
@@ -458,6 +460,42 @@
       "licence": "CC0-1.0",
       "title": "Gungen standalone firearm attachments",
       "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/attachmentExport.ts"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Original asset provenance data and its Jsonnet composition source.",
+      "download": null,
+      "files": ["assets/manifest.jsonnet", "assets/manifest.libsonnet"],
+      "licence": "CC0-1.0",
+      "title": "Project asset manifest sources",
+      "url": "https://github.com/roobie/skelly/tree/main/deadvox/src/content/base/assets"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Original model geometry generated through the Gungen export pipeline.",
+      "download": null,
+      "files": ["assets/models/rifle_hunting.glb"],
+      "licence": "CC0-1.0",
+      "title": "Gungen hunting rifle export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/hunting-rifle.json"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Original model geometry generated through the Gungen export pipeline.",
+      "download": null,
+      "files": ["assets/models/round-308_h_winchester.glb", "assets/models/case-308_h_winchester.glb"],
+      "licence": "CC0-1.0",
+      "title": "Gungen civilian .308 Winchester cartridge exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/308-winchester.json"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Original model geometry generated through the Gungen export pipeline.",
+      "download": null,
+      "files": ["assets/models/optic_hunting_3_9x.glb"],
+      "licence": "CC0-1.0",
+      "title": "Gungen hunting scope export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/optics.ts"
     },
     {
       "author": "Skelly contributors",

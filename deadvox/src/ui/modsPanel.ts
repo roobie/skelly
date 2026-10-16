@@ -1,9 +1,10 @@
 import { html, render } from 'lit-html';
-import { type BrowserMod, evaluateMods, MAX_MOD_BYTES } from '../game/browserMods.ts';
-import type { StartupContent } from '../game/bundledContent.ts';
+import { type BrowserMod, evaluateMods, MAX_MOD_BYTES, type ModEvaluation } from '../game/browserMods.ts';
+import { ModStorage } from '../game/modStorage.ts';
 import { factDetail } from './factDetail.ts';
 
 const httpUrl = /^https?:\/\//i;
+const sourceSequence = /^mod-(\d+)\//;
 
 export const readPaste = async (
   draft: string,
@@ -70,22 +71,41 @@ const readUpload = async (file: File): Promise<{ name: string; text: string; iss
 };
 
 // Meta: content selection precedes the world, so no world or bodily cue can replace it.
-export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
-  new Promise((resolve) => {
-    const mods: BrowserMod[] = [];
+export const chooseMods = async (root: HTMLElement, storage = new ModStorage()): Promise<ModEvaluation> => {
+  let initial: BrowserMod[] = [];
+  let storageFailed = false;
+  try {
+    initial = await storage.load();
+  } catch {
+    storageFailed = true;
+  }
+  return new Promise((resolve) => {
+    const mods: BrowserMod[] = initial;
     let draft = '';
-    let sequence = 0;
+    let sequence = mods.reduce((max, mod) => Math.max(max, Number(sourceSequence.exec(mod.source)?.[1]) || 0), 0);
     let busy = false;
     let uploadError = '';
     const add = (name: string, text: string) => {
       sequence += 1;
       mods.push({ source: `mod-${sequence}/${name}`, text, enabled: true });
     };
+    const update = async () => {
+      busy = true;
+      draw();
+      try {
+        await storage.save(mods);
+      } catch {
+        mods.splice(0);
+        storageFailed = true;
+      }
+      busy = false;
+      draw();
+    };
     const move = (index: number, offset: number) => {
       const target = index + offset;
       if (target >= 0 && target < mods.length) {
         [mods[index], mods[target]] = [mods[target]!, mods[index]!];
-        draw();
+        update();
       }
     };
     const upload = async (event: Event) => {
@@ -104,7 +124,7 @@ export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
       }
       busy = false;
       input.value = '';
-      draw();
+      await update();
     };
     const paste = async () => {
       if (!draft.trim() || busy) {
@@ -121,7 +141,7 @@ export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
         draft = '';
       }
       busy = false;
-      draw();
+      await update();
     };
     const draw = () => {
       const result = evaluateMods(mods);
@@ -129,14 +149,15 @@ export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
         html`
       <section class="mods-card" aria-label="Mods">
         <h1>Mods</h1>
-        <p>${factDetail('JSON files', `Later JSON files replace whole definitions with the same id; the limit is ${MAX_MOD_BYTES} bytes per file. This preview does not retain mods across reloads or check their identity against saves.`)}</p>
-        <label>JSON or URL<textarea aria-label="Mod JSON or URL" ?disabled=${busy} .value=${draft} @input=${(
+        <p>${factDetail('JSON files', `Later JSON files replace whole definitions with the same id; the limit is ${MAX_MOD_BYTES} bytes per file. Selections are stored in this browser; saves require the same enabled mods in the same order.`)}</p>
+        <pre role="alert">${storageFailed ? 'Mod storage unavailable · No mods loaded' : ''}</pre>
+        <label>JSON or URL<textarea aria-label="Mod JSON or URL" ?disabled=${busy || storageFailed} .value=${draft} @input=${(
           event: Event,
         ) => {
           draft = (event.currentTarget as HTMLTextAreaElement).value;
         }}></textarea></label>
-        <button type="button" ?disabled=${busy} @click=${paste}>Add</button>
-        <label>Upload .json<input type="file" accept=".json,application/json" multiple ?disabled=${busy} @change=${upload}></label>
+        <button type="button" ?disabled=${busy || storageFailed} @click=${paste}>Add</button>
+        <label>Upload .json<input type="file" accept=".json,application/json" multiple ?disabled=${busy || storageFailed} @change=${upload}></label>
         <pre role="alert">${uploadError}</pre>
         <pre role="alert">${[...result.issues]
           .filter(([source]) => !mods.some((mod) => mod.source === source))
@@ -147,13 +168,13 @@ export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
           <li data-mod-source=${mod.source}>
             <label><input type="checkbox" .checked=${mod.enabled} ?disabled=${busy} @change=${(event: Event) => {
               mod.enabled = (event.currentTarget as HTMLInputElement).checked;
-              draw();
+              update();
             }}>${mod.source}</label>
             <button type="button" aria-label=${`Move ${mod.source} up`} ?disabled=${busy || index === 0} @click=${() => move(index, -1)}>Up</button>
             <button type="button" aria-label=${`Move ${mod.source} down`} ?disabled=${busy || index === mods.length - 1} @click=${() => move(index, 1)}>Down</button>
             <button type="button" aria-label=${`Remove ${mod.source}`} ?disabled=${busy} @click=${() => {
               mods.splice(index, 1);
-              draw();
+              update();
             }}>Remove</button>
             <pre role="status">${(result.issues.get(mod.source) ?? []).map((issue) => `${issue.path}: ${issue.message}`).join('\n') || 'Valid'}</pre>
           </li>`,
@@ -163,7 +184,7 @@ export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
           const selected = evaluateMods(mods);
           if (!busy && selected.canStart) {
             root.hidden = true;
-            resolve(selected.content);
+            resolve(selected);
           }
         }}>Start</button>
       </section>`,
@@ -172,3 +193,4 @@ export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
     };
     draw();
   });
+};

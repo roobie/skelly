@@ -1,3 +1,4 @@
+import { deepStrictEqual } from 'node:assert/strict';
 import { describe, expect, it, vi } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import type { Chunk } from '../src/core/chunk.ts';
@@ -261,55 +262,63 @@ describe('final composed body-route certificate', () => {
   });
 });
 
-it('resolves production service ownership, furnished loot and terrain stamps independently of chunk request order', () => {
-  const first = siteOf();
-  const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile }));
-  const composition = first.plan.composition!;
-  const points = [
-    first.plan.portal!.upper,
-    first.plan.portal!.lower,
-    composition.objective,
-    ...composition.descents.flatMap(({ upper, lower, ladder }) => [upper, lower, ladder]),
-    ...composition.resources.map(({ at }) => at),
-  ];
-  const cells = new Map(
-    points.map((point) => {
+const stampProbePoints = [
+  base.portal!.upper,
+  base.portal!.lower,
+  base.composition!.objective,
+  ...base.composition!.descents.flatMap(({ upper, lower, ladder }) => [upper, lower, ladder]),
+  ...base.composition!.resources.map(({ at }) => at),
+];
+const stampProbeCells = [
+  ...new Map(
+    stampProbePoints.map((point) => {
       const cell = point.map(toChunk) as Vec3;
       return [cell.join(','), cell] as const;
     }),
-  );
-  expect(cells.size).toBeGreaterThan(1);
-  const service = first.plan.service!.template;
-  expect(service.provenance!.some((owner) => owner && owner.slotPath.split('/').length > 2)).toBe(true);
-  const selected = (site: CitySite) => ({
-    origin: site.plan.service!.origin,
-    turn: site.plan.service!.turn,
-    provenance: site.plan.service!.template.provenance,
-  });
-  const before = structuredClone(selected(first));
-  const request = (site: CitySite, order: readonly Vec3[]) => {
-    const terrain = {
-      seed: site.seed,
-      scale,
-      surface: site.surface,
-      blocks: sitePalette(registry).terrain,
+  ).values(),
+];
+
+it(
+  'resolves production service ownership, furnished loot and terrain stamps independently of chunk request order',
+  () => {
+    const first = siteOf();
+    const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile }));
+    expect(stampProbeCells.length).toBeGreaterThan(1);
+    const service = first.plan.service!.template;
+    expect(service.provenance!.some((owner) => owner && owner.slotPath.split('/').length > 2)).toBe(true);
+    const selected = (site: CitySite) => ({
+      origin: site.plan.service!.origin,
+      turn: site.plan.service!.turn,
+      provenance: site.plan.service!.template.provenance,
+    });
+    const before = structuredClone(selected(first));
+    const request = (site: CitySite, order: readonly Vec3[]) => {
+      const terrain = {
+        seed: site.seed,
+        scale,
+        surface: site.surface,
+        blocks: sitePalette(registry).terrain,
+      };
+      return new Map(
+        order.map((cell) => {
+          const chunk = generateChunk(terrain, cell);
+          site.stamp(chunk);
+          return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
+        }),
+      );
     };
-    return new Map(
-      order.map((cell) => {
-        const chunk = generateChunk(terrain, cell);
-        site.stamp(chunk);
-        return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
-      }),
-    );
-  };
-  const forward = request(first, [...cells.values()]);
-  const backward = request(second, [...cells.values()].reverse());
-  for (const key of cells.keys()) {
-    expect(backward.get(key)).toEqual(forward.get(key));
-  }
-  expect(selected(first)).toEqual(before);
-  expect(selected(second)).toEqual(before);
-});
+    const forward = request(first, stampProbeCells);
+    const backward = request(second, [...stampProbeCells].reverse());
+    // Native deep equality avoids matcher traversal overhead on dense chunk and provenance arrays.
+    for (const cell of stampProbeCells) {
+      const key = cell.join(',');
+      deepStrictEqual(backward.get(key), forward.get(key), `chunk ${key}`);
+    }
+    deepStrictEqual(selected(first), before, 'forward selection remains unchanged');
+    deepStrictEqual(selected(second), before, 'backward selection matches the original');
+  },
+  stampProbeCells.length * 2 * 1000,
+);
 
 it(
   'walks substituted rooms and closed lids, opens descents, returns alive and activates the objective from the goal-face save',

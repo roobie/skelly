@@ -391,6 +391,10 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
     const compiled = assembly
       ? compileAssembly(registry, assembly, { seed: 0, siteId: `scenario:${scenario.id}:service` })
       : compileTemplate(registry, template!);
+    const decals = compiled.decals?.length ?? 0;
+    if (decals > scenario.decalLimit) {
+      issues.push(['.decalLimit', `service template places ${decals} decals; the limit is ${scenario.decalLimit}`]);
+    }
     issues.push(...scenarioPortalIssues(registry, scenario, compiled));
     issues.push(...scenarioCompositionIssues(registry, scenario, compiled));
   } catch (error) {

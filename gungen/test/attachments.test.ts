@@ -646,7 +646,7 @@ describe('attachment parts and export metadata', () => {
   });
 
   it('tracks a fitted rail sight to its removable mount slot', () => {
-    const model = exported(design('archetype-ar-free-float'), 'ar_free_float');
+    const model = exported(design('archetype-ar-free-float'), 'ar_free_float', false);
     const fittedSight = model.modelEntry.attachments?.find(({ kind }) => kind === 'iron-sight');
     expect(fittedSight?.node).toBeTruthy();
     expect(
