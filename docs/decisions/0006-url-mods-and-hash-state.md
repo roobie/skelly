@@ -80,7 +80,7 @@ field, so it follows base edits without a second copy. A JSON mod loaded through
 cannot import, so it states the whole row; that cruder form is enough while browser mods
 are JSON.
 
-When browser loading of Jsonnet mods is built (issue #TBD), it must let a browser mod
+When browser loading of Jsonnet mods is built (issue #801), it must let a browser mod
 import the core sources, so a player's mod can override a single field of the start row,
 or of any definition, the way a demo mod does at build time. Whole-row replacement stays
 the merge rule; the import is what keeps a patch surgical.
