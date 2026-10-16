@@ -686,30 +686,8 @@
         },
         {
           "at": [4, 1, 6],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_roof_empty",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_roof_ac",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_roof_vent",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
           "id": "equipment",
+          "pool": "gauntlet_roof_equipment",
           "size": [4, 4, 4],
           "turn": 0
         }
@@ -18667,6 +18645,34 @@
       "ports": [],
       "size": [18, 8, 16],
       "style": "gauntlet_canvas"
+    }
+  ],
+  "mapPools": [
+    {
+      "choices": [
+        {
+          "ref": {
+            "id": "gauntlet_roof_empty",
+            "kind": "piece"
+          },
+          "weight": 3
+        },
+        {
+          "ref": {
+            "id": "gauntlet_roof_ac",
+            "kind": "piece"
+          },
+          "weight": 2
+        },
+        {
+          "ref": {
+            "id": "gauntlet_roof_vent",
+            "kind": "piece"
+          },
+          "weight": 1
+        }
+      ],
+      "id": "gauntlet_roof_equipment"
     }
   ],
   "mapStyles": [

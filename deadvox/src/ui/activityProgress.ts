@@ -48,7 +48,6 @@ export const activityProgress = ({
               style=${`--minimum-angle: ${minimumPercent * 3.6}deg`}
             ></span>`
       }
-      <span class="activity-progress-percent" aria-hidden="true">${progress}%</span>
     </div>
     <div class="activity-progress-copy">
       <strong>${label}</strong>

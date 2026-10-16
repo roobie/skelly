@@ -66,16 +66,18 @@ it('keeps every furniture disorder alternative clear of walls, furniture and doo
   expect(content.issues).toEqual([]);
   const { registry } = content;
   const assembly = registry.mapAssemblies.get('gauntlet_police_station')!;
-  const alternatives = assembly.slots.filter(({ choices }) => choices.length > 1);
+  const alternatives = assembly.slots.flatMap(({ choices }) => (choices && choices.length > 1 ? [choices] : []));
   expect(alternatives.length).toBeGreaterThan(0);
   // Each bay is disjoint and outside reserved circulation; cover each local pose without a seed sweep.
-  const variants = Math.max(...alternatives.map(({ choices }) => choices.length));
+  const variants = Math.max(...alternatives.map((choices) => choices.length));
   for (let variant = 0; variant < variants; variant++) {
     const station = compileAssembly(
       registry,
       {
         ...assembly,
-        slots: assembly.slots.map((slot) => ({ ...slot, choices: [slot.choices[variant % slot.choices.length]!] })),
+        slots: assembly.slots.map((slot) =>
+          slot.choices ? { ...slot, choices: [slot.choices[variant % slot.choices.length]!] } : slot,
+        ),
       },
       { seed: 1, siteId: 'police_contract' },
     );
@@ -93,7 +95,7 @@ it('keeps every furniture disorder alternative clear of walls, furniture and doo
     for (const furniture of ['desk', 'chair', 'bed', 'gauntlet_cell_bars', 'gauntlet_cell_door']) {
       expect(furnishings.has(furniture), furniture).toBe(true);
     }
-    const poseFurniture = alternatives.flatMap(({ choices }) => {
+    const poseFurniture = alternatives.flatMap((choices) => {
       const { ref } = choices[variant % choices.length]!;
       return compileMapPiece(registry, registry.mapPieces.get(ref.id)!).pieces.map(
         ({ furniture }) => registry.furniture.get(furniture)!,

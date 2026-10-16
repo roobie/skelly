@@ -317,7 +317,7 @@ const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
 const aroundPocketTemplate = (vm: PocketViewModel): TemplateResult => html`
   <div class="inv-pocket">
     <span class="inv-pocket-label">${vm.label}</span>
-    <div class="inv-grid-scroll">${gridTemplate(vm.grid)}</div>
+    ${gridTemplate(vm.grid)}
   </div>
 `;
 
@@ -411,7 +411,7 @@ const furnitureBodyTemplate = (
   return furniture.grids.map(
     (pocket) => html`
       ${pocket.label ? html`<span class="inv-pocket-label">${pocket.label}</span>` : nothing}
-      <div class="inv-grid-scroll">${gridTemplate(pocket.grid)}</div>
+      ${gridTemplate(pocket.grid)}
     `,
   );
 };
@@ -504,7 +504,7 @@ const inventoryTemplate = (
           (pile) => html`
           <div class="inv-around-section inv-around-floor" data-around-section="floor">
             <div class="inv-pile-label">${pile.label}</div>
-            ${pile.grids.map((grid) => html`<div class="inv-grid-scroll inv-floor-grid-scroll">${gridTemplate(grid)}</div>`)}
+            ${pile.grids.map(gridTemplate)}
           </div>
           ${pile.bags.map(
             (bag) => html`
