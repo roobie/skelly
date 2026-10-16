@@ -167,6 +167,12 @@ clock-ratio tuning does not retune content. See `src/core/time.ts`,
 `src/core/temporalFields.ts`, and the `lint:time` contract in
 `deadvox/tools/time-lint.mjs`.
 
+Advancing never moves Sim time back; only a seek can. A system tick may end up to the scheduler's epsilon
+past an advance's target, and a Game timestamp recorded inside that tick (a
+scenario completion) must still be at or before the calendar a save derives
+from the final Sim time; validation compares them exactly. See
+`src/core/scheduler.ts`, `Scheduler.advance`.
+
 Keep the custom time lint boundary current when simulation dependencies or
 field names change. Gungen's internal estimates are outside that lint; exported
 action metadata follows Deadvox's clock-and-unit contract. Persisted temporal
