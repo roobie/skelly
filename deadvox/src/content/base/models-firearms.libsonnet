@@ -1,3 +1,6 @@
+// Grounded in Crate Club's timed rifle reloads, which drop the old magazine:
+// https://crateclub.com/blogs/loadout/how-long-does-it-take-to-reload-an-assault-rifle
+// Changing a magazine here stows it instead, so skill 0 sits at the slow end.
 local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
 
 {
