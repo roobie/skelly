@@ -1768,6 +1768,18 @@ const SiteGenerationSchema = strictObject({
     openDensity: Fraction,
     obstacleMarginMetres: NonNegative,
   }),
+  // One palette shared by every site kind: terrain, paving, trees and litter are block ids.
+  palette: strictObject({
+    terrain: strictObject({ grass: Id, dirt: Id, rock: Id, sand: Id }),
+    paving: Id,
+    trees: strictObject({ trunk: Id, branch: Id, leaves: Id }),
+    leafLitter: Id,
+  }),
+  hamlet: strictObject({
+    hedge: Id,
+    northSide: pipe(array(Id), minLength(1)),
+    southSide: pipe(array(Id), minLength(1)),
+  }),
 });
 const SenseSchema = strictObject({
   id: Id,

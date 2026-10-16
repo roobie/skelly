@@ -19,6 +19,7 @@ import {
   type Site,
   type ZombieSpawn,
 } from './site.ts';
+import { type SitePalette, sitePalette } from './sitePalette.ts';
 import { type BlockBox, stampChunk } from './structure.ts';
 import {
   compileTemplate,
@@ -59,10 +60,21 @@ export const HAMLET = {
 } as const;
 
 /** Buildings north of the road (their fronts face south, onto it), then south of it. */
-const NORTH_SIDE = ['small_house', 'bungalow', 'corner_store', 'hardware_store'] as const;
-const SOUTH_SIDE = ['gas_station', 'shed', 'garage'] as const;
-/** Every template the hamlet uses. */
-export const HAMLET_TEMPLATES: readonly string[] = [...NORTH_SIDE, ...SOUTH_SIDE];
+export interface HamletSides {
+  readonly northSide: readonly string[];
+  readonly southSide: readonly string[];
+}
+
+/** Only for `cityPlan.ts`, `benchmarkCityGrid`, which has no registry; the city stack moves it to content. */
+export const HAMLET_TEMPLATES: readonly string[] = [
+  'small_house',
+  'bungalow',
+  'corner_store',
+  'hardware_store',
+  'gas_station',
+  'shed',
+  'garage',
+];
 
 /** Also seeded by the static reachability check: roadside wanderers spawn independently of markers. */
 const HAMLET_WANDERER = 'shambler';
@@ -98,6 +110,7 @@ export const ordinaryHamletSpawnWeights = (registry: Pick<Registry, 'zombies'>):
  * Certain earlier markers can consume all spawn slots; wanderers only fill remaining slots. */
 export const possibleHamletZombies = (
   templates: ReadonlyMap<string, readonly SpawnMarker[]>,
+  { northSide, southSide }: HamletSides,
   spawnWeights: ReadonlyMap<string, number> = new Map([[HAMLET_WANDERER, 1]]),
 ): Set<string> => {
   const types = new Set<string>();
@@ -116,11 +129,11 @@ export const possibleHamletZombies = (
     }
     return used;
   };
-  for (const id of NORTH_SIDE) {
+  for (const id of northSide) {
     scan(id, 0); // Each north template can be first.
   }
-  let before = NORTH_SIDE.reduce((total, id) => total + certain(id), 0);
-  for (const id of SOUTH_SIDE) {
+  let before = northSide.reduce((total, id) => total + certain(id), 0);
+  for (const id of southSide) {
     before = scan(id, before);
   }
   if (before < ZOMBIE_COUNT[1]) {
@@ -209,7 +222,7 @@ export class Hamlet implements Site {
   readonly seed: number;
   readonly registry: Registry;
   private readonly scale: Scale;
-  private readonly asphalt: number;
+  private readonly palette: SitePalette;
   /** Road heights from `roadHeights[0]` at x = road.x0. */
   private readonly roadHeights: Int32Array;
   private readonly zombieSpawns: ZombieSpawn[] = [];
@@ -222,7 +235,7 @@ export class Hamlet implements Site {
     this.seed = seed;
     this.scale = scale;
     this.registry = registry;
-    this.asphalt = registry.blockIds.get('asphalt')!;
+    this.palette = sitePalette(registry);
     const layout = this.layout();
     const [ox, oz] = this.site(layout.width, layout.depth);
     this.road = { x0: ox, z0: oz + layout.roadZ, x1: ox + layout.width, z1: oz + layout.roadZ + HAMLET.road };
@@ -279,7 +292,7 @@ export class Hamlet implements Site {
         return Array.from({ length: lot.rect.x1 - lot.rect.x0 - 4 }, (_, index): BlockBox => {
           const x = lot.rect.x0 + 2 + index;
           const y = ground(x, z) + 1;
-          return { min: [x, y, z], max: [x + 1, y + 3, z + 1], block: registry.blockIds.get('hedge')! };
+          return { min: [x, y, z], max: [x + 1, y + 3, z + 1], block: this.palette.hamlet.hedge };
         });
       });
     this.trees = vegetationPlacements({
@@ -306,9 +319,9 @@ export class Hamlet implements Site {
       height: (x, z, natural) => this.height(x, z, natural),
       top: (x, z) =>
         rectDistance(this.road, x, z) === 0
-          ? this.asphalt
+          ? this.palette.paving
           : (this.range.top(x, z) ??
-            (leafLitterAt(this.treeIndex.at(x, z), x, z) ? this.registry.blockIds.get('leaf_litter')! : undefined)),
+            (leafLitterAt(this.treeIndex.at(x, z), x, z) ? this.palette.leafLitter : undefined)),
     };
   }
 
@@ -379,7 +392,7 @@ export class Hamlet implements Site {
   /** Lots relative to the hamlet's north-west corner, and the road between them. */
   private layout() {
     const rng = Rng.stream(this.seed, 'hamlet');
-    const north = [...NORTH_SIDE];
+    const north = [...this.palette.hamlet.northSide];
     for (let i = north.length - 1; i > 0; i--) {
       const j = rng.int(0, i);
       [north[i], north[j]] = [north[j]!, north[i]!];
@@ -400,7 +413,7 @@ export class Hamlet implements Site {
       });
     };
     const northRow = row(north, 2);
-    const southRow = row(SOUTH_SIDE, 0);
+    const southRow = row(this.palette.hamlet.southSide, 0);
     const deepest = Math.max(...northRow.map((l) => l.d));
     const roadZ = HAMLET.pad + deepest + HAMLET.pad + HAMLET.gap;
     const southZ = roadZ + HAMLET.road + HAMLET.gap + HAMLET.pad;

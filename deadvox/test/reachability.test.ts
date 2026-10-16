@@ -535,6 +535,7 @@ describe('static reachability', () => {
 
   it('excludes capped markers and wanderers, but allows shuffled north templates to be first', () => {
     const ten = Array.from({ length: 10 }, () => marker('certain'));
+    const sides = { northSide: ['small_house', 'bungalow'], southSide: ['shed'] };
     expect(
       [
         ...possibleHamletZombies(
@@ -543,12 +544,13 @@ describe('static reachability', () => {
             ['bungalow', [marker('shuffled_first')]],
             ['shed', [marker('south_capped')]],
           ]),
+          sides,
         ),
       ].sort(),
     ).toEqual(['certain', 'shuffled_first']);
     // Nine certain markers leave a possible tenth wanderer; a chance-0 marker consumes no slot.
     expect(
-      [...possibleHamletZombies(new Map([['small_house', [...ten.slice(0, 9), marker('never', 0)]]]))].sort(),
+      [...possibleHamletZombies(new Map([['small_house', [...ten.slice(0, 9), marker('never', 0)]]]), sides)].sort(),
     ).toEqual(['certain', 'shambler']);
   });
 

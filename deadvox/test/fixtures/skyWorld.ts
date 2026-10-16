@@ -48,6 +48,13 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
               openDensity: 0,
               obstacleMarginMetres: 0,
             },
+            palette: {
+              terrain: { grass: 'fixture_wall', dirt: 'fixture_wall', rock: 'fixture_wall', sand: 'fixture_wall' },
+              paving: 'fixture_wall',
+              trees: { trunk: 'fixture_wall', branch: 'fixture_wall', leaves: 'fixture_leaves' },
+              leafLitter: 'fixture_leaves',
+            },
+            hamlet: { hedge: 'fixture_leaves', northSide: ['fixture_shell'], southSide: ['fixture_shell'] },
           },
         ],
         templates: [

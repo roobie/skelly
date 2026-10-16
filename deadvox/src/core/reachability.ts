@@ -1,11 +1,13 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
 import { startingKnownRecipes } from './character.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { disassemblyOutputs } from './disassembly.ts';
-import { HAMLET_TEMPLATES, ordinaryHamletSpawnWeights, possibleHamletZombies } from './hamlet.ts';
+import { ordinaryHamletSpawnWeights, possibleHamletZombies } from './hamlet.ts';
 import { WORK_IN_PROGRESS } from './inventory.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import type { SiteLayoutDef } from './schema.ts';
+import { siteGenerationOf } from './sitePalette.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 import { SEVERED_ITEM } from './zombieRegionNames.ts';
 
@@ -157,6 +159,12 @@ const authoredFixedLootItems = (layouts: readonly SiteLayoutDef[]): Set<string> 
   return items;
 };
 
+// Absent site generation is already reported by `requiredContentIssues`.
+const hamletSidesOf = (registry: Registry) =>
+  registry.siteGeneration.has(CORE_CONTENT_IDS.authoredSite)
+    ? siteGenerationOf(registry).hamlet
+    : { northSide: [], southSide: [] };
+
 const worldSources = (registry: Registry) => {
   const roots = new Set<string>();
   const workstations = new Set<string>();
@@ -166,7 +174,9 @@ const worldSources = (registry: Registry) => {
   const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
   const scenario = scenarioSources(registry);
   // Compiling uses the actual marked pieces/spawns, not unused palette declarations.
-  for (const id of new Set([...HAMLET_TEMPLATES, ...authoredTemplates, ...scenario.templates])) {
+  const hamletSides = hamletSidesOf(registry);
+  const hamletTemplates = new Set([...hamletSides.northSide, ...hamletSides.southSide]);
+  for (const id of new Set([...hamletTemplates, ...authoredTemplates, ...scenario.templates])) {
     const definition = registry.templates.get(id);
     if (!definition) {
       continue; // A rejected/missing template provides no sources.
@@ -178,12 +188,12 @@ const worldSources = (registry: Registry) => {
       }
       addWorkstationSource(registry.furniture.get(piece.furniture)?.workstation, workstations, workstationQualities);
     }
-    if (HAMLET_TEMPLATES.includes(id)) {
+    if (hamletTemplates.has(id)) {
       markers.set(id, template.spawns);
     }
   }
   const spawnWeights = ordinaryHamletSpawnWeights(registry);
-  for (const id of possibleHamletZombies(markers, spawnWeights)) {
+  for (const id of possibleHamletZombies(markers, hamletSides, spawnWeights)) {
     const loot = registry.zombies.get(id)?.loot;
     if (loot !== undefined) {
       roots.add(loot);
