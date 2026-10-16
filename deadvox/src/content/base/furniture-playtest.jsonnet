@@ -1,0 +1,65 @@
+local plaque(id, name, color, readable) = {
+  id: id,
+  name: name,
+  size: [1, 1, 1],
+  color: color,
+  mount: 'wall',
+  solid: false,
+  shape: [{ position: [0, 0, 0.875], size: [1, 1, 0.125] }],
+  readable: readable,
+};
+{
+  furniture: [
+    plaque('clinic_sign', 'Clinic direction sign', '#99794c', {
+      title: 'Hand-painted sign',
+      text: 'Clinic set up south — they took the sick there',
+    }),
+    plaque('gas_directions_sign', 'Hand-painted direction sign', '#99794c', {
+      title: 'Hand-painted sign',
+      text: "Dad's cabin is up the ridge, key under the step",
+    }),
+    plaque('medical_research_notice', 'Medical sampling notice board', '#b8b5a5', {
+      title: 'Sampling station notice',
+      text: 'COMMUNITY HEALTH SITE — VIRAL SAMPLING\n\nThis hall was requisitioned for observation and collection of viral samples. Intake records are kept in the lab. Supplies arrive from the military camp; keep the pharmacy stocked for staff.',
+    }),
+    {
+      id: 'medical_cabinet',
+      name: 'Medical supply cabinet',
+      size: [2, 3, 1],
+      color: '#a8ada4',
+      container: { pockets: [{ grid: [8, 6], handlingSimSeconds: 1.2 }] },
+    },
+    { id: 'sample_rack', name: 'Specimen rack', size: [2, 3, 1], color: '#7c8581' },
+    { id: 'sample_tray', name: 'Sample tray', size: [2, 1, 1], color: '#b6c1bc' },
+    {
+      id: 'dead_officer_body',
+      name: 'Dead military officer',
+      size: [4, 1, 2],
+      color: '#554f43',
+      container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
+    },
+    {
+      id: 'workshop_roller_door',
+      name: 'Roller door',
+      size: [6, 5, 1],
+      color: '#666c70',
+      door: { handlingSimSeconds: 1.2, openNoise: { sound: 'door_roller_open' } },
+    },
+    { id: 'workshop_service_pit', name: 'Service pit', size: [6, 1, 2], color: '#373a3b', solid: false },
+    { id: 'workshop_lift', name: 'Vehicle lift', size: [4, 2, 9], color: '#dfb72f', solid: false },
+    { id: 'workshop_stripped_car', name: 'Stripped car', size: [4, 4, 9], color: '#5b605c' },
+    {
+      id: 'workshop_scrap_pile',
+      name: 'Scrap pile',
+      size: [4, 1, 3],
+      color: '#615b50',
+      container: { pockets: [{ grid: [6, 5], handlingSimSeconds: 1.2 }] },
+      loot: 'workshop_filler',
+      searchNoise: { sound: 'player_strain' },
+    },
+    plaque('workshop_map_board', 'Workshop wall map', '#9f9675', {
+      title: 'Workshop wall map',
+      text: 'The clinic is south, past the hamlet. The military camp lies beyond it.',
+    }),
+  ],
+}

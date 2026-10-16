@@ -1,116 +1,166 @@
 {
   "furniture": [
     {
+      "color": "#99794c",
       "id": "clinic_sign",
+      "mount": "wall",
       "name": "Clinic direction sign",
-      "size": [2, 3, 1],
-      "color": "#99794c",
       "readable": {
-        "title": "Hand-painted sign",
-        "text": "Clinic set up south — they took the sick there"
-      }
+        "text": "Clinic set up south — they took the sick there",
+        "title": "Hand-painted sign"
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0.875],
+          "size": [1, 1, 0.125]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
     },
     {
+      "color": "#99794c",
       "id": "gas_directions_sign",
+      "mount": "wall",
       "name": "Hand-painted direction sign",
-      "size": [2, 3, 1],
-      "color": "#99794c",
       "readable": {
-        "title": "Hand-painted sign",
-        "text": "Dad's cabin is up the ridge, key under the step"
-      }
+        "text": "Dad's cabin is up the ridge, key under the step",
+        "title": "Hand-painted sign"
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0.875],
+          "size": [1, 1, 0.125]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
     },
     {
-      "id": "medical_research_notice",
-      "name": "Medical sampling notice board",
-      "size": [2, 2, 1],
       "color": "#b8b5a5",
-      "solid": false,
+      "id": "medical_research_notice",
+      "mount": "wall",
+      "name": "Medical sampling notice board",
       "readable": {
-        "title": "Sampling station notice",
-        "text": "COMMUNITY HEALTH SITE — VIRAL SAMPLING\n\nThis hall was requisitioned for observation and collection of viral samples. Intake records are kept in the lab. Supplies arrive from the military camp; keep the pharmacy stocked for staff."
-      }
+        "text": "COMMUNITY HEALTH SITE — VIRAL SAMPLING\n\nThis hall was requisitioned for observation and collection of viral samples. Intake records are kept in the lab. Supplies arrive from the military camp; keep the pharmacy stocked for staff.",
+        "title": "Sampling station notice"
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0.875],
+          "size": [1, 1, 0.125]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
     },
     {
-      "id": "medical_cabinet",
-      "name": "Medical supply cabinet",
-      "size": [2, 3, 1],
       "color": "#a8ada4",
       "container": {
-        "pockets": [{ "grid": [8, 6], "handlingSimSeconds": 1.2 }]
-      }
+        "pockets": [
+          {
+            "grid": [8, 6],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "id": "medical_cabinet",
+      "name": "Medical supply cabinet",
+      "size": [2, 3, 1]
     },
     {
+      "color": "#7c8581",
       "id": "sample_rack",
       "name": "Specimen rack",
-      "size": [2, 3, 1],
-      "color": "#7c8581"
+      "size": [2, 3, 1]
     },
     {
+      "color": "#b6c1bc",
       "id": "sample_tray",
       "name": "Sample tray",
-      "size": [2, 1, 1],
-      "color": "#b6c1bc"
+      "size": [2, 1, 1]
     },
     {
-      "id": "dead_officer_body",
-      "name": "Dead military officer",
-      "size": [4, 1, 2],
       "color": "#554f43",
       "container": {
-        "pockets": [{ "grid": [6, 4], "handlingSimSeconds": 1.2 }]
-      }
+        "pockets": [
+          {
+            "grid": [6, 4],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "id": "dead_officer_body",
+      "name": "Dead military officer",
+      "size": [4, 1, 2]
     },
     {
-      "id": "workshop_roller_door",
-      "name": "Roller door",
-      "size": [6, 5, 1],
       "color": "#666c70",
       "door": {
         "handlingSimSeconds": 1.2,
-        "openNoise": { "sound": "door_roller_open" }
-      }
+        "openNoise": {
+          "sound": "door_roller_open"
+        }
+      },
+      "id": "workshop_roller_door",
+      "name": "Roller door",
+      "size": [6, 5, 1]
     },
     {
+      "color": "#373a3b",
       "id": "workshop_service_pit",
       "name": "Service pit",
       "size": [6, 1, 2],
-      "color": "#373a3b",
       "solid": false
     },
     {
+      "color": "#dfb72f",
       "id": "workshop_lift",
       "name": "Vehicle lift",
       "size": [4, 2, 9],
-      "color": "#dfb72f",
       "solid": false
     },
     {
+      "color": "#5b605c",
       "id": "workshop_stripped_car",
       "name": "Stripped car",
-      "size": [4, 4, 9],
-      "color": "#5b605c"
+      "size": [4, 4, 9]
     },
     {
-      "id": "workshop_scrap_pile",
-      "name": "Scrap pile",
-      "size": [4, 1, 3],
       "color": "#615b50",
       "container": {
-        "pockets": [{ "grid": [6, 5], "handlingSimSeconds": 1.2 }]
+        "pockets": [
+          {
+            "grid": [6, 5],
+            "handlingSimSeconds": 1.2
+          }
+        ]
       },
+      "id": "workshop_scrap_pile",
       "loot": "workshop_filler",
-      "searchNoise": { "sound": "player_strain" }
+      "name": "Scrap pile",
+      "searchNoise": {
+        "sound": "player_strain"
+      },
+      "size": [4, 1, 3]
     },
     {
-      "id": "workshop_map_board",
-      "name": "Workshop wall map",
-      "size": [2, 2, 1],
       "color": "#9f9675",
+      "id": "workshop_map_board",
+      "mount": "wall",
+      "name": "Workshop wall map",
       "readable": {
-        "title": "Workshop wall map",
-        "text": "The clinic is south, past the hamlet. The military camp lies beyond it."
-      }
+        "text": "The clinic is south, past the hamlet. The military camp lies beyond it.",
+        "title": "Workshop wall map"
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0.875],
+          "size": [1, 1, 0.125]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
     }
   ]
 }
