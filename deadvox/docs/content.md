@@ -248,7 +248,9 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
 
 - **Kind.** The row's `kind` selects the site mechanism through a dispatch table that owns
   its keys. A new scenario of an existing kind is content alone; a new kind is a code
-  mechanism, because how a site is built and proved is geometry, not data.
+  mechanism, because how a site is built and proved is geometry, not data. See
+  `src/core/scenarioKinds.ts`, `SCENARIO_KINDS`; and `src/game/worldSetup.ts`,
+  `SCENARIO_SITES`.
 - **Route proof.** Each kind's code proves that its own routes are open, and the row
   supplies the proof's counts and thresholds, such as how many leads a player may miss
   while one stays reachable. The proof's shape is physics a mod cannot safely restate, while
@@ -263,8 +265,8 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   wording belongs to the mod (#456).
 
 The gauntlet sweep tracked by #393 brings the gauntlet's code to these rules; until it
-lands, its kind selection, lead and landmark counts and positions, lead redundancy and
-goal refusal text stay fixed in code.
+lands, its lead and landmark counts and positions, lead redundancy and goal refusal text
+stay fixed in code.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules
