@@ -22,6 +22,7 @@ export interface ReloadBinding {
    */
   readonly stillLoaded?: () => boolean;
   readonly cancelLoad: () => void;
+  readonly releaseLoad?: () => void;
 }
 
 /** A handling owner R can drive: firearm mechanics or magazine handling. */
@@ -41,6 +42,7 @@ export interface ReloadTarget {
   /** See `ReloadBinding.stillLoaded`. */
   readonly stillLoaded?: () => boolean;
   readonly cancelLoad: () => void;
+  readonly releaseLoad?: (time: number) => void;
 }
 
 /** A held firearm takes R; otherwise a wielded magazine, which R only loads with rounds. */
@@ -50,6 +52,8 @@ export const reloadTarget = (
     readonly cock: (uid: number, time: number) => string | undefined;
     readonly removeMagazine: (uid: number, time: number) => string | undefined;
     readonly stillLoaded: (uid: number) => boolean;
+    readonly unloadsByRacking?: (uid: number) => boolean;
+    readonly releaseLoad?: (uid: number, time: number) => void;
   },
   magazines: ReloadOwner,
 ): ReloadTarget | undefined => {
@@ -63,7 +67,10 @@ export const reloadTarget = (
       rack: (time) => firearms.cock(gun, time),
       remove: (time) => firearms.removeMagazine(gun, time),
       // A magazine change is one action; only a gun loaded round by round unloads by racking.
-      ...(oneAction ? {} : { stillLoaded: () => firearms.stillLoaded(gun) }),
+      ...(oneAction || firearms.unloadsByRacking?.(gun) === false
+        ? {}
+        : { stillLoaded: () => firearms.stillLoaded(gun) }),
+      ...(firearms.releaseLoad ? { releaseLoad: (time: number) => firearms.releaseLoad!(gun, time) } : {}),
       cancelLoad: () => firearms.cancelLoad(gun),
     };
   }
@@ -131,7 +138,12 @@ export class ReloadInput {
       }
       this.press = undefined; // Releasing a held rack lets the cycle under way finish and starts no other.
     } else if (press.loading || now - press.at >= RELOAD_GESTURE_MS.hold) {
-      this.cancel();
+      if (press.binding.releaseLoad) {
+        press.binding.releaseLoad();
+        this.press = undefined;
+      } else {
+        this.cancel();
+      }
     } else {
       press.released = true;
     }

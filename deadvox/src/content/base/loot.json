@@ -3,6 +3,26 @@
     {
       "entries": [
         {
+          "condition": [0.29999999999999999, 0.80000000000000004],
+          "item": "revolver_357",
+          "weight": 1
+        },
+        {
+          "count": [2, 5],
+          "item": "cartridge_357_h_magnum",
+          "weight": 2
+        },
+        {
+          "nothing": true,
+          "weight": 30
+        }
+      ],
+      "id": "gauntlet_home_gun",
+      "rolls": [1, 2]
+    },
+    {
+      "entries": [
+        {
           "count": [1, 2],
           "item": "canned_beans",
           "weight": 5
@@ -81,6 +101,10 @@
     },
     {
       "entries": [
+        {
+          "table": "gauntlet_home_gun",
+          "weight": 1
+        },
         {
           "condition": [0.5, 1],
           "item": "jeans",

@@ -11,6 +11,20 @@ const HANDLING_TURN_RADIANS = { pitch: 0.2, yaw: 0.45, roll: 0.5 } as const;
 /** Presentation: how much further a rack rolls the rifle for each radian its handle sits away from the off hand. */
 const RACK_ROLL_PER_HANDLE_RADIAN = 0.25;
 
+const revolverTurn = (side: HandSide, frame: HeldFirearmPose): Vec3 => {
+  const progress = Math.min(1, Math.max(0, frame.elapsed / (frame.duration ?? 1)));
+  const reach = Math.sin(progress * Math.PI);
+  const { step } = frame.revolver!;
+  const sideSign = side === 'right' ? 1 : -1;
+  if (step === 'eject' || step === 'pick') {
+    return [(reach * Math.PI) / 3, 0, sideSign * reach * 0.25];
+  }
+  if (step === 'load') {
+    return [-reach * 0.2, sideSign * reach * 0.2, sideSign * reach * 0.35];
+  }
+  return step === 'open' || step === 'close' ? [0, 0, sideSign * reach * 0.35] : [0, 0, 0];
+};
+
 /**
  * The pitch, yaw and roll a rack or a magazine job adds to the lowered pitch of a gun held in `side`, as an Euler
  * rotation in view axes (x right, y up, z toward the player). `grip` is the held root's camera-local position, which
@@ -29,6 +43,9 @@ export const handlingRotation = (
 ): Vec3 => {
   if (!(model && frame)) {
     return [0, 0, 0];
+  }
+  if (model.revolver && frame.revolver) {
+    return revolverTurn(side, frame);
   }
   if (model.tube) {
     return [0, 0, rackCant(model, side, frame, grip)];

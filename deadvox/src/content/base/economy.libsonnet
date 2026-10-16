@@ -7,12 +7,13 @@ local militaryItems = [
   'magazine_stanag_30', 'magazine_stanag_20', 'magazine_akm_30',
 ];
 local notSpawnable = [
-  'work_in_progress', 'debug_shotgun_pump',
+  'work_in_progress', 'debug_shotgun_pump', 'spent_case_357_h_magnum',
   'spent_case_5_d_56x45', 'spent_case_7_d_62x39', 'spent_case_12_h_gauge_h_00_h_buck',
   'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm',
   'shambler_left_leg', 'shambler_right_leg',
 ];
 local commonItems = [
+  'revolver_357', 'cartridge_357_h_magnum', 'cartridge_box_357_h_magnum',
   'camp_armoury_key', 'camp_supply_manifest', 'camp_hq_safe_key', 'camp_hq_safe_note',
   'optic_digital_thermal', 'optic_fixed_prism_4x', 'optic_high_mag_5_25x', 'optic_holographic',
   'optic_lpvo_1_6x', 'optic_mini_reflex', 'optic_tube_dot', 'rail_front_sight', 'real_suppressor',

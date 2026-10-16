@@ -383,6 +383,11 @@
           "weight": 1
         },
         {
+          "condition": [0.40000000000000002, 0.80000000000000004],
+          "item": "revolver_357",
+          "weight": 1
+        },
+        {
           "nothing": true,
           "weight": 2
         }
@@ -392,6 +397,58 @@
     },
     {
       "entries": [
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "revolver_357",
+          "weight": 2
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "pump_shotgun",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 1
+        }
+      ],
+      "id": "gauntlet_police_sidearms",
+      "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "count": [3, 12],
+          "item": "cartridge_357_h_magnum",
+          "weight": 3
+        },
+        {
+          "item": "cartridge_box_357_h_magnum",
+          "weight": 2
+        },
+        {
+          "item": "shotshell_box",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ],
+      "id": "gauntlet_police_ammunition",
+      "rolls": [1, 2]
+    },
+    {
+      "entries": [
+        {
+          "count": [2, 6],
+          "item": "cartridge_357_h_magnum",
+          "weight": 2
+        },
+        {
+          "item": "cartridge_box_357_h_magnum",
+          "weight": 1
+        },
         {
           "count": [2, 5],
           "item": "shell_12_gauge_00_buck",
@@ -16881,7 +16938,7 @@
         },
         "A": {
           "furniture": "crate",
-          "loot": "gauntlet_ammunition"
+          "loot": "gauntlet_police_ammunition"
         },
         "C": {
           "furniture": "desk",
@@ -16892,7 +16949,7 @@
         },
         "G": {
           "furniture": "range_rack",
-          "loot": "gauntlet_civilian_guns"
+          "loot": "gauntlet_police_sidearms"
         }
       },
       "ports": [],

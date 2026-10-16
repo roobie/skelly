@@ -337,6 +337,19 @@ const FirearmSchema = strictObject({
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
   /** Reload handling times at skill 0, before the firearms skill's reload factor. */
+  revolver: optional(
+    strictObject({
+      doubleActionPullSimSeconds: PositiveSimSeconds,
+      doubleActionDispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
+      recoverySimSeconds: PositiveSimSeconds,
+      openSimSeconds: PositiveSimSeconds,
+      ejectSimSeconds: PositiveSimSeconds,
+      pickSimSeconds: PositiveSimSeconds,
+      loadSimSeconds: PositiveSimSeconds,
+      closeSimSeconds: PositiveSimSeconds,
+      cockSimSeconds: PositiveSimSeconds,
+    }),
+  ),
   handling: strictObject({
     /** One shell into the tube; required for a pump. */
     shellLoadSimSeconds: optional(PositiveSimSeconds),

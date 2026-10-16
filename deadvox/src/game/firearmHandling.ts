@@ -19,7 +19,7 @@ import {
   skillZeroHandlingForFirearm,
 } from '../core/firearmsSkill.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
-import { heldEjectionPose } from '../core/heldPose.ts';
+import { heldEjectionPose, heldGripOffset, modelToView } from '../core/heldPose.ts';
 import { dropSpots, type Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleOnWorld } from '../core/itemThrow.ts';
@@ -29,10 +29,12 @@ import { type dropTarget, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
+import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { makeScale } from '../core/scale.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
+import { type RevolverFrame, RevolverHandling } from './revolverHandling.ts';
 
 /** Gameplay estimates for transient ballistics, not claimed as measured export data. */
 const CASE_SPEED = 3.5;
@@ -47,7 +49,7 @@ const TRAINING_ACTIONS: ReadonlySet<string> = new Set([
   MAGAZINE_LOAD_ACTION,
 ]);
 export const isFirearmTrainingAction = (job: Job): boolean =>
-  job.kind === 'action' && TRAINING_ACTIONS.has(job.jobType);
+  job.kind === 'action' && (TRAINING_ACTIONS.has(job.jobType) || job.jobType.startsWith('revolver.'));
 /**
  * A magazine change is two halves, each its own content time: taking the fitted magazine out and stowing it, then
  * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`DESIGN.md`, "Combat and
@@ -120,6 +122,9 @@ export const ammoMatchesCalibre = (type: string, calibre: string, registry: Regi
 
 const exportedActionReason = (item: Item, registry: Registry, mode: 'fire' | 'hand'): string | undefined => {
   const model = firearmModelFor(item, registry);
+  if (model?.revolver && model.calibre && model.grip && model.anchors?.muzzle) {
+    return undefined;
+  }
   if (!(model?.calibre && model.action?.hand && model.grip && model.anchors?.ejection)) {
     return 'No exported action data for this gun';
   }
@@ -143,7 +148,7 @@ export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandl
     model,
     action,
     calibre: model.calibre!,
-    roundsPerSimSecond: action.roundsPerSimMinute,
+    roundsPerSimSecond: action?.roundsPerSimMinute,
     ...(caseModelId ? { caseModelId } : {}),
     ...(defOf(registry, item.type).firearm
       ? {
@@ -220,7 +225,8 @@ interface ShotCommit {
 }
 export interface FirearmCycleFrame {
   readonly uid: number;
-  readonly mode: 'fire' | 'hand' | 'load' | 'magazine';
+  readonly mode: 'fire' | 'hand' | 'load' | 'magazine' | 'revolver';
+  readonly revolver?: RevolverFrame;
   readonly elapsed: number;
   readonly duration?: number;
   readonly roundType?: string;
@@ -267,6 +273,8 @@ export class FirearmMechanics {
   private readonly firearmsCombatTuning: FirearmsCombatTuning | undefined;
   private readonly firearmsSkillZeroOverrides = new Map<string, FirearmsSkillZeroHandling>();
   private readonly previousShotAt = new Map<number, number>();
+  private readonly revolvers: RevolverHandling;
+  private committingPull = false;
 
   constructor(
     inventory: Inventory,
@@ -336,6 +344,12 @@ export class FirearmMechanics {
         this.raising.add(item.uid);
       }
     }
+    this.revolvers = new RevolverHandling(inventory, queue, {
+      factor: () => this.handlingFactor('reloadDuration'),
+      sound: (event, time) => this.onSound(event, undefined, time),
+      eject: (gun, chamber, type, time) => this.ejectRevolver(gun, chamber, type, time),
+      caseType: (gun) => spentCaseItemId(firearmHandlingFor(gun, inventory.registry).calibre),
+    });
     queue.registerAction(COCK_ACTION, (params): string | undefined => {
       const item = typeof params.uid === 'number' ? inventory.itemByUid(params.uid) : undefined;
       if (!(item && this.held(item.uid)) || item.firearm?.cycle?.mode !== 'hand') {
@@ -378,6 +392,9 @@ export class FirearmMechanics {
     const item = this.inventory.itemByUid(uid);
     if (!item) {
       return 'Firearm is no longer carried';
+    }
+    if (item.firearm?.cylinder) {
+      return item.firearm.cylinder.open ? 'The cylinder is open' : undefined;
     }
     const pump = this.isPump(item);
     const reason = exportedActionReason(item, this.inventory.registry, pump ? 'hand' : 'fire');
@@ -542,9 +559,13 @@ export class FirearmMechanics {
     return readying ? Math.max(0, Math.min(1, readying.elapsed / readying.duration)) : 0;
   }
 
+  private canPull(input: FirearmShotInput): boolean {
+    return input.ready && !input.sprinting && this.held(input.item.uid) && (!this.queue.busy || this.committingPull);
+  }
+
   fire(input: FirearmShotInput): boolean {
     const pump = this.isPump(input.item);
-    if (!input.ready || input.sprinting || !this.held(input.item.uid) || this.queue.busy) {
+    if (!this.canPull(input)) {
       return false;
     }
     // Advancing to the exact deadline also handles a coarse input sample containing several shots.
@@ -557,10 +578,19 @@ export class FirearmMechanics {
       return false;
     }
     const data = firearmHandlingFor(item, this.inventory.registry);
+    const cylinder = item.firearm?.cylinder;
+    if (cylinder && !this.committingPull) {
+      const deferred = this.deferRevolverPull(input, item);
+      if (deferred !== undefined) {
+        return deferred;
+      }
+    }
     if (!hasTraceProperties(data)) {
       return false;
     }
-    const emission = this.emission(item, data, input);
+    const emission = cylinder
+      ? { origin: input.eye, direction: [0, -1, 0] as Vec3, feet: input.feet }
+      : this.emission(item, data, input);
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const tuning = this.requiredFirearmsCombatTuning();
     const bore = firearmBoreRay({
@@ -584,7 +614,58 @@ export class FirearmMechanics {
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;
     const commit = { input, item, data, emission, muzzle, shotOrigin, shotBasis, shotKey, seed };
+    if (cylinder) {
+      return this.commitRevolverShot(commit);
+    }
     return pump ? this.commitPumpShot(commit) : this.commitBallisticShot(commit);
+  }
+
+  private deferRevolverPull(input: FirearmShotInput, item: Item): boolean | undefined {
+    const tuning = defOf(this.inventory.registry, item.type).firearm!.revolver!;
+    const previous = this.previousShotAt.get(item.uid);
+    if (previous !== undefined && input.simTime < previous + tuning.recoverySimSeconds) {
+      return false;
+    }
+    if (item.firearm!.cylinder!.cocked) {
+      return;
+    }
+    const strikeAt = input.simTime + tuning.doubleActionPullSimSeconds * this.handlingFactor('reloadDuration');
+    this.revolvers.pull(item, input.simTime, () => {
+      this.committingPull = true;
+      try {
+        const strikeInput = { ...input };
+        strikeInput.simTime = strikeAt;
+        this.fire(strikeInput);
+      } finally {
+        this.committingPull = false;
+      }
+    });
+    return true;
+  }
+
+  private commitRevolverShot({ input, item, data, muzzle, shotOrigin, shotBasis, shotKey, seed }: ShotCommit): boolean {
+    const cylinder = item.firearm!.cylinder!;
+    const singleAction = cylinder.cocked;
+    if (!singleAction) {
+      cylinder.aligned = (cylinder.aligned + 1) % cylinder.chambers.length;
+    }
+    cylinder.cocked = false;
+    this.previousShotAt.set(item.uid, input.simTime);
+    const chamber = cylinder.chambers[cylinder.aligned]!;
+    if (chamber.state !== 'round') {
+      this.onSound('revolver_dry_click', undefined, input.simTime);
+      return false;
+    }
+    const ammo = defOf(this.inventory.registry, chamber.roundType).ammo!;
+    cylinder.chambers[cylinder.aligned] = { state: 'case' };
+    const spread = singleAction
+      ? data.dispersionRadians
+      : defOf(this.inventory.registry, item.type).firearm!.revolver!.doubleActionDispersionRadians;
+    const direction = coneDirection(shotBasis, spread, Rng.stream(input.seed, `firearm-dispersion:${shotKey}`));
+    this.onShot(projectileShot(ammo, shotOrigin, [direction]), input.simTime, item);
+    this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: [direction] }, input.simTime);
+    this.onCommittedShot(seed, data.recoilKickRadians, 'singleShot', item.uid);
+    return true;
   }
 
   private commitPumpShot({
@@ -675,6 +756,9 @@ export class FirearmMechanics {
       return reason;
     }
     const state = item.firearm;
+    if (state?.cylinder) {
+      return undefined;
+    }
     const data = firearmHandlingFor(item, this.inventory.registry);
     const type = state?.chamber === 'case' ? spentCaseItemId(data.calibre) : state?.roundType;
     if (!type) {
@@ -712,7 +796,11 @@ export class FirearmMechanics {
   }
 
   reloadableUid(): number | undefined {
-    return (this.heldPump() ?? this.heldMagazineFed())?.uid;
+    return (
+      Object.values(this.inventory.hands).find((item) => item?.firearm?.cylinder) ??
+      this.heldPump() ??
+      this.heldMagazineFed()
+    )?.uid;
   }
 
   /** A magazine change takes one press; a pump loads one shell per press-and-hold step. */
@@ -723,11 +811,20 @@ export class FirearmMechanics {
   /** Whether a rack would still take something out of the gun: a round or case in the chamber, or tube rounds. */
   stillLoaded(uid: number): boolean {
     const state = this.inventory.itemByUid(uid)?.firearm;
-    return state !== undefined && (state.chamber !== 'empty' || (state.tube?.length ?? 0) > 0);
+    return (
+      state !== undefined &&
+      (state.cylinder
+        ? state.cylinder.chambers.some((chamber) => chamber.state !== 'empty')
+        : state.chamber !== 'empty' || (state.tube?.length ?? 0) > 0)
+    );
   }
 
   /** Loose carried cartridges only; ascending UID makes the source order save-stable. */
   loadNext(uid: number, time: number): string | undefined {
+    const revolver = this.inventory.itemByUid(uid);
+    if (revolver?.firearm?.cylinder && this.held(uid)) {
+      return this.revolvers.load(revolver, time);
+    }
     const rifle = this.heldMagazineFed();
     if (rifle?.uid === uid) {
       return this.changeMagazine(rifle, time);
@@ -748,7 +845,20 @@ export class FirearmMechanics {
     return shell ? this.load(shell, time) : 'No loose compatible shells are carried';
   }
 
+  releaseLoad(uid: number, time: number): void {
+    if (this.inventory.itemByUid(uid)?.firearm?.cylinder) {
+      this.revolvers.release(uid, time);
+    } else {
+      this.cancelLoad(uid);
+    }
+  }
+
+  unloadsByRacking(uid: number): boolean {
+    return !this.inventory.itemByUid(uid)?.firearm?.cylinder;
+  }
+
   cancelLoad(uid: number): void {
+    this.revolvers.cancel(uid);
     const job = this.queue.jobs.find(
       (entry) => entry.kind === 'action' && entry.jobType === LOAD_ACTION && entry.params.uid === uid,
     );
@@ -817,6 +927,10 @@ export class FirearmMechanics {
 
   /** Takes the fitted magazine out to a pocket or the ground: tap, then hold R (`CONTROLS.md`, "Reload, rack, remove"). */
   removeMagazine(uid: number, time: number): string | undefined {
+    const revolver = this.inventory.itemByUid(uid);
+    if (revolver?.firearm?.cylinder && this.held(uid)) {
+      return this.revolvers.dump(revolver, time);
+    }
     const gun = this.heldMagazineFed();
     if (gun?.uid !== uid) {
       return 'This firearm has no magazine to remove';
@@ -917,6 +1031,12 @@ export class FirearmMechanics {
   }
 
   describe(item: Item): string[] {
+    const cylinder = item.firearm?.cylinder;
+    if (cylinder) {
+      return [
+        `Cylinder: ${cylinder.chambers.filter((chamber) => chamber.state === 'round').length}/${cylinder.chambers.length} loaded${cylinder.open ? ' · open' : ''}`,
+      ];
+    }
     if (magazineWellCalibre(this.inventory.registry, item.type) !== undefined) {
       const magazine = item.slots?.magazine;
       const spec = magazine && magazineSpec(this.inventory.registry, magazine.type);
@@ -930,7 +1050,7 @@ export class FirearmMechanics {
     }
     const state = item.firearm!;
     return [
-      `Chamber: ${{ round: '00 buck shell', case: 'fired hull — rack before firing', empty: 'empty' }[state.chamber]}`,
+      `Chamber: ${{ round: '00 buck shell', case: 'fired hull — rack before firing', empty: 'empty' }[state.chamber!]}`,
       `Tube: ${state.tube!.length}/${firearmHandlingFor(item, this.inventory.registry).model.tube!.capacity} shells`,
     ];
   }
@@ -949,6 +1069,9 @@ export class FirearmMechanics {
       return reason;
     }
     const item = this.inventory.itemByUid(uid)!;
+    if (item.firearm?.cylinder) {
+      return this.revolvers.cock(item, time);
+    }
     const data = firearmHandlingFor(item, this.inventory.registry);
     const pump = this.isPump(item);
     const state: FirearmState = item.firearm ?? { chamber: 'empty' };
@@ -977,6 +1100,12 @@ export class FirearmMechanics {
   }
 
   advanceTo(time: number): void {
+    this.revolvers.advance();
+    for (const { item } of this.inventory.items()) {
+      if (item.firearm?.cylinder && !this.held(item.uid)) {
+        this.revolvers.cancel(item.uid);
+      }
+    }
     for (const uid of this.active) {
       this.advanceItem(uid, time);
     }
@@ -1088,6 +1217,21 @@ export class FirearmMechanics {
       return [];
     }
     const clock = { uid: gun.uid, elapsed: job.elapsed, duration: job.duration };
+    if (job.jobType.startsWith('revolver.')) {
+      return [
+        {
+          ...clock,
+          mode: 'revolver',
+          revolver: {
+            step: job.jobType.slice('revolver.'.length) as RevolverFrame['step'],
+            ...(typeof job.params.chamber === 'number' ? { chamber: job.params.chamber } : {}),
+          },
+          ...(typeof job.params.ammoUid === 'number' && this.inventory.itemByUid(job.params.ammoUid)
+            ? { roundType: this.inventory.itemByUid(job.params.ammoUid)!.type }
+            : {}),
+        },
+      ];
+    }
     if (job.jobType === MAGAZINE_ACTION) {
       return [{ ...clock, mode: 'magazine', magazine: this.magazineMotion(gun, job.params.magazineUid) }];
     }
@@ -1278,6 +1422,53 @@ export class FirearmMechanics {
     const dropHeight = emission.origin[1] - (position[1] * this.blockSize + 0.006);
     const speed = hit ? Math.max(0, dropHeight / CASE_FLIGHT_SECONDS) : CASE_SPEED;
     return { position, direction: hit ? [0, -1, 0] : emission.direction, speed, verticalDrop: hit !== undefined };
+  }
+
+  private ejectRevolver(item: Item, chamber: number, type: string, time: number): void {
+    const pose = this.pose(item.uid);
+    if (!pose) {
+      throw new Error('No held revolver pose');
+    }
+    const data = firearmHandlingFor(item, this.inventory.registry);
+    const { model } = data;
+    const cylinder = item.firearm!.cylinder!;
+    const point = revolverChamberPoint(model.revolver!, chamber, cylinder.aligned, 1);
+    const local = modelToView(model, point.map((value, index) => value - model.grip!.at[index]!) as Vec3);
+    const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
+    const grip = heldGripOffset(side, false);
+    const basis = basisAlong(
+      [-Math.sin(pose.yaw) * Math.cos(pose.pitch), Math.sin(pose.pitch), -Math.cos(pose.yaw) * Math.cos(pose.pitch)],
+      [0, 1, 0],
+    );
+    const offset = local.map((value, index) => value + grip[index]!) as Vec3;
+    const origin = pose.eye.map(
+      (value, index) =>
+        value * this.blockSize +
+        basis.right[index]! * offset[0] +
+        basis.up[index]! * offset[1] -
+        basis.forward[index]! * offset[2],
+    ) as Vec3;
+    const emission = { origin, direction: [0, -1, 0] as Vec3, feet: pose.feet };
+    const landing = this.landing(emission);
+    if (!landing) {
+      return;
+    }
+    const seed = Math.floor(Rng.stream(item.uid, `cylinder:${time}:${chamber}`).next() * 4_294_967_296) >>> 0;
+    item.firearm!.landings ??= [];
+    item.firearm!.landings.push({ at: time + CASE_FLIGHT_SECONDS, position: landing.position, type, seed });
+    this.active.add(item.uid);
+    const modelId = defOf(this.inventory.registry, type).model ?? data.caseModelId;
+    this.onEjection({
+      origin,
+      direction: [0, -1, 0],
+      speed: landing.speed,
+      verticalDrop: true,
+      seed,
+      landingPosition: landing.position,
+      startedAtSimSeconds: time,
+      landingAt: time + CASE_FLIGHT_SECONDS,
+      ...(modelId ? { caseModelId: modelId } : {}),
+    });
   }
 
   private ejectionAt(state: FirearmState, data: FirearmHandlingData): number {

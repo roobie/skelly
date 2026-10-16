@@ -172,8 +172,8 @@ local yard(block) = { role: 'trim', block: block };
     ]),
     room('gauntlet_police_rooms', hunting, policeRows, policeTall, {
       C: { furniture: 'desk', loot: 'gauntlet_police_gear' },
-      G: { furniture: 'range_rack', loot: 'gauntlet_civilian_guns' },
-      A: box('gauntlet_ammunition'),
+      G: { furniture: 'range_rack', loot: 'gauntlet_police_sidearms' },
+      A: box('gauntlet_police_ammunition'),
     }, policeUpper, 'gauntlet_police'),
     room('gauntlet_food_aisles', residential, shopRows, shopTall, {
       C: { furniture: 'counter', loot: 'gauntlet_food_stock' },
@@ -201,9 +201,21 @@ local yard(block) = { role: 'trim', block: block };
       { item: 'crackers', weight: 3 }, { item: 'water_bottle', weight: 2 }, { nothing: true, weight: 4 },
     ] },
     { id: 'gauntlet_civilian_guns', rolls: [1, 1], entries: [
-      { item: 'pump_shotgun', weight: 1, condition: [0.4, 0.8] }, { nothing: true, weight: 2 },
+      { item: 'pump_shotgun', weight: 1, condition: [0.4, 0.8] },
+      { item: 'revolver_357', weight: 1, condition: [0.4, 0.8] }, { nothing: true, weight: 2 },
+    ] },
+    { id: 'gauntlet_police_sidearms', rolls: [1, 1], entries: [
+      { item: 'revolver_357', weight: 2, condition: [0.5, 0.9] },
+      { item: 'pump_shotgun', weight: 1, condition: [0.5, 0.9] }, { nothing: true, weight: 1 },
+    ] },
+    { id: 'gauntlet_police_ammunition', rolls: [1, 2], entries: [
+      { item: 'cartridge_357_h_magnum', weight: 3, count: [3, 12] },
+      { item: 'cartridge_box_357_h_magnum', weight: 2 },
+      { item: 'shotshell_box', weight: 1 }, { nothing: true, weight: 2 },
     ] },
     { id: 'gauntlet_ammunition', rolls: [1, 2], entries: [
+      { item: 'cartridge_357_h_magnum', weight: 2, count: [2, 6] },
+      { item: 'cartridge_box_357_h_magnum', weight: 1 },
       { item: 'shell_12_gauge_00_buck', weight: 3, count: [2, 5] },
       { item: 'shotshell_box', weight: 1 }, { nothing: true, weight: 4 },
     ] },
