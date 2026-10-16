@@ -52,7 +52,7 @@ local ladder = lab.entry.ladder;
       perimeter: {
         block: 'concrete', height: 12, thickness: 2,
         wire: { block: 'chain_link', height: 2 },
-        lining: { assembly: 'gauntlet_perimeter_lining', pitch: 12 },
+        lining: { assembly: 'gauntlet_perimeter_lining', pitch: 48 },
         gate: { assembly: 'gauntlet_perimeter_gate' },
       },
       streetProps: ['gauntlet_street_cars'],

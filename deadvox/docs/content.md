@@ -243,11 +243,12 @@ Every shop shows a street cue that no house carries, and no two shop types share
 ### City perimeter
 
 The perimeter must stay closed across streets as well as blocks, because a street gap
-would become an escape. Its dressing must face inward without opening a way through;
-notice text follows `INTERFACE.md`, "Text". Reachable roofs must not turn the wall into
-a step, so clearance covers the start building as well as pool buildings, including
-rooftop fittings. The start uses its actual distance to the wall, with or without a
-ring. Jump clearance follows player physics rather than a separate content limit;
+would become an escape. Sparse plinths let the wall read as a wall, not a row of barriers.
+Its dressing must face inward without opening a way through; notice text follows
+`INTERFACE.md`, "Text". Reachable roofs must not turn the wall into a step, so clearance
+covers the start building as well as pool buildings, including rooftop fittings. The
+start uses its actual distance to the wall, with or without a ring. Jump clearance
+follows player physics rather than a separate content limit;
 a slower jump can peak at the wall even when a sprint would reach its apex beyond it.
 Lower buildings or more separation preserve containment without changing the wall's look.
 See `src/core/cityPlan.ts`, `clearanceIssues`, `perimeterGaps` and `perimeterIssues`;

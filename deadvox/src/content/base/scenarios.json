@@ -150,7 +150,7 @@
           "height": 12,
           "lining": {
             "assembly": "gauntlet_perimeter_lining",
-            "pitch": 12
+            "pitch": 48
           },
           "thickness": 2,
           "wire": {
