@@ -97,7 +97,7 @@ it('honours the authored start cell and refuses a cell outside the street grid',
   const moved = buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own });
   expect(moved.composition!.start.placement.origin).not.toEqual(start.placement.origin);
   expect(moved.candidates).not.toContainEqual(cell);
-  expect(scenarioStartCertificate(new CitySite(9, registry, scale, moved)).issues).toEqual([]);
+  expect(scenarioCertificate(new CitySite(9, registry, scale, moved)).issues).toEqual([]);
   own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
   expect(scenarioStartIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
 });

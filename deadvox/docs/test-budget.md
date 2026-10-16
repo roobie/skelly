@@ -37,8 +37,10 @@ by content size without caching mutable registries. See `src/core/templates.ts`,
 `templateWalkingRoutes`.
 
 Start-only admission and obstruction cases must not repeatedly certify unrelated lab
-routes. Keep full-composition coverage at the integration boundary, and use the same
-start-proof owner for focused cases. A shared read-only compiled plan is safe only
+routes. Keep full-composition coverage at the integration boundary, including start
+relocation: valid exits alone cannot prove public leads remain reachable from a moved
+start. Focused obstruction cases use the same start-proof owner. A shared read-only
+compiled plan is safe only
 when each obstruction probe owns fresh route-space and entity state; a clear probe
 must not reuse an obstructed probe's memoized geometry. See `test/scenarioStart.test.ts`,
 `certificate`; and `src/core/scenarioCertificate.ts`, `scenarioStartCertificate` and
