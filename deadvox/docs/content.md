@@ -238,20 +238,39 @@ Every shop shows a street cue that no house carries, and no two shop types share
 ## Scenarios
 
 A scenario is mod content: a mod must be able to express a scenario like the gauntlet in
-Jsonnet without a code edit. The scenario row supplies values, including counts,
-placements, chances and densities, and selects code-owned mechanisms, as `../../PILLARS.md`, "Content forward compatibility" requires.
-Code keeps what a mod cannot safely or usefully restate: the body route oracle, the
-physical climb and reach certificates, spawn admission with its saved ledger, and the
-scenario run's win state. See `src/core/schema.ts`, `ScenarioSchema`;
-`src/core/gauntlet.ts`, `GauntletSite`; `src/core/scenarioCertificate.ts`,
-`scenarioCertificate`; and `src/core/zombieSpawns.ts`, `ZombieSpawner`.
+Jsonnet without a code edit. The scenario row must supply the values, such as counts,
+chances, densities, thresholds and authored anchors, and must select code-owned
+mechanisms, as `../../PILLARS.md`, "Content forward compatibility" requires. Code keeps
+what a mod cannot safely or usefully restate: the body route oracle, the physical climb
+and reach certificates, spawn admission with its saved ledger, and the scenario run's win
+state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts`,
+`climbCertificate`; and `src/core/zombieSpawns.ts`, `ZombieSpawner`.
+
+- **Kind.** The row's `kind` selects the site mechanism through a dispatch table that owns
+  its keys. A new scenario of an existing kind is content alone; a new kind is a code
+  mechanism, because how a site is built and proved is geometry, not data.
+- **Route proof.** Each kind's code proves that its own routes are open, and the row
+  supplies the proof's counts and thresholds, such as how many leads a player may miss
+  while one stays reachable. The proof's shape is physics a mod cannot safely restate, while
+  how forgiving a scenario is belongs to its design. See `src/core/scenarioCertificate.ts`,
+  `scenarioCertificate`.
+- **Leads and landmarks.** They are lists in the row, not a fixed number, because how
+  many clues and landmarks a scenario has is design.
+- **Placement.** The row places leads and landmarks by anchors on the city plan. Code
+  resolves anchors to positions and derives each template's size bound from its anchor,
+  so a scenario moves its clues without a code edit and a bad anchor fails validation.
+- **Goal text.** The words the goal shows when it refuses are content, as player-facing
+  wording belongs to the mod (#456).
+
+The gauntlet sweep tracked by #393 brings the gauntlet's code to these rules; until it
+lands, its kind selection, lead and landmark counts and positions, lead redundancy and
+goal refusal text stay fixed in code.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules
 beyond data, such as triggers, timed events and conditional consequences, wait for the
 runtime-function format that `../../docs/decisions/0004-content-language.md` leaves open
-in #313, so no scenario grows a private rule language first. Gauntlet values still fixed in
-code move in bounded sweeps tracked by #393.
+in #313, so no scenario grows a private rule language first.
 
 ## Recipes
 
