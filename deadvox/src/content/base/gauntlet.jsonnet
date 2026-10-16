@@ -73,7 +73,7 @@ local utilities = [
   },
 ];
 {
-  blocks: tents.blocks,
+  blocks: tents.blocks + types.blocks,
   loot: types.loot + tents.loot,
   mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
     air: { role: 'opening', block: 'air' }, concrete: { role: 'interior_floor', block: 'concrete' },
