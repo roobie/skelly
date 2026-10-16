@@ -1,9 +1,9 @@
 import { expect, test, vi } from 'vitest';
-import { evaluateMods, MAX_MOD_BYTES } from '../src/game/browserMods.ts';
+import { MAX_MOD_BYTES } from '../src/game/browserMods.ts';
 import { readPaste } from '../src/ui/modsPanel.ts';
 import fixture from './fixtures/mods/browser-mod.json' with { type: 'json' };
 
-test('URL intake uses ordinary validation and rejects HTTP failures and streamed overflow', async () => {
+test('URL intake preserves payloads and rejects HTTP failures and streamed overflow', async () => {
   const url = 'https://example.test/mod.json';
   const text = JSON.stringify(fixture);
   const fetchMod = vi.fn<typeof fetch>();
@@ -11,9 +11,6 @@ test('URL intake uses ordinary validation and rejects HTTP failures and streamed
   const result = await readPaste(` ${url} `, fetchMod);
   expect(fetchMod).toHaveBeenCalledWith(url, { credentials: 'omit' });
   expect(result).toEqual({ name: url, text });
-  const accepted = evaluateMods([{ source: result.name, text: result.text, enabled: true }]);
-  expect(accepted.canStart).toBe(true);
-  expect(accepted.content.registry.items.get(fixture.items[0]!.id)?.name).toBe(fixture.items[0]!.name);
 
   fetchMod.mockResolvedValueOnce(new Response(text, { status: 403 }));
   expect((await readPaste(url, fetchMod)).issue).toBeDefined();
@@ -45,7 +42,7 @@ test('URL intake uses ordinary validation and rejects HTTP failures and streamed
 
   fetchMod.mockResolvedValueOnce(new Response('{'));
   const invalid = await readPaste(url, fetchMod);
-  expect(evaluateMods([{ source: invalid.name, text: invalid.text, enabled: true }]).canStart).toBe(false);
+  expect(invalid).toEqual({ name: url, text: '{' });
   fetchMod.mockRejectedValueOnce(new TypeError('Failed to fetch'));
   expect((await readPaste(url, fetchMod)).issue).toBeDefined();
   expect(await readPaste(text, fetchMod)).toEqual({ name: 'pasted.json', text });

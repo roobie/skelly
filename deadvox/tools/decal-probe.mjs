@@ -125,9 +125,9 @@ try {
     await page.keyboard.down('F2');
     await page.keyboard.press('Numpad5');
     await page.keyboard.up('F2');
+    // Dirty fringe chunks are intentionally left pending outside the mesh radius; only in-radius holes must drain.
     await page.waitForFunction(
-      // biome-ignore lint/performance/useTopLevelRegex: Playwright serializes this callback into the browser without module scope
-      () => /chunks\s+\d+\s+meshed,\s+0\s+pending/.test(document.body.textContent),
+      () => document.querySelector('#debug-readout')?.textContent.includes('· 0 holes'),
       {},
       { timeout: 90_000 },
     );

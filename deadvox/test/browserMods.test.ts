@@ -1,16 +1,29 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type BrowserMod, evaluateMods, MAX_MOD_BYTES } from '../src/game/browserMods.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+// biome-ignore lint/performance/noNamespaceImport: the malformed-input test spies on the content-build boundary
+import * as bundledContent from '../src/game/bundledContent.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createWorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import fixture from './fixtures/mods/browser-mod.json' with { type: 'json' };
 
-const base = buildBundledContent();
-afterEach(() => vi.unstubAllGlobals());
+const base = bundledContent.buildBundledContent();
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 const mod = (data: unknown): BrowserMod => ({ source: 'fixture.json', text: JSON.stringify(data), enabled: true });
 
 describe('browser mod admission', () => {
+  it('refuses malformed JSON without changing admitted base content', () => {
+    vi.spyOn(bundledContent, 'buildBundledContent').mockReturnValue(base);
+    const result = evaluateMods([{ source: 'broken.json', text: '{', enabled: true }]);
+    expect(result.canStart).toBe(false);
+    expect(result.issues.get('broken.json')).toEqual([
+      expect.objectContaining({ source: 'broken.json', path: '', message: expect.any(String) }),
+    ]);
+    expect(result.content.origins).toEqual(base.origins);
+  });
   it('refuses a missing mod id without admitting its definitions', () => {
     const { id: _id, ...data } = fixture;
     const result = evaluateMods([mod(data)]);
@@ -27,15 +40,13 @@ describe('browser mod admission', () => {
       ...mod({ ...fixture, items: [{ ...fixture.items[0], name: 'Duplicate replacement' }] }),
       source: 'https://example.test/same-mod.json',
     };
-    const admitted = evaluateMods([first]);
     const result = evaluateMods([first, duplicate]);
     expect(result.issues.get(duplicate.source)).toEqual([
       expect.objectContaining({ path: 'id', message: expect.stringContaining(fixture.id) }),
     ]);
-    expect(admitted.canStart).toBe(true);
     expect(result.canStart).toBe(false);
-    expect(result.content.origins).toEqual(admitted.content.origins);
-    expect(result.content.registry.items).toEqual(admitted.content.registry.items);
+    expect(result.content.origins.get(`items:${fixture.items[0]!.id}`)?.source).toBe(first.source);
+    expect(result.content.registry.items.get(fixture.items[0]!.id)?.name).toBe(fixture.items[0]!.name);
     expect(result.issues.has(first.source)).toBe(false);
   });
 

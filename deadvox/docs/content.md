@@ -49,6 +49,9 @@ Weathering is a render-only content choice, not saved world state. Named profile
 ## Content test registries
 
 Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`. Unrelated contract fixtures may author common-supply metadata through `test/economyFixtures.ts`, `buildFixtureRegistry`; admission tests must use raw sources so the fixture builder cannot conceal missing metadata.
+Transport tests check the fetched payload and stream limits rather than rebuilding the
+playable pack at each asynchronous step. Admission and malformed-JSON rejection belong
+to `test/browserMods.test.ts`; keeping that owner avoids load-sensitive transport timeouts.
 
 ## Authored structures and sites
 
