@@ -8,7 +8,6 @@ local palette = {
   p: { role: 'interior_floor', material: 'floor' },
   D: { furniture: 'wood_door' },
   H: { furniture: 'ladder', facing: 'e' },
-  F: { furniture: 'crate' },
   Z: { spawn: 'shambler', chance: 0.8 },
 };
 local footing = [
@@ -71,58 +70,6 @@ local closed = [
   '#..............#..', '#..............#..', '#..............#H.', '#..............#H.',
   '#..............#..', '#..............#..', '#..............#..', '################..',
 ];
-local empty = [
-  '..............', '..............', '..............', '..............',
-  '..............', '..............', '..............', '..............',
-  '..............', '..............', '..............', '..............',
-];
-local furnished = [
-  '..............', '..............', '..............', '..............',
-  '..............', '..............', '..............', '..............',
-  '..............', '..............', 'FF..........Z.', 'FF............',
-];
-local furnishedUpper = [
-  '..............', '..............', '..............', '..............',
-  '..............', '..............', '..............', '..............',
-  '..............', '..............', 'FF............', 'FF............',
-];
-local reserved = [
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'AARRRRRRRRRRRR', 'AARRRRRRRRRRRR',
-];
-local furnishedClaims = [
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'SSRRRRRRRRRRRR', 'SSRRRRRRRRRRRR',
-];
-local room = {
-  id: 'gauntlet_city_room_crates', size: [14, 7, 12], style: 'brick_townhouse',
-  lootContext: context, palette: palette,
-  layers: [furnished, furnishedUpper, empty, empty, empty, empty, empty],
-  ownership: { layers: [furnishedClaims, furnishedClaims, reserved, reserved, reserved, reserved, reserved] },
-  anchors: {}, ports: [],
-};
-local lowerClaims = [
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', '...........RRR', '...........RRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'SSRRRRRRRRRRRR', 'SSRRRRRRRRRRRR',
-];
-local middleClaims = [
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  '...........RRR', '...........RRR', 'SSRRRRRRRRRRRR', 'SSRRRRRRRRRRRR',
-];
-local lowerAir = [
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', '...........RRR', '...........RRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'AARRRRRRRRRRRR', 'AARRRRRRRRRRRR',
-];
-local middleAir = [
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
-  '...........RRR', '...........RRR', 'AARRRRRRRRRRRR', 'AARRRRRRRRRRRR',
-];
 local lowerFloor = [
   'pppppppppppppp', 'pppppppppppppp', '...........ppp', '...........ppp',
   'pppppppppppppp', 'pppppppppppppp', 'pppppppppppppp', 'pppppppppppppp',
@@ -147,13 +94,8 @@ local slot = function(id, piece, at, size, turn=0) {
   id: id, at: at, size: size, turn: turn,
   choices: [{ ref: { kind: 'piece', id: piece }, weight: 1 }],
 };
-local roomSlot = function(id, at, level) {
-  id: id, at: at, size: [14, 7, 12], turn: 0,
-  choices: [
-    { ref: { kind: 'piece', id: 'gauntlet_city_' + level + '_crates' }, weight: 1 },
-    { ref: { kind: 'piece', id: 'gauntlet_city_' + level + '_cupboards' }, weight: 1 },
-  ],
-};
+local scenes = (import 'gauntlet-city-scenes.libsonnet')(palette, context);
+local roomSlot = scenes.slot;
 local lowerSlots = [
   slot('ground', 'gauntlet_city_ground', [0, 0, 0], [18, 1, 16]),
   slot('shell', 'gauntlet_city_shell', [0, 1, 0], [18, 7, 16]),
@@ -165,7 +107,8 @@ local lowerSlots = [
 ];
 local kit = {
   furniture: doors.furniture,
-  mapPieces: doors.mapPieces + [
+  loot: scenes.loot,
+  mapPieces: doors.mapPieces + scenes.mapPieces + [
     {
       id: 'gauntlet_city_ground', size: [18, 1, 16], style: 'brick_townhouse',
       lootContext: context, palette: palette, layers: [footing], ownership: { layers: [solid] },
@@ -234,20 +177,6 @@ local kit = {
       ] },
       anchors: {}, ports: [],
     },
-    room + { id: 'gauntlet_city_lower_crates', ownership: {
-      layers: [lowerClaims, lowerClaims, lowerAir, lowerAir, lowerAir, lowerAir, lowerAir],
-    } },
-    room + { id: 'gauntlet_city_lower_cupboards', palette: palette + { F: { furniture: 'kitchen_cupboard' } },
-      ownership: { layers: [lowerClaims, lowerClaims, lowerAir, lowerAir, lowerAir, lowerAir, lowerAir] } },
-    room + { id: 'gauntlet_city_middle_crates', ownership: {
-      layers: [middleClaims, middleClaims, middleAir, middleAir, middleAir, middleAir, middleAir],
-    } },
-    room + { id: 'gauntlet_city_middle_cupboards', palette: palette + { F: { furniture: 'kitchen_cupboard' } },
-      ownership: { layers: [middleClaims, middleClaims, middleAir, middleAir, middleAir, middleAir, middleAir] } },
-    room,
-    room + {
-      id: 'gauntlet_city_room_cupboards', palette: palette + { F: { furniture: 'kitchen_cupboard' } },
-    },
     {
       id: 'gauntlet_city_roof', size: [18, 1, 16], style: 'brick_townhouse',
       lootContext: context, palette: palette,
@@ -305,11 +234,7 @@ local kit = {
       { id: 'shell', at: [0, 1, 0], size: [18, 7, 16], turn: 0,
         choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_shell' }, weight: 1 }] },
       doors.slot([7, 1, 2]),
-      { id: 'room', at: [1, 1, 3], size: [14, 7, 12], turn: 0,
-        choices: [
-          { ref: { kind: 'piece', id: 'gauntlet_city_room_crates' }, weight: 1 },
-          { ref: { kind: 'piece', id: 'gauntlet_city_room_cupboards' }, weight: 1 },
-        ] },
+      scenes.slot('room', [1, 1, 3], 'room'),
       { id: 'roof', at: [0, 8, 0], size: [18, 1, 16], turn: 0,
         choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_roof' }, weight: 1 }] },
     ],

@@ -30,6 +30,7 @@ local dressed = function(building) building + {
   anchors: building.anchors + { street: { kind: 'standing', at: [8, ground(building), 1] } },
 };
 {
+  loot: kit.loot,
   mapPools: decor.mapPools,
   furniture: kit.furniture + decor.furniture + yards.furniture,
   mapPieces: kit.mapPieces + cellars.mapPieces + decor.mapPieces + yards.mapPieces,
