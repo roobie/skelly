@@ -9,35 +9,42 @@ read_if:
 
 The acid zombie is the first tier of the lab's acid evolution line and the first enemy that hurts the player from a distance. Its body exists so the player can pick a spitter out of a crowd at its range band before it spits, and can see the spit coming. Gameplay and the reasons for the spit are in `deadvox/docs/acid-zombie.md`; this doc covers only how the body serves them.
 
-## Its own body, shared skeleton
+## Its own body plan, shared skeleton
 
-The body is built from the ground up: its own template, builder, params and features, not a shambler with new colours. A recoloured shambler would read as a shambler at range, which defeats the silhouette rule above.
+The acid zombie is its own body plan with its own registered builder, template, params and features, not a shambler with new colours. The point is a new and better design with more variance than the humanoid builder gives. See `src/core/generate.ts`, `registerBodyPlan`, and `src/core/template.ts`, `BodyPlan`.
 
-It reuses the humanoid bone set and topology, and nothing about the humanoid's look. Deadvox's hit regions, severing, crowd mask packing, gait poses, attack poses and gaze all key on those bone names, so a shared skeleton lets the spitter take hits, lose limbs, walk and look at the player through the paths every humanoid already uses. A skeleton of its own would fork each of those paths for a body that moves and breaks like a human. See `src/mob/humanoid.ts`, `src/mob/shamblerFigure.ts`, `REGION_BONES`, `src/mob/crowd.ts`, `packSeveredMask`, `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and `deadvox/src/core/zombiePose.ts`.
+It keeps the humanoid bone set and topology, and nothing of the humanoid's look. Deadvox's hit regions, severing, crowd mask packing, poses and gaze all key on those bone names, so a shared skeleton lets the spitter take hits, lose limbs, move and look at the player through the paths every humanoid already uses. Every consumer that dispatches on body plan or model must therefore treat it as humanoid-shaped. See `src/mob/humanoid.ts`, `src/mob/shamblerFigure.ts`, `REGION_BONES`, `src/mob/crowd.ts`, `packSeveredMask`, and `deadvox/src/core/zombiePose.ts`.
 
-## Silhouette
+Mass fractions are the humanoid's. They cover only the severable parts, which the shared skeleton keeps unchanged, and the sac is cosmetic. See `src/mob/templates.ts`, `HUMANOID_MASS_FRACTIONS`.
 
-The frame is bulky and hunched: broad, heavy shoulders and chest, a forward-thrust head, so the outline differs from the shambler's at the distance it spits from. The swollen sac makes the chest bulge forward, which also separates it from the brute, whose bulk is height and breadth. Mass is a template choice (`PROJECT.md`, "Design boundaries"), so the spitter's weight follows its bulk, not voxel density.
+## Silhouette and size
+
+The frame is bulky and hunched, with a forward-thrust head and the sac bulging from the chest. It stands at shambler height with brute-like breadth, at the shambler's voxel size. Mass is a template choice (`PROJECT.md`, "Design boundaries"), so its weight follows its bulk, not voxel density.
+
+## Gait and gaze
+
+It has its own heavier gait and its own look-at profile. See `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`.
 
 ## Parts
 
-- **Chest sac.** A swollen acid sac in the chest, owned by the chest bone. It is the body's signature and its wind-up telegraph, so it sits on the front of the torso where a player facing the spitter sees it.
-- **Eyes.** Glowing green eyes in the sockets, so the face reads as a spitter when the sac is turned away or hidden by the crowd.
+- **Chest sac.** A swollen acid sac on the front of the chest, owned by the chest bone. It is cosmetic only and part of the torso hit region; later tiers of the line may give the sac effects of their own. On death it bursts as a cosmetic effect only.
+- **Eyes.** Glowing green eyes in the sockets.
 - **Drool.** Acid hanging from the mouth, owned by the jaw, so it goes with the head when the head is severed. Mesh drool is static; the drips that fall from it are Deadvox presentation, because mesh voxels cannot fall without a simulation of their own.
-- **Clothes.** A dark ragged shirt and trousers.
+- **Clothes.** A shirt and trousers, ragged, with shambler-like hue ranges kept dark.
 
 ## Materials and colour
 
-The acid parts need materials the body does not have: the fixed material list has no acid and nothing that glows. The acid colour is green against sickly skin and dark clothes; acid is the one bright colour on the body, so a player learns "green glow means spit". Colour values and their ranges are template params, so they stay authored content (`../PILLARS.md`, "Content forward compatibility"). Every added material must justify the mesh fragmentation it causes (`PROJECT.md`, "Design boundaries"). See `src/core/body.ts`, `MATERIALS`.
+The acid parts need materials the body does not have: the fixed material list has no acid and nothing that glows. Acid green against sickly skin and dark clothes makes the acid the body's bright colour. Colour values and ranges are template params, so they stay authored content (`../PILLARS.md`, "Content forward compatibility"). Every added material must justify the mesh fragmentation it causes (`PROJECT.md`, "Design boundaries"). See `src/core/body.ts`, `MATERIALS`.
 
 ## Glow: what mobgen exports, what Deadvox drives
 
-Mobgen says which materials glow; Deadvox says how brightly, per actor and per frame. The body is generated once per model and seed and shared by every actor of that variant, while the wind-up is simulation state of one actor, so the brightness cannot live in the geometry. The per-actor level reaches the shader through the crowd data texture that already carries each actor's severed and bloodied state. See `src/mob/crowd.ts` and `deadvox/src/render/mobActors.ts`.
+Mobgen says which materials glow; Deadvox says how brightly, per actor and per frame. The body is generated once per model and seed and shared by every actor of that variant, while the wind-up belongs to one actor, so the brightness cannot live in the geometry. See `src/mob/crowd.ts` and `deadvox/src/render/mobActors.ts`.
 
-- The sac and eyes glow at idle, so the spitter is identifiable before it acts.
-- The sac brightens with wind-up progress, so the brightness is the telegraph the player reads; the head pulls back as part of the same telegraph through the attack pose.
+- The eyes glow at a fixed level.
+- The sac glows at idle and brightens with wind-up progress; the head pulls back in the same telegraph.
+- Glow levels, drip rate and drip look are Deadvox type content, because tunables live in content (`../PILLARS.md`, "Content forward compatibility").
 - Glow is presentation. It reads simulation state and never feeds it back, so saves and replays are unaffected (`deadvox/docs/acid-zombie.md`, "Saves and determinism").
 
 ## Reaching Deadvox
 
-The body becomes a new `model` value for Deadvox zombie types, resolved through `consumableTemplate` like every spawned model, and the acid zombie type names it in content. The mouth is the origin of the spit's line-of-sight test, so the spit origin must come from the generated jaw, not a fixed offset, or a spit could leave from outside the visible mouth. See `src/core/template.ts`, `consumableTemplate`, `deadvox/src/core/schema.ts`, `ZombieSchema`, and `deadvox/docs/acid-zombie.md`, "The spit".
+The body becomes a new `model` value for Deadvox zombie types, resolved through `consumableTemplate` like every spawned model, and the acid zombie type names it in content. The mouth is the origin of the spit's line-of-sight test, so the spit origin comes from the generated jaw, not a fixed offset, or a spit could leave from outside the visible mouth. See `src/core/template.ts`, `consumableTemplate`, `deadvox/src/core/schema.ts`, `ZombieSchema`, and `deadvox/docs/acid-zombie.md`, "The spit".
