@@ -82,6 +82,9 @@ describe('browser mod admission', () => {
     const data = fixture;
     const result = evaluateMods([mod(data)]);
     expect(result.canStart).toBe(true);
+    expect(result.admitted).toEqual([
+      { id: data.id, version: '1', data: { items: data.items, zombies: data.zombies } },
+    ]);
     expect(result.content.registry.items.has(data.items[0]!.id)).toBe(true);
     const zombie = data.zombies[0]!;
     expect(result.content.registry.zombies.get(zombie.id)?.speed).toEqual(zombie.speed);
@@ -102,7 +105,8 @@ describe('browser mod admission', () => {
 
   it('rejects the whole broken file with issues without changing base content', () => {
     const data = fixture;
-    const result = evaluateMods([mod({ ...data, items: [...data.items, { id: 'broken' }] })]);
+    const broken = mod({ ...data, items: [...data.items, { id: 'broken' }] });
+    const result = evaluateMods([broken]);
     expect(result.canStart).toBe(false);
     expect(result.issues.get('fixture.json')?.length).toBeGreaterThan(0);
     expect(result.content.registry.items.size).toBe(base.registry.items.size);
@@ -111,5 +115,16 @@ describe('browser mod admission', () => {
     );
     expect(result.content.origins).toEqual(base.origins);
     expect(base.registry.items.has(data.items[0]!.id)).toBe(false);
+  });
+
+  it('allows base-content startup after disabling a broken file while preserving its issues', () => {
+    const broken = mod({ ...fixture, items: [...fixture.items, { id: 'broken' }] });
+    const disabled = evaluateMods([{ ...broken, enabled: false }]);
+    expect(disabled.canStart).toBe(true);
+    expect(disabled.admitted).toEqual([]);
+    expect(disabled.issues.get(broken.source)?.length).toBeGreaterThan(0);
+    expect(disabled.content.origins).toEqual(base.origins);
+    const config = configFromUrl(new URLSearchParams('site=testHouse'), disabled.content);
+    expect(config.content.registry).toBe(disabled.content.registry);
   });
 });

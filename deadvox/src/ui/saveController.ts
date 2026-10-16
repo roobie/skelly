@@ -2,7 +2,9 @@ import { html, render } from 'lit-html';
 import type { HandedCharacter } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import {
+  type ActiveBrowserMod,
   type ActiveBundledMod,
+  contentPackDifferences,
   currentSaveVersionIdentity,
   decodeSave,
   type SaveContentKind,
@@ -34,6 +36,7 @@ const SCHEDULER_IDS = new Set([
   'handling',
   'firearms',
 ]);
+const BROWSER_MOD_DIFFERENCE_PREFIX = /^(Missing|Different|Additional) mod: browser\./;
 const CONTINUE_KEY = 'deadvox.continue-namespace';
 const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
 const DEAD_WORLD_KEY = 'deadvox.dead-world';
@@ -150,10 +153,14 @@ export class SaveController {
     this.capture('scenario won');
   }
 
-  constructor(backend: SaveBackendPreference = 'auto', bundledMods: readonly ActiveBundledMod[] = []) {
+  constructor(
+    backend: SaveBackendPreference = 'auto',
+    bundledMods: readonly ActiveBundledMod[] = [],
+    browserMods: readonly ActiveBrowserMod[] = [],
+  ) {
     this.environmentProblem = saveEnvironmentProblem();
     if (!this.environmentProblem) {
-      this.identity = currentSaveVersionIdentity(bundledMods);
+      this.identity = currentSaveVersionIdentity(bundledMods, browserMods);
       this.worldId = globalThis.crypto.randomUUID();
       this.characterId = globalThis.crypto.randomUUID();
     }
@@ -287,7 +294,10 @@ export class SaveController {
     this.savedGeneration = this.currentRecord.generation;
     this.corruptRecords = this.currentRecord.corruptSlots.length > 0;
     try {
-      const decoded = await decodeSave(this.currentRecord.payload, { contentLookup: () => true });
+      const decoded = await decodeSave(this.currentRecord.payload, {
+        version: this.identityValue!.components,
+        contentLookup: () => true,
+      });
       const markedDeadWorld = this.readDeadWorldId();
       this.deadRecord =
         decoded.snapshot.character.simulation.dead !== undefined || markedDeadWorld === decoded.snapshot.world.id;
@@ -330,7 +340,10 @@ export class SaveController {
   }
 
   private async inspectOtherNamespaces(namespaces: readonly string[]): Promise<void> {
-    const namespace = namespaces.find((candidate) => candidate !== this.namespace);
+    const requested = sessionStorage.getItem(CONTINUE_KEY);
+    const namespace =
+      namespaces.find((candidate) => candidate === requested && candidate !== this.namespace) ??
+      namespaces.find((candidate) => candidate !== this.namespace);
     if (!namespace) {
       return;
     }
@@ -338,6 +351,20 @@ export class SaveController {
       const record = await this.storage.load(namespace);
       if (record) {
         this.oldVersionLabel = `An older or different-version save is preserved · ${namespace.slice(0, 12)} · ${versionLabel(record.payload)}`;
+        try {
+          const envelope = JSON.parse(new TextDecoder().decode(record.payload)) as {
+            versionIdentity: SaveVersionIdentity;
+          };
+          const differences = contentPackDifferences(
+            envelope.versionIdentity.components.contentPacks,
+            this.identityValue!.components.contentPacks,
+          ).map((difference) => difference.replace(BROWSER_MOD_DIFFERENCE_PREFIX, '$1 mod: '));
+          if (differences.length > 0) {
+            this.oldVersionLabel += ` · ${differences.join('; ')}`;
+          }
+        } catch {
+          // Unreadable pack metadata must not hide a preserved save.
+        }
       }
     } catch {
       this.oldVersionLabel = `A damaged older-version save is preserved · ${namespace.slice(0, 12)}`;
@@ -364,6 +391,7 @@ export class SaveController {
     }
     try {
       const decoded = await decodeSave(candidate.payload, {
+        version: this.identityValue!.components,
         contentLookup: (kind, id) => contentLookup(registry, kind, id),
       });
       this.restored = decoded.snapshot;
