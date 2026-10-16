@@ -22,6 +22,12 @@ export const PLAYER = {
 /** m/s². Heavier than Earth's; it makes jumps feel snappy. */
 const GRAVITY = 28;
 
+/** Metres a sprinting jump has risen above its take-off point after running `run` metres from it. */
+export const sprintJumpRise = (run: number): number => {
+  const t = run / PLAYER.sprint;
+  return PLAYER.jump * t - (GRAVITY * t * t) / 2;
+};
+
 export const physicsFor = (scale: Scale): PhysicsParams => ({
   gravity: GRAVITY / scale.blockSize,
   stepHeight: PLAYER.stepHeight / scale.blockSize,

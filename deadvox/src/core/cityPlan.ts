@@ -1,9 +1,11 @@
+import { sprintJumpRise } from '../game/player.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_TEMPLATES } from './hamlet.ts';
 import { hash3, pickWeighted, Rng } from './random.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
+import { BLOCK_SIZE } from './scale.ts';
 import type { MapPoolDef, ScenarioDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
@@ -221,21 +223,24 @@ const dressingIssues = (registry: Registry, city: ScenarioDef['city'], perimeter
   return issues;
 };
 
+/** A sprint jump from the roof edge must still be below the wall-plus-wire top where it crosses the wall. */
 const clearanceIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {
   const { ring } = city;
-  const buildings = (registry.mapPools.get(ring?.pool ?? city.pool)?.choices ?? []).flatMap(({ ref }) => {
+  const wallTop = perimeter.height + 1 + (perimeter.wire?.height ?? 0);
+  const setback = ring ? ring.setback : city.street + city.pad;
+  const arcTop = (roof: number) => roof + sprintJumpRise(setback * BLOCK_SIZE) / BLOCK_SIZE;
+  const choices = registry.mapPools.get(ring?.pool ?? city.pool)?.choices ?? [];
+  return choices.flatMap(({ ref }) => {
     const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id);
-    return building ? [building.size[1]] : [];
+    return building && arcTop(building.size[1]) >= wallTop
+      ? [
+          [
+            '.city.perimeter.clearance',
+            `a jump from the roof of "${ref.id}" clears the wall; lower the building or raise the setback`,
+          ] as [string, string],
+        ]
+      : [];
   });
-  const nearest = ring ? ring.setback : city.street + city.pad;
-  return nearest < perimeter.clearance && perimeter.height - Math.max(0, ...buildings) < perimeter.clearance
-    ? [
-        [
-          '.city.perimeter.clearance',
-          'the wall does not clear the tallest roof within jump reach of it; raise the wall or the ring setback',
-        ],
-      ]
-    : [];
 };
 
 const perimeterIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {

@@ -219,7 +219,7 @@ describe('one finished city plan', () => {
       blockX: 40,
       blockZ: 40,
       rows: 4,
-      perimeter: { block: 'fixture_solid', height: 6, thickness: 2, clearance: 2 },
+      perimeter: { block: 'fixture_solid', height: 6, thickness: 2 },
     };
     const admitted = buildRegistry(fixtureScenarioSources(scenario));
     expect(admitted.issues).toEqual([]);
@@ -282,7 +282,7 @@ describe('one finished city plan', () => {
         blockX: 40,
         blockZ: 40,
         rows: 4,
-        perimeter: { block: 'fixture_solid', height: 6, thickness: 2, clearance: 1 },
+        perimeter: { block: 'fixture_solid', height: 6, thickness: 2 },
         ...(ring ? { ring: { pool: 'fixture_pool', setback: 6 } } : {}),
       };
       const admitted = buildRegistry(fixtureScenarioSources(scenario));
@@ -298,11 +298,53 @@ describe('one finished city plan', () => {
     },
   );
 
+  it('reports a gap when a stretch of the north wall is missing', () => {
+    const scenario = fixtureScenario();
+    scenario.city = {
+      ...scenario.city,
+      blockX: 40,
+      blockZ: 40,
+      rows: 4,
+      perimeter: { block: 'fixture_solid', height: 6, thickness: 2 },
+    };
+    const admitted = buildRegistry(fixtureScenarioSources(scenario));
+    expect(admitted.issues).toEqual([]);
+    const plan = buildCityPlan({
+      seed: 73,
+      registry: admitted.registry,
+      floor,
+      grid: cityGridOf(admitted.registry, scenario.city),
+      scenario,
+    });
+    const height = scenario.city.perimeter!.height;
+    const probe = plan.bounds.z0 - 1;
+    const covers = ({ min, max }: (typeof plan.structures)[number]) => min[2] <= probe && probe < max[2];
+    expect(perimeterGaps(plan.structures, plan.bounds, floor, height)).toEqual([]);
+    const cut = plan.structures.filter((box) => !(covers(box) && box.min[0] <= plan.spawn[0] && plan.spawn[0] < box.max[0]));
+    expect(cut.length).toBeLessThan(plan.structures.length);
+    expect(perimeterGaps(cut, plan.bounds, floor, height).join('\n')).toContain('north side is open');
+  });
+
+  it.each([
+    { wall: 3, reports: true },
+    { wall: 6, reports: false },
+  ])('checks a roof jump against a wall $wall blocks high at the ring setback (reports: $reports)', ({ wall, reports }) => {
+    const scenario = fixtureScenario();
+    scenario.city = {
+      ...scenario.city,
+      perimeter: { block: 'fixture_solid', height: wall, thickness: 2 },
+      ring: { pool: 'fixture_pool', setback: 6 },
+    };
+    const { registry: admitted } = buildRegistry(fixtureScenarioSources(fixtureScenario()));
+    const paths = scenarioPlanIssues(admitted, scenario).map(([path]) => path);
+    expect(paths.includes('.city.perimeter.clearance')).toBe(reports);
+  });
+
   it('fails validation when the edge ring names a pool that does not exist', () => {
     const scenario = fixtureScenario();
     scenario.city = {
       ...scenario.city,
-      perimeter: { block: 'fixture_solid', height: 6, thickness: 2, clearance: 1 },
+      perimeter: { block: 'fixture_solid', height: 6, thickness: 2 },
       ring: { pool: 'missing_pool', setback: 6 },
     };
     const { registry: admitted } = buildRegistry(fixtureScenarioSources(fixtureScenario()));
@@ -331,7 +373,7 @@ describe('one finished city plan', () => {
       expect(pos[2]).toBeLessThan(site.bounds.z1);
       expect(inWall(pos)).toBe(false);
     }
-  }, 60_000);
+  });
 
   it('reserves each candidate/turn class inside the apron and keeps ordinary rows out of street space', () => {
     const plan = planned();

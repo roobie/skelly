@@ -37,7 +37,7 @@ local ladder = lab.entry.ladder;
       pad: 2, gap: 1, blend: 24,
       rows: 4,
       perimeter: {
-        block: 'concrete', height: 12, thickness: 2, clearance: 4,
+        block: 'concrete', height: 12, thickness: 2,
         wire: { block: 'chain_link', height: 2 },
         lining: { assembly: 'gauntlet_perimeter_lining', pitch: 12 },
         gate: { assembly: 'gauntlet_perimeter_gate' },
@@ -51,8 +51,6 @@ local ladder = lab.entry.ladder;
     id: 'gauntlet_ring',
     choices: [
       { ref: { kind: 'assembly', id: 'gauntlet_city_1' }, weight: 36 },
-      { ref: { kind: 'assembly', id: 'gauntlet_city_2' }, weight: 30 },
-      { ref: { kind: 'assembly', id: 'gauntlet_city_3' }, weight: 18 },
       { ref: { kind: 'assembly', id: 'gauntlet_food_store' }, weight: 6 },
     ],
   }, {

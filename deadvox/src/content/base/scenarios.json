@@ -11,20 +11,6 @@
         },
         {
           "ref": {
-            "id": "gauntlet_city_2",
-            "kind": "assembly"
-          },
-          "weight": 30
-        },
-        {
-          "ref": {
-            "id": "gauntlet_city_3",
-            "kind": "assembly"
-          },
-          "weight": 18
-        },
-        {
-          "ref": {
             "id": "gauntlet_food_store",
             "kind": "assembly"
           },
@@ -158,7 +144,6 @@
         "pad": 2,
         "perimeter": {
           "block": "concrete",
-          "clearance": 4,
           "gate": {
             "assembly": "gauntlet_perimeter_gate"
           },

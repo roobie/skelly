@@ -1427,8 +1427,6 @@ const ScenarioSchema = strictObject({
         block: Id,
         height: pipe(Count, minValue(1), maxValue(32)),
         thickness: pipe(Count, minValue(2), maxValue(8)),
-        /** Blocks a jump can span: a roof nearer the wall than this must sit this far below the wall top. */
-        clearance: pipe(Count, minValue(1), maxValue(32)),
         /** Solid wire fence on top of the wall. */
         wire: optional(strictObject({ block: Id, height: pipe(Count, minValue(1), maxValue(8)) })),
         /** Assembly set against the wall's inside face every `pitch` blocks, facing inward. */
