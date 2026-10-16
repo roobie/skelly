@@ -1,6 +1,12 @@
 // Gun-specific rules, added to the core rules through the domain.
 
-import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
+import {
+  distanceWorld,
+  localSolidBounds,
+  obbPolyhedron,
+  penetrationWorld,
+  worldSolid,
+} from '@skelly/engine/core/geometry.ts';
 import type { Issue } from '@skelly/engine/core/issue.ts';
 import type { Vec3 } from '@skelly/engine/core/math.ts';
 import {
@@ -227,12 +233,23 @@ export const pistolBarrelCrown: Rule = {
   },
 };
 
-const solidMaxX = (solid: Solid): number => localSolidBounds(solid)[1][0];
-
-const solidHalfExtent = (solid: Solid, axis: 1 | 2): number => {
-  const bounds = localSolidBounds(solid);
-  return Math.max(Math.abs(bounds[0][axis]), Math.abs(bounds[1][axis]));
+const solidSectionAtX = (solid: Solid, x: number): readonly Vec3[] => {
+  const shape = worldSolid(IDENTITY, solid);
+  const polyhedron = 'vertices' in shape ? shape : obbPolyhedron(shape);
+  return polyhedron.faces.flatMap((face) =>
+    face.flatMap((index, edge) => {
+      const a = polyhedron.vertices[index]!;
+      const b = polyhedron.vertices[face[(edge + 1) % face.length]!]!;
+      if (Math.abs(b[0] - a[0]) < 1e-8) {
+        return Math.abs(a[0] - x) < 1e-8 ? [a, b] : [];
+      }
+      const fraction = (x - a[0]) / (b[0] - a[0]);
+      return fraction >= 0 && fraction <= 1 ? [add(a, scale(sub(b, a), fraction))] : [];
+    }),
+  );
 };
+const sectionExtent = (solids: readonly Solid[], x: number, axis: 1 | 2): number =>
+  Math.max(0, ...solids.flatMap((solid) => solidSectionAtX(solid, x)).map((point) => Math.abs(point[axis])));
 
 /** Handguards must fit within the receiver's actual front-face cross-section. */
 export const handguardFit: Rule = {
@@ -247,14 +264,12 @@ export const handguardFit: Rule = {
       if (!(handguard && receiver)) {
         continue;
       }
-      const receiverFace = r.defs
-        .get(receiver.part)!
-        .solids.filter((solid) => Math.abs(solidMaxX(solid) - receiver.port.pos[0]) < 1e-6);
-      const maxY = Math.max(...receiverFace.map((solid) => solidHalfExtent(solid, 1)));
-      const maxZ = Math.max(...receiverFace.map((solid) => solidHalfExtent(solid, 2)));
+      const receiverSolids = r.defs.get(receiver.part)!.solids;
+      const maxY = sectionExtent(receiverSolids, receiver.port.pos[0], 1);
+      const maxZ = sectionExtent(receiverSolids, receiver.port.pos[0], 2);
       const handguardSolids = r.defs.get(handguard.part)!.solids;
-      const extentY = Math.max(...handguardSolids.map((solid) => solidHalfExtent(solid, 1)));
-      const extentZ = Math.max(...handguardSolids.map((solid) => solidHalfExtent(solid, 2)));
+      const extentY = sectionExtent(handguardSolids, handguard.port.pos[0], 1);
+      const extentZ = sectionExtent(handguardSolids, handguard.port.pos[0], 2);
       if (extentY <= maxY + 1e-6 && extentZ <= maxZ + 1e-6) {
         continue;
       }

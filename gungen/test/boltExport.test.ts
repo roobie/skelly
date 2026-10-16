@@ -157,12 +157,13 @@ it.each(['missing-test-cartridge', '12-gauge-00-buck'])(
   },
 );
 
-it('certifies the whole handle arc and draw against fixed geometry including the hunting scope', () => {
-  for (const assembly of [...designs.map((design) => design.assembly), scoped]) {
-    expect(validate(assembly, gunDomain).issues, assembly.name).toEqual([]);
-    expect(sweepBoltAction(resolve(assembly, gunDomain)), assembly.name).toEqual([]);
-  }
-});
+it.each([...designs.map((design) => design.assembly), { ...scoped, name: 'scoped hunting fixture' }])(
+  'certifies the whole handle arc and draw against fixed geometry: $name',
+  (assembly) => {
+    expect(validate(assembly, gunDomain).issues).toEqual([]);
+    expect(sweepBoltAction(resolve(assembly, gunDomain))).toEqual([]);
+  },
+);
 
 it('exports integral capacity from the well, iron or fitted-optic sights, and a validated phased action', () => {
   const out = exportFileText(readFileSync('designs/hunting-rifle.json', 'utf8'), {

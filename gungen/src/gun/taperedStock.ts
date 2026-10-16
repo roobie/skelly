@@ -29,12 +29,14 @@ export const taperedStockSolids = ({
   length,
   sawed,
   combDegrees = P.combDegrees,
+  lengthU,
 }: {
   length: 'S' | 'M' | 'L';
   sawed: boolean;
   combDegrees?: number;
+  lengthU?: number;
 }): Solid[] => {
-  const len = P.lengthU[length];
+  const len = lengthU ?? P.lengthU[length];
   const padLength = P.padLengthRatio * len;
   const height = P.buttHeightU[length];
   const rake = height * Math.tan((P.padPitchDegrees * Math.PI) / 180);

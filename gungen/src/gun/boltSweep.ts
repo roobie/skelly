@@ -6,10 +6,24 @@ import {
   type WorldSolid,
   worldSolid,
 } from '@skelly/engine/core/geometry.ts';
-import { length, sub } from '@skelly/engine/core/math.ts';
+import { dot, length, scale, sub, type Vec3 } from '@skelly/engine/core/math.ts';
 import { motionTransform } from '@skelly/engine/core/motion.ts';
 import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import { resolveGunAction } from './actionDescription.ts';
+
+// Every obstacle visits the same dyadic phases; a moving solid's pose is independent of the obstacle.
+const cachedPoses = (at: (phase: number) => WorldSolid): ((phase: number) => WorldSolid) => {
+  const poses = new Map<number, WorldSolid>();
+  return (phase) => {
+    const cached = poses.get(phase);
+    if (cached) {
+      return cached;
+    }
+    const shape = at(phase);
+    poses.set(phase, shape);
+    return shape;
+  };
+};
 
 /** Certify continuous intervals by bounding each vertex's maximum displacement from the midpoint. */
 const clearsInterval = (
@@ -52,13 +66,20 @@ export const sweepBoltAction = (resolved: Resolved): readonly string[] => {
     const turn = motion.turn!;
     return part.def.solids.flatMap((solid) => {
       const [min, max] = localSolidBounds(solid);
-      const radius = Math.hypot(
-        ...([0, 1, 2] as const).map((axis) =>
-          Math.max(Math.abs(min[axis] - turn.pivot[axis]), Math.abs(max[axis] - turn.pivot[axis])),
+      // Axial length does not contribute to turn speed, especially for the long rear bolt tail.
+      const radius = Math.max(
+        ...[min[0], max[0]].flatMap((x) =>
+          [min[1], max[1]].flatMap((y) =>
+            [min[2], max[2]].map((z) => {
+              const offset = sub([x, y, z] as Vec3, turn.pivot);
+              const axial = scale(turn.axis, dot(offset, turn.axis) / dot(turn.axis, turn.axis));
+              return length(sub(offset, axial));
+            }),
+          ),
         ),
       );
-      const turnAt = (phase: number) => worldSolid(motionTransform(part.placed, motion, 0, phase), solid);
-      const drawAt = (phase: number) => worldSolid(motionTransform(part.placed, motion, phase, 1), solid);
+      const turnAt = cachedPoses((phase) => worldSolid(motionTransform(part.placed, motion, 0, phase), solid));
+      const drawAt = cachedPoses((phase) => worldSolid(motionTransform(part.placed, motion, phase, 1), solid));
       return obstacles
         .filter(
           ({ shape }) =>
