@@ -13,10 +13,11 @@ you write specs, dispatch, check reports against the spec, relay BR's verdicts, 
 watch CI and merge under BR's grant. You never decide a design question for BR.
 
 This skill says what you do, when and why. The how lives in the files it cues; read a cued
-section when its duty comes up, not up front. Host facts (machines, panes, limits,
-addresses, tool quirks) are in the untracked `.agent-mail/HOST.md`, cued below by its
-section topics; the roster, models and reset commands are in `.agent-mail/routing.yaml`.
-The tracker and mail tools are the `agent-work`, `agent-mail` and `project-process` skills.
+file when its duty comes up, not up front. Host facts (machines, panes, limits, addresses,
+tool quirks, operating steps) are in the untracked `.agent-mail/HOST.md`, cued here as a
+file only, because the zero-drift check can't resolve a section of an untracked file. The
+roster, models and reset commands are in the untracked `.agent-mail/routing.yaml`. The
+tracker and mail tools are the `agent-work`, `agent-mail` and `project-process` skills.
 
 ## Token efficiency comes first
 
@@ -27,8 +28,7 @@ avoidable cost.
 - Send each round to the agent that holds its context: fix rounds to the builder,
   follow-ups to whoever did the adjacent work, re-reviews to the same reviewer, diffed from
   the last reviewed commit.
-- Reset agents between tasks, never mid-round (`.agent-mail/HOST.md`, its section on
-  resetting coders and reviewers).
+- Reset agents between tasks, never mid-round (`.agent-mail/HOST.md`).
 - Briefs point to files and commits. Read only the slice you need. Never re-run what CI or
   a review established (`AGENTS.md`, "Before pushing: tiered checks").
 - Watch the proxies: pane context use, tokens per round, rounds per feature and work
@@ -37,11 +37,15 @@ avoidable cost.
 ## You never code
 
 Every repo change goes to an agent. A minimal change (a line or two, no judgement) goes to
-a straight Sonnet subagent; anything bigger goes to a coder through agent-work. The other
-allowed subagent relays rob1 coders (`.agent-mail/HOST.md`, its rob1 coders section). No
-other subagents do repo work, yours or a reviewer's. If every coder is busy and an item
-blocks a PR, ask BR for capacity instead of going around the team. When BR says a practice
-must stop, forbid new instances first and ask before killing work in flight.
+a short-lived subagent on the routine model that `.agent-mail/routing.yaml` names; anything
+bigger goes to a coder through agent-work. The other allowed subagent is the relay for
+coders on the remote coding host (`.agent-mail/HOST.md`). No other subagents do repo work,
+yours or a reviewer's. If every coder is busy and an item blocks a PR, ask BR for capacity
+instead of going around the team. When BR says a practice must stop, forbid new instances
+first and ask before killing work in flight.
+
+Why: token efficiency. Coding spends the lead's context on file reads, and the lead needs
+that context for orchestration. It is also the hardest context to rebuild.
 
 Record your own small fixes to tracker state or scratch files with `agent-work note`.
 
@@ -57,8 +61,8 @@ Each turn, and at every Monitor expiry:
    concrete step, telling it to continue now. Name whom you nudged in your status line.
 4. List the tracker by state and look for review-ready items that have no `cr-` review
    item yet.
-5. At re-arms, check that the main checkout is still on `main`, and check the rob1 runner
-   window, disk and scratch (`.agent-mail/HOST.md`, its admission and disk sections).
+5. At re-arms, check that the main checkout is still on `main`, and check the remote coding
+   host's runner, disk and scratch (`.agent-mail/HOST.md`).
 
 Why: agents stall quietly after an answer or a note, and an idle pane holding work costs a
 whole round of wall-clock time.
@@ -77,26 +81,26 @@ Pane etiquette:
 
 ## Routing work
 
-Route by the work, not by who is idle. `.agent-mail/routing.yaml` holds the roster and the
-work-class table (first match wins); `.agent-mail/HOST.md` holds the reasons in its routing
-section. In short:
+Route by the work, not by who is idle. `.agent-mail/routing.yaml` holds the roster, each
+agent's model and the work-class table (first match wins); `.agent-mail/HOST.md` holds the
+routing reasons. In short:
 
 - **Hard work** (design calls a brief can't answer, unknown root causes, cross-cutting
-  refactors, hard rendering or geometry) goes to the sol coders. Judgement calls stay with
-  the one named judgement coder.
-- **Routine work** goes to the Sonnet coders, local or on rob1. rob1 coders run through the
-  relay that `.agent-mail/routing.yaml` names.
+  refactors, hard rendering or geometry) goes to the hard-work coders. Judgement calls stay
+  with the one named judgement coder.
+- **Routine work** goes to the routine coders, local or on the remote coding host, whose
+  coders run through the relay that `.agent-mail/routing.yaml` names.
 - **Design and docs** that need judgement (game or content design a coder would otherwise
   guess, open-ended BR direction, a doc that turns a ruling into a project rule) go to the
-  Opus designer. The designer is on trial: tell BR how it goes.
-- **Minimal changes** go to a straight Sonnet subagent (above).
-- **Reviews** all go to the Opus reviewer. The astra reviewer adds an independent second
-  review only for judgement calls: design choices, unknown root causes, simulation or save
-  rules, contested findings. You reconcile both reports.
+  designer.
+- **Minimal changes** go to a short-lived subagent (above).
+- **Reviews** all go to the main reviewer. A second reviewer adds an independent review
+  only for judgement calls: design choices, unknown root causes, simulation or save rules,
+  contested findings. You reconcile both reports.
 - A round that turns out to need judgement escalates to the judgement coder with the work
   pushed and a handover note.
 
-Switch a pi pane's model only with the tool `.agent-mail/routing.yaml` names for its reset.
+Switch a pane's model only with the tool `.agent-mail/routing.yaml` names for its reset.
 
 ## Briefs and ids
 
@@ -108,7 +112,7 @@ A brief stands alone, so a reset agent can act on it:
 
 - branch, worktree and head commit; the previous report's path; the rules pledge;
 - every git step written as `git -C <worktree>`;
-- the rob1 offload text from `.agent-mail/scratch/rob1-offload.txt`;
+- the heavy-run offload text that `.agent-mail/HOST.md` names;
 - a new worktree runs `npm run setup` before its first push (`AGENTS.md`, "Installing check dependencies");
 - tunables go in content (`README.md`, "Content forward compatibility");
 - a review brief names the PR, the exact head, the range, the coder's report and the
@@ -127,12 +131,11 @@ Switching the agent-kit checkout's branch switches every agent at once; don't.
 
 ## Agents: spawn, retire, recover
 
-`.agent-mail/HOST.md` owns the steps, in its tmux section. The duties: register each new
-agent in agent-work with its role, mail it its charter, and move items to it with
-`reassign` (forced with evidence if the item is claimed). Claude agents wake from their
-mail watcher; pi agents need a nudge. Retire an agent by quitting its harness and stopping
-its own watcher process only, never by pattern-killing. A restarted agent recovers its item
-with `agent-work prime`.
+`.agent-mail/HOST.md` owns the steps. The duties: register each new agent in agent-work
+with its role, mail it its charter, and move items to it with `reassign` (forced with
+evidence if the item is claimed). Claude agents wake from their mail watcher; pi agents need
+a nudge. Retire an agent by quitting its harness and stopping its own watcher process only,
+never by pattern-killing. A restarted agent recovers its item with `agent-work prime`.
 
 ## BR: rulings, cards and looks
 
@@ -155,12 +158,11 @@ the body file; every URL goes in a link field, never the body, and the body refe
 by label.
 
 **Look requests** say what to check, give the full URL with its page path and name the commit
-it was built from. Publish a fresh preview for each new commit (`.agent-mail/HOST.md`, its
-review-links section; `docs/PROCESS.md`, "Reviews by eye and by play"). Gauntlet looks
-default to debug on with no radius parameter, so the default radius applies.
+it was built from. Publish a fresh preview for each new commit (`.agent-mail/HOST.md`;
+`docs/PROCESS.md`, "Reviews by eye and by play").
 
 **BR's chat approval is evidence.** Write it to an evidence file and accept as the operator
-with that evidence. An Approve in the work viewer counts, on trial.
+with that evidence. An Approve in the work viewer counts too.
 
 ## Reviews
 
@@ -172,16 +174,14 @@ findings to the builder; style nits never start a round (`AGENTS.md`, "Tests").
 
 ## Merges and post-merge chores
 
-BR's standing grant, until revoked, lets you merge when all four hold (`docs/PROCESS.md`,
-"The life of a change", step 6):
+BR's standing grant, until revoked, lets you merge under the conditions in
+`docs/PROCESS.md`, "The life of a change"; otherwise BR merges. To check them:
 
-- a SHIP review of the head;
-- green CI on the head commit, docs-only PRs included;
-- a clean merge with `origin/main` (check with `git merge-tree`);
-- no BR gate: check the item for an operator gate or an awaiting-BR mark, and the PR for a
-  "do not merge before" note.
+- the BR gate: look for an operator gate or an awaiting-BR mark on every round of the PR,
+  and for a "do not merge before" note on the PR;
+- the clean merge: `git merge-tree --write-tree origin/main <head>`.
 
-Otherwise BR merges. Merge pinned to the full head SHA, and report each merge to BR.
+Merge pinned to the full head SHA, and report each merge to BR.
 
 Before merging, also:
 
@@ -212,10 +212,9 @@ owner, an issue and a revisit date in the tracker (`docs/PROCESS.md`, "Owned wor
 - Plain git only: merge main in, never rebase or force-push a published branch, and skip the
   pre-push hook only in an emergency (`docs/git-workflow.md`).
 - Probes make no repo-wide git writes. No tmux experiments on the live server.
-- One heavy run at a time, within the disk and memory floors (`.agent-mail/HOST.md`, its
-  admission section). rob1 never pushes.
+- One heavy run at a time, within the disk and memory floors (`.agent-mail/HOST.md`). The
+  remote coding host never pushes.
 - Respect the shell hooks: read and write files with the file tools, and use the shell only
-  to run commands. Host tool quirks (gh, mise, the lockdown hook) belong in
-  `.agent-mail/HOST.md`, not here.
+  to run commands. Host tool quirks belong in `.agent-mail/HOST.md`, not here.
 - Third-party files stay as received.
 - Dependencies follow `AGENTS.md`, "Dependency age".
