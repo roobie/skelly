@@ -412,7 +412,7 @@ export class FirearmMechanics {
       return reason;
     }
     if (pump && !firearmHandlingFor(item, this.inventory.registry).model.internalMagazine) {
-      return 'No exported tube data for this gun';
+      return 'No exported internal magazine data for this gun';
     }
     // Automatic motion will feed before the next cadence deadline. fire() rejects overlapping cycles;
     // only an idle empty chamber is a persistent refusal that should stop that cadence.
@@ -781,7 +781,7 @@ export class FirearmMechanics {
     }
     const gun = this.heldPump();
     if (gun?.uid !== uid) {
-      return 'Pump shotgun is no longer held';
+      return 'I am no longer holding it';
     }
     const reason = exportedActionReason(gun, this.inventory.registry, 'hand');
     if (reason) {
@@ -844,7 +844,7 @@ export class FirearmMechanics {
     }
     const data = firearmHandlingFor(gun, this.inventory.registry);
     if (!(data.model.internalMagazine && data.model.anchors?.loading_port)) {
-      return 'No exported loading port/tube';
+      return 'No exported loading port or internal magazine';
     }
     if (!ammoMatchesCalibre(ammo.type, data.calibre, this.inventory.registry)) {
       return 'Wrong ammunition';
