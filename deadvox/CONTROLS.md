@@ -18,7 +18,7 @@ A visible context owns attention: menus, reading, inventory and debug modals shi
 
 The browser keeps native text entry, IME, selection, clipboard and focus traversal. Deadvox does not duplicate a text editor or browser focus engine. The binding registry refuses Ctrl, Cmd/Meta and Alt as game modifiers because the browser and operating system own those shortcuts. Synthetic events do not prove immunity from desktop interception. In pointer-locked menus, the drawn cursor handles controls that native pointer lock cannot operate, such as range dragging.
 
-Physical key positions define bindings; labels follow the browser's keyboard layout. Rebinding must consider alternate bindings and held gates so a hidden conflict cannot steal movement or run two actions. See `BindingRegistry` and `bindingConflict` in `src/game/inputBindings.ts`.
+Physical key positions define bindings; labels follow the browser's keyboard layout. A modifier's own physical edge takes precedence over its aggregate flag because inconsistent edge flags must not disable unrelated movement. This does not authorize reconstructing other missing key events. Rebinding must consider alternate bindings and held gates so a hidden conflict cannot steal movement or run two actions. See `src/game/inputBindings.ts`, `KeyboardInput`, `BindingRegistry` and `bindingConflict`.
 
 The wheel is not a keyboard chord. In play it steps the wielded item's action; in a menu it scrolls the pane under the drawn cursor, including at the pane's edge. Elsewhere the game leaves it to the browser. See `src/ui/menuPointer.ts`, `mountMenuPointer`.
 
