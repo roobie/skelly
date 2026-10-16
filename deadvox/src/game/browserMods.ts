@@ -1,7 +1,8 @@
+import browserModConfig from '../config/browser-mods.json' with { type: 'json' };
 import { type ContentIssue, type ContentSource, validateContent } from '../core/content.ts';
 import { buildBundledContent, type StartupContent } from './bundledContent.ts';
 
-export const MAX_MOD_BYTES = 1024 * 1024;
+export const MAX_MOD_BYTES = browserModConfig.maxModBytes;
 
 export interface BrowserMod {
   source: string;
@@ -13,9 +14,10 @@ export interface ModEvaluation {
   content: StartupContent;
   issues: ReadonlyMap<string, readonly ContentIssue[]>;
   canStart: boolean;
+  admitted: { id: string; version: string; data: unknown }[];
 }
 
-type IdentifiedSource = ContentSource & { id: string };
+type IdentifiedSource = ContentSource & { id: string; version: string };
 
 const readMod = (mod: BrowserMod): IdentifiedSource | ContentIssue => {
   if (new TextEncoder().encode(mod.text).byteLength > MAX_MOD_BYTES) {
@@ -26,11 +28,14 @@ const readMod = (mod: BrowserMod): IdentifiedSource | ContentIssue => {
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
       return { source: mod.source, path: '', message: 'Expected a mod object' };
     }
-    const { id, ...data } = parsed as Record<string, unknown>;
+    const { id, version = '1', ...data } = parsed as Record<string, unknown>;
     if (typeof id !== 'string' || !id.trim()) {
       return { source: mod.source, path: 'id', message: 'Mod id required: non-empty string' };
     }
-    return { source: mod.source, id, data };
+    if (typeof version !== 'string' || !version.trim()) {
+      return { source: mod.source, path: 'version', message: 'Mod version must be a non-empty string' };
+    }
+    return { source: mod.source, id, version, data };
   } catch (error) {
     return { source: mod.source, path: '', message: error instanceof Error ? error.message : String(error) };
   }
@@ -38,7 +43,7 @@ const readMod = (mod: BrowserMod): IdentifiedSource | ContentIssue => {
 
 export const evaluateMods = (mods: readonly BrowserMod[]): ModEvaluation => {
   const issues = new Map<string, ContentIssue[]>();
-  const selected: ContentSource[] = [];
+  const selected: IdentifiedSource[] = [];
   const disabled: IdentifiedSource[] = [];
   const identities = new Map<string, string>();
   const duplicateIssue = (source: IdentifiedSource): ContentIssue => ({
@@ -87,6 +92,7 @@ export const evaluateMods = (mods: readonly BrowserMod[]): ModEvaluation => {
   }
   return {
     content,
+    admitted: selected.map(({ id, version, data }) => ({ id, version, data })),
     issues,
     canStart: content.issues.length === 0 && mods.every((mod) => !(mod.enabled && issues.get(mod.source)?.length)),
   };

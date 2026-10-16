@@ -10,7 +10,7 @@ import {
   terrainHeightMetres,
 } from '../src/core/worldgen.ts';
 
-const blocks = { air: 0, grass: 1, dirt: 2, stone: 3, sand: 4 };
+const blocks = { air: 0, grass: 1, dirt: 2, rock: 3, sand: 4 };
 const metre = makeScale(1);
 const half = makeScale(0.5);
 
@@ -58,7 +58,7 @@ describe('worldgen', () => {
       const h = terrainHeight(5, half, x, z);
       expect([blocks.grass, blocks.sand]).toContain(at(x, h, z));
       expect(at(x, h + 1, z)).toBe(blocks.air);
-      expect(at(x, h - 6, z)).toBe(blocks.stone);
+      expect(at(x, h - 6, z)).toBe(blocks.rock);
     }
   });
 
@@ -72,7 +72,7 @@ describe('worldgen', () => {
 
   it('stores chunks that are all one block as a single id', () => {
     const column = generateColumn({ seed: 5, blocks, scale: half }, 0, 0);
-    expect(column[0]?.uniformId).toBe(blocks.stone); // deep underground
+    expect(column[0]?.uniformId).toBe(blocks.rock); // deep underground
     expect(column.at(-1)?.uniformId).toBe(blocks.air); // sky
     expect(column.filter((c) => c.uniformId === undefined).length).toBeLessThanOrEqual(2);
   });

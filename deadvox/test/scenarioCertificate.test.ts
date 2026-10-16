@@ -262,15 +262,16 @@ describe('final composed body-route certificate', () => {
   });
 });
 
+const stampProbePoints = [
+  base.portal!.upper,
+  base.portal!.lower,
+  base.composition!.objective,
+  ...base.composition!.descents.flatMap(({ upper, lower, ladder }) => [upper, lower, ladder]),
+  ...base.composition!.resources.map(({ at }) => at),
+];
 const stampProbeCells = [
   ...new Map(
-    [
-      base.portal!.upper,
-      base.portal!.lower,
-      base.composition!.objective,
-      ...base.composition!.descents.flatMap(({ upper, lower, ladder }) => [upper, lower, ladder]),
-      ...base.composition!.resources.map(({ at }) => at),
-    ].map((point) => {
+    stampProbePoints.map((point) => {
       const cell = point.map(toChunk) as Vec3;
       return [cell.join(','), cell] as const;
     }),

@@ -1,5 +1,7 @@
 import type { CityPlan } from './cityPlan.ts';
+import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import { placedPieces } from './templates.ts';
 
 export const DISCOVERY_EVENTS = [
@@ -28,7 +30,7 @@ export interface ScenarioDiscovery {
   entrance: { min: Readonly<Vec3>; max: Readonly<Vec3> };
 }
 
-export const discoveryForPlan = (plan: CityPlan): ScenarioDiscovery | undefined => {
+export const discoveryForPlan = (plan: CityPlan, registry: Registry): ScenarioDiscovery | undefined => {
   if (!(plan.service && plan.portal && plan.composition)) {
     return undefined;
   }
@@ -38,7 +40,25 @@ export const discoveryForPlan = (plan: CityPlan): ScenarioDiscovery | undefined 
   });
   const side = Math.max(plan.service.template.size[0], plan.service.template.size[2]);
   return {
-    clues: plan.composition.leads.flatMap((placement) => placedPieces(placement).map(({ pos }) => pos)),
+    clues: plan.composition.leads.flatMap((placement) => {
+      const pieces = placedPieces(placement);
+      const fixed = plan.composition!.lootSources.find((source) => source.placement === placement)?.fixedLoot ?? [];
+      return [
+        ...pieces.filter((piece) => registry.furniture.get(piece.furniture)?.readable).map(({ pos }) => pos),
+        ...fixed.flatMap((source) => {
+          const index = placement.template.pieces.findIndex(
+            (candidate) => candidate.pos.join(',') === source.at.join(','),
+          );
+          const piece = pieces[index];
+          if (!piece) {
+            throw new Error(`Missing lead item anchor ${source.at.join(',')}`);
+          }
+          return source.items
+            .filter((item) => registry.items.get(item.item)?.readable)
+            .map((item) => (item.placement === 'surface' ? furnitureSurfacePosition(piece) : piece.pos));
+        }),
+      ];
+    }),
     landmarks: plan.composition.landmarks.map(({ origin, template }) => box(origin, template.size)),
     building: box([plan.service.origin[0], plan.floor, plan.service.origin[2]], [side, 4, side]),
     entrance: plan.portal.envelope,

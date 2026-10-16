@@ -9,6 +9,7 @@ import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import {
   type LootPointSource,
   type LootSpawnPoint,
@@ -131,7 +132,7 @@ export const lootSourcesOf = (
       sources.push({
         ...base,
         channel: 'surface',
-        position: [world.pos[0], world.pos[1] + world.size[1], world.pos[2]],
+        position: furnitureSurfacePosition(world),
         supply: { kind: 'fixed', items: surface },
         required: true,
       });

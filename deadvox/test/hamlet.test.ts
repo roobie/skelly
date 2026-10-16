@@ -25,7 +25,7 @@ const generate = (hamlet: Hamlet, seed: number, columns: [number, number][]) => 
   const terrain: Terrain = {
     seed,
     scale,
-    blocks: { grass: id('grass'), dirt: id('dirt'), stone: id('stone'), sand: id('sand') },
+    blocks: { grass: id('grass'), dirt: id('dirt'), rock: id('stone'), sand: id('sand') },
     surface: hamlet.surface,
     stamp: (chunk) => hamlet.stamp(chunk),
   };

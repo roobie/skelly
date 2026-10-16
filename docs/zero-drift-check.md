@@ -67,6 +67,10 @@ teach readers to copy them. Other inherited violations use the existing ratchet;
 regenerating it is not permission to absorb fixable cues. See
 `tools/zero-drift-check.mjs`, `comparePolicy`.
 
+Cue an untracked file, such as a host-notes file, by its path only, never by path and
+section name. The scanner resolves names only in tracked files, so a section cue into an
+untracked file fails on any clone without it, CI included.
+
 Statement-style references and table-row descriptions are not mechanically resolved.
 A passing check proves recognized cues resolve, not that every factual statement in
 a file remains true or that a cited section supports the surrounding claim.
