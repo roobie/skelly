@@ -146,6 +146,21 @@ export const gauntletFlow = async (browser, baseUrl) => {
       w.manual = true;
       const oldIntent = input.intent;
       input.intent = () => IDLE;
+      const walkBeside = (entity, at) => {
+        const standing = [entity.pos[0] - 1, at[2] + 0.5];
+        const distance = () => Math.hypot(standing[0] - session.body.pos[0], standing[1] - session.body.pos[2]);
+        const frames = Math.ceil((distance() / 2 + 3) * 60);
+        input.intent = () => ({ ...IDLE, forward: 1, walk: true });
+        for (let n = 0; n < frames && distance() >= 0.04; n++) {
+          input.yaw = Math.atan2(session.body.pos[0] - standing[0], session.body.pos[2] - standing[1]);
+          input.pitch = 0;
+          session.frame(1 / 60);
+        }
+        input.intent = () => IDLE;
+        if (distance() >= 0.04) {
+          throw new Error('Could not walk beside the public-paper support');
+        }
+      };
       try {
         for (let n = 0; n < 60; n++) {
           session.frame(1 / 60);
@@ -162,6 +177,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         if (!paper) {
           throw new Error('Public paper not on its support');
         }
+        walkBeside(entity, at);
         const pickup = session.queue.enqueue(paper, { kind: 'hand', side: 'right' });
         if (!pickup.ok) {
           throw new Error(pickup.reason);
