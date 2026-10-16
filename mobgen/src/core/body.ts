@@ -42,7 +42,7 @@ interface NoiseGate {
 }
 
 export interface Feature {
-  /** The bone this feature is anchored to. For 'paint', this is bookkeeping only:
+  /** The bone this feature is anchored to. For 'paint', this is bookkeeping unless `ownerOnly` is set:
    *  paint is tested against every filled voxel by world position, not by owner. */
   readonly bone: string;
   readonly op: 'add' | 'carve' | 'paint';
@@ -53,6 +53,9 @@ export interface Feature {
   readonly noise?: NoiseGate;
   /** Paint only: apply only where the current material is one of these. Unset = any material. */
   readonly onto?: readonly Material[];
+  /** Paint only: apply only to voxels `bone` owns, so a part that must leave with its bone keeps its look
+   *  off the neighbours it touches. */
+  readonly ownerOnly?: boolean;
 }
 
 export interface Body {

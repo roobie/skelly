@@ -545,6 +545,9 @@ const paintMaterial = (grid: Grid, body: Body, ctx: MaterialContext, idx: number
     if (paint.onto && !paint.onto.includes(MATERIALS[matIdx]!)) {
       continue;
     }
+    if (paint.ownerOnly && paint.bone !== bone.id) {
+      continue;
+    }
     if (paint.noise) {
       const n = noise3(p[0] / paint.noise.scale, p[1] / paint.noise.scale, p[2] / paint.noise.scale, ctx.seed);
       if (n >= paint.noise.threshold) {

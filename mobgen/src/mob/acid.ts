@@ -118,7 +118,15 @@ const buildAcidPaints = (layout: JointLayout, p: AcidParams): Feature[] => {
   const sac = sacShape(layout, p);
   const covered: readonly Material[] = ['shirt', 'skin', 'bruise'];
   return [
-    { bone: 'chest', op: 'paint', shape: { kind: 'ellipsoid', ...sac }, material: 'acid', onto: covered },
+    // Chest-only, so neck or jaw voxels inside the sac's ellipsoid stay flesh and a severed head takes none of it.
+    {
+      bone: 'chest',
+      op: 'paint',
+      shape: { kind: 'ellipsoid', ...sac },
+      material: 'acid',
+      onto: covered,
+      ownerOnly: true,
+    },
     {
       bone: 'chest',
       op: 'paint',
@@ -130,6 +138,7 @@ const buildAcidPaints = (layout: JointLayout, p: AcidParams): Feature[] => {
       material: 'bruise',
       onto: ['acid'],
       noise: { scale: 0.05, threshold: p.sacVeins },
+      ownerOnly: true,
     },
     {
       bone: 'chest',
