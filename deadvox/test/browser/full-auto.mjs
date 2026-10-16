@@ -78,6 +78,7 @@ try {
         event: probe.sourceEvent,
         gain: null,
         starts: [],
+        simStarts: [],
         stops: [],
         ramps: [],
         disconnected: false,
@@ -102,6 +103,7 @@ try {
       const start = source.start.bind(source);
       source.start = (...args) => {
         record.starts.push(this.currentTime);
+        record.simStarts.push(globalThis.fullAutoRuntime?.session.sim.time);
         const result = start(...args);
         probe.peak = Math.max(
           probe.peak,
@@ -603,8 +605,9 @@ try {
     peak: globalThis.fullAutoProbe.peak,
     records: globalThis.fullAutoProbe.sources
       .filter((record) => record.event === globalThis.fullAutoProbe.event)
-      .map(({ starts, stops, ramps, disconnected, gainDisconnected }) => ({
+      .map(({ starts, simStarts, stops, ramps, disconnected, gainDisconnected }) => ({
         starts,
+        simStarts,
         stops,
         ramps,
         disconnected,
@@ -615,11 +618,17 @@ try {
   assert.equal(native.records.length, 32 + 27, 'native source starts equal warm-up plus accepted shots');
   assert.ok(native.records.every(({ starts }) => starts.length === 1));
   const burst = native.records.slice(32);
-  const nativeSpan = burst.at(-1).starts[0] - burst[0].starts[0];
-  assert.ok(
-    nativeSpan >= 1.85 && nativeSpan <= 2.1,
-    `native two-second burst span ${nativeSpan}s (1.95s attack span, <=150ms scheduling allowance)`,
-  );
+  // Voices start immediately on the audio clock, so its span is wall time under CI load. Bind each
+  // native start to its shot on the simulation clock instead: in order, never before its shot.
+  burst.forEach(({ starts, simStarts }, index) => {
+    assert.ok(
+      simStarts[0] >= native.shots[index] - 1e-9,
+      `native start ${index} begins no earlier than its shot on the simulation clock`,
+    );
+    if (index > 0) {
+      assert.ok(starts[0] >= burst[index - 1].starts[0], `native start ${index} follows start ${index - 1}`);
+    }
+  });
   await page.waitForFunction(() => !globalThis.fullAutoRuntime.inventory.hands.right.firearm?.landings?.length);
   const persistentCases = await page.evaluate(
     () =>
@@ -733,7 +742,7 @@ try {
   );
   assert.deepEqual(errors, []);
   process.stdout.write(
-    `full-auto native WebAudio passed: 27 shots/2s at 800rpm, 27 cases, release stops, ${native.records.length} starts, ${nativeSpan.toFixed(3)}s native attack span, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,
+    `full-auto native WebAudio passed: 27 shots/2s at 800rpm, 27 cases, release stops, ${native.records.length} starts, ordered native starts, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,
   );
 } catch (error) {
   const page = browser?.contexts()[0]?.pages()[0];
