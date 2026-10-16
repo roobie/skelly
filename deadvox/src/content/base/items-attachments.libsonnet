@@ -1,6 +1,10 @@
 {
   "items": [
     {
+      id: 'optic_hunting_3_9x', name: '3–9× hunting scope', category: 'misc',
+      weight: 400, size: [2, 2], model: 'optic_hunting_3_9x', opticMagnification: 6,
+    },
+    {
       "id": "optic_digital_thermal",
       "name": "Digital thermal optic",
       "category": "misc",

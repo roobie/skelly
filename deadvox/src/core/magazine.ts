@@ -29,10 +29,10 @@ export const magazineSpec = (registry: Registry, type: string): MagazineSpec | u
   return { calibre: model.calibre, capacity: model.capacity };
 };
 
-/** The calibre a magazine-fed firearm takes. */
+/** The calibre a detachable-magazine firearm takes. */
 export const magazineWellCalibre = (registry: Registry, type: string): string | undefined => {
   const def = registry.items.get(type);
-  if (!def?.firearm || def.firearm.pump) {
+  if (!def?.firearm || def.firearm.pump || def.firearm.bolt) {
     return undefined;
   }
   const model = def.model === undefined ? undefined : registry.models.get(def.model);

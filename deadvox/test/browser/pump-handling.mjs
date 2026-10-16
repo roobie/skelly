@@ -723,10 +723,10 @@ try {
           switch (condition) {
             case 'rightHand':
               return !session.queue.busy && session.inventory.hands.right?.uid === uid;
-            case 'itemGone':
-              return item === undefined;
             case 'idle':
               return !session.queue.busy;
+            case 'itemGone':
+              return item === undefined;
             case 'tubeLoaded':
               return (item?.firearm?.tube?.length ?? 0) > 0;
             case 'chamberRound':
@@ -952,6 +952,101 @@ try {
   const lowered = await observe();
   assert.equal(lowered.ads, false, 'releasing the stance exits ADS');
   assert.equal(lowered.fov, ids.fov);
+  const boltIds = await page.evaluate(async (firearmModule) => {
+    const { spentCaseItemId } = await import(firearmModule);
+    const { session } = globalThis.pumpHandlingTest;
+    const { inventory } = session;
+    const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
+    const stock = rack.pockets.flat().map(({ item }) => item);
+    const gun = stock.find((item) => inventory.registry.items.get(item.type)?.firearm?.bolt);
+    if (!gun) {
+      throw new Error('Range rack has no bolt rifle');
+    }
+    const model = inventory.registry.models.get(inventory.registry.items.get(gun.type).model);
+    const round = stock.find((item) => inventory.registry.items.get(item.type)?.ammo?.calibre === model.calibre);
+    if (!round) {
+      throw new Error('Range rack has no matching bolt ammunition');
+    }
+    const caseType = spentCaseItemId(model.calibre);
+    const casesBefore = [...inventory.items()]
+      .filter(({ item, location }) => item.type === caseType && location.kind === 'pile')
+      .reduce((count, { item }) => count + item.count, 0);
+    return {
+      gun: gun.uid,
+      round: round.uid,
+      cycleSeconds: model.action.hand.durationSimSeconds,
+      caseType,
+      casesBefore,
+    };
+  }, '/src/game/firearmHandling.ts');
+  await pressAction(page, 'ui.inventory-toggle');
+  await select(boltIds.round);
+  await pressAction(page, 'inventory.best-pocket');
+  await waitForWork('idle', boltIds.round);
+  await select(boltIds.gun);
+  await pressAction(page, 'inventory.hands');
+  await waitForHands(boltIds.gun);
+  await pressAction(page, 'ui.inventory-toggle');
+  const releaseBoltLoad = await holdAction(page, 'firearm.reload');
+  try {
+    await page.waitForFunction(
+      (uid) =>
+        globalThis.pumpHandlingTest.session.queue.jobs.some(
+          (job) => job.kind === 'action' && job.params.uid === uid && job.jobType === 'firearm.load',
+        ),
+      boltIds.gun,
+    );
+    await waitForWork('tubeLoaded', boltIds.gun);
+    await page.waitForFunction(
+      (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.cycle?.phase === 'close',
+      boltIds.gun,
+    );
+    await waitForWork('chamberRound', boltIds.gun);
+  } finally {
+    await releaseBoltLoad();
+  }
+  const boltLoaded = await page.evaluate(
+    (uid) => structuredClone(globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm),
+    boltIds.gun,
+  );
+  assert.equal(boltLoaded.actionOpen, false, 'loading completion closes the bolt');
+  assert.equal(boltLoaded.chamber, 'round');
+  await page.mouse.down({ button: 'right' });
+  await page.evaluate((uid) => {
+    const { session } = globalThis.pumpHandlingTest;
+    session.frame(session.firearms.stanceEffectsFor(uid).raiseDurationSimSeconds + 0.1);
+  }, boltIds.gun);
+  await page.mouse.click(640, 450);
+  await page.waitForFunction(
+    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.chamber === 'case',
+    boltIds.gun,
+  );
+  const boltKeys = await page.context().newCDPSession(page);
+  await pressCdpActionBurst(
+    (expression) => page.evaluate(expression),
+    (method, params) => boltKeys.send(method, params),
+    'firearm.reload',
+    2,
+  );
+  await boltKeys.detach();
+  await page.waitForFunction(
+    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.cycle?.mode === 'hand',
+    boltIds.gun,
+  );
+  await waitForWork('idle', boltIds.gun, boltIds.cycleSeconds);
+  await page.mouse.up({ button: 'right' });
+  const ejectedCaseCount = await page.waitForFunction(({ caseType, casesBefore }) => {
+    const { inventory } = globalThis.pumpHandlingTest.session;
+    const count = [...inventory.items()]
+      .filter(({ item, location }) => item.type === caseType && location.kind === 'pile')
+      .reduce((total, { item }) => total + item.count, 0);
+    return count > casesBefore ? count : false;
+  }, boltIds);
+  assert.equal(
+    await ejectedCaseCount.jsonValue(),
+    boltIds.casesBefore + 1,
+    'the rack ejects one spent case as a pickup',
+  );
   assert.deepEqual(errors, []);
   await page.waitForFunction(() => globalThis.pumpDecoded.some((source) => source.event === 'shotgun_blast'));
   const decoded = await page.evaluate(() =>

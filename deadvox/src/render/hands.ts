@@ -62,7 +62,7 @@ import {
   poseRevolverParts,
   rackGrip,
   revolverOpenAmount,
-  sampleActionStroke,
+  sampleActionPose,
 } from './firearmModel.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
@@ -111,6 +111,7 @@ export interface HeldFirearmPose {
   readonly elapsed: number;
   readonly duration?: number;
   readonly roundType?: string;
+  readonly actionOpen?: boolean;
   readonly magazine?: { readonly removeShare: number; readonly incoming?: string };
 }
 
@@ -289,6 +290,13 @@ export class HeldItems {
     this.view.position.copy(main.position);
     this.view.quaternion.copy(baseCameraQuaternion);
     this.view.updateMatrixWorld(true);
+    for (const [uid, { parts }] of this.firearmParts) {
+      this.poseBoltHand(
+        uid,
+        firearmPoses.find((frame) => frame.uid === uid),
+        parts,
+      );
+    }
     this.poseRummage(renderPose, handling);
     this.poseMagazineLoad(handling);
     this.poseRevolverHands(firearmPoses);
@@ -782,9 +790,11 @@ export class HeldItems {
       this.updateRevolver(item, definition, frame);
       return;
     }
-    const mode = frame?.mode === 'fire' || frame?.mode === 'hand' ? frame.mode : undefined;
-    const stroke = frame && mode && action ? sampleActionStroke(action, mode, frame.elapsed, frame.duration) : 0;
-    poseActionParts(parts, mode, stroke);
+    if (!action) {
+      return;
+    }
+    const { mode, stroke, turn } = sampleActionPose(action, frame);
+    poseActionParts(parts, mode, stroke, turn);
     this.updatePump(uid, frame, stroke);
     const held = this.shown.get(uid);
     if (held && !this.pumpModels.has(uid)) {
@@ -794,6 +804,23 @@ export class HeldItems {
         held,
         mode === 'hand' && action ? this.rackHandGrip(held, action, parts, frame!) : magazineGrip,
       );
+    }
+  }
+
+  private poseBoltHand(uid: number, frame: HeldFirearmPose | undefined, parts: readonly HeldActionPart[]): void {
+    const knob = parts.find((part) => part.id === 'knob' && part.turn);
+    if (!knob) {
+      return;
+    }
+    const side = this.inventory.hands.right?.uid === uid ? 'right' : 'left';
+    const arm = this.arms.get(side);
+    if (!arm?.parent) {
+      return;
+    }
+    if (frame?.mode === 'hand') {
+      knob.node.updateWorldMatrix(true, true);
+      const point = new Box3().setFromObject(knob.node).getCenter(new Vector3());
+      arm.position.copy(arm.parent.worldToLocal(point));
     }
   }
 
@@ -1005,7 +1032,10 @@ export class HeldItems {
     }
     const feed =
       frame?.mode === 'load' && arm && base
-        ? shellLoadPose(base, heldAnchorOffset(model, 'loading_port'), side, frame)
+        ? shellLoadPose(base, heldAnchorOffset(model, 'loading_port'), side, {
+            ...frame,
+            topFeed: Object.values(model.action?.parts ?? {}).some((mover) => mover.turn),
+          })
         : undefined;
     if (feed) {
       arm?.position.set(...feed.wrist);
@@ -1036,6 +1066,13 @@ export class HeldItems {
     if (shell) {
       // The round follows the feeding wrist until seated, without becoming a second inventory item.
       shell.position.set(...feed.shell);
+      const model = this.pumpModels.get(uid);
+      if (model && Object.values(model.action?.parts ?? {}).some((part) => part.turn)) {
+        const direction = new Vector3(...heldAnchorOffset(model, 'loading_port')).sub(shell.position);
+        if (direction.lengthSq() > 0) {
+          shell.quaternion.setFromUnitVectors(new Vector3(1, 0, 0), direction.normalize());
+        }
+      }
       shell.visible = feed.visible;
     }
   }

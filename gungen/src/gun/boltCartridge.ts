@@ -77,9 +77,15 @@ export const boltStrokeUnits = (cartridge: Cartridge): number => {
     GRID
   );
 };
-/** Estimated integral-well wall and follower reserve. */
-export const BOLT_MAGAZINE_WALL_U = catalogue.magazineWallGridSteps * GRID;
-export const BOLT_MAGAZINE_RESERVE_U = catalogue.magazineReserveGridSteps * GRID;
+export const BOLT_MAGAZINE_WALL_U = catalogue.magazineOuterWallU;
+export const BOLT_WELL_PROFILES = catalogue.integralWells;
+export const boltWellProfile = (name: string) => {
+  const profile = BOLT_WELL_PROFILES[name as keyof typeof BOLT_WELL_PROFILES];
+  if (!profile) {
+    throw new Error(`Unknown integral well profile: ${name}`);
+  }
+  return profile;
+};
 export const boltMagazineSection = (cartridge: Cartridge) => {
   if (
     cartridge.kind !== 'metallic' ||

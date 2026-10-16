@@ -12,15 +12,18 @@ import { rackCant } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 
+const base = 'src/content/base';
+const { registry, issues } = buildRegistry(
+  readdirSync(base)
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
+);
+if (issues.length > 0) {
+  throw new Error(JSON.stringify(issues));
+}
+
 it('rack pose turns an away-facing port only during handling without changing game state', () => {
-  const base = 'src/content/base';
-  const { registry, issues } = buildRegistry(
-    readdirSync(base)
-      .filter((file) => file.endsWith('.json'))
-      .sort()
-      .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
-  );
-  expect(issues).toEqual([]);
   const model = structuredClone(registry.models.get('shotgun_pump')!);
   // Own this geometry/timeline fixture, not the evolving export's side or tuning.
   model.grip = { at: [0, 0, 0], turn: [0, 0, 0] };

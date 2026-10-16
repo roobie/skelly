@@ -4,11 +4,14 @@
   "expect": ["optic-mount-fit"],
   "root": "receiver",
   "parts": {
-    "receiver": { "family": "receiver", "params": { "action": "bolt", "feed": "top", "bore": "M" } },
+    "receiver": {
+      "family": "receiver",
+      "params": { "action": "bolt", "feed": "top", "bore": "M", "section": "sporter" }
+    },
     "lower": { "family": "lower", "params": { "layout": "conventional" } },
     "barrel": { "family": "barrel", "params": { "length": "L" } },
     "handguard": { "family": "handguard", "params": {} },
-    "magazine": { "family": "magazine", "params": { "length": "S" } },
+    "magazine": { "family": "magazine", "params": { "length": "S", "integral": "yes", "wellBody": "sporter" } },
     "stock": { "family": "stock", "params": { "length": "M", "style": "sporting" } },
     "sight": { "family": "sight" }
   },

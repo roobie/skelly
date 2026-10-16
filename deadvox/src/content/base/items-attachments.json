@@ -6,6 +6,19 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
+      "id": "optic_hunting_3_9x",
+      "model": "optic_hunting_3_9x",
+      "name": "3–9× hunting scope",
+      "opticMagnification": 6,
+      "size": [2, 2],
+      "weight": 400
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "optic_digital_thermal",
       "model": "optic_digital_thermal",
       "name": "Digital thermal optic",

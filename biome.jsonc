@@ -106,7 +106,9 @@
         "**/vite.config.ts",
         "testPool.ts",
         "tools/jsonnet/**",
-        "deadvox/tools/publish-playtest.mjs"
+        "deadvox/tools/publish-playtest.mjs",
+        "deadvox/tools/perf-baseline.mjs",
+        "deadvox/tools/perf-baseline.test.mjs"
       ],
       "linter": { "rules": { "correctness": { "noNodejsModules": "off" } } }
     },
@@ -130,6 +132,10 @@
           "suspicious": { "noConsole": "off", "noMisplacedAssertion": "off" }
         }
       }
+    },
+    {
+      "includes": ["deadvox/tools/perf-baseline.mjs"],
+      "linter": { "rules": { "suspicious": { "noConsole": "off" }, "performance": { "noAwaitInLoops": "off" } } }
     },
     {
       // CLIs talk to the terminal.

@@ -477,7 +477,7 @@ describe('content', () => {
       { field: 'ammo.stripSimSeconds' },
       { field: 'weapon.melee.contactFraction' },
       { field: 'weapon.melee.windupCapSimSeconds' },
-      { field: 'firearm.handling.shellLoadSimSeconds' },
+      { field: 'firearm.roundLoadSimSeconds' },
       { field: 'firearm.handling.magazine' },
     ];
     // One build for all drops: each takes a distinct item that has the field, and each is reported by its own path.
@@ -556,7 +556,8 @@ describe('content', () => {
         recoilKickRadians: 0.01,
         dispersionRadians: 0.01,
         shotSound: 'gunshot',
-        handling: { shellLoadSimSeconds: 1 },
+        handling: {},
+        roundLoadSimSeconds: 1,
       },
     };
     const { issues } = buildRegistry([baseSounds, { source, data: { items: [item] } }]);
@@ -864,12 +865,12 @@ describe('content', () => {
   });
 
   it('rejects a site palette that names a missing block or template', () => {
-    const edited = structuredClone(base);
-    const entry = (edited.find(({ source }) => source === 'site-generation.json')!.data as ContentFile)
-      .siteGeneration![0]!;
+    const source = 'site-generation-fixture.json';
+    const data = structuredClone(base.find((file) => file.source === 'site-generation.json')!.data) as ContentFile;
+    const entry = data.siteGeneration![0]!;
     entry.palette.terrain.rock = 'no_such_block';
     entry.hamlet.northSide = ['no_such_template'];
-    const { issues } = buildRegistry(edited);
+    const { issues } = buildRegistry([{ source, data }]);
     expect(issues.map(({ path, message }) => `${path}: ${message}`)).toEqual(
       expect.arrayContaining([
         'siteGeneration[0].palette.terrain.rock: no block "no_such_block"',

@@ -338,8 +338,8 @@ export class ItemFactory {
     if (def.container) {
       item.pockets = def.container.pockets.map(() => []);
     }
-    if (def.firearm?.pump) {
-      item.firearm = { chamber: 'empty', tube: [] };
+    if (def.firearm?.pump || def.firearm?.bolt) {
+      item.firearm = { chamber: 'empty', tube: [], ...(def.firearm.bolt ? { actionOpen: false } : {}) };
     }
     const model = def.model ? registry.models.get(def.model) : undefined;
     if (def.firearm && model?.revolver) {
@@ -424,9 +424,37 @@ const assertCylinderAmmunition = (registry: Registry, model: ModelDef, state: Fi
   }
 };
 
+const assertIntegralAmmunition = (registry: Registry, model: ModelDef | undefined, state: FirearmState): void => {
+  if (
+    !(state.tube && model?.internalMagazine) ||
+    state.tube.length > model.internalMagazine.capacity ||
+    state.cycle?.mode === 'fire'
+  ) {
+    throw new Error('Invalid exported integral magazine state');
+  }
+  if ((state.chamber === 'round') !== (state.roundType !== undefined)) {
+    throw new Error('Integral-magazine chamber needs exactly one real cartridge');
+  }
+  for (const round of [
+    ...state.tube,
+    ...(state.roundType ? [state.roundType] : []),
+    ...(state.retainedRoundType ? [state.retainedRoundType] : []),
+  ]) {
+    if (defOf(registry, round).ammo?.calibre !== model.calibre) {
+      throw new Error('Integral-magazine ammunition calibre mismatch');
+    }
+  }
+};
+
 /** Content-coupled constraints checked when rebuilding items from a decoded snapshot. */
 const assertAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
   const def = defOf(registry, type);
+  if (
+    (state.actionOpen !== undefined || state.cycle?.phase !== undefined || state.retainedRoundType !== undefined) &&
+    !def.firearm?.bolt
+  ) {
+    throw new Error('Action-open state needs a bolt firearm');
+  }
   const revolverModel = def.model ? registry.models.get(def.model) : undefined;
   if (revolverModel?.revolver) {
     assertCylinderAmmunition(registry, revolverModel, state);
@@ -435,26 +463,11 @@ const assertAmmunition = (registry: Registry, type: string, state: FirearmState)
   if (state.cylinder) {
     throw new Error('Cylinder state needs a revolver model');
   }
-  if (!def.firearm?.pump) {
+  if (!(def.firearm?.pump || def.firearm?.bolt)) {
     assertMagazineFedChamber(registry, type, state);
     return;
   }
-  const model = def.model ? registry.models.get(def.model) : undefined;
-  if (
-    !(state.tube && model?.internalMagazine) ||
-    state.tube.length > model.internalMagazine.capacity ||
-    state.cycle?.mode === 'fire'
-  ) {
-    throw new Error('Invalid exported pump tube state');
-  }
-  if ((state.chamber === 'round') !== (state.roundType !== undefined)) {
-    throw new Error('Pump chamber needs exactly one real cartridge');
-  }
-  for (const round of [...state.tube, ...(state.roundType ? [state.roundType] : [])]) {
-    if (defOf(registry, round).ammo?.calibre !== model.calibre) {
-      throw new Error('Pump ammunition calibre mismatch');
-    }
-  }
+  assertIntegralAmmunition(registry, revolverModel, state);
 };
 
 /** Width and height in cells, as placed. */
@@ -576,6 +589,7 @@ const ammunitionWeight = (registry: Registry, item: Item): number => {
   const rounds = [
     ...(state.tube ?? []),
     ...(state.roundType ? [state.roundType] : []),
+    ...(state.retainedRoundType ? [state.retainedRoundType] : []),
     ...(state.cylinder?.chambers.flatMap((chamber) => (chamber.state === 'round' ? [chamber.roundType] : [])) ?? []),
   ];
   const modelId = defOf(registry, item.type).model;

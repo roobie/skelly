@@ -29,10 +29,12 @@ export const shellLoadPose = (
   {
     elapsed,
     duration,
+    topFeed = false,
     feed = FEED,
   }: {
     readonly elapsed: number;
     readonly duration?: number | undefined;
+    readonly topFeed?: boolean;
     readonly feed?: RoundFeedPoseTuning;
   },
 ): { wrist: Vec3; shell: Vec3; visible: boolean } | undefined => {
@@ -40,13 +42,14 @@ export const shellLoadPose = (
     return undefined;
   }
   const progress = Math.max(0, Math.min(1, elapsed / duration));
+  const vertical = topFeed ? -1 : 1;
   const pickup: Vec3 = [
     port[0] + (side === 'right' ? feed.pickupSide : -feed.pickupSide),
-    port[1] - feed.pickupBelow,
+    port[1] - vertical * feed.pickupBelow,
     port[2] + feed.pickupBack,
   ];
-  const feeding: Vec3 = [port[0], port[1] - feed.palmBelow, port[2] + feed.palmBack];
-  const seated: Vec3 = [feeding[0], feeding[1] + feed.thumbLift, feeding[2] - feed.thumbTravel];
+  const feeding: Vec3 = [port[0], port[1] - vertical * feed.palmBelow, port[2] + feed.palmBack];
+  const seated: Vec3 = [feeding[0], feeding[1] + vertical * feed.thumbLift, feeding[2] - feed.thumbTravel];
   let wrist: Vec3;
   if (progress < feed.pickupEnd) {
     wrist = between(rest, pickup, progress / feed.pickupEnd);
@@ -59,7 +62,7 @@ export const shellLoadPose = (
   }
   return {
     wrist,
-    shell: [wrist[0], wrist[1] + feed.palmBelow, wrist[2] - feed.palmBack],
+    shell: [wrist[0], wrist[1] + vertical * feed.palmBelow, wrist[2] - feed.palmBack],
     visible: progress < feed.thumbEnd,
   };
 };

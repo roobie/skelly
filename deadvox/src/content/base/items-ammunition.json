@@ -2,6 +2,59 @@
   "items": [
     {
       "ammo": {
+        "calibre": "308-winchester",
+        "damage": 65,
+        "diameterMm": 7.8200000000000003,
+        "headDamageMultiplier": 2,
+        "impulse": 2.5,
+        "loadSimSeconds": 0.80000000000000004,
+        "pellets": 1,
+        "rangeMetres": 700,
+        "stripSimSeconds": 0.5
+      },
+      "category": "ammo",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "cartridge_308_h_winchester",
+      "model": "round_308_h_winchester",
+      "name": ".308 Winchester cartridge",
+      "size": [1, 1],
+      "stack": 20,
+      "weight": 24
+    },
+    {
+      "category": "ammo",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "cartridge_box_308_h_winchester",
+      "name": "Sealed .308 Winchester box (20)",
+      "size": [2, 1],
+      "unpack": {
+        "count": 20,
+        "item": "cartridge_308_h_winchester",
+        "simSeconds": 1.2
+      },
+      "weight": 520
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "spent_case_308_h_winchester",
+      "model": "case_308_h_winchester",
+      "name": "Spent .308 Winchester case",
+      "size": [1, 1],
+      "stack": 50,
+      "weight": 10
+    },
+    {
+      "ammo": {
         "calibre": "5.56x45",
         "damage": 35,
         "diameterMm": 5.7000000000000002,
