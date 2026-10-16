@@ -158,7 +158,7 @@ it.each(['missing-test-cartridge', '12-gauge-00-buck'])(
   },
 );
 
-// The sweep bisects every moving solid against every other solid, so its cost is the pair count.
+// The sweep bisects every moving solid against every fixed solid, so its cost is the pair count.
 const SWEEP_MS_PER_PAIR_BUDGET = 10;
 const sweepPairs = (assembly: Assembly): number => {
   const resolved = resolve(assembly, gunDomain);
