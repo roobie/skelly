@@ -85,7 +85,7 @@ export const validateManifest = (source: string, data: unknown): { manifest: Man
   return { manifest: result.output, issues };
 };
 
-/** The manifest's own path within its pack; it's the one file in the assets directory it doesn't list. */
+/** The compiled manifest's path within its pack. */
 export const MANIFEST_PATH = 'assets/manifest.json';
 
 /**
@@ -105,7 +105,8 @@ export const assetFileIssues = (source: string, manifest: Manifest, files: reado
     });
   });
   for (const file of [...present].sort()) {
-    if (file !== MANIFEST_PATH && !listed.has(file)) {
+    // Jsonnet authoring files are build inputs, not runtime assets requiring a separate asset credit.
+    if (file !== MANIFEST_PATH && !file.endsWith('.jsonnet') && !file.endsWith('.libsonnet') && !listed.has(file)) {
       issues.push({ source, path: 'sources', message: `"${file}" is in the pack but no source lists it` });
     }
   }

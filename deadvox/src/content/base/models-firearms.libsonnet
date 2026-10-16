@@ -2037,6 +2037,9 @@ local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSi
       "file": "assets/models/case-12_h_gauge_h_00_h_buck.glb",
       "id": "case_12_h_gauge_h_00_h_buck"
     },
+    import 'gungen/revolver.model.json',
+    import 'gungen/round_357_h_magnum.model.json',
+    import 'gungen/case_357_h_magnum.model.json',
     {
       "anchors": {
         "muzzle": [0.80049999999999999, 0.00040000000000000002, 0.039399999999999998]

@@ -12,13 +12,13 @@ import { tWiseCases } from './coveringArray.ts';
 import { expectWatertightMesh, loadFixture, variant } from './helpers.ts';
 import { runSweeps, sweepGroup } from './sweeps.ts';
 
-const validateFrameSolidMutation = (mutate: (solid: Solid) => Solid) => {
-  const source = FAMILIES['revolver-frame']!;
+const validateFrameSolidMutation = (mutate: (solid: Solid) => Solid, family = 'revolver-frame') => {
+  const source = FAMILIES[family]!;
   const domain = {
     ...gunDomain,
     families: {
       ...FAMILIES,
-      'revolver-frame': {
+      [family]: {
         ...source,
         build(params: Parameters<typeof source.build>[0]) {
           const def = source.build(params);
@@ -279,20 +279,24 @@ describe('revolver alignment rules', () => {
 
   it('rejects all trigger solids moved 10u above the bow from a valid baseline', () => {
     expect(validate(loadFixture('archetype-revolver'), gunDomain).issues).toEqual([]);
-    const report = validateFrameSolidMutation((solid) =>
-      solid.id.startsWith('curved-trigger-') && solid.kind === 'extruded-polygon'
-        ? { ...solid, profile: solid.profile.map(([x, y]) => [x, y + 10] as const) }
-        : solid,
+    const report = validateFrameSolidMutation(
+      (solid) =>
+        solid.id.startsWith('curved-trigger-') && solid.kind === 'extruded-polygon'
+          ? { ...solid, profile: solid.profile.map(([x, y]) => [x, y + 10] as const) }
+          : solid,
+      'revolver-trigger',
     );
     expect(report.issues.some((issue) => issue.rule === 'revolver-trigger-bow')).toBe(true);
   });
 
   it('rejects all trigger solids moved 10u outside the bow depth from a valid baseline', () => {
     expect(validate(loadFixture('archetype-revolver'), gunDomain).issues).toEqual([]);
-    const report = validateFrameSolidMutation((solid) =>
-      solid.id.startsWith('curved-trigger-') && solid.kind === 'extruded-polygon'
-        ? { ...solid, z: [solid.z[0] + 10, solid.z[1] + 10] as const }
-        : solid,
+    const report = validateFrameSolidMutation(
+      (solid) =>
+        solid.id.startsWith('curved-trigger-') && solid.kind === 'extruded-polygon'
+          ? { ...solid, z: [solid.z[0] + 10, solid.z[1] + 10] as const }
+          : solid,
+      'revolver-trigger',
     );
     expect(report.issues.some((issue) => issue.rule === 'revolver-trigger-bow')).toBe(true);
   });

@@ -2,12 +2,13 @@
 read_if:
   - you author or change Deadvox content sources or their build pipeline
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
+  - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you're authoring or changing exterior door openings
-  - you're authoring or changing furniture appearance, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
+  - you're authoring or changing furniture appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
 ---
@@ -27,6 +28,29 @@ may override the same definitions; identity is not a definition-id collision rul
 The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
 and `evaluateMods`. Bundled core-pack fragments remain content files rather than
 independent mods; see `src/game/bundledContent.ts`, `buildBundledContent`.
+
+## Bundled mods
+
+A bundled mod ships with the game but is applied only when asked, with `?mods=` and
+a comma-separated list of ids; `?mods=1` is the separate mods panel. Each one goes through
+the same intake as a player mod, so an unknown id is refused at startup with the usual
+diagnostics instead of being ignored. A bundled mod is derived from the base sources when
+it is selected, never written out as a second set of numbers, so it follows base tuning.
+That derivation is the seam player mods lack: they replace whole rows and cannot scale a
+base value. See `src/game/bundledMods.ts`, `selectBundledMods`.
+
+Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Damage, movement
+speed (wander and chase), detection and health each have one factor, `BEGINNER_FACTORS`.
+Detection covers sight, night sight, the hearing multiplier (footsteps and noise alike) and
+light spotting, the zombie stat `lightSightScale` that multiplies the range at which a carried
+or placed light is spotted. Light is included so a beginner carrying a torch or flashlight at
+night does not draw enemies from full range. The mode exists so a new player can learn the
+game against slower, weaker enemies that notice less.
+
+A save records each active bundled mod as a content pack in its version identity, so a
+beginner-mode world is stored apart from a normal one. The URL alone decides the mode, because
+no menu switch exists for it: a world loads only when started with the same `?mods=`. See
+`src/core/saveFormat.ts`, `currentSaveVersionIdentity`.
 
 ## Core-pack integrity
 
@@ -59,9 +83,13 @@ Fixed loot takes eligibility from its resolved authored source context, not a co
 
 Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `siteGeneration` in `src/core/schema.ts`, `site-generation.json`, and `AuthoredSite` in `src/core/authoredSite.ts`.
 
+Every site kind shares one block palette in the same entry, so a block choice has a single content home. Hamlet-only choices (hedge and the template pools) sit apart in its `hamlet` field. Code reads them through `sitePalette` in `src/core/sitePalette.ts`; names that resolve to nothing are validation errors (`checkSiteGeneration` in `src/core/content.ts`), never a runtime fallback. The one exception is `benchmarkCityGrid` in `src/core/cityPlan.ts`, which has no registry and keeps the hamlet template list in `HAMLET_TEMPLATES` in `src/core/hamlet.ts` until the city sweep under #393 reads it from content.
+
 Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
 Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, "Spawning"; see `PaletteThingSchema` in `src/core/schema.ts` and `SPAWN_TIMES` in `src/core/clock.ts`.
+
+A map piece makes a cell a spawn point through a palette `spawn` entry with an optional `chance`; a 1x1x1 marker piece is air that claims its cell and carries one such entry. A slot offers weighted marker pieces, and its pick, drawn once when the assembly compiles, decides the zombie type, while `chance` rolls per world. Lab threat varies by overriding the slot choices; see `src/content/base/gauntlet-lab-threat.libsonnet`, `markerPiece`.
 
 ### Curated kits
 
@@ -136,7 +164,7 @@ provenance, including air claims. Reconstructing claims from visible blocks woul
 reserved voids and could blame the wrong nested source. See `src/debug/kitOverlay.ts`,
 `KitOverlay` and `kitSlice`.
 
-A route graph is intent, not body reachability. Admission uses reserved volume and known
+A route graph is intent, not body reachability. Standing anchors promise usable circulation without defeating a lock; use a point anchor for a secured room's inspection target instead. Admission uses reserved volume and known
 support rather than assuming that unclaimed cells or terrain outside a piece are empty
 or load-bearing. Climbing also requires a continuous body-clear connector with a
 supported, braced exit that permits return. Ladder furniture owns its connector cells;
@@ -155,11 +183,15 @@ window hole. See `src/content/base/gauntlet-city-doors.libsonnet`, `gauntlet_cit
 
 ### City building types
 
-The city pool is authored, not inferred from item usage or building names. It is a named `mapPools` entry that the scenario's city names by id. Each row has the shape of a kit slot, a ref (`template` or `assembly`, plus an id) and a relative weight, and owns that weight; an enabled fitting row is selected before its seeded kit slots resolve. A selected building that cannot fit the row tail falls back to the first enabled fitting row, preserving the existing packing rule. A zero weight disables a type without removing its geometry or loot definitions. A row may also carry `atLeast` and `atMost`, per-site counts: the fill never exceeds an `atMost`, and when the scan ends with an `atLeast` unmet it retries the whole site with every short row forced into the earliest slots where it fits; each retry keeps the rows forced before it, and the retries stop when every quota is met or a retry would force no new row, so there is at most one retry per quota row. A quota still unmet then aborts the plan naming the pool, the building and the site, because a silent shortfall would hide the content error, and the bound keeps the plan a deterministic function of the seed rather than a search. Validation reports a pool whose `atLeast` total exceeds the building slots the grid guarantees. Quotas are for guaranteed specialty buildings; the residential majority stays on weights alone. A missing pool, an unknown ref, a ref of the wrong kind and a ref that does not fit the reserved row are each reported with the path of the offender. See `src/core/schema.ts`, `MapPoolSchema` and `PoolRefSchema`, and `src/core/cityPlan.ts`, `cityGridOf`, `cityPoolIssues`, `fillRow` and `buildCityPlan`.
+The city pool is authored, not inferred from item usage or building names. Keep prevalence and guarantees in the scenario's named pool so a mod can tune them without changing geometry. Quotas guarantee specialty buildings; residential prevalence comes from weights alone. An impossible quota must fail loudly rather than silently omit a required building. Quota recovery stays bounded and deterministic rather than searching layouts. See `src/core/schema.ts`, `MapPoolSchema` and `PoolRefSchema`, and `src/core/cityPlan.ts`, `cityGridOf`, `cityPoolIssues`, `fillRow` and `buildCityPlan`.
+
+Special buildings must be deliberately designed and curated as plausible places, not generic rooms with different loot. Room function, furnishings, circulation and supplies must agree: a police station needs public reception, working desks, holding cells and a small secured armoury. The gauntlet requires exactly one police station. Its structure should read as a municipal masonry building, not a timber house; wooden furniture and door leaves do not imply wooden partitions or ceilings. See `src/content/base/gauntlet-city-police.libsonnet`, `piece`; `src/content/base/gauntlet-city-building-types.libsonnet`, `mapAssemblies`; and `src/content/base/scenarios.jsonnet`, `mapPools`.
+
+Loose furniture in abandoned buildings should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. See `src/content/base/furniture-disorder.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-city-police.libsonnet`, `chairSlots`.
 
 Keep type geometry separate from the pool, and the pool separate from the scenario, so changing prevalence never requires editing a building or restating the scenario: a mod changes one building's weight by overriding the pool by id. Referenced assemblies, pieces, styles and loot tables remain independently overridable by id. See `src/content/base/scenarios.jsonnet` and `src/core/content.ts`, `buildRegistry`.
 
-Residential majority comes from weights alone, with no separate share rule, so there is one way to tune the mix. Supply shops supplement the houses, while police equipment rooms and gun shops remain rare draws. Their civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. Medical tents provide treatment supplies rather than a guaranteed full kit. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-city-building-types.libsonnet`, `src/content/base/gauntlet-city-medical.libsonnet`, and `src/core/loot.ts`, `lootTypeIssue`.
+Supply shops supplement the houses, while police stations and gun shops remain scarce. Their civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. Medical tents provide treatment supplies rather than a guaranteed full kit. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-city-building-types.libsonnet`, `src/content/base/gauntlet-city-medical.libsonnet`, and `src/core/loot.ts`, `lootTypeIssue`.
 
 The edge ring is a second pool on the city, `city.ring`, with a setback from the wall. Its slots go through the same weighted choice and quotas as the grid, so a ring pool is authored and validated like the city pool, and a ring naming a missing pool fails validation with its path. Ring slots count towards the guaranteed slots, so quotas see them. A ring needs a perimeter to back onto. The ring reuses ordinary buildings, so population takes ring spawns from template markers, not the street-frontage groups that give the grid its settlement pressure; a ring building has no street frontage to group by.
 

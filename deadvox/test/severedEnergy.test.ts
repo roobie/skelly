@@ -5,6 +5,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { angularVelocity, type RigidBody } from '../src/core/rigidBody.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import { type HitImpulse, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
@@ -152,7 +153,10 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
   const position: Vec3 = mode === 'rolled' || mode === 'offRay' ? [4, 1, 4] : [zombieSeed * 4, 2, 0];
   const id = system.add(zombieTypeForCut(mode), position, [0, 0, -1]);
   const zombie = system.store.get(id)!;
-  const actorMeshes = new MobActorMeshes(BLOCK, 16, { poolSize: mobFigurePoolSizeThrough(zombie.figureSeed) });
+  const actorMeshes = new MobActorMeshes(BLOCK, 16, {
+    figureSeeds: figureSeedPool(registry.zombies),
+    poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.zombies), zombie.figureSeed),
+  });
   renderer = actorMeshes;
   actorMeshes.setWorld(isSolid, BLOCK);
   const appliedPoints: AppliedPoint[] = [];

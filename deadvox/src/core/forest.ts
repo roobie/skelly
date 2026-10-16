@@ -4,6 +4,7 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Scale } from './scale.ts';
 import { type Rect, rectDistance, type Site } from './site.ts';
+import { sitePalette } from './sitePalette.ts';
 import {
   FOREST_HALF_EXTENT_METRES,
   forestDensityAt,
@@ -39,7 +40,7 @@ export class Forest implements Site {
       reserved: [{ x0: -clearing, z0: -clearing, x1: clearing, z1: clearing }],
     });
     this.treeIndex = new TreeIndex(this.trees);
-    const litter = registry.blockIds.get('leaf_litter')!;
+    const litter = sitePalette(registry).leafLitter;
     this.surface = {
       height: (x, z, natural) => (rectDistance(this.bounds, x, z) === 0 ? floor : natural),
       top: (x, z) => (leafLitterAt(this.treeIndex.at(x, z), x, z) ? litter : undefined),
