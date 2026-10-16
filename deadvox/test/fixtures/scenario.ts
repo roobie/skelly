@@ -30,6 +30,7 @@ export const fixtureScenario = (): ScenarioDef => ({
     pad: 2,
     gap: 2,
     blend: 4,
+    rows: 2,
     pool: 'fixture_pool',
   },
 });
