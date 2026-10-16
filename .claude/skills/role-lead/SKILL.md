@@ -77,9 +77,9 @@ Pane etiquette:
   what comes next, so the agent doesn't wait for a second note.
 - A brief never ends at "submit with CI"; it ends at the report.
 - Typing into a pane by hand follows the `project-process` skill's protocol for typing into
-  a harness pane, recovery from provider errors and hung requests included. On Claude
-  panes, send Enter as its own step and confirm a spinner; never submit a stale nudge left
-  in the input.
+  a harness pane. On Claude panes, send Enter as its own step and confirm a spinner; never
+  submit a stale nudge left in the input. Recovery from provider errors and hung requests is
+  in `.agent-mail/HOST.md`.
 
 ## Routing work
 
@@ -185,7 +185,9 @@ raise it with BR.
 ## Reviews
 
 Every round gets a review item and goes to the reviewer before its PR is called ready. You
-don't review fix rounds yourself. Order the reviewer's queue by priority. The reviewer's
+don't review fix rounds yourself. Order the reviewer's queue by priority. A reviewer says
+when a review is too big for one context, and you split it, rather than the reviewer
+spawning subagents whose reads are thrown away. The reviewer's
 duties are in `.agent-mail/scratch/reviewer1-charter.txt`; FIX verdicts carry a cause line
 (`docs/PROCESS.md`, "Slice decision rules"). Forward accepted must-fix and should-fix
 findings to the builder; style nits never start a round (`AGENTS.md`, "Tests").
