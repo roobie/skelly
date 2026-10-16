@@ -900,7 +900,7 @@
           "color": "#8bff32",
           "radiusMetres": 0.080000000000000002,
           "splashRadiusMetres": 0.29999999999999999,
-          "splashSeconds": 0.25
+          "splashRealSeconds": 0.25
         },
         "puddle": {
           "damagePerSimSecond": 2,

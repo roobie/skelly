@@ -535,7 +535,7 @@ local figureSeeds = std.range(1, 8);
           "color": "#8bff32",
           "radiusMetres": 0.08,
           "splashRadiusMetres": 0.3,
-          "splashSeconds": 0.25
+          "splashRealSeconds": 0.25
         },
         "moves": [
           {

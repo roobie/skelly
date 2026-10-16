@@ -168,6 +168,13 @@ export const TEMPORAL_FIELDS = [
   { path: 'zombies.acidSpit.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.globMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  {
+    path: 'zombies.acidSpit.globGravityMetresPerSimSecondSquared',
+    clock: 'Sim',
+    unit: 'PerSecondSquared',
+    dimension: 'acceleration',
+  },
+  { path: 'zombies.acidSpit.presentation.splashRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.puddle.lifetimeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.puddle.damagePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.downed.finishOff.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

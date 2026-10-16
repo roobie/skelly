@@ -6,7 +6,7 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFor
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ZombieDef } from '../src/core/schema.ts';
-import { simRate, simSeconds } from '../src/core/time.ts';
+import { simAcceleration, simRate, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import type { AcidGroundImpact } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -24,7 +24,7 @@ const spitter: ZombieDef = {
     rangeBand: { nearMetres: 1, farMetres: 20 },
     spreadDegrees: 0,
     globMetresPerSimSecond: simRate(8),
-    globGravityMetresPerSimSecondSquared: 4,
+    globGravityMetresPerSimSecondSquared: simAcceleration(4),
     moves: [
       {
         id: 'fixture_burn',

@@ -49,7 +49,7 @@ export class AcidEffects {
     for (let index = this.splashes.length - 1; index >= 0; index--) {
       const splash = this.splashes[index]!;
       splash.age += dt;
-      const fraction = Math.min(1, splash.age / splash.look.splashSeconds);
+      const fraction = Math.min(1, splash.age / splash.look.splashRealSeconds);
       splash.mesh.scale.setScalar(
         splash.look.radiusMetres + fraction * (splash.look.splashRadiusMetres - splash.look.radiusMetres),
       );
