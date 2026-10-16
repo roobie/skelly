@@ -296,7 +296,7 @@ export class HeldItems {
       compass.update(main.rotation.y);
     }
     for (const [side, arm] of this.arms) {
-      this.updateArmChain(side, arm);
+      this.updateArmChain(side, arm, this.revolverGripFrame(side, firearmPoses));
     }
     this.view.updateMatrixWorld(true);
   }
@@ -959,6 +959,11 @@ export class HeldItems {
     }
   }
 
+  private revolverGripFrame(side: HandSide, frames: readonly HeldFirearmPose[]): Object3D | undefined {
+    const loading = frames.find((frame) => frame.revolver?.step === 'load');
+    return loading && !this.inventory.hands[side] ? this.shown.get(loading.uid) : undefined;
+  }
+
   private revolverLoadingHand(item: Item, model: ModelDef, frame: HeldFirearmPose | undefined): void {
     const held = this.shown.get(item.uid)!;
     const side = this.inventory.hands.right?.uid === item.uid ? 'left' : 'right';
@@ -1233,7 +1238,7 @@ export class HeldItems {
     this.arms.clear();
   }
 
-  private updateArmChain(side: HandSide, arm: Group): void {
+  private updateArmChain(side: HandSide, arm: Group, gripFrame: Object3D | undefined): void {
     const sleeve = arm.children[0] as Mesh;
     const forearm = arm.children[1] as Mesh;
     const palm = arm.children[2] as Mesh;
@@ -1270,7 +1275,13 @@ export class HeldItems {
     placeFirstPersonSegment(sleeve, shoulder, elbow, { width: sleeve.scale.x, depth: sleeve.scale.z });
     placeFirstPersonSegment(forearm, elbow, wrist, { width: forearm.scale.x, depth: forearm.scale.z });
     palm.position.copy(wrist);
-    palm.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), wrist.clone().sub(elbow).normalize());
+    if (gripFrame) {
+      palm.quaternion.copy(
+        arm.getWorldQuaternion(new Quaternion()).invert().multiply(gripFrame.getWorldQuaternion(new Quaternion())),
+      );
+    } else {
+      palm.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), wrist.clone().sub(elbow).normalize());
+    }
   }
 
   private addArm(side: HandSide, grip: Vec3, parent: Group = this.torso, parentOrigin: Vec3 = [0, 0, 0]): void {

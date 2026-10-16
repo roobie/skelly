@@ -33,4 +33,6 @@ Handling times, dispersion, recoil and loot weights belong to content so mods ca
 
 The crane carries the cylinder and ejector even though the GLB nodes are flat. Loading and picking may display a different chamber angle without changing the saved alignment. Each frame starts from the exported rest transform to avoid accumulated rotation. See `src/render/firearmModel.ts`, `poseRevolverParts`.
 
+The loading fist shares the cartridge's frame rather than following the forearm's bend: an elbow-driven palm rotation makes a gun-local cartridge offset cut through the hand's face. Content places the round at the fist's forward edge so it protrudes toward the chamber instead of showing only its base through the palm. See `src/render/hands.ts`, `HeldItems`, and `src/content/base/items-revolver.jsonnet`, `loadPose`.
+
 Sound events reuse licensed existing recordings as tunable presentation selections; they do not claim to be recordings of this particular revolver. See `src/content/base/sounds-revolver.jsonnet`, `sounds`.

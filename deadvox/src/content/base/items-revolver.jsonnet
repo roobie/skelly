@@ -17,7 +17,7 @@
           loadPose: {
             pickupEnd: 0.2, approachEnd: 0.7, thumbEnd: 0.84,
             pickupSide: 0.05, pickupBelow: 0.1, pickupBack: 0.1,
-            palmBelow: 0.018, palmBack: 0.04, thumbLift: 0.01, thumbTravel: 0.045,
+            palmBelow: 0, palmBack: 0.055, thumbLift: 0.01, thumbTravel: 0.045,
           },
         },
       },
