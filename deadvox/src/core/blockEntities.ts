@@ -325,7 +325,7 @@ export class BlockEntities {
 
   /** Native eligibility shared by options and effects; key ids come from held definitions. */
   doorRefusal(entity: BlockEntity, operation: DoorOperation, keys: readonly string[], from?: Vec3): string | undefined {
-    const door = this.defOf(entity).door;
+    const { door } = this.defOf(entity);
     if (!door) {
       return "It isn't a door";
     }
