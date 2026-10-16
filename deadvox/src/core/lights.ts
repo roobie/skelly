@@ -4,13 +4,14 @@
 // what ticking every second would, and the light goes out when the charge runs out.
 // Swapping in a fresh battery is handling; the old one comes out with what it had left.
 
+import type { BlockEntity } from './blockEntities.ts';
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type DayCycle, DEFAULT_DAY_CYCLE } from './dayPhase.ts';
-import type { Inventory, Location, Target } from './inventory.ts';
+import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
-import { isInHeldItemSlotTree } from './itemTree.ts';
+import { isInHeldItemSlotTree, itemRoots } from './itemTree.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
 import { sunDirection } from './sky.ts';
@@ -84,6 +85,33 @@ export const lightSenseSourceFor = ({
     };
   }
   return undefined;
+};
+
+export const inventoryLightSources = (
+  inventory: Inventory,
+  playerPosition: Vec3,
+  eyeHeightMetres: number,
+): LightSenseSource[] => {
+  const sources: LightSenseSource[] = [];
+  const collect = (entries: ReturnType<Inventory['items']> | ReturnType<typeof itemRoots<Item, Pile, BlockEntity>>) => {
+    for (const { item, location, path } of entries) {
+      const source = lightSenseSourceFor({
+        registry: inventory.registry,
+        item,
+        location,
+        path,
+        playerPosition,
+        eyeHeightMetres,
+      });
+      if (source) {
+        sources.push(source);
+      }
+    }
+  };
+  // Only carried trees and pile roots can be exposed; furniture and pile descendants cannot emit.
+  collect(inventory.carriedTree());
+  collect(itemRoots<Item, Pile, BlockEntity>({ hands: {}, worn: {}, piles: inventory.piles.values(), entities: [] }));
+  return sources;
 };
 
 /** A daylight sky-exposure test for simulation senses; authored renderer skylight is not authoritative here. */

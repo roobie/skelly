@@ -79,10 +79,16 @@ const overlapsTerrain = (body: Body, isSolid: SolidAt): boolean => {
   const [x, y, z] = body.pos;
   const halfX = body.halfWidth;
   const halfZ = body.halfDepth ?? halfX;
-  for (let by = Math.floor(y); by < Math.ceil(y + body.height); by++) {
-    for (let bz = Math.floor(z - halfZ); bz < Math.ceil(z + halfZ); bz++) {
-      for (let bx = Math.floor(x - halfX); bx < Math.ceil(x + halfX); bx++) {
-        if (isSolid(bx, by, bz) && overlapsBlock(body, [bx, by, bz])) {
+  const minX = Math.floor(x - halfX);
+  const maxX = Math.ceil(x + halfX);
+  const minY = Math.floor(y);
+  const maxY = Math.ceil(y + body.height);
+  const minZ = Math.floor(z - halfZ);
+  const maxZ = Math.ceil(z + halfZ);
+  for (let by = minY; by < maxY; by++) {
+    for (let bz = minZ; bz < maxZ; bz++) {
+      for (let bx = minX; bx < maxX; bx++) {
+        if (isSolid(bx, by, bz)) {
           return true;
         }
       }
@@ -205,6 +211,16 @@ const shapeTerrainContact = (body: Body, shape: BodyShape, move: AxisMove, isSol
   return searchContact(body, move, () => shape.overlapsTerrain(body.pos));
 };
 
+const moveTerrainAxis = (body: Body, axis: Axis, delta: number, isSolid: SolidAt): boolean => {
+  body.pos[axis] += delta;
+  if (!overlapsTerrain(body, isSolid)) {
+    return false;
+  }
+  body.pos[axis] = boxTerrainContact(body, axis, delta);
+  body.vel[axis] = 0;
+  return true;
+};
+
 /** Moves along one axis; on contact, stops at the nearest obstacle. Returns true on contact. */
 const moveAxis = (
   body: Body,
@@ -216,6 +232,9 @@ const moveAxis = (
     return false;
   }
   const shape = shapeOf?.(body);
+  if (bodies.length === 0 && !shape) {
+    return moveTerrainAxis(body, axis, delta, isSolid);
+  }
   const alreadyOverlapping = new Set(bodies.filter((other) => bodiesOverlap(body, other, shapeOf)));
   const move: AxisMove = { axis, start: body.pos[axis]!, delta };
   body.pos[axis] = move.start + delta;

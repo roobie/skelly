@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
+import { type Body, bodyOverlapsBlock, bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
@@ -18,7 +18,71 @@ const run = (steps: number, fn: () => void) => {
   }
 };
 
+describe('terrain bounds', () => {
+  it('matches plain block intersection at faces and fractional extents and sees block edits', () => {
+    const cells: [number, number, number][] = [
+      [-2, 0, 1],
+      [0, 0, 0],
+      [1, 2, -1],
+    ];
+    const solid = (x: number, y: number, z: number) => cells.some(([bx, by, bz]) => x === bx && y === by && z === bz);
+    const body: Body = {
+      pos: [0, 1, 0],
+      vel: [0, 0, 0],
+      halfWidth: 0.5,
+      halfDepth: 0.25,
+      height: 1.5,
+      onGround: false,
+    };
+    for (const pos of [
+      [0, 1, 0],
+      [0, 1 - 1e-4, 0],
+      [-1.5, 0.5, 1],
+      [0.75, 0.5, 0.5],
+      [0.5, 2, -1],
+      [1, 2, -1],
+    ] as const) {
+      body.pos = [...pos];
+      expect(bodyOverlapsTerrain(body, solid)).toBe(cells.some((cell) => bodyOverlapsBlock(body, cell)));
+    }
+    body.pos = [0, 1, 0];
+    expect(bodyOverlapsTerrain(body, solid)).toBe(false);
+    cells.push([0, 1, 0]);
+    expect(bodyOverlapsTerrain(body, solid)).toBe(true);
+    cells.pop();
+    expect(bodyOverlapsTerrain(body, solid)).toBe(false);
+  });
+});
+
 describe('stepBody', () => {
+  it('terrain-only moves match the generic obstacle path through landing, steps and edits', () => {
+    const body: Body = {
+      pos: [0.5, 3, 0.5],
+      vel: [0, 0, 0],
+      halfWidth: 0.3,
+      halfDepth: 0.2,
+      height: 1.6,
+      onGround: false,
+    };
+    const plain = structuredClone(body);
+    const distant = { ...structuredClone(body), pos: [100, 100, 100] as [number, number, number] };
+    let ledge = true;
+    const terrain = (x: number, y: number) => y < 0 || (ledge && x === 2 && y === 0);
+    for (let frame = 0; frame < 120; frame++) {
+      if (frame === 60) {
+        ledge = false;
+      }
+      body.vel[0] = frame < 90 ? 2 : -2;
+      body.vel[2] = 0.2;
+      plain.vel[0] = body.vel[0];
+      plain.vel[2] = body.vel[2];
+      const params = { gravity: 10, stepHeight: 1 };
+      expect(stepBody(body, 1 / 30, terrain, params)).toBe(
+        stepBody(plain, 1 / 30, terrain, { ...params, obstacles: [distant] }),
+      );
+      expect(body).toEqual(plain);
+    }
+  });
   it('falls and comes to rest on top of the ground', () => {
     const body = createPlayerBody(metre, 0.5, 20, 0.5);
     run(180, () => stepBody(body, 1 / 60, floor, physicsFor(metre)));

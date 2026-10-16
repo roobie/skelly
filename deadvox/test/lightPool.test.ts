@@ -3,10 +3,18 @@ import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
+import {
+  chargeOf,
+  drainLight,
+  inventoryLightSources,
+  lightSenseSourceFor,
+  sunExposedAt,
+  toggleLight,
+} from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { gameSeconds } from '../src/core/time.ts';
 import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -41,6 +49,62 @@ const registryWithTestLights = () => {
 };
 
 describe('made-light point pool', () => {
+  it('pruned sense sources match the full tree after moving, switching and draining lights', () => {
+    const fixtureRegistry = { ...registry, items: new Map(registry.items) };
+    const base = registry.items.get('glowstick')!;
+    fixtureRegistry.items.set('test_stow_light', {
+      ...base,
+      id: 'test_stow_light',
+      light: { ...base.light!, burning: { ...base.light!.burning!, stow: 'stay' } },
+    });
+    const mounted = withDefaultMountedLight(fixtureRegistry, 'rifle_assault', 'flashlight');
+    const inventory = new Inventory(mounted.registry);
+    const backpack = inventory.create('school_backpack');
+    const glow = inventory.create('test_stow_light');
+    const gun = inventory.create('rifle_assault');
+    const flashlight = gun.slots![mounted.fitted.mountedAt]!;
+    const cupboard = inventory.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' }, [])!;
+    inventory.entities.markSearched(cupboard);
+    expect(inventory.add(backpack, { kind: 'worn' })).toBe(true);
+    expect(inventory.add(glow, { kind: 'pocket', owner: backpack, pocket: 0 })).toBe(true);
+    expect(inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
+    const position: [number, number, number] = [4, 1, 0];
+    const compare = () => {
+      const plain = [...inventory.items()].flatMap(({ item, location, path }) => {
+        const source = lightSenseSourceFor({
+          registry: mounted.registry,
+          item,
+          location,
+          path,
+          playerPosition: position,
+          eyeHeightMetres: 1.3,
+        });
+        return source ? [source] : [];
+      });
+      expect(inventoryLightSources(inventory, position, 1.3)).toEqual(plain);
+      return plain;
+    };
+    expect(compare()).toEqual([]);
+    expect(toggleLight(mounted.registry, glow, 0)).toBeUndefined();
+    expect(toggleLight(mounted.registry, flashlight, 0)).toBeUndefined();
+    expect(compare().some((source) => source.carried)).toBe(true);
+    expect(inventory.move(glow, { kind: 'pile', pos: [3, 1, 0] }).ok).toBe(true);
+    expect(compare().some((source) => !source.carried)).toBe(true);
+    expect(inventory.move(gun, { kind: 'pile', pos: [6, 1, 0] }).ok).toBe(true);
+    compare();
+    expect(inventory.move(glow, { kind: 'furniture', entity: cupboard, pocket: 0 }).ok).toBe(true);
+    expect(compare()).toEqual([]);
+    expect(inventory.move(gun, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(compare().length).toBeGreaterThan(0);
+    const drainRate = mounted.registry.items.get(flashlight.type)!.light!.power!.chargePerGameHour;
+    expect(
+      drainLight(mounted.registry, flashlight, gameSeconds(chargeOf(mounted.registry, flashlight)! / drainRate)),
+    ).toBeDefined();
+    expect(compare()).toEqual([]);
+    expect(inventory.move(backpack, { kind: 'pile', pos: [9, 1, 0] }).ok).toBe(true);
+    expect(inventory.move(glow, { kind: 'pocket', owner: backpack, pocket: 0 }).ok).toBe(true);
+    expect(compare()).toEqual([]);
+  });
   it('shares the active point pool with hands without adding shadow casters', () => {
     const scene = new Scene();
     const handScene = new Scene();
