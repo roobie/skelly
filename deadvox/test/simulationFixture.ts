@@ -93,6 +93,25 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   bloodRecoveryPerSimSecond: simRate(0.002),
   shockRecoveryPerSimSecond: simRate(0.1),
   advancedInfectionHealthLossPerSimSecond: simRate(0.0005),
+  // The fixture's own needs, so survival tests never lean on base content's tuning.
+  needs: {
+    spawn: { calories: 40, hydration: 35, fatigue: 70, stamina: 100 },
+    drainPerGameHour: { calories: gamePerHour(3), hydration: gamePerHour(5) },
+    healthLossPerGameHour: { starving: gamePerHour(4), dehydrated: gamePerHour(8) },
+    stamina: {
+      sprintPerSimSecond: simRate(5),
+      recoverPerSimSecond: simRate(4),
+      wornRecoveryFactor: 0.5,
+      windedBelow: 10,
+    },
+    full: { kcal: 2500, ml: 2500 },
+    critical: [
+      { need: 'calories', below: 10, message: 'Fixture starving' },
+      { need: 'hydration', below: 10, message: 'Fixture parched' },
+      { need: 'fatigue', above: 90, message: 'Fixture exhausted' },
+    ],
+    badlyHurt: { below: 25, message: 'Fixture badly hurt' },
+  },
   fatigueRisePerGameHour: gamePerHour(4),
   restFatigueRecoveryPerGameHour: gamePerHour(5),
   sleepFatigueRecoveryPerGameHour: gamePerHour(10),

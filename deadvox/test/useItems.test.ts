@@ -7,7 +7,6 @@ import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { chargeOf, toggleLight } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
-import { SPAWN_NEEDS } from '../src/core/needs.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
@@ -161,7 +160,11 @@ describe('using what you hold', () => {
     expect(inventory.hands.right).toBe(beans);
     queue.tick(0.2);
     expect(inventory.hands.right).toBeUndefined();
-    expect(sim.needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + 14, 9);
+    const meal = registry.items.get('canned_beans')!.food!;
+    expect(sim.needs.calories).toBeCloseTo(
+      sim.body.spawnNeeds.calories + (meal.calories / sim.body.nourishmentScale.kcal) * 100,
+      9,
+    );
   });
 
   it('needs the food in your hands, and rotten food makes you sick', () => {
@@ -173,7 +176,7 @@ describe('using what you hold', () => {
     sim.setDebugCalendarTime(300 * SECONDS_PER_HOUR);
     survival.use(apple);
     queue.tick(APPLE_EAT_TIME + 0.1);
-    expect(sim.needs.calories).toBe(SPAWN_NEEDS.calories);
+    expect(sim.needs.calories).toBe(sim.body.spawnNeeds.calories);
     expect(sim.body.health).toBe(100 - FOOD_POISONING);
     expect(notices).toContain('The apple was rotten');
   });

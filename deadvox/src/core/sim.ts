@@ -7,15 +7,7 @@ import { Compression, type CompressionLimits, type CompressionOwner, longActionL
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
-import {
-  awakeRates,
-  causeOf,
-  type Needs,
-  needsAllowRecovery,
-  type RecoveryState,
-  SPAWN_NEEDS,
-  stepNeeds,
-} from './needs.ts';
+import { awakeRates, causeOf, type Needs, needsAllowRecovery, type RecoveryState, stepNeeds } from './needs.ts';
 import type { AnalgesicLookup } from './pain.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
@@ -71,7 +63,7 @@ export class Simulation {
   readonly events = new EventQueue<Timed<SimEvent>>();
   readonly compression: Compression;
   readonly actions: LongActions;
-  readonly needs: Needs = { ...SPAWN_NEEDS };
+  readonly needs: Needs;
   readonly body: Body;
   /** Esc pauses everything; the inventory screen doesn't. */
   paused = false;
@@ -87,6 +79,7 @@ export class Simulation {
     this.seed = options.seed;
     this.clock = options.clock ?? defaultClock;
     this.body = new Body(options.bodyTuning, undefined, undefined, options.analgesics);
+    this.needs = this.body.spawnNeeds;
     this.compressionCaps = options.compressionCaps;
     // A start without its own limits (debug compression, a restored skip) passes time like a wait.
     this.compression = new Compression(longActionLimits(options.compressionCaps.wait));
