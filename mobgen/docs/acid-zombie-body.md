@@ -42,9 +42,9 @@ Mobgen says which materials glow; Deadvox says how brightly, per actor and per f
 
 - The eyes glow at a fixed level.
 - The sac glows at idle and brightens with wind-up progress; the head pulls back in the same telegraph.
-- Glow levels, drip rate and drip look are Deadvox type content, because tunables live in content (`../PILLARS.md`, "Content forward compatibility").
+- Glow levels, the drips and the death burst are Deadvox type content, because tunables live in content (`../PILLARS.md`, "Content forward compatibility"). See `deadvox/src/core/schema.ts`, `acidEffects`.
 - Glow is presentation. It reads simulation state and never feeds it back, so saves and replays are unaffected (`deadvox/docs/acid-zombie.md`, "Saves and determinism").
 
 ## Reaching Deadvox
 
-The body becomes a new `model` value for Deadvox zombie types, resolved through `consumableTemplate` like every spawned model, and the acid zombie type names it in content. The mouth is the origin of the spit's line-of-sight test, so the spit origin comes from the generated jaw, not a fixed offset, or a spit could leave from outside the visible mouth. See `src/core/template.ts`, `consumableTemplate`, `deadvox/src/core/schema.ts`, `ZombieSchema`, and `deadvox/docs/acid-zombie.md`, "The spit".
+The body becomes a new `model` value for Deadvox zombie types, resolved through `consumableTemplate` like every spawned model, and the acid zombie type names it in content. The mouth is the origin of the spit's line-of-sight test, so the spit origin comes from the generated jaw, not a fixed offset, or a spit could leave from outside the visible mouth. See `src/core/template.ts`, `consumableTemplate`, `deadvox/src/core/schema.ts`, `ZombieSchema`, `deadvox/src/core/zombieFigure.ts`, `humanoidMouthOrigin`, and `deadvox/docs/acid-zombie.md`, "The spit".
