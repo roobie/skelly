@@ -157,13 +157,14 @@ local roomSlot = function(id, at, level) {
 local lowerSlots = [
   slot('ground', 'gauntlet_city_ground', [0, 0, 0], [18, 1, 16]),
   slot('shell', 'gauntlet_city_shell', [0, 1, 0], [18, 7, 16]),
-  slot('door', 'gauntlet_city_door', [7, 1, 2], [2, 4, 1]),
+  doors.slot([7, 1, 2]),
   roomSlot('room', [1, 1, 3], 'lower'),
   slot('stairs', 'gauntlet_city_stairs_east', [1, 1, 5], [11, 8, 2]),
   slot('floor_shell', 'gauntlet_city_floor_shell', [0, 8, 0], [18, 1, 16]),
   slot('floor_inside', 'gauntlet_city_floor_lower', [1, 8, 3], [14, 1, 12]),
 ];
 local kit = {
+  furniture: doors.furniture,
   mapPieces: doors.mapPieces + [
     {
       id: 'gauntlet_city_ground', size: [18, 1, 16], style: 'brick_townhouse',
@@ -303,8 +304,7 @@ local kit = {
         choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_ground' }, weight: 1 }] },
       { id: 'shell', at: [0, 1, 0], size: [18, 7, 16], turn: 0,
         choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_shell' }, weight: 1 }] },
-      { id: 'door', at: [7, 1, 2], size: [2, 4, 1], turn: 0,
-        choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_door' }, weight: 1 }] },
+      doors.slot([7, 1, 2]),
       { id: 'room', at: [1, 1, 3], size: [14, 7, 12], turn: 0,
         choices: [
           { ref: { kind: 'piece', id: 'gauntlet_city_room_crates' }, weight: 1 },

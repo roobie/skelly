@@ -31,7 +31,7 @@ local dressed = function(building) building + {
 };
 {
   mapPools: decor.mapPools,
-  furniture: decor.furniture + yards.furniture,
+  furniture: kit.furniture + decor.furniture + yards.furniture,
   mapPieces: kit.mapPieces + cellars.mapPieces + decor.mapPieces + yards.mapPieces,
   mapAssemblies: decor.mapAssemblies + [dressed(building) for building in buildings],
 }

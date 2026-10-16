@@ -131,6 +131,40 @@
       "size": [5, 2, 10]
     },
     {
+      "color": "#7a5534",
+      "door": {
+        "handlingSimSeconds": 0.59999999999999998,
+        "prying": {
+          "fastestTimeSimSeconds": 7.5,
+          "quality": 3,
+          "skill": "mechanics",
+          "strikeIntervalSimSeconds": 0.5,
+          "timeSimSeconds": 15
+        }
+      },
+      "id": "gauntlet_door_boarded",
+      "name": "Boarded wooden door",
+      "shape": [
+        {
+          "position": [0, 0, 0.40000000000000002],
+          "size": [2, 4, 0.59999999999999998]
+        },
+        {
+          "position": [0, 0.59999999999999998, 0],
+          "size": [2, 0.40000000000000002, 0.40000000000000002]
+        },
+        {
+          "position": [0, 1.8, 0],
+          "size": [2, 0.40000000000000002, 0.40000000000000002]
+        },
+        {
+          "position": [0, 3, 0],
+          "size": [2, 0.40000000000000002, 0.40000000000000002]
+        }
+      ],
+      "size": [2, 4, 1]
+    },
+    {
       "color": "#a7aa9f",
       "id": "gauntlet_roof_ac",
       "name": "Air conditioner",
@@ -841,10 +875,24 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_door",
+                "id": "gauntlet_city_door_intact",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_door_missing",
                 "kind": "piece"
               },
               "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_door_boarded_outside",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "door",
@@ -1083,10 +1131,24 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_door",
+                "id": "gauntlet_city_door_intact",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_door_missing",
                 "kind": "piece"
               },
               "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_door_boarded_outside",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "door",
@@ -1391,10 +1453,24 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_door",
+                "id": "gauntlet_city_door_intact",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_door_missing",
                 "kind": "piece"
               },
               "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_door_boarded_outside",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "door",
@@ -1543,10 +1619,24 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_door",
+                "id": "gauntlet_city_door_intact",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_door_missing",
                 "kind": "piece"
               },
               "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_door_boarded_outside",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "door",
@@ -10245,7 +10335,7 @@
   "mapPieces": [
     {
       "anchors": {},
-      "id": "gauntlet_city_door",
+      "id": "gauntlet_city_door_intact",
       "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
       "lootContext": {
         "tier": "Tier1",
@@ -10257,6 +10347,47 @@
       "palette": {
         "D": {
           "furniture": "wood_door"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_door_missing",
+      "layers": [[".."], [".."], [".."], [".."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["AA"], ["AA"], ["AA"], ["AA"]]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_door_boarded_outside",
+      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "D": {
+          "furniture": "gauntlet_door_boarded"
         }
       },
       "ports": [],
