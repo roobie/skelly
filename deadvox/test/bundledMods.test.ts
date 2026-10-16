@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
+import { perceivePlayer } from '../src/core/zombies.ts';
 import { baseSources, buildBundledContent } from '../src/game/bundledContent.ts';
 import { BEGINNER_FACTORS, bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
@@ -96,5 +97,43 @@ describe('beginner mode saves', () => {
     await expect(decodeSave(normalBytes, { version: beginner.components, contentLookup })).rejects.toThrow(
       PACKS_DIFFER,
     );
+  });
+});
+
+describe('beginner mode light spotting', () => {
+  const farthestSpotted = (zombie: ReturnType<typeof base.zombies.get>): number => {
+    let farthest = 0;
+    for (let metres = 0.5; metres <= 150; metres += 0.5) {
+      const seen = perceivePlayer({
+        zombie: zombie!,
+        from: [0, 1, 0],
+        facing: [1, 0, 0],
+        player: {
+          pos: [metres / 0.5, 1, 0],
+          facing: [-1, 0, 0],
+          movement: 'still',
+          lit: true,
+          lightSeenFrom: 40,
+          sunlit: false,
+        },
+        dayPhase: 'night',
+        sightBlend: 0,
+        blockSize: 0.5,
+        isSolid: () => false,
+        tuning: base.senses.get('player')!,
+      });
+      if (seen) {
+        farthest = metres;
+      }
+    }
+    return farthest;
+  };
+
+  it('spots a carried light from a shorter range than without the mod', () => {
+    const beginner = selectBundledMods(['beginner']).content.registry;
+    for (const [id, plain] of base.zombies) {
+      const lightOnly = { ...beginner.zombies.get(id)!, sight: plain.sight, nightSight: plain.nightSight };
+      expect(farthestSpotted(lightOnly), id).toBeLessThan(farthestSpotted(plain));
+    }
   });
 });

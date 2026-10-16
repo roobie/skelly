@@ -12,6 +12,7 @@ interface Row {
   sight: number;
   nightSight: number;
   hearing: number;
+  lightSightScale?: number;
   regions: Record<string, number>;
 }
 type Factors = Readonly<Record<keyof typeof BEGINNER_FACTORS, number>>;
@@ -43,6 +44,7 @@ const scaleHostile = (row: Row, factors: Factors): Row => {
   out.sight *= factors.detection;
   out.nightSight *= factors.detection;
   out.hearing *= factors.detection;
+  out.lightSightScale = (out.lightSightScale ?? 1) * factors.detection;
   out.regions = Object.fromEntries(Object.entries(out.regions).map(([region, hp]) => [region, hp * factors.health]));
   return out;
 };

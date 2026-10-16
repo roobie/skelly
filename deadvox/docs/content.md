@@ -40,13 +40,17 @@ That derivation is the seam player mods lack: they replace whole rows and cannot
 base value. See `src/game/bundledMods.ts`, `selectBundledMods`.
 
 Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Damage, movement
-speed (wander and chase), detection (sight, night sight and the hearing multiplier, which
-covers footsteps and noise alike) and health each have one factor, `BEGINNER_FACTORS`. It exists
-so a new player can learn the game against slower, weaker enemies that notice less.
+speed (wander and chase), detection and health each have one factor, `BEGINNER_FACTORS`.
+Detection covers sight, night sight, the hearing multiplier (footsteps and noise alike) and
+light spotting, the zombie stat `lightSightScale` that multiplies the range at which a carried
+or placed light is spotted. Light is included so a beginner carrying a torch or flashlight at
+night does not draw enemies from full range. The mode exists so a new player can learn the
+game against slower, weaker enemies that notice less.
 
 A save records each active bundled mod as a content pack in its version identity, so a
-beginner-mode world is stored apart from a normal one and loads only when started with the
-same `?mods=`. See `src/core/saveFormat.ts`, `currentSaveVersionIdentity`.
+beginner-mode world is stored apart from a normal one. The URL alone decides the mode, because
+no menu switch exists for it: a world loads only when started with the same `?mods=`. See
+`src/core/saveFormat.ts`, `currentSaveVersionIdentity`.
 
 ## Core-pack integrity
 
