@@ -91,7 +91,7 @@ export class CitySite implements Site {
       },
       top: (x, z) => {
         if (rectDistance(bounds, x, z) !== 0) {
-          return undefined;
+          return;
         }
         const central = (0 <= x && x < grid.street) || (0 <= z && z < grid.street);
         const localZ = mod(z, grid.street + grid.blockZ);

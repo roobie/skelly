@@ -269,29 +269,32 @@ describe('one finished city plan', () => {
     { blocksX: 2, blocksZ: 1, ring: true },
     { blocksX: 1, blocksZ: 3, ring: false },
     { blocksX: 3, blocksZ: 2, ring: true },
-  ])('walls the whole loop with no street gap for $blocksX x $blocksZ cells, ring $ring', ({ blocksX, blocksZ, ring }) => {
-    const scenario = fixtureScenario();
-    scenario.city = {
-      ...scenario.city,
-      blocksX,
-      blocksZ,
-      blockX: 40,
-      blockZ: 40,
-      rows: 4,
-      perimeter: { block: 'fixture_solid', height: 6, thickness: 2, clearance: 1 },
-      ...(ring ? { ring: { pool: 'fixture_pool', setback: 6 } } : {}),
-    };
-    const admitted = buildRegistry(fixtureScenarioSources(scenario));
-    expect(admitted.issues).toEqual([]);
-    const plan = buildCityPlan({
-      seed: 73,
-      registry: admitted.registry,
-      floor,
-      grid: cityGridOf(admitted.registry, scenario.city),
-      scenario,
-    });
-    expect(perimeterGaps(plan.structures, plan.bounds, floor, scenario.city.perimeter!.height)).toEqual([]);
-  });
+  ])(
+    'walls the whole loop with no street gap for $blocksX x $blocksZ cells, ring $ring',
+    ({ blocksX, blocksZ, ring }) => {
+      const scenario = fixtureScenario();
+      scenario.city = {
+        ...scenario.city,
+        blocksX,
+        blocksZ,
+        blockX: 40,
+        blockZ: 40,
+        rows: 4,
+        perimeter: { block: 'fixture_solid', height: 6, thickness: 2, clearance: 1 },
+        ...(ring ? { ring: { pool: 'fixture_pool', setback: 6 } } : {}),
+      };
+      const admitted = buildRegistry(fixtureScenarioSources(scenario));
+      expect(admitted.issues).toEqual([]);
+      const plan = buildCityPlan({
+        seed: 73,
+        registry: admitted.registry,
+        floor,
+        grid: cityGridOf(admitted.registry, scenario.city),
+        scenario,
+      });
+      expect(perimeterGaps(plan.structures, plan.bounds, floor, scenario.city.perimeter!.height)).toEqual([]);
+    },
+  );
 
   it('fails validation when the edge ring names a pool that does not exist', () => {
     const scenario = fixtureScenario();
@@ -317,8 +320,7 @@ describe('one finished city plan', () => {
     expect(spawns.length).toBeGreaterThan(0);
     const inWall = ([x, y, z]: Vec3) =>
       site.plan.structures.some(
-        ({ min, max }) =>
-          x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
+        ({ min, max }) => x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
       );
     for (const { pos } of spawns) {
       expect(pos[0]).toBeGreaterThanOrEqual(site.bounds.x0);
