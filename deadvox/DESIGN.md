@@ -166,7 +166,7 @@ clock-ratio tuning does not retune content. See `src/core/time.ts`,
 `src/core/temporalFields.ts`, and the `lint:time` contract in
 `deadvox/tools/time-lint.mjs`.
 
-Sim time never decreases. A system tick may end up to the scheduler's epsilon
+Advancing never moves Sim time back; only a seek can. A system tick may end up to the scheduler's epsilon
 past an advance's target, and a Game timestamp recorded inside that tick (a
 scenario completion) must still be at or before the calendar a save derives
 from the final Sim time; validation compares them exactly. See
