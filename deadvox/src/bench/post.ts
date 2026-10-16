@@ -20,7 +20,7 @@ const BENCH_MOOD: MoodState = { post: true, bloom: true, film: true, grade: 1, b
 
 // The benchmark's own weathering, a content profile for the same reason: the play default's profile may change
 // without changing what the benchmark measures.
-export const BENCH_WEATHERING_PROFILE_ID = 'bench';
+const BENCH_WEATHERING_PROFILE_ID = 'bench';
 
 /** Gives a bench config the bench weathering instead of the play default's. */
 export const applyBenchWeathering = (config: GameConfig): void => {
