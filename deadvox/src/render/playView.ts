@@ -1,6 +1,7 @@
 // Owned play presentation resources and read-only frame projections. Gameplay chooses
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { AcidGlobState } from '../core/acidGlob.ts';
+import type { AcidPuddleState } from '../core/acidPuddle.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
@@ -73,6 +74,7 @@ export interface PlayWorldFrame {
   readonly entities: BlockEntities;
   readonly zombies: EntityStore<Zombie>;
   readonly acidGlobs: readonly Readonly<AcidGlobState>[];
+  readonly acidPuddles: readonly Readonly<AcidPuddleState>[];
   readonly frozen: boolean;
   readonly perceptionLabels: boolean;
 }
@@ -315,12 +317,13 @@ export const createPlayView = (
       entities,
       zombies,
       acidGlobs,
+      acidPuddles,
       frozen,
       perceptionLabels,
     }: PlayWorldFrame) => {
       itemThrows.update(time, inventory);
       blastFlashes.update(dt);
-      acidEffects.sync(acidGlobs, registry.zombies, dt);
+      acidEffects.sync(acidGlobs, acidPuddles, registry.zombies, dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
