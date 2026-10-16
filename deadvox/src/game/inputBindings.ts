@@ -1002,11 +1002,9 @@ export class KeyboardInput {
                       .some((gateChord) => gateChord.code === code && gateChord.modifier === modifier),
                 );
               return (
+                modifierCodes[chord.code] === modifier ||
                 Boolean(event[flags[modifier]]) ===
-                (chord.modifier === modifier ||
-                  modifierCodes[chord.code] === modifier ||
-                  ownedHeldModifier ||
-                  Boolean(gateModifier))
+                  (chord.modifier === modifier || ownedHeldModifier || Boolean(gateModifier))
               );
             }),
         ),

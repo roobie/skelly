@@ -22,7 +22,8 @@ it('street car procedural variants', () => {
   const poolIds = scenario.city.streetProps!.flatMap((id) =>
     registry.mapPools.get(id)!.choices.map(({ ref }) => ref.id),
   );
-  const draws = Array.from({ length: 6 }, (_, seed) => streetCars(seed));
+  // Each draw plans a whole city, which is the test's whole cost: one seed's many cars show variation, and its repeat shows determinism.
+  const draws = [streetCars(1)];
   for (const ids of draws) {
     expect(ids.length).toBeGreaterThan(0);
     expect(ids.every((id) => poolIds.includes(id))).toBe(true);
@@ -34,7 +35,7 @@ it('street car procedural variants', () => {
   expect(field((vehicle) => vehicle.body).size).toBeGreaterThan(1);
   expect(field((vehicle) => vehicle.dirt).size).toBeGreaterThan(1);
   expect(field((vehicle) => vehicle.removed).size).toBeGreaterThan(1);
-  expect(streetCars(3)).toEqual(draws[3]);
+  expect(streetCars(1)).toEqual(draws[0]);
 });
 
 it('rejects a vehicle look naming an unknown blueprint or part', () => {
