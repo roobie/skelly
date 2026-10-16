@@ -11,7 +11,9 @@ local normalSleep = 100 / normalSleepGameHours;
     knockoutSimSeconds: 20,
     staminaRegenDelaySimSeconds: 5,
     proneEyeHeightMetres: 0.3,
-    shockPerDamage: { blunt: 2, cut: 0, pierce: 0 },
+    shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
+    // Acid eats the outermost worn layer, so clothing is a consumable (`deadvox/docs/acid-zombie.md`).
+    outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
     landing: {
       safeSpeedMetresPerSimSecond: 11.5,
       damagePerSquaredSpeed: 0.129,
@@ -38,7 +40,7 @@ local normalSleep = 100 / normalSleepGameHours;
           closeSimSeconds: 180,
           treatmentEffort: 1,
           minDamage: 0,
-          chance: { blunt: 0.1, cut: 0.4, pierce: 0.3 },
+          chance: { blunt: 0.1, cut: 0.4, pierce: 0.3, acid: 0.05 },
           drip: { rate: 0.2, size: 0.75 },
           pain: 1,
         },
@@ -51,7 +53,7 @@ local normalSleep = 100 / normalSleepGameHours;
           closeSimSeconds: 7200,
           treatmentEffort: 1,
           minDamage: 5,
-          chance: { blunt: 0.03, cut: 0.35, pierce: 0.4 },
+          chance: { blunt: 0.03, cut: 0.35, pierce: 0.4, acid: 0.02 },
           drip: { rate: 1, size: 1 },
           pain: 5,
         },
@@ -64,7 +66,7 @@ local normalSleep = 100 / normalSleepGameHours;
           closeSimSeconds: 21600,
           treatmentEffort: 2,
           minDamage: 8,
-          chance: { blunt: 0.01, cut: 0.15, pierce: 0.15 },
+          chance: { blunt: 0.01, cut: 0.15, pierce: 0.15, acid: 0 },
           drip: { rate: 2.5, size: 1.3 },
           pain: 10,
         },
@@ -78,7 +80,7 @@ local normalSleep = 100 / normalSleepGameHours;
           treatmentEffort: 4,
           minDamage: 12,
           regionFactor: { torso: 0.5 },
-          chance: { blunt: 0.002, cut: 0.05, pierce: 0.03 },
+          chance: { blunt: 0.002, cut: 0.05, pierce: 0.03, acid: 0 },
           drip: { rate: 6, size: 1.6 },
           pain: 20,
         },
@@ -88,8 +90,8 @@ local normalSleep = 100 / normalSleepGameHours;
     // once the knockout lands (#654); until then nothing happens there. Tiers are shares of it.
     pain: {
       knockoutAt: 100,
-      // A bite or stab hurts a little more than a blow of the same damage.
-      perDamage: { blunt: 1.6, cut: 2, pierce: 2 },
+      // A bite or stab hurts a little more than a blow of the same damage; a burn hurts most.
+      perDamage: { blunt: 1.6, cut: 2, pierce: 2, acid: 3 },
       regionWeight: { head: 1.5, torso: 1, leftArm: 1, rightArm: 1, leftLeg: 1, rightLeg: 1 },
       perRegionDamage: 0.5,
       infection: { early: 8, advanced: 20 },

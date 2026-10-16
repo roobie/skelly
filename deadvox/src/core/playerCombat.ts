@@ -1,4 +1,4 @@
-import { DAMAGE_KINDS } from './body.ts';
+import { MELEE_DAMAGE_KINDS } from './body.ts';
 import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import {
@@ -82,7 +82,7 @@ const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean 
   (weapon.limbDamageMultiplier === undefined ||
     (Number.isFinite(weapon.limbDamageMultiplier) && weapon.limbDamageMultiplier > 0)) &&
   (weapon.speedMultiplier === undefined || (Number.isFinite(weapon.speedMultiplier) && weapon.speedMultiplier > 0)) &&
-  (weapon.type === undefined || DAMAGE_KINDS.includes(weapon.type));
+  (weapon.type === undefined || MELEE_DAMAGE_KINDS.includes(weapon.type));
 
 export class PlayerCombat {
   private playerAttackWait = 0;
@@ -214,7 +214,7 @@ export class PlayerCombat {
       Array.isArray(value) && value.length === 3 && value.every((component) => Number.isFinite(component));
     const validUid = (uid: number | null): boolean => uid === null || (Number.isSafeInteger(uid) && uid > 0);
     if (
-      !(action.profile === 'fists' || DAMAGE_KINDS.includes(action.profile)) ||
+      !(action.profile === 'fists' || MELEE_DAMAGE_KINDS.includes(action.profile)) ||
       (action.hand !== 'right' && action.hand !== 'left') ||
       typeof action.twoHanded !== 'boolean' ||
       !Number.isFinite(action.cooldown) ||

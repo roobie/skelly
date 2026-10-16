@@ -13,7 +13,7 @@ import {
   amalgamStrikeOrigin,
 } from './amalgamFigure.ts';
 import { AmalgamShape } from './amalgamShape.ts';
-import type { BodyRegion, DamageKind } from './body.ts';
+import type { BodyRegion, DamageKind, MeleeDamageKind } from './body.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
@@ -134,7 +134,7 @@ const validStanceWeight = (weight: number | undefined): boolean =>
 const validStepOffset = (offset: number | undefined): boolean =>
   offset === undefined || (Number.isFinite(offset) && Math.abs(offset) <= 0.5001);
 
-type MeleeDamageType = DamageKind;
+type MeleeDamageType = MeleeDamageKind;
 type ZombieMove = ZombieDef['attack']['moves'][number];
 type ZombieHitRegionChoice = ZombieMove['hitRegions'][number];
 
@@ -244,6 +244,10 @@ const meleeDamageForContact = (
   const resistance = zombie.type.meleeDamageResistance?.[regionClass][damageType] ?? 0;
   return rolled * multiplier * (1 - resistance);
 };
+
+/** Acid damage a zombie type takes; a type with `acidResistance` 1 is immune. */
+export const acidDamageToZombie = (type: Pick<ZombieDef, 'acidResistance'>, amount: number): number =>
+  amount * (1 - (type.acidResistance ?? 0));
 
 export interface MeleeResult {
   readonly id?: EntityId | undefined;
