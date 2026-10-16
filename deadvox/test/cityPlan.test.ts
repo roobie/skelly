@@ -223,7 +223,7 @@ describe('one finished city plan', () => {
     });
 
     // Each case builds the whole city and certifies it again, though only the population differs. Zero and two cover
-    // "none" and "distinct streets"; the bundled single horde is already asserted above.
+    // "none" and "distinct streets"; a 1-horde case adds nothing, since a count slip shows at 0 or 2 too.
     const hordeCases = [0, 2];
     it(
       'places exactly the horde count the scenario asks for, on different streets',
