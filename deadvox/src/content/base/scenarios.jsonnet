@@ -36,12 +36,26 @@ local ladder = lab.entry.ladder;
       blockZ: std.max(service.size[0], service.size[2]) + 24,
       pad: 2, gap: 1, blend: 24,
       rows: 4,
-      perimeter: { block: 'concrete', height: 8, thickness: 2 },
+      perimeter: {
+        block: 'concrete', height: 12, thickness: 2, clearance: 4,
+        wire: { block: 'chain_link', height: 2 },
+        lining: { assembly: 'gauntlet_perimeter_lining', pitch: 12 },
+        gate: { assembly: 'gauntlet_perimeter_gate' },
+      },
       streetProps: ['gauntlet_car_wreck'],
       pool: 'gauntlet_city',
+      ring: { pool: 'gauntlet_ring', setback: 6 },
     },
   }],
   mapPools: [{
+    id: 'gauntlet_ring',
+    choices: [
+      { ref: { kind: 'assembly', id: 'gauntlet_city_1' }, weight: 36 },
+      { ref: { kind: 'assembly', id: 'gauntlet_city_2' }, weight: 30 },
+      { ref: { kind: 'assembly', id: 'gauntlet_city_3' }, weight: 18 },
+      { ref: { kind: 'assembly', id: 'gauntlet_food_store' }, weight: 6 },
+    ],
+  }, {
     id: 'gauntlet_city',
     choices: [
       { ref: { kind: 'assembly', id: 'gauntlet_city_1' }, weight: 36 },

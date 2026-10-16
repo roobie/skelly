@@ -73,7 +73,7 @@ export class CitySite implements Site {
   }
 
   get surface(): Surface {
-    const { grid, bounds, floor } = this.plan;
+    const { grid, bounds, core, floor } = this.plan;
     const alleys = Array.from(
       { length: (grid.rows ?? 2) / 2 - 1 },
       (_, pair) => cityRowStart(grid, pair * 2) + 2 * cityRowDepth(grid),
@@ -90,11 +90,14 @@ export class CitySite implements Site {
         return Math.round(natural + smoothstep(1 - distance / grid.blend) * (floor - natural));
       },
       top: (x, z) => {
-        const inside = rectDistance(bounds, x, z) === 0;
+        if (rectDistance(bounds, x, z) !== 0) {
+          return undefined;
+        }
+        const central = (0 <= x && x < grid.street) || (0 <= z && z < grid.street);
         const localZ = mod(z, grid.street + grid.blockZ);
         const alley = alleys.some((start) => localZ >= start && localZ < start + grid.street);
         const street = mod(x, grid.street + grid.blockX) < grid.street || localZ < grid.street || alley;
-        return inside && street ? this.asphalt : undefined;
+        return central || (rectDistance(core, x, z) === 0 && street) ? this.asphalt : undefined;
       },
     };
   }

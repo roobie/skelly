@@ -3,6 +3,7 @@ local city = import 'gauntlet-city.libsonnet';
 local kits = import 'gauntlet-city-kits.libsonnet';
 local types = import 'gauntlet-city-building-types.libsonnet';
 local tents = import 'gauntlet-city-medical.libsonnet';
+local perimeter = import 'gauntlet-city-perimeter.libsonnet';
 local rooms = import 'gauntlet-lab-rooms.libsonnet';
 local descents = import 'gauntlet-lab-descents.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
@@ -85,6 +86,8 @@ local utilities = [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
     },
+    note('gauntlet_perimeter_notice', 'Notice', 'QUARANTINE ZONE'),
+    note('gauntlet_perimeter_gate_notice', 'Notice', 'NO ENTRY'),
     note('gauntlet_maintenance_memo', 'Ventilation invoice', |||
       Accounts queried the extra ducting again. The low brick service building beside the square water tank and yellow delivery frame has paired narrow exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.
 
@@ -120,5 +123,5 @@ local utilities = [
       ],
     },
   ],
-  templates: city.templates + utilities,
+  templates: city.templates + perimeter.templates + utilities,
 }

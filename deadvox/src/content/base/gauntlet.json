@@ -56,6 +56,40 @@
     },
     {
       "color": "#dfd6b9",
+      "id": "gauntlet_perimeter_notice",
+      "name": "Notice",
+      "readable": {
+        "text": "QUARANTINE ZONE",
+        "title": "Notice"
+      },
+      "shape": [
+        {
+          "position": [0.10000000000000001, 0.10000000000000001, 0.80000000000000004],
+          "size": [1.8, 1.8, 0.10000000000000001]
+        }
+      ],
+      "size": [2, 2, 1],
+      "solid": false
+    },
+    {
+      "color": "#dfd6b9",
+      "id": "gauntlet_perimeter_gate_notice",
+      "name": "Notice",
+      "readable": {
+        "text": "NO ENTRY",
+        "title": "Notice"
+      },
+      "shape": [
+        {
+          "position": [0.10000000000000001, 0.10000000000000001, 0.80000000000000004],
+          "size": [1.8, 1.8, 0.10000000000000001]
+        }
+      ],
+      "size": [2, 2, 1],
+      "solid": false
+    },
+    {
+      "color": "#dfd6b9",
       "id": "gauntlet_maintenance_memo",
       "name": "Ventilation invoice",
       "readable": {
@@ -17056,6 +17090,53 @@
         }
       },
       "size": [5, 3, 10]
+    },
+    {
+      "id": "gauntlet_perimeter_lining",
+      "layers": [
+        ["........", "HJJJJJJH", "HJJJJJJH"],
+        ["........", "HJJJJJJH", "HJJJJJJH"],
+        ["........", "........", "...FF..."],
+        ["........", "........", "...FF..."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": "air",
+        "C": "chain_link",
+        "F": {
+          "furniture": "gauntlet_perimeter_notice"
+        },
+        "H": "hazard_yellow",
+        "J": "concrete"
+      },
+      "size": [8, 4, 3]
+    },
+    {
+      "id": "gauntlet_perimeter_gate",
+      "layers": [
+        ["............", "............", "JJ........JJ", "JJCCCCCCCCJJ"],
+        ["............", "............", "JJ...FF...JJ", "JJCCCCCCCCJJ"],
+        ["............", "............", "JJ...FF...JJ", "JJCCCCCCCCJJ"],
+        ["............", "............", "JJ........JJ", "JJCCCCCCCCJJ"],
+        ["............", "............", "HHHHHHHHHHHH", "HHHHHHHHHHHH"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": "air",
+        "C": "chain_link",
+        "F": {
+          "furniture": "gauntlet_perimeter_gate_notice"
+        },
+        "H": "hazard_yellow",
+        "J": "concrete"
+      },
+      "size": [12, 5, 4]
     },
     {
       "id": "gauntlet_public_memo",

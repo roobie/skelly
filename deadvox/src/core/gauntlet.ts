@@ -7,7 +7,7 @@ import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import { scenarioCertificate } from './scenarioCertificate.ts';
 import type { ScenarioDef } from './schema.ts';
-import type { HordeSpawn, ZombieSpawn } from './site.ts';
+import { type HordeSpawn, rectDistance, type ZombieSpawn } from './site.ts';
 import { footprint, placedSpawns } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
@@ -67,8 +67,13 @@ export class GauntletSite extends CitySite {
 const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressure: boolean) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
-  const { grid, floor } = site.plan;
-  const ordinary = site.placements.filter((placement) => grid.templates.some(({ id }) => id === placement.template.id));
+  const { grid, floor, core } = site.plan;
+  // The edge ring reuses ordinary buildings but has no street frontage to group by; its spawns come from markers.
+  const ordinary = site.placements.filter(
+    (placement) =>
+      grid.templates.some(({ id }) => id === placement.template.id) &&
+      rectDistance(core, placement.origin[0], placement.origin[2]) === 0,
+  );
   const weights = ordinaryHamletSpawnWeights(site.registry);
   const append = <T extends { pos: Vec3 }>(columns: Map<string, T[]>, spawn: T) => {
     const key = `${toChunk(spawn.pos[0])},${toChunk(spawn.pos[2])}`;
