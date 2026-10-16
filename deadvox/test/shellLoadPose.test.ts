@@ -165,7 +165,13 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
         throw new Error('Missing actual support/grip objects');
       }
       const port = gunRoot.localToWorld(new Vector3(...heldAnchorOffset(model, 'loading_port')));
-      return { wrist: grip.getWorldPosition(new Vector3()), port, gun: gunRoot.getWorldPosition(new Vector3()) };
+      const wrist = grip.getWorldPosition(new Vector3());
+      return {
+        wrist,
+        wristLocal: gunRoot.worldToLocal(wrist.clone()),
+        port,
+        gun: gunRoot.getWorldPosition(new Vector3()),
+      };
     };
     try {
       const rest = update();
@@ -192,7 +198,7 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
       // Reprojection cannot advance the insertion or perturb an attached support arm.
       expect(update().wrist.distanceTo(feeding.wrist)).toBeCloseTo(0);
       queue.cancel();
-      expect(update().wrist.distanceTo(rest.wrist)).toBeCloseTo(0);
+      expect(update().wristLocal.distanceTo(rest.wristLocal)).toBeCloseTo(0);
       expect(scene.getObjectByName('load-shell-probe')).toBeUndefined();
       expect(shells.count).toBe(2);
       expect(mechanics.load(shells, duration)).toBeUndefined();
@@ -215,7 +221,7 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
       queue.tick(duration);
       expect(gun.firearm?.tube).toEqual([shells.type]);
       expect(shells.count).toBe(1);
-      expect(update().wrist.distanceTo(rest.wrist)).toBeCloseTo(0);
+      expect(update().wristLocal.distanceTo(rest.wristLocal)).toBeCloseTo(0);
       expect(scene.getObjectByName('load-shell-probe')).toBeUndefined();
     } finally {
       held.dispose();

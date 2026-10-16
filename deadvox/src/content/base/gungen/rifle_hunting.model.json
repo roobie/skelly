@@ -4,10 +4,10 @@
   "grip": { "at": [-0.215625, -0.048875, 0], "turn": [0, 0, 0] },
   "sight": {
     "kind": "iron",
-    "eye": [0.07475, 0.02875, 0],
+    "eye": [0.07475, 0.023, 0],
     "direction": [1, 0, 1.2246467991473532e-16],
     "up": [1.4997597826618576e-32, 1, -1.2246467991473532e-16],
-    "eyeReliefMetres": 0.046
+    "eyeReliefMetres": 0.276
   },
   "muzzleDirection": [1, 0, 1.2246467991473532e-16],
   "anchors": {
@@ -144,14 +144,16 @@
     "receiver.rail.0": [],
     "receiver.rail.1": [],
     "receiver.rail.2": [],
-    "receiver.rail.3": ["optic-lpvo-1-6x", "optic-hunting-3-9x"],
+    "receiver.rail.3": ["optic-lpvo-1-6x", "optic-hunting-3-9x", "optic-digital-thermal"],
     "receiver.rail.4": [],
     "receiver.rail.5": [],
     "receiver.rail.6": []
   },
   "compatibilityPairs": [
+    [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-digital-thermal"]],
     [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-hunting-3-9x"]],
     [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+    [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-digital-thermal"]],
     [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-hunting-3-9x"]],
     [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]]
   ]

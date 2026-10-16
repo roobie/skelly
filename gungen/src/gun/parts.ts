@@ -3220,15 +3220,30 @@ const sportingRearSight: PartFamily = {
     section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'base', param: 'section' }] },
   },
   build(params) {
-    const height =
-      params.section === 'sporter' ? SPORTER_PROPORTIONS.frontSight.sightLineU - BARREL_RADIUS[cls(params, 'bore')] : 1;
+    const sporter = params.section === 'sporter';
+    const height = sporter ? SPORTER_PROPORTIONS.frontSight.sightLineU - BARREL_RADIUS[cls(params, 'bore')] : 1;
+    const { halfWidthU, notchHalfWidthU, notchDepthU, eyeReliefU } = SPORTER_PROPORTIONS.rearSight;
     return {
       family: 'sporting-rear-sight',
-      solids: openNotchLeafSolids(height),
+      solids: sporter
+        ? [
+            solid('leaf-base', [-SIGHT_GRAIN, 0, -halfWidthU], [SIGHT_GRAIN, height - notchDepthU, halfWidthU]),
+            solid(
+              'leaf-left',
+              [-SIGHT_GRAIN, height - notchDepthU, -halfWidthU],
+              [SIGHT_GRAIN, height, -notchHalfWidthU],
+            ),
+            solid(
+              'leaf-right',
+              [-SIGHT_GRAIN, height - notchDepthU, notchHalfWidthU],
+              [SIGHT_GRAIN, height, halfWidthU],
+            ),
+          ]
+        : openNotchLeafSolids(height),
       ports: [
         { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
-      axes: [{ kind: 'sight', origin: [0, height, 0], dir: X, eyeReliefU: 4 }],
+      axes: [{ kind: 'sight', origin: [0, height, 0], dir: X, eyeReliefU: sporter ? eyeReliefU : 4 }],
       keepOuts: [],
     };
   },
