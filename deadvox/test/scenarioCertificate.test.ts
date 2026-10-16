@@ -24,6 +24,10 @@ if (!profile) {
   throw new Error('Missing composed scenario');
 }
 const COMPOSED_LADDER = /composed ladder/;
+// The heavy cases are CPU-bound, so their timeouts scale with the simulated work and leave headroom for a shared
+// CPU, instead of vitest's flat default (#792).
+const WALK_MS_PER_STOREY = 4800;
+const GAUNTLET_SITE_MS = 7200;
 const scale = makeScale(0.5);
 const grid = cityGridOf(registry, profile.city);
 const base = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
@@ -163,18 +167,22 @@ describe('final composed body-route certificate', () => {
     );
   }
 
-  it('rejects an obstruction stamped after the service portal was locally certified', () => {
-    const original = CitySite.prototype.stamp;
-    const stamp = vi.spyOn(CitySite.prototype, 'stamp').mockImplementation(function (this: CitySite, chunk: Chunk) {
-      original.call(this, chunk);
-      obstruct(chunk, this.plan.portal!.lower);
-    });
-    try {
-      expect(() => new GauntletSite({ seed: 9, registry, scale, scenario: profile })).toThrow(COMPOSED_LADDER);
-    } finally {
-      stamp.mockRestore();
-    }
-  });
+  it(
+    'rejects an obstruction stamped after the service portal was locally certified',
+    () => {
+      const original = CitySite.prototype.stamp;
+      const stamp = vi.spyOn(CitySite.prototype, 'stamp').mockImplementation(function (this: CitySite, chunk: Chunk) {
+        original.call(this, chunk);
+        obstruct(chunk, this.plan.portal!.lower);
+      });
+      try {
+        expect(() => new GauntletSite({ seed: 9, registry, scale, scenario: profile })).toThrow(COMPOSED_LADDER);
+      } finally {
+        stamp.mockRestore();
+      }
+    },
+    GAUNTLET_SITE_MS,
+  );
 
   it('rejects a shaft-neighbor obstruction in the final furnished production lab', () => {
     const [descent] = base.composition!.descents;
@@ -327,7 +335,7 @@ it(
     const plan = candidatePlan(base.candidates[0]!, 1, selected.template, substitutedRegistry);
     traverseScenario(new CitySite(selected.seed, substitutedRegistry, scale, plan), profile, scale);
   },
-  profile.composition!.storeys.length * 2000,
+  profile.composition!.storeys.length * WALK_MS_PER_STOREY,
 );
 
 describe('lab threat by depth', () => {
