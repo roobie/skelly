@@ -23,12 +23,13 @@ export const PLAYER = {
 const GRAVITY = 28;
 
 /**
- * Metres a sprinting jump has risen above its take-off point after covering `run` metres of clear
- * ground, edge of the body to the obstacle. With no run left, the body can still jump straight up
- * against the obstacle, so that is the standing apex.
+ * Most metres a jump can have risen above its take-off point after covering `run` metres of clear
+ * ground, edge of the body to the obstacle. Up to the distance a sprint covers before the apex, a
+ * slower jump peaks exactly at the obstacle, so the rise is the apex; beyond it the sprint arc is
+ * the highest.
  */
 export const sprintJumpRise = (run: number): number => {
-  if (run <= 0) {
+  if (run <= (PLAYER.jump * PLAYER.sprint) / GRAVITY) {
     return PLAYER.jump ** 2 / (2 * GRAVITY);
   }
   const t = run / PLAYER.sprint;

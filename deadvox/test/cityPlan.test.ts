@@ -328,17 +328,18 @@ describe('one finished city plan', () => {
   });
 
   it.each([
-    { wall: 3, reports: true },
-    { wall: 4, reports: true },
-    { wall: 6, reports: false },
+    { wall: 3, setback: 6, reports: true },
+    { wall: 4, setback: 6, reports: true },
+    { wall: 4, setback: 3, reports: true },
+    { wall: 6, setback: 6, reports: false },
   ])(
-    'checks a roof jump against a wall $wall blocks high at the ring setback (reports: $reports)',
-    ({ wall, reports }) => {
+    'checks a roof jump against a wall $wall blocks high at ring setback $setback (reports: $reports)',
+    ({ wall, setback, reports }) => {
       const scenario = fixtureScenario();
       scenario.city = {
         ...scenario.city,
         perimeter: { block: 'fixture_solid', height: wall, thickness: 2 },
-        ring: { pool: 'fixture_pool', setback: 6 },
+        ring: { pool: 'fixture_pool', setback },
       };
       const { registry: admitted } = buildRegistry(fixtureScenarioSources(fixtureScenario()));
       const paths = scenarioPlanIssues(admitted, scenario).map(([path]) => path);
