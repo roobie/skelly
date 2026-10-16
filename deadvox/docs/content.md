@@ -10,7 +10,7 @@ read_if:
   - you're authoring or changing exterior door openings
   - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author decals or scenario outbreak age
-  - you author a scenario or move scenario rules from code into content
+  - you author a scenario, its start or its ways down, or move scenario rules from code into content
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
 ---
@@ -263,9 +263,18 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   how forgiving a scenario is belongs to its design. Whether that redundancy sits with the
   leads or in a block of its own waits on BR in #393. See `src/core/scenarioCertificate.ts`,
   `scenarioCertificate`.
+- **Start.** The gauntlet starts on an authored roof with several authored ways down, each
+  trading speed against safety or noise, so leaving the roof is the first decision. They
+  are authored to keep the first version simple. Every route proof roots at the start, so
+  the rooftop start lands in #393 before seeded placement, and the proofs are rebuilt
+  around their root once, not twice. The template's climb proof covers the roof and ways
+  down; each world's route proof still runs from the roof, because the seeded city around
+  the building can block the foot of a way down. A threat waiting at that foot is
+  allowed.
 - **Street approach.** The street a kind's proof enters its site from is an authored
   anchor, not derived from the site, so a scenario can approach from another side and
-  stay the same kind.
+  stay the same kind. Under a rooftop start the anchor need not sit at the foot of a way
+  down.
 - **Leads and landmarks.** They are lists in the row, not a fixed number, because how
   many clues and landmarks a scenario has is design.
 - **Placement.** Leads and landmarks are placed by seeded rules in the row, not by fixed
@@ -275,11 +284,13 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   starts.
 - **Goal text.** The words the goal shows when it refuses live in a shared core-pack text
   table (#456), not on the scenario row. Player-facing wording belongs to the mod, and the
-  same line copied to every place that shows it is debt.
+  same line copied to every place that shows it is debt. For that reason the refusals the
+  goal shares with other actions move to the table in the same #393 step as the goal's
+  own, rather than waiting for #456's wider sweep and leaving a second copy behind.
 
 The gauntlet sweep tracked by #393 brings the gauntlet's code to these rules; until it
-lands, its lead and landmark counts and positions, street approach, lead redundancy and goal
-refusal text stay fixed in code.
+lands, its street start, lead and landmark counts and positions, street approach, lead
+redundancy and goal refusal text stay fixed in code.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules
