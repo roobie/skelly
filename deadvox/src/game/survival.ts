@@ -11,7 +11,7 @@ import type { HandSide, Inventory, Target, TargetState } from '../core/inventory
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import { chargeOf, chargeShare, drainBurnLight, drainLight, swapBattery, toggleLight } from '../core/lights.ts';
-import { consume, FOOD_POISONING } from '../core/needs.ts';
+import { consume } from '../core/needs.ts';
 import { consumption, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
@@ -349,7 +349,7 @@ export class Survival {
       this.sim.body.takeAnalgesic(item.type);
     } else if (rotten) {
       this.hooks.notice(`The ${def.name.toLowerCase()} was rotten`);
-      this.sim.hurt(FOOD_POISONING, 'food poisoning');
+      this.sim.hurt(def.food!.poisonHealth!, 'food poisoning');
     } else {
       consume(this.sim.needs, def.food!);
     }

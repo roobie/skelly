@@ -1,9 +1,12 @@
+local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
+
 {
   "items": [
     {
       "category": "weapon",
       "description": "12-gauge pump shotgun. The tube holds four shells, with one more in the chamber.",
       "firearm": {
+        "handling": { "shellLoadSimSeconds": 0.9 },
         "dispersionRadians": 0,
         "pump": true,
         "recoilKickRadians": 0.035000000000000003,
@@ -41,7 +44,7 @@
     {
       "category": "weapon",
       "description": "5.56×45 rifle fed from STANAG magazines.",
-      "firearm": {
+      "firearm": magazineHandling {
         "dispersionRadians": 0.012,
         "recoilKickRadians": 0.0060000000000000001,
         "shotSound": "gunshot_m4",
@@ -69,7 +72,7 @@
     {
       "category": "weapon",
       "description": "7.62×39 rifle fed from AKM magazines.",
-      "firearm": {
+      "firearm": magazineHandling {
         "dispersionRadians": 0.017999999999999999,
         "recoilKickRadians": 0.012,
         "shotSound": "gunshot",

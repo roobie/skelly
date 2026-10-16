@@ -121,7 +121,9 @@
         "damage": 35,
         "impulse": 1,
         "rangeMetres": 500,
-        "headDamageMultiplier": 2
+        "headDamageMultiplier": 2,
+        "loadSimSeconds": 0.8,
+        "stripSimSeconds": 0.5
       },
       "model": "round_5_d_56x45"
     },
@@ -140,7 +142,9 @@
         "damage": 45,
         "impulse": 1.5,
         "rangeMetres": 400,
-        "headDamageMultiplier": 2
+        "headDamageMultiplier": 2,
+        "loadSimSeconds": 0.8,
+        "stripSimSeconds": 0.5
       },
       "model": "round_7_d_62x39"
     },
@@ -151,7 +155,7 @@
       "weight": 280,
       "size": [2, 1],
       "description": "Sealed cardboard box of twenty 5.56×45 cartridges.",
-      "unpack": { "item": "cartridge_5_d_56x45", "count": 20 }
+      "unpack": { "item": "cartridge_5_d_56x45", "count": 20, "simSeconds": 1.2 }
     },
     {
       "id": "cartridge_box_7_d_62x39",
@@ -160,7 +164,7 @@
       "weight": 360,
       "size": [2, 1],
       "description": "Sealed cardboard box of twenty 7.62×39 cartridges.",
-      "unpack": { "item": "cartridge_7_d_62x39", "count": 20 }
+      "unpack": { "item": "cartridge_7_d_62x39", "count": 20, "simSeconds": 1.2 }
     },
     {
       "id": "magazine_stanag_30",

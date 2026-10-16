@@ -9,6 +9,7 @@
       },
       "food": {
         "calories": 350,
+        "consumeSimSeconds": 3,
         "water": 100
       },
       "id": "canned_beans",
@@ -24,6 +25,7 @@
       },
       "food": {
         "calories": 200,
+        "consumeSimSeconds": 3,
         "water": 250
       },
       "id": "canned_soup",
@@ -39,6 +41,7 @@
       },
       "food": {
         "calories": 1100,
+        "consumeSimSeconds": 3,
         "water": 0
       },
       "id": "crackers",
@@ -54,6 +57,9 @@
       },
       "food": {
         "calories": 95,
+        "consumeSimSeconds": 3,
+        "goingOffFraction": 0.5,
+        "poisonHealth": 15,
         "rotsAfterGameHours": 240,
         "water": 150
       },
@@ -70,6 +76,7 @@
       },
       "food": {
         "calories": 530,
+        "consumeSimSeconds": 3,
         "water": 0
       },
       "id": "chocolate_bar",
@@ -85,6 +92,7 @@
       },
       "food": {
         "calories": 140,
+        "consumeSimSeconds": 2,
         "water": 300
       },
       "id": "soda_can",
@@ -100,6 +108,7 @@
       },
       "food": {
         "calories": 0,
+        "consumeSimSeconds": 2,
         "water": 1000
       },
       "id": "water_bottle",
@@ -115,6 +124,7 @@
       },
       "food": {
         "calories": 450,
+        "consumeSimSeconds": 2,
         "water": 900
       },
       "id": "juice_carton",
