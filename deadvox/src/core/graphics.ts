@@ -44,6 +44,7 @@ export const GRAPHICS_KNOBS = {
   smallSunMap: { kind: 'toggle', url: 'sunsmall', schema: ToggleOptionSchema },
   fastCamo: { kind: 'toggle', url: 'camofast', schema: ToggleOptionSchema },
   coarseWeathering: { kind: 'toggle', url: 'weathercoarse', schema: ToggleOptionSchema },
+  cachedSurfaceNoise: { kind: 'toggle', url: 'surfacenoise', schema: ToggleOptionSchema },
 } as const;
 
 export type GraphicsKey = keyof typeof GRAPHICS_KNOBS;

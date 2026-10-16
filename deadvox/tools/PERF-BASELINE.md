@@ -32,6 +32,8 @@ serial budget components. Frame intervals include presentation and browser sched
 main-thread frame timing covers the game callback, not all browser tasks. CPU profiles run
 separately without GPU queries, so profiling overhead cannot contaminate the GPU baseline.
 
+A shader compile failure can leave geometry undrawn without throwing a page exception. Treat browser console errors as collection failures too; otherwise missing work can masquerade as a GPU improvement. See `deadvox/tools/perf-baseline.mjs`, `run`.
+
 Compare only like measurement builds. Reject invalid measurements rather than retrying
 until a run succeeds: selecting only successful attempts hides instability and can make an
 unreliable workload appear to meet its budget. Investigate the rejected attempt before

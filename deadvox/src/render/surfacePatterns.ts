@@ -6,6 +6,7 @@
 
 import type { Registry } from '../core/content.ts';
 import { BLOCK_PATTERNS } from '../core/schema.ts';
+import { SURFACE_NOISE_PERIOD } from './surfaceNoise.ts';
 
 const DEFINES = BLOCK_PATTERNS.map((name, i) => `#define PAT_${name.toUpperCase()} ${i}.0`).join('\n');
 const FALLBACK_CAMO: CamoShaderConfig = {
@@ -64,7 +65,7 @@ uniform vec3 uCamoBaseColor;
 
 // Hoskins' hash without sine; cell coordinates are wrapped so large worlds keep precision.
 float hash21(vec2 p) {
-  p = mod(p, 512.0);
+  p = mod(p, ${SURFACE_NOISE_PERIOD}.0);
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
@@ -75,11 +76,18 @@ vec2 hash22(vec2 p) {
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.xx + p3.yz) * p3.zy);
 }
+#ifdef DEADVOX_TEXTURE_NOISE
+uniform sampler2D uSurfaceNoise;
+#endif
 float vnoise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
+#ifdef DEADVOX_TEXTURE_NOISE
+  return textureLod(uSurfaceNoise, (i + f + 0.5) / ${SURFACE_NOISE_PERIOD}.0, 0.0).r;
+#else
   return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x), mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+#endif
 }
 
 // The in-plane coordinates in metres: u runs along the wall and v up it; on floors and ceilings it's x, z.

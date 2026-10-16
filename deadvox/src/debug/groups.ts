@@ -42,7 +42,10 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
   {
     id: 'look',
     title: 'Look',
-    notes: [{ label: 'Projected camouflage (debug URL override)', param: 'camofast=1' }],
+    notes: [
+      { label: 'Projected camouflage (debug URL override)', param: 'camofast=1' },
+      { label: 'Cached surface noise (debug URL override)', param: 'surfacenoise=1' },
+    ],
   },
   {
     id: 'weathering',

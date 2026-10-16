@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { build, preview } from 'vite';
+import { watchPageErrors } from './perf-baseline-page.mjs';
 import { rankProfile, summarize } from './perf-baseline-stats.mjs';
 
 const { chromium } = await import('playwright');
@@ -115,7 +116,7 @@ try {
       rejectPage = reject;
     });
     pageFailed.catch(() => undefined);
-    page.on('pageerror', (error) => {
+    watchPageErrors(page, (error) => {
       errors.push(String(error));
       rejectPage(error);
     });

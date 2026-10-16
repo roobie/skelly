@@ -9,5 +9,6 @@ local toggle(label) = { label: label, default: false, options: [false, true] };
     smallSunMap: toggle('Smaller sun shadow map'),
     fastCamo: toggle('Fast camouflage pattern'),
     coarseWeathering: toggle('Coarse weathering grid'),
+    cachedSurfaceNoise: toggle('Cached surface noise'),
   }],
 }
