@@ -362,8 +362,11 @@ Lab threat grows with depth so descending feels like going deeper into a failing
 facility, not repeating one room. Each storey authors weighted marker rows, and each
 room kind sets how many of its marker cells are live; breach and quarantine rooms are
 densest. Crawlers and runners appear only below the containment storey. The rows are
-slot choices, so a mod retunes a storey by overriding data. The amalgam is withheld
-because its validated body is taller than a storey. See
+slot choices, so a mod retunes a storey by overriding data. The amalgam body is taller
+than a storey, so the bottom storey holds it in a double-height chamber: the room piece
+is one storey, and a cap piece in the storey above owns the slab and air over it, with
+solid wall and cap around so nothing walks over the opening. The amalgam row appears
+only there. See
 `src/content/base/gauntlet-lab-threat.libsonnet`, `rows` and `kinds`; and
 `test/scenarioCertificate.test.ts`, "lab threat by depth".
 

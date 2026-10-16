@@ -55,7 +55,7 @@ local cabinetShape = [
     room('breach_incoming', '_incoming', 'breach', 'spill'), room('security_outgoing', '_outgoing', 'console', 'archive'),
     room('quarantine_incoming', '_incoming', 'breach', 'breach'), room('utilities_incoming', '_incoming', 'pump', 'pump'),
     room('decon_outgoing', '_outgoing', 'pump', 'spill'), room('breach_outgoing_east', '_outgoing_east', 'breach', 'spill'),
-    room('quarantine', '', 'breach', 'breach'), room('breach', '', 'breach', 'spill'), room('decon', '', 'pump', 'spill'),
+    room('quarantine', '', 'breach', 'breach'), room('breach', '', 'breach', 'spill'), room('decon', '', 'pump', 'spill'), room('holding', '', 'spill', 'spill'),
     room('objective', '', 'objective', 'breach'), room('quarantine_incoming_east', '_incoming_east', 'breach', 'breach'),
     storey('intake', [
       placedRoom('north_west', 'intake_outgoing', [4, 0, 4]), placedRoom('north_middle', 'records', [27, 0, 4]), placedRoom('north_east', 'clinic', [50, 0, 4]),
@@ -75,12 +75,12 @@ local cabinetShape = [
     storey('failure', [
       placedRoom('north_west', 'breach', [4, 0, 4]), placedRoom('north_middle', 'quarantine_incoming', [27, 0, 4]), placedRoom('north_east', 'containment', [50, 0, 4]),
       placedRoom('middle_west', 'decon_outgoing', [4, 0, 23]), placedRoom('middle_middle', 'assay', [27, 0, 23]), placedRoom('middle_east', 'breach_outgoing_east', [50, 0, 23]),
-      placedRoom('south_west', 'quarantine', [4, 0, 42]), placedRoom('south_middle', 'utilities_incoming', [27, 0, 42]), placedRoom('south_east', 'observation', [50, 0, 42]),
+      placedRoom('south_middle', 'utilities_incoming', [27, 0, 42]), placedRoom('south_east', 'observation', [50, 0, 42]),
     ]),
     storey('bottom', [
       placedRoom('north_west', 'quarantine', [4, 0, 4]), placedRoom('north_middle', 'breach', [27, 0, 4]), placedRoom('north_east', 'quarantine', [50, 0, 4]),
       placedRoom('middle_west', 'breach_incoming', [4, 0, 23]), placedRoom('middle_middle', 'objective', [27, 0, 23]), placedRoom('middle_east', 'quarantine_incoming_east', [50, 0, 23]),
-      placedRoom('south_west', 'quarantine', [4, 0, 42]), placedRoom('south_middle', 'decon', [27, 0, 42]), placedRoom('south_east', 'quarantine', [50, 0, 42]),
+      placedRoom('south_west', 'holding', [4, 0, 42]), placedRoom('south_middle', 'decon', [27, 0, 42]), placedRoom('south_east', 'quarantine', [50, 0, 42]),
     ]),
     {
       id: 'gauntlet_lab', size: [72, 40, 64], lootContext: context,
@@ -90,6 +90,7 @@ local cabinetShape = [
         slot('containment', 'assembly', 'gauntlet_lab_storey_containment', [0, 16, 0], [72, 8, 64]),
         slot('failure', 'assembly', 'gauntlet_lab_storey_failure', [0, 8, 0], [72, 8, 64]),
         slot('bottom', 'assembly', 'gauntlet_lab_storey_bottom', [0, 0, 0], [72, 8, 64]),
+        slot('holding_top', 'piece', 'gauntlet_lab_holding_top', [4, 8, 42], [18, 4, 14]),
         slot('intake_west_descent', 'piece', descents.mapPieces[3].id, [11, 25, 10], [3, 8, 2]),
         slot('intake_east_descent', 'piece', descents.mapPieces[3].id, [58, 25, 48], [3, 8, 2]),
         slot('research_east_descent', 'piece', descents.mapPieces[3].id, [58, 17, 10], [3, 8, 2]),

@@ -353,4 +353,20 @@ describe('lab threat by depth', () => {
     }
     expect(topDown.at(-1)).toBeGreaterThan(topDown[0]!);
   });
+
+  it('offers the amalgam only on the bottom storey', () => {
+    const amalgamPieces = new Set(
+      lab
+        .mapPieces!.filter((piece) =>
+          Object.values(piece.palette).some(
+            (entry) => typeof entry !== 'string' && 'spawn' in entry && entry.spawn === 'amalgam',
+          ),
+        )
+        .map((piece) => piece.id),
+    );
+    const storeysWithAmalgam = lab.mapAssemblies!.filter((assembly) =>
+      assembly.slots.some((slot) => slot.choices.some((choice) => amalgamPieces.has(choice.ref.id))),
+    );
+    expect(storeysWithAmalgam.map((assembly) => assembly.id)).toEqual(['gauntlet_lab_storey_bottom']);
+  });
 });
