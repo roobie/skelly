@@ -7,6 +7,10 @@ export interface ZombieFigureType {
   readonly bodyScale?: number | undefined;
 }
 
+/** The content type realized as the amalgam model, chosen by its model rather than its id. */
+export const amalgamTypeOf = <T extends ZombieFigureType>(zombies: ReadonlyMap<string, T>): T | undefined =>
+  [...zombies.values()].find((type) => type.model === 'amalgam');
+
 /** One realization boundary for every content-selected Deadvox zombie model. */
 export const zombieFigure = (type: ZombieFigureType, seed: number) => {
   if (type.model !== 'amalgam') {

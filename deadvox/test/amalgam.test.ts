@@ -23,7 +23,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
-import { zombieFigure } from '../src/core/zombieFigure.ts';
+import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
 import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
@@ -177,6 +177,13 @@ const stepHeadingAlignment = (before: Vec3, after: Vec3, target: Vec3): number |
   const dz = target[2] - after[2];
   return (moveX * dx + moveZ * dz) / (movementLength * Math.hypot(dx, dz));
 };
+
+it('selects the amalgam content type by its model, not its id', () => {
+  const amalgam = amalgamTypeOf(registry.zombies)!;
+  const renamed = new Map([...registry.zombies].map(([id, type]) => [id === amalgam.id ? 'renamed' : id, type]));
+  expect(amalgam.model).toBe('amalgam');
+  expect(amalgamTypeOf(renamed)).toBe(amalgam);
+});
 
 const boundsOfPosedRegions = (regions: ReturnType<typeof posedAmalgamRegionBoxes>) => {
   const bounds = {

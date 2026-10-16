@@ -31,6 +31,7 @@ import { MapEntityStore } from '../src/core/entities.ts';
 import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { amalgamTypeOf } from '../src/core/zombieFigure.ts';
 import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { type Zombie, type ZombieMode, ZombieSystem } from '../src/core/zombies.ts';
@@ -826,7 +827,7 @@ describe('MobActorMeshes', () => {
     const renderer = new MobActorMeshes(0.5, registry.zombies.size, {
       poolSize: 1,
       includeAmalgam: true,
-      amalgamType: registry.zombies.get('amalgam'),
+      amalgamType: amalgamTypeOf(registry.zombies),
     });
     try {
       const store = new MapEntityStore<Zombie>();
