@@ -602,7 +602,7 @@ interruptible. Tune handling duration in content, not in this rulebook.
 
 ### Inventory screen
 
-Timed actions use one circular progress indicator at screen centre, including crafting and play actions. Its simulation-owned progress and existing stop or resume controls remain authoritative; a shared high-contrast ring keeps progress visible over dark scenes and across HUD scales. See `src/ui/activityProgress.ts`, `activityProgress`, `src/ui/hud.ts`, `renderHandling`, and `src/ui/crafting.ts`, `renderCraftStatus`.
+Timed actions, crafting and play included, share one circular progress indicator at screen centre, so progress reads the same everywhere and stays visible over dark scenes and across HUD scales. Simulation-owned progress and the existing stop or resume controls stay authoritative. The ring shows no centre percentage: the arc already shows progress, and a number in the centre of the screen is noise. See `src/ui/activityProgress.ts`, `activityProgress`, `src/ui/hud.ts`, `renderHandling`, and `src/ui/crafting.ts`, `renderCraftStatus`.
 
 The inventory is a keyboard-first HTML overlay with **you** and **around**
 panes. Hands and worn storage appear beside reachable piles and furniture.

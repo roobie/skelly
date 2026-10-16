@@ -41,7 +41,7 @@ for (const room of lab.mapAssemblies!) {
   if (template.pieces.some((piece) => registry.furniture.get(piece.furniture)?.scenarioGoal)) {
     continue;
   }
-  const key = shell.choices[0]!.ref.id;
+  const key = shell.choices![0]!.ref.id;
   roomPools.set(key, [...(roomPools.get(key) ?? []), room]);
 }
 const alternatives = new Map(
@@ -58,7 +58,7 @@ const substitutedRegistry: Registry = {
           {
             ...assembly,
             slots: assembly.slots.map((slot) => {
-              const { ref } = slot.choices[0]!;
+              const { ref } = slot.choices![0]!;
               const choices = ref.kind === 'assembly' ? alternatives.get(ref.id) : undefined;
               const replacements = choices?.filter((room) => room.id !== ref.id);
               return replacements && replacements.length > 0

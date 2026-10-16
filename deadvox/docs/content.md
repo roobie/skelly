@@ -93,6 +93,34 @@ alternatives, so one compiled buffer per storey count serves every building that
 it; only assemblies resolve per location. See `src/core/cityPlan.ts`, `buildCityPlan`
 and `templateCompiler`.
 
+A slot may take its alternatives from a map pool instead of inline choices, so a mod
+changes one weight with a small pool override rather than re-authoring the assembly.
+Pool-sourced alternatives must preserve the same spatial contract as inline ones.
+Slot pools name pieces or assemblies and cannot carry city quotas: a single slot has
+no per-site count to satisfy. City pools name templates or assemblies instead. See
+`src/core/schema.ts`, `KitSlotSchema`, `PoolRefSchema` and `MapPoolSchema`;
+`src/core/templates.ts`, `kitSlotChoices` and `resolveSlot`; and `src/core/mapKit.ts`,
+`mapKitIssues`.
+
+A ref may carry a style, inherited by every piece beneath it so floor and roof edges
+share the facade treatment. Styles and pool rows can change the mix without new piece
+ids. Unknown styles fail validation and slot compilation retains the slot path.
+City template refs cannot carry styles because literal templates have no role palette;
+slot piece and assembly refs can. See `src/core/schema.ts`, `KitRefSchema`;
+`src/core/templates.ts`, `compileKitRef`; and `src/core/cityPlan.ts`, `cityPoolIssues`.
+
+Decoration must stay outside reserved roof and street circulation:
+tuning its frequency must not seal a ladder landing or entrance. The cellar street
+course keeps the street-side `=` footing solid so the yard and entrance stand on it, and
+leaves the interior to the floor piece (`gauntlet_city_floor_lower`, `floor_inside`
+slot) and the stair owners; only the stair hole belongs to the stairs. See
+`src/content/base/gauntlet-city-variants.libsonnet`, `dressed`;
+`src/content/base/gauntlet-city-decor.libsonnet`, `rooftop`;
+`src/content/base/gauntlet-city-yards.libsonnet`, `yard`; and
+`src/content/base/gauntlet-city-cellars.libsonnet`, `street`. A route may pass through
+an unlocked door but never through a wall, a window or furniture. The fixture mod in `test/fixtures/jsonnet/concrete-style-mod.jsonnet`
+exercises the ordinary whole-definition style override boundary.
+
 City placement honours the authored ground storey so a cellar stays underground
 rather than lifting the building above the street. Ordinary buildings and the service
 campus share this alignment rule; see `src/core/cityPlan.ts`, `groundedY`.
@@ -134,6 +162,8 @@ The city pool is authored, not inferred from item usage or building names. It is
 Keep type geometry separate from the pool, and the pool separate from the scenario, so changing prevalence never requires editing a building or restating the scenario: a mod changes one building's weight by overriding the pool by id. Referenced assemblies, pieces, styles and loot tables remain independently overridable by id. See `src/content/base/scenarios.jsonnet` and `src/core/content.ts`, `buildRegistry`.
 
 Residential majority comes from weights alone, with no separate share rule, so there is one way to tune the mix. Supply shops supplement the houses, while police equipment rooms and gun shops remain rare draws. Their civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. Medical tents provide treatment supplies rather than a guaranteed full kit. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-city-building-types.libsonnet`, `src/content/base/gauntlet-city-medical.libsonnet`, and `src/core/loot.ts`, `lootTypeIssue`.
+
+Every shop shows a street cue that no house carries, and no two shop types share one, so a player walking the street can tell a shop from a house, and one kind of shop from another, before entering. The cue is built from blocks that only shop fronts use, on the street face and in the yard in front of it. A cue prop must never narrow what a standing player or shambler can walk: the yard cells in front of a door keep full standing headroom, so a prop that hangs over the yard goes above the standing body, not at head height. The rule is data-only, with no code special cases per shop type. See `src/content/base/gauntlet-city-building-types.libsonnet`, `shell`, and `test/cityKitPlan.test.ts`, "gauntlet shop fronts".
 
 ## Recipes
 
