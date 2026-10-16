@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { CHUNK } from '../src/core/coords.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { skyAt } from '../src/core/sky.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { applySky, type SkyTargets } from '../src/render/sky.ts';

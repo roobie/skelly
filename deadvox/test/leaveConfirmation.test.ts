@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { realTimestamp } from '../src/core/time.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 import { CheckpointSchedule } from '../src/ui/checkpointSchedule.ts';
 

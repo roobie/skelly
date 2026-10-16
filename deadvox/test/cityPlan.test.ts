@@ -16,10 +16,10 @@ import type { ScenarioDef } from '../src/core/schema.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
 import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 // Building and certifying one bundled gauntlet city is CPU-bound, so the timeout scales with the sites built and
 // leaves headroom for a shared CPU, instead of vitest's flat default.
 const GAUNTLET_SITE_MS = 4000;

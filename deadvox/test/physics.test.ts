@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { type Body, bodyOverlapsBlock, bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 import { createPlayerBody, movementPace, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { StepOffset } from '../src/render/stepOffset.ts';
