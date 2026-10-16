@@ -281,9 +281,9 @@
           "descents": [
             {
               "kind": "ladder",
-              "ladder": [23, 1, 10],
-              "lower": [25, 1, 11],
-              "upper": [20, 41, 11]
+              "ladder": [39, 1, 10],
+              "lower": [41, 1, 11],
+              "upper": [36, 41, 11]
             },
             {
               "hatch": [10, 40, 5],
@@ -300,7 +300,7 @@
             }
           ],
           "minimumOpenDescents": 2,
-          "spawn": [14, 41, 11],
+          "spawn": [22, 41, 14],
           "template": "gauntlet_start"
         },
         "storeys": [

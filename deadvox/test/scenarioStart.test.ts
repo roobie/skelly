@@ -9,6 +9,7 @@ import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { type StartDescent, scenarioStartIssues } from '../src/core/scenarioStart.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
 import { type BlockBox, stampChunk } from '../src/core/structure.ts';
+import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
 import { gameHours } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -61,6 +62,31 @@ it('admits the authored roof spawn and keeps its reserved block inside the stree
   expect(placement.origin[2]).toBeGreaterThanOrEqual(plan.core.z0);
   expect(placement.origin[0] + placement.template.size[0]).toBeLessThanOrEqual(plan.core.x1);
   expect(placement.origin[2] + placement.template.size[2]).toBeLessThanOrEqual(plan.core.z1);
+});
+
+it('keeps every start-storey container reachable from the roof through supported steps', () => {
+  const { template } = start.placement;
+  const reached = templateReachableStandingPositions(registry, template, {
+    entrance: profile.composition!.start.spawn,
+  });
+  expect(template.access!.storeys.length).toBeGreaterThan(0);
+  for (const { floor } of template.access!.storeys) {
+    const containers = template.pieces.filter(
+      (piece) => piece.pos[1] === floor && registry.furniture.get(piece.furniture)!.container,
+    );
+    expect(containers.length).toBeGreaterThan(0);
+    for (const piece of containers) {
+      const [x, , z] = piece.pos;
+      const [width, , depth] = piece.size;
+      const beside = reached.some(
+        ([px, py, pz]) =>
+          py === floor &&
+          ((px >= x && px <= x + width && (Math.abs(pz - z) <= 1 || Math.abs(pz - z - depth) <= 1)) ||
+            (pz >= z && pz <= z + depth && (Math.abs(px - x) <= 1 || Math.abs(px - x - width) <= 1))),
+      );
+      expect(beside, `${piece.furniture} at ${piece.pos} needs a reachable side`).toBe(true);
+    }
+  }
 });
 
 it('honours the authored start cell and refuses a cell outside the street grid', () => {
