@@ -68,19 +68,19 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
-import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
+import { wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
 import { SEVERED_ITEM } from '../core/zombieRegionNames.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
+  type AcidGroundImpact,
   BACKGROUND_ZOMBIE_RATE,
   BACKGROUND_ZOMBIE_SLICE_COUNT,
   BACKGROUND_ZOMBIE_SLICE_RATE,
   type HitImpulse,
   type MeleeResult,
   type PlayerMovement,
-  pickZombieHitRegion,
   type VocalNoise,
   type Zombie,
   ZombieSystem,
@@ -117,6 +117,7 @@ import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
 import { UNPACK_ACTION } from './unpacking.ts';
+import { applyZombiePlayerHit } from './zombiePlayerHit.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
@@ -339,6 +340,8 @@ export interface SessionOptions {
   onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
+  onAcidImpact?: (position: Vec3, type: Zombie['type']) => void;
+  onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
@@ -1046,12 +1049,18 @@ export const createSession = (options: SessionOptions) => {
         character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
         return;
       }
-      const region = pickZombieHitRegion(hitRegions, sim.rng(`player-hit-region:${attacker}:${sim.time}`).next());
-      wearOnPlayerHit(inventory, region, bodyTuning.outerWearMultiplier[kind]);
       const source = zombieStore.get(attacker);
-      const attackerType = source?.type.name.toLowerCase() ?? 'zombie';
-      sim.hit(source ? modified('attack.damage', amount, source) : amount, `a ${attackerType}`, region, { kind });
+      applyZombiePlayerHit(sim, inventory, bodyTuning, {
+        damage: source ? modified('attack.damage', amount, source) : amount,
+        sourceName: source?.type.name ?? 'zombie',
+        regionRoll: sim.rng(`player-hit-region:${attacker}:${sim.time}`).next(),
+        hitRegions,
+        kind,
+      });
     },
+    onAcidPlayerHit: (hit) => applyZombiePlayerHit(sim, inventory, bodyTuning, hit),
+    onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
+    onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
     onSound: (event, position, zombie) => {
       if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {
         playWorldSound(event, position, sim.time, {

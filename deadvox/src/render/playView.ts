@@ -1,5 +1,6 @@
 // Owned play presentation resources and read-only frame projections. Gameplay chooses
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
+import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
@@ -22,6 +23,7 @@ import type { Engine } from '../game/engine.ts';
 import { PainCue } from '../game/painCue.ts';
 import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
+import { AcidEffects } from './acidEffects.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { AuthoredDecals } from './decals.ts';
@@ -70,6 +72,7 @@ export interface PlayWorldFrame {
   readonly dt: number;
   readonly entities: BlockEntities;
   readonly zombies: EntityStore<Zombie>;
+  readonly acidGlobs: readonly Readonly<AcidGlobState>[];
   readonly frozen: boolean;
   readonly perceptionLabels: boolean;
 }
@@ -177,8 +180,9 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
   const blastFlashes = new BlastFlashes();
+  const acidEffects = new AcidEffects(s);
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
-  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group, blastFlashes.group);
+  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group, blastFlashes.group, acidEffects.group);
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
@@ -187,6 +191,7 @@ export const createPlayView = (
     impactEffects.dispose();
     itemThrows.dispose();
     blastFlashes.dispose();
+    acidEffects.dispose();
     flashlight.dispose();
     held.dispose();
   };
@@ -282,6 +287,7 @@ export const createPlayView = (
     itemThrows,
     impactEffects,
     blastFlashes,
+    acidEffects,
     furniture,
     playerMeshes,
     held,
@@ -308,11 +314,13 @@ export const createPlayView = (
       dt,
       entities,
       zombies,
+      acidGlobs,
       frozen,
       perceptionLabels,
     }: PlayWorldFrame) => {
       itemThrows.update(time, inventory);
       blastFlashes.update(dt);
+      acidEffects.sync(acidGlobs, registry.zombies, dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
