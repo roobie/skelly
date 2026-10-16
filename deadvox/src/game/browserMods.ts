@@ -1,7 +1,8 @@
+import browserModConfig from '../config/browser-mods.json' with { type: 'json' };
 import { type ContentIssue, type ContentSource, validateContent } from '../core/content.ts';
 import { buildBundledContent, type StartupContent } from './bundledContent.ts';
 
-export const MAX_MOD_BYTES = 1024 * 1024;
+export const MAX_MOD_BYTES = browserModConfig.maxModBytes;
 
 export interface BrowserMod {
   source: string;

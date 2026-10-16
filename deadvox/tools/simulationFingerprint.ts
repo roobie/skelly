@@ -339,6 +339,9 @@ async function resolveTrackableModule(
   if (PRESENTATION_ASSET_EXTENSIONS.has(extension)) {
     return;
   }
+  if (extension === '.json' && relativePath.startsWith('src/config/')) {
+    return { file, relativePath };
+  }
   if (!SOURCE_EXTENSIONS.has(extension)) {
     throw new Error(`Unsupported runtime dependency ${specifier}: ${relativePath}`);
   }
@@ -380,6 +383,11 @@ export async function collectSimulationSourceGraph(
     context.visited.add(module.file);
     const source = (await context.host.readFile(module.file)).replace(LINE_ENDING_PATTERN, '\n');
     context.sources.set(module.relativePath, source);
+    // Trusted startup configuration affects admission but has no module dependencies.
+    if (extname(module.file) === '.json') {
+      JSON.parse(source);
+      return;
+    }
     const dependencies = await runtimeImports(module.file, source);
     await Promise.all(dependencies.map((dependency) => visit(dependency, module.file)));
   };

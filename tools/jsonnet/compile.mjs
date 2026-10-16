@@ -10,6 +10,7 @@ const OUTPUT_MANIFEST = resolve(REPOSITORY_ROOT, 'tools/jsonnet/outputs.json');
 const SOURCE_ROOTS = [
   'deadvox/maps',
   'deadvox/src/content/base',
+  'deadvox/src/config',
   'deadvox/test/fixtures/mods',
   'gungen/cartridges',
   'gungen/designs',

@@ -91,7 +91,8 @@ describe('browser mod admission', () => {
 
   it('rejects the whole broken file with issues without changing base content', () => {
     const data = fixture;
-    const result = evaluateMods([mod({ ...data, items: [...data.items, { id: 'broken' }] })]);
+    const broken = mod({ ...data, items: [...data.items, { id: 'broken' }] });
+    const result = evaluateMods([broken]);
     expect(result.canStart).toBe(false);
     expect(result.issues.get('fixture.json')?.length).toBeGreaterThan(0);
     expect(result.content.registry.items.size).toBe(base.registry.items.size);
@@ -100,5 +101,12 @@ describe('browser mod admission', () => {
     );
     expect(result.content.origins).toEqual(base.origins);
     expect(base.registry.items.has(data.items[0]!.id)).toBe(false);
+
+    const disabled = evaluateMods([{ ...broken, enabled: false }]);
+    expect(disabled.canStart).toBe(true);
+    expect(disabled.issues.get(broken.source)?.length).toBeGreaterThan(0);
+    expect(disabled.content.origins).toEqual(base.origins);
+    const config = configFromUrl(new URLSearchParams('site=testHouse'), disabled.content);
+    expect(config.content.registry).toBe(disabled.content.registry);
   });
 });

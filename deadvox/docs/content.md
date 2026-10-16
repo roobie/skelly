@@ -29,6 +29,20 @@ The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
 and `evaluateMods`. Bundled core-pack fragments remain content files rather than
 independent mods; see `src/game/bundledContent.ts`, `buildBundledContent`.
 
+The pre-start panel rejects invalid files whole and keeps their diagnostics visible.
+An enabled invalid file blocks Start rather than silently starting a different world;
+disabling it permits startup with the remaining content, including the base pack alone.
+See `src/ui/modsPanel.ts`, `chooseMods`, and `src/game/browserMods.ts`, `evaluateMods`.
+The intake byte limit belongs to trusted startup configuration in
+`src/config/browser-mods.jsonnet`, not to a selected mod: admission must bound a file
+before parsing or trusting its definitions.
+
+Browser mod selection is a preview until #633 supplies persistence and save-pack
+identity. Persistence must retain the ordered sources and enabled states across reloads;
+save compatibility must identify the admitted mods and refuse Continue when they differ.
+This prevents a world from resuming under different definitions. See `DESIGN.md`,
+"Content and modding".
+
 ## Bundled mods
 
 A bundled mod ships with the game but is applied only when asked, with `?mods=` and
