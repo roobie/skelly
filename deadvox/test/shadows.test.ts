@@ -25,9 +25,9 @@ import type { MeshData } from '../src/core/mesher.ts';
 import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { skyAt, sunShadowStrength } from '../src/core/sky.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { flashlightCastsShadow } from '../src/render/flashlight.ts';
@@ -253,7 +253,7 @@ describe('Shadows', () => {
     torch.distance = 20;
     scene.add(torch);
     const shadows = new Shadows(renderer, scene, { light, rig }, meshes);
-    shadows.attachTorch(torch);
+    shadows.attachTorches([torch]);
     shadows.restore({ sun: true, torch: true, distance: 40 });
     const player = new Vector3(0, 1.6, 0);
     /** One frame as play.ts runs it: update, then the renderer asks for the shadow maps. */
@@ -365,8 +365,12 @@ describe('Shadows', () => {
     expect(casting.sort((a, b) => a - b)).toEqual([-4, 60]);
   });
 
-  it('draws the flashlight map only while its light casts, through a camera that leaves out the player figure', () => {
-    const { frame, torch, draws, shadows } = setup();
+  it('draws each casting beam map through a camera that leaves out the player figure', () => {
+    const { frame, torch, draws, shadows, scene } = setup();
+    const worn = new SpotLight();
+    worn.distance = torch.distance;
+    scene.add(worn);
+    shadows.attachTorches([torch, worn]);
     torch.position.set(0, 1.6, 0);
     torch.castShadow = false;
     frame(0); // the sun's map is allocated here, empty
@@ -378,6 +382,10 @@ describe('Shadows', () => {
     expect(lights).toEqual([torch]);
     expect(draws.at(-1)?.seesFigure).toBe(false);
     expect(shadows.casters.torch).toBe(1);
+    worn.castShadow = true;
+    expect(frame(0)).toEqual([torch, worn]);
+    expect(draws.at(-1)?.seesFigure).toBe(false);
+    expect(shadows.casters.torch).toBe(2);
     // The sun's pass, by contrast, sees it.
     frame(1);
     expect(draws.some((draw) => draw.light !== torch && draw.seesFigure)).toBe(true);
@@ -407,23 +415,26 @@ describe('Shadows', () => {
     expect(draws).toHaveLength(before);
   });
 
-  it('warms up the flashlight both casting and not, and leaves the light as it found it', () => {
+  it('warms every casting-beam count and restores each beam state', () => {
     const { shadows, torch } = setup();
-    const seen: boolean[] = [];
+    const worn = new SpotLight();
+    shadows.attachTorches([torch, worn]);
+    const seen: number[] = [];
     const mood = {
       warmUp() {
-        seen.push(torch.castShadow);
+        seen.push([torch, worn].filter((light) => light.castShadow).length);
         return Promise.resolve();
       },
     };
     torch.castShadow = false;
+    worn.castShadow = true;
     shadows.warmUp(mood, []);
-    expect(seen).toEqual([true, false]);
-    expect(torch.castShadow).toBe(false);
+    expect(seen).toEqual([2, 1, 0]);
+    expect([torch.castShadow, worn.castShadow]).toEqual([false, true]);
     seen.length = 0;
     shadows.setTorch(false);
     shadows.warmUp(mood, []);
-    expect(seen).toEqual([false]);
+    expect(seen).toEqual([0]);
   });
 });
 

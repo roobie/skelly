@@ -1,9 +1,11 @@
 import { deepStrictEqual } from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { baseRegistry, startupContent } from './baseRegistry.ts';
 
 it('restores the complete validated base registry without changing its data', () => {
   const directory = 'src/content/base';
@@ -15,6 +17,19 @@ it('restores the complete validated base registry without changing its data', ()
   );
   expect(built.issues).toEqual([]);
   deepStrictEqual(baseRegistry(), built.registry);
+});
+
+it('restores bundled startup admission including origins and isolates each caller', () => {
+  const built = buildBundledContent();
+  expect(built.issues).toEqual([]);
+  const first = startupContent();
+  expect(isDeepStrictEqual(first, built)).toBe(true);
+  expect(first.origins.size).toBeGreaterThan(0);
+  first.registry.blocks[0]!.name = 'fixture-mutated-startup-block';
+  first.registry.items.clear();
+  (first.origins as Map<string, unknown>).clear();
+  first.issues.push({ source: 'fixture', path: '', message: 'fixture mutation' });
+  expect(isDeepStrictEqual(startupContent(), built)).toBe(true);
 });
 
 it('isolates nested content mutations and map edits from other fixture callers', () => {

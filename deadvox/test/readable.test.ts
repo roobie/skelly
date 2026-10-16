@@ -7,9 +7,9 @@ import { bindReach } from '../src/core/reach.ts';
 import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type Readable } from '../src/core/readable.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 import { createSession, IDLE } from '../src/game/session.ts';
 import { Survival } from '../src/game/survival.ts';

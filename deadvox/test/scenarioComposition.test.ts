@@ -10,9 +10,9 @@ import { makeScale } from '../src/core/scale.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { discoveryForPlan } from '../src/core/scenarioDiscovery.ts';
 import { compileTemplate, type Placement, placedPieces } from '../src/core/templates.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureService, fixtureStart } from './fixtures/scenario.ts';

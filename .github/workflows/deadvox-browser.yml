@@ -190,7 +190,8 @@ jobs:
         run: node test/browser/stairs.mjs camo
       - name: Stairs lighting cellar browser contract
         if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
-        timeout-minutes: 3
+        # Pixel readbacks doubled; scale their measured share, not the unchanged startup work.
+        timeout-minutes: 5
         run: node test/browser/stairs.mjs lighting-cellar
       - name: Stairs lighting residents browser contract
         if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}

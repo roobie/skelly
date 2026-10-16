@@ -187,15 +187,20 @@ export const createPlayView = (
     impactEffects.dispose();
     itemThrows.dispose();
     blastFlashes.dispose();
+    flashlight.dispose();
     held.dispose();
   };
   page.addEventListener('pagehide', dispose);
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
-  const flashlight = new Flashlight(scene, spillSwitchFromSearch(globalThis.location?.search ?? ''));
+  const flashlight = new Flashlight(
+    scene,
+    registry.senses.get(CORE_CONTENT_IDS.player)!.light.renderedBeamLimit,
+    spillSwitchFromSearch(globalThis.location?.search ?? ''),
+  );
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
-  engine.shadows?.attachTorch(flashlight.light);
+  engine.shadows?.attachTorches(flashlight.lights);
   scene.add(piles.group, furniture.group, playerMeshes.group);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.

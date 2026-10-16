@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
 import { Character, SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { setDebugFirearmsSkill } from '../src/debug/debugFirearmsSkill.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 it('accepts firearms-combat skill overrides only for fresh debug games', () => {
   const character = new Character(BUNDLED_CONTENT.registry);

@@ -8,9 +8,9 @@ import { type ActiveBrowserMod, currentSaveVersionIdentity, encodeSave } from '.
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { realTimestamp } from '../src/core/time.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { startupContent } from './baseRegistry.ts';
 
-const BUNDLED_CONTENT = buildBundledContent();
+const BUNDLED_CONTENT = startupContent();
 
 import type { SaveLoadResult } from '../src/game/saveStorage.ts';
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';

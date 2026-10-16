@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { compileFunction } from 'node:vm';
 import {
   MathUtils,
@@ -15,15 +15,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
-import { type BeamSpill, BeamSpillSchema } from '../src/core/schema.ts';
+import { type BeamSpill, BeamSpillSchema, type ContentFile } from '../src/core/schema.ts';
 import { HeldItems } from '../src/render/hands.ts';
 
 let Flashlight: typeof import('../src/render/flashlight.ts').Flashlight;
 let cone: typeof import('../src/render/flashlightCone.ts');
 const originalChunk = ShaderChunk.lights_pars_begin;
+const originalFragment = ShaderChunk.lights_fragment_begin;
 const originalUniforms = Object.values(ShaderLib).map((shader) => [shader, { ...shader.uniforms }] as const);
 const restoreShaders = () => {
   ShaderChunk.lights_pars_begin = originalChunk;
+  ShaderChunk.lights_fragment_begin = originalFragment;
   for (const [shader, uniforms] of originalUniforms) {
     shader.uniforms = { ...uniforms };
   }
@@ -58,11 +60,11 @@ const source = (shape: object) => ({
 
 // Execute the production scalar GLSL body as JavaScript, retaining its branches and expressions.
 const attenuation = (chunk: string) =>
-  compileFunction(chunk.replace('uniform vec2 uFlashlightSpill;\n', '').replace(/\bfloat\b/g, 'const'), [
+  compileFunction(chunk.replace(/\bfloat\b/g, 'const'), [
     'coneCosine',
     'penumbraCosine',
     'angleCosine',
-    'uFlashlightSpill',
+    'spillProfile',
     'smoothstep',
     'sqrt',
     'mix',
@@ -101,10 +103,10 @@ describe('flashlight cone', () => {
         expect(value[1]).toBeCloseTo(spill?.intensity ?? 0);
       };
       const scene = new Scene();
-      const torch = new Flashlight(scene, override);
+      const torch = new Flashlight(scene, 1, override);
       const camera = new PerspectiveCamera();
       const chunk = ShaderChunk.lights_pars_begin;
-      expect(chunk.includes('uniform vec2 uFlashlightSpill;')).toBe(enabled);
+      expect(chunk.includes('uniform vec2 uFlashlightSpill[ NUM_SPOT_LIGHTS ];')).toBe(enabled);
       const warmUniforms = UniformsUtils.clone(ShaderLib.lambert.uniforms);
       const material = new MeshLambertMaterial();
       scene.add(new Mesh(undefined, material));
@@ -146,9 +148,47 @@ describe('flashlight cone', () => {
     },
   );
 
+  it('keeps each beam spill with its source when shadow sorting reorders the spots', () => {
+    const fixture = source({ ...beam, spill: profile });
+    const dim = structuredClone(fixture.data.items[0]!);
+    dim.id = 'dim_beam';
+    dim.name = 'Dim fixture beam';
+    dim.light.intensity = 0.001;
+    dim.light.beam = { ...beam, spill: { ...profile, radiusRatio: 2.5 } };
+    fixture.data.items.push(dim);
+    expect(validateContent(fixture)).toEqual([]);
+    const { registry, issues } = buildRegistry([fixture]);
+    expect(issues).toEqual([]);
+    const inventory = new Inventory(registry);
+    const hand = inventory.create('dim_beam');
+    const worn = inventory.create('fixture_beam');
+    expect(inventory.add(hand, { kind: 'hand', side: 'left' })).toBe(true);
+    expect(inventory.add(worn, { kind: 'worn' })).toBe(true);
+    expect(toggleLight(registry, hand)).toBeUndefined();
+    expect(toggleLight(registry, worn)).toBeUndefined();
+    const held = new HeldItems(inventory, undefined, { skin: '#ffffff', shirt: '#ffffff', trousers: '#ffffff' });
+    vi.spyOn(held, 'lensOf').mockImplementation((item, at) => {
+      at.set(1, 2, 3);
+      return item === hand;
+    });
+    const torch = new Flashlight(new Scene(), 2);
+    torch.shadowsAllowed = true;
+    const uniforms = UniformsUtils.clone(ShaderLib.lambert.uniforms);
+    torch.update({ registry, inventory, lit: hand, held, camera: new PerspectiveCamera() });
+    expect(torch.lights.map((light) => light.castShadow)).toEqual([false, true]);
+    expect(Array.from(uniforms.uFlashlightSpill!.value as Float32Array)).toEqual([
+      Math.fround(profile.radiusRatio ** 2),
+      Math.fround(profile.intensity),
+      Math.fround(2.5 ** 2),
+      Math.fround(profile.intensity),
+    ]);
+    expect(ShaderChunk.lights_fragment_begin).toContain('uFlashlightSpill[ i ]');
+    held.dispose();
+  });
+
   it('plain uniforms reproduce the unmodified cone across its hotspot, edge and exterior', () => {
-    cone.installFlashlightSpill();
-    cone.setFlashlightSpill(undefined);
+    cone.installFlashlightSpill(1);
+    cone.setFlashlightSpill([undefined]);
     const [x, y] = ShaderLib.lambert.uniforms.uFlashlightSpill!.value as Float32Array;
     const patched = attenuation(cone.withFlashlightSpill(plainSource));
     const original = attenuation(plainSource);
@@ -177,15 +217,16 @@ describe('flashlight cone', () => {
     expect(spillSwitchFromSearch('?torchspill=maybe')).toBeUndefined();
   });
 
-  it('base flashlight items author spill present but switched off', () => {
-    const { items } = JSON.parse(readFileSync('src/content/base/items-tools.json', 'utf8')) as {
-      items: { light?: { beam?: { spill?: BeamSpill } } }[];
-    };
-    const spills = items.flatMap((item) => item.light?.beam?.spill ?? []);
-    expect(spills.length).toBeGreaterThan(0);
-    for (const spill of spills) {
-      expect(spill.enabled).toBe(false);
-    }
+  it('no base beam ships with spill enabled', () => {
+    const base = 'src/content/base';
+    const beams = readdirSync(base)
+      .filter((file) => file.endsWith('.json'))
+      .flatMap((file) => {
+        const content = JSON.parse(readFileSync(`${base}/${file}`, 'utf8')) as ContentFile;
+        return (content.items ?? []).filter((item) => item.light?.beam);
+      });
+    expect(beams.length).toBeGreaterThan(0);
+    expect(beams.filter((item) => item.light?.beam?.spill?.enabled).map((item) => item.id)).toEqual([]);
   });
 
   it('rejects malformed profiles at the shared content boundary', () => {
@@ -209,9 +250,9 @@ describe('flashlight cone', () => {
 
   it('installs the content profile before warm-up and only once without adding a second light', () => {
     const scene = new Scene();
-    const first = new Flashlight(scene);
+    const first = new Flashlight(scene, 1);
     const once = ShaderChunk.lights_pars_begin;
-    cone.installFlashlightSpill();
+    cone.installFlashlightSpill(1);
     expect(ShaderChunk.lights_pars_begin).toBe(once);
     expect(once).toContain('return mix( spill, 1.0, hotspot );');
     expect(scene.children.filter((child) => child.type === 'SpotLight')).toEqual([first.light]);
