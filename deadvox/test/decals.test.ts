@@ -86,8 +86,8 @@ it('batches marks with content-owned ageing and count budget', () => {
   const registry = fixture();
   const compiled = compileTemplate(registry, { ...template(), decals: [decal(), { ...decal(), kind: 'paint' }] });
   const placements = [{ template: compiled, origin: [0, 0, 0] as [number, number, number], turn: 0 as Turn }];
-  const fresh = new AuthoredDecals(placements, { seed: 1, blockSize: 0.5, ageGameHours: 0, limit: 1 });
-  const old = new AuthoredDecals(placements, { seed: 1, blockSize: 0.5, ageGameHours: 96, limit: 1 });
+  const fresh = new AuthoredDecals(placements, { seed: 1, blockSize: 0.5, ageGameSeconds: gameHours(0), limit: 1 });
+  const old = new AuthoredDecals(placements, { seed: 1, blockSize: 0.5, ageGameSeconds: gameHours(96), limit: 1 });
   expect(fresh.mesh.geometry.getAttribute('position').count).toBeGreaterThan(0);
   expect(fresh.mesh.geometry.getAttribute('color').array).not.toEqual(old.mesh.geometry.getAttribute('color').array);
   expect(fresh.mesh.geometry.getAttribute('decalLook').getX(0)).toBeGreaterThan(
@@ -95,7 +95,7 @@ it('batches marks with content-owned ageing and count budget', () => {
   );
   expect(fresh.mesh.material.vertexColors).toBe(true);
   expect(fresh.mesh.receiveShadow).toBe(true);
-  const disabled = new AuthoredDecals(placements, { seed: 1, blockSize: 0.5, ageGameHours: 0, limit: 0 });
+  const disabled = new AuthoredDecals(placements, { seed: 1, blockSize: 0.5, ageGameSeconds: gameHours(0), limit: 0 });
   expect(disabled.mesh.geometry.getAttribute('position').count).toBe(0);
   fresh.dispose();
   old.dispose();
@@ -114,7 +114,12 @@ it('a turned door mark appears with its loaded owner and follows the ordinary pa
   const placement = { template: compiled, origin: [10, 0, 20] as [number, number, number], turn: 1 as Turn };
   const mark = placedDecals(placement)[0]!;
   const entities = new BlockEntities(registry);
-  const rendered = new AuthoredDecals([placement], { seed: 1, blockSize: 0.5, ageGameHours: 24, limit: 2 });
+  const rendered = new AuthoredDecals([placement], {
+    seed: 1,
+    blockSize: 0.5,
+    ageGameSeconds: gameHours(24),
+    limit: 2,
+  });
   rendered.sync(entities);
   expect(Array.from(rendered.mesh.geometry.getAttribute('position').array).every((v) => v === 0)).toBe(true);
   const entity = entities.add({ type: 'fixture_door', pos: mark.door!, size: [1, 4, 2], facing: 'e' })!;

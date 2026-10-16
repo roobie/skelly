@@ -4,6 +4,7 @@ import { DECAL_KINDS } from '../core/decalKinds.ts';
 import { Rng } from '../core/random.ts';
 import type { DecalDef } from '../core/schema.ts';
 import { type Placement, placedDecals } from '../core/templates.ts';
+import type { GameSeconds } from '../core/time.ts';
 import { STAIN_NOISE_GLSL } from './bloodStain.ts';
 import { withHeightFog } from './heightFog.ts';
 
@@ -62,7 +63,12 @@ export class AuthoredDecals {
 
   constructor(
     placements: readonly Placement[],
-    { seed, blockSize, ageGameHours, limit }: { seed: number; blockSize: number; ageGameHours: number; limit: number },
+    {
+      seed,
+      blockSize,
+      ageGameSeconds,
+      limit,
+    }: { seed: number; blockSize: number; ageGameSeconds: GameSeconds; limit: number },
   ) {
     this.blockSize = blockSize;
     const positions: number[] = [];
@@ -79,7 +85,7 @@ export class AuthoredDecals {
       const start = positions.length / 3;
       const rng = Rng.stream(seed, `decal:${decal.at.join(',')}:${decal.kind}`);
       const look = decal.variants[rng.int(0, decal.variants.length - 1)]!;
-      const age = Math.min(1, ageGameHours / look.ageingGameHours);
+      const age = Math.min(1, ageGameSeconds / look.ageingGameHours);
       color.set(look.color).lerp(aged.set(look.agedColor), age);
       const opacity = look.opacity + (look.agedOpacity - look.opacity) * age;
       const normal = new Vector3(...faceNormals[decal.normal]);

@@ -144,7 +144,7 @@ export const fixtureScenarioSources = (
           { ...compression, id: scenario.compression, caps: { ...compression.caps, wait: compression.caps.wait + 1 } },
         ],
         mapPools: [pool],
-        scenarios: [scenario],
+        scenarios: [{ ...scenario, outbreakAgeGameHours: scenario.outbreakAgeGameHours / gameHours(1) }],
       },
     },
   ];

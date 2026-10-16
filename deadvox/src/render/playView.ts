@@ -160,7 +160,7 @@ export const createPlayView = (
       ? new AuthoredDecals(engine.site?.authoredPlacements ?? [], {
           seed: config.seed,
           blockSize: s,
-          ageGameHours: engine.scenario.outbreakAgeGameHours,
+          ageGameSeconds: engine.scenario.outbreakAgeGameHours,
           limit: engine.scenario.decalLimit,
         })
       : undefined;
