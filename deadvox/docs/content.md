@@ -7,7 +7,7 @@ read_if:
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
-  - you're authoring or changing exterior door openings
+  - you're authoring or changing exterior door openings, or townhouse aftermath scenes (`deadvox/docs/aftermath.md`)
   - you're authoring or changing furniture appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
@@ -175,11 +175,12 @@ boundaries cannot disagree about a usable climb. See `src/core/mapKit.ts`, `comp
 and `src/core/climbCertificate.ts`, `climbCertificate`.
 
 An exterior wall door is a delegated piece, not a hole baked into the shell: the shell
-leaves the doorway slot unclaimed and the assembly names a door piece that owns exactly
-the opening it fills. The slot's size binds the door's own size, so a window-sized hole
+leaves the doorway slot unclaimed and the assembly names a door slot whose choices own exactly
+the opening they fill. The slot's size binds the door's own size, so a window-sized hole
 cannot host a door. A door must be its own opening, not a leaf standing in a larger
-window hole. See `src/content/base/gauntlet-city-doors.libsonnet`, `gauntlet_city_door`,
-`src/core/templates.ts`, `compileAssembly`, and `test/cityKitPlan.test.ts`, "gauntlet door openings".
+window hole. See `src/content/base/gauntlet-city-doors.libsonnet`, `slot`,
+`src/core/templates.ts`, `compileAssembly`, `test/cityKitPlan.test.ts`, "gauntlet door openings",
+and `deadvox/docs/aftermath.md`, "Door variants".
 
 ### City building types
 
@@ -187,7 +188,7 @@ The city pool is authored, not inferred from item usage or building names. Keep 
 
 Special buildings must be deliberately designed and curated as plausible places, not generic rooms with different loot. Room function, furnishings, circulation and supplies must agree: a police station needs public reception, working desks, holding cells and a small secured armoury. The gauntlet requires exactly one police station. Its structure should read as a municipal masonry building, not a timber house; wooden furniture and door leaves do not imply wooden partitions or ceilings. See `src/content/base/gauntlet-city-police.libsonnet`, `piece`; `src/content/base/gauntlet-city-building-types.libsonnet`, `mapAssemblies`; and `src/content/base/scenarios.jsonnet`, `mapPools`.
 
-Loose furniture in abandoned buildings should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. See `src/content/base/furniture-disorder.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-city-police.libsonnet`, `chairSlots`.
+Loose furniture in abandoned buildings should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-city-police.libsonnet`, `chairSlots`.
 
 Keep type geometry separate from the pool, and the pool separate from the scenario, so changing prevalence never requires editing a building or restating the scenario: a mod changes one building's weight by overriding the pool by id. Referenced assemblies, pieces, styles and loot tables remain independently overridable by id. See `src/content/base/scenarios.jsonnet` and `src/core/content.ts`, `buildRegistry`.
 
