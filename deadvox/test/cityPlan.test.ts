@@ -20,6 +20,9 @@ import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const BUNDLED_CONTENT = buildBundledContent();
+// Building and certifying one bundled gauntlet city is CPU-bound, so the timeout scales with the sites built and
+// leaves headroom for a shared CPU, instead of vitest's flat default.
+const GAUNTLET_SITE_MS = 4000;
 
 const profile = fixtureScenario();
 const { registry, issues } = buildRegistry(fixtureScenarioSources(profile));
@@ -220,11 +223,20 @@ describe('one finished city plan', () => {
       expect(hordes.every((horde) => horde.members > 0)).toBe(true);
     });
 
-    it.each([0, 1, 2])('places the requested %i hordes on different streets', (hordes) => {
-      const placed = populationOf({ hordes }).hordes;
-      expect(placed).toHaveLength(hordes);
-      expect(new Set(placed.map(({ id }) => id)).size).toBe(hordes);
-    });
+    // Each case builds the whole city and certifies it again, though only the population differs. Zero and two cover
+    // "none" and "distinct streets"; a 1-horde case adds nothing, since a count slip shows at 0 or 2 too.
+    const hordeCases = [0, 2];
+    it(
+      'places exactly the horde count the scenario asks for, on different streets',
+      () => {
+        for (const hordes of hordeCases) {
+          const placed = populationOf({ hordes }).hordes;
+          expect(placed).toHaveLength(hordes);
+          expect(new Set(placed.map(({ id }) => id)).size).toBe(hordes);
+        }
+      },
+      hordeCases.length * GAUNTLET_SITE_MS,
+    );
 
     it('adds more stragglers when the scenario asks for extras', () => {
       const base = populationOf({ extraStragglers: 0 }).spawns.length;

@@ -155,7 +155,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
 };
 
 export interface ReplayCommandOwners {
-  inventory: Pick<Inventory, 'itemByUid' | 'resolveTarget'>;
+  inventory: Pick<Inventory, 'itemByUid' | 'carriedByUid' | 'resolveTarget'>;
   queue: Pick<HandlingQueue, 'enqueue' | 'cancel'>;
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
@@ -203,9 +203,9 @@ export const applyReplayActionPayload = (
     case 'inventory.work':
       return owners.work(payload.itemUid, payload.operation);
     case 'inventory.assign': {
-      const item = owners.inventory.itemByUid(payload.itemUid);
+      const item = owners.inventory.carriedByUid(payload.itemUid);
       if (!item) {
-        return 'The item is no longer available';
+        return "I'm not carrying that";
       }
       owners.quickbar.assign(payload.slot, item);
       return undefined;
