@@ -55,8 +55,6 @@ Keep exterior shells visually continuous around authored openings; doors and sol
 
 Keep enclosed building roofs flush with their exterior wall footprint so the roof silhouette follows the shell instead of adding projecting eaves. City roofs are a mixture of two treatments, chosen per building by a weighted content choice, never by a building id in code:
 
-> roofs should be a mixture of simple sheet metal and some are semi-walled concrete roofs
-
 - A sheet-metal roof is a plain galvanized deck.
 - A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges, never a full ring.
 
