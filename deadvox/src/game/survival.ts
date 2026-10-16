@@ -1,6 +1,7 @@
 // Using what's in your hands (`DESIGN.md`, "Hands"): eating, drinking and taking a painkiller
 // are short actions in the handling queue, a light switches on and off, and a battery goes into
-// the light you're holding. Head-worn beam lights also remain usable while worn.
+// the light you're holding. A light whose content sets `wornSwitch` also stays lit while worn and answers the
+// worn-light control (`toggleWornLights`).
 // The needs themselves are in the simulation (core/needs.ts).
 
 import { canonicalJson } from '../core/canonicalJson.ts';
@@ -31,9 +32,9 @@ type LightSpec = NonNullable<ReturnType<typeof defOf>['light']>;
 type LightLocation = NonNullable<ReturnType<Inventory['locate']>>;
 const shouldDouse = (spec: LightSpec, location: LightLocation, path: string, sprinting: boolean): boolean => {
   const { burning } = spec;
-  const wornHeadlamp = location.kind === 'worn' && location.slot === 'head' && spec.beam !== undefined;
+  const wornSwitch = location.kind === 'worn' && spec.wornSwitch === true;
   const inHeldItemSlotTree = location.kind === 'slot' && isInHeldItemSlotTree(path);
-  const movedOutOfHand = location.kind !== 'hand' && !wornHeadlamp && !inHeldItemSlotTree;
+  const movedOutOfHand = location.kind !== 'hand' && !wornSwitch && !inHeldItemSlotTree;
   const dropped = location.kind === 'pile';
   return (
     (dropped ? burning?.drop !== 'stay' : movedOutOfHand && burning?.stow !== 'stay') ||
@@ -373,6 +374,42 @@ export class Survival {
       return "It's out of fuel";
     }
     return igniter;
+  }
+
+  /**
+   * The worn-light control: if any worn switchable light is off, every one comes on, otherwise every one goes off.
+   * Returns why none could change, or undefined.
+   */
+  toggleWornLights(): string | undefined {
+    const { registry } = this.inventory;
+    const worn: Item[] = [];
+    for (const { item, location } of this.inventory.items()) {
+      if (location.kind === 'worn' && defOf(registry, item.type).light?.wornSwitch === true) {
+        worn.push(item);
+      }
+    }
+    if (worn.length === 0) {
+      return undefined;
+    }
+    const turnOn = worn.some((light) => !light.on);
+    const heldBeam = this.lit && !worn.includes(this.lit) && this.lit.on ? this.lit : undefined;
+    let reason: string | undefined;
+    let changed = false;
+    for (const light of worn) {
+      if (light.on === turnOn) {
+        continue;
+      }
+      const refusal = this.switchLight(light);
+      if (refusal === undefined) {
+        changed = true;
+      } else {
+        reason ??= refusal;
+      }
+    }
+    if (heldBeam) {
+      this.lit = heldBeam;
+    }
+    return changed ? undefined : reason;
   }
 
   private switchLight(light: Item): string | undefined {
