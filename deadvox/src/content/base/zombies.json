@@ -868,6 +868,7 @@
       "acidSpit": {
         "cancelPenaltyFraction": 0.5,
         "cooldownSimSeconds": 5,
+        "globGravityMetresPerSimSecondSquared": 4,
         "globMetresPerSimSecond": 14,
         "moves": [
           {
@@ -895,6 +896,12 @@
             "weight": 1
           }
         ],
+        "presentation": {
+          "color": "#8bff32",
+          "radiusMetres": 0.080000000000000002,
+          "splashRadiusMetres": 0.29999999999999999,
+          "splashSeconds": 0.25
+        },
         "puddle": {
           "damagePerSimSecond": 2,
           "lifetimeSimSeconds": 8,

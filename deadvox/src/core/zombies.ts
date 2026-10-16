@@ -1,3 +1,4 @@
+import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import {
   carveAround,
   centralCell,
@@ -20,7 +21,7 @@ import type { DayPhase, DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import { lightSenseRangeScale } from './lights.ts';
-import type { Modifier } from './modifiers.ts';
+import { type Modifier, modified } from './modifiers.ts';
 import {
   type Body,
   type BodyShape,
@@ -49,6 +50,7 @@ import {
   posedAmalgamRegionBoxes,
   posedRegionHit,
   posedShamblerRegionBoxes,
+  rayBoxEntry,
   type ZombieHitRegion,
   type ZombieRegion,
   type ZombieRegions,
@@ -501,6 +503,7 @@ export interface ZombieSystemState {
   nextEntityId: number;
   zombies: { id: number; zombie: ZombieState }[];
   hordes: HordeState[];
+  acidGlobs: AcidGlobState[];
 }
 
 export interface VocalNoise {
@@ -578,6 +581,9 @@ export interface ZombieSystemOptions {
   onSound?: (event: SoundEventId, position: Vec3, body?: Zombie) => void;
   /** A spit left the mouth. No damage is applied here; the owner of the in-flight glob takes it from this. */
   onAcidSpit?: (release: AcidSpitRelease) => void;
+  onAcidPlayerHit?: (hit: ZombiePlayerHit) => void;
+  onAcidImpact?: (position: Vec3, type: ZombieDef) => void;
+  onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
   onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode, body: Zombie) => void;
   /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
@@ -841,6 +847,26 @@ export interface AcidSpitRelease {
   aim: Vec3;
   moves: readonly ZombieMove[];
 }
+
+export interface ZombiePlayerHit {
+  damage: number;
+  kind: DamageKind;
+  hitRegions: readonly ZombieHitRegionChoice[];
+  regionRoll: number;
+  sourceName: string;
+}
+
+export interface AcidGroundImpact {
+  position: Vec3;
+  source: EntityId;
+  type: string;
+  puddle: NonNullable<ZombieDef['acidSpit']>['puddle'];
+}
+
+type GlobContact =
+  | { kind: 'solid'; distance: number; normal: Vec3 }
+  | { kind: 'player'; distance: number }
+  | { kind: 'zombie'; distance: number; hit: RegionHit };
 
 /** Share of the wind-up elapsed, 0 when not winding up; presentation reads it for the sac glow and head pull. */
 export const acidSpitWindupProgress = (zombie: Zombie): number => {
@@ -1548,6 +1574,11 @@ interface AmalgamCollider {
 export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
+  private globs: { state: AcidGlobState; type: ZombieDef }[] = [];
+
+  get acidGlobs(): readonly Readonly<AcidGlobState>[] {
+    return this.globs.map(({ state }) => state);
+  }
   private readonly tickScratch = createZombieTickScratch();
   private readonly hordes = new Map<string, { state: Omit<HordeState, 'rng'>; rng: Rng }>();
   private frozen = false;
@@ -1702,6 +1733,7 @@ export class ZombieSystem {
       nextEntityId: this.store.nextId,
       zombies: [...this.store.entries()].map(([id, zombie]) => snapshotZombie(id, zombie)),
       hordes: [...this.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
+      acidGlobs: this.globs.map(({ state }) => ({ ...state, pos: [...state.pos], velocity: [...state.velocity] })),
     });
   }
 
@@ -1709,6 +1741,25 @@ export class ZombieSystem {
     if (this.store.size > 0) {
       throw new Error('Zombie state restores only into an empty entity store');
     }
+    const globs = state.acidGlobs.map((glob) => {
+      const type = resolveType(glob.type);
+      const valid =
+        type?.acidSpit?.moves.some((move) => move.id === glob.move) &&
+        Number.isSafeInteger(glob.source) &&
+        glob.source >= 1 &&
+        glob.source < state.nextEntityId &&
+        validVec3State(glob.pos) &&
+        validVec3State(glob.velocity) &&
+        Number.isFinite(glob.damage) &&
+        glob.damage >= 0 &&
+        Number.isFinite(glob.regionRoll) &&
+        glob.regionRoll >= 0 &&
+        glob.regionRoll < 1;
+      if (!(type && valid)) {
+        throw new Error('Invalid acid glob state');
+      }
+      return { state: { ...glob, pos: copy(glob.pos), velocity: copy(glob.velocity) }, type };
+    });
     const entries = state.zombies.map(
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validate every persisted zombie invariant before mutating the entity store.
       ({ id, zombie }) => {
@@ -1822,6 +1873,7 @@ export class ZombieSystem {
       },
     );
     this.store.restore(entries, state.nextEntityId);
+    this.globs = globs;
     this.hordes.clear();
     for (const horde of state.hordes ?? []) {
       if (!validHordeSnapshotState(horde, this.hordes.has(horde.id), resolveType)) {
@@ -2937,7 +2989,24 @@ export class ZombieSystem {
       const heading = headingAt(angleOf(toPlayer) + spread);
       const reach = Math.hypot(toPlayer[0], toPlayer[2]);
       const aim = unit([heading[0] * reach, toPlayer[1], heading[2] * reach]);
-      this.options.onAcidSpit?.({ source: scratch.id, origin, aim, moves: spit.moves });
+      const release = { source: scratch.id, origin, aim, moves: spit.moves };
+      const move = pickZombieMove(spit.moves, zombie.spitRng.next());
+      const speed = spit.globMetresPerSimSecond / blockSize;
+      const gravity = spit.globGravityMetresPerSimSecondSquared / blockSize;
+      const flightSeconds = Math.hypot(...toPlayer) / speed;
+      this.globs.push({
+        type,
+        state: {
+          source: scratch.id,
+          type: type.id,
+          move: move.id,
+          pos: copy(origin),
+          velocity: [aim[0] * speed, aim[1] * speed + 0.5 * gravity * flightSeconds, aim[2] * speed],
+          damage: modified('attack.damage', move.damage, zombie),
+          regionRoll: zombie.spitRng.next(),
+        },
+      });
+      this.options.onAcidSpit?.(release);
       return;
     }
     const metres = horizontalDistance(player.pos, pos) * blockSize;
@@ -3047,6 +3116,7 @@ export class ZombieSystem {
       this.tickFrozen(dt, entries);
       return;
     }
+    this.tickAcidGlobs(dt, player);
     const dayState = this.options.dayPhase();
     const { blockSize, isSolid } = this.options;
     const groundedAtTickStart = new Map<Zombie, boolean>();
@@ -3092,6 +3162,121 @@ export class ZombieSystem {
     this.emitFootsteps(entries, groundedAtTickStart, player, blockSize);
   }
 
+  private tickAcidGlobs(dt: number, player: PlayerSense): void {
+    const poseCache = new Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>>();
+    this.globs = this.globs.filter(({ state, type }) => {
+      const impact = advanceAcidGlob<GlobContact>(
+        state,
+        dt,
+        type.acidSpit!.globGravityMetresPerSimSecondSquared / this.options.blockSize,
+        (origin, direction, distance) =>
+          this.acidGlobContact({ origin, direction, distance, source: state.source, player, poseCache }),
+      );
+      if (!impact) {
+        return true;
+      }
+      this.resolveAcidGlobImpact(state, type, impact);
+      return false;
+    });
+  }
+
+  private resolveAcidGlobImpact(
+    state: AcidGlobState,
+    type: ZombieDef,
+    { contact, position }: { contact: GlobContact; position: Vec3 },
+  ): void {
+    const spit = type.acidSpit!;
+    const move = spit.moves.find((candidate) => candidate.id === state.move)!;
+    if (contact.kind === 'player') {
+      this.options.onAcidPlayerHit?.({
+        damage: state.damage,
+        kind: move.damageKind,
+        hitRegions: move.hitRegions,
+        regionRoll: state.regionRoll,
+        sourceName: type.name,
+      });
+    } else if (contact.kind === 'zombie') {
+      const { id, zombie, region, cell } = contact.hit;
+      const damage = move.damageKind === 'acid' ? acidDamageToZombie(zombie.type, state.damage) : state.damage;
+      if (damage > 0) {
+        const strike = this.applyMeleeHit({
+          id,
+          zombie,
+          region,
+          cell,
+          origin: position,
+          direction: unit(state.velocity),
+          distanceMetres: 0,
+          weapon: projectileWeapon(damage, 0, 0),
+          damageType: 'blunt',
+          damageOverride: damage,
+          isFist: false,
+          projectile: true,
+        });
+        if (strike) {
+          this.carve(id, zombie, [strike]);
+        }
+      }
+    } else if (contact.normal[1] > 0) {
+      this.options.onAcidGroundImpact?.({
+        position: copy(position),
+        source: state.source,
+        type: type.id,
+        puddle: spit.puddle,
+      });
+    }
+    this.options.onAcidImpact?.(copy(position), type);
+  }
+
+  private acidGlobContact({
+    origin,
+    direction,
+    distance,
+    source,
+    player,
+    poseCache,
+  }: {
+    origin: Vec3;
+    direction: Vec3;
+    distance: number;
+    source: EntityId;
+    player: PlayerSense;
+    poseCache: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>>;
+  }): GlobContact | undefined {
+    const contacts: GlobContact[] = [];
+    const solid = raycast(origin, direction, distance, this.options.isSolid);
+    if (solid) {
+      contacts.push({ kind: 'solid', distance: solid.distance, normal: solid.normal });
+    }
+    const zombie = this.firstRegionHit({
+      origin,
+      direction,
+      isBlocked: this.options.isSolid,
+      exclude: source,
+      poseCache,
+    });
+    if (zombie) {
+      contacts.push({ kind: 'zombie', distance: zombie.distance, hit: zombie });
+    }
+    if (player.body) {
+      const { body } = player;
+      const relative: Vec3 = [
+        origin[0] - body.pos[0],
+        origin[1] - body.pos[1] - body.height / 2,
+        origin[2] - body.pos[2],
+      ];
+      const entry = rayBoxEntry(relative, direction, [
+        body.halfWidth,
+        body.height / 2,
+        body.halfDepth ?? body.halfWidth,
+      ]);
+      if (entry !== undefined) {
+        contacts.push({ kind: 'player', distance: entry });
+      }
+    }
+    return contacts.filter((contact) => contact.distance <= distance).sort((a, b) => a.distance - b.distance)[0];
+  }
+
   tickActive(dt: number, time = 0, hands?: { right: number | null; left: number | null }): void {
     this.tick(dt, time, hands, 'active');
   }
@@ -3101,15 +3286,21 @@ export class ZombieSystem {
     direction,
     isBlocked,
     poseCache,
+    exclude,
   }: {
     origin: Vec3;
     direction: Vec3;
     isBlocked: SolidAt;
     poseCache?: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>> | undefined;
+    exclude?: EntityId;
   }): RegionHit | undefined {
     let nearest: RegionHit | undefined;
     for (const [id, zombie] of this.store.entries()) {
-      if (!zombie.incapacitated && rayMayHitZombie(zombie, origin, direction, this.options.blockSize)) {
+      if (
+        id !== exclude &&
+        !zombie.incapacitated &&
+        rayMayHitZombie(zombie, origin, direction, this.options.blockSize)
+      ) {
         nearest = this.nearerRegionHit({ id, zombie, origin, direction, isBlocked, poseCache }, nearest);
       }
     }
@@ -3355,7 +3546,8 @@ export class ZombieSystem {
     damageType,
     isFist,
     projectile = false,
-  }: MeleeHitContext & { projectile?: boolean }): AmalgamStrike | undefined {
+    damageOverride,
+  }: MeleeHitContext & { projectile?: boolean; damageOverride?: number }): AmalgamStrike | undefined {
     const ray = unit(direction);
     const distance = distanceMetres / this.options.blockSize;
     const hit: HitImpulse = {
@@ -3363,7 +3555,7 @@ export class ZombieSystem {
       direction: ray,
       impulse: weapon.impulse ?? 4,
     };
-    const damage = meleeDamageForContact(zombie, region, weapon, damageType);
+    const damage = damageOverride ?? meleeDamageForContact(zombie, region, weapon, damageType);
     if (!projectile) {
       this.options.onMeleeContact?.(hit.impulse);
     }

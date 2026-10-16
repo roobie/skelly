@@ -1687,6 +1687,13 @@ const AcidSpitSchema = pipe(
     cancelPenaltyFraction: Fraction,
     spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
     globMetresPerSimSecond: SimRate,
+    globGravityMetresPerSimSecondSquared: Positive,
+    presentation: strictObject({
+      color: Color,
+      radiusMetres: Positive,
+      splashRadiusMetres: Positive,
+      splashSeconds: Positive,
+    }),
     moves: ZombieMovesSchema,
     puddle: strictObject({
       lifetimeSimSeconds: PositiveSimSeconds,

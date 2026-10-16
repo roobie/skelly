@@ -530,6 +530,13 @@ local figureSeeds = std.range(1, 8);
         "cancelPenaltyFraction": 0.5,
         "spreadDegrees": 4,
         "globMetresPerSimSecond": 14,
+        "globGravityMetresPerSimSecondSquared": 4,
+        "presentation": {
+          "color": "#8bff32",
+          "radiusMetres": 0.08,
+          "splashRadiusMetres": 0.3,
+          "splashSeconds": 0.25
+        },
         "moves": [
           {
             "id": "spit",
