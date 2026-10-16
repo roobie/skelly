@@ -8,7 +8,6 @@ import type { Scale } from './scale.ts';
 import { scenarioCertificate } from './scenarioCertificate.ts';
 import type { ScenarioDef } from './schema.ts';
 import type { HordeSpawn, ZombieSpawn } from './site.ts';
-import { hamletTemplateIds } from './sitePalette.ts';
 import { footprint, placedSpawns } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
@@ -22,8 +21,8 @@ export class GauntletSite extends CitySite {
     registry,
     scale,
     scenario,
-    settlementPressure = true,
-    authoredMarkers = true,
+    settlementPressure = scenario.population.settlementPressure,
+    authoredMarkers = scenario.population.authoredMarkers,
   }: {
     seed: number;
     registry: Registry;
@@ -53,7 +52,7 @@ export class GauntletSite extends CitySite {
       throw new Error(certificate.issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
     }
     this.scenario = scenario;
-    const population = gauntletPopulation(this, scenario.id, settlementPressure, authoredMarkers);
+    const population = gauntletPopulation(this, scenario, settlementPressure, authoredMarkers);
     this.population = population.zombies;
     this.hordes = population.hordes;
   }
@@ -69,7 +68,7 @@ export class GauntletSite extends CitySite {
 
 const gauntletPopulation = (
   site: CitySite,
-  scenarioId: string,
+  { id: scenarioId, population }: ScenarioDef,
   settlementPressure: boolean,
   authoredMarkers: boolean,
 ) => {
@@ -85,9 +84,16 @@ const gauntletPopulation = (
     columns.set(key, column);
   };
   // Scale the ordinary settlement population by buildings, not by empty reserved-campus area.
-  const perGroup = hamletTemplateIds(site.registry).length;
-  for (let start = 0; settlementPressure && start < ordinary.length; start += perGroup) {
-    const group = ordinary.slice(start, start + perGroup);
+  const { groupSize, hordes: hordeCount, roadsideOffset, extraStragglers } = population;
+  const starts: number[] = [];
+  for (let start = 0; settlementPressure && start < ordinary.length; start += groupSize) {
+    starts.push(start);
+  }
+  const hordeStarts = new Set(
+    [...starts].sort((a, b) => hash3(site.seed, a, 0, 602) - hash3(site.seed, b, 0, 602)).slice(0, hordeCount),
+  );
+  for (const start of starts) {
+    const group = ordinary.slice(start, start + groupSize);
     const first = group[0]!;
     const [, depth] = footprint(first);
     const frontage = group.filter(
@@ -107,14 +113,17 @@ const gauntletPopulation = (
     for (const spawn of hamletZombieSpawns(seed, road, group.flatMap(placedSpawns), {
       roadHeightAt: () => floor,
       spawnWeights: weights,
-      roadsideOffset: grid.street / 4,
+      roadsideOffset,
+      extraWanderers: extraStragglers,
     })) {
       append(zombies, spawn);
     }
-    append(
-      hordes,
-      hamletHordeSpawn(seed, road, () => floor, `scenario:${scenarioId}:horde:${start}`),
-    );
+    if (hordeStarts.has(start)) {
+      append(
+        hordes,
+        hamletHordeSpawn(seed, road, () => floor, `scenario:${scenarioId}:horde:${start}`),
+      );
+    }
   }
   const authored = authoredMarkers ? site.placements.filter((placement) => !ordinary.includes(placement)) : [];
   for (const marker of authored.flatMap(placedSpawns)) {

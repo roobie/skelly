@@ -336,10 +336,17 @@ movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`
 `templates`.
 
 Marker-only population omits the ordinary settlement's wanderers and horde, making
-empty marker sets silently remove street pressure. Gauntlet therefore scales the
+empty marker sets silently remove street pressure. A scenario therefore scales the
 ordinary settlement policy by building groups, not by the reserved campus's empty
-area, while the lab retains its authored markers. This reuses population and spawn
-admission instead of inventing an enemy-density runtime. See `src/core/gauntlet.ts`,
+area, while authored markers stay separate. The policy is the scenario's
+`population` content, so a scenario's street pressure is tuned without code: the
+group size, the number of hordes in the whole city (each on a different street
+group), the extra stragglers each group carries beyond its hamlet-sized count, and
+the switches for settlement pressure and authored markers. The gauntlet keeps one
+horde, with stragglers carrying more of the street pressure, because a horde per
+building group made every street a fight. This reuses population and spawn
+admission instead of inventing an enemy-density runtime. See `src/core/schema.ts`,
+`ScenarioSchema`; `src/content/base/scenarios.jsonnet`; `src/core/gauntlet.ts`,
 `gauntletPopulation`; `src/core/hamlet.ts`, `hamletZombieSpawns`; and
 `src/core/zombieSpawns.ts`, `ZombieSpawner`.
 

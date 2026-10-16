@@ -6,6 +6,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { ScenarioDef } from '../src/core/schema.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
 import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
@@ -171,9 +172,9 @@ describe('one finished city plan', () => {
       }
     }
   });
-  it('supplies ordinary wanderers and hordes even when city buildings have no spawn markers', () => {
+  describe('gauntlet population from scenario content', () => {
     const native = BUNDLED_CONTENT.registry;
-    const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
+    const bundled = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
     const fixture = registry.templates.get('fixture_house')!;
     const solid = native.blocks.find((block) => block.solid)!.id;
     const cityRegistry = {
@@ -182,28 +183,54 @@ describe('one finished city plan', () => {
       mapPools: new Map([
         ...native.mapPools,
         [
-          scenario.city.pool,
-          { id: scenario.city.pool, choices: [{ ref: { kind: 'template' as const, id: fixture.id }, weight: 1 }] },
+          bundled.city.pool,
+          { id: bundled.city.pool, choices: [{ ref: { kind: 'template' as const, id: fixture.id }, weight: 1 }] },
         ],
       ]),
     };
-    const site = new GauntletSite({
-      seed: 73,
-      registry: cityRegistry,
-      scale,
-      scenario,
-    });
-    const spawns: ZombieSpawn[] = [];
-    const hordes: HordeSpawn[] = [];
-    for (let cz = toChunk(site.bounds.z0); cz <= toChunk(site.bounds.z1); cz++) {
-      for (let cx = toChunk(site.bounds.x0); cx <= toChunk(site.bounds.x1); cx++) {
-        spawns.push(...site.zombiesIn(cx, cz));
-        hordes.push(...(site.hordesIn?.(cx, cz) ?? []));
+    const populationOf = (population: Partial<ScenarioDef['population']>) => {
+      const site = new GauntletSite({
+        seed: 73,
+        registry: cityRegistry,
+        scale,
+        scenario: { ...bundled, population: { ...bundled.population, ...population } },
+      });
+      const spawns: ZombieSpawn[] = [];
+      const hordes: HordeSpawn[] = [];
+      for (let cz = toChunk(site.bounds.z0); cz <= toChunk(site.bounds.z1); cz++) {
+        for (let cx = toChunk(site.bounds.x0); cx <= toChunk(site.bounds.x1); cx++) {
+          spawns.push(...site.zombiesIn(cx, cz));
+          hordes.push(...site.hordesIn(cx, cz));
+        }
       }
-    }
-    expect(spawns.length).toBeGreaterThan(0);
-    expect(hordes.length).toBeGreaterThan(0);
-    expect(hordes.every((horde) => horde.members > 0)).toBe(true);
+      return { spawns, hordes };
+    };
+
+    it('supplies ordinary wanderers and hordes even when city buildings have no spawn markers', () => {
+      const { spawns, hordes } = populationOf({});
+      expect(spawns.length).toBeGreaterThan(0);
+      expect(hordes.length).toBeGreaterThan(0);
+      expect(hordes.every((horde) => horde.members > 0)).toBe(true);
+    });
+
+    it('places exactly the horde count the scenario asks for, on different streets', () => {
+      for (const hordes of [0, 1, 2]) {
+        const placed = populationOf({ hordes }).hordes;
+        expect(placed).toHaveLength(hordes);
+        expect(new Set(placed.map(({ id }) => id)).size).toBe(hordes);
+      }
+    });
+
+    it('adds the configured extra stragglers to every street group', () => {
+      const base = populationOf({ extraStragglers: 0 }).spawns.length;
+      expect(populationOf({ extraStragglers: 3 }).spawns.length).toBeGreaterThan(base);
+    });
+
+    it('drops the ordinary settlement crowd when settlement pressure is off', () => {
+      const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
+      expect(spawns).toEqual([]);
+      expect(hordes).toEqual([]);
+    });
   });
 
   it('fills paired inner banks while keeping alleys, perimeter gates and the service reserve clear', () => {

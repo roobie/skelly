@@ -37,6 +37,10 @@ local ladder = lab.entry.ladder;
       upper: [hatch[0] + 4, ground + 1, hatch[2] + 1],
       lower: [hatch[0], ladder[1], hatch[2] + 1],
     },
+    population: {
+      settlementPressure: true, authoredMarkers: true,
+      groupSize: 7, hordes: 1, roadsideOffset: 3, extraStragglers: 2,
+    },
     city: {
       blocksX: 1, blocksZ: 1,
       street: 12,
