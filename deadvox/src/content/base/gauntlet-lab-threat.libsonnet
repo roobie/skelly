@@ -32,6 +32,7 @@ local markerPiece = function(r) {
   layers: [[if r.type == null then '.' else 'Z']], ownership: { layers: [['R']] }, anchors: {}, ports: [],
 };
 local distinct = std.set([r for s in std.objectFields(rows) for r in rows[s]] + centreRows.bottom, function(r) markerId(r));
+// Every lab room slot offers one room, so its first choice names the kind.
 local kindAt = function(room) kindOf(std.strReplace(room.choices[0].ref.id, 'gauntlet_lab_', ''));
 local slot = function(room, name, cell, choices) {
   id: room.id + '_threat_' + name, at: [room.at[0] + cell[0], room.at[1] + cell[1], room.at[2] + cell[2]],
