@@ -95,6 +95,10 @@ const layoutValidationBase = [
       sounds: [...new Set([...layoutZombieIds].flatMap((id) => Object.values(registry.zombies.get(id)!.sounds)))].map(
         (id) => structuredClone(registry.sounds.get(id)!),
       ),
+      // The track surfaces are real blocks, minus the footstep sounds this fixture does not carry.
+      blocks: (base.find(({ source }) => source === 'blocks.json')!.data as { blocks: { id: string }[] }).blocks
+        .filter(({ id }) => layout.tracks.some(({ surface }) => surface === id))
+        .map(({ footsteps: _, ...block }: { id: string; footsteps?: unknown }) => block),
       layouts: baseLayoutIds.map(validationLayout),
     },
   },
@@ -668,6 +672,7 @@ describe('authored layout acceptance', () => {
               [127, 20],
             ],
             width: 4,
+            surface: 'dirt',
           },
         ],
       },
@@ -694,6 +699,11 @@ describe('authored layout acceptance', () => {
   });
   it('rejects a zero-width track', () => {
     invalid({ ...layout, tracks: [{ ...layout.tracks[0], width: 0 }] }, 'Invalid value');
+  });
+  it('rejects a track without a surface block, or whose surface names no block', () => {
+    const { surface: _, ...unsurfaced } = layout.tracks[0]!;
+    invalid({ ...layout, tracks: [unsurfaced as SiteLayoutDef['tracks'][number]] }, 'missing');
+    invalid({ ...layout, tracks: [{ ...layout.tracks[0]!, surface: 'no_such_block' }] }, 'no block "no_such_block"');
   });
   it('rejects bounds without positive area', () => {
     invalid({ ...layout, bounds: { ...layout.bounds, x1: 0 } }, 'positive area');

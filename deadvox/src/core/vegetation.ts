@@ -5,6 +5,7 @@ import { CHUNK, type Vec3 } from './coords.ts';
 import { Rng, valueNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import { type Rect, rectDistance } from './site.ts';
+import { sitePalette } from './sitePalette.ts';
 import { type BlockBox, type MetreBox, rasterize, stampChunk } from './structure.ts';
 
 export type TreeShape = 'broadleaf' | 'conifer' | 'young';
@@ -56,9 +57,7 @@ const crown = (leaf: number, centreY: number, [rx, ry, rz]: Vec3): MetreBox[] =>
 
 /** Metre-authored shapes reuse structure rasterization and chunk clipping, not another stamping engine. */
 const treeShapes = (registry: Registry, scale: Scale): Readonly<Record<TreeShape, readonly BlockBox[]>> => {
-  const trunk = registry.blockIds.get('tree_trunk')!;
-  const branch = registry.blockIds.get('tree_branch')!;
-  const leaf = registry.blockIds.get('leaves')!;
+  const { trunk, branch, leaves: leaf } = sitePalette(registry).trees;
   const pine: MetreBox[] = [];
   for (let y = 2; y < 8.5; y += 0.5) {
     const width = Math.max(0.25, (8.5 - y) * 0.38);

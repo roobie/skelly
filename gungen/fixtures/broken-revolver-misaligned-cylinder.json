@@ -26,6 +26,10 @@
         "chamberIndex": "1"
       }
     },
+    "crane": { "family": "revolver-crane" },
+    "ejector": { "family": "revolver-ejector" },
+    "hammer": { "family": "revolver-hammer" },
+    "trigger": { "family": "revolver-trigger" },
     "grip": {
       "family": "revolver-grip",
       "params": {
@@ -34,6 +38,12 @@
     }
   },
   "connections": [
+    { "from": "frame.crane", "to": "crane.mount" },
+    { "from": "crane.cylinder", "to": "cylinder.crane" },
+    { "from": "cylinder.ejector", "to": "ejector.mount" },
+    { "from": "barrel.ejector", "to": "ejector.barrel" },
+    { "from": "frame.hammer", "to": "hammer.mount" },
+    { "from": "frame.trigger", "to": "trigger.mount" },
     {
       "from": "frame.barrel",
       "to": "barrel.frame"

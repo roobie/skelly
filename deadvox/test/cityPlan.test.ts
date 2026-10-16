@@ -7,7 +7,7 @@ import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
-import { cellsOf, compileAssembly, compileTemplate, footprint } from '../src/core/templates.ts';
+import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
@@ -75,7 +75,9 @@ const generated = (reverse: boolean) => {
 const nativeDefinitions = (id: string, style?: string) => {
   const native = BUNDLED_CONTENT.registry;
   const alternatives = Math.max(
-    ...[...native.mapAssemblies.values()].flatMap((candidate) => candidate.slots.map((slot) => slot.choices.length)),
+    ...[...native.mapAssemblies.values()].flatMap((candidate) =>
+      candidate.slots.map((slot) => kitSlotChoices(native, slot).length),
+    ),
   );
   return Array.from({ length: alternatives }, (_, variant) => {
     const selected = {
@@ -85,10 +87,10 @@ const nativeDefinitions = (id: string, style?: string) => {
           candidate.id,
           {
             ...candidate,
-            slots: candidate.slots.map((slot) => ({
-              ...slot,
-              choices: [slot.choices[variant % slot.choices.length]!],
-            })),
+            slots: candidate.slots.map(({ pool: _pool, ...slot }) => {
+              const choices = kitSlotChoices(native, { ...slot, pool: _pool });
+              return { ...slot, choices: [choices[variant % choices.length]!] };
+            }),
           },
         ]),
       ),
@@ -296,6 +298,37 @@ describe('one finished city plan', () => {
     const site = new CitySite(73, registry, scale, plan);
     expect(site.surface.height(plan.spawn[0], plan.spawn[2], floor + 9)).toBe(floor);
     expect(site.surface.top(plan.spawn[0], plan.spawn[2])).toBe(registry.blockIds.get('asphalt'));
+  });
+
+  it('never stacks a template past its authored maxStoreys while an unlimited one still stacks', () => {
+    const limited = registry.templates.get('fixture_house')!;
+    const capped = {
+      ...registry,
+      templates: new Map(registry.templates).set(limited.id, { ...limited, maxStoreys: 1 }),
+    };
+    const plan = buildCityPlan({
+      seed: 73,
+      registry: capped,
+      floor,
+      grid: {
+        ...fixtureGrid,
+        blocksX: 3,
+        blocksZ: 3,
+        templates: [
+          { id: 'fixture_house', weight: 1 },
+          { id: 'fixture_small_house', weight: 1 },
+        ],
+      },
+      maxStoreys: 4,
+    });
+    const heights = (id: string) =>
+      plan.placements
+        .filter((placement) => placement.template.id.split('×')[0] === id)
+        .map((placement) => placement.template.size[1]);
+    const [, unstacked] = limited.size;
+    expect(heights('fixture_house').length).toBeGreaterThan(0);
+    expect(heights('fixture_house').every((height) => height === unstacked)).toBe(true);
+    expect(heights('fixture_small_house').some((height) => height > unstacked)).toBe(true);
   });
 
   it('chooses the service block/turn independently of incidental template selection', () => {

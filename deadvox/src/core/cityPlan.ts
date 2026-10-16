@@ -20,7 +20,6 @@ import {
 } from './templates.ts';
 
 export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
-const SINGLE_STOREY = new Set(['gas_station', 'shed']);
 interface PoolRef {
   readonly id: string;
   readonly style?: string | undefined;
@@ -159,6 +158,9 @@ const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, str
   const rowIssues = pool.choices.flatMap(({ ref }, index): [string, string][] => {
     const at = `.city.pool.choices[${index}].ref`;
     const { id } = ref;
+    if (ref.kind === 'piece') {
+      return [[at, `city pool "${pool.id}" needs a template or assembly, not piece "${id}"`]];
+    }
     if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
       return [[at, `ambiguous template and assembly "${id}"`]];
     }
@@ -276,6 +278,7 @@ interface FillContext {
   seed: number;
   floor: number;
   grid: CityGrid;
+  registry: Registry;
   maxStoreys: number;
   incidentalTemplates: readonly string[];
   compiled: ReturnType<typeof templateCompiler>;
@@ -315,7 +318,7 @@ const chooseBuilding = (
 };
 
 const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
-  const { seed, floor, grid, compiled, maxStoreys, counts } = context;
+  const { seed, floor, grid, registry, compiled, maxStoreys, counts } = context;
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
   const end = (i + 1) * pitchX - grid.pad;
@@ -333,9 +336,8 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
     if (!(incidental && context.incidentalTemplates.includes(building.id))) {
       counts.set(rowKey(building), (counts.get(rowKey(building)) ?? 0) + 1);
     }
-    const storeys = SINGLE_STOREY.has(building.id)
-      ? 1
-      : 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * maxStoreys);
+    const limit = Math.min(maxStoreys, registry.templates.get(building.id)?.maxStoreys ?? maxStoreys);
+    const storeys = 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * limit);
     const template = compiled(building, storeys, `city:${i},${j}/row:${row}/building:${k}`);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const bank = j * pitchZ + cityRowStart(grid, row);
@@ -454,6 +456,7 @@ export const buildCityPlan = ({
     seed,
     floor,
     grid,
+    registry,
     maxStoreys: scenario ? 1 : maxStoreys,
     incidentalTemplates: scenario?.composition?.incidentalTemplates ?? [],
     compiled: templateCompiler(registry, seed),

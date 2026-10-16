@@ -34,6 +34,8 @@ export const copyMeleeWeapon = (weapon: MeleeWeapon): MeleeWeapon => ({
   damage: weapon.damage,
   reach: weapon.reach,
   cooldown: weapon.cooldown,
+  ...(weapon.contactFraction === undefined ? {} : { contactFraction: weapon.contactFraction }),
+  ...(weapon.windupCapSimSeconds === undefined ? {} : { windupCapSimSeconds: weapon.windupCapSimSeconds }),
   ...(weapon.stamina === undefined ? {} : { stamina: weapon.stamina }),
   ...(weapon.impulse === undefined ? {} : { impulse: weapon.impulse }),
   ...(weapon.damageVariance === undefined ? {} : { damageVariance: weapon.damageVariance }),
@@ -59,6 +61,12 @@ const unit = (v: Vec3): Vec3 => {
   return n > 0 ? [v[0] / n, v[1] / n, v[2] / n] : [0, 0, 0];
 };
 const copy = (v: Vec3): Vec3 => [v[0], v[1], v[2]];
+const contactTimeOf = (weapon: MeleeWeapon): number => {
+  if (weapon.contactFraction === undefined || weapon.windupCapSimSeconds === undefined) {
+    throw new Error('A player melee weapon needs its windup timing');
+  }
+  return meleeContactTime(weapon.cooldown, weapon.contactFraction, weapon.windupCapSimSeconds);
+};
 const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean =>
   Number.isFinite(weapon.damage) &&
   weapon.damage > 0 &&
@@ -184,7 +192,7 @@ export class PlayerCombat {
       hand,
       twoHanded: start.twoHanded,
       cooldown: weapon.cooldown,
-      contactAt: meleeContactTime(weapon.cooldown),
+      contactAt: contactTimeOf(weapon),
       aimYaw: start.aimYaw ?? Math.atan2(-direction[0], -direction[2]),
       aimPitch: start.aimPitch ?? Math.asin(Math.max(-1, Math.min(1, direction[1]))),
       elapsed: 0,
@@ -212,7 +220,7 @@ export class PlayerCombat {
       !Number.isFinite(action.cooldown) ||
       action.cooldown <= 0 ||
       !Number.isFinite(action.contactAt) ||
-      Math.abs(action.contactAt - meleeContactTime(action.cooldown)) > 1e-9 ||
+      Math.abs(action.contactAt - contactTimeOf(action.weapon)) > 1e-9 ||
       !Number.isFinite(action.aimYaw) ||
       !Number.isFinite(action.aimPitch) ||
       !Number.isFinite(action.elapsed) ||

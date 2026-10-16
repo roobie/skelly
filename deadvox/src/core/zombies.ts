@@ -1,4 +1,3 @@
-import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import {
   carveAround,
   centralCell,
@@ -65,6 +64,13 @@ const BACKGROUND_STEP_CAP_METRES = 1;
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 export const zombieBodyDimensions = measureZombieBody;
 
+const requiredFigureSeeds = (type: ZombieDef): readonly number[] => {
+  if (type.figureSeeds === undefined) {
+    throw new Error(`Zombie type ${type.id} is missing its authored figureSeeds`);
+  }
+  return type.figureSeeds;
+};
+
 export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
   type.model === 'amalgam' ? type.attack.reach * amalgamFigureForType(type, figureSeed).scale : type.attack.reach;
 
@@ -74,7 +80,15 @@ export const PLAYER_ARM_REACH_M = 1.2;
 import { blastShare, bodyCentre, type ExplosiveSpec, inSight } from './explosive.ts';
 import type { PelletShot } from './pellets.ts';
 
-export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
+export const FISTS_MELEE = {
+  damage: 8,
+  reach: 0.1,
+  cooldown: 0.8,
+  stamina: 4,
+  impulse: 4,
+  contactFraction: 0.4,
+  windupCapSimSeconds: 0.25,
+} as const;
 
 /** A shot's or a blast's hit, dealt through the melee hit path without a swing to recover from. */
 const projectileWeapon = (damage: number, reach: number, impulse: number): MeleeWeapon => ({
@@ -146,6 +160,9 @@ export interface MeleeWeapon {
   readonly damage: number;
   readonly reach: number;
   readonly cooldown: number;
+  /** A player swing's contact timing; required to begin one, unused by zombie and projectile hits. */
+  readonly contactFraction?: number | undefined;
+  readonly windupCapSimSeconds?: number | undefined;
   readonly stamina?: number | undefined;
   readonly impulse?: number | undefined;
   readonly damageVariance?: number | undefined;
@@ -1119,7 +1136,8 @@ const seesPlayer = ({
   let sightRange = zombie.nightSight + (zombie.sight - zombie.nightSight) * sightBlend;
   const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos) ?? dayPhase === 'day';
   const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
-  const maximumRange = Math.max(sightRange, player.lit ? player.lightSeenFrom * playerLightScale : 0);
+  const lightSpotScale = zombie.lightSightScale ?? 1;
+  const maximumRange = Math.max(sightRange, player.lit ? player.lightSeenFrom * playerLightScale * lightSpotScale : 0);
   if (metres > maximumRange) {
     return false;
   }
@@ -1134,7 +1152,7 @@ const seesPlayer = ({
   const clear = clearAtHeight(eyeHeight);
   const lightClear = !player.lit || clearAtHeight(lightHeight);
   if (player.lit && lightClear && playerLightScale > 0) {
-    sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale);
+    sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale * lightSpotScale);
   } else if (player.crouching) {
     sightRange *= tuning.crouch.sightRangeScale;
   }
@@ -1166,7 +1184,10 @@ const canSeeLight = ({
   const distance = Math.hypot(delta[0], delta[2]) * blockSize;
   const sunlit = source.sunlit ?? isSunExposedAt?.(source.pos) ?? dayPhase === 'day';
   const exposure = source.carried ? 'carried' : 'world';
-  if (distance <= 0 || distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light)) {
+  if (
+    distance <= 0 ||
+    distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light) * (zombie.lightSightScale ?? 1)
+  ) {
     return undefined;
   }
   const direction = unit(delta);
@@ -1617,7 +1638,6 @@ export class ZombieSystem {
           !validZombieEventState(zombie) ||
           !validHordeMemberState(zombie) ||
           !Number.isSafeInteger(zombie.figureSeed) ||
-          !(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(zombie.figureSeed) ||
           !validHitFlinchTime(zombie.hitFlinchTime) ||
           !validStanceWeight(zombie.stanceWeight) ||
           !validStepOffset(zombie.stepOffset) ||
@@ -1632,6 +1652,9 @@ export class ZombieSystem {
         }
         if (type.model === 'amalgam' && zombie.figureSeed !== AMALGAM_FIGURE_SEED) {
           throw new Error(`Invalid amalgam figure seed for entity ${id}`);
+        }
+        if (type.model !== 'amalgam' && !requiredFigureSeeds(type).includes(zombie.figureSeed)) {
+          throw new Error(`Invalid zombie state for entity ${id}`);
         }
         const expectedRegions = zombieRegionsFor(type, zombie.figureSeed);
         const expectedRegionIds = Object.keys(expectedRegions);
@@ -1899,10 +1922,10 @@ export class ZombieSystem {
     const figureSeed =
       type.model === 'amalgam'
         ? AMALGAM_FIGURE_SEED
-        : SHAMBLER_FIGURE_SEEDS[
+        : requiredFigureSeeds(type)[
             Rng.stream(this.options.seed ?? 0, `zombie-figure:${this.store.nextId}`).int(
               0,
-              SHAMBLER_FIGURE_SEEDS.length - 1,
+              requiredFigureSeeds(type).length - 1,
             )
           ]!;
     const dimensions = zombieBodyDimensions(type, this.options.blockSize);

@@ -423,8 +423,8 @@ describe('static reachability', () => {
   it('follows nested unpack contents from placed loot into both reachability sets', () => {
     const registry = fresh();
     for (const [id, unpack] of [
-      ['fixture_outer_box', { item: 'fixture_inner_box', count: 1 }],
-      ['fixture_inner_box', { item: 'fixture_unpacked_payload', count: 1 }],
+      ['fixture_outer_box', { item: 'fixture_inner_box', count: 1, simSeconds: simSeconds(1) }],
+      ['fixture_inner_box', { item: 'fixture_unpacked_payload', count: 1, simSeconds: simSeconds(1) }],
       ['fixture_unpacked_payload', undefined],
     ] as const) {
       registry.items.set(id, {
@@ -468,7 +468,7 @@ describe('static reachability', () => {
       category: 'material',
       weight: 1,
       size: [1, 1],
-      unpack: { item: 'fixture_crafted_payload', count: 1 },
+      unpack: { item: 'fixture_crafted_payload', count: 1, simSeconds: simSeconds(1) },
     });
     registry.items.set('fixture_crafted_payload', {
       id: 'fixture_crafted_payload',
@@ -535,6 +535,7 @@ describe('static reachability', () => {
 
   it('excludes capped markers and wanderers, but allows shuffled north templates to be first', () => {
     const ten = Array.from({ length: 10 }, () => marker('certain'));
+    const sides = { northSide: ['small_house', 'bungalow'], southSide: ['shed'] };
     expect(
       [
         ...possibleHamletZombies(
@@ -543,12 +544,13 @@ describe('static reachability', () => {
             ['bungalow', [marker('shuffled_first')]],
             ['shed', [marker('south_capped')]],
           ]),
+          sides,
         ),
       ].sort(),
     ).toEqual(['certain', 'shuffled_first']);
     // Nine certain markers leave a possible tenth wanderer; a chance-0 marker consumes no slot.
     expect(
-      [...possibleHamletZombies(new Map([['small_house', [...ten.slice(0, 9), marker('never', 0)]]]))].sort(),
+      [...possibleHamletZombies(new Map([['small_house', [...ten.slice(0, 9), marker('never', 0)]]]), sides)].sort(),
     ).toEqual(['certain', 'shambler']);
   });
 

@@ -6,7 +6,7 @@ import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK } from '../src/core/coords.ts';
-import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
+import { disassemblyOutputs, disassemblyWorkTime } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
@@ -655,7 +655,7 @@ describe('craft job codec and ownership', () => {
         outputs: disassemblyOutputs(radio, SKILL_LEVEL_LEGENDARY),
         gather: 0,
         elapsed: 37,
-        duration: SALVAGE_DURATION,
+        duration: disassemblyWorkTime(radio),
         components: [{ uid: sourceUid, type: radio.id, count: 1, condition: 0, origin: { kind: 'fixture' } }],
       };
       const decodedDisassembly = await decodeSave(await encodeFixture(disassembly), {

@@ -566,12 +566,9 @@ const createPlayRefusalPresenter = (
   audio: GameAudio,
   showNotice: (text: string) => void,
 ) => {
-  const nope = registry.sounds.get('player_nope');
-  return createRefusalPresenter(
-    showNotice,
-    () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
-    nope?.minIntervalSimSeconds ?? 0,
-  );
+  const event = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.refusalSound;
+  const nope = registry.sounds.get(event)!;
+  return createRefusalPresenter(showNotice, () => audio.preview(event, nope.variants[0]!), nope.minIntervalSimSeconds);
 };
 
 export interface StartPlayOptions {
@@ -3544,7 +3541,7 @@ export const startPlay = (
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
-    const visible = hudVisibility(hudOptions);
+    const visible = hudVisibility(hudOptions, false, menuState.menuPointer);
     let mark = realNow();
     prepareStreaming(now);
     meshingQueueMs = realNow() - mark;

@@ -4,7 +4,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { ownershipCell } from '../src/core/templateOwnership.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
-import { type CompiledTemplate, cellsOf, compileAssembly } from '../src/core/templates.ts';
+import { type CompiledTemplate, cellsOf, compileAssembly, kitSlotChoices } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 
 const BUNDLED_CONTENT = buildBundledContent();
@@ -50,7 +50,9 @@ const cityAlternatives = function* (everyStyle = false) {
     throw new Error('no city-pool building declares access');
   }
   const alternatives = Math.max(
-    ...[...registry.mapAssemblies.values()].flatMap((assembly) => assembly.slots.map((slot) => slot.choices.length)),
+    ...[...registry.mapAssemblies.values()].flatMap((assembly) =>
+      assembly.slots.map((slot) => kitSlotChoices(registry, slot).length),
+    ),
   );
   for (const { building, style } of buildings) {
     for (let variant = 0; variant < alternatives; variant++) {
@@ -61,10 +63,10 @@ const cityAlternatives = function* (everyStyle = false) {
             assembly.id,
             {
               ...assembly,
-              slots: assembly.slots.map((slot) => ({
-                ...slot,
-                choices: [slot.choices[variant % slot.choices.length]!],
-              })),
+              slots: assembly.slots.map(({ pool: _pool, ...slot }) => {
+                const choices = kitSlotChoices(registry, { ...slot, pool: _pool });
+                return { ...slot, choices: [choices[variant % choices.length]!] };
+              }),
             },
           ]),
         ),

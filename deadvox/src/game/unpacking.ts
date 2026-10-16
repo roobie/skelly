@@ -4,8 +4,6 @@ import { dropSpots, type Inventory, type Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { playerPockets } from '../core/options.ts';
 
-/** Gameplay handling estimate for opening a sealed cardboard package. */
-export const BOX_UNPACK_SECONDS = 1.2;
 export const UNPACK_ACTION = 'item.unpack';
 
 /** Activation only: deliberately not an inventory Use option. */
@@ -34,7 +32,7 @@ export class Unpacking {
     this.queue.enqueueAction(
       UNPACK_ACTION,
       `Unpack ${this.inventory.name(item)}`,
-      this.inventory.scaleHandlingTime(BOX_UNPACK_SECONDS),
+      this.inventory.scaleHandlingTime(defOf(this.inventory.registry, item.type).unpack!.simSeconds),
       {
         uid: item.uid,
       },

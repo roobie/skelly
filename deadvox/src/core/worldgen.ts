@@ -12,6 +12,10 @@ export interface TerrainBlocks {
   sand: number;
 }
 
+/**
+ * Only for the main-arrival stage's overlay of main's world setup; code reads `sitePalette` instead.
+ * @public
+ */
 export const terrainBlockIds = (id: (name: string) => number): TerrainBlocks => ({
   grass: id('grass'),
   dirt: id('dirt'),

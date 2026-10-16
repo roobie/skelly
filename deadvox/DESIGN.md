@@ -336,11 +336,13 @@ admission instead of inventing an enemy-density runtime. See `src/core/gauntlet.
 `gauntletPopulation`; `src/core/hamlet.ts`, `hamletZombieSpawns`; and
 `src/core/zombieSpawns.ts`, `ZombieSpawner`.
 
-The route/save browser flow proves connectivity and persistence, not balance. Its
-test-only admission selects authored-marker pressure before world construction,
-including on reload, so settlement crowds cannot turn that proof into a balance
-trial. Damage, collision, lab encounters and the dead-survivor barrier remain
-ordinary rules; default play keeps settlement pressure. See `src/core/gauntlet.ts`,
+The route/save browser flow proves connectivity and persistence, not balance or
+combat. Its test-only admission omits settlement crowds and the lab's authored
+markers before world construction, including on reload, so neither can turn that
+proof into an encounter trial: a scripted walker would only stall on a chasing
+zombie. The body and rules stay ordinary: damage, collision and the dead-survivor
+barrier apply, and default play keeps both populations; lab encounters are judged
+in play. See `src/core/gauntlet.ts`,
 `GauntletSite`; `test/browser/save-controller-regressions.mjs`, `observation`; and
 `test/browser/gauntlet-flow.mjs`, `gauntletFlow`.
 
@@ -357,6 +359,18 @@ vertical chunks and furniture requests need the same complete plan. See `scenari
 `scenarioPortalIssues` in `src/core/scenarioPortal.ts`, and `templateBodySpace`
 in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `src/core/ladders.ts`, `ladderOutward`.
+
+Lab threat grows with depth so descending feels like going deeper into a failing
+facility, not repeating one room. Each storey authors weighted marker rows, and each
+room kind sets how many of its marker cells are live; breach and quarantine rooms are
+densest. Crawlers and runners appear only below the containment storey. The rows are
+slot choices, so a mod retunes a storey by overriding data. The amalgam body is taller
+than a storey, so the bottom storey holds it in a double-height chamber: the room piece
+is one storey, and a cap piece in the storey above owns the slab and air over it, with
+solid wall and cap around so nothing walks over the opening. The amalgam row appears
+only there. See
+`src/content/base/gauntlet-lab-threat.libsonnet`, `rows` and `kinds`; and
+`test/scenarioCertificate.test.ts`, "lab threat by depth".
 
 One owned assembly supplies the service facade and underground campus, so the
 playable world and visual inspection cannot diverge into separate geometry.
@@ -588,7 +602,7 @@ interruptible. Tune handling duration in content, not in this rulebook.
 
 ### Inventory screen
 
-Timed actions use one circular progress indicator at screen centre, including crafting and play actions. Its simulation-owned progress and existing stop or resume controls remain authoritative; a shared high-contrast ring keeps progress visible over dark scenes and across HUD scales. See `src/ui/activityProgress.ts`, `activityProgress`, `src/ui/hud.ts`, `renderHandling`, and `src/ui/crafting.ts`, `renderCraftStatus`.
+Timed actions, crafting and play included, share one circular progress indicator at screen centre, so progress reads the same everywhere and stays visible over dark scenes and across HUD scales. Simulation-owned progress and the existing stop or resume controls stay authoritative. The ring shows no centre percentage: the arc already shows progress, and a number in the centre of the screen is noise. See `src/ui/activityProgress.ts`, `activityProgress`, `src/ui/hud.ts`, `renderHandling`, and `src/ui/crafting.ts`, `renderCraftStatus`.
 
 The inventory is a keyboard-first HTML overlay with **you** and **around**
 panes. Hands and worn storage appear beside reachable piles and furniture.
@@ -1588,8 +1602,8 @@ decoration.
   `shambler_idle` provides an occasional groan while idling or strolling. Each
   shambler's vocals and body-made sounds shift lower with its realized body
   height, so larger figures sound heavier and the runner/brute templates inherit
-  the same law. `shamblerBodyPitch` in `src/game/shamblerAudio.ts` makes larger
-  figures sound heavier. Body-size pitch tuning affects playback only, never
+  the same law. `shamblerVoiceLaw` in `src/game/shamblerAudio.ts` calibrates it
+  on the authored figure seeds. Body-size pitch tuning affects playback only, never
   hearing or simulation; the `voice_size` comparison site exposes its endpoints.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest

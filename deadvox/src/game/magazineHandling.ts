@@ -3,14 +3,11 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
+import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
 import { stowTarget } from '../core/options.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 
-/** Gameplay handling estimates per round, before the firearms skill's reload factor. */
-export const ROUND_LOAD_SIM_SECONDS = 0.8;
-export const ROUND_STRIP_SIM_SECONDS = 0.5;
 export const MAGAZINE_LOAD_ACTION = 'magazine.load';
 export const MAGAZINE_STRIP_ACTION = 'magazine.strip';
 
@@ -72,7 +69,7 @@ export class MagazineHandling {
     this.queue.enqueueAction(
       MAGAZINE_LOAD_ACTION,
       `Load round ${magazine.cartridges!.length + 1}/${spec.capacity}`,
-      ROUND_LOAD_SIM_SECONDS * this.reloadFactor(),
+      defOf(this.inventory.registry, round.type).ammo!.loadSimSeconds * this.reloadFactor(),
       { uid: magazine.uid, ammoUid: round.uid },
     );
     this.onSound('magazine_round_insert', time);
@@ -93,7 +90,8 @@ export class MagazineHandling {
       this.heldStripUid = undefined;
       return 'Magazine is empty';
     }
-    this.queue.enqueueAction(MAGAZINE_STRIP_ACTION, 'Strip a round', ROUND_STRIP_SIM_SECONDS * this.reloadFactor(), {
+    const { stripSimSeconds } = defOf(this.inventory.registry, magazine.cartridges![0]!).ammo!;
+    this.queue.enqueueAction(MAGAZINE_STRIP_ACTION, 'Strip a round', stripSimSeconds * this.reloadFactor(), {
       uid: magazine.uid,
     });
     this.heldStripUid = held ? uid : undefined;

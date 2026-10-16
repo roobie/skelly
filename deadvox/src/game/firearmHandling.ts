@@ -48,26 +48,24 @@ const TRAINING_ACTIONS: ReadonlySet<string> = new Set([
 ]);
 export const isFirearmTrainingAction = (job: Job): boolean =>
   job.kind === 'action' && TRAINING_ACTIONS.has(job.jobType);
-/** Single-shell handling estimate, not an exported mechanical phase. */
-export const SHELL_LOAD_SECONDS = 0.9;
 /**
- * Gameplay handling estimates for the two halves of a magazine change at skill 0, which the firearms skill's reload
- * factor shortens. Grounded in timed rifle reloads (Crate Club, "How Long Does It Take to Reload an Assault Rifle?",
- * https://crateclub.com/blogs/loadout/how-long-does-it-take-to-reload-an-assault-rifle): an average shooter changes
- * an AR magazine in 3–5 s and an AK one in 4–6 s, a proficient one an AR magazine in about 2 s, all dropping the old
- * magazine. A change here stows it, which is slower, so skill 0 sits at the slow end. Taking a magazine out and
- * stowing it is one half, drawing one and seating it the other: a removal or an insert into an empty gun takes only
- * its half (`DESIGN.md`, "Combat and noise", rifles).
+ * A magazine change is two halves, each its own content time: taking the fitted magazine out and stowing it, then
+ * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`DESIGN.md`, "Combat and
+ * noise", rifles). The skill's reload factor shortens both.
  */
-const MAGAZINE_REMOVE_SIM_SECONDS = 3;
-const MAGAZINE_INSERT_SIM_SECONDS = 3;
+const magazineTimes = (gun: Item, registry: Registry): { removeSimSeconds: number; insertSimSeconds: number } =>
+  defOf(registry, gun.type).firearm!.handling.magazine!;
 
 /** The share of a magazine job spent taking the fitted one out, so presentation can play remove, then insert. */
-const magazineRemoveShare = (removing: boolean, inserting: boolean): number => {
+const magazineRemoveShare = (
+  times: { removeSimSeconds: number; insertSimSeconds: number },
+  removing: boolean,
+  inserting: boolean,
+): number => {
   if (!removing) {
     return 0;
   }
-  return inserting ? MAGAZINE_REMOVE_SIM_SECONDS / (MAGAZINE_REMOVE_SIM_SECONDS + MAGAZINE_INSERT_SIM_SECONDS) : 1;
+  return inserting ? times.removeSimSeconds / (times.removeSimSeconds + times.insertSimSeconds) : 1;
 };
 
 const unit = (vector: Vec3): Vec3 => {
@@ -793,7 +791,8 @@ export class FirearmMechanics {
     this.queue.enqueueAction(
       LOAD_ACTION,
       `Load shell ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.tube!.capacity}`,
-      SHELL_LOAD_SECONDS * this.handlingFactor('reloadDuration'),
+      defOf(this.inventory.registry, gun.type).firearm!.handling.shellLoadSimSeconds! *
+        this.handlingFactor('reloadDuration'),
       { uid: gun.uid, ammoUid: ammo.uid },
     );
     this.onSound('shotgun_insert', undefined, time);
@@ -842,8 +841,8 @@ export class FirearmMechanics {
 
   /** A change names its replacement; a removal names none. Each half it does takes its own time. */
   private enqueueMagazineAction(gun: Item, label: string, time: number, replacement?: Item): void {
-    const seconds =
-      (gun.slots?.magazine ? MAGAZINE_REMOVE_SIM_SECONDS : 0) + (replacement ? MAGAZINE_INSERT_SIM_SECONDS : 0);
+    const times = magazineTimes(gun, this.inventory.registry);
+    const seconds = (gun.slots?.magazine ? times.removeSimSeconds : 0) + (replacement ? times.insertSimSeconds : 0);
     this.queue.enqueueAction(
       MAGAZINE_ACTION,
       label,
@@ -1051,7 +1050,11 @@ export class FirearmMechanics {
     const incoming = typeof magazineUid === 'number' ? this.inventory.itemByUid(magazineUid) : undefined;
     const model = incoming && defOf(this.inventory.registry, incoming.type).model;
     return {
-      removeShare: magazineRemoveShare(gun.slots?.magazine !== undefined, incoming !== undefined),
+      removeShare: magazineRemoveShare(
+        magazineTimes(gun, this.inventory.registry),
+        gun.slots?.magazine !== undefined,
+        incoming !== undefined,
+      ),
       ...(model ? { incoming: model } : {}),
     };
   }

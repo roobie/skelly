@@ -453,20 +453,21 @@ try {
     const locker = [...document.querySelectorAll('#inventory .inv-pile[data-entity-uid]')].find(
       (node) => node.dataset.entityUid === String(lockerUid),
     );
-    const scroll = locker?.querySelector('.inv-grid-scroll');
-    if (!(you && around && locker && scroll)) {
+    const grid = locker?.querySelector('.inv-grid');
+    if (!(you && around && locker && grid)) {
       throw new Error('Open weapon locker did not render in the vicinity pane');
     }
     return {
       viewport: { width: innerWidth, height: innerHeight },
       you: box(you),
       around: box(around),
-      locker: box(scroll),
-      lockerScroll: {
-        clientWidth: scroll.clientWidth,
-        scrollWidth: scroll.scrollWidth,
-        clientHeight: scroll.clientHeight,
-        scrollHeight: scroll.scrollHeight,
+      lockerGrid: box(grid),
+      lockerGridOverflowY: getComputedStyle(grid.parentElement).overflowY,
+      aroundScroll: {
+        clientWidth: around.clientWidth,
+        scrollWidth: around.scrollWidth,
+        clientHeight: around.clientHeight,
+        scrollHeight: around.scrollHeight,
       },
     };
   }, routeLockerUid);
@@ -478,21 +479,27 @@ try {
   for (const [name, rect] of Object.entries({
     you: lockerGeometry.you,
     around: lockerGeometry.around,
-    locker: lockerGeometry.locker,
+    lockerGrid: lockerGeometry.lockerGrid,
   })) {
     assert.ok(
       rect.left >= 0 && rect.right <= 960,
       `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`,
     );
+  }
+  for (const name of ['you', 'around']) {
     assert.ok(
-      rect.top >= 0 && rect.bottom <= 540,
+      lockerGeometry[name].top >= 0 && lockerGeometry[name].bottom <= 540,
       `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`,
     );
   }
   assert.ok(
-    lockerGeometry.lockerScroll.scrollWidth <= lockerGeometry.lockerScroll.clientWidth &&
-      lockerGeometry.lockerScroll.scrollHeight > lockerGeometry.lockerScroll.clientHeight,
-    `the cap-wide locker stays visible horizontally and scrolls vertically inside its region: ${JSON.stringify(lockerGeometry.lockerScroll)}`,
+    lockerGeometry.aroundScroll.scrollWidth <= lockerGeometry.aroundScroll.clientWidth &&
+      lockerGeometry.aroundScroll.scrollHeight > lockerGeometry.aroundScroll.clientHeight,
+    `the cap-wide locker stays visible horizontally and the pane scrolls vertically: ${JSON.stringify(lockerGeometry.aroundScroll)}`,
+  );
+  assert.ok(
+    lockerGeometry.lockerGridOverflowY === 'visible',
+    `the locker's grid has no scrollport of its own: ${JSON.stringify(lockerGeometry)}`,
   );
   const selectInventoryTab = async (tab) => {
     const tabButton = page.locator(`#inventory .inv-tab[data-tab="${tab}"]`);

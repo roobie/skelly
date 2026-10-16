@@ -94,7 +94,7 @@ it('rejects connector furniture substituted into the shaft-owned clearance', () 
   blocked.ownership.layers[1]![0] = 'RSS';
   blocked.palette.B = { furniture: 'fixture_shaft_box' };
   const altered = structuredClone(assembly);
-  altered.slots[2]!.choices[0]!.ref.id = blocked.id;
+  altered.slots[2]!.choices![0]!.ref.id = blocked.id;
   const local = {
     ...registry,
     furniture: new Map([
