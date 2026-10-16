@@ -12,9 +12,11 @@ import { readCartridge } from '../src/cli/readCartridge.ts';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { BOLT_EXTRACTION_CLEARANCE_U, boltCartridge, boltStrokeUnits } from '../src/gun/boltCartridge.ts';
 import { sweepBoltAction } from '../src/gun/boltSweep.ts';
+import { exportCartridgeModels } from '../src/gun/cartridgeExport.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
 import { loadDesigns } from './helpers.ts';
 
 const designs = loadDesigns().filter(({ assembly }) =>
@@ -121,14 +123,21 @@ it('sizes a bolt design action and integral well from its selected calibre', () 
   if (!exported.ok) {
     throw new Error(exported.message);
   }
-  const companions = boltCompanionExports(exported.modelEntry, [
-    { id: 'optic_high_mag_5_25x', file: 'assets/models/optic_high_mag_5_25x.glb' },
-    { id: 'optic_red_dot', file: 'assets/models/optic_red_dot.glb' },
-  ]).map(({ modelEntry }) => modelEntry);
-  const selectedCalibre = selected.cartridge.id;
-  expect(companions.filter(({ calibre }) => calibre === selectedCalibre)).toHaveLength(2);
-  expect(companions.some(({ id }) => id === 'optic_high_mag_5_25x')).toBe(true);
-  expect(companions.some(({ id }) => id === 'optic_red_dot')).toBe(false);
+  const optics = OPTIC_TYPE_IDS.map((type) => {
+    const id = `optic_${type.replaceAll('-', '_')}`;
+    return { id, file: `assets/models/${id}.glb` as const };
+  });
+  const compatible = new Set(Object.values(exported.modelEntry.compatibility ?? {}).flat());
+  const expectedOptics = optics.filter(({ id }) => compatible.has(id.replaceAll('_', '-')));
+  expect(expectedOptics.length).toBeGreaterThan(0);
+  expect(expectedOptics.length).toBeLessThan(optics.length);
+  const ammunition = exportCartridgeModels(selected.cartridge);
+  if (!ammunition.ok) {
+    throw new Error(JSON.stringify(ammunition.error));
+  }
+  const expectedAmmunition = Object.values(ammunition.models).map(({ modelEntry }) => modelEntry.id);
+  const companions = boltCompanionExports(exported.modelEntry, optics).map(({ modelEntry }) => modelEntry.id);
+  expect(companions.sort()).toEqual([...expectedAmmunition, ...expectedOptics.map(({ id }) => id)].sort());
 });
 
 it.each(['missing-test-cartridge', '12-gauge-00-buck'])(
