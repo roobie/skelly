@@ -274,7 +274,9 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   every world, so one blocked way never leaves a single forced exit and leaving the roof
   stays a choice. The foot of a way down need not be kept clear. The start building
   stands away from the perimeter wall, so its roof cannot become a jump over it and the
-  ring's clearance check need not cover it.
+  ring's clearance check need not cover it. See `src/core/scenarioStart.ts`,
+  `scenarioStartIssues`; `src/core/cityPlan.ts`, `buildCityPlan`; and
+  `src/core/scenarioCertificate.ts`, `scenarioCertificate`.
 - **Street approach.** The street a kind's proof enters its site from is an authored
   anchor, not derived from the site, so a scenario can approach from another side and
   stay the same kind. Under a rooftop start the anchor need not sit at the foot of a way
@@ -292,9 +294,9 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   goal shares with other actions move to the table in the same #393 step as the goal's
   own, rather than waiting for #456's wider sweep and leaving a second copy behind.
 
-The gauntlet sweep tracked by #393 brings the gauntlet's code to these rules; until it
-lands, its street start, lead and landmark counts and positions, street approach, lead
-redundancy and goal refusal text stay fixed in code.
+The remaining gauntlet sweep under #393 covers lead and landmark authoring, street
+approach, lead redundancy and goal refusal text; those boundaries still need content
+ownership so a mod can express the scenario without a code edit.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules

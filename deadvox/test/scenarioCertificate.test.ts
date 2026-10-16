@@ -100,7 +100,10 @@ const candidatePlan = (
   content = registry,
 ): CityPlan => {
   const service = servicePlacement({ template, floor: base.floor, grid, cell, turn });
-  const composition = composeScenario(content, profile, service, base.floor)!;
+  const composition = composeScenario(content, profile, service, {
+    floor: base.floor,
+    start: base.composition!.start.placement,
+  })!;
   const [width, depth] = footprint(service);
   const placements = base.placements.filter((placement) => {
     if (

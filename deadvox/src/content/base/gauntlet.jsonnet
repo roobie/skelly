@@ -8,6 +8,7 @@ local rooms = import 'gauntlet-lab-rooms.libsonnet';
 local descents = import 'gauntlet-lab-descents.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local service = import 'gauntlet-service.libsonnet';
+local start = import 'gauntlet-start.libsonnet';
 local metal = '#707b7e';
 local button = std.filter(function(f) f.id == 'gauntlet_look_button', look.furniture)[0];
 local note = function(id, title, text) {
@@ -105,9 +106,9 @@ local utilities = [
     air: { role: 'opening', block: 'air' }, concrete: { role: 'interior_floor', block: 'concrete' },
     brick: { role: 'shell', block: 'brick' }, galvanized: { role: 'shell', block: 'galvanized' },
   } }] + types.mapStyles + tents.mapStyles,
-  mapPieces: kits.mapPieces + rooms.mapPieces + descents.mapPieces + lab.mapPieces + service.mapPieces + types.mapPieces + tents.mapPieces,
-  mapAssemblies: kits.mapAssemblies + lab.mapAssemblies + service.mapAssemblies + types.mapAssemblies + tents.mapAssemblies,
-  furniture: city.furniture + kits.furniture + types.furniture + [
+  mapPieces: start.mapPieces + kits.mapPieces + rooms.mapPieces + descents.mapPieces + lab.mapPieces + service.mapPieces + types.mapPieces + tents.mapPieces,
+  mapAssemblies: start.mapAssemblies + kits.mapAssemblies + lab.mapAssemblies + service.mapAssemblies + types.mapAssemblies + tents.mapAssemblies,
+  furniture: start.furniture + city.furniture + kits.furniture + types.furniture + [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
     },

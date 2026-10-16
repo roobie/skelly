@@ -72,6 +72,25 @@ export const fixtureService = (): TemplateDef => ({
   access: { ground: 'ground', entrance: [2, 7, 2], storeys: [{ id: 'ground', floor: 7 }], stairs: [] },
 });
 
+const fixtureStartTemplate = (): TemplateDef => {
+  const template = fixtureService();
+  template.id = 'fixture_start';
+  template.size = [10, 13, 8];
+  template.layers = template.layers.slice(0, 13);
+  for (const layer of template.layers.slice(1, 5)) {
+    layer[0] = '==..======';
+  }
+  template.access = { ground: 'ground', entrance: [2, 1, 2], storeys: [{ id: 'ground', floor: 1 }], stairs: [] };
+  return template;
+};
+
+export const fixtureStart = (): NonNullable<ScenarioDef['composition']>['start'] => ({
+  template: 'fixture_start',
+  spawn: [2, 7, 2],
+  minimumOpenDescents: 1,
+  descents: [{ kind: 'ladder', ladder: [4, 1, 3], upper: [6.5, 7, 4], lower: [3, 1, 4] }],
+});
+
 export const fixtureScenarioSources = (
   scenario = fixtureScenario(),
   service = fixtureService(),
@@ -130,6 +149,7 @@ export const fixtureScenarioSources = (
         loot: [{ id: 'fixture_loot', rolls: [1, 2], entries: [{ weight: 1, item: 'fixture_token' }] }],
         templates: [
           service,
+          fixtureStartTemplate(),
           {
             id: 'fixture_small_house',
             lootContext: fixtureLootContext(),

@@ -6,6 +6,7 @@ import { hash3, pickWeighted, Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
+import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
 import type { MapPoolDef, ScenarioDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
@@ -333,8 +334,8 @@ const poolStyleIssue = (
 };
 
 /** Building slots every plan has: each row of each non-service block holds at least one building. */
-const guaranteedSlots = (city: ScenarioDef['city'], incidental: number): number => {
-  const blocks = 4 * city.blocksX * city.blocksZ - 1;
+const guaranteedSlots = (city: ScenarioDef['city'], incidental: number, hasStart: boolean): number => {
+  const blocks = 4 * city.blocksX * city.blocksZ - 1 - Number(hasStart);
   return blocks * ((city.rows ?? 2) - (incidental > 0 ? 1 : 0));
 };
 
@@ -375,7 +376,11 @@ const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, str
     {
       at: '.city.pool',
       id: city.pool,
-      slots: guaranteedSlots(city, scenario.composition?.incidentalTemplates.length ?? 0),
+      slots: guaranteedSlots(
+        city,
+        scenario.composition?.incidentalTemplates.length ?? 0,
+        scenario.composition !== undefined,
+      ),
     },
     ...(city.ring ? [{ at: '.city.ring.pool', id: city.ring.pool, slots: ringSlots(city) }] : []),
   ];
@@ -407,7 +412,11 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
     ]);
   }
   const width = city.blockX - 2 * city.pad;
-  issues.push(...cityDecorationIssues(registry, city), ...cityPoolIssues(registry, scenario));
+  issues.push(
+    ...cityDecorationIssues(registry, city),
+    ...cityPoolIssues(registry, scenario),
+    ...scenarioStartIssues(registry, scenario),
+  );
   const template = registry.templates.get(serviceTemplate);
   const assembly = registry.mapAssemblies.get(serviceTemplate);
   const service = template ?? assembly;
@@ -863,15 +872,29 @@ export const buildCityPlan = ({
           turn: Rng.stream(seed, `scenario:${scenario.id}:service-turn`).int(0, 3) as Turn,
         })
       : undefined;
-  const composition = service && scenario ? composeScenario(registry, scenario, service, floor) : undefined;
+  const start = scenario?.composition
+    ? servicePlacement({
+        template: startTemplate(registry, scenario.composition.start.template, seed, `scenario:${scenario.id}:start`),
+        floor,
+        grid,
+        cell: [0, 0],
+        turn: 0,
+      })
+    : undefined;
+  const composition =
+    service && scenario && start ? composeScenario(registry, scenario, service, { floor, start }) : undefined;
   const fillCells = (forced: PoolRef[]): Placement[] => {
     context.counts = new Map();
     context.forced = forced;
-    return cells.flatMap(([i, j]) =>
-      service && serviceBlock?.[0] === i && serviceBlock[1] === j
-        ? [service]
-        : Array.from({ length: grid.rows ?? 2 }, (_, row) => fillRow(context, [i, j], row)).flat(),
-    );
+    return cells.flatMap(([i, j]) => {
+      if (service && serviceBlock?.[0] === i && serviceBlock[1] === j) {
+        return [service];
+      }
+      if (start && i === 0 && j === 0) {
+        return [start];
+      }
+      return Array.from({ length: grid.rows ?? 2 }, (_, row) => fillRow(context, [i, j], row)).flat();
+    });
   };
   const placements = fillWithQuotas(context, fillCells, scenario ? `scenario:${scenario.id}:city` : 'city');
   if (composition) {
@@ -879,7 +902,7 @@ export const buildCityPlan = ({
   }
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
-  const spawn: Vec3 = [grid.street / 2, floor + 1, grid.street / 2];
+  const spawn: Vec3 = composition ? [...composition.start.spawn] : [grid.street / 2, floor + 1, grid.street / 2];
   const core = cityCore(grid);
   const bounds = cityBounds(grid);
   const { perimeter } = grid;

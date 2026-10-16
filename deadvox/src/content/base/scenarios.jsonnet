@@ -12,6 +12,7 @@ local ladder = lab.entry.ladder;
     body: 'player', compression: 'player',
     serviceTemplate: service.id,
     composition: {
+      start: (import 'gauntlet-start.libsonnet').start,
       fixedLoot: [{
         at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18],
         items: [{ item: 'flashlight', placement: 'surface', key: true }],
