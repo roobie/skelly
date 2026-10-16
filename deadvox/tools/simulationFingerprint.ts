@@ -101,6 +101,8 @@ export const SIMULATION_EXCLUSIONS = [
   // Chooses the ray for debug readouts only; it cannot affect gameplay or saves.
   'src/game/debugTargetRay.ts',
   'src/game/saveStorage.ts',
+  // Browser selection persistence is transport; admission and pack identity are fingerprinted separately.
+  'src/game/modStorage.ts',
   'src/game/saveStorageLockError.ts',
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',

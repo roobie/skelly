@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { currentSaveVersionIdentity, encodeSave } from '../src/core/saveFormat.ts';
+import { type ActiveBrowserMod, currentSaveVersionIdentity, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { realTimestamp } from '../src/core/time.ts';
@@ -87,14 +87,44 @@ const stubLiveRecord = (controller: SaveController, record: SaveLoadResult) => {
   vi.spyOn(controller.storage, 'load').mockResolvedValue(record);
 };
 
-const title = () => {
+const title = (mods: readonly ActiveBrowserMod[] = []) => {
   const body = readFileSync('index.html', 'utf8').match(BODY_MARKUP)?.[1];
   if (!body) {
     throw new Error('Title fixture needs the actual body markup');
   }
   document.body.innerHTML = body.replace(SCRIPT_MARKUP, '');
-  return new SaveController();
+  return new SaveController('auto', [], mods);
 };
+
+const browserMods = [{ id: 'fixture-mod', version: '1', data: { items: [] } }];
+
+it('offers Continue for a save with the same admitted browser mods', async () => {
+  enableSaveEnvironment();
+  const controller = title(browserMods);
+  const identity = await currentSaveVersionIdentity([], browserMods);
+  stubLiveRecord(controller, await recordFor('fixture-world', identity));
+  await controller.prepare();
+  expect(await controller.validateContent(saveFixtureRegistry)).toBeDefined();
+  expect(document.getElementById('continue')!.hidden).toBe(false);
+});
+
+it('refuses Continue and names the browser mod missing from a saved world', async () => {
+  enableSaveEnvironment();
+  const controller = title();
+  const saved = await currentSaveVersionIdentity([], browserMods);
+  const record = await recordFor('fixture-world', saved);
+  stubLiveRecord(controller, record);
+  vi.spyOn(controller.storage, 'listNamespaces').mockResolvedValue([saved.digest]);
+  vi.spyOn(controller.storage, 'load').mockImplementation((namespace) =>
+    Promise.resolve(namespace === saved.digest ? record : undefined),
+  );
+  sessionStorage.setItem('deadvox.continue-namespace', saved.digest);
+  await controller.prepare();
+  await controller.validateContent(saveFixtureRegistry);
+  expect(controller.isRestored).toBe(false);
+  expect(document.getElementById('continue')!.hidden).toBe(true);
+  expect(document.getElementById('save-status')!.textContent).toContain('Missing mod: browser.fixture-mod');
+});
 
 it('refuses a live record marked dead and starts a new world without replacement confirmation', async () => {
   enableSaveEnvironment();

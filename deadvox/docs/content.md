@@ -37,11 +37,20 @@ The intake byte limit belongs to trusted startup configuration in
 `src/config/browser-mods.jsonnet`, not to a selected mod: admission must bound a file
 before parsing or trusting its definitions.
 
-Browser mod selection is a preview until #633 supplies persistence and save-pack
-identity. Persistence must retain the ordered sources and enabled states across reloads;
-save compatibility must identify the admitted mods and refuse Continue when they differ.
-This prevents a world from resuming under different definitions. See `DESIGN.md`,
-"Content and modding".
+Browser selections persist as one atomic IndexedDB record, including source text,
+order and enabled state. An unavailable or failed store leaves the panel with no mods
+loaded and a visible storage error, never a partially restored selection. See
+`src/game/modStorage.ts`, `ModStorage`, and `src/ui/modsPanel.ts`, `chooseMods`.
+
+Each admitted browser mod contributes its explicit identity, version and canonical
+content hash to the save's ordered pack identity. An omitted mod version denotes the
+initial version; changing content still changes its hash. Delivery names and JSON
+object key order are not identity. Selection order is identity because later files
+can override earlier definitions; disabled files are not admitted packs. Continue
+refuses missing, changed, additional or reordered packs rather than resuming a world
+under different definitions. See `src/game/browserMods.ts`, `evaluateMods`, and
+`src/core/saveFormat.ts`, `currentSaveVersionIdentity` and `contentPackDifferences`.
+The panel remains opt-in pending BR's decision about making it the default entry.
 
 ## Bundled mods
 

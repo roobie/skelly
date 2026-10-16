@@ -45,6 +45,25 @@ export const selectFixtureMods = async (page) => {
   assert.equal(await page.locator('#mods-start').isDisabled(), true, 'duplicate mod id blocks startup');
   assert.ok((await duplicate.locator('pre').textContent()).includes(fixture.id), 'duplicate feedback names the mod id');
   await page.locator('[data-mod-source="mod-1/browser-mod.json"]').getByRole('checkbox').uncheck();
+  await page.waitForFunction(() => !document.querySelector('#mods-start')?.disabled);
+  const selected = await page.locator('[data-mod-source]').evaluateAll((rows) =>
+    rows.map((row) => ({
+      source: row.dataset.modSource,
+      enabled: row.querySelector('input').checked,
+    })),
+  );
+  await page.reload();
+  await page.locator('#mods-start').waitFor();
+  assert.deepEqual(
+    await page.locator('[data-mod-source]').evaluateAll((rows) =>
+      rows.map((row) => ({
+        source: row.dataset.modSource,
+        enabled: row.querySelector('input').checked,
+      })),
+    ),
+    selected,
+    'reload retains the complete ordered selection and enabled states',
+  );
   assert.equal(await page.locator('#mods-start').isDisabled(), false, 'disabled files cannot block startup');
   await page.locator('#mods-start').click();
   return fixture;
