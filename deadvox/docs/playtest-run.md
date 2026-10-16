@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're preparing, operating or closing the Slice 3 playtest
-  - you're publishing a frozen playtest or changing tester feedback or error-report handling
+  - you're publishing or patching a playtest round, or changing tester feedback or error-report handling
   - you're using playtest results to plan the next slice
 ---
 
@@ -11,11 +11,13 @@ The playtest is self-serve: testers use the landing page to play or practise the
 
 ## Frozen round publication
 
-The lead publishes a round locally after BR approves the build. One domain per round holds both the landing and game, published together because Surge replaces the whole domain. The landing comes from the current clean checkout; the game always comes from the explicitly chosen frozen game commit, even for a landing-only correction. This prevents a consent-page edit from accidentally shipping newer game code. See `deadvox/tools/publish-playtest.mjs`, `publishPlaytest` and `playtestRound`, for the command and round address. Dry runs assemble the same output without contacting Surge. The temporary detached game checkout reuses installed dependencies only when their lockfiles match; this avoids extra installs without silently changing the frozen build's dependencies.
+The lead publishes a round locally after BR approves the build. One domain per round holds both the landing and game, published together because Surge replaces the whole domain. The landing comes from the current clean checkout; the game always comes from an explicitly chosen game commit, even for a landing-only correction, so a consent-page edit cannot ship newer game code by accident. See `deadvox/tools/publish-playtest.mjs`, `publishPlaytest` and `playtestRound`. A reused dependency install must match the game commit's lockfiles, so the published build's dependencies never change silently.
 
-GitHub Actions never publishes to Surge; Pages continues rolling with main so merged development remains available without changing the testers' build. The landing carries the consent brief and links relatively to the game beneath the same domain, not the rolling Pages build. Browser saves belong to an origin, so changing the game address strands saves: keep its address for the whole round. Moving from Pages does not transfer saves; the old landing page explains this before linking onward.
+No automation publishes to Surge. The build exists so that the testers' game changes only when we decide, not so that it can never take main's fixes; Pages keeps rolling with main so merged work stays playable without touching the testers' build. The landing links relatively to the game beneath the same domain. Browser saves belong to an origin, so keep the game address for the whole round.
 
-An approved hotfix is built from the round's published commit with only the intended fix and republishes the same game address. Record the commit printed after successful publication, and send the fix to main through a reviewed PR. Save compatibility requires matching simulation, schema, generators and content identity; the reported build revision is not a compatibility check. See `src/core/saveFormat.ts`, `versionDifferences`. A presentation-only hotfix preserves saves at the same game origin. A simulation, content or generator change invalidates saves regardless of domain; the lead's tester message must warn that the hotfix starts a fresh run. The Pages cutover also starts testers fresh, both because the origin changes and because simulation and content have changed. The menu shows the existing build revision, and error reports include it, so feedback can identify the published build.
+A round is updated only by an active choice that BR approves. Such a patch may rebuild the game from a newer main commit and republish it at the same game address. The landing's heading shows the patch number, and each published patch is tagged `playtest-1-patch-N` on its game commit, so feedback and the menu's build revision trace back to it. Save compatibility depends on simulation, schema, generators and content identity, not on the build revision; see `src/core/saveFormat.ts`, `versionDifferences`. A patch that changes any of them starts testers fresh, and the lead's tester message says so. That is acceptable for Round 1 because no tester has survived the playtest map.
+
+The landing offers beginner mode as a separate link after the normal one, so a tester opts in by choice. A beginner world is saved apart from the normal one; see `docs/content.md`, "Bundled mods".
 
 Keep the consent description aligned with the frozen game: both use the explicit publication analytics opt-in. Robots exclusions discourage search indexing; they do not make a playtest private.
 
