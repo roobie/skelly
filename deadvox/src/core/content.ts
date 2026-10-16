@@ -315,6 +315,12 @@ const checkDisassembly = (item: ItemDef, registry: Registry, qualities: Readonly
       report('items', item.id, `.salvage[${index}].item`, `no item "${output.item}"`);
     }
   });
+  if (item.salvage && item.salvageTimeGameMinutes === undefined) {
+    report('items', item.id, '.salvageTimeGameMinutes', 'a salvage list needs an authored work time');
+  }
+  if (!item.salvage && item.salvageTimeGameMinutes !== undefined) {
+    report('items', item.id, '.salvageTimeGameMinutes', 'a salvage work time needs a salvage list');
+  }
   if (disassembly && item.salvage) {
     report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
   }
@@ -1099,6 +1105,21 @@ const checkBlockFootsteps = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
+  for (const skill of registry.skills.values()) {
+    skill.startingRecipes?.forEach((id, index) => {
+      if (!registry.recipes.has(id)) {
+        report('skills', skill.id, `.startingRecipes[${index}]`, `no recipe "${id}"`);
+      }
+    });
+  }
+  for (const tuning of registry.ui.values()) {
+    if (!registry.sounds.has(tuning.refusalSound)) {
+      report('ui', tuning.id, '.refusalSound', `no sound event "${tuning.refusalSound}"`);
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1128,6 +1149,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkKeys(registry, report);
   checkZombies(registry, report);
   checkRecipes(registry, report);
+  checkSkillAndUiReferences(registry, report);
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }

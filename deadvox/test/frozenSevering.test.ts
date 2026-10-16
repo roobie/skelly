@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
@@ -56,7 +57,7 @@ describe('melee while debug-frozen', () => {
       regions: { ...SHAMBLER.regions, rightArm: FISTS_MELEE.damage },
       dismember: { chance: 0, headOnKillChance: 0 },
     };
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { poolSize: 2 });
+    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 2 });
     try {
       renderer.setWorld(FLOOR, BLOCK_SIZE);
       const severedParts: string[] = [];
