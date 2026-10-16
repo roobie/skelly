@@ -1079,6 +1079,21 @@ describe('authored fixed loot', () => {
     }
   });
 
+  it('gives the starting house a revolver and its ammo box in separate containers', () => {
+    const house = placedOverrides(layout).filter(({ building }) => building.template === 'playtest_house');
+    const anchorsHolding = (match: (item: string) => boolean): Set<string> =>
+      new Set(
+        house
+          .filter(({ override }) => override.items.some(({ item }) => match(item)))
+          .map(({ override }) => override.at.join(',')),
+      );
+    const revolvers = anchorsHolding((item) => item === 'revolver_357');
+    const boxes = anchorsHolding((item) => result.registry.items.get(item)?.unpack?.item === 'cartridge_357_h_magnum');
+    expect(revolvers.size).toBe(1);
+    expect(boxes.size).toBe(1);
+    expect([...boxes][0]).not.toBe([...revolvers][0]);
+  });
+
   it('furnishes the long gun in Dad’s cabin with a sling, so it can go on the shoulder', () => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
     const cabin = placedOverrides(layout).filter(({ building }) => building.template === 'playtest_dads_cabin');
