@@ -154,12 +154,18 @@ it('keeps the office key outside the locked armoury and police weapons and ammun
   const supplies = station.pieces.filter(({ loot }) => loot);
   const secured = supplies.filter((piece) => !near(beforeUnlock, piece));
   expect(secured.length).toBeGreaterThan(0);
-  for (const table of ['gauntlet_civilian_guns', 'gauntlet_ammunition', 'gauntlet_police_gear']) {
-    const sources = supplies.filter(({ loot }) => loot === table);
-    expect(sources.length, table).toBeGreaterThan(0);
+  for (const capability of ['firearm', 'ammo'] as const) {
+    const sources = supplies.filter(({ loot }) =>
+      registry.loot.get(loot!)!.entries.some(({ item }) => {
+        const definition = item ? registry.items.get(item) : undefined;
+        const payload = definition?.unpack ? registry.items.get(definition.unpack.item) : definition;
+        return Boolean(payload?.[capability]);
+      }),
+    );
+    expect(sources.length, capability).toBeGreaterThan(0);
     for (const source of sources) {
-      expect(secured.includes(source), table).toBe(true);
-      expect(near(afterUnlock, source), table).toBe(true);
+      expect(secured.includes(source), source.loot).toBe(true);
+      expect(near(afterUnlock, source), source.loot).toBe(true);
     }
   }
   const keyDesks = supplies.filter(
