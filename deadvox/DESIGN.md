@@ -314,8 +314,17 @@ mechanics in the implementation rather than repeating the format here.
 Gauntlet uses ordinary survival rules, not a second mission runtime. Reserving
 the service campus makes its street approach constructible; knowing a clue never
 grants access. Independent notes give alternate ways to infer the destination.
-Physical perimeter walls enclose the core without an enforced world edge: ordinary
-movement, doors and destruction remain authoritative. City size, scarcity and
+The play area is closed by physical voxels, not an invisible wall: a continuous
+containment wall, with a sealed checkpoint gate where the central street meets it,
+so the limit is something the player can see and read. Ordinary movement, doors and
+destruction remain authoritative. An edge ring of buildings stands between the grid
+and the wall, backs to the wall and fronts inward across a perimeter street, so the
+wall has a lived-in face rather than an empty fence line. The wall's height clears
+the tallest roof within jump reach of it, because a rooftop within reach would turn
+the wall into a step; the reach is authored as the perimeter's clearance since the
+player's jump lives in code, not content. Sounds and crowds beyond the wall are a
+separate decision. See `src/core/cityPlan.ts`, `cityPerimeter`, `perimeterGaps` and
+`perimeterIssues`. City size, scarcity and
 pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
 remain outside #671's first version.
 
