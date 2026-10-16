@@ -40,7 +40,9 @@
         "src/soundsPage.ts!",
         "tools/bench-rigid-body.mjs",
         "tools/bench-zombie-swings.mjs",
-        "tools/ui-browser-contract.mjs"
+        "tools/ui-browser-contract.mjs",
+        "tools/perf-baseline.mjs",
+        "tools/perf-baseline-browser.mjs"
       ],
       "project": [
         "src/**/*.{js,mjs,ts,tsx}!",
