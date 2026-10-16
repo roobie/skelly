@@ -1,5 +1,5 @@
-// The beam stays in the scene with zero intensity while off, so switching it
-// doesn't recompile every material.
+// Keep the light and its shader installed through warm-up; on/off and content spill
+// changes then update light properties and uniforms without recompiling materials.
 
 import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } from 'three';
 import type { Registry } from '../core/content.ts';
@@ -7,40 +7,9 @@ import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { DEFAULT_TORCH } from '../core/mood.ts';
 import type { Sky } from '../core/sky.ts';
+import { installFlashlightSpill, setFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
 import type { HeldItems } from './hands.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
-
-/**
- * Candela, for the default look (exposure 3, core/mood.ts). three.js (0.186, lights_pars_begin and
- * lights_lambert_pars_fragment) shades a Lambert surface at distance d from a spot light with a cut-off
- * distance R (the item's `radius`, 20 m) as
- *   radiance = I * cos(angle of incidence) * falloff(d) * (1 - (d / R)^4)^2 * albedo / pi
- * (no extra pi on the intensity: it is candela), and OutputPass multiplies that by the exposure. three's
- * falloff is 1 / d^DECAY; render/lightFalloff.ts makes it 1 / (d + d0)^DECAY with d0 = NEAR_FIELD_M, so
- * close surfaces stop brightening while the reach stays.
- *
- * How I and d0 were chosen (DECAY = 1, exposure 3, beam centre, w = the window term):
- *   - a mid-grey (albedo 0.5) at 10 m should be about 0.15, what 3.5 cd with a plain 1 / d gave and the
- *     operator found adequate at range: I / (10 + d0) * w(10) * 0.5 / pi * 3 = 0.15 with w(10) = 0.879,
- *     so I = 0.357 * (10 + d0);
- *   - a white block (albedo 0.9) at 1 m should stay just under white (1): I / (1 + d0) * 0.9 / pi * 3 <= 0.9,
- *     so I <= 1.047 * (1 + d0).
- *   Both hold from d0 = 3.7 up. d0 = 4 gives I = 5.0 (0.357 * 14); 5 cd is used.
- *
- * Values after exposure (white is 1), I = 5, d0 = 4:
- *               albedo 0.5                     albedo 0.9
- *   d = 0.5 m   5 / 4.5 * 1.000 * 0.5 / pi * 3 = 0.53    ... * 0.9 / pi * 3 = 0.96
- *   d = 1 m     5 / 5   * 1.000 * ...          = 0.48    0.86
- *   d = 2 m     5 / 6   * 1.000 * ...          = 0.40    0.72
- *   d = 3 m     5 / 7   * 0.999 * ...          = 0.34    0.61
- *   d = 10 m    5 / 14  * 0.879 * ...          = 0.15    0.27
- * Close surfaces vary by under 2x between 0.5 m and 2 m (plain 1 / d: 4x), and stay under the bloom clip
- * and the ACES shoulder, which skews a bright warm colour towards orange from about 2. Set by eye on
- * 2026-10-01: 3.5 cd with a plain 1 / d was too bright close up, and torch=0.41 on it (1.44 cd) was right
- * there but too weak at 10 m, hence the capped falloff. The earlier 40 cd with a decay of 1.5 gave 6.8 at
- * 2 m for albedo 0.5.
- */
-export const FLASHLIGHT_DECAY = 1;
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
 export const HALF_BRIGHTNESS = 0.9;
@@ -80,16 +49,30 @@ const MIN_SHADOW_INTENSITY = 0.07;
 export const flashlightCastsShadow = (allowed: boolean, intensity: number): boolean =>
   allowed && intensity > MIN_SHADOW_INTENSITY;
 
+/** The `torchspill` URL parameter as the constructor's switch: `1` true, `0` false, anything else follows content. */
+export const spillSwitchFromSearch = (search: string): boolean | undefined => {
+  const value = new URLSearchParams(search).get('torchspill');
+  if (value === '1' || value === '0') {
+    return value === '1';
+  }
+  return undefined;
+};
+
 export class Flashlight {
   // Colour, range and beam shape come from the lit item's content in `update`.
   readonly light = new SpotLight(undefined, 0);
   private readonly at = new Vector3();
   private readonly ahead = new Vector3();
 
-  constructor(scene: Scene) {
+  private readonly spillOverride: boolean | undefined;
+  /** `spillOverride` is the render-only comparison switch: true enables present spill, false forces the plain cone, undefined follows content. */
+  constructor(scene: Scene, spillOverride?: boolean) {
+    this.spillOverride = spillOverride;
     // Before any material compiles; the light chunk is shared by all of them.
     installNearFieldFalloff();
-    this.light.decay = FLASHLIGHT_DECAY;
+    if (spillOverride !== false) {
+      installFlashlightSpill();
+    }
     const { shadow } = this.light;
     shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
     shadow.camera.near = SHADOW_NEAR;
@@ -143,7 +126,16 @@ export class Flashlight {
     this.light.intensity = def.intensity * this.daylightScale * this.strength;
     this.light.castShadow = flashlightCastsShadow(this.shadowsAllowed, this.light.intensity);
     this.light.distance = def.radius;
-    this.light.angle = MathUtils.degToRad(def.beam.angleDegrees / 2);
+    const angle = MathUtils.degToRad(def.beam.angleDegrees / 2);
+    const authored = def.beam.spill;
+    const spill =
+      this.spillOverride === false || !authored || !(this.spillOverride ?? authored.enabled) ? undefined : authored;
+    if (this.spillOverride !== false) {
+      setFlashlightSpill(spill);
+    }
+    this.light.shadow.focus = spill ? spillHalfAngle(angle, spill) / angle : 1;
+    this.light.decay = def.beam.decay;
+    this.light.angle = angle;
     this.light.penumbra = def.beam.penumbra;
     this.light.position.copy(this.at);
     camera.getWorldDirection(this.ahead);

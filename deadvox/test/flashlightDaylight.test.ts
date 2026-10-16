@@ -1,11 +1,12 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
+import type { ItemDef } from '../src/core/schema.ts';
 import { skyAt } from '../src/core/sky.ts';
-import { FLASHLIGHT_DECAY, flashlightDaylightScale } from '../src/render/flashlight.ts';
+import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { NEAR_FIELD_M } from '../src/render/lightFalloff.ts';
 import { phaseMidpoint } from './dayPhaseFixture.ts';
-import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
 
 const scaleAt = (hour: number): number => flashlightDaylightScale(skyAt(hour));
 
@@ -19,8 +20,13 @@ describe('flashlight daylight scale', () => {
 
   it('keeps the daylight-scaled flashlight weaker than direct sun lighting', () => {
     const hour = phaseMidpoint('day') / 3600;
-    const pool = (CALIBRATED_BEAM_INTENSITY / (3 + NEAR_FIELD_M) ** FLASHLIGHT_DECAY) * scaleAt(hour);
-    expect(pool).toBeLessThan(skyAt(hour).lightIntensity);
+    const { items } = JSON.parse(readFileSync('src/content/base/items-tools.json', 'utf8')) as { items: ItemDef[] };
+    const beams = items.flatMap(({ light }) => (light?.beam && light.power ? [light] : []));
+    expect(beams.length).toBeGreaterThan(0);
+    for (const light of beams) {
+      const pool = (light.intensity / (3 + NEAR_FIELD_M) ** light.beam!.decay) * scaleAt(hour);
+      expect(pool).toBeLessThan(skyAt(hour).lightIntensity);
+    }
   });
 
   it('blends flashlight strength through dawn and dusk', () => {

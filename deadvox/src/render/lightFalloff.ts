@@ -10,7 +10,7 @@
 
 import { ShaderChunk } from 'three';
 
-/** Metres added to the distance in the falloff; see render/flashlight.ts for how it and the intensity were chosen. */
+/** Shared punctual-light cap prevents close surfaces from blowing out when lights are tuned for reach. */
 export const NEAR_FIELD_M = 4;
 
 const ORIGINAL = 'float distanceFalloff = 1.0 / max( pow( lightDistance, decayExponent ), 0.01 );';
