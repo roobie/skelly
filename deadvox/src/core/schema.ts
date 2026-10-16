@@ -2003,6 +2003,7 @@ const SenseSchema = strictObject({
     throwMinimumHoldSimSeconds: PositiveSimSeconds,
     throwStanceDropHoldRealSeconds: Positive,
     wornLightToggleHoldRealSeconds: Positive,
+    renderedBeamLimit: pipe(Count, minValue(2)),
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
   }),

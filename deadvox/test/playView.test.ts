@@ -15,7 +15,7 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { toggleLight } from '../src/core/lights.ts';
+import { inventoryLightSources, toggleLight } from '../src/core/lights.ts';
 import type { Body } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { skyAt } from '../src/core/sky.ts';
@@ -53,7 +53,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     setPainDesaturation: vi.fn(),
     setSky: vi.fn(),
   };
-  const shadows = { restore: vi.fn(), attachTorch: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
+  const shadows = { restore: vi.fn(), attachTorches: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
   const engine = {
     config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
     registry: inventory.registry,
@@ -187,7 +187,7 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
       render: vi.fn((draw: () => void) => draw()),
       setSky: vi.fn(),
     },
-    shadows: { torchOn: true, restore: vi.fn(), attachTorch: vi.fn() },
+    shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
   const daylight = skyAt(12);
@@ -216,8 +216,32 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
   };
 }
 
-const RECEIVER_SCALE =
-  /getSpotLightInfo\( spotLight, geometryPosition, directLight \);\s*directLight.color \*= ([^;]+);/;
+it('renders a hand beam and a worn beam together while both contribute to zombie sight', () => {
+  const { inventory, view, engine } = fixture();
+  const hand = inventory.create('flashlight');
+  const worn = inventory.create('headlamp');
+  expect(inventory.add(hand, { kind: 'hand', side: 'left' })).toBe(true);
+  expect(inventory.add(worn, { kind: 'worn' })).toBe(true);
+  expect(toggleLight(inventory.registry, hand)).toBeUndefined();
+  expect(toggleLight(inventory.registry, worn)).toBeUndefined();
+
+  view.updateHeld(0, restingHands, hand);
+  const sources = inventoryLightSources(inventory, [0, 0, 0], 1.6);
+  expect(sources.map((source) => source.seenFrom).sort()).toEqual(
+    [hand, worn].map((item) => inventory.registry.items.get(item.type)!.light!.seenFrom).sort(),
+  );
+  expect(sources.every((source) => source.carried)).toBe(true);
+  const beams = engine.scene.children.filter((child) => child.type === 'SpotLight') as import('three').SpotLight[];
+  expect(beams.filter((light) => light.intensity > 0)).toHaveLength(2);
+
+  expect(toggleLight(inventory.registry, hand)).toBeUndefined();
+  view.updateHeld(0, restingHands, hand);
+  expect(inventoryLightSources(inventory, [0, 0, 0], 1.6)).toHaveLength(1);
+  expect(beams.filter((light) => light.intensity > 0)).toHaveLength(1);
+  view.dispose();
+});
+
+const RECEIVER_SCALE = /getSpotLightInfo\([^;]+\);\s*directLight.color \*= ([^;]+);/;
 
 function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3) {
   const material = new MeshLambertMaterial();
