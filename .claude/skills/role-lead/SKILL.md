@@ -54,7 +54,8 @@ Record your own small fixes to tracker state or scratch files with `agent-work n
 Each turn, and at every Monitor expiry:
 
 1. Re-arm the mail watch before anything else, so no mail lands unseen.
-2. Handle what is already in your mailbox. Your mail mode is auto. Operator mail is BR's
+2. Handle what is already in your mailbox: mail that lands between a Monitor expiry and its
+   re-arm raises no event. Your mail mode is auto. Operator mail is BR's
    own mailbox: say that it arrived, and act on it only when BR asks.
 3. Sweep every agent pane: is it working, how full is its context, has it hit a usage
    limit. An idle agent that holds open work gets a nudge naming the item and its first
@@ -72,7 +73,8 @@ Pane etiquette:
 - A few minutes after you send a note or an agent promises a next step, look at its pane.
 - A note that re-opens work says to resume now. A broadcast ends by telling agents no reply
   is needed and to continue their active item. A "don't do X yet" note states its release
-  condition.
+  condition, and when the condition is met, the release says "clear to X now" and names
+  what comes next, so the agent doesn't wait for a second note.
 - A brief never ends at "submit with CI"; it ends at the report.
 - Typing into a pane by hand follows the `project-process` skill's protocol for typing into
   a harness pane, recovery from provider errors and hung requests included. On Claude
@@ -105,16 +107,25 @@ Switch a pane's model only with the tool `.agent-mail/routing.yaml` names for it
 ## Briefs and ids
 
 Mint every id with `agent-work mint`, in its own call, before writing anything that names it
-(`AGENTS.md`, "Work item IDs"). Then write the brief to scratch, add or edit and assign the
-item, and mail the agent. Mail goes one recipient per send, with an absolute worktree path.
+(`AGENTS.md`, "Work item IDs"). Never write a brief under an id that an earlier mint call
+didn't return: scratch is untracked, so a hand-picked id that collides overwrites a finished
+brief for good. An id of an unusual shape goes in with `agent-work add` after `agent-work
+show` and a look at scratch confirm it is free. Then write the brief to scratch, add or edit
+and assign the item, and mail the agent. Mail goes one recipient per send, with an absolute
+worktree path; a second recipient in one send replaces the first, so check each delivery
+path the send prints.
 
 A brief stands alone, so a reset agent can act on it:
 
 - branch, worktree and head commit; the previous report's path; the rules pledge;
-- every git step written as `git -C <worktree>`;
+- every git step written as `git -C <worktree>`, because a step run from the wrong
+  directory lands in the main checkout;
 - the heavy-run offload text that `.agent-mail/HOST.md` names;
 - a new worktree runs `npm run setup` before its first push (`AGENTS.md`, "Installing check dependencies");
-- tunables go in content (`README.md`, "Content forward compatibility");
+- tunables go in content (`README.md`, "Content forward compatibility"), even where a design
+  note calls them named constants; the brief says so;
+- the CI step: cite the head's run IDs, pending is fine, don't wait; the lead checks green
+  before merging. An idle coder whose last word is "CI pending" gets the result and a nudge;
 - a review brief names the PR, the exact head, the range, the coder's report and the
   previous review.
 
@@ -124,10 +135,15 @@ A brief that leaves the reason implicit costs a FIX round.
 
 Tracker shape: work after a submit is a new round; partial work is reopened with a note.
 Dependencies use `after`. A hold means the agent blocks the item; you unblock it, then mail
-the go. Before reassigning a worktree, check its status and diff yourself.
+the go. Before reassigning a worktree, check its status and diff yourself, and tell the old
+owner not to touch it until the new owner has committed: two agents editing one worktree
+silently revert each other's files.
 
-File bugs in the tracker or mail tools in the agent-kit repository (the `gitea` skill).
-Switching the agent-kit checkout's branch switches every agent at once; don't.
+File bugs in the tracker or mail tools in the agent-kit repository (the `gitea` skill):
+search for an existing issue first, and check the stored copy after filing. When a stall or
+misfire comes from a tool's own text, such as a wake message, fix it there rather than
+nudging around it each time. Switching the agent-kit checkout's branch switches every agent
+at once; don't. Review an agent-kit change in its own worktree for the same reason.
 
 ## Agents: spawn, retire, recover
 
@@ -153,16 +169,18 @@ merged PRs. An open draft doesn't mean the work is undone.
 
 **Every open ask to BR is a br-queue card**, made in the same turn, so the work viewer's
 waiting list stays true. When BR answers in chat, answer or withdraw the card; reconcile
-against the card list before listing open asks. Card titles stay a few words; detail goes in
-the body file; every URL goes in a link field, never the body, and the body refers to links
-by label.
+against the card list before listing open asks. Card titles stay a few words, because a long
+title can break submission in the work viewer; detail goes in the body file; every URL goes
+in a link field, never the body, and the body refers to links by label.
 
 **Look requests** say what to check, give the full URL with its page path and name the commit
 it was built from. Publish a fresh preview for each new commit (`.agent-mail/HOST.md`;
 `docs/PROCESS.md`, "Reviews by eye and by play").
 
-**BR's chat approval is evidence.** Write it to an evidence file and accept as the operator
-with that evidence. An Approve in the work viewer counts too.
+**BR's chat approval is evidence.** Write it to an evidence file that quotes BR with the
+time, and accept as the operator with that evidence, only for what BR actually approved. An
+Approve in the work viewer counts too; quote it from the card. If one ever proves ambiguous,
+raise it with BR.
 
 ## Reviews
 
@@ -175,26 +193,19 @@ findings to the builder; style nits never start a round (`AGENTS.md`, "Tests").
 ## Merges and post-merge chores
 
 BR's standing grant, until revoked, lets you merge under the conditions in
-`docs/PROCESS.md`, "The life of a change"; otherwise BR merges. To check them:
+`docs/PROCESS.md`, "The life of a change", and after the checks in `docs/PROCESS.md`,
+"Merge checks"; otherwise BR merges. Stop merging the moment BR revokes it.
 
-- the BR gate: look for an operator gate or an awaiting-BR mark on every round of the PR,
-  and for a "do not merge before" note on the PR;
-- the clean merge: `git merge-tree --write-tree origin/main <head>`.
+- **The BR gate:** `agent-work show` every round of the PR for an operator gate or an
+  awaiting-BR mark, and read the PR for a "do not merge before" note. A coder can set the
+  gate without filing a card, so the tracker is the place to look. If gated, file the card
+  and wait.
+- **The clean merge:** `git merge-tree --write-tree origin/main <head>` after a fetch.
 
-Merge pinned to the full head SHA, and report each merge to BR.
-
-Before merging, also:
-
-- check merge-tree before opening a PR and again before calling it ready; re-check open PRs
-  when main moves, and build a trial merge when both sides touched the same files;
-- after a conflicted main merge, scan for lost lines;
-- check that closing keywords in the PR body point only at issues;
-- for deadvox, check that the save schema version exceeds main's when saves changed;
-- never rerun a deadvox PR's CI run; close and reopen the PR instead (`docs/browser-ci.md`).
-
-After the merge: accept the rounds, withdraw superseded drafts, close completed issues,
-tick the slice checklist (`docs/PROCESS.md`, "Slice checklist"), check push-only workflows
-such as pages, and clean up worktree, branch and dev server (`docs/git-workflow.md`, "Merge and clean up").
+Merge pinned to the full head SHA, so a push after the review can't slip in, and report each
+merge to BR. Then do the chores in `docs/PROCESS.md`, "After the merge" and
+`docs/git-workflow.md`, "Merge and clean up", and fast-forward the main checkout when it is
+clean.
 
 ## Failure ownership
 
