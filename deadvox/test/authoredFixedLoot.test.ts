@@ -30,7 +30,7 @@ import {
   placedSpawns,
 } from '../src/core/templates.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
-import { WORKSHOP_DISPLAY_CAR, workshopCar, workshopLift } from '../src/render/workshopVehicle.ts';
+import { vehicleInstanceOf, vehicleModel, workshopLift } from '../src/render/workshopVehicle.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
 import { wheel } from '../src/vehicles/rangeRover.ts';
@@ -1230,7 +1230,9 @@ describe('authored fixed loot', () => {
     const door = compiledArmoury.pieces.find((piece) => piece.furniture === 'container_door');
     expect(door?.lock).toEqual({ id: 'camp_armoury', locked: true });
     expect(result.registry.furniture.get('container_door')?.door?.prying).toBeDefined();
-    expect(compiledArmoury.pieces.some((piece) => piece.furniture === 'camp_closing_note')).toBe(true);
+    const closingNote = overrideFor(overrides, 'camp_armoury', 'camp_closing_note');
+    expect(closingNote).toBeDefined();
+    expect(furnitureAt(closingNote!)).toBeDefined();
     expect(compiledArmoury.spawns).toEqual([]);
 
     expectCampHqProperties(compiledArmoury);
@@ -1599,8 +1601,10 @@ describe('authored fixed loot', () => {
     const cars = template.pieces.filter(({ furniture }) => furniture === 'workshop_stripped_car');
     expect(lifts.length).toBeGreaterThan(0);
     expect(cars.length).toBeGreaterThan(0);
+    const carLook = result.registry.furniture.get('workshop_stripped_car')!.vehicle!;
+    const workshopCarInstance = vehicleInstanceOf(carLook);
     const lowestSolidVoxelY = Math.min(
-      ...WORKSHOP_DISPLAY_CAR.fittings.flatMap((fitting) =>
+      ...workshopCarInstance.fittings.flatMap((fitting) =>
         [...partLibrary.placed(fitting).grid].flatMap(([voxel, material]) =>
           material === GLASS ? [] : [keyVoxel(voxel)[1]],
         ),
@@ -1616,7 +1620,7 @@ describe('authored fixed loot', () => {
         searched: false,
         open: false,
       } satisfies BlockEntity;
-      const carBottom = workshopCar(renderEntity).position.y + lowestSolidVoxelY * VOXEL;
+      const carBottom = vehicleModel(renderEntity, carLook).position.y + lowestSolidVoxelY * VOXEL;
       const supportingLift = lifts.find((lift) => {
         const overlapsX = car.pos[0] < lift.pos[0] + lift.size[0] && lift.pos[0] < car.pos[0] + car.size[0];
         const overlapsZ = car.pos[2] < lift.pos[2] + lift.size[2] && lift.pos[2] < car.pos[2] + car.size[2];
@@ -1643,8 +1647,8 @@ describe('authored fixed loot', () => {
       expect(carBottom, 'lowest solid voxel meets lift arms without a gap').toBe(Math.max(...armTops));
     }
 
-    expect(WORKSHOP_DISPLAY_CAR.fittings.length).toBeGreaterThan(0);
-    expect(WORKSHOP_DISPLAY_CAR.fittings.some(({ type }) => type === wheel.type.id)).toBe(false);
+    expect(workshopCarInstance.fittings.length).toBeGreaterThan(0);
+    expect(workshopCarInstance.fittings.some(({ type }) => type === wheel.type.id)).toBe(false);
   });
 
   it.each([

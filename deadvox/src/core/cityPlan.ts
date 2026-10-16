@@ -172,6 +172,23 @@ export const perimeterGaps = (
   return gaps;
 };
 
+/**
+ * A street prop names a template, or a map pool of templates whose procedural variant each placement draws
+ * from the world seed. An unknown name has no choices.
+ */
+const streetPropChoices = (registry: Registry, id: string): { id: string; weight: number }[] => {
+  const pool = registry.mapPools.get(id);
+  if (!pool) {
+    return registry.templates.has(id) ? [{ id, weight: 1 }] : [];
+  }
+  return pool.choices.map(({ ref, weight }) => {
+    if (ref.kind !== 'template') {
+      throw new Error(`street prop pool "${id}" needs template refs, not ${ref.kind} ${ref.id}`);
+    }
+    return { id: ref.id, weight };
+  });
+};
+
 const cityDecorationIssues = (registry: Registry, city: ScenarioDef['city']): [string, string][] => {
   const issues: [string, string][] = [];
   const { perimeter, ring } = city;
@@ -182,12 +199,21 @@ const cityDecorationIssues = (registry: Registry, city: ScenarioDef['city']): [s
     issues.push(...perimeterIssues(registry, city, perimeter));
   }
   for (const id of city.streetProps ?? []) {
-    const prop = registry.templates.get(id);
-    if (
-      !prop ||
-      prop.size[0] + STAIR_BODY_HALF_WIDTH > city.street / 2 ||
-      prop.size[2] > Math.floor(city.blockZ / ((city.streetProps?.length ?? 0) + 1))
-    ) {
+    const kitRef = registry.mapPools.get(id)?.choices.find(({ ref }) => ref.kind !== 'template');
+    if (kitRef) {
+      issues.push(['.city.streetProps', `street prop pool "${id}" needs template refs, not ${kitRef.ref.kind}`]);
+      continue;
+    }
+    const choices = streetPropChoices(registry, id);
+    const fits = choices.every(({ id: templateId }) => {
+      const prop = registry.templates.get(templateId);
+      return (
+        prop !== undefined &&
+        prop.size[0] + STAIR_BODY_HALF_WIDTH <= city.street / 2 &&
+        prop.size[2] <= Math.floor(city.blockZ / ((city.streetProps?.length ?? 0) + 1))
+      );
+    });
+    if (choices.length === 0 || !fits) {
       issues.push(['.city.streetProps', `street prop "${id}" does not fit its lane`]);
     }
   }
@@ -373,7 +399,13 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
   if (!registry.blockIds.has('asphalt')) {
     issues.push(['.city', 'city needs asphalt content']);
   }
-  const { city, serviceTemplate } = scenario;
+  const { city, serviceTemplate, population } = scenario;
+  if (population.roadsideOffset * 2 >= city.street) {
+    issues.push([
+      '.population.roadsideOffset',
+      'stragglers must stand inside the street on both sides of its centreline',
+    ]);
+  }
   const width = city.blockX - 2 * city.pad;
   issues.push(...cityDecorationIssues(registry, city), ...cityPoolIssues(registry, scenario));
   const template = registry.templates.get(serviceTemplate);
@@ -750,12 +782,15 @@ const wallPlacements = (context: FillContext, bounds: Rect, { gate, lining }: Pe
 ];
 
 const streetPropPlacements = (context: FillContext, cells: Cell[], pitchX: number, pitchZ: number): Placement[] => {
-  const { grid, floor } = context;
+  const { grid, floor, registry, seed } = context;
   const props = grid.streetProps ?? [];
   return cells.flatMap(([i, j]) =>
-    props.map((id, index) =>
+    props.map((prop, index) =>
       freezePlacement({
-        template: context.compiled({ id }, 1),
+        template: context.compiled(
+          pickWeighted(streetPropChoices(registry, prop), Rng.stream(seed, `city:${i},${j}/street-prop:${index}`))!,
+          1,
+        ),
         turn: 0,
         origin: [i * pitchX, floor, j * pitchZ + grid.street + (grid.blockZ * (index + 1)) / (props.length + 1)].map(
           Math.floor,

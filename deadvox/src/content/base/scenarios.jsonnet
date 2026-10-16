@@ -15,6 +15,9 @@ local ladder = lab.entry.ladder;
       fixedLoot: [{
         at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18],
         items: [{ item: 'flashlight', placement: 'surface', key: true }],
+      }, {
+        at: [lab.surfaceOffset + 15, ground + 1, lab.surfaceOffset + 14],
+        items: [{ item: 'gauntlet_maintenance_memo', placement: 'surface' }],
       }],
       leads: [
         { template: 'gauntlet_public_memo', fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_memo', placement: 'surface' }] }] },
@@ -34,6 +37,10 @@ local ladder = lab.entry.ladder;
       upper: [hatch[0] + 4, ground + 1, hatch[2] + 1],
       lower: [hatch[0], ladder[1], hatch[2] + 1],
     },
+    population: {
+      settlementPressure: true, authoredMarkers: true,
+      groupSize: 7, hordes: 1, roadsideOffset: 3, extraStragglers: 2,
+    },
     city: {
       blocksX: 1, blocksZ: 1,
       street: 12,
@@ -47,7 +54,7 @@ local ladder = lab.entry.ladder;
         lining: { assembly: 'gauntlet_perimeter_lining', pitch: 12 },
         gate: { assembly: 'gauntlet_perimeter_gate' },
       },
-      streetProps: ['gauntlet_car_wreck'],
+      streetProps: ['gauntlet_street_cars'],
       pool: 'gauntlet_city',
       ring: { pool: 'gauntlet_ring', setback: 7 },
     },

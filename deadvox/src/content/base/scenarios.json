@@ -165,7 +165,7 @@
         },
         "rows": 4,
         "street": 12,
-        "streetProps": ["gauntlet_car_wreck"]
+        "streetProps": ["gauntlet_street_cars"]
       },
       "composition": {
         "descents": [
@@ -217,6 +217,15 @@
               {
                 "item": "flashlight",
                 "key": true,
+                "placement": "surface"
+              }
+            ]
+          },
+          {
+            "at": [39, 41, 38],
+            "items": [
+              {
+                "item": "gauntlet_maintenance_memo",
                 "placement": "surface"
               }
             ]
@@ -295,6 +304,14 @@
       "id": "gauntlet",
       "kind": "gauntlet",
       "outbreakAgeGameHours": 2880,
+      "population": {
+        "authoredMarkers": true,
+        "extraStragglers": 2,
+        "groupSize": 7,
+        "hordes": 1,
+        "roadsideOffset": 3,
+        "settlementPressure": true
+      },
       "portal": {
         "hatch": [42, 40, 39],
         "ladder": [43, 33, 39],

@@ -156,6 +156,8 @@ export const hamletZombieSpawns = (
     readonly roadHeightAt: (x: number) => number;
     readonly spawnWeights?: ReadonlyMap<string, number>;
     readonly roadsideOffset?: number;
+    /** Stragglers beyond the hamlet's 6–10 population target. */
+    readonly extraWanderers?: number;
   },
 ): ZombieSpawn[] => {
   const { roadHeightAt } = options;
@@ -184,7 +186,7 @@ export const hamletZombieSpawns = (
     pos,
     ...(spawnWindow ? { window: spawnWindow } : {}),
   }));
-  const wanderers = count - spawns.length;
+  const wanderers = count - spawns.length + (options.extraWanderers ?? 0);
   for (let i = 0; i < wanderers; i++) {
     const x = Math.floor(road.x0 + ((i + 1) * (road.x1 - road.x0)) / (wanderers + 1));
     const side = i % 2 === 0 ? -1 : 1;

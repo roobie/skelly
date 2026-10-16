@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
+import { KeyTrace } from '../src/debug/keyTrace.ts';
 import {
   type Binding,
   BindingRegistry,
@@ -94,6 +95,110 @@ const storage = () => {
 };
 
 describe('keyboard registry', () => {
+  it('accepts a physical Shift down with a false Shift flag so strafe remains available', () => {
+    const keyboard = new KeyboardInput(
+      new BindingRegistry(
+        [
+          ...fixture,
+          {
+            id: 'fixture.strafe',
+            description: 'Fixture strafe',
+            contexts: ['play'],
+            commands: [{ id: 'fixture.strafe', kind: 'held-state' }],
+            defaults: [{ code: 'KeyD' }],
+          },
+        ],
+        storage(),
+      ),
+    );
+    keyboard.context = () => ({ context: 'play', debug: false });
+    keyboard.press(event('KeyW'));
+    keyboard.press(event('ShiftLeft', { shiftKey: true }));
+    keyboard.release(event('ShiftLeft', { shiftKey: true }));
+    keyboard.press(event('KeyW', { repeat: true }));
+    const sprintAccepted = keyboard.press(event('ShiftLeft', { shiftKey: false }));
+    keyboard.press(event('KeyW', { repeat: true, shiftKey: true }));
+    const strafeAccepted = keyboard.press(event('KeyD', { shiftKey: true }));
+    expect({
+      sprintAccepted,
+      strafeAccepted,
+      forward: keyboard.held('fixture.move'),
+      sprint: keyboard.held('fixture.sprint'),
+      strafe: keyboard.held('fixture.strafe'),
+    }).toEqual({ sprintAccepted: true, strafeAccepted: true, forward: true, sprint: true, strafe: true });
+  });
+  it('does not revive a held Shift with a false flag through the menu', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
+    let context: InputContext = 'play';
+    keyboard.context = () => ({ context, debug: false });
+    expect(keyboard.press(event('ShiftLeft', { shiftKey: true }))).toBe(true);
+    context = 'menu';
+    keyboard.sync();
+    expect(keyboard.held('fixture.sprint')).toBe(false);
+    expect(keyboard.press(event('ShiftLeft', { repeat: true, shiftKey: false }))).toBe(false);
+    context = 'play';
+    keyboard.sync();
+    expect(keyboard.press(event('ShiftLeft', { repeat: true, shiftKey: false }))).toBe(false);
+    expect(keyboard.held('fixture.sprint')).toBe(false);
+    keyboard.release(event('ShiftLeft'));
+    expect(keyboard.press(event('ShiftLeft', { shiftKey: true }))).toBe(true);
+    expect(keyboard.held('fixture.sprint')).toBe(true);
+  });
+  it('redacts movement codes from the debug trace while text entry has focus', () => {
+    const bindings = new BindingRegistry(
+      [
+        {
+          id: 'movement.fixture',
+          description: 'Fixture movement',
+          contexts: ['play'],
+          commands: [{ id: 'movement.fixture', kind: 'held-state' }],
+          defaults: [{ code: 'KeyW' }],
+        },
+      ],
+      storage(),
+    );
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'play', debug: true });
+    const trace = new KeyTrace();
+    keyboard.trace = trace.record;
+    const field = document.createElement('input');
+    document.body.append(field);
+    field.focus();
+    try {
+      expect(keyboard.press(event('KeyW'), true)).toBe(false);
+      keyboard.release(event('KeyW'));
+      const { entries } = JSON.parse(trace.export());
+      expect(entries.find((entry: { kind: string }) => entry.kind === 'down')).toMatchObject({
+        focus: 'editable',
+        accepted: false,
+        reason: 'editing',
+      });
+      for (const entry of entries) {
+        expect(entry).not.toHaveProperty('code');
+        expect(entry.down).toEqual([]);
+        expect(entry.blocked).toEqual([]);
+        expect(entry.active).toEqual([]);
+      }
+    } finally {
+      field.remove();
+    }
+  });
+  it('records the modifier refusal for a movement down in the debug key trace', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: true });
+    const trace = new KeyTrace();
+    keyboard.trace = trace.record;
+    expect(keyboard.press(new KeyboardEvent('keydown', { code: 'KeyA', key: 'A', shiftKey: true }))).toBe(false);
+    expect(JSON.parse(trace.export()).entries.at(-1)).toMatchObject({
+      kind: 'down',
+      code: 'KeyA',
+      context: 'play',
+      shiftKey: true,
+      accepted: false,
+      reason: 'modifiers',
+      active: [],
+    });
+  });
   it('declares conflict-free defaults with valid physical keys and unique semantic commands', () => {
     expect(INPUT_BINDINGS.length).toBeGreaterThan(0);
     expect(bindingConflict(INPUT_BINDINGS, new Map())).toBeUndefined();
