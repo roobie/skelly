@@ -15,15 +15,20 @@ reads the same on every visit and different houses read differently.
 ## Scene slots
 
 A building type names scene slots. A scene slot is a weighted choice of scene pieces. A piece
-holds furniture, disorder slots, loot overrides and shambler markers, and may hold a note slot.
-Every slot resolves per building location by the slot seed that `buildCityPlan` already uses,
-so variation is stable without a runtime simulation. A mod replaces one slot's piece or pool
-by id and leaves the building geometry alone.
+is a map piece: a palette of furniture with optional loot overrides, shambler markers and a
+loot context. It carries no slots. Every slot resolves per building location by the slot seed
+that `buildCityPlan` uses, so variation is stable without a runtime simulation. A mod replaces
+one slot's piece or pool by id and leaves the building geometry alone.
 
-Scene pieces are authored data, not generated at run time, because reachability, loot context
-and spawn safety are checked on exactly the content that ships. See
+Scene pieces are authored data, not generated at run time, so the content that ships is the
+content that is checked. The checks cover each piece on its own, one compile of each assembly
+(one choice per slot) and anchor routes through every alternative of every slot. They do not
+cover container reach or spawn clearance in each assembled alternative, so keep scenes inside
+the placement rules below, which hold for every alternative by construction. See
 `src/content/base/gauntlet-city-scenes.libsonnet`, `scenes` and `slot`;
-and `src/content/base/aftermath.libsonnet`, `pieces` and `slot`.
+`src/core/mapKit.ts`, `mapKitIssues`; `test/cityKitRoutes.test.ts`; and
+`src/content/base/aftermath.libsonnet`, `pieces` and `slot`, which offers disorder poses as
+separate slots.
 
 Rules for placement, each with its reason:
 
@@ -37,7 +42,7 @@ Rules for placement, each with its reason:
   cell of margin from solids, so a gap narrower than three cells is not a way through.
 - **Keep landings clear.** Furniture on a landing disconnects every storey above it.
 - **Place shambler markers with intent.** A marker sits clear of solids, because a body spawned
-  inside furniture is stuck. Only the failed-barricade scene places them.
+  inside furniture is stuck.
 - **Loot tables use existing items.** Each table is tied to a room purpose, and each piece's
   loot context makes the table admissible.
 
@@ -57,8 +62,10 @@ because it obeys the same limits they would.
 
 ### How long ago
 
-How long ago the chaos happened is per-scenario content, never a code constant. One scenario
-can be months after, another years, another only days.
+How long ago the chaos happened belongs in per-scenario content, never in a code constant,
+because one scenario can sit years after the chaos and another only days. No scenario value
+carries it yet, and nothing reads one. d342, "Per-scenario time since the chaos", adds it and
+must put it in content; the Gauntlet's value there is months.
 
 ## Door variants
 
