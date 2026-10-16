@@ -35,6 +35,7 @@ import { type SkyResult, sampleSky } from '../core/skyTransport.ts';
 import type { World } from '../core/world.ts';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 
+const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
 const RESIDENT_FIELDS = 4;
 const PREPARE_MS = 0.5;
 const PREFETCH_M = 16;
@@ -598,8 +599,8 @@ float skyVisibility() {
         .replace(
           '#include <lights_fragment_begin>',
           `float receiverSkyVisibility = skyVisibility();\n${ShaderChunk.lights_fragment_begin.replace(
-            'getSpotLightInfo( spotLight, geometryPosition, directLight );',
-            `getSpotLightInfo( spotLight, geometryPosition, directLight );
+            SPOT_LIGHT_INFO_CALL,
+            `$&
         directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyVisibility / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));`,
           )}`,
         )

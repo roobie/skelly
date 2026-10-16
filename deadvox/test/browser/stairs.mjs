@@ -631,9 +631,49 @@ try {
       await page.waitForTimeout(700);
       assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left.on), true);
       const lit = await shot('cellar-beam', true);
-      const proof = { dark: await luminance(dark), beam: await luminance(lit) };
+      await page.evaluate(() => {
+        const { session } = globalThis.stairsWitness;
+        const previous = session.inventory.worn.head;
+        if (previous && !session.inventory.consume(previous, previous.count)) {
+          throw new Error('Could not clear fixture head slot');
+        }
+        const headlamp = session.inventory.create('headlamp');
+        if (!session.inventory.add(headlamp, { kind: 'worn' })) {
+          throw new Error('Could not wear fixture headlamp');
+        }
+        const reason = session.survival.toggleWornLights();
+        if (reason) {
+          throw new Error(reason);
+        }
+      });
+      await page.waitForFunction(
+        () =>
+          globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
+            .length === 2,
+      );
+      const both = await shot('cellar-both-beams', true);
+      await page.evaluate(() => {
+        const { session } = globalThis.stairsWitness;
+        const reason = session.survival.use(session.inventory.hands.left);
+        if (reason) {
+          throw new Error(reason);
+        }
+      });
+      await page.waitForFunction(
+        () =>
+          globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
+            .length === 1,
+      );
+      const worn = await shot('cellar-worn-beam', true);
+      const proof = {
+        dark: await luminance(dark),
+        beam: await luminance(lit),
+        worn: await luminance(worn),
+        both: await luminance(both),
+      };
       assert.ok(proof.dark < 15, JSON.stringify(proof));
       assert.ok(proof.beam > proof.dark + 10, JSON.stringify(proof));
+      assert.ok(proof.both > Math.max(proof.beam, proof.worn), JSON.stringify(proof));
       return proof;
     });
     return { lightProof, raisedOutdoor };
