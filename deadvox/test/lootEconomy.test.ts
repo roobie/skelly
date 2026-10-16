@@ -183,7 +183,7 @@ describe('loot economy descriptions', () => {
                 radius: 1,
                 seenFrom: 1,
                 color: '#ffffff',
-                power: { battery: 'fixture_battery', chargePerGameHour: 1 },
+                power: { battery: 'fixture_battery', chargePerGameHour: 1, swapSimSeconds: 2 },
               },
             },
             { ...item('fixture_battery', ['Medical']), battery: { capacity: 1 } },

@@ -22,7 +22,7 @@ import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
 import { firearmShotEmission, firearmShotSoundEvents } from '../src/game/audioPresentation.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import type { Engine } from '../src/game/engine.ts';
-import { firearmHandlingFor, SHELL_LOAD_SECONDS } from '../src/game/firearmHandling.ts';
+import { firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -372,7 +372,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     observe(scenario, 'shotgun items admitted', gunHeld && bagWorn && shellCarried);
     const loaded = session.firearms.load(shell, session.sim.time) === undefined;
     observe(scenario, 'shotgun loads', loaded);
-    advance(Math.ceil(SHELL_LOAD_SECONDS * 60) + 1);
+    advance(Math.ceil(registry.items.get('pump_shotgun')!.firearm!.handling.shellLoadSimSeconds! * 60) + 1);
     const rackDuration = firearmHandlingFor(gun, registry).action.hand.durationSimSeconds;
     const racked = session.firearms.cock(gun.uid, session.sim.time) === undefined;
     observe(scenario, 'shotgun racks', racked);

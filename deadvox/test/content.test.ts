@@ -160,7 +160,7 @@ const firearmFixture = (skillZeroHandling: unknown) => ({
   category: 'weapon',
   weight: 1,
   size: [1, 1],
-  firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', skillZeroHandling },
+  firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {}, skillZeroHandling },
 });
 
 const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: string): boolean => {
@@ -462,6 +462,45 @@ describe('content', () => {
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
   });
 
+  it('rejects an item that lacks the handling time its kind needs', () => {
+    type Raw = Record<string, unknown>;
+    const at = (root: unknown, keys: string[]): unknown =>
+      keys.reduce<unknown>((node, key) => (node as Raw | undefined)?.[key], root);
+    // A dropped field is reported at its own path, except a food's rot fields, which are checked together on `.food`.
+    const drops: { field: string; reportedAt?: string }[] = [
+      { field: 'food.consumeSimSeconds' },
+      { field: 'food.poisonHealth', reportedAt: '.food' },
+      { field: 'analgesic.takeSimSeconds' },
+      { field: 'light.power.swapSimSeconds' },
+      { field: 'unpack.simSeconds' },
+      { field: 'ammo.loadSimSeconds' },
+      { field: 'ammo.stripSimSeconds' },
+      { field: 'weapon.melee.contactFraction' },
+      { field: 'weapon.melee.windupCapSimSeconds' },
+      { field: 'firearm.handling.shellLoadSimSeconds' },
+      { field: 'firearm.handling.magazine' },
+    ];
+    // One build for all drops: each takes a distinct item that has the field, and each is reported by its own path.
+    const files = structuredClone(base) as { source: string; data: { items?: Raw[] } }[];
+    const items = files.flatMap((file) => file.data.items ?? []);
+    const used = new Set<Raw>();
+    const dropped = drops.map(({ field, reportedAt }) => {
+      const keys = field.split('.');
+      const item = items.find((candidate) => !used.has(candidate) && at(candidate, keys) !== undefined);
+      expect(item, field).toBeDefined();
+      used.add(item!);
+      Reflect.deleteProperty(at(item, keys.slice(0, -1)) as Raw, keys.at(-1)!);
+      return reportedAt ?? `.${field}`;
+    });
+    const { issues } = buildRegistry(files);
+    for (const path of dropped) {
+      expect(
+        issues.some((issue) => issue.path.endsWith(path)),
+        path,
+      ).toBe(true);
+    }
+  });
+
   it('rejects incomplete per-firearm skill-zero factors', () => {
     const issues = validateContent({
       source: 'fixture-firearm.json',
@@ -512,7 +551,13 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01, shotSound: 'gunshot' },
+      firearm: {
+        pump: true,
+        recoilKickRadians: 0.01,
+        dispersionRadians: 0.01,
+        shotSound: 'gunshot',
+        handling: { shellLoadSimSeconds: 1 },
+      },
     };
     const { issues } = buildRegistry([baseSounds, { source, data: { items: [item] } }]);
     expect(issues.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -532,7 +577,7 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot' },
+      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot', handling: {} },
     };
     const missing = validateContent({ source, data: { items: [item] } });
     expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -555,7 +600,7 @@ describe('content', () => {
           weight: 1,
           size: [1, 1],
           model: 'fixture_gun',
-          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot' },
+          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {} },
         },
         {
           id: 'fixture_suppressor',
@@ -1539,7 +1584,7 @@ describe('content references', () => {
               category: 'material',
               weight: 1,
               size: [1, 1],
-              unpack: { item: 'fixture_box', count: 1 },
+              unpack: { item: 'fixture_box', count: 1, simSeconds: 1 },
             },
             {
               id: 'fixture_box',
@@ -1548,7 +1593,7 @@ describe('content references', () => {
               category: 'material',
               weight: 1,
               size: [1, 1],
-              unpack: { item: cartridge, count: 1 },
+              unpack: { item: cartridge, count: 1, simSeconds: 1 },
               disassembly: {
                 timeGameMinutes: gameMinutes(1),
                 skill: 'fixture_crafting',
@@ -1796,7 +1841,7 @@ describe('content references', () => {
               seenFrom: 30,
               color: '#ffffff',
               intensity: 1,
-              power: { battery: 'bandage', chargePerGameHour: 1 },
+              power: { battery: 'bandage', chargePerGameHour: 1, swapSimSeconds: 1 },
             },
           },
         ],

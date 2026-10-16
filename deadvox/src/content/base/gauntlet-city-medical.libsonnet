@@ -17,8 +17,9 @@ local wall = [
   '##...##', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#',
   '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#######',
 ];
+local posts(layer) = ['#T...T#'] + std.slice(layer, 1, null, 1);
 local crossWide = [
-  '##TTT##', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#',
+  'TTTTTTT', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#',
   '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#######',
 ];
 local crossStem = [
@@ -26,7 +27,7 @@ local crossStem = [
   '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#######',
 ];
 local claim(layer) = [std.join('', [if c == '.' then 'R' else 'S' for c in std.stringChars(row)]) for row in layer];
-local layers = [base, supply, wall, wall, crossWide, crossStem];
+local layers = [posts(base), posts(supply), posts(wall), posts(wall), crossWide, crossStem];
 local full = [
   '#######', '#######', '#######', '#######', '#######', '#######',
   '#######', '#######', '#######', '#######', '#######', '#######',
@@ -59,7 +60,7 @@ local slot(id, piece, at, size, turn=0) = {
   blocks: [{ id: 'gauntlet_canvas', name: 'Tent canvas', color: '#d9d2b7', solid: true, weatherable: false }],
   mapStyles: [{ id: 'gauntlet_canvas', bindings: {
     canvas: { role: 'shell', block: 'gauntlet_canvas' },
-    cross: { role: 'trim', block: 'siding_red' }, opening: { role: 'opening', block: 'air' },
+    cross: { role: 'trim', block: 'shop_red' }, opening: { role: 'opening', block: 'air' },
   } }],
   mapPieces: [
     piece('gauntlet_triage_tent', [7, 6, 12], layers, [claim(layer) for layer in layers]),

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { BATTERY_SWAP, chargeOf } from '../src/core/lights.ts';
+import { chargeOf } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import { Survival } from '../src/game/survival.ts';
@@ -105,7 +105,7 @@ describe('non-owning item bindings', () => {
     expect(inventory.add(battery, { kind: 'hand', side: 'right' })).toBe(true);
     quickbar.assign(0, battery);
     expect(survival.use(battery)).toBeUndefined();
-    queue.tick(BATTERY_SWAP + 0.1);
+    queue.tick(registry.items.get('flashlight')!.light!.power!.swapSimSeconds + 0.1);
     expect(inventory.itemByUid(battery.uid)).toBe(battery);
     expect(light.slots?.battery).toBe(battery);
     expect(quickbar.snapshotState(inventory)[0]).toBe(battery.uid);

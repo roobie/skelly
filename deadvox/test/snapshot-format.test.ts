@@ -218,6 +218,7 @@ it("a hit's acute pain and a painkiller dose under way survive the save codec", 
             weight: 1,
             size: [1, 1],
             analgesic: {
+              takeSimSeconds: 2,
               reliefPerDose: 1,
               maxRelief: 1,
               onsetGameMinutes: 30,

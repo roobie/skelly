@@ -7,7 +7,7 @@ import { options, toHands } from '../src/core/options.ts';
 import { reach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
-import { BOX_UNPACK_SECONDS, Unpacking } from '../src/game/unpacking.ts';
+import { Unpacking } from '../src/game/unpacking.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const sources = readdirSync('src/content/base')
@@ -18,6 +18,7 @@ const { registry, issues } = buildRegistry(sources);
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
+const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSeconds;
 const shellType = 'shell_12_gauge_00_buck';
 const payloadCount = 7;
 const stackCapacity = 11;
@@ -29,7 +30,7 @@ const fixture = (small = false, held = true) => {
       .set(shellType, { ...registry.items.get(shellType)!, stack: stackCapacity })
       .set('shotshell_box', {
         ...registry.items.get('shotshell_box')!,
-        unpack: { item: shellType, count: payloadCount },
+        unpack: { item: shellType, count: payloadCount, simSeconds: BOX_UNPACK_SECONDS },
       }),
   };
   const content = small
@@ -138,7 +139,7 @@ describe('sealed ammunition package activation', () => {
             category: box.category,
             weight: box.weight,
             size: box.size,
-            unpack: { item: 'fixture_shell', count: stackCapacity + 1 },
+            unpack: { item: 'fixture_shell', count: stackCapacity + 1, simSeconds: BOX_UNPACK_SECONDS },
           },
         ],
       },
@@ -150,7 +151,10 @@ describe('sealed ammunition package activation', () => {
       data: {
         items: [
           source.data.items[0],
-          { ...source.data.items[1], unpack: { item: 'fixture_shell', count: stackCapacity } },
+          {
+            ...source.data.items[1],
+            unpack: { item: 'fixture_shell', count: stackCapacity, simSeconds: BOX_UNPACK_SECONDS },
+          },
         ],
       },
     };

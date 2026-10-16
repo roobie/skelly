@@ -256,14 +256,29 @@ const WearableSchema = strictObject({
   wearPerHit: optional(Fraction),
 });
 
-const FoodSchema = strictObject({
-  /** Kilocalories. */
-  calories: NonNegative,
-  /** Millilitres of water it gives. */
-  water: NonNegative,
-  /** Game hours until it spoils; absent means it keeps. */
-  rotsAfterGameHours: optional(PositiveGameHours),
-});
+const FoodSchema = pipe(
+  strictObject({
+    /** Kilocalories. */
+    calories: NonNegative,
+    /** Millilitres of water it gives. */
+    water: NonNegative,
+    /** Sim seconds to eat or drink one. */
+    consumeSimSeconds: PositiveSimSeconds,
+    /** Game hours until it spoils; absent means it keeps. */
+    rotsAfterGameHours: optional(PositiveGameHours),
+    /** Share of `rotsAfterGameHours` after which it reads as going off; required for food that spoils. */
+    goingOffFraction: optional(pipe(Positive, maxValue(1, 'must be at most 1'))),
+    /** Health lost to eating it once rotten; required for food that spoils. */
+    poisonHealth: optional(Positive),
+  }),
+  check(
+    (food) =>
+      food.rotsAfterGameHours === undefined
+        ? food.goingOffFraction === undefined && food.poisonHealth === undefined
+        : food.goingOffFraction !== undefined && food.poisonHealth !== undefined,
+    'food that spoils needs goingOffFraction and poisonHealth, and food that keeps has neither',
+  ),
+);
 
 const ToolSchema = strictObject({
   /** Quality levels, such as { "prying": 2 }. */
@@ -278,6 +293,10 @@ const WeaponSchema = strictObject({
     /** Sim seconds between swings. */
     cooldownSimSeconds: PositiveSimSeconds,
     stamina: NonNegative,
+    /** Share of the cooldown a swing winds up before contact, capped by `windupCapSimSeconds`. */
+    contactFraction: Fraction,
+    /** The longest wind-up before contact, in sim seconds. */
+    windupCapSimSeconds: PositiveSimSeconds,
     /** Impulse delivered by a melee hit, in N·s. */
     impulse: optional(NonNegative),
     /** Condition lost when this weapon lands a melee hit. */
@@ -317,6 +336,18 @@ const FirearmSchema = strictObject({
   dispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2, 'must be at most a right angle')),
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
+  /** Reload handling times at skill 0, before the firearms skill's reload factor. */
+  handling: strictObject({
+    /** One shell into the tube; required for a pump. */
+    shellLoadSimSeconds: optional(PositiveSimSeconds),
+    /** Taking the fitted magazine out and drawing one in; required for a magazine-fed gun. */
+    magazine: optional(
+      strictObject({
+        removeSimSeconds: PositiveSimSeconds,
+        insertSimSeconds: PositiveSimSeconds,
+      }),
+    ),
+  }),
 });
 /** Per projectile (one rifle bullet, or each pellet); damage, push and reach are gameplay estimates, not ballistics. */
 const AmmoSchema = strictObject({
@@ -331,6 +362,10 @@ const AmmoSchema = strictObject({
   rangeMetres: Positive,
   /** Scales `damage` on a head hit; absent means 1. */
   headDamageMultiplier: optional(Positive),
+  /** Sim seconds to press one into a magazine, before the firearms skill's reload factor. */
+  loadSimSeconds: PositiveSimSeconds,
+  /** Sim seconds to strip one out of a magazine, before the firearms skill's reload factor. */
+  stripSimSeconds: PositiveSimSeconds,
 });
 
 const LightSchema = strictObject({
@@ -367,7 +402,7 @@ const LightSchema = strictObject({
     }),
   ),
   /** What powers it: an item with a battery component, and charge used per Game hour. */
-  power: optional(strictObject({ battery: Id, chargePerGameHour: GamePerHour })),
+  power: optional(strictObject({ battery: Id, chargePerGameHour: GamePerHour, swapSimSeconds: PositiveSimSeconds })),
 });
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
@@ -474,6 +509,8 @@ const DisassemblySchema = strictObject({
 const AnalgesicSchema = strictObject({
   /** Painkillers that share one cap; an item without a group is its own. */
   group: optional(Id),
+  /** Handling time to take one dose. */
+  takeSimSeconds: PositiveSimSeconds,
   /** Pain one dose takes off at its peak. */
   reliefPerDose: Positive,
   /** The most relief the group's doses give together, so a repeat dose adds less. */
@@ -528,7 +565,9 @@ const ItemSchema = strictObject({
   firearm: optional(FirearmSchema),
   ammo: optional(AmmoSchema),
   /** Sealed, non-container payload: held primary activation opens one package. */
-  unpack: optional(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
+  unpack: optional(
+    strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')), simSeconds: PositiveSimSeconds }),
+  ),
   /** An authored yield for a finished item; never inferred from recipe alternatives. */
   disassembly: optional(DisassemblySchema),
   /** Fixed outputs for found items with no recipe. */
@@ -1089,13 +1128,17 @@ const MapPieceSchema = strictObject({
   ports: array(KitPortSchema),
 });
 const KitRefSchema = strictObject({ kind: picklist(['piece', 'assembly']), id: Id, style: optional(Id) });
-const KitSlotSchema = strictObject({
-  id: Id,
-  at: tuple([Count, Count, Count]),
-  size: KitSize,
-  turn: picklist([0, 1, 2, 3]),
-  choices: pipe(array(strictObject({ ref: KitRefSchema, weight: Positive })), nonEmpty()),
-});
+const KitSlotSchema = pipe(
+  strictObject({
+    id: Id,
+    at: tuple([Count, Count, Count]),
+    size: KitSize,
+    turn: picklist([0, 1, 2, 3]),
+    choices: optional(pipe(array(strictObject({ ref: KitRefSchema, weight: Positive })), nonEmpty())),
+    pool: optional(Id),
+  }),
+  check((slot) => (slot.choices === undefined) !== (slot.pool === undefined), 'needs exactly one of choices or pool'),
+);
 const KitEndpointSchema = strictObject({ slot: Id, port: Id });
 const KitJoinSchema = strictObject({
   id: Id,
@@ -1241,7 +1284,7 @@ const SiteLayoutSchema = strictObject({
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
 });
 
-const PoolRefSchema = strictObject({ kind: picklist(['template', 'assembly']), id: Id, style: optional(Id) });
+const PoolRefSchema = union([KitRefSchema, strictObject({ kind: literal('template'), id: Id, style: optional(Id) })]);
 const MapPoolSchema = strictObject({
   id: Id,
   choices: pipe(

@@ -7,8 +7,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { chargeOf, toggleLight } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
-import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
-import { EAT_TIME, TAKE_TIME } from '../src/core/options.ts';
+import { SPAWN_NEEDS } from '../src/core/needs.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
@@ -22,6 +21,10 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => read(`src/content/base/${file}`)),
 );
+const EAT_TIME = registry.items.get('canned_beans')!.food!.consumeSimSeconds;
+const APPLE_EAT_TIME = registry.items.get('apple')!.food!.consumeSimSeconds;
+const FOOD_POISONING = registry.items.get('apple')!.food!.poisonHealth!;
+const TAKE_TIME = 2;
 
 // The test's own painkillers: the component, not the category, makes an item one, so each route is held to that.
 const pillOf = (id: string, category: string) => ({
@@ -31,7 +34,14 @@ const pillOf = (id: string, category: string) => ({
   weight: 1,
   size: [1, 1],
   stack: 6,
-  analgesic: { reliefPerDose: 1, maxRelief: 1, onsetGameMinutes: 30, peakGameMinutes: 120, fadeGameMinutes: 60 },
+  analgesic: {
+    takeSimSeconds: TAKE_TIME,
+    reliefPerDose: 1,
+    maxRelief: 1,
+    onsetGameMinutes: 30,
+    peakGameMinutes: 120,
+    fadeGameMinutes: 60,
+  },
 });
 const painkillerFixture = buildRegistry([
   {
@@ -162,7 +172,7 @@ describe('using what you hold', () => {
     apple.madeAtGameTimestamp = 0;
     sim.setDebugCalendarTime(300 * SECONDS_PER_HOUR);
     survival.use(apple);
-    queue.tick(EAT_TIME + 0.1);
+    queue.tick(APPLE_EAT_TIME + 0.1);
     expect(sim.needs.calories).toBe(SPAWN_NEEDS.calories);
     expect(sim.body.health).toBe(100 - FOOD_POISONING);
     expect(notices).toContain('The apple was rotten');

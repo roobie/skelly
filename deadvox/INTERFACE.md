@@ -39,7 +39,7 @@ Short first-person refusals and observations name the world or the character's s
 
 ## HUD
 
-The HUD options and master toggle govern HUD-owned elements. World, bodily and held-item cues remain outside them. See `src/ui/hudOptions.ts`, `hudVisibility`.
+The HUD options and master toggle govern HUD-owned elements without changing individual settings. World, bodily and held-item cues, the compass display, inventory controls and the rest card remain outside them. Interaction hints are hidden while a modal screen is open, because the screen owns input and a world hint over it is noise. See `src/ui/hudOptions.ts`, `HudSettings`, and `hudVisibility`.
 
 The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. The outline must not become a glowing substitute for seeing the object: it receives the scene's surface lighting, without emission or a minimum visibility floor. Its edge normals bisect the adjacent faces, so an edge cannot receive direct light when neither adjoining face faces the light. This keeps its yellow cue responsive to lamps and flashlights as well as the sky, rather than treating a sky-intensity estimate as surface brightness. See `src/render/interactionMarker.ts`, `markInteractionTarget`, and `src/render/furniture.ts`, `markerEdges`.
 
@@ -56,8 +56,6 @@ Bleeding feedback names each region's tier when messages are enabled. A content 
 `?debug=1` is a development profile whose tools and readouts may be instructional. A separate playtest profile remains planned, without god mode, spawning, noclip or time controls. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
 
 A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
-
-The HUD toggle hides every element owned by HUD options without changing individual settings. World, bodily cues and the compass display remain; inventory controls and the rest card remain because they are not governed by those options. See `src/ui/hudOptions.ts`, `HudSettings`, and `hudVisibility`.
 
 ## Layout
 

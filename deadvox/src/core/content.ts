@@ -401,6 +401,20 @@ const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry
   }
 };
 
+const checkFirearmHandling = (
+  item: ItemDef,
+  firearm: NonNullable<ItemDef['firearm']>,
+  registry: Registry,
+  report: Report,
+): void => {
+  if (firearm.pump && firearm.handling.shellLoadSimSeconds === undefined) {
+    report('items', item.id, '.firearm.handling.shellLoadSimSeconds', 'a pump firearm needs a shell load time');
+  }
+  if (magazineWellCalibre(registry, item.id) !== undefined && firearm.handling.magazine === undefined) {
+    report('items', item.id, '.firearm.handling.magazine', 'a magazine-fed firearm needs magazine handling times');
+  }
+};
+
 const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): void => {
   if (item.firearm?.pump && item.firearm.dispersionRadians !== 0) {
     report('items', item.id, '.firearm.dispersionRadians', 'pump pellet spread owns its cone');
@@ -412,6 +426,7 @@ const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): vo
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
   if (item.firearm) {
     checkFirearmSounds(item, model, registry, report);
+    checkFirearmHandling(item, item.firearm, registry, report);
   }
   for (const attachment of model?.attachments ?? []) {
     const registered = [...registry.items.values()].some((candidate) => {

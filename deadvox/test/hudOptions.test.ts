@@ -79,6 +79,14 @@ describe('HUD options', () => {
     );
   });
 
+  it('hides the interaction hint while a modal screen is open and leaves the other elements alone', () => {
+    const settings = { ...DEFAULT_HUD_OPTIONS, shown: true, interaction: true };
+    const open = hudVisibility(settings, false, true);
+    expect(open.interaction).toBe(false);
+    expect(open).toEqual({ ...hudVisibility(settings), interaction: false });
+    expect(hudVisibility(settings, true, true).interaction).toBe(false);
+  });
+
   it('hides every element while the HUD is hidden and shows each option as set once it is shown again', () => {
     const settings = onlyFirstOptionOff();
     const shownVisibility = hudVisibility(settings);

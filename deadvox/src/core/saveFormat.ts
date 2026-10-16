@@ -599,6 +599,8 @@ const meleeAction = nullable(
       damage: positive,
       reach: positive,
       cooldown: positive,
+      contactFraction: opt(num({ min: 0, max: 1 })),
+      windupCapSimSeconds: opt(positive),
       stamina: opt(nonNegative),
       impulse: opt(nonNegative),
       damageVariance: opt(num({ min: 0, max: 1 })),

@@ -88,7 +88,8 @@
         "maxRelief": 30,
         "onsetGameMinutes": 45,
         "peakGameMinutes": 210,
-        "reliefPerDose": 20
+        "reliefPerDose": 20,
+        "takeSimSeconds": 2
       },
       "category": "medical",
       "description": "An over-the-counter pill. Eases pain for a few hours; it heals nothing.",
@@ -353,8 +354,10 @@
         "damage": 20,
         "diameterMm": 8.3800000000000008,
         "impulse": 0.34999999999999998,
+        "loadSimSeconds": 0.80000000000000004,
         "pellets": 9,
-        "rangeMetres": 50
+        "rangeMetres": 50,
+        "stripSimSeconds": 0.5
       },
       "category": "ammo",
       "description": "Nine-pellet 00 buckshot.",
@@ -381,7 +384,8 @@
       "size": [2, 2],
       "unpack": {
         "count": 20,
-        "item": "shell_12_gauge_00_buck"
+        "item": "shell_12_gauge_00_buck",
+        "simSeconds": 1.2
       },
       "weight": 840
     },

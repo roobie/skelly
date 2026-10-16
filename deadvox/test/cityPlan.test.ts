@@ -13,7 +13,7 @@ import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
-import { cellsOf, compileAssembly, compileTemplate, footprint } from '../src/core/templates.ts';
+import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
@@ -81,7 +81,9 @@ const generated = (reverse: boolean) => {
 const nativeDefinitions = (id: string, style?: string) => {
   const native = BUNDLED_CONTENT.registry;
   const alternatives = Math.max(
-    ...[...native.mapAssemblies.values()].flatMap((candidate) => candidate.slots.map((slot) => slot.choices.length)),
+    ...[...native.mapAssemblies.values()].flatMap((candidate) =>
+      candidate.slots.map((slot) => kitSlotChoices(native, slot).length),
+    ),
   );
   return Array.from({ length: alternatives }, (_, variant) => {
     const selected = {
@@ -91,10 +93,10 @@ const nativeDefinitions = (id: string, style?: string) => {
           candidate.id,
           {
             ...candidate,
-            slots: candidate.slots.map((slot) => ({
-              ...slot,
-              choices: [slot.choices[variant % slot.choices.length]!],
-            })),
+            slots: candidate.slots.map(({ pool: _pool, ...slot }) => {
+              const choices = kitSlotChoices(native, { ...slot, pool: _pool });
+              return { ...slot, choices: [choices[variant % choices.length]!] };
+            }),
           },
         ]),
       ),

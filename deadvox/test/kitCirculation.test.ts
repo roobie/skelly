@@ -4,7 +4,7 @@ import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { templateStandingRoute } from '../src/core/templateSpatial.ts';
-import { compileAssembly, compileMapPiece } from '../src/core/templates.ts';
+import { compileAssembly, compileMapPiece, kitSlotChoices } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 
 const BUNDLED_CONTENT = buildBundledContent();
@@ -19,11 +19,11 @@ it('equipment alternatives leave declared level circulation reachable in both di
   let furnished = false;
   for (const surface of surfaces) {
     for (const slot of surface.slots) {
-      for (const choice of slot.choices) {
+      for (const choice of kitSlotChoices(registry, slot)) {
         const definition = {
           ...surface,
           slots: surface.slots.map((candidate) =>
-            candidate === slot ? { ...candidate, choices: [choice] } : candidate,
+            candidate === slot ? { ...candidate, pool: undefined, choices: [choice] } : candidate,
           ),
         };
         const compiled = compileAssembly(registry, definition, { seed: 1, siteId: 'circulation-witness' });
@@ -72,7 +72,7 @@ it('a fixture mod can replace a role style by id without changing curated geomet
   });
   expect(facadeCells.length).toBeGreaterThan(0);
   expect(facadeCells.every((index) => compiled.blocks[index] === facade)).toBe(true);
-  const base = buildRegistry(sources);
+  const base = BUNDLED_CONTENT;
   expect(base.issues).toEqual([]);
   const original = compileMapPiece(base.registry, base.registry.mapPieces.get(piece.id)!);
   expect(compiled.ownership).toEqual(original.ownership);

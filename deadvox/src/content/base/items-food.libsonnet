@@ -1,94 +1,73 @@
+// Eating takes longer than drinking; a rotting food spoils at its going-off fraction of life and poisons for its health cost.
+local eats(calories, water) = { calories: calories, water: water, consumeSimSeconds: 3 };
+local drinks(calories, water) = { calories: calories, water: water, consumeSimSeconds: 2 };
+
 {
-  "items": [
+  items: [
     {
-      "id": "canned_beans",
-      "name": "Can of beans",
-      "category": "food",
-      "weight": 450,
-      "size": [1, 2],
-      "description": "Dented but sealed.",
-      "food": {
-        "calories": 350,
-        "water": 100
-      }
+      id: 'canned_beans',
+      name: 'Can of beans',
+      category: 'food',
+      weight: 450,
+      size: [1, 2],
+      description: 'Dented but sealed.',
+      food: eats(350, 100),
     },
     {
-      "id": "canned_soup",
-      "name": "Can of soup",
-      "category": "food",
-      "weight": 430,
-      "size": [1, 2],
-      "food": {
-        "calories": 200,
-        "water": 250
-      }
+      id: 'canned_soup',
+      name: 'Can of soup',
+      category: 'food',
+      weight: 430,
+      size: [1, 2],
+      food: eats(200, 250),
     },
     {
-      "id": "crackers",
-      "name": "Box of crackers",
-      "category": "food",
-      "weight": 250,
-      "size": [2, 2],
-      "food": {
-        "calories": 1100,
-        "water": 0
-      }
+      id: 'crackers',
+      name: 'Box of crackers',
+      category: 'food',
+      weight: 250,
+      size: [2, 2],
+      food: eats(1100, 0),
     },
     {
-      "id": "apple",
-      "name": "Apple",
-      "category": "food",
-      "weight": 180,
-      "size": [1, 1],
-      "food": {
-        "calories": 95,
-        "water": 150,
-        "rotsAfterGameHours": 240
-      }
+      id: 'apple',
+      name: 'Apple',
+      category: 'food',
+      weight: 180,
+      size: [1, 1],
+      food: eats(95, 150) { rotsAfterGameHours: 240, goingOffFraction: 0.5, poisonHealth: 15 },
     },
     {
-      "id": "chocolate_bar",
-      "name": "Chocolate bar",
-      "category": "food",
-      "weight": 100,
-      "size": [2, 1],
-      "food": {
-        "calories": 530,
-        "water": 0
-      }
+      id: 'chocolate_bar',
+      name: 'Chocolate bar',
+      category: 'food',
+      weight: 100,
+      size: [2, 1],
+      food: eats(530, 0),
     },
     {
-      "id": "soda_can",
-      "name": "Can of soda",
-      "category": "drink",
-      "weight": 360,
-      "size": [1, 2],
-      "food": {
-        "calories": 140,
-        "water": 300
-      }
+      id: 'soda_can',
+      name: 'Can of soda',
+      category: 'drink',
+      weight: 360,
+      size: [1, 2],
+      food: drinks(140, 300),
     },
     {
-      "id": "water_bottle",
-      "name": "Bottle of water",
-      "category": "drink",
-      "weight": 1050,
-      "size": [1, 3],
-      "food": {
-        "calories": 0,
-        "water": 1000
-      }
+      id: 'water_bottle',
+      name: 'Bottle of water',
+      category: 'drink',
+      weight: 1050,
+      size: [1, 3],
+      food: drinks(0, 1000),
     },
     {
-      "id": "juice_carton",
-      "name": "Carton of juice",
-      "category": "drink",
-      "weight": 1050,
-      "size": [1, 3],
-      "food": {
-        "calories": 450,
-        "water": 900
-      }
-    }
-  ]
+      id: 'juice_carton',
+      name: 'Carton of juice',
+      category: 'drink',
+      weight: 1050,
+      size: [1, 3],
+      food: drinks(450, 900),
+    },
+  ],
 }

@@ -5,7 +5,7 @@ import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
-import { EAT_TIME, options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
+import { options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
@@ -163,7 +163,7 @@ it('beans expose the eat time and a refusal when both hands hold other items', (
   const t = setup();
   const beans = t.add('canned_beans', { kind: 'hand', side: 'right' });
   expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({
-    plan: { ok: true, time: EAT_TIME },
+    plan: { ok: true, time: registry.items.get('canned_beans')!.food!.consumeSimSeconds },
   });
   const backpack = t.add('school_backpack', { kind: 'worn' });
   t.inventory.move(beans, { kind: 'pocket', owner: backpack, pocket: 0 });

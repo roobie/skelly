@@ -91,17 +91,23 @@ alternatives, so one compiled buffer per storey count serves every building that
 it; only assemblies resolve per location. See `src/core/cityPlan.ts`, `buildCityPlan`
 and `templateCompiler`.
 
-A ref carries the style: a slot choice's `ref` or a map pool row's `ref` may name a map
-style, and every piece beneath it takes its palette from that style instead of its own.
-The whole building therefore shares one facade treatment, so floor and roof edges cannot
-become unrelated stripes, and a mod adds a style by adding a style definition and a pool
-row, with no new piece ids. The brick-to-concrete ratio is the weights of two rows of the
-same building and style; a mod changes the ratio by overriding the pool. An unknown style
-fails validation at the row's source path, and compiling a slot ref with one throws with
-the slot path. A style on a ref that is not an assembly is an issue too, because only an
-assembly's pieces resolve through it. See `src/core/schema.ts`, `KitRefSchema`,
-`PoolRefSchema` and `MapPoolSchema`; `src/core/templates.ts`, `compileKitRef`; and
-`src/core/cityPlan.ts`, `cityPoolIssues`. Decoration must stay outside reserved roof and street circulation:
+A slot may take its alternatives from a map pool instead of inline choices, so a mod
+changes one weight with a small pool override rather than re-authoring the assembly.
+Pool-sourced alternatives must preserve the same spatial contract as inline ones.
+Slot pools name pieces or assemblies and cannot carry city quotas: a single slot has
+no per-site count to satisfy. City pools name templates or assemblies instead. See
+`src/core/schema.ts`, `KitSlotSchema`, `PoolRefSchema` and `MapPoolSchema`;
+`src/core/templates.ts`, `kitSlotChoices` and `resolveSlot`; and `src/core/mapKit.ts`,
+`mapKitIssues`.
+
+A ref may carry a style, inherited by every piece beneath it so floor and roof edges
+share the facade treatment. Styles and pool rows can change the mix without new piece
+ids. Unknown styles fail validation and slot compilation retains the slot path.
+City template refs cannot carry styles because literal templates have no role palette;
+slot piece and assembly refs can. See `src/core/schema.ts`, `KitRefSchema`;
+`src/core/templates.ts`, `compileKitRef`; and `src/core/cityPlan.ts`, `cityPoolIssues`.
+
+Decoration must stay outside reserved roof and street circulation:
 tuning its frequency must not seal a ladder landing or entrance. The cellar street
 course keeps the street-side `=` footing solid so the yard and entrance stand on it, and
 leaves the interior to the floor piece (`gauntlet_city_floor_lower`, `floor_inside`
@@ -160,6 +166,7 @@ The edge ring is a second pool on the city, `city.ring`, with a setback from the
 ### City perimeter
 
 The wall is content: block, height, thickness and optional wire on `city.perimeter`, with `clearance` as the jump reach the wall must out-top, and optional `lining` and `gate` assemblies. The wall is one closed loop, including across the central street, because a gap at the street would be the one way out and the loop check fails any open span. The lining (barriers and notices) repeats along the inside foot and the gate dresses the street crossing; both are authored templates or assemblies that must fit beside the wall, and notice text follows `INTERFACE.md`, "Text" and faces inward. The gate is solid for movement, so the central street ends at it. Keep the reach as content rather than a code constant so the check and the wall height move together. The clearance check is static, from the wall and the tallest roof near it; a reach flood fill from the spawn would add a whole-city traversal with a jump model for no extra property the loop and clearance checks leave open. See `src/core/cityPlan.ts`, `perimeterGaps` and `perimeterIssues`, `src/core/schema.ts`, `ScenarioSchema`, and `src/content/base/gauntlet-city-perimeter.libsonnet`.
+Every shop shows a street cue that no house carries, and no two shop types share one, so a player walking the street can tell a shop from a house, and one kind of shop from another, before entering. The cue is built from blocks that only shop fronts use, on the street face and in the yard in front of it. A cue prop must never narrow what a standing player or shambler can walk: the yard cells in front of a door keep full standing headroom, so a prop that hangs over the yard goes above the standing body, not at head height. The rule is data-only, with no code special cases per shop type. See `src/content/base/gauntlet-city-building-types.libsonnet`, `shell`, and `test/cityKitPlan.test.ts`, "gauntlet shop fronts".
 
 ## Recipes
 

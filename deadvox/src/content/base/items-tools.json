@@ -32,13 +32,15 @@
       },
       "weapon": {
         "melee": {
+          "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 1.1000000000000001,
           "damage": 14,
           "impulse": 8,
           "reach": 0.59999999999999998,
           "stamina": 8,
           "type": "blunt",
-          "wearPerHit": 0.014999999999999999
+          "wearPerHit": 0.014999999999999999,
+          "windupCapSimSeconds": 0.25
         }
       },
       "weight": 1500
@@ -60,13 +62,15 @@
       },
       "weapon": {
         "melee": {
+          "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 0.80000000000000004,
           "damage": 10,
           "impulse": 6,
           "reach": 0.40000000000000002,
           "stamina": 5,
           "type": "blunt",
-          "wearPerHit": 0.012
+          "wearPerHit": 0.012,
+          "windupCapSimSeconds": 0.25
         }
       },
       "weight": 700
@@ -88,13 +92,15 @@
       },
       "weapon": {
         "melee": {
+          "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 0.5,
           "damage": 8,
           "impulse": 3.5,
           "reach": 0.25,
           "stamina": 3,
           "type": "cut",
-          "wearPerHit": 0.025000000000000001
+          "wearPerHit": 0.025000000000000001,
+          "windupCapSimSeconds": 0.25
         }
       },
       "weight": 150
@@ -116,13 +122,15 @@
       },
       "weapon": {
         "melee": {
+          "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 0.55000000000000004,
           "damage": 9,
           "impulse": 4,
           "reach": 0.29999999999999999,
           "stamina": 3.5,
           "type": "cut",
-          "wearPerHit": 0.025000000000000001
+          "wearPerHit": 0.025000000000000001,
+          "windupCapSimSeconds": 0.25
         }
       },
       "weight": 300
@@ -144,13 +152,15 @@
       },
       "weapon": {
         "melee": {
+          "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 0.75,
           "damage": 11,
           "impulse": 4.5,
           "reach": 0.45000000000000001,
           "stamina": 5,
           "type": "cut",
-          "wearPerHit": 0.02
+          "wearPerHit": 0.02,
+          "windupCapSimSeconds": 0.25
         }
       },
       "weight": 550
@@ -184,13 +194,15 @@
       "twoHanded": true,
       "weapon": {
         "melee": {
+          "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 1.2,
           "damage": 15,
           "impulse": 10,
           "reach": 0.80000000000000004,
           "stamina": 9,
           "type": "blunt",
-          "wearPerHit": 0.01
+          "wearPerHit": 0.01,
+          "windupCapSimSeconds": 0.25
         }
       },
       "weight": 900
@@ -207,13 +219,15 @@
       "size": [1, 6],
       "weapon": {
         "melee": {
+          "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 1.2,
           "damage": 13,
           "impulse": 8,
           "reach": 0.59999999999999998,
           "stamina": 9,
           "type": "blunt",
-          "wearPerHit": 0.014999999999999999
+          "wearPerHit": 0.014999999999999999,
+          "windupCapSimSeconds": 0.25
         }
       },
       "weight": 1800
@@ -235,7 +249,8 @@
         "intensity": 5,
         "power": {
           "battery": "aa_battery",
-          "chargePerGameHour": 0.25
+          "chargePerGameHour": 0.25,
+          "swapSimSeconds": 2
         },
         "radius": 20,
         "seenFrom": 40
@@ -262,7 +277,8 @@
         "intensity": 2.5,
         "power": {
           "battery": "aa_battery",
-          "chargePerGameHour": 0.20000000000000001
+          "chargePerGameHour": 0.20000000000000001,
+          "swapSimSeconds": 2
         },
         "radius": 12,
         "seenFrom": 30

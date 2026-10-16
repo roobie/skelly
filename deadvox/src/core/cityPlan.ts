@@ -317,6 +317,9 @@ const poolRowIssues = (
 ): [string, string][] =>
   pool.choices.flatMap(({ ref }, index): [string, string][] => {
     const choiceAt = `${at}.choices[${index}].ref`;
+    if (ref.kind === 'piece') {
+      return [[choiceAt, `city pool "${pool.id}" needs a template or assembly, not piece "${ref.id}"`]];
+    }
     if (registry.templates.has(ref.id) && registry.mapAssemblies.has(ref.id)) {
       return [[choiceAt, `ambiguous template and assembly "${ref.id}"`]];
     }
