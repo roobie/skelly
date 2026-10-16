@@ -37,7 +37,7 @@ const metal = (id: string, min: readonly [number, number, number], max: readonly
   box: boxFromMinMax(min, max),
   slot: 'metal',
 });
-export const sporterFinger = (): Box =>
+const sporterFinger = (): Box =>
   boxFromMinMax(
     [P.lower.finger.x[0], P.lower.finger.y[0], P.lower.finger.z[0]],
     [P.lower.finger.x[1], P.lower.finger.y[1], P.lower.finger.z[1]],
