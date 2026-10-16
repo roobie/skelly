@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { buildRegistry } from '../deadvox/src/core/content.ts';
+import { namedNodes } from '../deadvox/src/render/firearmModel.ts';
 import { exportFileText } from '../gungen/src/cli/exportFile.ts';
 import { exportAttachmentGlb } from '../gungen/src/gun/attachmentExport.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
@@ -164,6 +165,28 @@ describe('gungen exports satisfy deadvox model validation', () => {
         });
         assert.ok(loadedColors.length > 0, `Deadvox ${id} GLB loaded no mesh materials`);
         assert.deepEqual(loadedColors, [exportedColor.slice(0, 3)]);
+      }),
+    );
+  });
+
+  it('loads every exported revolver moving node through the Deadvox parser association', async () => {
+    const models = FIREARM_CONTENT.models.filter((model) => model.revolver);
+    assert.ok(models.length > 0);
+    await Promise.all(
+      models.map(async (model) => {
+        assert.deepEqual(buildRegistry([{ source: model.file, data: { models: [model] } }]).issues, []);
+        const bytes = readFileSync(join(DEADVOX_BASE, model.file));
+        const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+        const roles = ['crane', 'cylinder', 'ejector', 'hammer', 'trigger'];
+        const nodes = namedNodes(
+          loaded.scene,
+          loaded.parser,
+          roles.map((role) => model.revolver[role].node),
+        );
+        assert.equal(new Set(nodes).size, roles.length);
+        for (const node of nodes) {
+          assert.ok(node.isMesh || node.children.some((child) => child.isMesh));
+        }
       }),
     );
   });

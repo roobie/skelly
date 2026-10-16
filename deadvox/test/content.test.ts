@@ -13,12 +13,12 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
+import { sitePalette } from '../src/core/sitePalette.ts';
 import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
-import { terrainBlockIds } from '../src/core/worldgen.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
@@ -100,7 +100,7 @@ it('validates weathering profile bounds without pinning authored tuning', () => 
 it('weathering applies to authored construction, not terrain or vegetation', () => {
   const vegetation = base.find(({ source }) => source === 'vegetation.json')!.data as ContentFile;
   const vegetationIds = (vegetation.blocks ?? []).map(({ id }) => baseRegistry.blockIds.get(id)!);
-  const terrainIds = Object.values(terrainBlockIds((id) => baseRegistry.blockIds.get(id)!));
+  const terrainIds = Object.values(sitePalette(baseRegistry).terrain);
   const naturalIds = [...vegetationIds, ...terrainIds];
   const naturalIdSet = new Set(naturalIds);
   const builtIds = baseRegistry.blocks.map((_, id) => id).filter((id) => id !== 0 && !naturalIdSet.has(id));
@@ -160,7 +160,7 @@ const firearmFixture = (skillZeroHandling: unknown) => ({
   category: 'weapon',
   weight: 1,
   size: [1, 1],
-  firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', skillZeroHandling },
+  firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {}, skillZeroHandling },
 });
 
 const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: string): boolean => {
@@ -462,6 +462,45 @@ describe('content', () => {
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
   });
 
+  it('rejects an item that lacks the handling time its kind needs', () => {
+    type Raw = Record<string, unknown>;
+    const at = (root: unknown, keys: string[]): unknown =>
+      keys.reduce<unknown>((node, key) => (node as Raw | undefined)?.[key], root);
+    // A dropped field is reported at its own path, except a food's rot fields, which are checked together on `.food`.
+    const drops: { field: string; reportedAt?: string }[] = [
+      { field: 'food.consumeSimSeconds' },
+      { field: 'food.poisonHealth', reportedAt: '.food' },
+      { field: 'analgesic.takeSimSeconds' },
+      { field: 'light.power.swapSimSeconds' },
+      { field: 'unpack.simSeconds' },
+      { field: 'ammo.loadSimSeconds' },
+      { field: 'ammo.stripSimSeconds' },
+      { field: 'weapon.melee.contactFraction' },
+      { field: 'weapon.melee.windupCapSimSeconds' },
+      { field: 'firearm.handling.shellLoadSimSeconds' },
+      { field: 'firearm.handling.magazine' },
+    ];
+    // One build for all drops: each takes a distinct item that has the field, and each is reported by its own path.
+    const files = structuredClone(base) as { source: string; data: { items?: Raw[] } }[];
+    const items = files.flatMap((file) => file.data.items ?? []);
+    const used = new Set<Raw>();
+    const dropped = drops.map(({ field, reportedAt }) => {
+      const keys = field.split('.');
+      const item = items.find((candidate) => !used.has(candidate) && at(candidate, keys) !== undefined);
+      expect(item, field).toBeDefined();
+      used.add(item!);
+      Reflect.deleteProperty(at(item, keys.slice(0, -1)) as Raw, keys.at(-1)!);
+      return reportedAt ?? `.${field}`;
+    });
+    const { issues } = buildRegistry(files);
+    for (const path of dropped) {
+      expect(
+        issues.some((issue) => issue.path.endsWith(path)),
+        path,
+      ).toBe(true);
+    }
+  });
+
   it('rejects incomplete per-firearm skill-zero factors', () => {
     const issues = validateContent({
       source: 'fixture-firearm.json',
@@ -512,7 +551,13 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01, shotSound: 'gunshot' },
+      firearm: {
+        pump: true,
+        recoilKickRadians: 0.01,
+        dispersionRadians: 0.01,
+        shotSound: 'gunshot',
+        handling: { shellLoadSimSeconds: 1 },
+      },
     };
     const { issues } = buildRegistry([baseSounds, { source, data: { items: [item] } }]);
     expect(issues.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -532,7 +577,7 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot' },
+      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot', handling: {} },
     };
     const missing = validateContent({ source, data: { items: [item] } });
     expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -555,7 +600,7 @@ describe('content', () => {
           weight: 1,
           size: [1, 1],
           model: 'fixture_gun',
-          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot' },
+          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {} },
         },
         {
           id: 'fixture_suppressor',
@@ -818,6 +863,26 @@ describe('content', () => {
     expect(result.registry.items.has('book_reference_fixture')).toBe(false);
   });
 
+  it('rejects a site palette that names a missing block or template', () => {
+    const edited = structuredClone(base);
+    const entry = (edited.find(({ source }) => source === 'site-generation.json')!.data as ContentFile)
+      .siteGeneration![0]!;
+    entry.palette.terrain.rock = 'no_such_block';
+    entry.hamlet.northSide = ['no_such_template'];
+    const { issues } = buildRegistry(edited);
+    expect(issues.map(({ path, message }) => `${path}: ${message}`)).toEqual(
+      expect.arrayContaining([
+        'siteGeneration[0].palette.terrain.rock: no block "no_such_block"',
+        'siteGeneration[0].hamlet.northSide: no template "no_such_template"',
+      ]),
+    );
+  });
+
+  it('rejects a registry without site generation when a site palette is read', () => {
+    const { registry } = buildRegistry([]);
+    expect(() => sitePalette(registry)).toThrow('Missing site generation content');
+  });
+
   it('rejects placement loot without a container and retains the same loot when a pocket exists', () => {
     const source = 'test/fixtures/content/loot-override-no-container.json';
     const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;
@@ -832,6 +897,20 @@ describe('content', () => {
     // Only the container changes: shape/references and actual marked placement stay identical.
     const control = structuredClone(data);
     control.furniture![0]!.container = { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] };
+    // Reachability reads the hamlet template pools from site generation, so the fixture supplies them.
+    control.blocks = [{ id: 'fixture_block', name: 'Fixture block', color: '#888888', solid: true }];
+    control.siteGeneration = [
+      {
+        ...(base.find((file) => file.source === 'site-generation.json')!.data as ContentFile).siteGeneration![0]!,
+        palette: {
+          terrain: { grass: 'fixture_block', dirt: 'fixture_block', rock: 'fixture_block', sand: 'fixture_block' },
+          paving: 'fixture_block',
+          trees: { trunk: 'fixture_block', branch: 'fixture_block', leaves: 'fixture_block' },
+          leafLitter: 'fixture_block',
+        },
+        hamlet: { hedge: 'fixture_block', northSide: ['shed'], southSide: ['shed'] },
+      },
+    ];
     const { registry, issues } = buildRegistry([{ source, data: control }]);
     expect(issues).toEqual([]);
     expect(checkReachability(registry).found.has('review_only_item')).toBe(true);
@@ -1075,6 +1154,41 @@ describe('content', () => {
     expect(validateContent(missingStepLength).map((issue) => issue.path)).toContain('zombies[0].stepLength');
   });
 
+  it('requires figureSeeds on every zombie type but the amalgam, which must not define them', () => {
+    const zombieFile = base.find((file) => file.source === 'zombies.json')!;
+    interface Authored {
+      model: string;
+      figureSeeds?: number[] | undefined;
+    }
+    const issuesAfter = (model: string, change: (zombie: Authored) => void): string[] => {
+      const data = structuredClone(zombieFile.data) as { zombies: Authored[] };
+      change(data.zombies.find((zombie) => zombie.model === model)!);
+      return validateContent({ source: zombieFile.source, data }).map((issue) => issue.path);
+    };
+    const seeded = (zombie: Authored) => zombie.figureSeeds!;
+
+    expect(
+      issuesAfter('shambler', (zombie) => {
+        zombie.figureSeeds = undefined;
+      }),
+    ).toContain('zombies');
+    expect(
+      issuesAfter('shambler', (zombie) => {
+        zombie.figureSeeds = [];
+      }),
+    ).not.toEqual([]);
+    expect(
+      issuesAfter('shambler', (zombie) => {
+        zombie.figureSeeds = [seeded(zombie)[0]!, seeded(zombie)[0]!];
+      }),
+    ).not.toEqual([]);
+    expect(
+      issuesAfter('amalgam', (zombie) => {
+        zombie.figureSeeds = [1];
+      }),
+    ).not.toEqual([]);
+  });
+
   it('reports a duplicate id within a file', () => {
     const block = { id: 'ok', name: 'Fine', color: '#ffffff', solid: true };
     const issues = validateContent({ source: 'dup.json', data: { blocks: [block, block] } });
@@ -1297,7 +1411,7 @@ describe('content references', () => {
     source: 'reference-dependencies.json',
     data: {
       items: baseContent('items-other.json').items!.filter(({ id }) => id === 'bandage'),
-      skills: baseContent('recipes.json').skills,
+      skills: baseContent('recipes.json').skills!.map(({ startingRecipes: _, ...skill }) => skill),
       sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
     },
   };
@@ -1518,6 +1632,7 @@ describe('content references', () => {
               category: 'material',
               weight: 1,
               size: [1, 1],
+              salvageTimeGameMinutes: gameMinutes(1),
               salvage: [{ item, count: 1 }],
             },
             {
@@ -1539,7 +1654,7 @@ describe('content references', () => {
               category: 'material',
               weight: 1,
               size: [1, 1],
-              unpack: { item: 'fixture_box', count: 1 },
+              unpack: { item: 'fixture_box', count: 1, simSeconds: 1 },
             },
             {
               id: 'fixture_box',
@@ -1548,7 +1663,7 @@ describe('content references', () => {
               category: 'material',
               weight: 1,
               size: [1, 1],
-              unpack: { item: cartridge, count: 1 },
+              unpack: { item: cartridge, count: 1, simSeconds: 1 },
               disassembly: {
                 timeGameMinutes: gameMinutes(1),
                 skill: 'fixture_crafting',
@@ -1586,6 +1701,7 @@ describe('content references', () => {
       weight: 1,
       size: [1, 1],
       economy: { usage: ['Residential'], tiers: ['Tier1'] },
+      salvageTimeGameMinutes: 1,
       salvage: [{ item: 'fixture_shared', count: 1 }],
     };
     const shared = {
@@ -1622,6 +1738,36 @@ describe('content references', () => {
     ]);
     expect(result.issues).toEqual([]);
     expect(result.registry.recipes.has('fixture_recipe')).toBe(true);
+  });
+
+  it('rejects a salvage list without an authored work time, and a work time without a salvage list', () => {
+    const fields = { category: 'material', weight: 1, size: [1, 1] };
+    const { issues } = buildRegistry([
+      {
+        source: 'salvage-time-fixture',
+        data: {
+          items: [
+            { id: 'fixture_untimed', name: 'Untimed', ...fields, salvage: [{ item: 'fixture_bare', count: 1 }] },
+            { id: 'fixture_orphan_time', name: 'Orphan', ...fields, salvageTimeGameMinutes: 1 },
+            { id: 'fixture_bare', name: 'Bare', ...fields },
+          ],
+        },
+      },
+    ]);
+    expect(issues.map(({ path }) => path)).toEqual([
+      'items[0].salvageTimeGameMinutes',
+      'items[1].salvageTimeGameMinutes',
+    ]);
+  });
+
+  it('rejects a starting recipe that names no recipe instead of dropping it', () => {
+    const { issues } = buildRegistry([
+      {
+        source: 'starting-recipe-fixture',
+        data: { skills: [{ id: 'fixture_skill', name: 'Fixture', startingRecipes: ['fixture_missing'] }] },
+      },
+    ]);
+    expect(issues.map(({ path }) => path)).toEqual(['skills[0].startingRecipes[0]']);
   });
 
   it('allows tables to hold candidates without becoming a second geography authority', () => {
@@ -1717,6 +1863,7 @@ describe('content references', () => {
             id: 'clerk',
             name: 'Clerk',
             model: 'shambler',
+            figureSeeds: [1],
             spawnWeight: 1,
             canJumpObstacles: true,
             sounds: zombieSounds,
@@ -1796,7 +1943,7 @@ describe('content references', () => {
               seenFrom: 30,
               color: '#ffffff',
               intensity: 1,
-              power: { battery: 'bandage', chargePerGameHour: 1 },
+              power: { battery: 'bandage', chargePerGameHour: 1, swapSimSeconds: 1 },
             },
           },
         ],

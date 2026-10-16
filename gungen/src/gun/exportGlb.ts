@@ -34,6 +34,7 @@ import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { internalMagazineCapacity } from './internalMagazine.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
+import { type RevolverMetadata, revolverMetadata } from './revolverExport.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
 export type DeadvoxModelFile = `assets/models/${string}.glb`;
@@ -95,6 +96,7 @@ export interface DeadvoxModelEntry {
   readonly internalMagazine?: { readonly capacity: number };
   readonly rounds?: readonly { readonly at: Vec3; readonly tilt: number }[];
   readonly action?: GunActionMetadata;
+  readonly revolver?: RevolverMetadata;
   /** Metadata for an attachment exported as its own item model. */
   readonly attachment?: AttachmentMetadata;
   /** Default mods fitted by the template, with data for deadvox to consume. */
@@ -464,6 +466,7 @@ export const exportGunGlb = (
     up: normalize(toFileAxes(up)),
   }));
   const magazine = magazineSlotData(resolved);
+  const revolver = revolverMetadata(resolved, metadata.cartridge);
   const compatibility = includeAttachmentCompatibility
     ? attachmentCompatibility(assembly, attachmentSlotsData)
     : undefined;
@@ -475,6 +478,7 @@ export const exportGunGlb = (
     ...result,
     modelEntry: {
       ...modelEntry,
+      ...(revolver ? { revolver } : {}),
       attachments: attachmentData(resolved),
       attachmentSlots: attachmentSlotsData,
       ...(compatibility === undefined || compatibilityPairs === undefined ? {} : { compatibility, compatibilityPairs }),

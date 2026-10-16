@@ -139,7 +139,10 @@ const ogive = (start: number, tip: number, radius: number): ProfilePoint[] => {
 
 const bulletProfile = (cartridge: MetallicCartridge): ProfilePoint[] => {
   const radius = required(cartridge.payload.diameter, 'bullet diameter') / 2;
-  const tip = cartridge.overallLength.typical.value ?? required(cartridge.overallLength.max, 'maximum overall length');
+  const tip = required(
+    cartridge.overallLength.typical.value === null ? cartridge.overallLength.max : cartridge.overallLength.typical,
+    'overall length for presentation',
+  );
   const caseLength = required(cartridge.case.length, 'case length');
   const sourcedLength = cartridge.payload.length.min.value;
   const bulletLength = sourcedLength ?? tip - caseLength + ASSUMED_BULLET_SEATING_DEPTH_CALIBRES * radius * 2;

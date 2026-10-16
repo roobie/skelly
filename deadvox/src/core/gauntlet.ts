@@ -2,12 +2,13 @@ import { buildCityPlan, cityGridOf, scenarioPlanIssues } from './cityPlan.ts';
 import { CitySite } from './citySite.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import { HAMLET_TEMPLATES, hamletHordeSpawn, hamletZombieSpawns, ordinaryHamletSpawnWeights } from './hamlet.ts';
+import { hamletHordeSpawn, hamletZombieSpawns, ordinaryHamletSpawnWeights } from './hamlet.ts';
 import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import { scenarioCertificate } from './scenarioCertificate.ts';
 import type { ScenarioDef } from './schema.ts';
 import type { HordeSpawn, ZombieSpawn } from './site.ts';
+import { hamletTemplateIds } from './sitePalette.ts';
 import { footprint, placedSpawns } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
@@ -22,12 +23,14 @@ export class GauntletSite extends CitySite {
     scale,
     scenario,
     settlementPressure = true,
+    authoredMarkers = true,
   }: {
     seed: number;
     registry: Registry;
     scale: Scale;
     scenario: ScenarioDef;
     settlementPressure?: boolean;
+    authoredMarkers?: boolean;
   }) {
     const issues = scenarioPlanIssues(registry, scenario);
     if (issues.length > 0) {
@@ -50,7 +53,7 @@ export class GauntletSite extends CitySite {
       throw new Error(certificate.issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
     }
     this.scenario = scenario;
-    const population = gauntletPopulation(this, scenario.id, settlementPressure);
+    const population = gauntletPopulation(this, scenario.id, settlementPressure, authoredMarkers);
     this.population = population.zombies;
     this.hordes = population.hordes;
   }
@@ -64,7 +67,12 @@ export class GauntletSite extends CitySite {
   }
 }
 
-const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressure: boolean) => {
+const gauntletPopulation = (
+  site: CitySite,
+  scenarioId: string,
+  settlementPressure: boolean,
+  authoredMarkers: boolean,
+) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
@@ -77,8 +85,9 @@ const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressu
     columns.set(key, column);
   };
   // Scale the ordinary settlement population by buildings, not by empty reserved-campus area.
-  for (let start = 0; settlementPressure && start < ordinary.length; start += HAMLET_TEMPLATES.length) {
-    const group = ordinary.slice(start, start + HAMLET_TEMPLATES.length);
+  const perGroup = hamletTemplateIds(site.registry).length;
+  for (let start = 0; settlementPressure && start < ordinary.length; start += perGroup) {
+    const group = ordinary.slice(start, start + perGroup);
     const first = group[0]!;
     const [, depth] = footprint(first);
     const frontage = group.filter(
@@ -107,7 +116,8 @@ const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressu
       hamletHordeSpawn(seed, road, () => floor, `scenario:${scenarioId}:horde:${start}`),
     );
   }
-  for (const marker of site.placements.filter((placement) => !ordinary.includes(placement)).flatMap(placedSpawns)) {
+  const authored = authoredMarkers ? site.placements.filter((placement) => !ordinary.includes(placement)) : [];
+  for (const marker of authored.flatMap(placedSpawns)) {
     if (Rng.stream(site.seed, `scenario:${scenarioId}:spawn:${marker.pos.join(',')}`).chance(marker.chance)) {
       append(zombies, { type: marker.zombie, pos: marker.pos, ...(marker.window ? { window: marker.window } : {}) });
     }

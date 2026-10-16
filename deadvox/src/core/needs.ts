@@ -314,9 +314,6 @@ const nourishment = (food: { calories: number; water: number }): { calories: num
   hydration: (food.water / FULL.ml) * 100,
 });
 
-/** Health lost to eating something rotten, which gives nothing else (the caller hurts you with it). */
-export const FOOD_POISONING = 15;
-
 /** Eats or drinks something that isn't rotten, in place. */
 export const consume = (needs: Needs, food: { calories: number; water: number }): void => {
   const gain = nourishment(food);

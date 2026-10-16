@@ -27,6 +27,6 @@ Pump tubes and integral rifle wells use the same neutral model record because lo
 
 ## Regeneration and acceptance
 
-The refresh path preserves only Deadvox-owned fields so regenerating cannot silently fork geometry or overwrite handling data; see `src/cli/refreshDeadvoxFirearms.ts`. Content compilation shares the source boundary so the manifest and bundled entries cannot silently diverge.
+Generated model records stay separate from authored handling constructors so an asset refresh cannot flatten tunable content. The refresh path preserves Deadvox-owned model fields; see `src/cli/refreshDeadvoxFirearms.ts`. Content compilation shares the source boundary so the manifest and bundled entries cannot silently diverge.
 
 Acceptance includes Deadvox validation and model preparation, not just a successful Gungen export. The property checks are in `test/boltExport.test.ts` and `deadvox/test/models.test.ts`; synchronization of credited firearm assets is checked by `test/gungen-deadvox-contract.test.mjs`.

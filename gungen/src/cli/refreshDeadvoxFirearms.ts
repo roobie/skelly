@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { exportAttachmentGlb } from '../gun/attachmentExport.ts';
 import { exportCartridgeModels } from '../gun/cartridgeExport.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from '../gun/exportGlb.ts';
@@ -10,22 +11,27 @@ import { readCartridge } from './readCartridge.ts';
 
 const root = resolve(import.meta.dirname, '../../..');
 const base = resolve(root, 'deadvox/src/content/base');
-const source = resolve(base, 'models-firearms.libsonnet');
-const data = JSON.parse(readFileSync(source, 'utf8')) as {
+const data = JSON.parse(compileJsonnetFile(resolve(base, 'models-firearms.libsonnet'))) as {
   models: (DeadvoxModelEntry & { chargingHandleDegrees?: number })[];
 };
+const entries = resolve(base, 'gungen');
+mkdirSync(entries, { recursive: true });
 const store = (entry: DeadvoxModelEntry, glb: Uint8Array) => {
-  const index = data.models.findIndex(({ id }) => id === entry.id);
-  const old = data.models[index];
+  const old = data.models.find(({ id }) => id === entry.id);
   const merged = {
     ...entry,
     ...(old?.chargingHandleDegrees === undefined ? {} : { chargingHandleDegrees: old.chargingHandleDegrees }),
   };
-  if (index < 0) {
-    data.models.push(merged);
-  } else {
-    data.models[index] = merged;
-  }
+  const formatted = execFileSync(
+    process.execPath,
+    [
+      resolve(root, 'node_modules/@biomejs/biome/bin/biome'),
+      'format',
+      `--stdin-file-path=deadvox/src/content/base/gungen/${entry.id}.model.json`,
+    ],
+    { cwd: root, encoding: 'utf8', input: JSON.stringify(merged) },
+  );
+  writeFileSync(resolve(entries, `${entry.id}.model.json`), formatted);
   writeFileSync(resolve(base, entry.file), glb);
 };
 const manifest = JSON.parse(readFileSync(resolve(base, 'assets/manifest.json'), 'utf8')) as {
@@ -73,13 +79,3 @@ if (!optic.ok) {
   throw new Error(JSON.stringify(optic.error));
 }
 store(optic.modelEntry, optic.glb);
-const formatted = execFileSync(
-  process.execPath,
-  [
-    resolve(root, 'node_modules/@biomejs/biome/bin/biome'),
-    'format',
-    '--stdin-file-path=deadvox/src/content/base/models-firearms.json',
-  ],
-  { cwd: root, encoding: 'utf8', input: JSON.stringify(data) },
-);
-writeFileSync(source, formatted);

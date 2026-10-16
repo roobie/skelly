@@ -40,7 +40,6 @@ import { installNearFieldFalloff } from './lightFalloff.ts';
  * there but too weak at 10 m, hence the capped falloff. The earlier 40 cd with a decay of 1.5 gave 6.8 at
  * 2 m for albedo 0.5.
  */
-export const FLASHLIGHT_INTENSITY = 5;
 export const FLASHLIGHT_DECAY = 1;
 
 /** Sun plus ambient intensity at which the beam is at half strength. */

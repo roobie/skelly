@@ -4,11 +4,9 @@ import type { Vec3 } from './coords.ts';
 export type MeleeProfile = 'blunt' | 'cut' | 'pierce' | 'fists';
 export type MeleeHand = 'right' | 'left';
 
-/** Contact is quick for heavy weapons too; recovery still fills the item's full cooldown. */
-const MELEE_WINDUP_FRACTION = 0.4;
-const MELEE_WINDUP_CAP_SECONDS = 0.25;
-export const meleeContactTime = (cooldown: number): number =>
-  Math.min(MELEE_WINDUP_FRACTION * cooldown, MELEE_WINDUP_CAP_SECONDS);
+/** Contact is quick for heavy weapons too, by the weapon's cap; recovery still fills its full cooldown. */
+export const meleeContactTime = (cooldown: number, contactFraction: number, windupCapSimSeconds: number): number =>
+  Math.min(contactFraction * cooldown, windupCapSimSeconds);
 
 export interface MeleeActionPose {
   profile: MeleeProfile;

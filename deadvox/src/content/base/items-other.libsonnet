@@ -87,6 +87,7 @@ local spentCase(id, name, weight, description, model) = {
       stack: pillPack,
       analgesic: {
         group: 'otc',
+        takeSimSeconds: 2,
         reliefPerDose: 20,
         maxRelief: 30,
         onsetGameMinutes: 45,
@@ -213,6 +214,7 @@ local spentCase(id, name, weight, description, model) = {
       weight: 600,
       size: [2, 2],
       description: 'A battered handheld radio. Its battery and metal casing can be salvaged.',
+      salvageTimeGameMinutes: 5,
       salvage: [{ item: 'scrap_metal', count: 1 }, { item: 'aa_battery', count: 1 }],
     },
     {
@@ -252,6 +254,8 @@ local spentCase(id, name, weight, description, model) = {
         damage: 20,
         impulse: 0.35,
         rangeMetres: 50,
+        loadSimSeconds: 0.8,
+        stripSimSeconds: 0.5,
       },
       model: 'round_12_h_gauge_h_00_h_buck',
     },
@@ -262,7 +266,7 @@ local spentCase(id, name, weight, description, model) = {
       weight: 840,
       size: [2, 2],
       description: 'Sealed cardboard box of twenty 00-buck shells.',
-      unpack: { item: 'shell_12_gauge_00_buck', count: 20 },
+      unpack: { item: 'shell_12_gauge_00_buck', count: 20, simSeconds: 1.2 },
     },
     spentCase(
       'spent_case_12_h_gauge_h_00_h_buck',

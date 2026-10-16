@@ -247,7 +247,8 @@ describe('part library', () => {
     const pistol = FAMILIES.frame!.build({ bore: 'S', gripLength: 'M', slideLength: 'S' });
     const revolver = FAMILIES['revolver-frame']!.build({ bore: 'S', frameSize: 'M', butt: 'round' });
     expect(pistol.solids.some(({ id }) => id === 'beavertail-grip-safety')).toBe(true);
-    expect(revolver.solids.some(({ id }) => id === 'exposed-hammer-spur')).toBe(true);
+    const hammer = FAMILIES['revolver-hammer']!.build({});
+    expect(hammer.solids.some(({ id }) => id === 'exposed-hammer-spur')).toBe(true);
     expect(revolver.keepOuts.some(({ id }) => id === 'hammer-travel')).toBe(true);
   });
 

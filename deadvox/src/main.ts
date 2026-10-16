@@ -9,7 +9,7 @@ import assetManifest from './content/base/assets/manifest.json' with { type: 'js
 import { validateManifest } from './core/assets.ts';
 import { getBuildRevision } from './core/buildInfo.ts';
 import { parseTimeOfDay } from './core/clock.ts';
-import { buildBundledContent } from './game/bundledContent.ts';
+import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import { applyWeatheringConfig, configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
@@ -41,7 +41,8 @@ if (showMods) {
   startupScreen.hidden = true;
   modsScreen.hidden = false;
 }
-const content = showMods ? await chooseMods(modsScreen) : buildBundledContent();
+const bundled = selectBundledMods(showMods ? [] : bundledModIdsFromUrl(params));
+const content = showMods ? await chooseMods(modsScreen) : bundled.content;
 startupScreen.hidden = false;
 applyUiTokens(content.registry, document.documentElement);
 const saveStatus = document.getElementById('save-status')!;
@@ -61,6 +62,11 @@ const showStartupFailure = (message: string) => {
   document.getElementById('errors')!.textContent = message;
   hideStartupScreen();
 };
+if (bundled.issues.length > 0) {
+  showStartupFailure(bundled.issues.map((issue) => `${issue.source} ${issue.path}: ${issue.message}`).join('\n'));
+  // Refused mods must not start a game with other content; stop the module here.
+  await new Promise<never>(() => undefined);
+}
 const menuCard = document.querySelector<HTMLElement>('#overlay .card');
 const scrollUpCue = document.getElementById('card-scroll-up');
 const scrollDownCue = document.getElementById('card-scroll-down');
@@ -191,7 +197,7 @@ if (bench === 'report') {
     });
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
-    const saveController = new SaveController(backend);
+    const saveController = new SaveController(backend, bundled.admitted);
     startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
       Object.assign(globalThis, {

@@ -92,6 +92,7 @@
           "simSeconds": 3
         }
       },
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
       "hearing": 1,
       "hearingModel": {
@@ -289,6 +290,7 @@
           "simSeconds": 3
         }
       },
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
       "hearing": 1,
       "hearingModel": {
@@ -485,6 +487,7 @@
           "simSeconds": 3
         }
       },
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
@@ -616,6 +619,7 @@
           "simSeconds": 3
         }
       },
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,

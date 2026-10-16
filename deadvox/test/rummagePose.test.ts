@@ -34,7 +34,7 @@ const { registry, issues } = buildRegistry([
           category: 'misc',
           weight: 50,
           size: [2, 2],
-          unpack: { item: 'fixture_payload', count: 3 },
+          unpack: { item: 'fixture_payload', count: 3, simSeconds: 1.2 },
         },
         { id: 'fixture_payload', name: 'Fixture payload', category: 'misc', weight: 10, size: [1, 1], stack: 7 },
         {
