@@ -104,10 +104,10 @@ place the authorities gave up on.
 ## Performance and scale
 
 Performance acceptance targets 60 fps on a portable reference-laptop class:
-Intel HD 530-class integrated graphics at a device pixel ratio of 1.5. That
-class is old and widely owned, so meeting it keeps the game playable for most
-testers, and the pixel ratio matches common laptop display scaling, so the
-target counts the pixels those players actually draw. Integrated graphics share
+Intel HD 530-class integrated graphics at a device pixel ratio of 1.5. The
+game should ideally run on a low-end ("potato") PC so that as many people as
+possible can enjoy it, and the pixel ratio matches common laptop display
+scaling, so the target counts the pixels those players actually draw. Integrated graphics share
 memory bandwidth with the CPU, so triangle count, overdraw and draw calls
 compete with simulation; workers also compete with the main thread, so keep
 their number small. Compare the same workloads on that reference class,
@@ -116,10 +116,12 @@ execution host. Compare the forest workload there when evaluating foliage
 performance changes. See
 [CHALLENGES.md](CHALLENGES.md) for active performance constraints.
 
-Render scale adapts by default: scene resolution drops only while the frame
-rate misses the target, so slower machines trade sharpness for frame rate and
-faster ones keep the full image. The adaptive default is pending #680; until it
-lands, content sets a fixed default. See `src/content/base/graphics.jsonnet` and
+Render scale adapts by default, so slower machines trade sharpness for frame
+rate and faster ones keep the full image. Content must at least be able to
+switch adaptation off and tune it, so a mod can choose a fixed scale or a
+different trade (`PILLARS.md`, "Content forward compatibility"). The adaptive
+default awaits the adaptive render-scale work under #680; until it lands,
+content sets a fixed default. See `src/content/base/graphics.jsonnet` and
 `src/render/mood.ts`, `Mood.setRenderScale`. Look changes made for performance
 follow `deadvox/GRAPHICS.md`, "Look decisions".
 
