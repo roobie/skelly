@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
+import { KeyTrace } from '../src/debug/keyTrace.ts';
 import {
   type Binding,
   BindingRegistry,
@@ -94,6 +95,22 @@ const storage = () => {
 };
 
 describe('keyboard registry', () => {
+  it('records the modifier refusal for a movement down in the debug key trace', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: true });
+    const trace = new KeyTrace();
+    keyboard.trace = trace.record;
+    expect(keyboard.press(new KeyboardEvent('keydown', { code: 'KeyA', key: 'A', shiftKey: true }))).toBe(false);
+    expect(JSON.parse(trace.export()).entries.at(-1)).toMatchObject({
+      kind: 'down',
+      code: 'KeyA',
+      context: 'play',
+      shiftKey: true,
+      accepted: false,
+      reason: 'modifiers',
+      active: [],
+    });
+  });
   it('declares conflict-free defaults with valid physical keys and unique semantic commands', () => {
     expect(INPUT_BINDINGS.length).toBeGreaterThan(0);
     expect(bindingConflict(INPUT_BINDINGS, new Map())).toBeUndefined();
