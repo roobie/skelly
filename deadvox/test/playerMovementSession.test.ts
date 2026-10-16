@@ -157,7 +157,7 @@ describe('attacker modifiers', () => {
                 id: `fixture-tier-${index}`,
                 minDamage,
                 regionFactor: {},
-                chance: { blunt: 1, cut: 1, pierce: 1 },
+                chance: { blunt: 1, cut: 1, pierce: 1, acid: 0 },
               })),
             },
           },

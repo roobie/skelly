@@ -1,6 +1,6 @@
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
-import { BODY_REGIONS, DAMAGE_KINDS } from './body.ts';
+import { BODY_REGIONS, MELEE_DAMAGE_KINDS } from './body.ts';
 import { getBuildRevision } from './buildInfo.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
@@ -600,7 +600,7 @@ const playerState = obj({
 });
 const meleeAction = nullable(
   obj({
-    profile: enumeration([...DAMAGE_KINDS, 'fists']),
+    profile: enumeration([...MELEE_DAMAGE_KINDS, 'fists']),
     hand: enumeration(['right', 'left']),
     twoHanded: bool,
     cooldown: positive,
@@ -624,7 +624,7 @@ const meleeAction = nullable(
       headDamageMultiplier: opt(positive),
       limbDamageMultiplier: opt(positive),
       speedMultiplier: opt(positive),
-      type: opt(enumeration(DAMAGE_KINDS)),
+      type: opt(enumeration(MELEE_DAMAGE_KINDS)),
     }),
   }),
 );

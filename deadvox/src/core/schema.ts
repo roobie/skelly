@@ -32,7 +32,7 @@ import {
 } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { hasSegment } from './authoredTerrain.mjs';
-import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
+import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind, MELEE_DAMAGE_KINDS } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
@@ -317,12 +317,12 @@ const WeaponSchema = strictObject({
     limbDamageMultiplier: optional(Positive),
     /** Overrides the weapon class's swing-speed multiplier. */
     speedMultiplier: optional(Positive),
-    type: picklist(DAMAGE_KINDS),
+    type: picklist(MELEE_DAMAGE_KINDS),
   }),
 });
 
 const MeleeClassSchema = strictObject({
-  id: picklist(DAMAGE_KINDS),
+  id: picklist(MELEE_DAMAGE_KINDS),
   /** Fractional spread applied symmetrically around base weapon damage. */
   damageVariance: Fraction,
   headDamageMultiplier: Positive,
@@ -1691,6 +1691,8 @@ const ZombieSchema = strictObject({
   }),
   /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
+  /** Fraction of acid damage resisted, whatever the region; 1 is immune and omitted is neutral. */
+  acidResistance: optional(Fraction),
   /** Metres per Sim second. */
   speed: strictObject({ wanderMetresPerSimSecond: SimRate, chaseMetresPerSimSecond: SimRate }),
   /** Metres advanced by one half-cycle of the leg gait. */
@@ -2144,6 +2146,8 @@ const BodyTuningSchema = strictObject({
   proneEyeHeightMetres: Positive,
   /** Shock damage per point of health damage, by the hit's damage kind. */
   shockPerDamage: perDamageKind(NonNegative),
+  /** How much harder a hit of each damage kind wears the outermost worn item on the struck region; 1 is the item's own rate. */
+  outerWearMultiplier: perDamageKind(NonNegative),
   landing: strictObject({
     safeSpeedMetresPerSimSecond: SimRate,
     damagePerSquaredSpeed: Positive,
