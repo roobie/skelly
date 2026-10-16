@@ -1,11 +1,14 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '../../src/core/content.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
+import { gameHours } from '../../src/core/time.ts';
 import { fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
   id: 'fixture_scenario',
   kind: 'gauntlet',
+  outbreakAgeGameHours: gameHours(24),
+  decalLimit: 16,
   body: 'fixture_body',
   compression: 'fixture_compression',
   serviceTemplate: 'fixture_service',

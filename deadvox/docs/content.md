@@ -8,6 +8,7 @@ read_if:
   - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you're authoring or changing exterior door openings
   - you're authoring or changing furniture appearance, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
+  - you author decals or scenario outbreak age
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you change the debug kit ownership view
 ---
@@ -178,6 +179,28 @@ Choose the structural appearance in content through `src/core/schema.ts`, `Furni
 Use `deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
 
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
+
+## Authored decals
+
+Decals are presentation-only surface marks, not furniture or blocks. They cannot change
+collision, sight, searching or saves: their placements derive from content. They share
+scene lighting so darkness hides them and carried light reveals them. Authored marks
+are needed for beats furniture cannot carry, such as a blood trail leading into a room.
+Keep them sparse rather than covering every surface.
+
+Scenario content owns time since the outbreak because different scenarios may be days,
+months or years afterward. The gauntlet authors months, so blood reads dried rather
+than fresh. Definitions own the ageing response instead of a renderer-wide age default.
+See `src/core/schema.ts`, `DecalSchema` and `ScenarioSchema`; the closed kind dispatch
+is `src/core/decalKinds.ts`, `DECAL_KINDS`.
+
+Templates and kit pieces own surface placements independently of occupied cells. A door
+attachment names its ordinary upright door anchor so the mark follows that panel without
+owning door state. Size, palette, stroke geometry, seeded variants and ageing live in
+`src/content/base/decals.libsonnet`; the scenario owns the count cap. See
+`src/core/templates.ts`, `placedDecals`, and `src/render/decals.ts`, `AuthoredDecals`.
+The renderer batches authored marks and shares stain noise with body blood. Use
+`decals=0` in a review URL to compare without the marks; it does not alter the world.
 
 ## Furniture action noise
 

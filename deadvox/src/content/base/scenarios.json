@@ -185,8 +185,10 @@
         ]
       },
       "compression": "player",
+      "decalLimit": 48,
       "id": "gauntlet",
       "kind": "gauntlet",
+      "outbreakAgeGameHours": 2880,
       "portal": {
         "hatch": [42, 40, 39],
         "ladder": [43, 33, 39],

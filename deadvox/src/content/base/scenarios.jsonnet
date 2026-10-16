@@ -7,6 +7,8 @@ local ladder = lab.entry.ladder;
 {
   scenarios: [{
     id: 'gauntlet', kind: 'gauntlet',
+    outbreakAgeGameHours: 24 * 120,
+    decalLimit: 48,
     body: 'player', compression: 'player',
     serviceTemplate: service.id,
     composition: {
