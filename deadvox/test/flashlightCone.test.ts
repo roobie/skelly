@@ -219,13 +219,14 @@ describe('flashlight cone', () => {
 
   it('no base beam ships with spill enabled', () => {
     const base = 'src/content/base';
-    const enabled = readdirSync(base)
+    const beams = readdirSync(base)
       .filter((file) => file.endsWith('.json'))
       .flatMap((file) => {
         const content = JSON.parse(readFileSync(`${base}/${file}`, 'utf8')) as ContentFile;
-        return (content.items ?? []).filter((item) => item.light?.beam?.spill?.enabled).map((item) => item.id);
+        return (content.items ?? []).filter((item) => item.light?.beam);
       });
-    expect(enabled).toEqual([]);
+    expect(beams.length).toBeGreaterThan(0);
+    expect(beams.filter((item) => item.light?.beam?.spill?.enabled).map((item) => item.id)).toEqual([]);
   });
 
   it('rejects malformed profiles at the shared content boundary', () => {
