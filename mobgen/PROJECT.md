@@ -29,6 +29,19 @@ The crawler is a distinct prone creature, not a humanoid gait variant: its arm-d
 
 The dog shambler is a quadruped: four paws, a hanging head and a limping diagonal gait whose opposite-corner pairs (fore-left with hind-right, fore-right with hind-left) define it, so it is its own body plan rather than a crouched humanoid. The four paws are the declared supports, and the template is `comparison-only` (`src/core/template.ts`, `TemplateStatus`): it is kept to compare gaits against other quadrupeds, is not fit for a player to meet, and so is never shipped. Consumers refuse it through `consumableTemplate` and the viewer labels it. See `src/mob/dog.ts`, `buildDog`, `dogPose`, `dogGaitPose`, `dogHitPose`, `src/mob/dogTemplate.ts`, `dogTemplate`, and `test/dog.test.ts`.
 
+### Dog gait
+
+The trot uses a withers-normalized stride rather than increasing cadence to compensate for a short,
+rigid leg sweep. Its scale is grounded in observed canine trotting proportions
+([biomechanical reference](https://doi.org/10.1371/journal.pone.0278665), including its treadmill-speed
+supplement), not a claim to reproduce a healthy dog's speed-dependent gait transitions. Keeping the
+cycle distance-driven avoids foot jumps when speed changes. Joint flex and footfall-linked torso
+motion must be solved around fixed ground targets, not layered onto planted legs afterwards. The
+impaired diagonal retains its relative shortening so increased stride does not erase the shambler's
+limp. See `src/mob/dog.ts`, `DOG_TROT`, `dogStepGeometry`, `dogStrideLength` and `dogGaitPose`.
+
+### Template readiness
+
 A template's readiness is a contract, not a naming convention: a comparison-only model may be generated, validated and viewed like any other, but it must not be spawned or exported. Every path that chooses a model for a consumer resolves it through `consumableTemplate`: the Deadvox spawn boundary (`src/mob/shamblerFigure.ts`, `zombieFigure`), the amalgam realization (`deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`) and the `generate` export CLI (`src/cli/generate.ts`). The tag therefore refuses a comparison-only model by itself rather than relying on its absence from a list. The viewer and the dev CLIs are not consumers: the viewer opts a comparison-only template into its own list and labels it so it stays available to compare, while the dev CLIs work from the shipped `TEMPLATES`. See `src/core/template.ts`, `TemplateStatus`, `consumableTemplate`, `src/viewer/main.ts`, `src/cli/stats.ts`, `src/cli/view.ts`, `src/cli/bench.ts`, and `test/dog.test.ts`.
 
 The playtest apex enemy must read as one grotesque fusion, not several unrelated actors. Complete shambler members remain severable subtrees beneath a non-severable shared core; members may hang or turn in any orientation, while support comes from actual ground contacts. The core's spreading lower mass should read as flesh rather than a platform or extra limbs. Its member count is a visual choice, not a budget ceiling. See `src/mob/amalgam.ts`, `amalgamManifest`, `src/core/generate.ts`, `resolveSupportBones`, and `test/amalgam.test.ts`.

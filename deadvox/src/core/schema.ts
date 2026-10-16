@@ -1040,6 +1040,8 @@ const OwnershipSchema = strictObject({
 const TemplateSchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
+  /** The most storeys the stress-test city stacks this template to; absent means no limit. */
+  maxStoreys: optional(pipe(Count, minValue(1), maxValue(8))),
   /** Blocks: [x, y, z]. */
   size: Size,
   /** What each character means: a block id ("air" for empty), or furniture or a spawn point. */
