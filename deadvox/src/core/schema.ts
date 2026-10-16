@@ -1080,6 +1080,8 @@ const FurnitureSchema = pipe(
         openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
         hatch: optional(literal(true)),
+        /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
+        barredFrom: optional(picklist(['front', 'back'])),
       }),
     ),
     /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */
@@ -1208,8 +1210,13 @@ const PaletteThingSchema = pipe(
     chance: optional(Fraction),
     /** Daily game-clock window; omitted markers spawn when their column loads. */
     window: optional(SpawnWindowSchema),
+    /** The ground here: the cell stamps nothing and keeps whatever surface the site put under the item. */
+    ground: optional(literal(true)),
   }),
-  check((e) => (e.furniture === undefined) !== (e.spawn === undefined), 'needs exactly one of "furniture" or "spawn"'),
+  check(
+    (e) => [e.furniture, e.spawn, e.ground].filter((part) => part !== undefined).length === 1,
+    'needs exactly one of "furniture", "spawn" or "ground"',
+  ),
   check((e) => e.spawn !== undefined || e.window === undefined, '"window" only goes with "spawn"'),
   check(
     (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined && e.lock === undefined),

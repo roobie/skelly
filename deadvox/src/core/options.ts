@@ -23,7 +23,7 @@ export const doorPlan = (
   operation: DoorOperation,
   keyLocks = heldKeyLocks(inventory),
 ): Plan => {
-  const refusal = inventory.entities.doorRefusal(entity, operation, keyLocks);
+  const refusal = inventory.entities.doorRefusal(entity, operation, keyLocks, inventory.actorPosition());
   const reason =
     refusal ??
     ((operation === 'lock' || operation === 'unlock') && !inventory.canReachEntity(entity)

@@ -42,12 +42,12 @@ local publicNotes = [
 local utilities = [
   {
     id: 'gauntlet_public_memo', size: [2, 3, 2], lootContext: { usage: ['Industrial'], tier: 'Tier1' },
-    palette: { '=': 'concrete', F: { furniture: 'crate', loot: 'd41_empty' } },
+    palette: { '=': { ground: true }, F: { furniture: 'crate', loot: 'd41_empty' } },
     layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
     id: 'gauntlet_public_directions', size: [2, 3, 2], lootContext: { usage: ['Industrial'], tier: 'Tier1' },
-    palette: { '=': 'concrete', F: { furniture: 'crate', loot: 'd41_empty' } },
+    palette: { '=': { ground: true }, F: { furniture: 'crate', loot: 'd41_empty' } },
     layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
@@ -80,7 +80,7 @@ local utilities = [
   },
   {
     id: 'gauntlet_incidental_bollard', size: [2, 5, 2], lootContext: emptyLoot,
-    palette: { '=': 'concrete', F: { furniture: 'gauntlet_look_bollard' } },
+    palette: { '=': { ground: true }, F: { furniture: 'gauntlet_look_bollard' } },
     layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF'], ['FF', 'FF'], ['FF', 'FF']],
   },
   {
@@ -101,7 +101,7 @@ local utilities = [
   items: types.items + publicNotes,
   mapPools: kits.mapPools + city.mapPools,
   blocks: tents.blocks + types.blocks,
-  loot: types.loot + tents.loot,
+  loot: types.loot + tents.loot + kits.loot,
   mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
     air: { role: 'opening', block: 'air' }, concrete: { role: 'interior_floor', block: 'concrete' },
     brick: { role: 'shell', block: 'brick' }, galvanized: { role: 'shell', block: 'galvanized' },
