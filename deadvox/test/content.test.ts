@@ -368,7 +368,7 @@ describe('content', () => {
     expect(issuesFor(() => undefined)).not.toContain(mismatch);
     expect(
       issuesFor((acid) => {
-        delete acid.acidSpit;
+        acid.acidSpit = undefined;
       }),
     ).toContain(mismatch);
     expect(

@@ -114,10 +114,10 @@ describe('acid spit', () => {
     const { zombie } = spawn(h);
     frames(h.system, WIND_FRAMES + 5);
     expect(h.releases).toHaveLength(1);
-    const [release] = h.releases;
-    expect(release!.moves).toEqual(SPIT.moves);
-    expect(release!.origin[0]).toBeCloseTo(zombie.body.pos[0], 0);
-    expect(Math.hypot(...release!.aim)).toBeCloseTo(1, 5);
+    const [{ moves, origin, aim }] = h.releases as [AcidSpitRelease];
+    expect(moves).toEqual(SPIT.moves);
+    expect(origin[0]).toBeCloseTo(zombie.body.pos[0], 0);
+    expect(Math.hypot(...aim)).toBeCloseTo(1, 5);
   });
 
   it('charges a full cooldown at release and a fraction when a hit cancels the wind-up', () => {
@@ -130,8 +130,8 @@ describe('acid spit', () => {
     const second = spawn(hit);
     frames(hit.system, 10);
     expect(second.zombie.spitWindup).toBeGreaterThan(0);
-    const pos = second.zombie.body.pos;
-    const origin: Vec3 = [pos[0] - 1, pos[1] + 1.3 / BLOCK_SIZE, pos[2]];
+    const [x, y, z] = second.zombie.body.pos;
+    const origin: Vec3 = [x - 1, y + 1.3 / BLOCK_SIZE, z];
     expect(hit.system.swing(origin, [1, 0, 0], { damage: 1, reach: 4, cooldown: 0 })).toBe(second.id);
     expect(second.zombie.spitWindup).toBe(0);
     expect(second.zombie.spitWait).toBeCloseTo(SPIT.cancelCooldownFraction * SPIT.cooldownSimSeconds, 5);
@@ -161,7 +161,7 @@ describe('acid spit', () => {
 
     const far = harness(() => sensed(PLAYER_POS));
     const approaching = spawn(far, (SPIT.rangeBand.farMetres * 1.5) / BLOCK_SIZE);
-    const before = approaching.zombie.body.pos[0];
+    const [before] = approaching.zombie.body.pos;
     frames(far.system, 120);
     expect(approaching.zombie.body.pos[0]).toBeLessThan(before - 0.5);
   });
@@ -174,7 +174,7 @@ describe('acid spit', () => {
     const snapshot = structuredClone(h.system.snapshotState()) as ReturnType<ZombieSystem['snapshotState']>;
 
     const twin = harness(() => sensed(PLAYER_POS));
-    twin.system.restoreState(snapshot, (id) => (id === ACID.id ? ACID : undefined));
+    twin.system.restoreState(snapshot, (typeId) => (typeId === ACID.id ? ACID : undefined));
     const restored = twin.system.store.get(id)!;
     expect(restored.spitWindup).toBe(zombie.spitWindup);
     expect(restored.spitWait).toBe(zombie.spitWait);

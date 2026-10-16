@@ -421,7 +421,7 @@ const validSpitTimers = (zombie: ZombieState): boolean =>
   zombie.spitWindup >= 0 &&
   Number.isFinite(zombie.spitWait) &&
   zombie.spitWait >= 0;
-const validObstacleWanderState =(zombie: ZombieState): boolean =>
+const validObstacleWanderState = (zombie: ZombieState): boolean =>
   Number.isFinite(zombie.obstacleWanderRemaining) &&
   zombie.obstacleWanderRemaining >= 0 &&
   zombie.obstacleWanderRemaining > 0 === (zombie.obstacleWanderHeading !== undefined) &&
@@ -843,6 +843,15 @@ export interface AcidSpitRelease {
 export const acidSpitWindupProgress = (zombie: Zombie): number => {
   const spit = zombie.type.acidSpit;
   return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
+};
+
+/** A spitter that sees the player from inside its far edge stands and faces; it closes in only beyond that edge. */
+const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
+  const { zombie, type, sees, metresToTarget, dt } = scratch;
+  if (type.acidSpit && zombie.mode === 'chase' && sees && metresToTarget <= type.acidSpit.rangeBand.farMetres) {
+    scratch.moving = false;
+    steer(zombie, toward, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+  }
 };
 
 // ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
@@ -2624,15 +2633,7 @@ export class ZombieSystem {
     const toward = unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
     scratch.direction = obstacleDirection ?? toward;
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
-    const holdsGround =
-      type.acidSpit !== undefined &&
-      zombie.mode === 'chase' &&
-      scratch.sees &&
-      scratch.metresToTarget <= type.acidSpit.rangeBand.farMetres;
-    if (holdsGround) {
-      scratch.moving = false;
-      steer(zombie, toward, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
-    }
+    holdSpitGround(scratch, toward);
     if (scratch.moving) {
       scratch.aimDirection = scratch.direction;
       if (scratch.seeking) {

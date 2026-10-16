@@ -1862,7 +1862,7 @@ const ZombieSchema = strictObject({
 const zombieAcidSpitMatchesAbility = (zombie: InferOutput<typeof ZombieSchema>): boolean =>
   zombie.abilities.includes('acidSpit') === (zombie.acidSpit !== undefined);
 
-const zombieRegionsMatchModel =(zombie: InferOutput<typeof ZombieSchema>): boolean => {
+const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): boolean => {
   const expected = zombie.model === 'amalgam' ? AMALGAM_REGION_KEYS : ZOMBIE_REGION_NAMES;
   const keys = Object.keys(zombie.regions);
   return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
@@ -2320,7 +2320,10 @@ const SECTION_DESCRIPTOR = {
           'every type but the amalgam, whose figure seed is fixed, must define figureSeeds',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
-        check((types) => types.every(zombieAcidSpitMatchesAbility), 'acidSpit tunables must match the acidSpit ability'),
+        check(
+          (types) => types.every(zombieAcidSpitMatchesAbility),
+          'acidSpit tunables must match the acidSpit ability',
+        ),
       ),
     ),
     label: 'zombie types',
