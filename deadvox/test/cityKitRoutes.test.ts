@@ -178,7 +178,9 @@ it('city building alternatives keep cellars and street approaches reachable thro
         ownershipCell(compiled.size, offset.map((value, axis) => value + at[axis]!) as Vec3),
       );
     const doorPieces = compiled.pieces.filter((piece) => registry.furniture.get(piece.furniture)!.door);
-    const locked = new Set(doorPieces.filter((piece) => piece.lock?.locked).flatMap((piece) => cellsAt(piece.size, piece.pos)));
+    const locked = new Set(
+      doorPieces.filter((piece) => piece.lock?.locked).flatMap((piece) => cellsAt(piece.size, piece.pos)),
+    );
     const doors = new Set(
       [
         ...doorPieces.filter((piece) => !piece.lock?.locked).flatMap((piece) => cellsAt(piece.size, piece.pos)),
