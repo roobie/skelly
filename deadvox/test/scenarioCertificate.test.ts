@@ -333,20 +333,23 @@ describe('lab threat by depth', () => {
       .mapAssemblies!.find((assembly) => assembly.id === storeyId)!
       .slots.filter((slot) => slot.id.includes('_threat_'))
       .reduce((sum, slot) => {
-        const total = slot.choices.reduce((all, choice) => all + choice.weight, 0);
+        const total = (slot.choices ?? []).reduce((all, choice) => all + choice.weight, 0);
         return (
           sum +
-          slot.choices.reduce((acc, choice) => acc + (choice.weight / total) * markerChance.get(choice.ref.id)!, 0)
+          (slot.choices ?? []).reduce(
+            (acc, choice) => acc + (choice.weight / total) * markerChance.get(choice.ref.id)!,
+            0,
+          )
         );
       }, 0);
 
   it('weights expected markers no lower on each deeper storey and higher at the bottom than the top', () => {
     const lowestFirst = lab
       .mapAssemblies!.find((assembly) => assembly.id === 'gauntlet_lab')!
-      .slots.filter((slot) => slot.choices[0]!.ref.id.startsWith('gauntlet_lab_storey_'));
+      .slots.filter((slot) => slot.choices?.[0]?.ref.id.startsWith('gauntlet_lab_storey_'));
     const topDown = [...lowestFirst]
       .sort((a, b) => b.at[1] - a.at[1])
-      .map((slot) => expectedMarkers(slot.choices[0]!.ref.id));
+      .map((slot) => expectedMarkers(slot.choices?.[0]?.ref.id ?? ''));
     expect(topDown.length).toBeGreaterThan(1);
     for (let i = 1; i < topDown.length; i++) {
       expect(topDown[i]).toBeGreaterThanOrEqual(topDown[i - 1]!);
@@ -365,7 +368,7 @@ describe('lab threat by depth', () => {
         .map((piece) => piece.id),
     );
     const storeysWithAmalgam = lab.mapAssemblies!.filter((assembly) =>
-      assembly.slots.some((slot) => slot.choices.some((choice) => amalgamPieces.has(choice.ref.id))),
+      assembly.slots.some((slot) => slot.choices?.some((choice) => amalgamPieces.has(choice.ref.id))),
     );
     expect(storeysWithAmalgam.map((assembly) => assembly.id)).toEqual(['gauntlet_lab_storey_bottom']);
   });

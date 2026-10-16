@@ -27,7 +27,7 @@ const observation = {
       assert(code.includes(marker), 'scenario population fixture admission point exists');
       return code.replace(
         marker,
-        "new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario, settlementPressure: new URLSearchParams(location.search).get('route-fixture') !== '1', labMarkers: new URLSearchParams(location.search).get('route-fixture') !== '1' })",
+        "new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario, settlementPressure: new URLSearchParams(location.search).get('route-fixture') !== '1', authoredMarkers: new URLSearchParams(location.search).get('route-fixture') !== '1' })",
       );
     }
     if (id.endsWith('/src/ui/saveController.ts')) {
