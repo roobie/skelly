@@ -934,6 +934,7 @@ export const startPlay = (
     },
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
     onDetonation: (at, radiusMetres) => view.blastFlashes.spawn(at, radiusMetres),
+    onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse, blood for every wound and an acid sac's burst. Only MobActorMeshes implements the zombie hooks;
@@ -3608,6 +3609,7 @@ export const startPlay = (
       playerEye: eye().map((coordinate) => coordinate * s) as Vec3,
       playerChest: [body.pos[0] * s, body.pos[1] * s + PLAYER_CHEST_METRES, body.pos[2] * s],
       lastZombieStep: session.lastZombieStep,
+      acidGlobs: zombieSystem.acidGlobs,
       lastBackgroundStep: session.lastBackgroundStep,
       dt,
       entities,

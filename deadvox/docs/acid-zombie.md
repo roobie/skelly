@@ -28,13 +28,13 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 **Line of sight is checked at release.** The path from the mouth to the player's chest is tested against solids when the spit leaves. If something solid is in the way, there is no spit and the cooldown is not spent. Ducking behind a wall during the wind-up is the main counter, and it must work. The amalgam's tentacle and the grenade use the same rule. See `src/core/zombies.ts`, `withinAttackReach`, and `src/core/explosive.ts`, `inSight`.
 
-**The glob is simulated.** The spit leaves as a glob that flies on an arc at a speed from content and hits the first thing it meets: a solid, a zombie body or the player. The player can sidestep a glob in flight, which makes the spit read as a thing in the world and gives a second chance after the wind-up. Thrown items have no in-flight simulation (`DESIGN.md`, "Held-item throws"), so the glob is a new owner of in-flight state, with its own collision.
+**The glob is simulated.** Flight gives the player a second chance after the wind-up: sidestepping matters because the spit is a thing in the world, not delayed unavoidable damage. See `src/core/acidGlob.ts`, `advanceAcidGlob`, and `src/core/zombies.ts`, `ZombieSystem.acidGlobContact`. Flight and splash appearance remain presentation only; see `src/render/acidEffects.ts`, `AcidEffects`.
 
-**Aim is seeded.** The glob aims where the player is at release, with a seeded spread from content, so replays and saves agree and a far spit can miss. The release is one output that carries no damage, so the glob and the damage path hang off a single seam. See `DESIGN.md`, "Determinism", and `src/core/zombies.ts`, `AcidSpitRelease`.
+**Aim is seeded.** A far spit can miss, but saving or replaying must not change its chance to land. Release captures the attack rather than following the player, so moving after release remains a counter. See `DESIGN.md`, "Determinism"; `src/core/zombies.ts`, `AcidSpitRelease` and `ZombieSystem.resolveAcidSpit`; and `src/core/acidGlob.ts`, `AcidGlobState`.
 
-**A zombie in the way takes the acid.** A body the glob meets stops it, as it stops pellets and fragments, and that zombie takes the burn unless its type is immune to acid. Acid zombies are immune; shamblers are not. A crowd therefore shields the player and takes the acid, so "use the crowd" stays a tactic. Immunity is a per-type resistance to the acid kind in content, beside the existing per-region melee resistance, not a check on the acid zombie, so later tiers and other types choose it by data. See `src/core/zombies.ts`, `ZombieSystem.firePellets`, and `src/core/schema.ts`, `ZombieSchema`, `meleeDamageResistance`.
+**A zombie in the way takes the acid.** A crowd shields the player and takes the burn, so "use the crowd" stays a tactic. Acid zombies are immune; shamblers are not. Content owns immunity so later tiers and other types choose it by data. See `src/core/zombies.ts`, `ZombieSystem.resolveAcidGlobImpact` and `acidDamageToZombie`, and `src/core/schema.ts`, `ZombieSchema`.
 
-**The player is hit through the existing path.** A glob that lands is one localized hit on a region picked by the move's weighted `hitRegions`. Pain, shock, bleeding, worn-item wear and saves therefore keep their single owners, as landing injuries do. Hits are light and the cooldown long, so one spit hurts but rarely opens a serious wound. See `DESIGN.md`, "Landing injuries", and `DESIGN.md`, "Bleeding"; `src/core/zombies.ts`, `pickZombieHitRegion`; and `src/core/sim.ts`, `Simulation.hit`.
+**The player is hit through the existing path.** The glob ignores the melee block, which stays a melee answer. Localized hits keep pain, shock, bleeding and worn-item wear with their existing owners rather than creating a second injury system. Hits are light and the cooldown long, so one spit hurts but rarely opens a serious wound. See `DESIGN.md`, "Landing injuries", and `DESIGN.md`, "Bleeding"; `src/game/zombiePlayerHit.ts`, `applyZombiePlayerHit`; and `src/core/sim.ts`, `Simulation.hit`.
 
 **Acid is a damage kind.** Acid sits beside the melee kinds, not among them: weapons, melee classes and per-region melee resistance take only melee kinds, while zombie attack moves, injury and wear content take every kind. So bleeding chance, wound depth, pain and shock are authored for acid in content, not special-cased in code. The aim is a burn: content gives acid a low bleeding chance and high pain. Hazmat's "resists acid" gets a key to resist. See `src/core/body.ts`, `MELEE_DAMAGE_KINDS` and `DAMAGE_KINDS`.
 
@@ -42,7 +42,7 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 ## Puddles
 
-A glob that hits the ground leaves a short-lived puddle that burns the legs of anyone standing in it. Ground becomes terrain to read, and a missed spit still denies space. Its lifetime, size and burn rate are content. Acid immunity covers puddles too, so a spitter can stand in its own acid. A puddle is simulation state, not a decal.
+A glob that hits the ground leaves a short-lived puddle that burns the legs of anyone standing in it. The glob's ground-contact boundary is `src/core/zombies.ts`, `AcidGroundImpact`. Ground becomes terrain to read, and a missed spit still denies space. Its lifetime, size and burn rate are content. Acid immunity covers puddles too, so a spitter can stand in its own acid. A puddle is simulation state, not a decal.
 
 ## Movement
 
@@ -71,7 +71,7 @@ Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types
 
 ## Saves and determinism
 
-Wind-up progress, cooldown, the aim seed, every glob in flight and every puddle are simulation state, saved and replayed like the melee attack's. Their look (trail, splash, hiss, steam) is presentation only, like gore. See `DESIGN.md`, "Damage, destruction and dismemberment".
+A save must not erase an incoming threat or change its outcome. See `src/core/zombies.ts`, `ZombieSystemState`, and `src/core/saveFormat.ts`, `encodeSave` and `decodeSave`. Presentation never decides whether a hit landed; see `DESIGN.md`, "Damage, destruction and dismemberment".
 
 ## Model
 
