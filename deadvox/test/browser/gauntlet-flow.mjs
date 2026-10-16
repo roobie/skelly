@@ -3,7 +3,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract.
 // biome-ignore-all lint/performance/noAwaitInLoops: route segments and save boundaries run in order.
 import assert from 'node:assert/strict';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction } from './input-actions.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const gauntletLoading = async (browser, baseUrl) => {
@@ -192,8 +192,12 @@ export const gauntletFlow = async (browser, baseUrl) => {
         w.manual = false;
       }
     });
-    await pressAction(page, 'quickbar.use.1');
-    await page.locator('#reading').waitFor({ state: 'visible' });
+    const releasePaper = await holdAction(page, 'quickbar.use.1');
+    try {
+      await page.locator('#reading').waitFor({ state: 'visible' });
+    } finally {
+      await releasePaper();
+    }
     assert.ok((await page.locator('.reading-text').innerText()).trim().length > 0);
     const before = await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun);
     assert.notEqual(before.discovery.clueRead, null);
