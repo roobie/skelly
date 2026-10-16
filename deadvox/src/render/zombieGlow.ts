@@ -1,7 +1,8 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import type { GlowMaterial } from '@mobgen/core/body.ts';
 import type { ZombieDef } from '../core/schema.ts';
-import { acidSpitWindupProgress, type Zombie } from '../core/zombies.ts';
+import { acidSpitWindupProgress } from '../core/zombiePose.ts';
+import type { Zombie } from '../core/zombies.ts';
 
 export type GlowLevels = Readonly<Record<GlowMaterial, number>>;
 

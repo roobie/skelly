@@ -905,6 +905,10 @@
           "nearMetres": 4
         },
         "spreadDegrees": 4,
+        "windupPullbackDegrees": {
+          "chest": 10,
+          "head": 25
+        },
         "windupSimSeconds": 1.2
       },
       "attack": {

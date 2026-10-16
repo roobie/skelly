@@ -1682,6 +1682,11 @@ const AcidSpitSchema = pipe(
   strictObject({
     rangeBand: strictObject({ nearMetres: Positive, farMetres: Positive }),
     windupSimSeconds: PositiveSimSeconds,
+    /** How far the head and chest rear back by the end of the wind-up; the pose eases in with its progress. */
+    windupPullbackDegrees: strictObject({
+      head: pipe(NonNegative, maxValue(90, 'must be at most 90')),
+      chest: pipe(NonNegative, maxValue(90, 'must be at most 90')),
+    }),
     cooldownSimSeconds: PositiveSimSeconds,
     /** Fraction of the cooldown a spit cancelled by a hit costs. */
     cancelPenaltyFraction: Fraction,

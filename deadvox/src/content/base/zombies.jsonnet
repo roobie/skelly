@@ -528,6 +528,7 @@ local figureSeeds = std.range(1, 8);
       "acidSpit": {
         "rangeBand": { "nearMetres": 4, "farMetres": 12 },
         "windupSimSeconds": 1.2,
+        "windupPullbackDegrees": { "head": 25, "chest": 10 },
         "cooldownSimSeconds": 5,
         "cancelPenaltyFraction": 0.5,
         "spreadDegrees": 4,
