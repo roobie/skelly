@@ -26,6 +26,14 @@ Isolate city route alternatives so content additions do not accumulate into one 
 
 For production chunk-order checks, native deep equality avoids matcher traversal dominating generation and stamping without weakening full-data comparisons. A workload-scaled deadline avoids coupling content growth to a fixed allowance. See `test/scenarioCertificate.test.ts`, `stampProbeCells`.
 
+Skyline admission needs the compiler's grounded envelopes, not fully expanded voxel maps:
+seeded choices cannot exceed their declared envelope. Routes sharing a roof origin also
+share one static flood rather than repeating the same search for each exit. These avoid
+multiplying content-validation work by both building choices and ways down without
+caching mutable registries. See `src/core/templates.ts`, `templateEnvelope`;
+`src/core/scenarioStart.ts`, `skylineIssues`; and `src/core/templateSpatial.ts`,
+`templateWalkingRoutes`.
+
 ## Base-registry fixtures
 
 Gameplay tests need validated content, not repeated admission of the same base pack during every file's import. Build that fixture once per run and deserialize a fresh object graph for each caller; do not share mutable registries or disable file isolation. See `test/baseRegistrySetup.ts`, `setup` and `test/baseRegistry.ts`, `baseRegistry`. Run-owned temporary storage prevents concurrent runs from replacing each other's content or interrupting a snapshot read.

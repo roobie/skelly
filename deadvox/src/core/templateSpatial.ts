@@ -468,10 +468,23 @@ export const templateStandingRoute = (
   );
 };
 
-export const templateWalkingRoute = (registry: Registry, template: CompiledTemplate, from: Vec3, to: Vec3): boolean => {
+export const templateWalkingRoutes = (
+  registry: Registry,
+  template: CompiledTemplate,
+  from: Vec3,
+  targets: readonly Vec3[],
+): boolean[] => {
   const space = new TemplateSpace(registry, template);
-  return space.standing(from) && space.standing(to) && space.reached(from).has(key(to));
+  const standing = targets.map((point) => space.standing(point));
+  if (!(space.standing(from) && standing.some(Boolean))) {
+    return targets.map(() => false);
+  }
+  const reached = space.reached(from);
+  return targets.map((point, index) => standing[index]! && reached.has(key(point)));
 };
+
+export const templateWalkingRoute = (registry: Registry, template: CompiledTemplate, from: Vec3, to: Vec3): boolean =>
+  templateWalkingRoutes(registry, template, from, [to])[0]!;
 
 export const templateReachableStandingPositions = (
   registry: Registry,

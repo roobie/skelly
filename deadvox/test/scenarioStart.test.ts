@@ -6,7 +6,7 @@ import { CitySite } from '../src/core/citySite.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
-import type { StartDescent } from '../src/core/scenarioStart.ts';
+import { type StartDescent, scenarioStartIssues } from '../src/core/scenarioStart.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
 import { type BlockBox, stampChunk } from '../src/core/structure.ts';
 import { gameHours } from '../src/core/time.ts';
@@ -121,6 +121,25 @@ it('refuses a start overtopped by a building in either city pool', () => {
     building.size[1] = start.placement.template.size[1] + 1;
     expect(startIssues().length).toBeGreaterThan(0);
   }
+});
+
+it('rejects an unsupported roof-route target without rejecting its reachable sibling', () => {
+  const own = structuredClone(profile);
+  const definition = own.composition!.start;
+  const upper: Vec3 = [...definition.spawn];
+  const unsupported: Vec3 = [upper[0], start.placement.template.size[1] - 1, upper[2]];
+  const drop = (point: Vec3) => ({
+    kind: 'drop' as const,
+    upper: point,
+    edge: point,
+    landing: [point[0], point[1] - 1, point[2]] as Vec3,
+    lower: definition.spawn,
+  });
+  definition.descents = [drop(upper), drop(unsupported)];
+  definition.minimumOpenDescents = 1;
+  const paths = scenarioStartIssues(registry, own).map(([path]) => path);
+  expect(paths).toContain('.composition.start.descents[1]');
+  expect(paths).not.toContain('.composition.start.descents[0]');
 });
 
 for (const descent of start.descents) {

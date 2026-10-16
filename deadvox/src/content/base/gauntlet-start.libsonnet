@@ -1,4 +1,5 @@
 local kits = import 'gauntlet-city-kits.libsonnet';
+local rooms = import 'gauntlet-start-rooms.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
 local storeys = [1, 9, 17, 25, 33];
 local roofY = 40;
@@ -82,7 +83,7 @@ local roomAir = [
 local roomClaims = [
   'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', '...........RRR', '...........RRR',
   'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', '...........RRR', '...........RRR',
-  'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR', 'RRRRRRRRRRRRRR',
+  '..............', '..............', '..............', '..............',
 ];
 local corridor = ['...........', '...........'];
 local corridorClaims = ['RRRRRRRRRRR', 'RRRRRRRRRRR'];
@@ -158,7 +159,7 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
       ['SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'RRRRRR', 'RRRRRR'],
       ['SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'RRRRRR', 'RRRRRR', 'RRRRRR'],
     ]),
-  ],
+  ] + rooms.mapPieces,
   mapAssemblies: [{
     id: 'gauntlet_start', size: [27, roofY + 5, 16], lootContext: context,
     slots: [
@@ -173,6 +174,8 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
       [
         slot('shell_' + floor, 'gauntlet_start_shell', [6, floor, 0], [18, 7, 16]),
         slot('room_' + floor, 'gauntlet_start_room_air', [7, floor, 3], [14, 7, 12]),
+        slot('partition_' + floor, 'gauntlet_start_room_partition', [7, floor, 11], [14, 7, 1]),
+        slot('furnished_' + floor, 'gauntlet_start_room_' + rooms.byFloor[std.toString(floor)], [7, floor, 12], [14, 7, 3]),
         slot('stairs_' + floor, 'gauntlet_start_stairs', [7, floor, if floor == 9 || floor == 25 then 9 else 5], [11, 8, 2]),
         slot('corridor_' + floor, 'gauntlet_start_corridor_air', [7, floor, if floor == 9 || floor == 25 then 5 else 9], [11, 7, 2]),
         slot('deck_' + floor, if floor == 9 || floor == 25 then 'gauntlet_start_floor_rear' else 'gauntlet_start_roof', [6, floor + 7, 0], [18, 1, 16]),

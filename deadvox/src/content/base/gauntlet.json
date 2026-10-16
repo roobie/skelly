@@ -2756,6 +2756,36 @@
           "turn": 0
         },
         {
+          "at": [7, 1, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_partition",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "partition_1",
+          "size": [14, 7, 1],
+          "turn": 0
+        },
+        {
+          "at": [7, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_office",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "furnished_1",
+          "size": [14, 7, 3],
+          "turn": 0
+        },
+        {
           "at": [7, 1, 5],
           "choices": [
             {
@@ -2843,6 +2873,36 @@
           ],
           "id": "room_9",
           "size": [14, 7, 12],
+          "turn": 0
+        },
+        {
+          "at": [7, 9, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_partition",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "partition_9",
+          "size": [14, 7, 1],
+          "turn": 0
+        },
+        {
+          "at": [7, 9, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_workshop",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "furnished_9",
+          "size": [14, 7, 3],
           "turn": 0
         },
         {
@@ -2936,6 +2996,36 @@
           "turn": 0
         },
         {
+          "at": [7, 17, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_partition",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "partition_17",
+          "size": [14, 7, 1],
+          "turn": 0
+        },
+        {
+          "at": [7, 17, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_sleeping",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "furnished_17",
+          "size": [14, 7, 3],
+          "turn": 0
+        },
+        {
           "at": [7, 17, 5],
           "choices": [
             {
@@ -3026,6 +3116,36 @@
           "turn": 0
         },
         {
+          "at": [7, 25, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_partition",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "partition_25",
+          "size": [14, 7, 1],
+          "turn": 0
+        },
+        {
+          "at": [7, 25, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_kitchen",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "furnished_25",
+          "size": [14, 7, 3],
+          "turn": 0
+        },
+        {
           "at": [7, 25, 9],
           "choices": [
             {
@@ -3113,6 +3233,36 @@
           ],
           "id": "room_33",
           "size": [14, 7, 12],
+          "turn": 0
+        },
+        {
+          "at": [7, 33, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_partition",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "partition_33",
+          "size": [14, 7, 1],
+          "turn": 0
+        },
+        {
+          "at": [7, 33, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_room_lounge",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "furnished_33",
+          "size": [14, 7, 3],
           "turn": 0
         },
         {
@@ -14097,10 +14247,10 @@
             "RRRRRRRRRRRRRR",
             "...........RRR",
             "...........RRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "..............",
+            "..............",
+            "..............",
+            ".............."
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -14111,10 +14261,10 @@
             "RRRRRRRRRRRRRR",
             "...........RRR",
             "...........RRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "..............",
+            "..............",
+            "..............",
+            ".............."
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -14125,10 +14275,10 @@
             "RRRRRRRRRRRRRR",
             "...........RRR",
             "...........RRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "..............",
+            "..............",
+            "..............",
+            ".............."
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -14139,10 +14289,10 @@
             "RRRRRRRRRRRRRR",
             "...........RRR",
             "...........RRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "..............",
+            "..............",
+            "..............",
+            ".............."
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -14153,10 +14303,10 @@
             "RRRRRRRRRRRRRR",
             "...........RRR",
             "...........RRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "..............",
+            "..............",
+            "..............",
+            ".............."
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -14167,10 +14317,10 @@
             "RRRRRRRRRRRRRR",
             "...........RRR",
             "...........RRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "..............",
+            "..............",
+            "..............",
+            ".............."
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -14181,10 +14331,10 @@
             "RRRRRRRRRRRRRR",
             "...........RRR",
             "...........RRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
+            "..............",
+            "..............",
+            "..............",
+            ".............."
           ]
         ]
       },
@@ -15179,6 +15329,420 @@
       },
       "ports": [],
       "size": [6, 2, 10],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_room_office",
+      "layers": [
+        ["DDD...........", "DDD...........", "............SS"],
+        ["DDD...........", "DDD...........", "............SS"],
+        ["..............", "..............", "............SS"],
+        ["..............", "..............", "............SS"],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSRRRRRRRRRRR", "SSSRRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["SSSRRRRRRRRRRR", "SSSRRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "facing": "w",
+          "furniture": "bed"
+        },
+        "C": {
+          "furniture": "crate"
+        },
+        "D": {
+          "furniture": "desk"
+        },
+        "F": {
+          "furniture": "fridge"
+        },
+        "K": {
+          "furniture": "kitchen_cupboard"
+        },
+        "S": {
+          "furniture": "shelf"
+        },
+        "T": {
+          "furniture": "workbench"
+        },
+        "V": {
+          "furniture": "sofa"
+        },
+        "W": {
+          "furniture": "wardrobe"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 3],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_room_workshop",
+      "layers": [
+        ["TTT...........", "TTT.........CC", "............CC"],
+        ["TTT...........", "TTT.........CC", "............CC"],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSRRRRRRRRRRR", "SSSRRRRRRRRRSS", "RRRRRRRRRRRRSS"],
+          ["SSSRRRRRRRRRRR", "SSSRRRRRRRRRSS", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "facing": "w",
+          "furniture": "bed"
+        },
+        "C": {
+          "furniture": "crate"
+        },
+        "D": {
+          "furniture": "desk"
+        },
+        "F": {
+          "furniture": "fridge"
+        },
+        "K": {
+          "furniture": "kitchen_cupboard"
+        },
+        "S": {
+          "furniture": "shelf"
+        },
+        "T": {
+          "furniture": "workbench"
+        },
+        "V": {
+          "furniture": "sofa"
+        },
+        "W": {
+          "furniture": "wardrobe"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 3],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_room_sleeping",
+      "layers": [
+        ["BBBB..........", "BBBB..........", "............WW"],
+        ["..............", "..............", "............WW"],
+        ["..............", "..............", "............WW"],
+        ["..............", "..............", "............WW"],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSRRRRRRRRRR", "SSSSRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "facing": "w",
+          "furniture": "bed"
+        },
+        "C": {
+          "furniture": "crate"
+        },
+        "D": {
+          "furniture": "desk"
+        },
+        "F": {
+          "furniture": "fridge"
+        },
+        "K": {
+          "furniture": "kitchen_cupboard"
+        },
+        "S": {
+          "furniture": "shelf"
+        },
+        "T": {
+          "furniture": "workbench"
+        },
+        "V": {
+          "furniture": "sofa"
+        },
+        "W": {
+          "furniture": "wardrobe"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 3],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_room_kitchen",
+      "layers": [
+        ["..............", "............FF", "KK..........FF"],
+        ["..............", "............FF", "KK..........FF"],
+        ["..............", "............FF", "............FF"],
+        ["..............", "............FF", "............FF"],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS", "SSRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS", "SSRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "facing": "w",
+          "furniture": "bed"
+        },
+        "C": {
+          "furniture": "crate"
+        },
+        "D": {
+          "furniture": "desk"
+        },
+        "F": {
+          "furniture": "fridge"
+        },
+        "K": {
+          "furniture": "kitchen_cupboard"
+        },
+        "S": {
+          "furniture": "shelf"
+        },
+        "T": {
+          "furniture": "workbench"
+        },
+        "V": {
+          "furniture": "sofa"
+        },
+        "W": {
+          "furniture": "wardrobe"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 3],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_room_lounge",
+      "layers": [
+        ["VVVV..........", "VVVV..........", "............SS"],
+        ["VVVV..........", "VVVV..........", "............SS"],
+        ["..............", "..............", "............SS"],
+        ["..............", "..............", "............SS"],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."],
+        ["..............", "..............", ".............."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSRRRRRRRRRR", "SSSSRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["SSSSRRRRRRRRRR", "SSSSRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRSS"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"],
+          ["RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR", "RRRRRRRRRRRRRR"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "facing": "w",
+          "furniture": "bed"
+        },
+        "C": {
+          "furniture": "crate"
+        },
+        "D": {
+          "furniture": "desk"
+        },
+        "F": {
+          "furniture": "fridge"
+        },
+        "K": {
+          "furniture": "kitchen_cupboard"
+        },
+        "S": {
+          "furniture": "shelf"
+        },
+        "T": {
+          "furniture": "workbench"
+        },
+        "V": {
+          "furniture": "sofa"
+        },
+        "W": {
+          "furniture": "wardrobe"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 3],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_room_partition",
+      "layers": [
+        ["##########...#"],
+        ["##########...#"],
+        ["##########...#"],
+        ["##########...#"],
+        ["##############"],
+        ["##############"],
+        ["##############"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSSSSSSRRRS"],
+          ["SSSSSSSSSSRRRS"],
+          ["SSSSSSSSSSRRRS"],
+          ["SSSSSSSSSSRRRS"],
+          ["SSSSSSSSSSSSSS"],
+          ["SSSSSSSSSSSSSS"],
+          ["SSSSSSSSSSSSSS"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "facing": "w",
+          "furniture": "bed"
+        },
+        "C": {
+          "furniture": "crate"
+        },
+        "D": {
+          "furniture": "desk"
+        },
+        "F": {
+          "furniture": "fridge"
+        },
+        "K": {
+          "furniture": "kitchen_cupboard"
+        },
+        "S": {
+          "furniture": "shelf"
+        },
+        "T": {
+          "furniture": "workbench"
+        },
+        "V": {
+          "furniture": "sofa"
+        },
+        "W": {
+          "furniture": "wardrobe"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 1],
       "style": "brick_townhouse"
     },
     {

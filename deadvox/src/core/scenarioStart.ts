@@ -1,7 +1,12 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { ScenarioDef } from './schema.ts';
-import { templateBodySpace, templateClimbCertificate, templateWalkingRoute } from './templateSpatial.ts';
+import {
+  templateBodySpace,
+  templateClimbCertificate,
+  templateWalkingRoute,
+  templateWalkingRoutes,
+} from './templateSpatial.ts';
 import {
   type CompiledTemplate,
   compileAssembly,
@@ -9,6 +14,7 @@ import {
   type Placement,
   placedPieces,
   placedPoint,
+  templateEnvelope,
   templateResolves,
 } from './templates.ts';
 
@@ -57,7 +63,12 @@ const skylineIssues = (registry: Registry, scenario: ScenarioDef, template: Comp
   ]);
   const roofHeight = composition!.start.spawn[1] - (template.groundLayer ?? 0);
   return [...buildingIds].flatMap((id): [string, string][] => {
-    const building = startTemplate(registry, id, 0, `scenario:${scenario.id}:skyline:${id}`);
+    const definition = registry.mapAssemblies.get(id) ?? registry.templates.get(id);
+    if (!definition) {
+      throw new Error(`missing skyline template/assembly "${id}"`);
+    }
+    // Seeded choices cannot outgrow the envelope that the compiler enforces.
+    const building = templateEnvelope(definition);
     return building.size[1] - (building.groundLayer ?? 0) >= roofHeight
       ? [
           [
@@ -103,12 +114,18 @@ export const scenarioStartIssues = (registry: Registry, scenario: ScenarioDef): 
     }
     issues.push(...skylineIssues(registry, scenario, template));
     const placement: Placement = { template, origin: [0, 0, 0], turn: 0 };
+    const roofRoutes = templateWalkingRoutes(
+      registry,
+      template,
+      start.spawn,
+      start.descents.map(({ upper }) => upper),
+    );
     start.descents.forEach((descent, index) => {
       const path = `.composition.start.descents[${index}]`;
       for (const [name, point] of descentPoints(descent)) {
         anchor(point, `${path}.${name}`);
       }
-      if (!templateWalkingRoute(registry, template, start.spawn, descent.upper)) {
+      if (!roofRoutes[index]) {
         issues.push([path, 'way down must be reachable from the roof spawn']);
       }
       switch (descent.kind) {
