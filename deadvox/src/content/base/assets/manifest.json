@@ -463,6 +463,42 @@
     },
     {
       "author": "Skelly contributors",
+      "changes": "Original asset provenance data and its Jsonnet composition source.",
+      "download": null,
+      "files": ["assets/manifest.jsonnet", "assets/manifest.libsonnet"],
+      "licence": "CC0-1.0",
+      "title": "Project asset manifest sources",
+      "url": "https://github.com/roobie/skelly/tree/main/deadvox/src/content/base/assets"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Original model geometry generated through the Gungen export pipeline.",
+      "download": null,
+      "files": ["assets/models/rifle_hunting.glb"],
+      "licence": "CC0-1.0",
+      "title": "Gungen hunting rifle export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/hunting-rifle.json"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Original model geometry generated through the Gungen export pipeline.",
+      "download": null,
+      "files": ["assets/models/round-308_h_winchester.glb", "assets/models/case-308_h_winchester.glb"],
+      "licence": "CC0-1.0",
+      "title": "Gungen civilian .308 Winchester cartridge exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/308-winchester.json"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Original model geometry generated through the Gungen export pipeline.",
+      "download": null,
+      "files": ["assets/models/optic_hunting_3_9x.glb"],
+      "licence": "CC0-1.0",
+      "title": "Gungen hunting scope export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/optics.ts"
+    },
+    {
+      "author": "Skelly contributors",
       "changes": "Original project-built geometry exported by gungen. Moving assembly parts and the revolver metadata preserve the assembled rest pose for runtime composition; see gungen/docs/revolver-export.md.",
       "download": null,
       "files": ["assets/models/revolver.glb"],

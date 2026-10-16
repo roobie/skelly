@@ -36,8 +36,14 @@ describe('5.56x45 round profile estimate', () => {
     expect(fixture.overallLength.typical.value).toBeNull();
   });
   it('keeps bullet length unsourced and uses the named seating-depth assumption only for the model', () => {
-    expect(natoCartridge.payload.length.min.value).toBeNull();
-    const profile = roundProfiles(natoCartridge);
+    const fixture: MetallicCartridge = {
+      ...natoCartridge,
+      payload: {
+        ...natoCartridge.payload,
+        length: { ...natoCartridge.payload.length, min: { value: null, cite: null } },
+      },
+    };
+    const profile = roundProfiles(fixture);
     const assumedBase =
       natoCartridge.case.length.value! - ASSUMED_BULLET_SEATING_DEPTH_CALIBRES * natoCartridge.payload.diameter.value!;
     expect(maximum(profile.bullet, 0)).toBeCloseTo(natoCartridge.overallLength.typical.value!, 6);

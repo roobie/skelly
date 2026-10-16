@@ -341,11 +341,13 @@ const collectAuthoredFields = (value, path, file, state) => {
   }
 };
 
-const temporalCatalogueFindings = (contentFiles) => {
+export const temporalCatalogueFindings = (contentFiles, read = readFileSync) => {
   const known = new Set(TEMPORAL_FIELDS.map(({ path }) => normalizedPath(path)));
   const state = { known, findings: [] };
   for (const file of contentFiles) {
-    collectAuthoredFields(JSON.parse(readFileSync(file, 'utf8')), '', file, state);
+    // Standalone ModelSchema records share the pack namespace rather than a second temporal catalogue.
+    const path = file.endsWith('.model.json') ? 'models' : '';
+    collectAuthoredFields(JSON.parse(read(file, 'utf8')), path, file, state);
   }
   return state.findings;
 };

@@ -160,7 +160,9 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
   'muzzle-brake': { anchors: muzzlePortAnchor },
   receiver: {
     anchors: (params, part) => {
-      const mouth = params.feed === 'tube' && part.keepOuts.find((volume) => volume.id === 'loading-port');
+      const mouth = part.keepOuts.find(
+        (volume) => volume.id === (params.feed === 'top' ? 'loading-mouth' : 'loading-port'),
+      );
       return {
         ...ejectionAnchor(params, part),
         ...(mouth

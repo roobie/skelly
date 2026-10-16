@@ -30,7 +30,7 @@ export const handlingRotation = (
   if (!(model && frame)) {
     return [0, 0, 0];
   }
-  if (model.tube) {
+  if (model.internalMagazine) {
     return [0, 0, rackCant(model, side, frame, grip)];
   }
   // +1 when the off hand is on the left.

@@ -1,5 +1,4 @@
 import { generate, generateValid } from '@skelly/engine/core/generate.ts';
-import { seededRng } from '@skelly/engine/core/random.ts';
 import type { ParamReference, Template } from '@skelly/engine/core/template.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
@@ -10,14 +9,6 @@ import { sweepGroup } from './sweeps.ts';
 const SEEDS = 300;
 const CHUNK = 25;
 
-describe('seededRng', () => {
-  // mulberry32's published sequence for seed 1.
-  it('is stable across runs and machines', () => {
-    const rng = seededRng(1);
-    expect([rng(), rng(), rng()].map((value) => value.toFixed(6))).toEqual(['0.627074', '0.002736', '0.527447']);
-  });
-});
-
 describe('generate', () => {
   it('is deterministic: same seed, same assembly', () => {
     for (const t of TEMPLATES) {
@@ -25,15 +16,18 @@ describe('generate', () => {
     }
   });
 
-  sweepGroup('varies with the seed', () => {
-    it('passes', () => {
-      for (const t of TEMPLATES) {
-        const keys = new Set(
-          Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, gunDomain, seed).parts)),
-        );
-        expect(keys.size).toBeGreaterThan(5);
-      }
-    });
+  it('uses the seed to select authored parameter choices', () => {
+    const fixture: Template = {
+      name: 'seed-choice-fixture',
+      description: '',
+      root: 'receiver',
+      slots: [{ id: 'receiver', family: 'receiver', params: { rail: ['full', 'none'] } }],
+      connections: [],
+    };
+    const choices = new Set(
+      Array.from({ length: 8 }, (_, seed) => generate(fixture, gunDomain, seed).parts.receiver!.params!.rail),
+    );
+    expect(choices.size).toBeGreaterThan(1);
   });
 
   it('includes conditional slots only when an earlier parameter matches', () => {

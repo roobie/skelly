@@ -369,6 +369,40 @@ export const boltRifle: Template = {
   ],
 };
 
+const huntingRifle: Template = {
+  ...boltRifle,
+  name: 'hunting-rifle',
+  variant: '308-winchester',
+  description: 'Civilian turn-bolt rifle with an integral top-fed magazine and iron sights.',
+  slots: [
+    ...boltRifle.slots
+      .filter(({ id }) => id !== 'sight')
+      .map((slot) => {
+        if (slot.id === 'receiver') {
+          return { ...slot, params: { ...slot.params, bore: 'M' } };
+        }
+        if (slot.id === 'magazine') {
+          return { ...slot, params: { ...slot.params, integral: 'yes' } };
+        }
+        if (slot.id === 'lower') {
+          return { ...slot, params: { layout: 'conventional', magazineWell: 'recessed' } };
+        }
+        if (slot.id === 'stock') {
+          return { ...slot, params: { length: 'M', style: 'sporting' } };
+        }
+        return slot;
+      }),
+    { id: 'front-sight', family: 'front-sight', params: { style: 'sporting' } },
+    { id: 'rear-sight', family: 'sporting-rear-sight' },
+    { id: 'sight', family: 'sight', params: { type: 'hunting-3-9x' }, chance: 0 },
+  ],
+  connections: [
+    ...boltRifle.connections,
+    { from: 'barrel.front-sight', to: 'front-sight.base' },
+    { from: 'receiver.rear-sight', to: 'rear-sight.base' },
+  ],
+};
+
 export const boltRifleBox: Template = {
   name: 'bolt-rifle-box',
   description:
@@ -614,6 +648,7 @@ const ALL_TEMPLATES: readonly Template[] = [
   revolver,
   smg,
   boltRifle,
+  huntingRifle,
   boltRifleBox,
   boltRifleThumbhole,
   pumpShotgun,
