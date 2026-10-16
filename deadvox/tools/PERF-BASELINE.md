@@ -14,9 +14,10 @@ not a portable performance promise.
 
 See `deadvox/tools/perf-baseline.mjs`, `run`, for collection and the same file's usage
 message for invocation. Workloads and sampling policy belong in
-`deadvox/src/config/perf-baseline.jsonnet`, so comparisons can share an explicit fixture
-rather than depend on an operator's saved preferences. Do not publish diagnostic bundles
-as ordinary game builds.
+`deadvox/src/config/perf-baseline.jsonnet`, so comparisons can share an explicit fixture.
+Each run gets a fresh browser context so an operator's saved preferences cannot change the
+comparison workload. The measurement build is unminified to retain useful profiler symbols.
+Do not publish diagnostic bundles as ordinary game builds.
 
 Fixed input does not promise bit-identical AI trajectories: frame cadence still controls
 live simulation time. Inspect scene evidence before comparing runs; a repeatable camera
