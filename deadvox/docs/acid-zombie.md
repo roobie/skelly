@@ -77,6 +77,6 @@ The acid zombie gets its own mobgen body, built from the ground up, not a recolo
 - glowing green eyes;
 - acid drooling from the mouth, with drips that fall to the ground.
 
-The body is a mobgen design task for an opus designer and opus coder pair; it adds a `model` entry for the type. See `mobgen/PROJECT.md` and `src/core/schema.ts`, `ZombieSchema`, `model`.
+The body is a mobgen design task for an opus designer and opus coder pair; it adds a `model` entry for the type. See `mobgen/docs/acid-zombie-body.md` and `src/core/schema.ts`, `ZombieSchema`, `model`.
 
 Player-visible text follows `INTERFACE.md`, "Text": the type's name is a label, and the burn shows through bodily cues and the body panel, never as narration.
