@@ -3760,7 +3760,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_start_snack_crate",
+                "id": "gauntlet_start_roof_snack_crate",
                 "kind": "piece"
               },
               "weight": 1
@@ -3790,7 +3790,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_start_snack_crate",
+                "id": "gauntlet_start_roof_snack_crate",
                 "kind": "piece"
               },
               "weight": 1
@@ -8717,6 +8717,27 @@
         "M": {
           "furniture": "crate",
           "loot": "medical_filler"
+        }
+      },
+      "ports": [],
+      "size": [2, 2, 2],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_roof_snack_crate",
+      "layers": [["CC", "CC"], ["CC", "CC"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS", "SS"], ["SS", "SS"]]
+      },
+      "palette": {
+        "C": {
+          "furniture": "crate",
+          "loot": "snacks"
         }
       },
       "ports": [],

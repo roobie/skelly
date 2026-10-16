@@ -10,6 +10,7 @@ local palette = {
   N: { furniture: 'counter', facing: 's', loot: 'gauntlet_food_stock' },
   x: { furniture: 'crate', loot: 'junk' },
   S: { furniture: 'crate', loot: 'snacks' },
+  C: { furniture: 'crate', loot: 'snacks' },
   M: { furniture: 'crate', loot: 'medical_filler' },
   B: { furniture: 'crate', loot: 'building_parts' },
   R: { furniture: 'crate', loot: 'gauntlet_ammunition' },
@@ -73,6 +74,7 @@ local pieces = [
   piece('crate', [['xx', 'xx'], ['xx', 'xx']]),
   piece('snack_crate', [['SS', 'SS'], ['SS', 'SS']]),
   piece('medical_crate', [['MM', 'MM'], ['MM', 'MM']]),
+  piece('roof_snack_crate', [['CC', 'CC'], ['CC', 'CC']]),
   piece('parts_crate', [['BB', 'BB'], ['BB', 'BB']]),
   piece('ammo_crate', [['RR', 'RR'], ['RR', 'RR']]),
   piece('burst_crate', [['XX', 'XX'], ['XX', 'XX']]),
@@ -336,6 +338,6 @@ local hall(y) = [
     ['sofa',23,23,2], ['sofa',30,23,2], ['bed',35,15], ['soldier',23,15], ['burst_crate',32,19],
     ['workbench',8,13], ['scrap',8,19], ['parts_crate',17,22], ['shelf',13,24,2], ['shambler',15,18],
   ]) + furnish(41, [
-    ['snack_crate',19,12], ['medical_crate',24,12], ['snack_crate',19,16], ['burst_crate',24,16],
+    ['roof_snack_crate',19,12], ['medical_crate',24,12], ['roof_snack_crate',19,16], ['burst_crate',24,16],
   ]),
 }
