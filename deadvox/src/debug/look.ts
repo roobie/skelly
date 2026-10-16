@@ -1,6 +1,6 @@
 // Live look controls for the deadvox/look-experiments workstream: they exist so
 // different looks (tone mapping, exposure, block colour space, mood pass, fog) can be compared by
-// eye against the game's default look (DEFAULT_LOOK in core/mood.ts), which play has already applied.
+// eye against the game's default look (the `look` content section), which play has already applied.
 
 import type { WebGLRenderer } from 'three';
 import {
@@ -10,11 +10,12 @@ import {
   clampExposure,
   clampGrade,
   clampTorch,
-  DEFAULT_LOOK,
-  DEFAULT_MOOD,
   DEFAULT_SHADOWS,
+  type LookDefaults,
   type LookState,
+  lookOf,
   type MoodState,
+  moodOf,
   nextShadowDistance,
   type ShadowState,
   TORCH_STEP,
@@ -71,12 +72,12 @@ export class LookControls {
   private readonly weather: Weather;
   private readonly shadows: ShadowControls | undefined;
   private readonly flashlight: { strength: number };
-  private moodValue: MoodState = { ...DEFAULT_MOOD };
+  private moodValue: MoodState;
   private shadowValue: ShadowState = { ...DEFAULT_SHADOWS };
-  private exposureValue = DEFAULT_LOOK.exposure;
-  private linearColorsValue = DEFAULT_LOOK.srgb;
-  private patternsValue = DEFAULT_LOOK.patterns;
-  private occlusionValue = DEFAULT_LOOK.vao;
+  private exposureValue: number;
+  private linearColorsValue: boolean;
+  private patternsValue: boolean;
+  private occlusionValue: boolean;
   private crackCheckValue = false;
   private weatheringValue: WeatheringUrlState | undefined;
   private readonly weatheringProfiles: ReadonlyMap<string, WeatheringDef>;
@@ -88,6 +89,8 @@ export class LookControls {
     meshes: LookMeshes | undefined,
     mood: MoodControls | undefined,
     environment: {
+      /** The content's default look, which the controls fall back to for what the renderer cannot tell. */
+      defaults: LookDefaults;
       weather: Weather;
       shadows?: ShadowControls;
       flashlight: { strength: number };
@@ -107,16 +110,18 @@ export class LookControls {
     this.weatheringValue = environment.weathering?.state;
     this.weatheringProfiles = environment.weathering?.profiles ?? new Map();
     this.weatheringSplit = environment.weathering?.split;
+    const base = lookOf(environment.defaults);
+    this.moodValue = moodOf(environment.defaults);
     this.mode = Math.max(
       0,
       renderer
         ? TONE_MODES.findIndex((candidate) => candidate.mapping === renderer.toneMapping)
-        : TONE_MODES.findIndex((candidate) => candidate.key === DEFAULT_LOOK.tone),
+        : TONE_MODES.findIndex((candidate) => candidate.key === base.tone),
     );
-    this.exposureValue = renderer?.toneMappingExposure ?? DEFAULT_LOOK.exposure;
-    this.linearColorsValue = meshes?.linearColorsOn ?? DEFAULT_LOOK.srgb;
-    this.patternsValue = meshes?.patternsOn ?? DEFAULT_LOOK.patterns;
-    this.occlusionValue = meshes?.occlusionOn ?? DEFAULT_LOOK.vao;
+    this.exposureValue = renderer?.toneMappingExposure ?? base.exposure;
+    this.linearColorsValue = meshes?.linearColorsOn ?? base.srgb;
+    this.patternsValue = meshes?.patternsOn ?? base.patterns;
+    this.occlusionValue = meshes?.occlusionOn ?? base.vao;
     if (mood) {
       this.moodValue = {
         post: mood.post,

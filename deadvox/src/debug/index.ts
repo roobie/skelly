@@ -11,6 +11,7 @@ import {
   type FirearmsSkillZeroEffect,
   type FirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
+import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import type { ShadowState } from '../core/mood.ts';
 import { raycast } from '../core/raycast.ts';
 import type { WeatheringDef } from '../core/schema.ts';
@@ -1136,7 +1137,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   /** Groups the operator collapsed; remembered per browser. */
   const closedGroups = readClosedGroups();
   const { shadows } = hooks.engine;
+  const lookDefaults = lookDefaultsOf(hooks.engine.registry);
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, {
+    defaults: lookDefaults,
     weather: hooks.weather,
     ...(shadows ? { shadows } : {}),
     flashlight: hooks.flashlight,
@@ -1156,7 +1159,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         }
       : {}),
   });
-  const initialLook = parseLookParams(new URLSearchParams(location.search));
+  const initialLook = parseLookParams(new URLSearchParams(location.search), lookDefaults);
   look.restore(initialLook);
   // `?cam=` puts the player at a saved view instead of the spawn or a save's position (the body moves; saves
   // only ever record the body, never this URL). Mid-air the player falls, unless `freeze=1` or noclip holds
@@ -1190,7 +1193,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
-    const next = lookUrl(location.href, lookState(), look.weatheringState, hooks.engine.registry.weathering);
+    const next = lookUrl(
+      location.href,
+      lookState(),
+      lookDefaults,
+      look.weatheringState && { state: look.weatheringState, profiles: hooks.engine.registry.weathering },
+    );
     if (next !== location.href) {
       history.replaceState(history.state, '', next);
     }
@@ -1683,7 +1691,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       pitchRad: hooks.input.pitch,
       buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
-      url: camUrl(lookUrl(location.href, lookState()), {
+      url: camUrl(lookUrl(location.href, lookState(), lookDefaults), {
         position: hooks.body.pos.map((v) => v * metres) as Vec3,
         yaw: hooks.input.yaw,
         pitch: hooks.input.pitch,

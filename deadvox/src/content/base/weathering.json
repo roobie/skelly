@@ -2,9 +2,9 @@
   "weathering": [
     {
       "id": "proper",
-      "strength": 4,
+      "strength": 0,
       "tintColor": "#ddd7d7",
-      "tintDarkness": 1,
+      "tintDarkness": 0,
       "streakColor": "#ddddcf",
       "streakStrength": 0.22,
       "streakLengthMetres": 2.38,

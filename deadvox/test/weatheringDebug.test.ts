@@ -7,6 +7,7 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { FakeMood } from './fakeMood.ts';
+import { LOOK_FIXTURE } from './lookFixture.ts';
 
 describe('debug weathering controls', () => {
   it('selects another authored profile and updates live mesh uniforms for edits', () => {
@@ -25,6 +26,7 @@ describe('debug weathering controls', () => {
       setWeathering: (settings: WeatheringDef | undefined) => applied.push(settings),
     };
     const look = new LookControls(undefined, meshes, new FakeMood(), {
+      defaults: LOOK_FIXTURE,
       weather: { fogginess: DEFAULT_FOGGINESS },
       flashlight: { strength: 1 },
       weathering: {

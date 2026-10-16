@@ -1235,6 +1235,7 @@ export const REQUIRED_CORE_CONTENT = [
   { section: 'skills', id: CORE_CONTENT_IDS.inventoryManagement },
   { section: 'ui', id: CORE_CONTENT_IDS.coreUi },
   { section: 'graphics', id: CORE_CONTENT_IDS.coreGraphics },
+  { section: 'look', id: CORE_CONTENT_IDS.coreLook },
   ...SOUND_EVENT_IDS.map((id) => ({ section: 'sounds' as const, id })),
 ] as const satisfies readonly { section: Exclude<ContentSection, 'blocks'>; id: string }[];
 

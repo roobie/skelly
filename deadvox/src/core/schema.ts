@@ -40,6 +40,7 @@ import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
+import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
@@ -2292,6 +2293,25 @@ const RecipeSchema = strictObject({
 
 const GraphicsTuningSchema = strictObject({ id: Id, ...GraphicsOptionsSchema.entries });
 
+/** The game's default look (core/mood.ts `LookDefaults`); URL parameters and the debug panel override it. */
+const LookDefaultsSchema = strictObject({
+  id: Id,
+  tone: picklist(TONE_KEYS),
+  exposure: pipe(
+    number(),
+    minValue(MIN_EXPOSURE, `must be ${MIN_EXPOSURE} to ${MAX_EXPOSURE}`),
+    maxValue(MAX_EXPOSURE, `must be ${MIN_EXPOSURE} to ${MAX_EXPOSURE}`),
+  ),
+  srgb: vBoolean(),
+  patterns: vBoolean(),
+  vao: vBoolean(),
+  /** The mood pass's master switch: off, bloom, film and grade render nothing. */
+  post: vBoolean(),
+  bloom: vBoolean(),
+  film: vBoolean(),
+  grade: Fraction,
+});
+
 // ---- files ----
 
 /** Native schemas and section metadata live here, not in parallel loader/validator lists. */
@@ -2353,6 +2373,7 @@ const SECTION_DESCRIPTOR = {
   mapAssemblies: { schema: optional(array(MapAssemblySchema)), label: 'map assemblies', order: 25 },
   mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
   mapPools: { schema: optional(array(MapPoolSchema)), label: 'map pools', order: 27 },
+  look: { schema: optional(array(LookDefaultsSchema)), label: 'default look', order: 28 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };

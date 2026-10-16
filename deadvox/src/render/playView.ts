@@ -8,8 +8,9 @@ import { dayCycleFor } from '../core/dayPhase.ts';
 import type { EntityStore } from '../core/entities.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
+import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
-import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
+import { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
@@ -146,8 +147,9 @@ export const createPlayView = (
     if (shadows === undefined) {
       throw new Error('rendering resources are incomplete');
     }
-    applyLook(renderer, meshes, DEFAULT_LOOK);
-    mood.restore(DEFAULT_MOOD);
+    const look = lookDefaultsOf(registry);
+    applyLook(renderer, meshes, lookOf(look));
+    mood.restore(moodOf(look));
     shadows.restore(DEFAULT_SHADOWS);
   }
   const weather: Weather = { fogginess: DEFAULT_FOGGINESS };

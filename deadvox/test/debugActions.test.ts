@@ -12,6 +12,7 @@ import { inputBindings } from '../src/game/inputBindings.ts';
 import { TONE_MODES } from '../src/render/look.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
+import { LOOK_FIXTURE } from './lookFixture.ts';
 
 interface FakeRenderer {
   toneMapping: ToneMapping;
@@ -166,7 +167,7 @@ const makeActions = (
       },
     },
     mood,
-    { weather, shadows, flashlight },
+    { defaults: LOOK_FIXTURE, weather, shadows, flashlight },
   );
   const sim = {
     godMode: false,

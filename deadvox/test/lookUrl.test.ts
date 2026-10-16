@@ -1,10 +1,10 @@
 import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS, DEFAULT_TORCH, SHADOW_DISTANCES } from '../src/core/mood.ts';
+import { DEFAULT_SHADOWS, DEFAULT_TORCH, lookOf, moodOf, SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { DEFAULT_FOGGINESS } from '../src/core/weather.ts';
 import { LookControls } from '../src/debug/look.ts';
 import {
-  DEFAULT_LOOK_URL_STATE,
+  defaultLookUrlState,
   LOOK_PARAMS,
   type LookUrlState,
   lookUrl,
@@ -15,9 +15,12 @@ import { setAutoToneWeight } from '../src/render/autoTone.ts';
 import { hotCheckUniform } from '../src/render/hotCheck.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
+import { LOOK_FIXTURE } from './lookFixture.ts';
 
-const parse = (query: string) => parseLookParams(new URLSearchParams(query));
-const write = (query: string, state: LookUrlState) => writeLookParams(new URLSearchParams(query), state).toString();
+const DEFAULT_LOOK_URL_STATE = defaultLookUrlState(LOOK_FIXTURE);
+const parse = (query: string) => parseLookParams(new URLSearchParams(query), LOOK_FIXTURE);
+const write = (query: string, state: LookUrlState) =>
+  writeLookParams(new URLSearchParams(query), state, LOOK_FIXTURE).toString();
 
 describe('look URL parameters', () => {
   it('reads defaults from an empty query', () => {
@@ -34,10 +37,10 @@ describe('look URL parameters', () => {
     expect(write(params.toString(), DEFAULT_LOOK_URL_STATE)).toBe('debug=1&seed=7');
   });
 
-  it('has the game look as its defaults', () => {
+  it('has the given default look as its defaults', () => {
     expect(DEFAULT_LOOK_URL_STATE).toEqual({
-      ...DEFAULT_LOOK,
-      ...DEFAULT_MOOD,
+      ...lookOf(LOOK_FIXTURE),
+      ...moodOf(LOOK_FIXTURE),
       freeze: false,
       fogginess: DEFAULT_FOGGINESS,
       torch: DEFAULT_TORCH,
@@ -255,7 +258,7 @@ describe('look URL parameters', () => {
     expect(write('debug=1&tone=none&seed=5&exposure=2&time=20%3A30&site=testHouse', state)).toBe(
       'debug=1&seed=5&time=20%3A30&site=testHouse&tone=agx',
     );
-    expect(lookUrl('http://localhost:5173/play?debug=1&time=20:30&srgb=0#x', state)).toBe(
+    expect(lookUrl('http://localhost:5173/play?debug=1&time=20:30&srgb=0#x', state, LOOK_FIXTURE)).toBe(
       'http://localhost:5173/play?debug=1&time=20:30&tone=agx#x',
     );
   });
@@ -280,6 +283,7 @@ describe('restoring look controls from URL state', () => {
 
   it('takes the parsed tone, exposure, colour decode and patterns', () => {
     const look = new LookControls(renderer, meshes, new FakeMood(), {
+      defaults: LOOK_FIXTURE,
       weather: { fogginess: 0.2 },
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -298,6 +302,7 @@ describe('restoring look controls from URL state', () => {
     const mood = new FakeMood();
     const weather = { fogginess: 0.2 };
     const look = new LookControls(renderer, meshes, mood, {
+      defaults: LOOK_FIXTURE,
       weather,
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -313,6 +318,7 @@ describe('restoring look controls from URL state', () => {
     const flashlight = { strength: 1 };
     const game = { toneMapping: ACESFilmicToneMapping, toneMappingExposure: 3 };
     const look = new LookControls(game, meshes, mood, {
+      defaults: LOOK_FIXTURE,
       weather: { fogginess: 0.2 },
       shadows: new FakeShadows(),
       flashlight,
@@ -349,6 +355,7 @@ describe('restoring look controls from URL state', () => {
   it('takes the parsed diagnostic checks and toggles them', () => {
     const mood = new FakeMood();
     const look = new LookControls(renderer, meshes, mood, {
+      defaults: LOOK_FIXTURE,
       weather: { fogginess: 0.2 },
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -365,6 +372,7 @@ describe('restoring look controls from URL state', () => {
   it('takes the parsed shadow settings', () => {
     const shadows = new FakeShadows();
     const look = new LookControls(renderer, meshes, new FakeMood(), {
+      defaults: LOOK_FIXTURE,
       weather: { fogginess: 0.2 },
       shadows,
       flashlight: { strength: 1 },
@@ -377,6 +385,7 @@ describe('restoring look controls from URL state', () => {
   it('follows the renderer it finds, so the game default look survives attaching the controls', () => {
     const game = { toneMapping: ACESFilmicToneMapping, toneMappingExposure: 3 };
     const look = new LookControls(game, meshes, new FakeMood(), {
+      defaults: LOOK_FIXTURE,
       weather: { fogginess: 0.2 },
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -395,6 +404,7 @@ describe('restoring look controls from URL state', () => {
     const mood = new FakeMood();
     const game = { toneMapping: CustomToneMapping, toneMappingExposure: 3 };
     const look = new LookControls(game, meshes, mood, {
+      defaults: LOOK_FIXTURE,
       weather: { fogginess: 0.2 },
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -416,6 +426,7 @@ describe('restoring look controls from URL state', () => {
   it('steps fogginess by tenths within 0..1', () => {
     const weather = { fogginess: 0.2 };
     const look = new LookControls(renderer, meshes, new FakeMood(), {
+      defaults: LOOK_FIXTURE,
       weather,
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
