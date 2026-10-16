@@ -277,9 +277,11 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   leads, beside what it counts. Only leads reached by different routes count toward it,
   because two leads behind one blocked street fail together and would overstate how
   forgiving the scenario is. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`.
-- **Start.** The gauntlet starts on an authored roof with several authored ways down, each
-  trading speed against safety or noise, so leaving the roof is the first decision. They
-  are authored to keep the first version simple. Every route proof roots at the start, so
+- **Start.** The player starts on the tallest building, authored at five to seven storeys,
+  so the run opens with an overview and a descent. The roof stands above every other
+  city building, including seeded pool choices, rather than merely above its neighbours
+  in one world. Several authored ways down trade speed against safety or noise, so
+  leaving the roof is the first decision. Authored routes keep the first version simple. Every route proof roots at the start, so
   the rooftop start lands in #393 before seeded placement, and the proofs are rebuilt
   around their root once, not twice. The template's climb proof covers the roof and ways
   down; each world's route proof still runs from the roof, because the seeded city around

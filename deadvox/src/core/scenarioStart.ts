@@ -44,6 +44,31 @@ export const startTemplate = (registry: Registry, id: string, seed: number, site
   return assembly ? compileAssembly(registry, assembly, { seed, siteId }) : compileTemplate(registry, template!);
 };
 
+const skylineIssues = (registry: Registry, scenario: ScenarioDef, template: CompiledTemplate): [string, string][] => {
+  const { city, composition } = scenario;
+  const buildingIds = new Set([
+    scenario.serviceTemplate,
+    ...[city.pool, ...(city.ring ? [city.ring.pool] : [])].flatMap((id) =>
+      (registry.mapPools.get(id)?.choices ?? []).map(({ ref }) => ref.id),
+    ),
+    ...composition!.leads.map((lead) => lead.template),
+    ...composition!.landmarks,
+    ...composition!.incidentalTemplates,
+  ]);
+  const roofHeight = composition!.start.spawn[1] - (template.groundLayer ?? 0);
+  return [...buildingIds].flatMap((id): [string, string][] => {
+    const building = startTemplate(registry, id, 0, `scenario:${scenario.id}:skyline:${id}`);
+    return building.size[1] - (building.groundLayer ?? 0) >= roofHeight
+      ? [
+          [
+            '.composition.start.template',
+            `start roof must stand above "${id}"; raise the start building or lower the other building`,
+          ],
+        ]
+      : [];
+  });
+};
+
 export const scenarioStartIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
   const start = scenario.composition?.start;
   if (!start) {
@@ -76,6 +101,7 @@ export const scenarioStartIssues = (registry: Registry, scenario: ScenarioDef): 
     if (start.minimumOpenDescents > start.descents.length) {
       issues.push(['.composition.start.minimumOpenDescents', 'minimum exceeds the authored ways down']);
     }
+    issues.push(...skylineIssues(registry, scenario, template));
     const placement: Placement = { template, origin: [0, 0, 0], turn: 0 };
     start.descents.forEach((descent, index) => {
       const path = `.composition.start.descents[${index}]`;

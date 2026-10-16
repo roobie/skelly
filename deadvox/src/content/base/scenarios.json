@@ -283,24 +283,24 @@
               "kind": "ladder",
               "ladder": [23, 1, 10],
               "lower": [25, 1, 11],
-              "upper": [20, 9, 11]
+              "upper": [20, 41, 11]
             },
             {
-              "hatch": [10, 8, 5],
+              "hatch": [10, 40, 5],
               "kind": "stairs",
               "lower": [14, 1, 1],
-              "upper": [18, 9, 6]
+              "upper": [18, 41, 6]
             },
             {
-              "edge": [5, 9, 8],
+              "edge": [5, 41, 8],
               "kind": "drop",
               "landing": [5, 3, 8],
               "lower": [5, 1, 14],
-              "upper": [6, 9, 8]
+              "upper": [6, 41, 8]
             }
           ],
           "minimumOpenDescents": 2,
-          "spawn": [14, 9, 11],
+          "spawn": [14, 41, 11],
           "template": "gauntlet_start"
         },
         "storeys": [

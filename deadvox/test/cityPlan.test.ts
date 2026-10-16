@@ -219,12 +219,10 @@ describe('one finished city plan', () => {
       expect(hordes.every((horde) => horde.members > 0)).toBe(true);
     });
 
-    it('places exactly the horde count the scenario asks for, on different streets', () => {
-      for (const hordes of [0, 1, 2]) {
-        const placed = populationOf({ hordes }).hordes;
-        expect(placed).toHaveLength(hordes);
-        expect(new Set(placed.map(({ id }) => id)).size).toBe(hordes);
-      }
+    it.each([0, 1, 2])('places the requested %i hordes on different streets', (hordes) => {
+      const placed = populationOf({ hordes }).hordes;
+      expect(placed).toHaveLength(hordes);
+      expect(new Set(placed.map(({ id }) => id)).size).toBe(hordes);
     });
 
     it('adds more stragglers when the scenario asks for extras', () => {

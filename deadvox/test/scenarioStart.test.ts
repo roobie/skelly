@@ -86,10 +86,40 @@ it('refuses a start roof that can clear the wall, with or without a ring', () =>
   own.composition!.start.cell = [-own.city.blocksX, -own.city.blocksZ];
   for (const ring of [profile.city.ring, undefined]) {
     own.city.ring = ring;
+    own.composition!.start.cell = [-own.city.blocksX, -own.city.blocksZ];
     expect(scenarioPlanIssues(fixtures, own).some(([path]) => path === '.composition.start.template')).toBe(true);
     template.size[1] = registry.mapAssemblies.get(profile.composition!.start.template)!.size[1];
+    own.composition!.start.cell = [...profile.composition!.start.cell];
     expect(scenarioPlanIssues(fixtures, own).filter(([path]) => path.startsWith('.composition.start'))).toEqual([]);
     template.size[1] = 1000;
+  }
+});
+
+it('refuses a start overtopped by a building in either city pool', () => {
+  for (const ring of [false, true]) {
+    const own = structuredClone(profile);
+    const poolId = ring ? own.city.ring!.pool : own.city.pool;
+    const pool = structuredClone(registry.mapPools.get(poolId)!);
+    const { ref: buildingRef } = pool.choices.find(({ ref }) => ref.kind === 'assembly')!;
+    const building = structuredClone(registry.mapAssemblies.get(buildingRef.id)!);
+    building.id = 'fixture_overtopping_building';
+    pool.id = 'fixture_skyline';
+    pool.choices = [{ ref: { kind: 'assembly', id: building.id }, weight: 1 }];
+    if (ring) {
+      own.city.ring!.pool = pool.id;
+    } else {
+      own.city.pool = pool.id;
+    }
+    const fixtures = {
+      ...registry,
+      mapAssemblies: new Map(registry.mapAssemblies).set(building.id, building),
+      mapPools: new Map(registry.mapPools).set(pool.id, pool),
+    };
+    const startIssues = () =>
+      scenarioPlanIssues(fixtures, own).filter(([path]) => path === '.composition.start.template');
+    expect(startIssues()).toEqual([]);
+    building.size[1] = start.placement.template.size[1] + 1;
+    expect(startIssues().length).toBeGreaterThan(0);
   }
 });
 
