@@ -339,6 +339,13 @@ export interface Zombie {
    * type.attack.windup when an attack starts (alongside attackWait), counts down to exactly 0, then the
    * hit resolves (hurtPlayer or a miss) if the target is still in reach/LOS. */
   attackWindup: number;
+  /** `acidSpit` telegraph: seconds left in the wind-up, 0 = not winding up. Progress for presentation is
+   * `acidSpitWindupProgress`. */
+  spitWindup: number;
+  /** Seconds until the next spit may start; counts down whatever the zombie is doing. */
+  spitWait: number;
+  /** Seeded stream for the spit's aim, apart from behaviorRng so a spit never shifts movement draws. */
+  spitRng: Rng;
   /** Unwrapped gait phase; advances by π for each travelled stepLength metres. */
   gaitPhase: number;
   /** Surface footfall cadence advances only with grounded travel. */
@@ -389,17 +396,31 @@ export const zombieAttackReachMetres = (zombie: Pick<Zombie, 'type' | 'figureSee
 
 export type ZombieState = Omit<
   Zombie,
-  'type' | 'tier' | 'behaviorRng' | 'soundRng' | 'dismemberRng' | 'renderPrevious' | 'lastVocalNoiseId' | 'modifiers'
+  | 'type'
+  | 'tier'
+  | 'behaviorRng'
+  | 'soundRng'
+  | 'dismemberRng'
+  | 'spitRng'
+  | 'renderPrevious'
+  | 'lastVocalNoiseId'
+  | 'modifiers'
 > & {
   type: string;
   behaviorRng: RngState;
   soundRng: RngState;
   dismemberRng: RngState;
+  spitRng: RngState;
   lastVocalNoiseId: number | null;
 };
 
 const validRngState = (state: unknown): state is RngState =>
   Array.isArray(state) && state.length === 4 && state.every((word) => Number.isSafeInteger(word));
+const validSpitTimers = (zombie: ZombieState): boolean =>
+  Number.isFinite(zombie.spitWindup) &&
+  zombie.spitWindup >= 0 &&
+  Number.isFinite(zombie.spitWait) &&
+  zombie.spitWait >= 0;
 const validObstacleWanderState = (zombie: ZombieState): boolean =>
   Number.isFinite(zombie.obstacleWanderRemaining) &&
   zombie.obstacleWanderRemaining >= 0 &&
@@ -555,6 +576,8 @@ export interface ZombieSystemOptions {
   onSevered?: (zombie: Zombie, region: ZombieRegion) => void;
   /** Sound-source position is in block coordinates; body is present when the shambler made the sound. */
   onSound?: (event: SoundEventId, position: Vec3, body?: Zombie) => void;
+  /** A spit left the mouth. No damage is applied here; the owner of the in-flight glob takes it from this. */
+  onAcidSpit?: (release: AcidSpitRelease) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
   onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode, body: Zombie) => void;
   /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
@@ -782,12 +805,63 @@ const withinAttackReach = (probe: AttackReachProbe): boolean => {
     zombie.type.model === 'amalgam'
       ? strikeOrigin(probe, reachMetres, playerChest)
       : grabOrigin(probe, reachMetres, chestOffset);
-  if (!origin) {
-    return false;
+  return origin !== undefined && clearLine(origin, playerChest, isSolid);
+};
+
+/** Nothing solid between two points: the line rule every attack's start and resolve share. */
+const clearLine = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
+  const toward = sub(to, from);
+  const lineDistance = Math.hypot(...toward);
+  return lineDistance > 0 && raycast(from, unit(toward), lineDistance, isSolid) === undefined;
+};
+
+/** Where a spit leaves a zombie: its grab height, which stands in for the mouth until the model gives one. */
+const spitOrigin = (zombiePos: Vec3, blockSize: number): Vec3 => [
+  zombiePos[0],
+  zombiePos[1] + PLAYER_CHEST_METRES / blockSize,
+  zombiePos[2],
+];
+
+/** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
+const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
+  const metres =
+    player.eyeHeightMetres === undefined ? PLAYER_CHEST_METRES : player.eyeHeightMetres * tuning.chestEyeFraction;
+  return [player.pos[0], player.pos[1] + metres / blockSize, player.pos[2]];
+};
+
+/** The mouth-to-chest line at release, by the same rule as a melee strike. */
+const spitLineClear = (zombiePos: Vec3, chest: Vec3, blockSize: number, isSolid: SolidAt): boolean =>
+  clearLine(spitOrigin(zombiePos, blockSize), chest, isSolid);
+
+/** What a released spit hands the simulation: the glob's start, its seeded direction and the hit moves it carries. */
+export interface AcidSpitRelease {
+  source: EntityId;
+  origin: Vec3;
+  /** Unit direction from the mouth, spread already applied. */
+  aim: Vec3;
+  moves: readonly ZombieMove[];
+}
+
+/** Share of the wind-up elapsed, 0 when not winding up; presentation reads it for the sac glow and head pull. */
+export const acidSpitWindupProgress = (zombie: Zombie): number => {
+  const spit = zombie.type.acidSpit;
+  return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
+};
+
+/** A spitter that sees the player inside its range band stands and faces; outside the band it closes in. */
+const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
+  const { zombie, type, sees, metresToTarget, dt } = scratch;
+  const band = type.acidSpit?.rangeBand;
+  if (
+    band &&
+    zombie.mode === 'chase' &&
+    sees &&
+    metresToTarget >= band.nearMetres &&
+    metresToTarget <= band.farMetres
+  ) {
+    scratch.moving = false;
+    steer(zombie, toward, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
-  const toPlayer = sub(playerChest, origin);
-  const lineDistance = Math.hypot(...toPlayer);
-  return lineDistance > 0 && raycast(origin, unit(toPlayer), lineDistance, isSolid) === undefined;
 };
 
 // ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
@@ -1256,6 +1330,7 @@ const zombieSnapshotFields = [
   'behaviorRng',
   'soundRng',
   'dismemberRng',
+  'spitRng',
   'idleSoundTimer',
   'lastVocalNoiseId',
   'modeTimer',
@@ -1293,6 +1368,8 @@ const zombieSnapshotFields = [
   'stimulusAt',
   'attackWait',
   'attackWindup',
+  'spitWindup',
+  'spitWait',
   'gaitPhase',
   'footstepClock',
   'wanderClock',
@@ -1357,6 +1434,7 @@ const zombieSnapshotProjectors = {
   behaviorRng: (zombie) => [...zombie.behaviorRng.state()] as RngState,
   soundRng: (zombie) => [...zombie.soundRng.state()] as RngState,
   dismemberRng: (zombie) => [...zombie.dismemberRng.state()] as RngState,
+  spitRng: (zombie) => [...zombie.spitRng.state()] as RngState,
   idleSoundTimer: (zombie) => zombie.idleSoundTimer,
   lastVocalNoiseId: (zombie) => zombie.lastVocalNoiseId ?? null,
   modeTimer: (zombie) => zombie.modeTimer,
@@ -1395,6 +1473,8 @@ const zombieSnapshotProjectors = {
   stimulusAt: (zombie) => zombie.stimulusAt,
   attackWait: (zombie) => zombie.attackWait,
   attackWindup: (zombie) => zombie.attackWindup,
+  spitWindup: (zombie) => zombie.spitWindup,
+  spitWait: (zombie) => zombie.spitWait,
   gaitPhase: (zombie) => zombie.gaitPhase,
   footstepClock: (zombie) => ({ ...zombie.footstepClock }),
   wanderClock: (zombie) => zombie.wanderClock,
@@ -1601,6 +1681,7 @@ export class ZombieSystem {
         this.captureRenderPrevious(zombie);
         if (!zombie.incapacitated) {
           zombie.attackWindup = 0;
+          zombie.spitWindup = 0;
         }
       }
     }
@@ -1637,6 +1718,8 @@ export class ZombieSystem {
           !validRngState(zombie.behaviorRng) ||
           !validRngState(zombie.soundRng) ||
           !validRngState(zombie.dismemberRng) ||
+          !validRngState(zombie.spitRng) ||
+          !validSpitTimers(zombie) ||
           !Number.isFinite(zombie.idleSoundTimer) ||
           zombie.idleSoundTimer < 0 ||
           !validZombieEventState(zombie) ||
@@ -1699,7 +1782,10 @@ export class ZombieSystem {
         if (!validCarvedCells(type, zombie.figureSeed, zombie.carved)) {
           throw new Error(`Invalid carved cells for entity ${id}`);
         }
-        const { type: _type, behaviorRng, soundRng, dismemberRng, lastVocalNoiseId, ...fields } = zombie;
+        if (zombie.spitWindup > 0 && type.acidSpit === undefined) {
+          throw new Error(`Invalid acid spit state for entity ${id}`);
+        }
+        const { type: _type, behaviorRng, soundRng, dismemberRng, spitRng, lastVocalNoiseId, ...fields } = zombie;
         const restored: Zombie = {
           ...fields,
           type,
@@ -1708,6 +1794,7 @@ export class ZombieSystem {
           behaviorRng: new Rng(behaviorRng),
           soundRng: new Rng(soundRng),
           dismemberRng: new Rng(dismemberRng),
+          spitRng: new Rng(spitRng),
           lastVocalNoiseId: lastVocalNoiseId ?? undefined,
           footstepClock: { ...zombie.footstepClock },
           body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
@@ -1952,6 +2039,7 @@ export class ZombieSystem {
       behaviorRng: Rng.stream(this.options.seed ?? 0, `zombie:${this.store.size + 1}`),
       soundRng: Rng.stream(this.options.seed ?? 0, `zombie-sound:${this.store.size + 1}`),
       dismemberRng: Rng.stream(this.options.seed ?? 0, `zombie-dismember:${this.store.size + 1}`),
+      spitRng: Rng.stream(this.options.seed ?? 0, `zombie-spit:${this.store.size + 1}`),
       idleSoundTimer: 8,
       modeTimer: 0,
       searchAnchor: undefined,
@@ -1986,6 +2074,8 @@ export class ZombieSystem {
       incapacitated: false,
       attackWait: 0,
       attackWindup: 0,
+      spitWindup: 0,
+      spitWait: 0,
       gaitPhase: 0,
       footstepClock: initialShamblerFootstepClock(type.stepLength),
       wanderClock: 0,
@@ -1998,6 +2088,7 @@ export class ZombieSystem {
     zombie.behaviorRng = Rng.stream(this.options.seed ?? 0, `zombie:${id}`);
     zombie.soundRng = Rng.stream(this.options.seed ?? 0, `zombie-sound:${id}`);
     zombie.dismemberRng = Rng.stream(this.options.seed ?? 0, `zombie-dismember:${id}`);
+    zombie.spitRng = Rng.stream(this.options.seed ?? 0, `zombie-spit:${id}`);
     zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
     this.beginIdle(zombie);
     return id;
@@ -2242,6 +2333,7 @@ export class ZombieSystem {
     zombie.horizontalSpeed = 0;
     zombie.attackWait = 0;
     zombie.attackWindup = 0;
+    zombie.spitWindup = 0;
     zombie.body.vel[0] = 0;
     zombie.body.vel[2] = 0;
     stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [], shapeOf: this.shapeOf });
@@ -2254,6 +2346,7 @@ export class ZombieSystem {
       zombie.hitFlinchTime = nextFlinchTime > HIT_FLINCH_DURATION ? undefined : nextFlinchTime;
     }
     zombie.attackWait = Math.max(0, zombie.attackWait - dt);
+    zombie.spitWait = Math.max(0, zombie.spitWait - dt);
   }
 
   private updatePerception(): void {
@@ -2550,6 +2643,7 @@ export class ZombieSystem {
     const toward = unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
     scratch.direction = obstacleDirection ?? toward;
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
+    holdSpitGround(scratch, toward);
     if (scratch.moving) {
       scratch.aimDirection = scratch.direction;
       if (scratch.seeking) {
@@ -2808,12 +2902,55 @@ export class ZombieSystem {
     } else if (
       zombie.mode === 'chase' &&
       zombie.attackWait <= 0 &&
+      zombie.spitWindup <= 0 &&
       (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie.severed)) &&
       withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
       zombie.attackWindup = type.attack.windupSimSeconds;
       zombie.attackWait = type.attack.cooldownSimSeconds;
+    }
+    this.resolveAcidSpit();
+  }
+
+  /** Doc: `docs/acid-zombie.md`, "The spit". Sight starts it, release re-checks the line, a hit cancels it. */
+  private resolveAcidSpit(): void {
+    const scratch = this.tickScratch;
+    const { zombie, dt, player, blockSize, type, pos, isSolid } = scratch;
+    const spit = type.acidSpit;
+    if (!spit) {
+      return;
+    }
+    if (zombie.spitWindup > 0) {
+      zombie.spitWindup = Math.max(0, zombie.spitWindup - dt);
+      if (zombie.spitWindup > 0) {
+        return;
+      }
+      const chest = spitChest(player, this.options.tuning, blockSize);
+      if (!spitLineClear(pos, chest, blockSize, isSolid)) {
+        return;
+      }
+      zombie.spitWait = spit.cooldownSimSeconds;
+      const origin = spitOrigin(pos, blockSize);
+      const spread = (zombie.spitRng.range(-1, 1) * spit.spreadDegrees * Math.PI) / 180;
+      const toPlayer = sub(chest, origin);
+      const heading = headingAt(angleOf(toPlayer) + spread);
+      const reach = Math.hypot(toPlayer[0], toPlayer[2]);
+      const aim = unit([heading[0] * reach, toPlayer[1], heading[2] * reach]);
+      this.options.onAcidSpit?.({ source: scratch.id, origin, aim, moves: spit.moves });
+      return;
+    }
+    const metres = horizontalDistance(player.pos, pos) * blockSize;
+    if (
+      zombie.mode === 'chase' &&
+      scratch.sees &&
+      zombie.spitWait <= 0 &&
+      zombie.attackWindup <= 0 &&
+      metres >= spit.rangeBand.nearMetres &&
+      metres <= spit.rangeBand.farMetres
+    ) {
+      this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
+      zombie.spitWindup = spit.windupSimSeconds;
     }
   }
 
@@ -3240,6 +3377,7 @@ export class ZombieSystem {
     zombie.regions[region] = healthAfter;
     if (healthAfter < healthBefore) {
       zombie.hitFlinchTime = 0;
+      this.cancelAcidSpit(zombie);
     }
     if (damage > 0) {
       this.options.onWound?.(id, zombie, hit, damage);
@@ -3286,6 +3424,15 @@ export class ZombieSystem {
     }
     zombie.carved = [...zombie.carved, ...cells].sort((a, b) => a - b);
     this.options.onCarve?.(id, zombie, cells, strikes.find((strike) => strike.cell === struck)!.hit);
+  }
+
+  /** A hit during the wind-up spoils the spit and spends the content fraction of the cooldown. */
+  private cancelAcidSpit(zombie: Zombie): void {
+    const spit = zombie.type.acidSpit;
+    if (spit && zombie.spitWindup > 0) {
+      zombie.spitWindup = 0;
+      zombie.spitWait = spit.cancelPenaltyFraction * spit.cooldownSimSeconds;
+    }
   }
 
   private applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit }: MeleeEffectsContext): boolean {

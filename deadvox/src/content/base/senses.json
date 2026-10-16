@@ -1,6 +1,7 @@
 {
   "senses": [
     {
+      "chestEyeFraction": 0.62,
       "crouch": {
         "bodyHeightMetres": 1.2,
         "eyeDropMetres": 0.69999999999999996,

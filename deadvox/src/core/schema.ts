@@ -1660,6 +1660,45 @@ const MeleeDamageResistanceSchema = strictObject({
   rightLeg: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
 });
 
+/** What a landed hit can be, picked by weight as it lands (`DESIGN.md`, "Bleeding"). */
+const ZombieMovesSchema = pipe(
+  array(
+    strictObject({
+      id: Id,
+      weight: Positive,
+      damage: Positive,
+      damageKind: picklist(DAMAGE_KINDS),
+      hitRegions: pipe(
+        array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
+        nonEmpty('needs at least one hit region'),
+      ),
+    }),
+  ),
+  nonEmpty('needs at least one move'),
+);
+
+/** Tunables of the `acidSpit` ability (`docs/acid-zombie.md`, "Ability, not type"). */
+const AcidSpitSchema = pipe(
+  strictObject({
+    rangeBand: strictObject({ nearMetres: Positive, farMetres: Positive }),
+    windupSimSeconds: PositiveSimSeconds,
+    cooldownSimSeconds: PositiveSimSeconds,
+    /** Fraction of the cooldown a spit cancelled by a hit costs. */
+    cancelPenaltyFraction: Fraction,
+    spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
+    globMetresPerSimSecond: SimRate,
+    moves: ZombieMovesSchema,
+    puddle: strictObject({
+      lifetimeSimSeconds: PositiveSimSeconds,
+      radiusMetres: Positive,
+      damagePerSimSecond: Positive,
+    }),
+  }),
+  check(({ rangeBand }) => rangeBand.nearMetres < rangeBand.farMetres, 'range band near edge must be inside far edge'),
+  check((spit) => spit.windupSimSeconds < spit.cooldownSimSeconds, 'windup must be less than cooldown'),
+  check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
+);
+
 const ZombieSchema = strictObject({
   id: Id,
   name: Name,
@@ -1786,22 +1825,7 @@ const ZombieSchema = strictObject({
       reach: Positive,
       cooldownSimSeconds: PositiveSimSeconds,
       windupSimSeconds: PositiveSimSeconds,
-      /** What a landed hit can be, picked by weight as it lands (`DESIGN.md`, "Bleeding"). */
-      moves: pipe(
-        array(
-          strictObject({
-            id: Id,
-            weight: Positive,
-            damage: Positive,
-            damageKind: picklist(DAMAGE_KINDS),
-            hitRegions: pipe(
-              array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
-              nonEmpty('needs at least one hit region'),
-            ),
-          }),
-        ),
-        nonEmpty('needs at least one move'),
-      ),
+      moves: ZombieMovesSchema,
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
     check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
@@ -1829,9 +1853,14 @@ const ZombieSchema = strictObject({
     }),
   ),
   abilities: array(picklist(ZOMBIE_ABILITIES)),
+  /** Tunables of the `acidSpit` ability; present exactly when the type lists that ability. */
+  acidSpit: optional(AcidSpitSchema),
   /** What's in its pockets. */
   loot: optional(Id),
 });
+
+const zombieAcidSpitMatchesAbility = (zombie: InferOutput<typeof ZombieSchema>): boolean =>
+  zombie.abilities.includes('acidSpit') === (zombie.acidSpit !== undefined);
 
 const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): boolean => {
   const expected = zombie.model === 'amalgam' ? AMALGAM_REGION_KEYS : ZOMBIE_REGION_NAMES;
@@ -1982,6 +2011,8 @@ const SenseSchema = strictObject({
     sidewaysSpeedScale: Fraction,
     backwardSpeedScale: Fraction,
   }),
+  /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
+  chestEyeFraction: Fraction,
   crouch: strictObject({
     speedMetresPerSimSecond: SimRate,
     hearingRangeScale: Fraction,
@@ -2291,6 +2322,10 @@ const SECTION_DESCRIPTOR = {
           'every type but the amalgam, whose figure seed is fixed, must define figureSeeds',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
+        check(
+          (types) => types.every(zombieAcidSpitMatchesAbility),
+          'acidSpit tunables must match the acidSpit ability',
+        ),
       ),
     ),
     label: 'zombie types',

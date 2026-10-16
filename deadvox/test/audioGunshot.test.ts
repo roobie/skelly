@@ -36,6 +36,7 @@ const baseRegistry = baseRegistryBuild.registry;
 const senseTuning = {
   id: 'fixture_player',
   movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
+  chestEyeFraction: 0.62,
   crouch: {
     speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,
