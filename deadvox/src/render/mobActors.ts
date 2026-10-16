@@ -16,8 +16,8 @@
 // <begin_vertex>/<beginnormal_vertex> chunks, same relative order, so the same patch applies unchanged).
 //
 // Known simplification: each model/seed variant owns a block of `capacity` bone-texture rows. The models
-// come from `modelIds`, and the seeds from `SHAMBLER_FIGURE_SEEDS`; `DEFAULT_POOL_SIZE` and
-// `DEFAULT_CAPACITY` provide their default inputs. A variant's overflow is not drawn, though its sim state
+// come from `modelIds`, and the seeds from the content-authored `figureSeeds` option; `DEFAULT_CAPACITY`
+// provides the default capacity. A variant's overflow is not drawn, though its sim state
 // is unaffected — a hard per-variant cap for that zombie's whole life, not a rotating "nearest capacity"
 // set. Picking the nearest actors would require per-frame distance sorting within every overflowing variant.
 //
@@ -82,7 +82,6 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '@mobgen/mob/lookAt.ts';
 import { LOOK_AT_PROFILES, type LookAtProfile } from '@mobgen/mob/lookAtProfiles.ts';
 import { DEATH_FALL_DURATION, type DeathActor, deathPose } from '@mobgen/mob/reactions.ts';
-import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
   type BufferGeometry,
@@ -159,15 +158,14 @@ export interface ZombieRenderer {
   zombieCarved?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
 }
 
-const DEFAULT_POOL_SIZE = SHAMBLER_FIGURE_SEEDS.length;
 const DEFAULT_CAPACITY = 64; // matches ZombieMeshes' own default
 
 const PELVIS_HEIGHT_M = 0.9;
 const BOUNDING_RADIUS_M = 1.2;
 
 /** Keeps severing-energy tests within the selected fixture seed instead of allocating every renderer variant. */
-export const mobFigurePoolSizeThrough = (figureSeed: number): number => {
-  const index = SHAMBLER_FIGURE_SEEDS.indexOf(figureSeed as (typeof SHAMBLER_FIGURE_SEEDS)[number]);
+export const mobFigurePoolSizeThrough = (figureSeeds: readonly number[], figureSeed: number): number => {
+  const index = figureSeeds.indexOf(figureSeed);
   if (index < 0) {
     throw new RangeError(`Unknown shambler figure seed: ${figureSeed}`);
   }
@@ -415,6 +413,9 @@ interface Debris extends SlotHolder {
 }
 
 export interface MobActorMeshesOptions {
+  /** The authored figure seeds to build variants for (`figureSeedPool` of the registry's zombie types). */
+  readonly figureSeeds: readonly number[];
+  /** Builds only the first this-many of `figureSeeds`. */
   readonly poolSize?: number;
   readonly includeAmalgam?: boolean;
   readonly amalgamType?:
@@ -557,7 +558,8 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly boundingSphere = new Sphere(new Vector3(), BOUNDING_RADIUS_M);
   private world: RigidWorld | undefined;
 
-  constructor(blockSize: number, capacity = DEFAULT_CAPACITY, options: MobActorMeshesOptions = {}) {
+  constructor(blockSize: number, requestedCapacity: number | undefined, options: MobActorMeshesOptions) {
+    const capacity = requestedCapacity ?? DEFAULT_CAPACITY;
     this.blockSize = blockSize;
     this.capacity = capacity;
     this.tentacleGeometry = options.includeAmalgam ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
@@ -565,7 +567,10 @@ export class MobActorMeshes implements ZombieRenderer {
     this.tentacleMaterial = options.includeAmalgam
       ? new MeshLambertMaterial({ color: 0xb9_4c_3e, emissive: 0x2c_0b_08 })
       : undefined;
-    const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
+    if (options.figureSeeds.length === 0) {
+      throw new Error('MobActorMeshes requires authored figureSeeds');
+    }
+    const poolSize = Math.min(options.figureSeeds.length, Math.max(1, options.poolSize ?? options.figureSeeds.length));
     if (options.includeAmalgam && options.amalgamType?.model !== 'amalgam') {
       throw new Error('MobActorMeshes requires amalgamType when amalgam actors are enabled');
     }
@@ -575,7 +580,7 @@ export class MobActorMeshes implements ZombieRenderer {
       : ['shambler', 'runner', 'crawler'];
 
     const t0 = performance.now();
-    const built = buildActorVariants(modelIds, SHAMBLER_FIGURE_SEEDS.slice(0, poolSize), options.amalgamType);
+    const built = buildActorVariants(modelIds, options.figureSeeds.slice(0, poolSize), options.amalgamType);
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
     console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);

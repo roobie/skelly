@@ -1,6 +1,11 @@
 {
   "skills": [
-    { "id": "crafting", "name": "Crafting", "training": { "craftingTierOffset": 1 } },
+    {
+      "id": "crafting",
+      "name": "Crafting",
+      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank"],
+      "training": { "craftingTierOffset": 1 },
+    },
     { "id": "mechanics", "name": "Mechanics" },
     {
       "id": "inventory_management",

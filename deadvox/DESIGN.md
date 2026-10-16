@@ -1606,8 +1606,8 @@ decoration.
   `shambler_idle` provides an occasional groan while idling or strolling. Each
   shambler's vocals and body-made sounds shift lower with its realized body
   height, so larger figures sound heavier and the runner/brute templates inherit
-  the same law. `shamblerBodyPitch` in `src/game/shamblerAudio.ts` makes larger
-  figures sound heavier. Body-size pitch tuning affects playback only, never
+  the same law. `shamblerVoiceLaw` in `src/game/shamblerAudio.ts` calibrates it
+  on the authored figure seeds. Body-size pitch tuning affects playback only, never
   hearing or simulation; the `voice_size` comparison site exposes its endpoints.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest

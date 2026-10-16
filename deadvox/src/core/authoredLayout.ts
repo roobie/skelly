@@ -200,6 +200,9 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     track.points.forEach((p, j) => {
       check(p, `.tracks[${i}].points[${j}]`, track.width / 2);
     });
+    if (!registry.blockIds.has(track.surface)) {
+      issues.push([`.tracks[${i}].surface`, `no block "${track.surface}"`]);
+    }
   });
   const beatIds = new Set<string>();
   layout.beats?.forEach(({ id, area }, i) => {

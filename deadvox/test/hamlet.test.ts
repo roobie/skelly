@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
-import { HAMLET, HAMLET_TEMPLATES, Hamlet, hamletZombieSpawns } from '../src/core/hamlet.ts';
+import { HAMLET, Hamlet, hamletZombieSpawns } from '../src/core/hamlet.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { hamletTemplateIds } from '../src/core/sitePalette.ts';
 import { cellsOf } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
@@ -107,7 +108,7 @@ describe('the hamlet', () => {
     expect(spawns.length).toBeGreaterThanOrEqual(6);
     expect(spawns.length).toBeLessThanOrEqual(10);
     const { world } = generate(hamlet, 3, columns);
-    expect(new Set(hamlet.lots.map((lot) => lot.placement.template.id))).toEqual(new Set(HAMLET_TEMPLATES));
+    expect(new Set(hamlet.lots.map((lot) => lot.placement.template.id))).toEqual(new Set(hamletTemplateIds(registry)));
     const top = (x: number, z: number) => {
       let y = 200;
       while (y > -100 && world.getBlock(x, y, z) === 0) {

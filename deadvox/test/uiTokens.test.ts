@@ -4,12 +4,22 @@ import { buildRegistry, requiredContentIssues, validateContent } from '../src/co
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
 
+const refusalSound = {
+  id: 'player_nope',
+  variants: ['assets/audio/nope.ogg'],
+  gain: 0.5,
+  pitchJitter: [1, 1],
+  gainJitter: [1, 1],
+  minIntervalSimSeconds: 0.75,
+  category: 'body',
+  noise: { enabled: false, radiusMetres: 1 },
+};
+const tuning = { id: CORE_CONTENT_IDS.coreUi, spacing: 1, hudScale: 1, refusalSound: refusalSound.id };
+
 it('applies validated core-mod UI tuning to document-root CSS properties', () => {
   const { registry, issues } = buildRegistry([
-    {
-      source: 'ui-fixture.json',
-      data: { ui: [{ id: CORE_CONTENT_IDS.coreUi, spacing: 0.75, hudScale: 1.25 }] },
-    },
+    { source: 'ui-fixture.json', data: { ui: [{ ...tuning, spacing: 0.75, hudScale: 1.25 }] } },
+    { source: 'ui-sounds.json', data: { sounds: [refusalSound] } },
   ]);
   expect(issues).toEqual([]);
 
@@ -23,14 +33,23 @@ it('applies validated core-mod UI tuning to document-root CSS properties', () =>
 it('rejects non-positive UI spacing and scale', () => {
   const issues = validateContent({
     source: 'invalid-ui-fixture.json',
-    data: { ui: [{ id: CORE_CONTENT_IDS.coreUi, spacing: 0, hudScale: 0 }] },
+    data: { ui: [{ ...tuning, spacing: 0, hudScale: 0 }] },
   });
   expect(issues.map(({ path }) => path)).toEqual(['ui[0].spacing', 'ui[0].hudScale']);
 });
 
-it('reports content without the core UI tuning at validation, not at startup', () => {
-  const { registry } = buildRegistry([
-    { source: 'other-ui.json', data: { ui: [{ id: 'other', spacing: 1, hudScale: 1 }] } },
+it('rejects UI tuning without a refusal sound, or whose refusal sound is not loaded', () => {
+  const { refusalSound: _, ...withoutSound } = tuning;
+  const missing = validateContent({ source: 'no-refusal-sound.json', data: { ui: [withoutSound] } });
+  expect(missing.map(({ path }) => path)).toEqual(['ui[0].refusalSound']);
+
+  const { issues } = buildRegistry([{ source: 'dangling-refusal-sound.json', data: { ui: [tuning] } }]);
+  expect(issues.map(({ path, message }) => [path, message])).toEqual([
+    ['ui[0].refusalSound', `no sound event "${refusalSound.id}"`],
   ]);
+});
+
+it('reports content without the core UI tuning at validation, not at startup', () => {
+  const { registry } = buildRegistry([{ source: 'other-ui.json', data: { ui: [{ ...tuning, id: 'other' }] } }]);
   expect(requiredContentIssues(registry).some(({ path }) => path === 'ui')).toBe(true);
 });
