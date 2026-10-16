@@ -321,6 +321,15 @@ it(
 );
 
 describe('lab threat by depth', () => {
+  // The lab assembly no other lab assembly references stacks the storeys, one assembly slot per storey.
+  const referenced = new Set(
+    lab
+      .mapAssemblies!.flatMap((assembly) => assembly.slots.flatMap((slot) => slot.choices ?? []))
+      .map((choice) => choice.ref.id),
+  );
+  const storeySlots = lab
+    .mapAssemblies!.find((assembly) => !referenced.has(assembly.id))!
+    .slots.filter((slot) => slot.choices?.[0]?.ref.kind === 'assembly');
   // A threat slot's pieces carry the marker chance; its weighted choices carry the zombie type.
   const markerChance = new Map(
     lab.mapPieces!.map((piece) => [
@@ -344,10 +353,7 @@ describe('lab threat by depth', () => {
       }, 0);
 
   it('weights expected markers no lower on each deeper storey and higher at the bottom than the top', () => {
-    const lowestFirst = lab
-      .mapAssemblies!.find((assembly) => assembly.id === 'gauntlet_lab')!
-      .slots.filter((slot) => slot.choices?.[0]?.ref.id.startsWith('gauntlet_lab_storey_'));
-    const topDown = [...lowestFirst]
+    const topDown = [...storeySlots]
       .sort((a, b) => b.at[1] - a.at[1])
       .map((slot) => expectedMarkers(slot.choices?.[0]?.ref.id ?? ''));
     expect(topDown.length).toBeGreaterThan(1);
@@ -357,7 +363,7 @@ describe('lab threat by depth', () => {
     expect(topDown.at(-1)).toBeGreaterThan(topDown[0]!);
   });
 
-  it('offers the amalgam only on the bottom storey', () => {
+  it('offers the amalgam only on the lowest storey', () => {
     const amalgamPieces = new Set(
       lab
         .mapPieces!.filter((piece) =>
@@ -370,6 +376,7 @@ describe('lab threat by depth', () => {
     const storeysWithAmalgam = lab.mapAssemblies!.filter((assembly) =>
       assembly.slots.some((slot) => slot.choices?.some((choice) => amalgamPieces.has(choice.ref.id))),
     );
-    expect(storeysWithAmalgam.map((assembly) => assembly.id)).toEqual(['gauntlet_lab_storey_bottom']);
+    const lowest = storeySlots.reduce((low, slot) => (slot.at[1] < low.at[1] ? slot : low));
+    expect(storeysWithAmalgam.map((assembly) => assembly.id)).toEqual([lowest.choices?.[0]?.ref.id]);
   });
 });
