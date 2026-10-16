@@ -321,10 +321,10 @@ destruction remain authoritative. An edge ring of buildings stands between the g
 and the wall, backs to the wall and fronts inward across a perimeter street, so the
 wall has a lived-in face rather than an empty fence line. The wall's height clears
 the tallest roof within jump reach of it, because a rooftop within reach would turn
-the wall into a step; the reach is authored as the perimeter's clearance since the
-player's jump lives in code, not content. Sounds and crowds beyond the wall are a
-separate decision. See `src/core/cityPlan.ts`, `cityPerimeter`, `perimeterGaps` and
-`perimeterIssues`. City size, scarcity and
+the wall into a step; the check reads the player's sprint jump from
+`src/game/player.ts`, `sprintJumpRise`. Sounds and crowds beyond the wall are a
+separate decision. See `src/core/cityPlan.ts`, `cityPerimeter`, `clearanceIssues`,
+`perimeterGaps` and `perimeterIssues`. City size, scarcity and
 pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
 remain outside #671's first version.
 
