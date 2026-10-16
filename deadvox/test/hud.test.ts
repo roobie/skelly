@@ -66,13 +66,13 @@ describe('quickbarViewModel', () => {
     expect(vm.slots[2]).toMatchObject({ where: `hoodie · ${seconds} s` });
   });
 
-  it('shows an item in furniture', () => {
+  it('renders an item left in furniture as an empty slot', () => {
     const { inv, cupboard, beans } = kitchen();
     inv.entities.markSearched(cupboard);
     const bar = new Quickbar();
     bar.assign(3, beans);
     const vm = quickbarViewModel(bar, inv);
-    expect(vm.slots[3]).toMatchObject({ where: 'in the kitchen cupboard' });
+    expect(vm.slots[3]).toMatchObject({ filled: false, where: '' });
   });
 
   it('renders a consumed binding as an empty slot', () => {

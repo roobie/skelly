@@ -7,23 +7,18 @@ import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { Quickbar } from '../game/quickbar.ts';
 import { activityProgress } from './activityProgress.ts';
 
-/** Where a quickbar item is, and how long it takes to get it in hand. */
+/** Where a quickbar item is on the person, and how long it takes to get it in hand. */
 const whereText = (inv: Inventory, item: Item, at: Location | undefined): string => {
-  if (!at) {
-    return 'not with you';
-  }
   const cells = cellCount(defOf(inv.registry, item.type));
-  switch (at.kind) {
+  switch (at?.kind) {
     case 'hand':
       return `in ${at.side} hand`;
     case 'worn':
       return 'worn';
     case 'pocket':
       return `${inv.name(at.owner).toLowerCase()} · ${(inv.pocketHandling(at.owner, at.pocket) + 0.05 * cells).toFixed(1)} s`;
-    case 'furniture':
-      return `in the ${inv.entities.defOf(at.entity).name.toLowerCase()}`;
     default:
-      return 'on the floor';
+      return '';
   }
 };
 

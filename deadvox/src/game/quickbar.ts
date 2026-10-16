@@ -3,7 +3,11 @@ import type { Item } from '../core/items.ts';
 
 export const QUICKBAR_SLOTS = 5;
 
-/** Non-owning UID bindings; Inventory is the sole authority for live items. */
+/**
+ * Non-owning UID bindings; Inventory is the sole authority for live items.
+ * A binding survives only while its item is on the person, so every route off the
+ * person (drop, throw, merge, ruin, a container left behind) clears it here.
+ */
 export class Quickbar {
   private readonly bindings: (number | null)[] = new Array(QUICKBAR_SLOTS).fill(null);
 
@@ -16,7 +20,7 @@ export class Quickbar {
     if (uid === null || uid === undefined) {
       return undefined;
     }
-    const item = inventory.itemByUid(uid);
+    const item = inventory.carriedByUid(uid);
     if (!item) {
       this.bindings[slot] = null;
     }
@@ -32,10 +36,7 @@ export class Quickbar {
       throw new Error('Invalid quickbar slot count');
     }
     for (const [index, uid] of state.entries()) {
-      if (uid !== null && !inventory.itemByUid(uid)) {
-        throw new Error(`Missing quickbar item ${uid}`);
-      }
-      this.bindings[index] = uid;
+      this.bindings[index] = uid !== null && inventory.carriedByUid(uid) ? uid : null;
     }
   }
 

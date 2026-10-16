@@ -112,24 +112,50 @@ describe('non-owning item bindings', () => {
     expect(chargeOf(registry, battery)).toBeGreaterThan(0.25);
   });
 
-  it('retains the same binding through a drop and a move into a container', () => {
+  it('keeps a binding through a move into a carried container', () => {
     const { inventory, quickbar } = runtime();
     const bag = inventory.create('school_backpack');
     const light = inventory.create('flashlight');
     expect(inventory.add(bag, { kind: 'hand', side: 'right' })).toBe(true);
     expect(inventory.add(light, { kind: 'hand', side: 'left' })).toBe(true);
     quickbar.assign(0, light);
-    expect(inventory.move(light, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-    expect(quickbar.resolve(0, inventory)).toBe(light);
-    expect(inventory.hands.left).toBeUndefined();
     expect(inventory.move(light, { kind: 'pocket', owner: bag, pocket: 0 }).ok).toBe(true);
     expect(quickbar.resolve(0, inventory)).toBe(light);
     expect(quickbar.snapshotState(inventory)[0]).toBe(light.uid);
   });
 
-  it('refuses dangling saved quickbar and light references rather than repairing them', () => {
-    const { inventory, quickbar, survival } = runtime();
-    expect(() => quickbar.restoreState([99, null, null, null, null], inventory)).toThrow('Missing quickbar item 99');
+  it('clears a binding on every route that takes the item off the person', () => {
+    const { inventory, quickbar } = runtime();
+    const bag = inventory.create('school_backpack');
+    const dropped = inventory.create('flashlight');
+    const inBag = inventory.create('rag');
+    expect(inventory.add(bag, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(inventory.add(dropped, { kind: 'hand', side: 'left' })).toBe(true);
+    expect(inventory.add(inBag, { kind: 'pocket', owner: bag, pocket: 0 })).toBe(true);
+    quickbar.assign(0, dropped);
+    quickbar.assign(1, inBag);
+    quickbar.assign(2, bag);
+    expect(inventory.move(dropped, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(quickbar.resolve(0, inventory)).toBeUndefined();
+    // The bag's contents leave with the bag.
+    expect(inventory.move(bag, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(quickbar.resolve(1, inventory)).toBeUndefined();
+    expect(quickbar.resolve(2, inventory)).toBeUndefined();
+    expect(quickbar.snapshotState(inventory).every((uid) => uid === null)).toBe(true);
+  });
+
+  it('restores a saved binding to an item no longer on the person as empty', () => {
+    const { inventory, quickbar } = runtime();
+    const carried = inventory.create('rag');
+    const onGround = inventory.create('flashlight');
+    expect(inventory.add(carried, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(inventory.add(onGround, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    quickbar.restoreState([onGround.uid, carried.uid, 99, null, null], inventory);
+    expect(quickbar.slots).toEqual([null, carried.uid, null, null, null]);
+  });
+
+  it('refuses a dangling saved light reference rather than repairing it', () => {
+    const { survival } = runtime();
     expect(() => survival.restoreState({ litUid: 99 })).toThrow('Missing saved light item 99');
   });
 });

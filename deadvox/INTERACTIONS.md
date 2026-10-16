@@ -11,7 +11,7 @@ This document keeps the reasons and ownership rules behind item use, crafting an
 
 ## Ownership
 
-The core decides admission and effects; the UI projects queries and sends commands. Queries change nothing. Delayed commands revalidate when they complete because reach, tools and world state may have changed. Item ownership stays in item trees; quickbar and light selections are non-owning UID references. UI selection, drag state and open panels are not saved game state.
+The core decides admission and effects; the UI projects queries and sends commands. Queries change nothing. Delayed commands revalidate when they complete because reach, tools and world state may have changed. Item ownership stays in item trees; quickbar and light selections are non-owning UID references. The quickbar shows only what the player carries, so a binding clears when its item leaves the person by any route, and a saved binding to an item not carried restores empty. See `src/game/quickbar.ts`, `Quickbar.resolve`, and `src/core/inventory.ts`, `Inventory.carriedByUid`. UI selection, drag state and open panels are not saved game state.
 
 Moves, crafting, appliances and quickbar actions share the reach query so they cannot disagree about accessible items. Keep one inventory counter per store; only add per-place counters if Slice 5 profiling shows view-model rebuilding cost needs them, and BR decides whether that evidence warrants the change. See `src/core/reach.ts`, `reach`, and `src/core/options.ts`, `options`.
 
