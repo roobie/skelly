@@ -201,6 +201,9 @@ owning door state. Size, palette, stroke geometry, seeded variants and ageing li
 `src/core/templates.ts`, `placedDecals`, and `src/render/decals.ts`, `AuthoredDecals`.
 The renderer batches authored marks and shares stain noise with body blood. Use
 `decals=0` in a review URL to compare without the marks; it does not alter the world.
+For hardware review use `tools/decal-probe.mjs` with matching posed head and main
+URLs and an evidence directory. Exclusive paired trials distinguish decal cost from
+whole-scene variation; screenshots also need operator judgment.
 
 ## Furniture action noise
 
