@@ -31,13 +31,14 @@
       "weight": 80
     },
     {
-      "category": "book",
+      "category": "note",
       "description": "A folded note from the kitchen; readable in hand.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
       },
       "id": "evacuation_note",
+      "model": "folded_note",
       "name": "Folded evacuation note",
       "readable": {
         "text": "If you're reading this, they took the sick south to the clinic. We went looking for Dad. Please don't wait for us.",

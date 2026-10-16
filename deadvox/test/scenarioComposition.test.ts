@@ -3,10 +3,12 @@ import { buildCityPlan, cityGridOf, scenarioPlanIssues, servicePlacement } from 
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
+import { Inventory } from '../src/core/inventory.ts';
 // biome-ignore lint/performance/noNamespaceImport: A module spy observes every scenario-source handoff.
 import * as lootSelection from '../src/core/loot.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
+import { discoveryForPlan } from '../src/core/scenarioDiscovery.ts';
 import { compileTemplate, type Placement, placedPieces } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 
@@ -32,7 +34,7 @@ const fixture = () => {
         ],
       },
     ],
-    leads: ['fixture_note_a', 'fixture_note_b'],
+    leads: [{ template: 'fixture_note_a' }, { template: 'fixture_note_b' }],
     landmarks: ['fixture_landmark_a', 'fixture_landmark_b'],
     incidentalTemplates: ['fixture_small_house'],
     objective: [2, 1, 2],
@@ -130,12 +132,66 @@ describe('authored scenario composition', () => {
   it('rejects dangling resource, unreadable public lead and out-of-block landmark metadata', () => {
     const { profile, registry } = fixture();
     profile.composition!.resources[0]!.at = [0, 0, 0];
-    profile.composition!.leads[0] = 'fixture_small_house';
+    profile.composition!.leads[0] = { template: 'fixture_small_house' };
     profile.composition!.landmarks[0] = profile.serviceTemplate;
     const issues = scenarioPlanIssues(registry, profile);
     expect(issues.some(([path]) => path === '.composition.resources[0].at')).toBe(true);
     expect(issues.some(([path]) => path === '.composition.leads[0]')).toBe(true);
     expect(issues.some(([path]) => path === '.composition.landmarks[0]')).toBe(true);
+  });
+
+  it('accepts a readable surface item lead and discovers its placed pile cell, not its support', () => {
+    const { profile, registry } = fixture();
+    const item = registry.items.get('fixture_token')!;
+    registry.items.set(item.id, {
+      ...item,
+      category: 'note',
+      readable: { title: 'Fixture paper', text: 'Independent directions.' },
+    });
+    const [lead] = profile.composition!.leads;
+    const crate = registry.furniture.get('fixture_crate')!;
+    registry.furniture.set('fixture_paper_support', { ...crate, id: 'fixture_paper_support', size: [2, 2, 2] });
+    const template = registry.templates.get(lead.template)!;
+    registry.templates.set(template.id, {
+      ...template,
+      palette: { '=': 'fixture_solid', N: { furniture: 'fixture_paper_support' } },
+      size: [2, 3, 2],
+      layers: [
+        ['==', '=='],
+        ['NN', 'NN'],
+        ['NN', 'NN'],
+      ],
+    });
+    lead.fixedLoot = [{ at: [0, 1, 0], items: [{ item: item.id, placement: 'surface' }] }];
+    expect(scenarioPlanIssues(registry, profile)).toEqual([]);
+    const plan = buildCityPlan({
+      seed: 8,
+      registry,
+      floor: 32,
+      grid: cityGridOf(registry, profile.city),
+      scenario: profile,
+    });
+    const site = new CitySite(8, registry, makeScale(0.5), plan);
+    const support = placedPieces(plan.composition!.leads[0]!)[0]!;
+    const spawn = site
+      .furnitureIn(toChunk(support.pos[0]), toChunk(support.pos[2]))
+      .find(({ spec }) => spec.pos.join(',') === support.pos.join(','))!;
+    const inventory = new Inventory(registry);
+    expect(inventory.furnish(spawn.spec, spawn.loot, spawn.surfaceLoot)).toBeDefined();
+    const pile = [...inventory.piles.values()].find((candidate) =>
+      candidate.items.some((entry) => entry.item.type === item.id),
+    );
+    expect(pile).toBeDefined();
+    const { clues } = discoveryForPlan(plan, registry)!;
+    expect(clues).toContainEqual(pile!.pos);
+    expect(clues).not.toContainEqual(support.pos);
+    expect(
+      site
+        .lootPointsIn(toChunk(support.pos[0]), toChunk(support.pos[2]))
+        .some((point) => point.channel === 'surface' && point.position.join(',') === pile!.pos.join(',')),
+    ).toBe(true);
+    registry.items.set(item.id, item);
+    expect(scenarioPlanIssues(registry, profile).some(([, message]) => message.includes('readable source'))).toBe(true);
   });
 
   it('keeps public leads at separate locations and destination landmarks in the finished plan', () => {

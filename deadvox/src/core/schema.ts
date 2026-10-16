@@ -33,6 +33,7 @@ import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
@@ -182,6 +183,7 @@ const ITEM_CATEGORIES = [
   'ammo',
   'material',
   'book',
+  'note',
   'misc',
 ] as const;
 
@@ -1134,6 +1136,36 @@ const OwnershipSchema = strictObject({
   /** '.' leaves terrain alone, S claims occupancy, A excavates, R reserves empty circulation. */
   layers: array(array(pipe(string(), regex(/^[.SAR]*$/)))),
 });
+const DecalVariantSchema = strictObject({
+  sizeMetres: tuple([Positive, Positive]),
+  color: Color,
+  agedColor: Color,
+  opacity: Fraction,
+  agedOpacity: Fraction,
+  ageingGameHours: PositiveGameHours,
+  noiseScale: Positive,
+  edgeRaggedness: Fraction,
+  /** Normalized line segments, each [x0, y0, x1, y1, width]. */
+  strokes: pipe(
+    array(
+      pipe(
+        tuple([Fraction, Fraction, Fraction, Fraction, Fraction]),
+        check(([x0, y0, x1, y1, width]) => width > 0 && (x0 !== x1 || y0 !== y1), 'needs a nonzero stroke'),
+      ),
+    ),
+    maxLength(64),
+  ),
+});
+export const DecalSchema = strictObject({
+  kind: picklist(Object.keys(DECAL_KINDS) as DecalKind[]),
+  at: tuple([number(), number(), number()]),
+  door: optional(tuple([number(), number(), number()])),
+  normal: picklist(['n', 'e', 's', 'w', 'up', 'down']),
+  rotation: number(),
+  variants: pipe(array(DecalVariantSchema), nonEmpty(), maxLength(32)),
+});
+export type DecalDef = InferOutput<typeof DecalSchema>;
+
 const TemplateSchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
@@ -1145,6 +1177,7 @@ const TemplateSchema = strictObject({
   palette: record(Char, union([Id, PaletteThingSchema])),
   /** Layers from the bottom up; each is rows along z of characters along x. */
   layers: array(array(string())),
+  decals: optional(pipe(array(DecalSchema), maxLength(128))),
   /** Explicit floors and flights, never stress-test repetitions. Floor heights are feet heights in blocks. */
   access: optional(TemplateAccessSchema),
   ownership: optional(OwnershipSchema),
@@ -1181,6 +1214,7 @@ const MapPieceSchema = strictObject({
   style: Id,
   palette: record(Char, union([strictObject({ role: MaterialRole, material: Id }), PaletteThingSchema])),
   layers: array(array(string())),
+  decals: optional(pipe(array(DecalSchema), maxLength(128))),
   ownership: OwnershipSchema,
   anchors: record(Id, KitAnchorSchema),
   ports: array(KitPortSchema),
@@ -1376,13 +1410,18 @@ const MapPoolSchema = strictObject({
 const ScenarioSchema = strictObject({
   id: Id,
   kind: literal('gauntlet'),
+  outbreakAgeGameHours: PositiveGameHours,
+  decalLimit: pipe(Count, maxValue(4096)),
   body: Id,
   compression: Id,
   serviceTemplate: Id,
   composition: optional(
     strictObject({
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
-      leads: tuple([Id, Id]),
+      leads: tuple([
+        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
+        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
+      ]),
       landmarks: tuple([Id, Id]),
       incidentalTemplates: pipe(array(Id), minLength(1), maxLength(32)),
       objective: CellPosition,

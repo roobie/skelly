@@ -2,6 +2,7 @@ local lab = import 'gauntlet-lab.libsonnet';
 local circulation = import 'gauntlet-lab-circulation.libsonnet';
 local rooms = import 'gauntlet-lab-rooms.libsonnet';
 local context = { usage: ['Industrial', 'Medical'], tier: 'Tier1' };
+local decals = import 'decals.libsonnet';
 local palette = { '.': { role: 'opening', material: 'air' }, '#': { role: 'shell', material: 'brick' }, R: { role: 'shell', material: 'galvanized' }, D: { furniture: 'wood_door', facing: 'n' } };
 local doorway = ['###########DD###########', '#......................#', '#......................#', '#......................#', '#......................#', '#......................#', '#......................#', '#......................#', '#......................#', '#......................#', '#......................#', '#......................#', '#......................#', '###########DD###########'];
 local doorwayClaims = ['SSSSSSSSSSSSSSSSSSSSSSSS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRRRRRRRS', 'SSSSSSSSSSSSSSSSSSSSSSSS'];
@@ -28,6 +29,14 @@ local small = function(id, size, furniture, layers, claims, facing='n') {
     },
     {
       id: 'gauntlet_service_shell', size: [24, 8, 14], style: 'service_brick', lootContext: context, palette: palette,
+      decals: [
+        decals.blood([12, 0, -2.5], 0.1),
+        decals.blood([11.7, 0, -1.2], -0.2),
+        decals.blood([12.1, 0, 0.5], 0.25),
+        decals.blood([11.8, 0, 2], -0.1),
+        decals.blood([12.3, 0, 3.5], 0.3),
+        decals.searched([12, 2.4, 0.44]) + { door: [11, 0, 0] },
+      ],
       layers: [doorway, doorway, doorway, doorway, walls, walls, walls, roof],
       ownership: { layers: [doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, roofClaims] }, anchors: {}, ports: [],
     },

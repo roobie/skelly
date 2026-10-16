@@ -194,7 +194,36 @@
           "gauntlet_incidental_riser"
         ],
         "landmarks": ["gauntlet_water_tank", "gauntlet_loading_frame"],
-        "leads": ["gauntlet_public_memo", "gauntlet_public_directions"],
+        "leads": [
+          {
+            "fixedLoot": [
+              {
+                "at": [0, 1, 0],
+                "items": [
+                  {
+                    "item": "gauntlet_public_memo",
+                    "placement": "surface"
+                  }
+                ]
+              }
+            ],
+            "template": "gauntlet_public_memo"
+          },
+          {
+            "fixedLoot": [
+              {
+                "at": [0, 1, 0],
+                "items": [
+                  {
+                    "item": "gauntlet_public_directions",
+                    "placement": "surface"
+                  }
+                ]
+              }
+            ],
+            "template": "gauntlet_public_directions"
+          }
+        ],
         "objective": [30, 3, 26],
         "objectiveFace": [30, 1, 29],
         "resources": [
@@ -228,8 +257,10 @@
         ]
       },
       "compression": "player",
+      "decalLimit": 48,
       "id": "gauntlet",
       "kind": "gauntlet",
+      "outbreakAgeGameHours": 2880,
       "portal": {
         "hatch": [42, 40, 39],
         "ladder": [43, 33, 39],
