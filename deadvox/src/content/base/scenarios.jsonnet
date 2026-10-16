@@ -15,6 +15,9 @@ local ladder = lab.entry.ladder;
       fixedLoot: [{
         at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18],
         items: [{ item: 'flashlight', placement: 'surface', key: true }],
+      }, {
+        at: [lab.surfaceOffset + 15, ground + 1, lab.surfaceOffset + 14],
+        items: [{ item: 'gauntlet_maintenance_memo', placement: 'surface' }],
       }],
       leads: [
         { template: 'gauntlet_public_memo', fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_memo', placement: 'surface' }] }] },

@@ -44,6 +44,7 @@
     { "id": "hinge_set", "file": "assets/models/hinge_set.glb" },
     { "id": "glass_bulb", "file": "assets/models/glass_bulb.glb" },
     { "id": "paper_sheet", "file": "assets/models/paper_sheet.glb" },
-    { "id": "folded_note", "file": "assets/models/folded_note.glb" }
+    { "id": "folded_note", "file": "assets/models/folded_note.glb" },
+    { "id": "notebook", "file": "assets/models/notebook.glb" }
   ]
 }
