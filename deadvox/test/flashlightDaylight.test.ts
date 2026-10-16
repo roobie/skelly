@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { skyAt } from '../src/core/sky.ts';
-import { FLASHLIGHT_DECAY, FLASHLIGHT_INTENSITY, flashlightDaylightScale } from '../src/render/flashlight.ts';
+import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { NEAR_FIELD_M } from '../src/render/lightFalloff.ts';
 import { phaseMidpoint } from './dayPhaseFixture.ts';
 
@@ -18,7 +18,7 @@ describe('flashlight daylight scale', () => {
 
   it('keeps the daylight-scaled flashlight weaker than direct sun lighting', () => {
     const hour = phaseMidpoint('day') / 3600;
-    const pool = (FLASHLIGHT_INTENSITY / (3 + NEAR_FIELD_M) ** FLASHLIGHT_DECAY) * scaleAt(hour);
+    const pool = (5 / (3 + NEAR_FIELD_M)) * scaleAt(hour);
     expect(pool).toBeLessThan(skyAt(hour).lightIntensity);
   });
 

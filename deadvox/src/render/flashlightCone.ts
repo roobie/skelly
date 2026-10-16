@@ -1,8 +1,6 @@
 import { ShaderChunk, ShaderLib } from 'three';
 import type { BeamSpill } from '../core/schema.ts';
 
-const MINIMUM_SOFTNESS = 0.1;
-
 /** Cone radius, not angle, grows by the spill ratio at every axial distance. */
 export const spillHalfAngle = (beamHalfAngle: number, profile: BeamSpill): number =>
   Math.atan(profile.radiusRatio * Math.tan(beamHalfAngle));
@@ -17,7 +15,7 @@ export const withFlashlightSpill = (chunk: string): string => {
   return `uniform vec2 uFlashlightSpill;\n${chunk.replace(
     ORIGINAL,
     `float spillCosine = coneCosine / sqrt( uFlashlightSpill.x + ( 1.0 - uFlashlightSpill.x ) * coneCosine * coneCosine );
-    float hotspot = smoothstep( coneCosine, max( penumbraCosine, mix( coneCosine, 1.0, ${MINIMUM_SOFTNESS} ) ), angleCosine );
+    float hotspot = smoothstep( coneCosine, penumbraCosine, angleCosine );
     float spill = uFlashlightSpill.y * smoothstep( spillCosine, coneCosine, angleCosine );
     return mix( spill, 1.0, hotspot );`,
   )}`;
@@ -33,14 +31,27 @@ export const setFlashlightSpill = (profile: BeamSpill): void => {
 
 let installed = false;
 
-/** Install before material compilation; shared chunks and uniforms cover all built-in receiving materials. */
-export const installFlashlightSpill = (): void => {
-  if (installed) {
-    return;
+/** Returns whether receiving materials need a different shader variant. */
+export const installFlashlightSpill = (enabled = true): boolean => {
+  if (installed === enabled) {
+    return false;
   }
-  ShaderChunk.lights_pars_begin = withFlashlightSpill(ShaderChunk.lights_pars_begin);
+  if (enabled) {
+    ShaderChunk.lights_pars_begin = withFlashlightSpill(ShaderChunk.lights_pars_begin);
+  } else {
+    const patched = withFlashlightSpill(ORIGINAL);
+    ShaderChunk.lights_pars_begin = ShaderChunk.lights_pars_begin
+      .replace('uniform vec2 uFlashlightSpill;\n', '')
+      .replace(patched.replace('uniform vec2 uFlashlightSpill;\n', ''), ORIGINAL);
+  }
   for (const shader of Object.values(ShaderLib)) {
-    shader.uniforms.uFlashlightSpill = spillUniform;
+    if (enabled) {
+      shader.uniforms.uFlashlightSpill = spillUniform;
+    } else {
+      // biome-ignore lint/performance/noDelete: plain-cone shader variants must not carry spill uniforms.
+      delete shader.uniforms.uFlashlightSpill;
+    }
   }
-  installed = true;
+  installed = enabled;
+  return true;
 };

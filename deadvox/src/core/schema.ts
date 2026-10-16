@@ -361,7 +361,8 @@ const LightSchema = strictObject({
       angleDegrees: pipe(Positive, maxValue(180, 'must be at most 180')),
       /** Share of the cone, from its edge inward, over which the beam fades to dark; the rest is the hotspot. */
       penumbra: pipe(number(), minValue(0, 'must be at least 0'), maxValue(1, 'must be at most 1')),
-      spill: BeamSpillSchema,
+      decay: NonNegative,
+      spill: optional(BeamSpillSchema),
     }),
   ),
   burning: optional(

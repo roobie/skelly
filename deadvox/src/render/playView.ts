@@ -177,7 +177,7 @@ export const createPlayView = (
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const flashlight = new Flashlight(
     scene,
-    !(config.debug && new URLSearchParams(globalThis.location?.search ?? '').get('torchspill') === '0'),
+    new URLSearchParams(globalThis.location?.search ?? '').get('torchspill') !== '0',
   );
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
