@@ -1,9 +1,10 @@
 import { buildingBounds } from './core/authoredTerrain.mjs';
 import type { Chunk } from './core/chunk.ts';
-import { blockColors, blockId } from './core/content.ts';
+import { blockColors } from './core/content.ts';
 import { CHUNK, compassBearing, toChunk, toLocal } from './core/coords.ts';
 import { BLOCK_SIZE } from './core/scale.ts';
-import { generateColumn, terrainBlockIds, worldGroundAt } from './core/worldgen.ts';
+import { sitePalette } from './core/sitePalette.ts';
+import { generateColumn, worldGroundAt } from './core/worldgen.ts';
 import { buildBundledContent } from './game/bundledContent.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';
@@ -69,7 +70,7 @@ const blockIds = new Uint16Array(width * height);
 const terrain = {
   seed,
   scale,
-  blocks: terrainBlockIds((name) => blockId(registry, name)),
+  blocks: sitePalette(registry).terrain,
   surface: site?.surface,
   ...(site ? { stamp: (chunk: Chunk) => site.stamp(chunk) } : {}),
 };
