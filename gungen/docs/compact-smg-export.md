@@ -8,13 +8,13 @@ read_if:
 
 # Compact SMG export
 
-BR asked for an SMG traced from an MP5-type side view and then built in the Gungen engine, as the hunting rifle was. They singled out four features: the charging handle at the front, the telescoping buttstock, the rotary rear aperture sight and the ringed front sight. Those four features are what makes the silhouette recognisable, so the build must produce each one as real geometry and not as a decal or substitute part. This doc states intent before implementation; build rounds trim it to reasons and code cues (`PILLARS.md`, "Zero drift").
+The compact SMG is traced from an MP5-type side view with simple shapes and then built in the Gungen engine, as the hunting rifle was. Four features make the silhouette recognisable: the charging handle at the front, the telescoping buttstock, the rear aperture sight with its drum and the ringed front sight. The build must produce each one as real geometry and not as a decal or substitute part. This doc states intent before implementation; build rounds trim it to reasons and code cues (`PILLARS.md`, "Zero drift").
 
 ## Reference registration
 
-The reference is a side-view photo kept outside the repository; only the derived table is tracked. See `src/gun/compactSmgProportions.ts`, `COMPACT_SMG_PROPORTIONS`.
+The reference is a side-view photo kept outside the repository. Build round 1 lands the derived proportions table together with its first consumer, once the reference length is settled, as the sporter and AK tables did; until then the trace data stays outside the tracked tree.
 
-The photo shows the stock collapsed, so the scale comes from a published collapsed overall length for the A3 pattern rather than the extended 680 mm in the [Small Arms Survey MP5 sheet](https://www.smallarmssurvey.org/sites/default/files/SAS-weapons-sub-machine-guns-Heckler-Koch-MP5.pdf). Calibrating with the extended length on a collapsed photo would inflate every part by roughly a quarter. The span is from the butt plate's rear face to the muzzle stub's tip, the two features that are sharp in the photo. Sources disagree on the collapsed length, which is why it is an open question below.
+The photo shows the stock collapsed. The collapsed-length method scales from a published collapsed overall length rather than the extended 680 mm in the [Small Arms Survey MP5 sheet](https://www.smallarmssurvey.org/sites/default/files/SAS-weapons-sub-machine-guns-Heckler-Koch-MP5.pdf), because calibrating with the extended length on a collapsed photo would inflate every part by roughly a quarter. It is the method behind the 550 mm and 490 mm options of the reference-length question below, not a settled choice. The span is from the butt plate's rear face to the muzzle stub's tip, the two features that are sharp in the photo. Sources disagree on the collapsed length, which is why it is an open question.
 
 The bore line runs through the muzzle axis and is horizontal in the photo, so the registration has no slope. The origin is the receiver's front face, where the handguard starts, matching the sporter's receiver/barrel datum (`docs/bolt-action-export.md`, "Reference registration"). Parts are traced around that fixed bore and datum and never moved to cover the photo, for the same reason given there. Depth, wall thickness and clearances are not recoverable from a side view and stay authoring choices.
 
@@ -39,9 +39,9 @@ Joins keep the shared receiver frame so struts, tube and lower cannot drift from
 
 Each mover is certified with the swept-clearance check, not exempted by family; see `src/gun/cycle.ts`, `sweepMovingPart`.
 
-- **Charging handle.** The knob slides back along its slot in the cocking tube. The visible slot length bounds the travel in the trace. BR named "locked back and released", but the photo does not show the notch that holds it back, so that state is an open question. The handle is hand-only and does not move with each shot, matching the forward-handle pattern the `smg` template already exports; see `src/gun/actionDescription.ts`, `resolveGunAction`.
+- **Charging handle.** The knob slides back along its slot in the cocking tube. The visible slot length bounds the travel in the trace. Whether the handle has a held-back state is open, because the photo does not show a notch that holds it. The handle is hand-only and does not move with each shot. The `smg` pattern has no resolved action yet: `resolveGunAction` resolves no `smg` pattern and the archetype's handle is not in `coupledParts`; see `src/gun/actionDescription.ts`. Build round 3 adds the action description and handle pairing.
 - **Stock.** It moves between the collapsed and extended positions along the bore axis. It is a configuration state, not part of the firing cycle, so it does not belong on the action timeline.
-- **Rear drum.** It turns to present a different aperture. The axis cannot be recovered from a side view, so it is an open question whether the drum turns, and about which axis.
+- **Rear drum.** A real drum turns to present a different aperture. The axis cannot be recovered from a side view, so whether the model's drum turns, and about which axis, is an open question.
 
 ## Export contract for Deadvox
 
@@ -67,13 +67,11 @@ The compact SMG sits beside `designs/archetype-smg.json` as a new compact-smg Js
 
 The rounds run in order. Every round must pass these checks: validate reports no geometry issues for the design, every mover passes its swept-clearance check, and the export loads in Deadvox validation and model preparation. A round only adds checks of its own.
 
-1. **Design and silhouette.** Add the compact-smg Jsonnet design on the archetype, consuming the proportions table for the receiver, handguard, cocking tube, lower, grip and magazine. Remove the table's knip entry. Its own check: the bore and receiver datum match the registration.
-2. **Sights.** Add the ringed front-sight style and a static drum rear-sight family. Its own check: the eye line passes through the aperture and ring.
-3. **Charging handle travel.** Tune the existing sliding handle to the traced slot, plus the locked-back state if BR wants it. Its own check: the handle clears the front sight base and handguard over its full travel.
+1. **Design and silhouette.** Add the compact-smg Jsonnet design on the archetype, adding the proportions table with this first consumer, and using it for the receiver, handguard, cocking tube, lower, grip and magazine. Its own check: the bore and receiver datum match the registration.
+2. **Sights.** Add the ringed front-sight style and the drum rear-sight family, static or turning per the rear-drum question. Its own check: the eye line passes through the aperture and ring.
+3. **Charging handle travel.** Tune the existing sliding handle to the traced slot, plus the locked-back state if the locked-back question is answered yes. Add the `smg` action description in `src/gun/actionDescription.ts` and pair the handle in `coupledParts`. Its own checks: the handle clears the front sight base and handguard over its full travel, and `resolveGunAction` resolves an action for the `smg` pattern.
 4. **Telescoping stock.** Add the telescoping stock style with collapsed and extended states. Its own checks: the struts clear the end cap and lower at both ends, and the grip datum does not move with the stock.
 5. **Deadvox entry.** Export, refresh and credit the gun in Deadvox once BR has chosen its calibre. Its own check: the gungen-deadvox contract test covers it.
-
-If BR chooses a turning drum, it is added as part of the sights round.
 
 ## Open questions for BR
 
