@@ -295,7 +295,7 @@
               "kind": "drop",
               "landing": [5, 3, 8],
               "lower": [5, 1, 14],
-              "upper": [6.5, 9, 8]
+              "upper": [6, 9, 8]
             }
           ],
           "minimumOpenDescents": 2,

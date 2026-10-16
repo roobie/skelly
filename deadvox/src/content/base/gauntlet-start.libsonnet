@@ -36,6 +36,18 @@ local shellClaims = [
   'S..............S..', 'S..............S..', 'S..............S..', 'S..............S..',
   'S..............S..', 'S..............S..', 'S..............S..', 'SSSSSSSSSSSSSSSS..',
 ];
+local lintel = [
+  '..................', '..................', '################..', '#..............#..',
+  '#..............#..', '#..............#..', '#..............#..', '#..............#..',
+  '#..............#..', '#..............#..', '#..............#..', '#..............#..',
+  '#..............#..', '#..............#..', '#..............#..', '################..',
+];
+local lintelClaims = [
+  'RRRRRRRRRRRRRRRR..', 'RRRRRRRRRRRRRRRR..', 'SSSSSSSSSSSSSSSS..', 'S..............S..',
+  'S..............S..', 'S..............S..', 'S..............S..', 'S..............S..',
+  'S..............S..', 'S..............S..', 'S..............S..', 'S..............S..',
+  'S..............S..', 'S..............S..', 'S..............S..', 'SSSSSSSSSSSSSSSS..',
+];
 local roof = [
   '..................', '..................', '################..', '#rrrrrrrrrrrrrr#..',
   '#rrrrrrrrrrrrrr#..', '#rrr........rrr#..', '#rrr........rrr#..', '#rrrrrrrrrrrrrr#..',
@@ -86,7 +98,7 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
     descents: [
       { kind: 'ladder', ladder: [23, 1, 10], upper: [20, 9, 11], lower: [25, 1, 11] },
       { kind: 'stairs', hatch: [10, 8, 5], upper: [18, 9, 6], lower: [14, 1, 1] },
-      { kind: 'drop', upper: [6.5, 9, 8], edge: [5, 9, 8], landing: [5, 3, 8], lower: [5, 1, 14] },
+      { kind: 'drop', upper: [6, 9, 8], edge: [5, 9, 8], landing: [5, 3, 8], lower: [5, 1, 14] },
     ],
   },
   furniture: [{
@@ -99,8 +111,8 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
       [marginGround, marginAir, marginAir, marginAir, marginAir, marginAir, marginAir, marginAir, marginAir, marginAir, marginAir, marginAir, marginAir],
       [marginSolid, marginReserved, marginReserved, marginReserved, marginReserved, marginReserved, marginReserved, marginReserved, marginReserved, marginReserved, marginReserved, marginReserved, marginReserved]),
     piece('gauntlet_start_shell', [18, 7, 16],
-      [shell, shell, shell, shell, shell, shell, shell],
-      [shellClaims, shellClaims, shellClaims, shellClaims, shellClaims, shellClaims, shellClaims]),
+      [shell, shell, shell, shell, lintel, lintel, lintel],
+      [shellClaims, shellClaims, shellClaims, shellClaims, lintelClaims, lintelClaims, lintelClaims]),
     roofDeck + { id: 'gauntlet_start_roof', layers: [roof], ownership: { layers: [roofClaims] } },
     stairs + { id: 'gauntlet_start_stairs', ownership: { layers: stairs.ownership.layers[:7] + [['.........SS', '.........SS']] } },
     piece('gauntlet_start_roof_air', [19, 4, 16], [cap, cap, cap, cap], [capClaims, capClaims, capClaims, capClaims]),

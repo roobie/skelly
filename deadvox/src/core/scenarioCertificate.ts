@@ -125,6 +125,7 @@ class Certificate {
       case 'drop':
         return (
           descent.edge[1] === descent.upper[1] &&
+          Math.hypot(descent.edge[0] - descent.upper[0], descent.edge[2] - descent.upper[2]) <= 1 &&
           descent.landing[1] < descent.edge[1] &&
           descent.landing[0] === descent.edge[0] &&
           descent.landing[2] === descent.edge[2] &&

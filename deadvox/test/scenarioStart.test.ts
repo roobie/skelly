@@ -71,6 +71,19 @@ for (const descent of start.descents) {
   });
 }
 
+it('rejects a drop that would require walking on air before reaching its landing', () => {
+  const drop = start.descents.find((descent) => descent.kind === 'drop');
+  expect(drop).toBeDefined();
+  if (drop?.kind !== 'drop') {
+    throw new Error('Missing drop fixture');
+  }
+  const remoteEdge = { ...drop, upper: start.spawn };
+  expect(
+    Math.hypot(remoteEdge.edge[0] - remoteEdge.upper[0], remoteEdge.edge[2] - remoteEdge.upper[2]),
+  ).toBeGreaterThan(1);
+  expect(certificate([remoteEdge], 1).issues.some(([path]) => path === '.composition.start.descents')).toBe(true);
+});
+
 it('keeps a choice when one way down is blocked but rejects a single remaining exit', () => {
   const parsed = parse(ContentFileSchema, {
     scenarios: [
