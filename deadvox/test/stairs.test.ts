@@ -194,7 +194,7 @@ describe('explicit storeys and ordinary-block flights', () => {
       blocks: {
         grass: registry.blockIds.get('grass')!,
         dirt: registry.blockIds.get('dirt')!,
-        stone: registry.blockIds.get('stone')!,
+        rock: registry.blockIds.get('stone')!,
         sand: registry.blockIds.get('sand')!,
       },
       surface: site.surface,

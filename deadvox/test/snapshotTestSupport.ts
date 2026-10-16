@@ -65,7 +65,7 @@ for (let cz = toChunk(fixtureHamlet.bounds.z0); cz <= toChunk(fixtureHamlet.boun
 }
 const fixtureTerrain: Terrain = {
   seed,
-  blocks: { grass: blockId('grass'), dirt: blockId('dirt'), stone: blockId('stone'), sand: blockId('sand') },
+  blocks: { grass: blockId('grass'), dirt: blockId('dirt'), rock: blockId('stone'), sand: blockId('sand') },
   scale,
   surface: fixtureHamlet.surface,
   stamp: (chunk) => fixtureHamlet.stamp(chunk),
