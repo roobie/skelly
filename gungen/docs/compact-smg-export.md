@@ -61,13 +61,13 @@ Profiles, travel limits, sight-ring sizes and drum aperture count are content va
 
 ## Archetype decision
 
-The compact SMG sits beside `designs/archetype-smg.json` as a new `designs/compact-smg.jsonnet`, which imports the archetype and overrides parts, as `designs/hunting-rifle.jsonnet` does with its base. The archetype is a canonical generator fixture with its own appearance variant (see `src/cli/exportFile.ts`, `FIXTURE_APPEARANCE`), so replacing it would change generator output that other checks rely on. Extending it in place would bend the generic fixture toward one traced gun. Its cocking tube, sliding handle and magazine profile are reused rather than duplicated.
+The compact SMG sits beside `designs/archetype-smg.json` as a new compact-smg Jsonnet design, which imports the archetype and overrides parts, as `designs/hunting-rifle.jsonnet` does with its base. The archetype is a canonical generator fixture with its own appearance variant (see `src/cli/exportFile.ts`, `FIXTURE_APPEARANCE`), so replacing it would change generator output that other checks rely on. Extending it in place would bend the generic fixture toward one traced gun. Its cocking tube, sliding handle and magazine profile are reused rather than duplicated.
 
 ## Build split
 
 The rounds run in order. Every round must pass these checks: validate reports no geometry issues for the design, every mover passes its swept-clearance check, and the export loads in Deadvox validation and model preparation. A round only adds checks of its own.
 
-1. **Design and silhouette.** Add `designs/compact-smg.jsonnet` on the archetype, consuming the proportions table for the receiver, handguard, cocking tube, lower, grip and magazine. Remove the table's knip entry. Its own check: the bore and receiver datum match the registration.
+1. **Design and silhouette.** Add the compact-smg Jsonnet design on the archetype, consuming the proportions table for the receiver, handguard, cocking tube, lower, grip and magazine. Remove the table's knip entry. Its own check: the bore and receiver datum match the registration.
 2. **Sights.** Add the ringed front-sight style and a static drum rear-sight family. Its own check: the eye line passes through the aperture and ring.
 3. **Charging handle travel.** Tune the existing sliding handle to the traced slot, plus the locked-back state if BR wants it. Its own check: the handle clears the front sight base and handguard over its full travel.
 4. **Telescoping stock.** Add the telescoping stock style with collapsed and extended states. Its own checks: the struts clear the end cap and lower at both ends, and the grip datum does not move with the stock.
