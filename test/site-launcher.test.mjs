@@ -19,6 +19,7 @@ const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAY_LINK_PATTERN = /<a[^>]*class="playtest-action"[^>]*>/;
 const TUTORIAL_LINK_PATTERN = /<a[^>]*class="tutorial-action"[^>]*>/;
+const BEGINNER_LINK_PATTERN = /<a[^>]*class="beginner-action"[^>]*>/;
 const ROUND1_STATIC_URL = playtestRound(1).url;
 const ROUND1_LANGUAGE_PATTERN = /lang=\$\{language\}/;
 const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title|deadvox-playtest/;
@@ -436,6 +437,13 @@ describe('site launcher playtest entry', () => {
       tutorial.searchParams.delete('tutorial');
       const play = new URL(href, config.url);
       assert.equal(tutorial.href, play.href, 'practice uses the same frozen game URL');
+      const beginnerHref = script.match(BEGINNER_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
+      assert.ok(beginnerHref, 'the assembled page has a beginner-mode link');
+      assert.ok(script.indexOf('class="playtest-action"') < script.indexOf('class="beginner-action"'));
+      const beginner = new URL(beginnerHref, config.url);
+      assert.equal(beginner.searchParams.get('mods'), 'beginner', 'beginner selects its bundled mod');
+      beginner.searchParams.delete('mods');
+      assert.equal(beginner.href, play.href, 'beginner mode uses the same frozen game URL');
       assert.ok(authoredLayoutIds().includes(play.searchParams.get('site')), 'play selects an authored site');
       assert.equal(play.searchParams.has('debug'), false);
       assert.ok(html.includes(`<link rel="canonical" href="${config.url}"`));
