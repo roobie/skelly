@@ -1,11 +1,12 @@
 import { expect, it, vi } from 'vitest';
-import { SPAWN_TIME, SPAWN_TIMES } from '../src/core/clock.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
 import { applyWeatheringConfig } from '../src/game/config.ts';
 import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
 
-it('uses SPAWN_TIME when the URL has no time for a site without its own start', () => {
-  expect(configFromUrl(new URLSearchParams('site=city')).start).toBe(SPAWN_TIME);
+const dayCycle = BUNDLED_CONTENT.registry.dayCycle!;
+
+it("uses the day cycle's default start when the URL has no time for a site without its own start", () => {
+  expect(configFromUrl(new URLSearchParams('site=city')).start).toBe(dayCycle.defaultStartGameTimeOfDay);
 });
 
 it('restricts handedness overrides to debug URL configuration', () => {
@@ -57,7 +58,7 @@ it('accepts bounded weathering splits only in debug URLs and defaults the compar
   expect(configFromUrl(new URLSearchParams('debug=1&weatheringSplit=-257')).weatheringSplit).toBeUndefined();
   const comparison = configFromUrl(new URLSearchParams('debug=1&site=weatheringTest'));
   expect(comparison.weatheringSplit).toBe(0);
-  expect(comparison.start).toBe(SPAWN_TIMES.noon);
+  expect(comparison.start).toBe(dayCycle.noonGameTimeOfDay);
   expect(configFromUrl(new URLSearchParams('site=weatheringTest')).site).toBe('hamlet');
 });
 

@@ -34,7 +34,7 @@ import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { hasSegment } from './authoredTerrain.mjs';
 import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind, MELEE_DAMAGE_KINDS } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
-import { parseSpawnTime } from './clock.ts';
+import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
@@ -1210,11 +1210,8 @@ const LootTableSchema = strictObject({
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
 const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
-const SpawnTime = pipe(
-  string(),
-  check((value) => parseSpawnTime(value) !== undefined, 'expected a named game time or HH:MM'),
-  transform((value) => gameTimeOfDay(parseSpawnTime(value)!)),
-);
+// Names stay names through parsing: the day cycle that gives them meaning is content too (`resolveSpawnTime`).
+const SpawnTime = union([picklist(SPAWN_TIME_NAMES), GameTimeOfDay], 'expected a named game time or HH:MM');
 const SpawnWindowSchema = pipe(
   strictObject({ fromGameTimeOfDay: SpawnTime, toGameTimeOfDay: optional(SpawnTime) }),
   check(
@@ -1422,6 +1419,11 @@ const DayCycleSchema = strictObject({
   latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
   date: CalendarDateSchema,
   twilight: literal('nautical'),
+  /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
+  defaultStartGameTimeOfDay: GameTimeOfDay,
+  /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */
+  midnightGameTimeOfDay: GameTimeOfDay,
+  noonGameTimeOfDay: GameTimeOfDay,
 });
 const HalfMetres = pipe(
   Metres,

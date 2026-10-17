@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
+import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
@@ -105,8 +105,6 @@ describe('sun-owned day phases', () => {
     }
 
     expect(Math.max(...nightLightIntensities)).toBeLessThan(Math.min(...dayLightIntensities));
-    expect(parseSpawnTime('dawn', cycle)).toBe(dayPhaseAt(cycle, 0).dawn);
-    expect(parseSpawnTime('dusk', cycle)).toBe(dayPhaseAt(cycle, 0).sunset);
   });
 
   it('lets twilight sight reach the quarter-range target but not the three-quarter target', () => {

@@ -5,6 +5,9 @@
       "month": 6,
       "day": 25
     },
-    "twilight": "nautical"
+    "twilight": "nautical",
+    "defaultStartGameTimeOfDay": "10:00",
+    "midnightGameTimeOfDay": "00:00",
+    "noonGameTimeOfDay": "12:00"
   }
 }
