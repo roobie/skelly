@@ -1415,10 +1415,50 @@ const CalendarDateSchema = pipe(
   }),
   check(({ month, day }) => day <= [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]!, 'invalid date'),
 );
-const DayCycleSchema = strictObject({
+const SkyColour = pipe(
+  string(),
+  regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb colour'),
+  transform((text): readonly [number, number, number] => {
+    const rgb = Number.parseInt(text.slice(1), 16);
+    return [((rgb >> 16) & 255) / 255, ((rgb >> 8) & 255) / 255, (rgb & 255) / 255];
+  }),
+);
+const UnitFraction = pipe(number(), finite(), minValue(0), maxValue(1));
+/** One sky look: the keyframe values the time of day blends between (core/sky.ts owns the blend). */
+const SkyLookSchema = strictObject({
+  sky: SkyColour,
+  lightColor: SkyColour,
+  lightIntensity: NonNegative,
+  ambientSky: SkyColour,
+  ambientGround: SkyColour,
+  ambientIntensity: NonNegative,
+  fogNear: UnitFraction,
+  fogFar: UnitFraction,
+  heightFog: NonNegative,
+  heightFogColor: SkyColour,
+  bloom: NonNegative,
+  tone: UnitFraction,
+});
+/** The weather's fog on top of the looks; fractions only shrink the distance fog, so both stay below 1. */
+const WeatherTuningSchema = strictObject({
+  /** The fogginess a session starts at; the looks' height fog is exactly their own density here. */
+  defaultFogginess: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
+  nearTighten: pipe(UnitFraction, maxValue(0.99)),
+  farTighten: pipe(UnitFraction, maxValue(0.99)),
+});
+export const DayCycleSchema = strictObject({
   latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
   date: CalendarDateSchema,
   twilight: literal('nautical'),
+  /** The keyframe looks by solar phase: night and deepNight around midnight, dawn and dusk at the sun's edge. */
+  looks: strictObject({
+    night: SkyLookSchema,
+    deepNight: SkyLookSchema,
+    dawn: SkyLookSchema,
+    day: SkyLookSchema,
+    dusk: SkyLookSchema,
+  }),
+  weather: WeatherTuningSchema,
   /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
   defaultStartGameTimeOfDay: GameTimeOfDay,
   /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */

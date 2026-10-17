@@ -1160,7 +1160,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         }
       : {}),
   });
-  const initialLook = parseLookParams(new URLSearchParams(location.search));
+  const { defaultFogginess } = requireDayCycle(hooks.engine.registry).weather;
+  const initialLook = parseLookParams(new URLSearchParams(location.search), defaultFogginess);
   look.restore(initialLook);
   // `?cam=` puts the player at a saved view instead of the spawn or a save's position (the body moves; saves
   // only ever record the body, never this URL). Mid-air the player falls, unless `freeze=1` or noclip holds
@@ -1194,7 +1195,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
-    const next = lookUrl(location.href, lookState(), look.weatheringState, hooks.engine.registry.weathering);
+    const next = lookUrl(location.href, lookState(), {
+      defaultFogginess,
+      weathering: look.weatheringState,
+      profiles: hooks.engine.registry.weathering,
+    });
     if (next !== location.href) {
       history.replaceState(history.state, '', next);
     }
@@ -1689,7 +1694,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       pitchRad: hooks.input.pitch,
       buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
-      url: camUrl(lookUrl(location.href, lookState()), {
+      url: camUrl(lookUrl(location.href, lookState(), { defaultFogginess }), {
         position: hooks.body.pos.map((v) => v * metres) as Vec3,
         yaw: hooks.input.yaw,
         pitch: hooks.input.pitch,
