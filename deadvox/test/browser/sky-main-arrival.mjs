@@ -30,17 +30,6 @@ export function mainOverlayPath(root, id) {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
-// Remove once d397 is merged and main's bench/run.ts no longer imports CLOCK_RATIO (issue #854). The branch moved the
-// ratio into the day-cycle content, so main's copy takes it from the day cycle it already reads.
-function withBranchClockRatio(relative, source) {
-  if (relative !== 'bench/run.ts' || !source.includes('CLOCK_RATIO')) {
-    return source;
-  }
-  return source
-    .replace('import { CLOCK_RATIO, hourOfDay', 'import { hourOfDay')
-    .replace('ratio: CLOCK_RATIO', 'ratio: dayCycle.clockRatio');
-}
-
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
@@ -116,7 +105,6 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
               '  globalThis.mainArrival.engineReadyRealMs=performance.now();\n  return {\n    ...worldSetup,',
             );
           }
-          source = withBranchClockRatio(relative, source);
           if (relative === 'game/streamer.ts') {
             source = source.replace(
               '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
