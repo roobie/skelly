@@ -8,6 +8,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { gameMinutes } from '../src/core/time.ts';
+import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const base = 'src/content/base';
 const itemSource = (file: string, ids: readonly string[]) => {
@@ -27,6 +28,7 @@ const recipes = JSON.parse(readFileSync(join(base, 'recipes.json'), 'utf8')) as 
   skills: { id: string; [key: string]: unknown }[];
 };
 const fixtureBuild = buildRegistry([
+  playerInventorySource(),
   itemSource('items-tools.json', ['kitchen_knife']),
   itemSource('items-other.json', ['portable_radio', 'scrap_metal']),
   { source: 'models-melee.json', data: JSON.parse(readFileSync(join(base, 'models-melee.json'), 'utf8')) as unknown },

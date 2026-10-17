@@ -8,6 +8,7 @@ import { ignitionTargetForHand, selectPrimaryAction } from '../src/game/primaryA
 import { Survival } from '../src/game/survival.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { playerInventorySource } from './fixtures/playerInventory.ts';
 import { Simulation } from './simulationFixture.ts';
 
 // A painkiller is one by its component, whatever its category.
@@ -86,6 +87,7 @@ const capabilities = [
   },
 ] as const;
 const { registry, issues } = buildRegistry([
+  playerInventorySource(),
   {
     source: '../content/base/sounds.json',
     data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,

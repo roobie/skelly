@@ -1233,7 +1233,7 @@ describe('content', () => {
 describe('content references', () => {
   it('uses the content container-width limit and requires a reason for wider pockets', () => {
     const content = {
-      inventory: [{ id: 'player', containerMaxWidthCells: 4 }],
+      inventory: [{ id: 'player', containerMaxWidthCells: 4, reachMetres: 2, chestHeightMetres: 1, useReachMetres: 2 }],
       items: [
         {
           id: 'fixture_at_limit',

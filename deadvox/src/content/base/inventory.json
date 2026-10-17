@@ -2,7 +2,10 @@
   "inventory": [
     {
       "id": "player",
-      "containerMaxWidthCells": 10
+      "containerMaxWidthCells": 10,
+      "reachMetres": 2,
+      "chestHeightMetres": 1,
+      "useReachMetres": 2
     }
   ]
 }

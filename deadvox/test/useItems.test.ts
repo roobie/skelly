@@ -11,6 +11,7 @@ import { bindReach } from '../src/core/reach.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
+import { playerInventorySource } from './fixtures/playerInventory.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
@@ -43,6 +44,7 @@ const pillOf = (id: string, category: string) => ({
   },
 });
 const painkillerFixture = buildRegistry([
+  playerInventorySource(),
   {
     source: 'painkiller-fixture',
     data: {
