@@ -488,7 +488,6 @@ const longAction = obj({
         obj({
           kind: enumeration(['rest', 'sleep']),
           furnitureUid: positiveInt,
-          label: str({ nonEmpty: true }),
           rate: finite,
           startFatigue: nonNegative,
           wakeAt: opt(finite),
