@@ -22,8 +22,12 @@ system-owned. Existing TypeScript tuning moves only through scoped follow-up wor
 `deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `deadvox/src/core/content.ts`,
 `buildRegistry`; see `docs/jsonnet.md` for the authoring rule.
 
-Runtime mod functions and their expression format remain undecided. A mod-facing rule may
-describe a consequence, but cannot mutate state outside the engine's validated boundary.
+The deeper runtime-function spike proceeds on restricted CEL. A maintained expression runtime
+supplies parsing, typing and evaluation without making a new language an engine maintenance
+obligation. Pure expressions fit snapshot inputs and validated effect descriptions; the deeper
+spike tests whether this remains useful for composed functions and mod-owned state. Adoption and
+the production profile remain open. A mod-facing rule may describe a consequence, but cannot
+mutate state outside the engine's validated boundary.
 
 ## Runtime design
 
@@ -37,18 +41,21 @@ continual rain; rules may read weather through an event such as `weather_changed
 contract open.
 
 The runtime-function format and its event, effect, composition and persistence contracts remain
-open in #313. The content extraction tracked by #393 does not settle that format. The isolated
-comparison in `deadvox/test/expressionSpike.test.ts` and `deadvox/test/expressionWasmCases.ts`,
-`wasmCases`, exercises recovery and an engine-bound panel effect. See
-`deadvox/src/spikes/expressions/contract.ts`, `Candidate`, and
-`deadvox/src/spikes/expressions/README.md`, "Published runtime boundary", for the boundary and the
-reason for stopped candidates. The measurement probes are `deadvox/tools/bench-expressions.mjs`
-and `deadvox/tools/probe-wasm-expressions.mjs`; browser timing uses
-`deadvox/src/spikes/expressions/benchmark.ts`, `benchmarkWasmExpressions`.
-This is evidence for a format proposal, not adoption: restricted language profiles do not establish
-the safety or cost of unrestricted runtimes, and scalar effects do not establish the wider event or
-composition contracts. Mind Over Matter's required scope remains open; each candidate needs that
-scope established before a stable format is chosen.
+open in #313. The content extraction tracked by #393 does not settle that format. See
+`deadvox/src/spikes/expressions/celMods.ts`, `ModHarness`, and
+`deadvox/test/celModsSpike.test.ts` for isolated CEL composition evidence; see
+`deadvox/src/spikes/expressions/README.md`, "CEL mod boundary", for why the engine must still own
+scheduling, state and effects. The scalar comparison remains in
+`deadvox/src/spikes/expressions/contract.ts`, `Candidate`. These are separate profiles, not a
+widening of the scalar contract. See `deadvox/tools/bench-expressions.mjs`, `measureModRules`, for
+Node probes, and `deadvox/src/spikes/expressions/README.md`, "Published runtime boundary", for the
+Wasm comparison's limits.
+
+Restricted profiles do not establish the safety or cost of unrestricted runtimes. Representative
+engine contracts exercise a MoM-shaped rule layer, not a port of its world mechanics. Target
+fidelity, triggers, randomness, effect vocabulary, mod state, composition, effect combining, field
+patches, UI, core tuning and save mismatch policy remain open. No harness policy adopts any of
+those choices for the game.
 
 ## When
 

@@ -1,0 +1,109 @@
+[
+  {
+    "dependencies": [],
+    "functions": [
+      {
+        "expression": "add(2.0, add(level, divide(drain, 10.0)))",
+        "name": "cost",
+        "params": ["level", "drain"]
+      },
+      {
+        "expression": "clamp(mul(add(intellect, level), add(1.0, divide(drain, 100.0))), 0.0, 100.0)",
+        "name": "strength",
+        "params": ["intellect", "level", "drain"]
+      }
+    ],
+    "id": "mom",
+    "rules": [
+      {
+        "effects": "[spend(mom_cost(level, state[\"mom:uses\"])), roll < 0.8 ? damage(mom_strength(intellect, level, state[\"mom:uses\"])) : overload(1.0), change(\"mom:uses\", min(1.0, sub(100.0, state[\"mom:uses\"])))]",
+        "event": "cast",
+        "id": "mom:power",
+        "when": "flags.exists(flag, flag == \"focused\") && target[\"distance\"] < 10.0"
+      }
+    ],
+    "state": [
+      {
+        "bands": [10],
+        "initial": 0,
+        "key": "mom:uses",
+        "max": 100,
+        "min": 0
+      }
+    ]
+  },
+  {
+    "dependencies": ["mom"],
+    "functions": [],
+    "id": "attune",
+    "rules": [
+      {
+        "effects": "[change(\"attune:drain\", min(7.0, sub(100.0, state[\"attune:drain\"])))]",
+        "event": "cast",
+        "id": "attune:gain",
+        "onTrue": "attune:consequence",
+        "when": "true"
+      },
+      {
+        "effects": "weighted(roll, [1.0, rank(state[\"attune:drain\"], [10.0, 20.0, 30.0]) > 1.0 ? 3.0 : 0.0], [overload(1.0), damage(rank(state[\"attune:drain\"], [10.0, 20.0, 30.0]))])",
+        "id": "attune:consequence",
+        "onFalse": "attune:quiet",
+        "when": "rank(state[\"attune:drain\"], [10.0, 20.0, 30.0]) > 0.0"
+      },
+      {
+        "effects": "[overload(0.0)]",
+        "id": "attune:quiet",
+        "when": "true"
+      },
+      {
+        "effects": "[change(\"attune:drain\", sub(max(0.0, sub(state[\"attune:drain\"], 2.0)), state[\"attune:drain\"]))]",
+        "event": "decay",
+        "id": "attune:decay",
+        "when": "true"
+      },
+      {
+        "effects": "[spend(mom_cost(level, state[\"attune:drain\"])), damage(mom_strength(intellect, level, state[\"attune:drain\"]))]",
+        "event": "cast",
+        "id": "attune:power",
+        "when": "true"
+      }
+    ],
+    "state": [
+      {
+        "bands": [10, 20, 30],
+        "initial": 0,
+        "key": "attune:drain",
+        "max": 100,
+        "min": 0
+      }
+    ]
+  },
+  {
+    "dependencies": ["mom"],
+    "functions": [
+      {
+        "expression": "max(0.0, sub(add(level, divide(drain, 10.0)), 1.0))",
+        "name": "cost",
+        "params": ["level", "drain"],
+        "replaces": "mom_cost"
+      },
+      {
+        "expression": "divide(mom_strength(intellect, level, drain), 2.0)",
+        "name": "echo",
+        "params": ["intellect", "level", "drain"]
+      }
+    ],
+    "id": "resonance",
+    "optional": ["attune"],
+    "requires": "attune",
+    "rules": [
+      {
+        "effects": "[damage(resonance_echo(intellect, level, state[\"attune:drain\"]))]",
+        "event": "cast",
+        "id": "resonance:echo",
+        "when": "true"
+      }
+    ],
+    "state": []
+  }
+]
