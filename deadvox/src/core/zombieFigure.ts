@@ -51,13 +51,13 @@ export const humanoidMouthOrigin = (model: string, seed: number, facing: Vec3): 
   return turnedTo(facing, jaw.center);
 };
 
-const sacCentres = new WeakMap<object, readonly [number, number, number]>();
+const sacCentres = new WeakMap<object, readonly [number, number, number] | null>();
 
 /** The centre of the acid the chest owns, which is the sac: drool and veins belong to other bones or flesh. */
-const sacCentre = (model: string, seed: number): readonly [number, number, number] => {
+const sacCentre = (model: string, seed: number): readonly [number, number, number] | null => {
   const figure = humanoidFigure(model, seed);
   const known = sacCentres.get(figure);
-  if (known) {
+  if (known !== undefined) {
     return known;
   }
   const { voxels, body } = figure.realized;
@@ -78,14 +78,19 @@ const sacCentre = (model: string, seed: number): readonly [number, number, numbe
       }
     }
   }
-  if (count === 0) {
-    throw new Error(`Zombie figure ${model} seed ${seed} has no acid sac`);
-  }
-  const centre = [sum[0]! / count, sum[1]! / count, sum[2]! / count] as const;
+  const centre = count === 0 ? null : ([sum[0]! / count, sum[1]! / count, sum[2]! / count] as const);
   sacCentres.set(figure, centre);
   return centre;
 };
 
+/** Whether a humanoid figure grows the chest-owned acid that `acidEffects` drips and bursts from. */
+export const humanoidHasAcidSac = (model: string, seed: number): boolean => sacCentre(model, seed) !== null;
+
 /** Where a humanoid's acid sac is, in metres from its ground origin, at rest pose turned to `facing`. */
-export const humanoidSacOrigin = (model: string, seed: number, facing: Vec3): Vec3 =>
-  turnedTo(facing, sacCentre(model, seed));
+export const humanoidSacOrigin = (model: string, seed: number, facing: Vec3): Vec3 => {
+  const centre = sacCentre(model, seed);
+  if (!centre) {
+    throw new Error(`Zombie figure ${model} seed ${seed} has no acid sac`);
+  }
+  return turnedTo(facing, centre);
+};

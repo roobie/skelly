@@ -2363,10 +2363,6 @@ const SECTION_DESCRIPTOR = {
           (types) => types.every((zombie) => zombie.model !== 'amalgam' || zombie.acidSpit === undefined),
           'an amalgam has no jaw to spit acid from',
         ),
-        check(
-          (types) => types.every((zombie) => zombie.model === 'acid' || zombie.acidEffects === undefined),
-          'only the acid model grows the sac that acidEffects drips and bursts from',
-        ),
       ),
     ),
     label: 'zombie types',
