@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { build } from 'vite';
 import { cel } from '../src/spikes/expressions/cel.ts';
+import { compileModExpression, ModHarness, modProfile, modVariables } from '../src/spikes/expressions/celMods.ts';
 import { panelSchema, sleepSchema } from '../src/spikes/expressions/contract.ts';
 import { small } from '../src/spikes/expressions/small.ts';
 
@@ -40,7 +41,7 @@ const repetitions = 100_000;
 const median = (samples) => [...samples].sort((a, b) => a - b)[Math.floor(samples.length / 2)];
 const candidates = [small, cel];
 async function measureBundles() {
-  const entries = ['small', 'cel', 'starlark', 'luau'];
+  const entries = process.argv.includes('--mods') ? ['cel', 'celMods'] : ['small', 'cel', 'starlark', 'luau'];
   const bundles = await Promise.all(
     entries.map((entry) =>
       build({
@@ -75,8 +76,71 @@ async function measureBundles() {
   });
 }
 
+function measureModRules() {
+  const mods = JSON.parse(readFileSync(new URL('../test/fixtures/mods/cel-mod-spike.json', import.meta.url), 'utf8'));
+  const harness = new ModHarness(mods);
+  const states = new Set(harness.declarations.keys());
+  const input = {
+    intellect: 12,
+    level: 3,
+    flags: ['focused'],
+    target: new Map([['distance', 2]]),
+    state: new Map([...states].map((key) => [key, harness.state(key)])),
+    roll: 0.5,
+  };
+  const measurements = [];
+  for (const [id, rule] of harness.rules) {
+    const load = () => [
+      compileModExpression(rule.def.when, {
+        schema: modVariables,
+        result: 'bool',
+        functions: harness.functions,
+        states,
+      }),
+      compileModExpression(rule.def.effects, {
+        schema: modVariables,
+        result: 'list<Effect>',
+        functions: harness.functions,
+        states,
+      }),
+    ];
+    const start = performance.now();
+    for (let i = 0; i < 100; i++) {
+      load();
+    }
+    const loadUs = ((performance.now() - start) * 1000) / 100;
+    const [when, effects] = load();
+    const evaluate = () => [when.run(input), effects.run(input)];
+    for (let i = 0; i < 10_000; i++) {
+      evaluate();
+    }
+    const expected = JSON.stringify(evaluate());
+    const samples = [];
+    for (let sample = 0; sample < 5; sample++) {
+      const begin = performance.now();
+      for (let i = 0; i < repetitions; i++) {
+        evaluate();
+      }
+      samples.push(((performance.now() - begin) * 1000) / repetitions);
+    }
+    if (JSON.stringify(evaluate()) !== expected) {
+      throw new Error('Mod benchmark result mismatch');
+    }
+    measurements.push({
+      rule: id,
+      loadUs,
+      evalMedianUs: median(samples),
+      evalSamplesUs: samples,
+      reservedCost: when.cost + effects.cost,
+    });
+  }
+  console.log(JSON.stringify({ candidate: modProfile, node: process.version, repetitions, measurements }));
+}
+
 if (process.argv.includes('--bundles')) {
   console.log(JSON.stringify(await measureBundles()));
+} else if (process.argv.includes('--mods')) {
+  measureModRules();
 } else {
   const bundles = await Promise.all(
     candidates.map((candidate) =>

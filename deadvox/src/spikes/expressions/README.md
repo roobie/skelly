@@ -2,6 +2,7 @@
 read_if:
   - you're evaluating expression runtimes or extending the isolated Wasm spike
   - you're interpreting the expression benchmark or its safety claims
+  - you're evaluating CEL for MoM-shaped mod logic or its engine contracts
 ---
 
 # Expression runtime evidence
@@ -35,6 +36,78 @@ boundary; see `contract.ts`, `serializeIdentity`. Retaining original source avoi
 unavailable language canonicalizer. Changes to bindings, numeric conversion or the profile require
 an identity change; hashing source alone cannot capture those semantic changes.
 
+## CEL mod boundary
+
+The mod profile is separate from the scalar `contract.ts`, `Candidate`: otherwise collection and
+composition evidence would silently change the scalar comparison. See `celMods.ts`,
+`compileModExpression` and `ModHarness`, and `../../../test/celModsSpike.test.ts`. Authored
+mini-mods live in `../../../test/fixtures/mods/cel-mod-spike.jsonnet`; nothing in the shipped game
+imports the harness. The dummy engine applies counter changes and accumulates effects on one
+engine-bound actor ledger, not a world simulation. World verbs remain engine work.
+
+CEL supplies the parser, AST locations, typed function signatures, list/map evaluation and
+all/exists macros. The harness supplies visibility, function-body compilation and replacement,
+event ordering, effect validation, seeded draws, counter ownership and save validation. This keeps
+language implementation in the package rather than rebuilding an evaluator in the engine. Named
+functions cannot capture mutable game state: callers pass numeric snapshots explicitly.
+
+Native double arithmetic can silently produce infinity even inside a predicate. The mod profile
+therefore admits arithmetic through typed, finite-checking functions rather than native arithmetic
+operators. The package refuses replacement of its built-in numeric operator overloads; wrapping a
+final result alone would miss invalid intermediate values. See `celMods.ts`, `maths`, and
+`../../../test/celModsSpike.test.ts` for the executable hazard probe. This is a profile restriction,
+not a claim that CEL lacks arithmetic. It trades familiar operator syntax for a small checked
+host-function boundary; choosing operator syntax would require numeric range analysis or evaluator
+instrumentation before claiming the same error contract.
+
+Termination relies on rejecting recursion, dynamic dispatch, unbounded collections and nested
+macros, not on an unavailable interpreter instruction counter. Bounded all/exists over literal or
+validated input lists remain useful without permitting arbitrary comprehensions. The structural
+reservation includes reachable function bodies, worst-case macro traversal and bounded aggregate
+comparisons. The tick spends that reservation before evaluation, across event roots and chained
+branches. It is conservative work accounting, not a millisecond deadline or a CEL-native fuel
+meter. Host callbacks must remain synchronous and bounded; widening callbacks or macros requires
+revisiting that proof. Runtime input size validation is part of the proof, not optional hygiene.
+
+Each rule reads a fresh snapshot after preceding effects; failure discards the whole tick's ledger,
+counters and random draws. This representative transaction prevents partial effects after a budget
+or arithmetic failure. It is not a production engine transaction design. The fixture's decay event
+stands in for an engine game-time timer: no scheduler, NPC lifecycle, continuous modifier system or
+re-entrant event emission is proved. Those contracts belong to #313.
+
+## Exercised, not chosen
+
+These representatives keep open choices visible rather than letting a test harness settle them.
+The alternatives below change the engine envelope or the admitted CEL environment, not CEL's
+ability to evaluate a pure expression.
+
+- **Target fidelity:** rule-layer fidelity is exercised, not chosen. A close MoM port or same-kind world mod
+  requires additional engine verbs and content kinds; the actor ledger proves neither.
+- **Triggers:** engine-emitted typed events are exercised, not chosen. Timers require engine scheduling
+  and cancellation; continuous conditions require modifier hooks. CEL can consume their snapshots.
+- **Randomness:** a seeded engine draw supplied as an input, including weighted selection, is exercised,
+  not chosen. Engine-only randomness would remove the draw input; weighted-only randomness would
+  narrow the callable surface and disallow direct roll predicates.
+- **Effect vocabulary:** a fixed typed engine effect vocabulary is exercised, not chosen. Mod-defined effects or
+  engine extensions need registration and validation outside CEL before their constructors exist.
+- **Mod state:** bounded namespaced counters are exercised, not chosen. Engine-only state would remove
+  mod declarations; arbitrary records need richer schemas, size bounds and save validation. Flags,
+  enums and per-character progression are not proved by a numeric counter.
+- **Composition:** hard dependencies with named function calls/replacement and an optional gated interaction
+  pack are exercised, not chosen. Independent mods would prohibit cross-references; hard-only
+  composition would remove optional gating. Rule references are engine-envelope links, not CEL calls.
+- **Effect combining:** dependency order then lexical rule order, sequential effects and tick rollback are
+  exercised, not chosen. Priorities or conflict rejection change harness validation and dispatch,
+  not CEL. A later rule sees earlier state changes, including changes from a chained rule.
+- **Field patches:** field-patch policy is not exercised or chosen. Jsonnet can patch definitions before CEL
+  sees them; whole replacement or load-time patching still belongs to the content loader.
+- **UI:** UI policy is not exercised or chosen. Read-only declarations or custom panels require
+  renderer contracts; they do not follow from collection evaluation.
+- **Core tuning:** core-tuning policy is not exercised or chosen. Replacement or modifier hooks need engine
+  authorization and identity; exposing more numeric inputs alone does not authorize writes.
+- **Save mismatch:** strict mod-identity/state rejection is exercised, not chosen. Dropping unknown state or
+  migrations would change restore semantics outside CEL; no save migration is implied.
+
 ## Reading measurements
 
 See `../../../tools/bench-expressions.mjs`, `measureBundles`, for deployable output sizes including
@@ -48,7 +121,11 @@ See `benchmark.ts`, `benchmarkWasmExpressions`, for the browser comparison, and
 marshalling and the asynchronous binding boundary even for synchronous baselines. Initialization
 and retained-rule evaluation must not be conflated. A repeated-load mean excludes first-use runtime
 initialization. Node microbenchmarks remain probes, not browser or whole-simulation frame-budget
-guarantees. Browser microbenchmarks are not whole-simulation guarantees either.
+guarantees. For CEL mod rules, `../../../tools/bench-expressions.mjs`, `measureModRules`, measures
+load-time parse/profile/typecheck with functions already registered, then unconditional predicate
+and effect evaluation on fixed snapshots. It excludes harness construction, effect application,
+state copying and scheduling. The `--mods --bundles` mode compares deployable scalar CEL and mod
+profile entries so wrapper growth is not mistaken for additional CEL package code. Browser microbenchmarks are not whole-simulation guarantees either.
 
 See `../../../test/expressionWasmCases.ts`, `wasmCases`, for behaviour checks shared between Node
 and browser probes. Float equality across engines is bounded fixture evidence, not proof of all

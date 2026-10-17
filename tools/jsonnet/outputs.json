@@ -201,6 +201,10 @@
       "output": "deadvox/test/fixtures/mods/browser-mod.json"
     },
     {
+      "source": "deadvox/test/fixtures/mods/cel-mod-spike.jsonnet",
+      "output": "deadvox/test/fixtures/mods/cel-mod-spike.json"
+    },
+    {
       "source": "deadvox/test/fixtures/mods/expression-spike.jsonnet",
       "output": "deadvox/test/fixtures/mods/expression-spike.json"
     },
