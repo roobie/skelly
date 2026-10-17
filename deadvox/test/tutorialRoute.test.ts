@@ -3,7 +3,7 @@ import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { sitePalette } from '../src/core/sitePalette.ts';
+import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -18,6 +18,7 @@ it('the authored escape path can be walked with the ordinary threat active and n
   const entities = new BlockEntities(registry);
   const terrain = {
     seed: config.seed,
+    shape: terrainShapeOf(registry),
     scale: config.scale,
     surface: site.surface,
     blocks: sitePalette(registry).terrain,

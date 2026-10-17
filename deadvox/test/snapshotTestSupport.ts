@@ -15,6 +15,7 @@ import {
 import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { BodyTuningDef } from '../src/core/schema.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import type { MoveIntent } from '../src/game/player.ts';
@@ -58,6 +59,7 @@ for (let cz = toChunk(fixtureHamlet.bounds.z0); cz <= toChunk(fixtureHamlet.boun
 }
 const fixtureTerrain: Terrain = {
   seed,
+  shape: terrainShapeOf(registry),
   blocks: { grass: blockId('grass'), dirt: blockId('dirt'), rock: blockId('stone'), sand: blockId('sand') },
   scale,
   surface: fixtureHamlet.surface,

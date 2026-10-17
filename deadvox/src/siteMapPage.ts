@@ -3,7 +3,7 @@ import type { Chunk } from './core/chunk.ts';
 import { blockColors } from './core/content.ts';
 import { CHUNK, compassBearing, toChunk, toLocal } from './core/coords.ts';
 import { BLOCK_SIZE } from './core/scale.ts';
-import { sitePalette } from './core/sitePalette.ts';
+import { sitePalette, terrainShapeOf } from './core/sitePalette.ts';
 import { generateColumn, worldGroundAt } from './core/worldgen.ts';
 import { buildBundledContent } from './game/bundledContent.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
@@ -71,6 +71,7 @@ const terrain = {
   seed,
   scale,
   blocks: sitePalette(registry).terrain,
+  shape: terrainShapeOf(registry),
   surface: site?.surface,
   ...(site ? { stamp: (chunk: Chunk) => site.stamp(chunk) } : {}),
 };
@@ -191,7 +192,14 @@ const sampleGround = async () => {
       const { z: zm } = siteMapRasterToWorld(0, row + 0.5, mapGrid);
       for (let column = 0; column < width; column += 1) {
         const { x: xm } = siteMapRasterToWorld(column + 0.5, row + 0.5, mapGrid);
-        heights[column + row * width] = worldGroundAt({ seed, scale, surface: site?.surface, xm, zm });
+        heights[column + row * width] = worldGroundAt({
+          seed,
+          shape: terrain.shape,
+          scale,
+          surface: site?.surface,
+          xm,
+          zm,
+        });
       }
     },
     (rows) => {
