@@ -22,10 +22,10 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
-import { requireDayCycle } from '../core/content.ts';
 import { skyAt } from '../core/sky.ts';
 import { FIGURE_BOXES } from '../core/zombieRegions.ts';
 import { buildBundledContent } from '../game/bundledContent.ts';
@@ -728,7 +728,10 @@ renderer.setSize(stage.clientWidth, stage.clientHeight);
 const sunlight = new DirectionalLight();
 const ambient = new HemisphereLight();
 scene.add(sunlight, sunlight.target, ambient);
-applySky({ scene, light: sunlight, ambient, camera, radiusM: 96 }, skyAt(12, requireDayCycle(buildBundledContent().registry)));
+applySky(
+  { scene, light: sunlight, ambient, camera, radiusM: 96 },
+  skyAt(12, requireDayCycle(buildBundledContent().registry)),
+);
 sunlight.position.normalize().multiplyScalar(20);
 sunlight.castShadow = true;
 sunlight.shadow.mapSize.set(2048, 2048);

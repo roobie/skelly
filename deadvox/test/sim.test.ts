@@ -3,7 +3,6 @@ import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json'
 import { BODY_REGIONS } from '../src/core/body.ts';
 import {
   calendarAt,
-  defaultClock,
   nextTimeOfDay,
   parseTimeOfDay,
   SECONDS_PER_DAY,
@@ -11,12 +10,13 @@ import {
   skipTarget,
 } from '../src/core/clock.ts';
 import { SKIP_COMPRESSION } from '../src/core/compression.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { awakeRates } from '../src/core/needs.ts';
 import { SCHEDULER_TIME_EPSILON } from '../src/core/scheduler.ts';
 import type { BodyTuningDef, TreatmentDef } from '../src/core/schema.ts';
 import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
+import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
@@ -41,7 +41,7 @@ const treatmentHooks = (sim: Simulation): NonNullable<Simulation['actions']['tre
   finish: (region, _itemUid, itemType) =>
     sim.body.treat(region, TREATMENTS[itemType]!, () => 0.5) ? true : 'Treatment no longer applies',
 });
-const HOUR = simSecondsPerHour(defaultClock);
+const HOUR = simSecondsPerHour(BASE_CLOCK);
 
 /** Runs 60 fps frames until the simulation reaches `until`. Returns the real seconds taken. */
 const runUntil = (sim: Simulation, until: number): number => {
@@ -58,12 +58,12 @@ const runUntil = (sim: Simulation, until: number): number => {
 
 describe('clock', () => {
   it("starts at the day cycle's default start in daylight and advances the calendar at the clock ratio", () => {
-    const start = calendarAt(defaultClock, 0);
+    const start = calendarAt(BASE_CLOCK, 0);
     expect(start).toBe(parseTimeOfDay(coreDayCycle.dayCycle.defaultStartGameTimeOfDay));
-    const phase = dayPhaseAt(DEFAULT_DAY_CYCLE, start);
+    const phase = dayPhaseAt(BASE_DAY_CYCLE, start);
     expect(phase.phase).toBe('day');
     expect(phase.sunset).toBeGreaterThan(start);
-    expect(calendarAt(defaultClock, HOUR) - start).toBe(3600);
+    expect(calendarAt(BASE_CLOCK, HOUR) - start).toBe(3600);
   });
 
   it('parses a time of day', () => {
@@ -338,8 +338,8 @@ describe('Simulation', () => {
     expect(realPlain).toBeCloseTo(HOUR, 0);
     expect(realFast).toBeLessThan(HOUR / 10);
     expect(fast.time).toBeCloseTo(plain.time, 9);
-    expect(fast.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * fast.time, 6);
-    expect(plain.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * plain.time, 6);
+    expect(fast.calendar - calendarAt(BASE_CLOCK, 0)).toBeCloseTo(BASE_CLOCK.ratio * fast.time, 6);
+    expect(plain.calendar - calendarAt(BASE_CLOCK, 0)).toBeCloseTo(BASE_CLOCK.ratio * plain.time, 6);
     // Needs lag by at most one grown step: 30 s, 4 game minutes.
     const rates = awakeRates(plain.body);
     const tolerance = (Math.max(...Object.values(rates).map(Math.abs)) * 4) / 60;
@@ -454,8 +454,8 @@ describe('Simulation', () => {
 
   describe('debug time skip', () => {
     it('computes the target as game hours of simulation seconds after now', () => {
-      expect(skipTarget(defaultClock, 0, 1)).toBe(HOUR);
-      expect(skipTarget(defaultClock, 100, 23)).toBe(100 + 23 * HOUR);
+      expect(skipTarget(BASE_CLOCK, 0, 1)).toBe(HOUR);
+      expect(skipTarget(BASE_CLOCK, 100, 23)).toBe(100 + 23 * HOUR);
       expect(skipTarget({ ratio: 4, start: 0 }, 10, 2)).toBe(10 + 2 * 900);
     });
 

@@ -5,10 +5,10 @@
 // the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
-import { requireDayCycle } from '../core/content.ts';
 import { skyAt } from '../core/sky.ts';
 import { footprint } from '../core/templates.ts';
 import { ChunkMeshes } from '../render/chunks.ts';

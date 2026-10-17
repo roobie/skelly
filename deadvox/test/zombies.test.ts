@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';
 import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
@@ -48,6 +48,7 @@ import {
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -59,7 +60,7 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
-const DAY_CYCLE = dayCycleFor(registry.dayCycle);
+const DAY_CYCLE = requireDayCycle(registry);
 const DUSK = resolveSpawnTime(registry.dayCycle!, 'dusk');
 const dayStateAtHour = (hour: number) => dayPhaseAt(DAY_CYCLE, hour * 3600);
 const SHAMBLER = registry.zombies.get('shambler')!;
@@ -659,10 +660,10 @@ describe('shambler perception', () => {
 
     const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
     const daylightSky = (position: Vec3, hour: number) =>
-      sunExposedAt({ position, gameHours: hour, skyTop: 20, isOpaque: wallShadow });
+      sunExposedAt({ position, gameHours: hour, cycle: DAY_CYCLE, skyTop: 20, isOpaque: wallShadow });
     const sunlitSample: Vec3 = [0.5, 1.15, 0.5];
     expect(
-      raycast([sunlitSample[0], sunlitSample[1] + 1e-4, sunlitSample[2]], sunDirection(12), 20, wallShadow),
+      raycast([sunlitSample[0], sunlitSample[1] + 1e-4, sunlitSample[2]], sunDirection(12, DAY_CYCLE), 20, wallShadow),
     ).toBeDefined();
     expect(daylightSky(sunlitSample, 12)).toBe(true);
 
@@ -2041,6 +2042,7 @@ describe('shambler scenarios', () => {
         seed: 9,
         bodyTuning: registry.body.get('player')!,
         compressionCaps: registry.compression.get('player')!.caps,
+        clock: BASE_CLOCK,
       });
       sim.godMode = godMode;
       let hits = 0;

@@ -1,16 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
-import { defaultClock, SECONDS_PER_HOUR, simSecondsPerHour } from '../src/core/clock.ts';
+import { SECONDS_PER_HOUR, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
 import { canSprint, consume, type Needs, stepNeeds, stepStamina } from '../src/core/needs.ts';
 import { gameHours, gameSeconds } from '../src/core/time.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
-const HOUR = simSecondsPerHour(defaultClock); // 450 simulation seconds
+const HOUR = simSecondsPerHour(BASE_CLOCK); // 450 simulation seconds
 const fixtureBody = new Body(BODY_TUNING_FIXTURE);
 const SPAWN_NEEDS: Needs = fixtureBody.spawnNeeds;
 const STAMINA = fixtureBody.staminaRules;
@@ -196,7 +197,7 @@ describe('flashlight', () => {
     expect([caught.on, live.on]).toEqual([true, true]);
     expect(drainLight(registry, caught, gameHours(3))).toBeUndefined();
     for (let i = 0; i < 3 * HOUR; i++) {
-      drainLight(registry, live, gameSeconds(defaultClock.ratio));
+      drainLight(registry, live, gameSeconds(BASE_CLOCK.ratio));
     }
     expect(chargeOf(registry, caught)).toBeCloseTo(0.25, 9);
     expect(chargeOf(registry, live)).toBeCloseTo(0.25, 6);

@@ -198,8 +198,7 @@ const lookAt = (state: DayPhaseState, time: number): Look => {
 };
 
 /** Sun direction from the single latitude/date model, with east/up/north axes. */
-export const sunDirection = (hour: number, cycle: DayCycle): Vec3 =>
-  dayPhaseAt(cycle, hour * 3600).sunDirection;
+export const sunDirection = (hour: number, cycle: DayCycle): Vec3 => dayPhaseAt(cycle, hour * 3600).sunDirection;
 
 /** Lowest elevation of the main light, so it never grazes the ground at sunrise and sunset. */
 const MIN_LIGHT_Y = 0.2;

@@ -30,19 +30,48 @@ export function mainOverlayPath(root, id) {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
-// Remove once d387 is merged and main's config.ts no longer imports SPAWN_TIME; it only applies while it does.
-// The measurement needs a start time, not the weathering site's noon, so both fall back to the default clock.
-function withoutSpawnTimeImport(relative, source) {
-  if (relative !== 'game/config.ts' || !source.includes('SPAWN_TIME')) {
+const REQUIRE_DAY_CYCLE_IMPORT = "import { requireDayCycle } from '../core/content.ts';\n";
+
+// Remove once d389 is merged and main's sources no longer use DAY_SKY, dayCycleFor or DEFAULT_DAY_CYCLE;
+// each rewrite only applies while its marker is in main's source. The branch removed those code defaults,
+// so main's copies take the day cycle from the registry the way the branch does.
+const DAY_CYCLE_REWRITES = {
+  'game/engine.ts': {
+    marker: 'DAY_SKY',
+    edits: [
+      [
+        "import { DAY_SKY } from '../core/sky.ts';",
+        `${REQUIRE_DAY_CYCLE_IMPORT}import { skyAt } from '../core/sky.ts';`,
+      ],
+      ['applySky(sky, DAY_SKY);', 'applySky(sky, skyAt(12, requireDayCycle(config.content.registry)));'],
+    ],
+  },
+  'render/playView.ts': {
+    marker: 'dayCycleFor',
+    edits: [
+      ["import { dayCycleFor } from '../core/dayPhase.ts';\n", REQUIRE_DAY_CYCLE_IMPORT],
+      ['dayCycleFor(registry.dayCycle)', 'requireDayCycle(registry)'],
+    ],
+  },
+  'bench/run.ts': {
+    marker: 'DEFAULT_DAY_CYCLE',
+    edits: [
+      [
+        "import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';",
+        `${REQUIRE_DAY_CYCLE_IMPORT}import { dayPhaseAt } from '../core/dayPhase.ts';`,
+      ],
+      ['skyAt(hour)', 'skyAt(hour, requireDayCycle(engine.registry))'],
+      ['dayPhaseAt(DEFAULT_DAY_CYCLE, startTime)', 'dayPhaseAt(requireDayCycle(engine.registry), startTime)'],
+    ],
+  },
+};
+
+function withBranchDayCycle(relative, source) {
+  const rewrite = DAY_CYCLE_REWRITES[relative];
+  if (!(rewrite && source.includes(rewrite.marker))) {
     return source;
   }
-  return source
-    .replace(
-      "import { parseTimeOfDay, SPAWN_TIME, SPAWN_TIMES } from '../core/clock.ts';",
-      "import { defaultClock, parseTimeOfDay } from '../core/clock.ts';",
-    )
-    .replaceAll('SPAWN_TIMES.noon', 'defaultClock.start')
-    .replaceAll(/\bSPAWN_TIME\b/g, 'defaultClock.start');
+  return rewrite.edits.reduce((text, [from, to]) => text.replaceAll(from, to), source);
 }
 
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
@@ -129,7 +158,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
               )
               .replace('weapon: FISTS_MELEE,', 'weapon: unarmedMeleeWeapon(registry.meleeClasses),');
           }
-          source = withoutSpawnTimeImport(relative, source);
+          source = withBranchDayCycle(relative, source);
           if (relative === 'game/streamer.ts') {
             source = source.replace(
               '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',

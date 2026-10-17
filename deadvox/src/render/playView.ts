@@ -3,9 +3,9 @@
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
+import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { requireDayCycle } from '../core/content.ts';
 import type { EntityStore } from '../core/entities.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
