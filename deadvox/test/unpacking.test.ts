@@ -5,10 +5,10 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { options, toHands } from '../src/core/options.ts';
 import { reach } from '../src/core/reach.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const sources = readdirSync('src/content/base')
@@ -115,7 +115,10 @@ describe('sealed ammunition package activation', () => {
 
   it('inventory options never expose an enabled Use, Load or Unpack operation even when the box is held', () => {
     const f = fixture();
-    const choices = options(f.box, reach({ inventory: f.inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK }));
+    const choices = options(
+      f.box,
+      reach({ inventory: f.inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK }),
+    );
     expect(choices.filter((choice) => choice.kind === 'use' && choice.plan.ok)).toEqual([]);
   });
 

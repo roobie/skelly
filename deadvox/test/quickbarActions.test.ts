@@ -6,10 +6,10 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bestPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Survival } from '../src/game/survival.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
 

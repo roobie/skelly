@@ -9,12 +9,12 @@ import { craftActionHooks } from '../src/core/craftWork.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { craftingActivityTier } from '../src/core/skillTraining.ts';
 import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 

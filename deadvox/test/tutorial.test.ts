@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { startupContent } from './baseRegistry.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 const BUNDLED_CONTENT = startupContent();
 

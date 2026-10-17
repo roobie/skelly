@@ -10,7 +10,6 @@ import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
   BindingRegistry,
@@ -30,6 +29,7 @@ import {
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 

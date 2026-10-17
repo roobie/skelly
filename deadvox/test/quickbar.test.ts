@@ -6,10 +6,10 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { chargeOf } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import { applyReplayActionPayload, type ReplayCommandOwners } from '../src/game/replayCommands.ts';
 import { Survival } from '../src/game/survival.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const BASE = 'src/content/base';

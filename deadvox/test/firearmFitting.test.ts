@@ -10,9 +10,9 @@ import { Inventory } from '../src/core/inventory.ts';
 import { defOf, type Item } from '../src/core/items.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 type Pair = NonNullable<ModelDef['compatibilityPairs']>[number];
 type Choice = Pair[number];

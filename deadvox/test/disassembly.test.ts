@@ -6,9 +6,9 @@ import { buildRegistry } from '../src/core/content.ts';
 import { disassemblyOutputs, planDisassembly } from '../src/core/disassembly.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { gameMinutes } from '../src/core/time.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const base = 'src/content/base';

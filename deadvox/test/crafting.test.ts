@@ -7,8 +7,8 @@ import { buildRegistry, type RecipeDef, type Registry } from '../src/core/conten
 import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 const inputs = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json'))
@@ -136,7 +136,12 @@ describe('pure craft planner', () => {
     const recipeWithStation = { ...recipe([[{ item: 'rag', count: 1 }]]), workstation: 'fixture_station' };
     const near = stock([{ type: 'rag' }], definitions);
     near.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
-    const nearReach = bindReach({ inventory: near.inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
+    const nearReach = bindReach({
+      inventory: near.inventory,
+      position: [0, 0, 0],
+      blockSize: 0.5,
+      clock: BASE_CLOCK,
+    })();
     expect(planCraft(recipeWithStation, nearReach, character)).toMatchObject({ plan: { recipe: 'fixture' } });
 
     const far = stock([{ type: 'rag' }], definitions);
