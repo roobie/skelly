@@ -13,10 +13,11 @@ import { compileTemplate, footprint, type Placement, placedBlockAt } from '../sr
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { FISTS_MELEE, type Zombie } from '../src/core/zombies.ts';
+import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { type MoveIntent, PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
 const { registry, issues } = buildRegistry(

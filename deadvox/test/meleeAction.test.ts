@@ -11,7 +11,7 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { FISTS_MELEE, type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
+import { type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import {
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,
@@ -21,6 +21,7 @@ import {
 } from '../src/game/melee.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 

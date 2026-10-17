@@ -42,6 +42,14 @@ local meleeClasses = [
   { id: 'blunt', damageVariance: 0.05, headDamageMultiplier: 1.7, limbDamageMultiplier: 1, speedMultiplier: 0.85 },
   { id: 'cut', damageVariance: 0.18, headDamageMultiplier: 1, limbDamageMultiplier: 2.5, speedMultiplier: 1 },
   { id: 'pierce', damageVariance: 0.4, headDamageMultiplier: 1, limbDamageMultiplier: 1, speedMultiplier: 1.15 },
+  {
+    id: 'fists',
+    damageVariance: 0,
+    headDamageMultiplier: 1,
+    limbDamageMultiplier: 1,
+    speedMultiplier: 1,
+    unarmed: { damage: 8, reach: 0.1, cooldownSimSeconds: 0.8, stamina: 4, impulse: 4, contactFraction: 0.4, windupCapSimSeconds: 0.25 },
+  },
 ];
 
 local items = [

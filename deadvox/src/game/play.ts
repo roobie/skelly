@@ -40,7 +40,7 @@ import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
-import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
+import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
@@ -146,6 +146,7 @@ import {
   shouldBlockFromEnGarde,
   shouldEnterMeleeReady,
   startPlayerMelee,
+  unarmedMeleeWeapon,
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
@@ -2735,7 +2736,7 @@ export const startPlay = (
       }
     }
     return {
-      weapon: FISTS_MELEE,
+      weapon: unarmedMeleeWeapon(registry.meleeClasses),
       profile: 'fists',
       ...(preferredHand === undefined ? {} : { hand: preferredHand }),
       twoHanded: false,
@@ -2749,8 +2750,8 @@ export const startPlay = (
       return;
     }
     const selected = meleeSelection(preferredHand);
-    const classTuning = selected.profile === 'fists' ? undefined : registry.meleeClasses.get(selected.profile);
-    if (selected.profile !== 'fists' && classTuning === undefined) {
+    const classTuning = registry.meleeClasses.get(selected.profile);
+    if (classTuning === undefined) {
       throw new Error(`Missing melee class tuning for ${selected.profile}`);
     }
     const swingWeapon = resolvePlayerMeleeWeapon(
@@ -3250,6 +3251,7 @@ export const startPlay = (
       surface,
       zombies: zombieSystem,
       blockSize: s,
+      weapon: unarmedMeleeWeapon(registry.meleeClasses),
     });
   };
 
