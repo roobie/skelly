@@ -9,6 +9,7 @@ import { chargeOf, toggleLight } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
@@ -87,7 +88,7 @@ const setup = (
   const inventory = new Inventory(content);
   const queue = new HandlingQueue(inventory);
   const notices: string[] = [];
-  const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
+  const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1, clock: BASE_CLOCK };
   const reach = bindReach(player);
   const survival = new Survival(sim, inventory, queue, {
     reach,

@@ -12,6 +12,7 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 type Pair = NonNullable<ModelDef['compatibilityPairs']>[number];
 type Choice = Pair[number];
@@ -109,6 +110,7 @@ const makeCandidateFixture = (attachmentCount: number, includeOutOfReach = false
       return playerPosition;
     },
     blockSize: 1,
+    clock: BASE_CLOCK,
   });
   const attachments = [
     fixture.foregrip,

@@ -501,6 +501,25 @@ it('acknowledges only the won checkpoint and keeps a failed completion visible f
   expect(controller.lastCompletedSaveRealTimestamp).toBeDefined();
 });
 
+it('refuses a save made under a different clock ratio instead of crashing startup', async () => {
+  enableSaveEnvironment();
+  const identity = await currentSaveVersionIdentity();
+  const { simulation } = fixtureSnapshot.character;
+  const retimed = {
+    ...fixtureSnapshot,
+    character: {
+      ...fixtureSnapshot.character,
+      simulation: { ...simulation, clock: { ...simulation.clock, ratio: simulation.clock.ratio * 2 } },
+    },
+  };
+  const controller = title();
+  stubLiveRecord(controller, await recordOf(retimed, identity));
+  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  await controller.prepare();
+  expect(await controller.validateContent(saveFixtureRegistry)).toBeUndefined();
+  expect(controller.isRestored).toBe(false);
+});
+
 it('continues a won record as terminal but refuses an ordinary dead record', async () => {
   enableSaveEnvironment();
   const identity = await currentSaveVersionIdentity();

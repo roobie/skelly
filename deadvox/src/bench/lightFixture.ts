@@ -1,5 +1,5 @@
 import type { PerspectiveCamera } from 'three';
-import { CLOCK_RATIO } from '../core/clock.ts';
+import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory } from '../core/inventory.ts';
@@ -63,11 +63,11 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
     seed: config.seed,
     bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
     compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
-    clock: { ratio: CLOCK_RATIO, start: calendar },
+    clock: { ratio: requireDayCycle(registry).clockRatio, start: calendar },
   });
   const queue = new HandlingQueue(inventory);
   const survival = new Survival(simulation, inventory, queue, {
-    reach: bindReach({ inventory, position: spawn.pos, blockSize }),
+    reach: bindReach({ inventory, position: spawn.pos, blockSize, clock: simulation.clock }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
     read: () => {

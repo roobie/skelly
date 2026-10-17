@@ -9,7 +9,7 @@ import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } f
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
-import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
+import { hourOfDay } from '../core/clock.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -658,6 +658,9 @@ export const createSession = (options: SessionOptions) => {
     get position() {
       return body.pos;
     },
+    get clock() {
+      return sim.clock;
+    },
   };
   const reach = bindReach(reachPlayer);
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
@@ -674,7 +677,7 @@ export const createSession = (options: SessionOptions) => {
     bodyTuning,
     analgesics: (item) => registry.items.get(item)?.analgesic,
     compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),
-    clock: { ratio: CLOCK_RATIO, start: options.start },
+    clock: { ratio: dayCycle.clockRatio, start: options.start },
   });
   const { compression } = sim;
   let scenarioRun: ScenarioRun | undefined;

@@ -1,7 +1,6 @@
 // Pure craft planning: no removal, effect, timer or world mutation.
 import type { BlockEntity } from './blockEntities.ts';
 import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
-import { CLOCK_RATIO } from './clock.ts';
 import type { RecipeDef } from './content.ts';
 import type { DisassemblyPlan } from './disassembly.ts';
 import type { Location } from './inventory.ts';
@@ -117,11 +116,15 @@ const compareAllocation = (a: Allocation, b: Allocation): number => {
   return left.length - right.length;
 };
 
+/** Handling is authored in simulation seconds; plans and work durations are game seconds. */
+export const gatherGameSeconds = (handlingTime: number, clockRatio: number): number => handlingTime * clockRatio;
+
 /** Spec ordering within a type; retrieving a stack costs once, even for a partial count. */
 const allocate = (
   entries: readonly ReachEntry[],
   needed: number,
   reserved: ReadonlySet<number>,
+  clockRatio: number,
 ): Allocation | undefined => {
   const allocation: Allocation = { components: [], gather: 0 };
   let remaining = needed;
@@ -134,7 +137,7 @@ const allocate = (
     const { location, handlingTime } = entry;
     const count = Math.min(item.count, remaining);
     allocation.components.push({ item, count, from: location });
-    allocation.gather += handlingTime * CLOCK_RATIO;
+    allocation.gather += gatherGameSeconds(handlingTime, clockRatio);
     remaining -= count;
     if (remaining === 0) {
       return allocation;
@@ -264,11 +267,12 @@ const allocateCombination = (
   requirements: ReadonlyMap<string, number>,
   index: ReachIndex,
   tools: CraftPlan['tools'],
+  clockRatio: number,
 ): Allocation | undefined => {
   const reserved = new Set(tools.map((tool) => tool.item.uid));
   const allocation: Allocation = { components: [], gather: 0 };
   for (const [type, count] of [...requirements].sort(([a], [b]) => a.localeCompare(b))) {
-    const picked = allocate(index.byType.get(type) ?? [], count, reserved);
+    const picked = allocate(index.byType.get(type) ?? [], count, reserved, clockRatio);
     if (!picked) {
       return undefined;
     }
@@ -387,7 +391,7 @@ export const planCraft = (
     .sort(([a], [b]) => a.localeCompare(b));
   for (const requirements of componentAlternatives(recipe, prefer)) {
     for (const tools of toolSelections(toolNeeds, index, requirements)) {
-      const allocation = allocateCombination(requirements, index, tools);
+      const allocation = allocateCombination(requirements, index, tools, snapshot.player.clock.ratio);
       if (allocation && (!best || compareAllocation(allocation, best) < 0)) {
         best = craftPlan(recipe, snapshot, { allocation, tools, character });
       }

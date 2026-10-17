@@ -99,19 +99,6 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (relative === 'core/authoredSite.ts' || relative === 'content/base/templates-stairs.json') {
             source = fixtureTransform(source, id) ?? source;
           }
-          // Remove with d393 (#854): main's play.ts still imports the throw constants that d393 moved into content.
-          if (relative === 'game/play.ts' && source.includes('ITEM_FLIGHT_SECONDS')) {
-            source = source
-              .replace('  ITEM_FLIGHT_SECONDS,\n', '')
-              .replace(
-                'startedAtSimSeconds + ITEM_FLIGHT_SECONDS',
-                'startedAtSimSeconds + reachTuning(registry).throwFlightSimSeconds',
-              )
-              .replace(
-                '      distanceMetres,\n      blockSize: s,',
-                '      distanceMetres,\n      arcHeightMetres: reachTuning(registry).throwArcHeightMetres,\n      blockSize: s,',
-              );
-          }
           if (relative === 'game/engine.ts') {
             source = source.replace(
               '  return {\n    ...worldSetup,',

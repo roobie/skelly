@@ -1471,6 +1471,8 @@ const WeatherTuningSchema = strictObject({
   farTighten: pipe(UnitFraction, maxValue(0.99)),
 });
 export const DayCycleSchema = strictObject({
+  /** Calendar seconds per simulation second: how long a game day lasts in play. A new session takes it; a save keeps its own. */
+  clockRatio: Positive,
   latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
   date: CalendarDateSchema,
   twilight: literal('nautical'),

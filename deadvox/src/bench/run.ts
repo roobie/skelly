@@ -3,7 +3,7 @@
 // speed while streaming. Each phase records frame times; moving phases also record
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
-import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
@@ -283,7 +283,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         seed: config.seed,
         bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
         compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
-        clock: { ratio: CLOCK_RATIO, start: startTime },
+        clock: { ratio: dayCycle.clockRatio, start: startTime },
       });
       simulation.godMode = true;
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
