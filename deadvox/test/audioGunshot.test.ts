@@ -45,6 +45,8 @@ const senseTuning = {
     bodyHeightMetres: 1.2,
   },
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
+  footsteps: baseRegistry.senses.get('player')!.footsteps,
+  vocalNoiseLifetimeSimSeconds: baseRegistry.senses.get('player')!.vocalNoiseLifetimeSimSeconds,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,
