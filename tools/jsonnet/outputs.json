@@ -113,6 +113,10 @@
       "output": "deadvox/src/content/base/locks.json"
     },
     {
+      "source": "deadvox/src/content/base/look.jsonnet",
+      "output": "deadvox/src/content/base/look.json"
+    },
+    {
       "source": "deadvox/src/content/base/loot.jsonnet",
       "output": "deadvox/src/content/base/loot.json"
     },

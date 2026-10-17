@@ -8,9 +8,6 @@ import {
   clampExposure,
   clampGrade,
   clampTorch,
-  DEFAULT_GRADE,
-  DEFAULT_LOOK,
-  DEFAULT_MOOD,
   DEFAULT_TORCH,
   GRAIN,
   gradeParams,
@@ -63,26 +60,16 @@ describe('grade strength steps', () => {
     expect(clampGrade(0.300_000_000_000_000_04)).toBe(0.3);
     expect(clampGrade(1.04)).toBe(1);
     expect(clampGrade(-0.3)).toBe(0);
-    let strength = DEFAULT_GRADE;
+    let strength = 1;
     for (let i = 0; i < 7; i++) {
       strength = clampGrade(strength - 0.1);
     }
     expect(strength).toBe(0.3);
   });
-
-  it('defaults to everything on at full strength', () => {
-    expect(DEFAULT_MOOD).toEqual({ post: true, bloom: true, film: true, grade: 1, bloomClip: null });
-  });
 });
 
-describe('the default look', () => {
-  it('is the operator-chosen one', () => {
-    expect(DEFAULT_LOOK).toEqual({ tone: 'auto', exposure: 3, srgb: true, patterns: true, vao: true });
-    expect(TONE_MODES.map((mode) => mode.key)).toContain(DEFAULT_LOOK.tone);
-  });
-
-  it('keeps exposure in range, in tenths', () => {
-    expect(clampExposure(DEFAULT_LOOK.exposure)).toBe(DEFAULT_LOOK.exposure);
+describe('exposure', () => {
+  it('stays in range, in tenths', () => {
     expect(clampExposure(9)).toBe(3);
     expect(clampExposure(0)).toBe(0.2);
     expect(clampExposure(1.26)).toBe(1.3);

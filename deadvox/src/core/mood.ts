@@ -4,8 +4,6 @@
 
 import type { Rgb } from './sky.ts';
 
-export const DEFAULT_GRADE = 1;
-
 /** Which parts of the mood pass are on. `post` is the master: off, nothing below renders. */
 export interface MoodState {
   post: boolean;
@@ -17,15 +15,6 @@ export interface MoodState {
   /** Bloom clip override (post-exposure value, see `BLOOM_CLIP_BY_TONE`); null follows the active tone mapper. */
   bloomClip: number | null;
 }
-
-/** Play's mood pass. The height-fog mist is not here: it follows the weather's fogginess (core/weather.ts). */
-export const DEFAULT_MOOD: MoodState = {
-  post: true,
-  bloom: true,
-  film: true,
-  grade: DEFAULT_GRADE,
-  bloomClip: null,
-};
 
 /**
  * The `TONE_MODES` key of the tone mapping that blends Neutral and ACES Filmic by time of day (the sky's `tone`
@@ -45,12 +34,34 @@ export interface LookState {
   vao: boolean;
 }
 
+/** The `LookState.tone` values the schema accepts; render/look.ts `TONE_MODES` has one mode per key. */
+export const TONE_KEYS = ['none', 'agx', 'aces', 'neutral', AUTO_TONE] as const;
+
 /**
- * The game's look. Play applies it at start-up (game/play.ts) with no URL parameters; the debug
- * controls and URL record only deviations from it. The benchmark does not apply it: it keeps
- * three.js's own defaults (no tone mapping, exposure 1, colours undecoded) and the mood pass off.
+ * The game's default look, authored as the `look` content section. Play applies it at start-up
+ * (render/playView.ts) with no URL parameters; the debug controls and URL record only deviations from
+ * it. `bloomClip` is not content: null follows the tone mapper. The benchmark does not apply it: it
+ * keeps three.js's own defaults (no tone mapping, exposure 1, colours undecoded) and the mood pass
+ * off. The height-fog mist is not here: it follows the weather's fogginess (core/weather.ts).
  */
-export const DEFAULT_LOOK: LookState = { tone: AUTO_TONE, exposure: 3, srgb: true, patterns: true, vao: true };
+export type LookDefaults = Omit<LookState & MoodState, 'bloomClip'>;
+
+/** A look as the renderer and mood pass take it, with the bloom clip following the tone mapper. */
+export const lookOf = (defaults: LookDefaults): LookState => ({
+  tone: defaults.tone,
+  exposure: defaults.exposure,
+  srgb: defaults.srgb,
+  patterns: defaults.patterns,
+  vao: defaults.vao,
+});
+
+export const moodOf = (defaults: LookDefaults): MoodState => ({
+  post: defaults.post,
+  bloom: defaults.bloom,
+  film: defaults.film,
+  grade: defaults.grade,
+  bloomClip: null,
+});
 
 /** Which shadows are drawn, and how far from the player the sun's reach. Render-only; the debug controls and URL change it. */
 export interface ShadowState {
@@ -92,8 +103,8 @@ export const TORCH_STEP = 1.25;
 export const clampTorch = (value: number): number =>
   Number.isFinite(value) ? Math.min(MAX_TORCH, Math.max(MIN_TORCH, Math.round(value * 100) / 100)) : DEFAULT_TORCH;
 
-const MIN_EXPOSURE = 0.2;
-const MAX_EXPOSURE = 3.0;
+export const MIN_EXPOSURE = 0.2;
+export const MAX_EXPOSURE = 3.0;
 
 /** Clamped to the allowed range and rounded to a tenth, so repeated steps don't accumulate float error. */
 export const clampExposure = (value: number): number =>

@@ -1,5 +1,5 @@
 // Opt-in: the benchmarks render through the game's mood pass (bloom, grade, film, height fog, shadows) with
-// the default look, so frame times with and without post-processing can be compared. `&post=1` on a bench URL
+// a fixed look, so frame times with and without post-processing can be compared. `&post=1` on a bench URL
 // turns it on; without it the benchmarks draw with `renderer.render` and three.js's own defaults, as they
 // always did, so older results still compare. The flag is carried from run to run by each bench's nextUrl.
 // Its URL parameter is read here, not in run.ts or shamblers.ts, because the site launcher offers only the
@@ -7,11 +7,29 @@
 // parameters, not something to launch from the site page.
 
 import { requireDayCycle } from '../core/content.ts';
-import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
+import { AUTO_TONE, DEFAULT_SHADOWS, type LookState, type MoodState } from '../core/mood.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather } from '../core/weather.ts';
+import type { GameConfig } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { applyLook } from '../render/look.ts';
+
+// The benchmark's own look, fixed so results stay comparable whatever the game's default look is: every
+// effect on, which is the full cost of the mood pass.
+const BENCH_LOOK: LookState = { tone: AUTO_TONE, exposure: 3, srgb: true, patterns: true, vao: true };
+const BENCH_MOOD: MoodState = { post: true, bloom: true, film: true, grade: 1, bloomClip: null };
+
+// The benchmark's own weathering, a content profile for the same reason: the play default's profile may change
+// without changing what the benchmark measures.
+const BENCH_WEATHERING_PROFILE_ID = 'bench';
+
+/** Gives a bench config the bench weathering instead of the play default's. */
+export const applyBenchWeathering = (config: GameConfig): void => {
+  const profile = config.content.registry.weathering.get(BENCH_WEATHERING_PROFILE_ID);
+  config.weatheringProfileId = BENCH_WEATHERING_PROFILE_ID;
+  config.weatheringDefaultProfileId = BENCH_WEATHERING_PROFILE_ID;
+  config.weathering = profile ? { ...profile } : undefined;
+};
 
 export const benchPostFromUrl = (params: URLSearchParams): boolean => params.get('post') === '1';
 
@@ -20,7 +38,7 @@ export const postUrlPart = (post: boolean): string => (post ? '&post=1' : '');
 
 /**
  * What a bench calls instead of `renderer.render(scene, camera)` each frame. With `post` it applies the
- * default look once and returns a draw through the mood pass at `hour` (no weather beyond the default
+ * bench look once and returns a draw through the mood pass at `hour` (no weather beyond the default
  * fogginess, no held items); without, the plain render. The distance fog and far plane stay the bench's own.
  * The optional callback samples scene counters before post-processing overwrites renderer.info.
  */
@@ -48,8 +66,8 @@ export const benchDraw = (
       report();
     };
   }
-  applyLook(renderer, engine.meshes, DEFAULT_LOOK);
-  mood.restore(DEFAULT_MOOD);
+  applyLook(renderer, engine.meshes, BENCH_LOOK);
+  mood.restore(BENCH_MOOD);
   shadows.restore(DEFAULT_SHADOWS);
   const dayCycle = requireDayCycle(engine.registry);
   const sky = skyInWeather(skyAt(hour, dayCycle), { fogginess: dayCycle.weather.defaultFogginess }, dayCycle.weather);
