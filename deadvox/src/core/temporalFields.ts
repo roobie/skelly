@@ -177,6 +177,13 @@ export const TEMPORAL_FIELDS = [
   { path: 'zombies.acidSpit.presentation.splashRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.puddle.lifetimeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.puddle.damagePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  { path: 'zombies.acidEffects.drips.perRealSecond', clock: 'Real', unit: 'PerSecond', dimension: 'rate' },
+  {
+    path: 'zombies.acidEffects.deathBurst.speedMetresPerRealSecond',
+    clock: 'Real',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
   { path: 'zombies.downed.finishOff.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.downed.dismember.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
 ] as const satisfies readonly TemporalField[];

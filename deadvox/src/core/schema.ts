@@ -1683,7 +1683,7 @@ const AcidSpitSchema = pipe(
     rangeBand: strictObject({ nearMetres: Positive, farMetres: Positive }),
     windupSimSeconds: PositiveSimSeconds,
     /** How far the head and chest rear back by the end of the wind-up; the pose eases in with its progress. */
-    windupPullbackDegrees: strictObject({
+    pullbackDegrees: strictObject({
       head: pipe(NonNegative, maxValue(90, 'must be at most 90')),
       chest: pipe(NonNegative, maxValue(90, 'must be at most 90')),
     }),
@@ -1719,11 +1719,11 @@ const ZombieSchema = strictObject({
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
   /** How brightly the model's glowing materials light (see `mobgen/src/core/body.ts`, `GLOW_MATERIALS`); omitted
-   * is unlit. The acid level rises from idle to windup with the spit's wind-up (`docs/acid-zombie.md`, "Model"). */
+   * is unlit. The acid level rises from idle to charged with the spit's wind-up (`docs/acid-zombie.md`, "Model"). */
   glow: optional(
     pipe(
-      strictObject({ eye: NonNegative, acid: strictObject({ idle: NonNegative, windup: NonNegative }) }),
-      check(({ acid }) => acid.idle <= acid.windup, 'acid glow must not dim during the wind-up'),
+      strictObject({ eye: NonNegative, acid: strictObject({ idle: NonNegative, charged: NonNegative }) }),
+      check(({ acid }) => acid.idle <= acid.charged, 'acid glow must not dim during the wind-up'),
     ),
   ),
   /** Presentation-only acid: drool dripping from the jaw while alive and the sac bursting on death
@@ -1731,10 +1731,10 @@ const ZombieSchema = strictObject({
   acidEffects: optional(
     strictObject({
       color: Color,
-      drips: strictObject({ perSecond: NonNegative, sizeMetres: Positive }),
+      drips: strictObject({ perRealSecond: NonNegative, sizeMetres: Positive }),
       deathBurst: strictObject({
         droplets: pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more')),
-        speedMetresPerSecond: Positive,
+        speedMetresPerRealSecond: Positive,
         sizeMetres: Positive,
       }),
     }),

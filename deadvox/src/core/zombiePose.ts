@@ -58,7 +58,7 @@ export const acidSpitWindupProgress = (zombie: Zombie): number => {
 
 const spitPullbackFor = (zombie: Zombie): Pick<ShamblerPoseInput, 'spitPullbackDegrees'> => {
   const progress = acidSpitWindupProgress(zombie);
-  const pullback = zombie.type.acidSpit?.windupPullbackDegrees;
+  const pullback = zombie.type.acidSpit?.pullbackDegrees;
   return pullback && progress > 0
     ? { spitPullbackDegrees: { head: pullback.head * progress, chest: pullback.chest * progress } }
     : {};

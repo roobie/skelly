@@ -341,13 +341,13 @@ export class Gore {
     const { pos } = zombie.body;
     const [x, y, z] = humanoidSacOrigin(zombie.type.model, zombie.figureSeed, zombie.facing);
     this.origin.set(pos[0] * s + x, pos[1] * s + y, pos[2] * s + z);
-    const { droplets, speedMetresPerSecond, sizeMetres } = effects.deathBurst;
+    const { droplets, speedMetresPerRealSecond, sizeMetres } = effects.deathBurst;
     const tint = acidTint(effects);
     for (let i = 0; i < droplets; i++) {
       const direction = this.scratch
         .set(this.rng.range(-1, 1), this.rng.range(-1, 1), this.rng.range(-1, 1))
         .normalize()
-        .multiplyScalar(speedMetresPerSecond * this.rng.range(BURST_SLOWEST_FRACTION, 1));
+        .multiplyScalar(speedMetresPerRealSecond * this.rng.range(BURST_SLOWEST_FRACTION, 1));
       if (!this.emit(this.origin, direction, sizeMetres, tint)) {
         return;
       }
@@ -428,7 +428,7 @@ export class Gore {
         !effects ||
         zombie.incapacitated ||
         Math.hypot(pos[0] - lx, pos[1] - ly, pos[2] - lz) > rangeBlocks ||
-        !this.rng.chance(effects.drips.perSecond * dt)
+        !this.rng.chance(effects.drips.perRealSecond * dt)
       ) {
         continue;
       }
