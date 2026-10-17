@@ -30,6 +30,21 @@ export function mainOverlayPath(root, id) {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
+// Remove once d387 is merged and main's config.ts no longer imports SPAWN_TIME; it only applies while it does.
+// The measurement needs a start time, not the weathering site's noon, so both fall back to the default clock.
+function withoutSpawnTimeImport(relative, source) {
+  if (relative !== 'game/config.ts' || !source.includes('SPAWN_TIME')) {
+    return source;
+  }
+  return source
+    .replace(
+      "import { parseTimeOfDay, SPAWN_TIME, SPAWN_TIMES } from '../core/clock.ts';",
+      "import { defaultClock, parseTimeOfDay } from '../core/clock.ts';",
+    )
+    .replaceAll('SPAWN_TIMES.noon', 'defaultClock.start')
+    .replaceAll(/\bSPAWN_TIME\b/g, 'defaultClock.start');
+}
+
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
@@ -114,6 +129,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
               )
               .replace('weapon: FISTS_MELEE,', 'weapon: unarmedMeleeWeapon(registry.meleeClasses),');
           }
+          source = withoutSpawnTimeImport(relative, source);
           if (relative === 'game/streamer.ts') {
             source = source.replace(
               '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
