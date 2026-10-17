@@ -14,7 +14,9 @@ The graphics direction is driven by atmosphere and readability, not realism. The
 
 ## Look decisions
 
-Tone mapping follows the solar cycle: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night. The by-eye choice gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `src/core/mood.ts`, `DEFAULT_LOOK`, and `src/render/autoTone.ts`.
+The default look is tone mapping off, low exposure, the mood pass off and no weathering, because it was judged by eye to look better and costs less. Content owns it, so a mod can change it; every part stays tunable through URL parameters and the debug panel. See `src/core/schema.ts`, `LookDefaultsSchema`, and `src/core/lookDefaults.ts`, `lookDefaultsOf`.
+
+Tone mapping can follow the solar cycle instead: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night, which gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `src/render/autoTone.ts`.
 
 Distance fog, the clear background and height mist share the camera's diffuse sky visibility so they cannot glow where the sky cannot reach. Use the interior field's spatial interpolation rather than a separate transition, keeping doorway changes aligned with held-item lighting. See `src/render/playView.ts`, `prepareLighting`; `src/render/sky.ts`, `applySky`; and `src/render/mood.ts`, `Mood.setSky`.
 
@@ -49,6 +51,10 @@ choices, not absence. See `src/content/base/graphics.jsonnet`,
 Benchmarks use only effective mod defaults, ignoring machine preferences and debug graphics
 URL overrides, because saved choices must not silently change the comparison workload.
 See `src/game/engine.ts`, `createEngine`, and `src/main.ts`.
+
+Benchmarks also fix their own look and weathering, so a change to the play default cannot
+change what they measure. The weathering is a content profile, not a code constant, so a mod
+sees it. See `src/bench/post.ts`, `BENCH_LOOK` and `applyBenchWeathering`.
 
 Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's
 policy can change without stale defaults becoming machine preferences. Validate stored

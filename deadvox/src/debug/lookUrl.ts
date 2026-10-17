@@ -1,21 +1,22 @@
 // Debug look settings as URL query parameters, so a look survives a reload and can be shared.
 // Only the debug tools read or write these (`?debug=1`); every other parameter is left alone.
-// Absent parameters mean the game's default look (DEFAULT_LOOK, DEFAULT_MOOD, the day cycle's default fogginess), and
-// only deviations from it are written.
+// Absent parameters mean the default look, which is content: the `look` section for tone, exposure and the
+// mood pass, the day cycle's default fogginess for fog, and the code defaults for the rest; only deviations
+// from it are written. A switch is written as `1` or `0`, whichever differs from the default.
 //
-//   tone=none|agx|aces|neutral|auto  tone mapping (J); omitted for auto (Neutral by day, ACES by night, by the sky)
-//   exposure=<0.2..3.0>          exposure in tenths (- =); omitted for 3; out of range is clamped
-//   srgb=0                       block colours left undecoded (I); omitted when decoded, which is the default
-//   patterns=0                   surface patterns off (;); omitted when on, which is the default
-//   vao=0                        wide ambient occlusion off (9); omitted when on, which is the default
+//   tone=none|agx|aces|neutral|auto  tone mapping (J); auto is Neutral by day, ACES by night, by the sky
+//   exposure=<0.2..3.0>          exposure in tenths (- =); out of range is clamped
+//   srgb=0|1                     block colours decoded or left undecoded (I)
+//   patterns=0|1                 surface patterns (;)
+//   vao=0|1                      wide ambient occlusion (9)
 //   freeze=1                    whole game frozen (M), so a reload resumes frozen; omitted when off
-//   post=0                       whole mood pass off (Q): no bloom, grade, film or height fog; omitted when on
-//   bloom=0                      bloom off (');  omitted when on
+//   post=0|1                     whole mood pass (Q): bloom, grade, film and height fog
+//   bloom=0|1                    bloom (')
 //   bloomclip=<1..8>             bloom clip, the post-exposure value where bloom starts, in tenths (Delete Insert);
 //                                omitted for the tone mapper's own value (BLOOM_CLIP_BY_TONE), which it follows;
 //                                under auto that value moves with the time of day, so it is never omitted
-//   film=0                       vignette and grain off (\); omitted when on
-//   grade=<0..1>                 colour grade strength in tenths ([ ]); omitted for 1; 0 is no grade
+//   film=0|1                     vignette and grain (\)
+//   grade=<0..1>                 colour grade strength in tenths ([ ]); 0 is no grade
 //   torch=<0.1..16>              flashlight intensity multiplier in hundredths (numpad - +); omitted for 1
 //   fog=<0..1>                   fogginess in tenths (L /); omitted for 0.2; 0 is clear, 1 thick fog
 //   sunshadow=0                  sun shadows off (0); omitted when on, which is the default
@@ -35,13 +36,13 @@ import {
   clampGrade,
   clampShadowDistance,
   clampTorch,
-  DEFAULT_GRADE,
-  DEFAULT_LOOK,
-  DEFAULT_MOOD,
   DEFAULT_SHADOWS,
   DEFAULT_TORCH,
+  type LookDefaults,
   type LookState,
+  lookOf,
   type MoodState,
+  moodOf,
   type ShadowState,
 } from '../core/mood.ts';
 import type { WeatheringDef } from '../core/schema.ts';
@@ -62,10 +63,18 @@ export interface LookUrlState extends LookState, MoodState {
   hotCheck: boolean;
 }
 
-/** The state no parameter departs from; the default fogginess is content (the day cycle's weather), so the caller names it. */
-export const defaultLookUrlState = (defaultFogginess: number): LookUrlState => ({
-  ...DEFAULT_LOOK,
-  ...DEFAULT_MOOD,
+/** What the written parameters are measured against: the content's default look and fogginess, and the weathering state to write. */
+export interface LookUrlDefaults {
+  look: LookDefaults;
+  defaultFogginess: number;
+  weathering?: WeatheringUrlState | undefined;
+  profiles?: ReadonlyMap<string, WeatheringDef>;
+}
+
+/** The state no parameter departs from: the content's look and fogginess, and the code's defaults for the rest. */
+export const defaultLookUrlState = ({ look, defaultFogginess }: LookUrlDefaults): LookUrlState => ({
+  ...lookOf(look),
+  ...moodOf(look),
   fogginess: defaultFogginess,
   torch: DEFAULT_TORCH,
   shadows: DEFAULT_SHADOWS,
@@ -73,13 +82,6 @@ export const defaultLookUrlState = (defaultFogginess: number): LookUrlState => (
   crackCheck: false,
   hotCheck: false,
 });
-
-/** What the written parameters are measured against: the content's default fogginess, and the weathering state to write. */
-export interface LookUrlDefaults {
-  defaultFogginess: number;
-  weathering?: WeatheringUrlState | undefined;
-  profiles?: ReadonlyMap<string, WeatheringDef>;
-}
 
 export const LOOK_PARAMS = [
   'tone',
@@ -112,29 +114,30 @@ const numberParam = (params: URLSearchParams, name: string): number => {
   return text === null || text.trim() === '' ? Number.NaN : Number(text);
 };
 
-export const parseLookParams = (params: URLSearchParams, defaultFogginess: number): LookUrlState => {
+export const parseLookParams = (params: URLSearchParams, defaults: LookUrlDefaults): LookUrlState => {
+  const base = defaultLookUrlState(defaults);
   const tone = params.get('tone') ?? '';
   const exposure = numberParam(params, 'exposure');
   const grade = numberParam(params, 'grade');
   const fogginess = numberParam(params, 'fog');
   const shadowDistance = numberParam(params, 'shadowdist');
   const bloomClip = numberParam(params, 'bloomclip');
-  const toneKey = TONE_MODES.some((mode) => mode.key === tone) ? tone : DEFAULT_LOOK.tone;
+  const toneKey = TONE_MODES.some((mode) => mode.key === tone) ? tone : base.tone;
   const clip = Number.isFinite(bloomClip) ? clampBloomClip(bloomClip) : null;
   return {
-    post: params.get('post') !== '0',
-    bloom: params.get('bloom') !== '0',
-    film: params.get('film') !== '0',
-    grade: Number.isFinite(grade) ? clampGrade(grade) : DEFAULT_GRADE,
+    post: flagParam(params, 'post', base.post),
+    bloom: flagParam(params, 'bloom', base.bloom),
+    film: flagParam(params, 'film', base.film),
+    grade: Number.isFinite(grade) ? clampGrade(grade) : base.grade,
     // The tone mapper's own value is not an override: it keeps following the tone mapper.
     bloomClip: clip === fixedBloomClip(toneKey) ? null : clip,
-    fogginess: Number.isFinite(fogginess) ? clampFogginess(fogginess) : defaultFogginess,
+    fogginess: Number.isFinite(fogginess) ? clampFogginess(fogginess) : base.fogginess,
     torch: clampTorch(numberParam(params, 'torch')),
     tone: toneKey,
-    exposure: Number.isFinite(exposure) ? clampExposure(exposure) : DEFAULT_LOOK.exposure,
-    srgb: params.get('srgb') !== '0',
-    patterns: params.get('patterns') !== '0',
-    vao: params.get('vao') !== '0',
+    exposure: Number.isFinite(exposure) ? clampExposure(exposure) : base.exposure,
+    srgb: flagParam(params, 'srgb', base.srgb),
+    patterns: flagParam(params, 'patterns', base.patterns),
+    vao: flagParam(params, 'vao', base.vao),
     shadows: {
       sun: params.get('sunshadow') !== '0',
       torch: params.get('torchshadow') !== '0',
@@ -146,21 +149,30 @@ export const parseLookParams = (params: URLSearchParams, defaultFogginess: numbe
   };
 };
 
+/** A switch parameter: `1` on, `0` off, anything else the default. */
+const flagParam = (params: URLSearchParams, name: string, fallback: boolean): boolean => {
+  const text = params.get(name);
+  if (text === '1' || text === '0') {
+    return text === '1';
+  }
+  return fallback;
+};
+
+const setFlagIfChanged = (next: URLSearchParams, name: string, value: boolean, fallback: boolean): void => {
+  if (value !== fallback) {
+    next.set(name, value ? '1' : '0');
+  }
+};
+
 /** The mood pass's non-default settings. A bloom clip equal to the tone mapper's own is the default and left out. */
-const writeMoodParams = (next: URLSearchParams, state: LookUrlState): void => {
-  if (!state.post) {
-    next.set('post', '0');
-  }
-  if (!state.bloom) {
-    next.set('bloom', '0');
-  }
+const writeMoodParams = (next: URLSearchParams, state: LookUrlState, base: LookUrlState): void => {
+  setFlagIfChanged(next, 'post', state.post, base.post);
+  setFlagIfChanged(next, 'bloom', state.bloom, base.bloom);
   if (state.bloomClip !== null && state.bloomClip !== fixedBloomClip(state.tone)) {
     next.set('bloomclip', state.bloomClip.toFixed(1));
   }
-  if (!state.film) {
-    next.set('film', '0');
-  }
-  if (state.grade !== DEFAULT_GRADE) {
+  setFlagIfChanged(next, 'film', state.film, base.film);
+  if (state.grade !== base.grade) {
     next.set('grade', state.grade.toFixed(1));
   }
 };
@@ -169,32 +181,27 @@ const writeMoodParams = (next: URLSearchParams, state: LookUrlState): void => {
 export const writeLookParams = (
   params: URLSearchParams,
   state: LookUrlState,
-  { defaultFogginess, weathering, profiles = new Map() }: LookUrlDefaults,
+  defaults: LookUrlDefaults,
 ): URLSearchParams => {
   const next = new URLSearchParams(params);
+  const base = defaultLookUrlState(defaults);
   for (const name of LOOK_PARAMS) {
     next.delete(name);
   }
-  if (state.tone !== DEFAULT_LOOK.tone) {
+  if (state.tone !== base.tone) {
     next.set('tone', state.tone);
   }
-  if (state.exposure !== DEFAULT_LOOK.exposure) {
+  if (state.exposure !== base.exposure) {
     next.set('exposure', state.exposure.toFixed(1));
   }
-  if (!state.srgb) {
-    next.set('srgb', '0');
-  }
-  if (!state.patterns) {
-    next.set('patterns', '0');
-  }
-  if (!state.vao) {
-    next.set('vao', '0');
-  }
+  setFlagIfChanged(next, 'srgb', state.srgb, base.srgb);
+  setFlagIfChanged(next, 'patterns', state.patterns, base.patterns);
+  setFlagIfChanged(next, 'vao', state.vao, base.vao);
   if (state.freeze) {
     next.set('freeze', '1');
   }
-  writeMoodParams(next, state);
-  if (state.fogginess !== defaultFogginess) {
+  writeMoodParams(next, state, base);
+  if (state.fogginess !== base.fogginess) {
     next.set('fog', state.fogginess.toFixed(1));
   }
   if (state.torch !== DEFAULT_TORCH) {
@@ -210,7 +217,7 @@ export const writeLookParams = (
     next.set('shadowdist', String(state.shadows.distance));
   }
   writeCheckParams(next, state);
-  return writeWeatheringParams(next, weathering, profiles);
+  return writeWeatheringParams(next, defaults.weathering, defaults.profiles ?? new Map());
 };
 
 /** The diagnostic checks are written only when on. */

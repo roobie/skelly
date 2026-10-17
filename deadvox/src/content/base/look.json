@@ -1,0 +1,16 @@
+{
+  "look": [
+    {
+      "bloom": true,
+      "exposure": 0.20000000000000001,
+      "film": true,
+      "grade": 0.90000000000000002,
+      "id": "core",
+      "patterns": true,
+      "post": false,
+      "srgb": true,
+      "tone": "none",
+      "vao": true
+    }
+  ]
+}

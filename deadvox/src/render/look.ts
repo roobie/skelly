@@ -1,5 +1,5 @@
 // Applies the look (core/mood.ts `LookState`) to the renderer and the block materials. Play does it
-// once at start-up with DEFAULT_LOOK; the debug controls change the same settings afterwards.
+// once at start-up with the content's default look (core/lookDefaults.ts); the debug controls change the same settings afterwards.
 
 import {
   ACESFilmicToneMapping,
@@ -19,7 +19,7 @@ export const TONE_MODES: readonly { readonly key: string; readonly name: string;
   { key: 'agx', name: 'AgX', mapping: AgXToneMapping },
   { key: 'aces', name: 'ACES Filmic', mapping: ACESFilmicToneMapping },
   { key: 'neutral', name: 'Neutral', mapping: NeutralToneMapping },
-  // Neutral by day, ACES at night, by the sky's weight (render/autoTone.ts); the game's default.
+  // Neutral by day, ACES at night, by the sky's weight (render/autoTone.ts).
   { key: AUTO_TONE, name: 'Auto', mapping: CustomToneMapping },
 ];
 

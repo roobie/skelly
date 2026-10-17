@@ -1,6 +1,7 @@
 export const CORE_CONTENT_IDS = {
   coreUi: 'core',
   coreGraphics: 'core',
+  coreLook: 'core',
   player: 'player',
   autosave: 'autosave',
   authoredSite: 'authored',
