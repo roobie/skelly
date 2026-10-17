@@ -106,6 +106,9 @@ export const fixtureScenarioSources = (
   const {
     compression: [compression],
   } = JSON.parse(readFileSync('src/content/base/compression.json', 'utf8'));
+  const {
+    siteGeneration: [baseSite],
+  } = JSON.parse(readFileSync('src/content/base/site-generation.json', 'utf8'));
   return [
     {
       source: 'scenario-fixture.json',
@@ -124,24 +127,14 @@ export const fixtureScenarioSources = (
               roadShoulderMetres: 0,
               spawnMarginMetres: 0,
             },
-            terrain: {
-              minHeightMetres: 8,
-              maxHeightMetres: 56,
-              beachBelowMetres: 14,
-              dirtDepthMetres: 2,
-              featureSizeMetres: 96,
-              octaves: 4,
-            },
+            terrain: baseSite.terrain,
             vegetation: {
+              ...baseSite.vegetation,
               woodlandEdgeWavelengthMetres: 1,
               woodlandEdgeVariation: 0,
               openDensity: 0,
               obstacleMarginMetres: 0,
               treeMix: ['broadleaf'],
-              treeCellMetres: 8,
-              hamletDensity: 0.5,
-              forestHalfExtentMetres: 384,
-              forestDensityField: { wavelengthMetres: 128, seedSalt: 137, floor: 0.2, gain: 1, ceiling: 0.75 },
             },
             palette: {
               terrain: { grass: 'fixture_solid', dirt: 'fixture_solid', rock: 'fixture_solid', sand: 'fixture_solid' },

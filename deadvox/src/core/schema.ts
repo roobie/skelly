@@ -54,6 +54,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
+import { TREE_SHAPES } from './treeShapes.ts';
 import { WEATHERING_RANGES } from './weather.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
@@ -2038,7 +2039,7 @@ const SiteGenerationSchema = strictObject({
     openDensity: Fraction,
     obstacleMarginMetres: NonNegative,
     // One entry per draw, so repeating a shape weights it.
-    treeMix: pipe(array(picklist(['broadleaf', 'conifer', 'young'])), minLength(1)),
+    treeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
     treeCellMetres: PositiveMetres,
     hamletDensity: Fraction,
     forestHalfExtentMetres: PositiveMetres,

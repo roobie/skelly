@@ -7,8 +7,7 @@ import type { Scale } from './scale.ts';
 import { type Rect, rectDistance } from './site.ts';
 import { siteGenerationOf, sitePalette } from './sitePalette.ts';
 import { type BlockBox, type MetreBox, rasterize, stampChunk } from './structure.ts';
-
-export type TreeShape = 'broadleaf' | 'conifer' | 'young';
+import type { TreeShape } from './treeShapes.ts';
 
 /** Smooth seeded value noise with broad plateaus; the field's tuning is site-generation content. Coordinates are metres. */
 export const forestDensityAt = (
