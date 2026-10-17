@@ -17,7 +17,7 @@ import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target, wo
 import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
-import type { ReachSnapshot } from '../core/reach.ts';
+import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
@@ -1142,7 +1142,7 @@ export class InventoryScreen {
         searchLabel:
           entity.searched || this.hooks.searching(entity)
             ? undefined
-            : secs(this.inv.scaleHandlingTime(searchTime(def))),
+            : secs(this.inv.scaleHandlingTime(searchTime(def, reachTuning(this.inv.registry)))),
         grids: searchedGrids,
       };
     });

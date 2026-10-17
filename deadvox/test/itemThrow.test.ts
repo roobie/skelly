@@ -1,6 +1,8 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import {
@@ -11,13 +13,23 @@ import {
 } from '../src/core/itemThrow.ts';
 import { pileItemPosition } from '../src/core/pileLayout.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
+
+const { registry: base } = buildRegistry(
+  readdirSync('src/content/base')
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+    .map((source) => ({ source, data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')) as unknown })),
+);
+const { throwArcHeightMetres: arcHeightMetres } = reachTuning(base);
 
 const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1, origin: { kind: 'fixture' } });
 const testRegistry = (weights: Record<string, number>): Registry =>
   ({
     items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight }])),
     models: new Map(),
+    inventory: base.inventory,
   }) as unknown as Registry;
 const presentationInventory = (item: Item): Inventory => {
   const pile = { pos: [2, 0, 0] as [number, number, number], items: [{ item, x: 0, y: 0, rotated: false }] };
@@ -185,7 +197,7 @@ describe('held-item throws', () => {
     throws.update(5, inventory);
     expect(throws.activeCount).toBe(0);
     expect(visual.visible).toBe(false);
-    expect(visual.position.toArray()).toEqual(itemFlightPoint(start, landing, 1));
+    expect(visual.position.toArray()).toEqual(itemFlightPoint(start, landing, 1, arcHeightMetres));
     throws.dispose();
   });
 
@@ -207,6 +219,7 @@ describe('held-item throws', () => {
       from,
       direction: [1, 0, 0],
       distanceMetres: 4,
+      arcHeightMetres,
       blockSize: 1,
       minY: -8,
       isSolid,
@@ -223,6 +236,7 @@ describe('held-item throws', () => {
       from: [1.5, 8.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 4,
+      arcHeightMetres,
       blockSize: 1,
       minY: -8,
       isSolid: () => false,
@@ -237,6 +251,7 @@ describe('held-item throws', () => {
       from: [1.5, 1.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 8,
+      arcHeightMetres,
       blockSize: 1,
       minY: -8,
       isSolid,
@@ -253,6 +268,7 @@ describe('held-item throws', () => {
       from: [1.5, 1.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 8,
+      arcHeightMetres,
       blockSize: 1,
       minY: -8,
       isSolid,

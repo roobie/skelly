@@ -1,6 +1,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
 // biome-ignore-all lint/performance/noAwaitInLoops: one page and cursor; declared wheel trials cannot overlap
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +18,9 @@ const root = fileURLToPath(new URL('../..', import.meta.url));
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
 const RACK_GRID = [5, 6];
+const {
+  inventory: [baseInventoryRow],
+} = JSON.parse(readFileSync(resolve(root, 'src/content/base/inventory.json'), 'utf8'));
 const refusalSound = {
   source: 'inventory-scroll-sounds',
   data: {
@@ -40,7 +44,7 @@ const content = [
   {
     source: 'inventory-scroll-fixture',
     data: {
-      inventory: [{ id: 'player', containerMaxWidthCells: 5, reachMetres: 2, chestHeightMetres: 1, useReachMetres: 2 }],
+      inventory: [{ ...baseInventoryRow, containerMaxWidthCells: 5 }],
       furniture: [
         {
           id: 'scroll_rack',

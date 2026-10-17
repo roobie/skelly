@@ -6,6 +6,7 @@
     refusalSound: 'player_nope',
     restLabels: { rest: 'Resting', sleep: 'Sleeping' },
     doorCloseBlockedMessages: { player: "You're in the way", other: "Something's in the way" },
+    itemActionLabels: { stripRound: 'Strip a round' },
     wearSlotLabels: {
       head: 'Head',
       torso: 'Torso',
