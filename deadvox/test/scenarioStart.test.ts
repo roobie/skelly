@@ -107,7 +107,7 @@ it(
   GAUNTLET_SITE_MS,
 );
 
-// Each ring case validates the whole scenario twice, which costs about a site's build.
+// Each ring case validates the whole scenario twice, which costs less than a site's build.
 const roofRings = [profile.city.ring, undefined];
 it(
   'refuses a start roof that can clear the wall, with or without a ring',
