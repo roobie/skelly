@@ -20,11 +20,9 @@ import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } 
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const BUNDLED_CONTENT = startupContent();
-// Building and certifying one bundled gauntlet city is CPU-bound, so the timeout scales with the sites built and
-// leaves headroom for a shared CPU, instead of vitest's flat default.
-const GAUNTLET_SITE_MS = 4000;
 
 const profile = fixtureScenario();
 const { registry, issues } = buildRegistry(fixtureScenarioSources(profile));
@@ -218,12 +216,16 @@ describe('one finished city plan', () => {
       return { spawns, hordes };
     };
 
-    it('supplies ordinary wanderers and hordes even when city buildings have no spawn markers', () => {
-      const { spawns, hordes } = populationOf({});
-      expect(spawns.length).toBeGreaterThan(0);
-      expect(hordes.length).toBeGreaterThan(0);
-      expect(hordes.every((horde) => horde.members > 0)).toBe(true);
-    });
+    it(
+      'supplies ordinary wanderers and hordes even when city buildings have no spawn markers',
+      () => {
+        const { spawns, hordes } = populationOf({});
+        expect(spawns.length).toBeGreaterThan(0);
+        expect(hordes.length).toBeGreaterThan(0);
+        expect(hordes.every((horde) => horde.members > 0)).toBe(true);
+      },
+      GAUNTLET_SITE_MS,
+    );
 
     // Each case builds the whole city and certifies it again, though only the population differs. Zero and two cover
     // "none" and "distinct streets"; a 1-horde case adds nothing, since a count slip shows at 0 or 2 too.
@@ -249,15 +251,23 @@ describe('one finished city plan', () => {
       2 * GAUNTLET_SITE_MS,
     );
 
-    it('leaves no zombies or hordes when settlement pressure and authored markers are both off', () => {
-      const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
-      expect(spawns).toEqual([]);
-      expect(hordes).toEqual([]);
-    });
+    it(
+      'leaves no zombies or hordes when settlement pressure and authored markers are both off',
+      () => {
+        const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
+        expect(spawns).toEqual([]);
+        expect(hordes).toEqual([]);
+      },
+      GAUNTLET_SITE_MS,
+    );
 
-    it('rejects more hordes than the city has street groups', () => {
-      expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
-    });
+    it(
+      'rejects more hordes than the city has street groups',
+      () => {
+        expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
+      },
+      GAUNTLET_SITE_MS,
+    );
   });
 
   it('fills paired inner banks while keeping alleys, perimeter gates and the service reserve clear', () => {
@@ -479,29 +489,33 @@ describe('one finished city plan', () => {
     expect(scenarioPlanIssues(admitted, scenario).map(([path]) => path)).toContain('.city.ring.pool');
   });
 
-  it('keeps every gauntlet spawn inside the walled area and clear of the wall', () => {
-    const native = BUNDLED_CONTENT.registry;
-    const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-    const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
-    const spawns: { pos: Vec3 }[] = [];
-    for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
-      for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
-        spawns.push(...site.zombiesIn(cx, cz), ...site.hordesIn(cx, cz));
+  it(
+    'keeps every gauntlet spawn inside the walled area and clear of the wall',
+    () => {
+      const native = BUNDLED_CONTENT.registry;
+      const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
+      const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
+      const spawns: { pos: Vec3 }[] = [];
+      for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
+        for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
+          spawns.push(...site.zombiesIn(cx, cz), ...site.hordesIn(cx, cz));
+        }
       }
-    }
-    expect(spawns.length).toBeGreaterThan(0);
-    const inWall = ([x, y, z]: Vec3) =>
-      site.plan.structures.some(
-        ({ min, max }) => x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
-      );
-    for (const { pos } of spawns) {
-      expect(pos[0]).toBeGreaterThanOrEqual(site.bounds.x0);
-      expect(pos[0]).toBeLessThan(site.bounds.x1);
-      expect(pos[2]).toBeGreaterThanOrEqual(site.bounds.z0);
-      expect(pos[2]).toBeLessThan(site.bounds.z1);
-      expect(inWall(pos)).toBe(false);
-    }
-  });
+      expect(spawns.length).toBeGreaterThan(0);
+      const inWall = ([x, y, z]: Vec3) =>
+        site.plan.structures.some(
+          ({ min, max }) => x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
+        );
+      for (const { pos } of spawns) {
+        expect(pos[0]).toBeGreaterThanOrEqual(site.bounds.x0);
+        expect(pos[0]).toBeLessThan(site.bounds.x1);
+        expect(pos[2]).toBeGreaterThanOrEqual(site.bounds.z0);
+        expect(pos[2]).toBeLessThan(site.bounds.z1);
+        expect(inWall(pos)).toBe(false);
+      }
+    },
+    GAUNTLET_SITE_MS,
+  );
 
   it('reserves each candidate/turn class inside the apron and keeps ordinary rows out of street space', () => {
     const plan = planned();
