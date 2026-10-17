@@ -47,7 +47,7 @@ For other entries:
 
 ### Hard cases
 
-**Ranged combat.** The core holds ranged combat in general: aim, projectiles, ballistics and noise. The setting pack holds the guns, the ammunition and the grenades, so a medieval pack could add bows on the same rules. The tunables of aim, projectile flight, ballistics and noise propagation are core content. Firearm items, their models and attachments, ammunition, explosives and their sounds are setting content. Firearm actions such as the revolver's cylinder or the pump stay engine mechanisms that a setting entry selects (`docs/decisions/0006-firearm-handling.md`). The grenade's blast is an engine mechanism, and the grenade is a setting item. The firearms skill is not core content; its provider pack and the separation of skill effects from ordinary ranged policy remain open.
+**Ranged combat.** The core holds ranged combat in general: aim, projectiles, ballistics and noise. The setting pack holds the guns, the ammunition and the grenades, so a medieval pack could add bows on the same rules. The tunables of aim, projectile flight, ballistics and noise propagation are core content. Firearm items, their models and attachments, ammunition, explosives and their sounds are setting content. Firearm actions such as the revolver's cylinder or the pump stay engine mechanisms that a setting entry selects (`docs/decisions/0006-firearm-handling.md`). The grenade's blast is an engine mechanism, and the grenade is a setting item. The firearms skill is not core content; its provider pack and whether ordinary ranged policy is separated from the skill remain open.
 
 **Creature framework.** The core holds the creature framework: senses, attention, modes, and abilities such as `acidSpit` as components. The setting pack holds the zombie types as data, so a medieval pack could add wolves on the same AI. The reason is modding. Modders will want to control and design enemy brains, and a framework whose parts are selected by data is the design that adds the least debt as types multiply.
 
@@ -89,7 +89,7 @@ The first build round adds a CI check that a registry built from the core pack a
 What must move before the check can pass:
 
 1. **Pack folders and ordered loading.** The single base folder becomes one folder per pack. `src/game/bundledContent.ts`, `buildBundledContent` and `src/cli/validate.ts`, `validate` load packs in their declared order, and the base content hash in `vite.config.ts` becomes one hash per pack. Folder names wait on the pack-id ruling.
-2. **Requirements split by pack.** `REQUIRED_CORE_CONTENT` keeps only core requirements, with no skill entries required. Skill requirements belong to the packs that select them; which packs supply the skills remains open. Setting sound rows become setting requirements until the sound-selection round replaces the code list.
+2. **Requirements split by pack.** `REQUIRED_CORE_CONTENT` requires no skill entry. Where skill requirements live follows the rulings on activity selection and baseline policy. Setting sound rows become setting requirements until the sound-selection round replaces the code list.
 3. **Core entries cleared of higher-layer references.** The check finds them. Skill-dependent entries need the ruling on their placement or reference contract; moving their skills into core is not an option. Other references follow the classification rule.
 
 The round passes when the core-alone check, the full-stack validate with reachability, the deadvox unit suite and a save round trip all pass.
@@ -98,7 +98,7 @@ The round passes when the core-alone check, the full-stack validate with reachab
 
 Each round leaves the game playable and keeps the core-alone check green.
 
-1. **Core-alone check and pack folders**, as above, with no core skill entries. Engine assumptions about built-in skills must be removed so zero skills are supported; the proof beyond validation and the behaviour of skill-dependent actions await the open questions. Check: core-alone validate, full-stack validate, the unit suite and a save round trip.
+1. **Core-alone check and pack folders**, as above, with no core skill entries. Removing engine assumptions about built-in skills lands in the round the skill-less proof ruling names; the core-alone validate check needs only the requirement split. The behaviour of skill-dependent actions remains open. Check: core-alone validate, full-stack validate, the unit suite and a save round trip.
 2. **Sounds by selection.** Mechanisms take their sound from the triggering entry, and the code list of every event shrinks to the roles that core mechanisms play themselves. Setting sounds move to the setting pack. Check: the core-alone check without setting sound rows, and an admission test showing that an entry selecting a missing sound is rejected at that entry.
 3. **Creature framework.** Body plan, footstep family and spawn role become capabilities. The model-name branches and the hamlet type ids leave code. Acid's values move to the setting, and damage kinds and resistance follow the ownership ruling. Zombie types move to the setting pack. Check: the core-alone check with no creature type, and an admission test showing that a creature with a new id and an existing body plan loads without a code edit.
 4. **Ranged split.** Ranged tunables stay in core. Firearms, ammunition, attachments and explosives move to the setting pack, and debug loadouts come from content. The firearms skill stays outside core; provider selection and baseline policy follow the skill-contract rulings. Check: the core-alone check with no firearm, and a full-stack firing and grenade flow in an existing browser stage.
@@ -113,12 +113,12 @@ Each question is open on #637. When it is ruled, the rule and its reason replace
 - **Creature section name**, given that it will hold types that are not zombies. Blocks round 3's schema rename.
 - **Pack ids, folder names and the setting's name.** Blocks round 1's folders and save identity.
 - **Where do otherwise-core entries with skill references belong?** Blocks round 1's classification of those entries.
-- **Who owns handling, ranged and melee policy when no skill is supplied?** Blocks round 1's runtime decoupling and round 4's ranged-policy split.
-- **How does an activity select a skill?** Blocks round 1's provider contract and round 4's combat integration.
-- **How are skills shared between settings: setting-owned or in a shared optional pack?** Blocks round 1's skill-pack placement and dependencies, and round 4's firearms-skill placement.
-- **Where does starting recipe knowledge belong?** Blocks round 1's character-start contract and round 5's scenario integration.
-- **What should the UI show with zero skills?** Blocks round 1's zero-skill UI proof.
-- **How do competing skill providers interact?** Blocks round 1's provider admission.
+- **Who owns handling, ranged and melee policy when no skill is supplied?** Blocks runtime decoupling, in round 1 only if the skill-less proof ruling puts it there, and round 4's ranged-policy split.
+- **How does an activity select a skill?** Blocks the provider contract, in round 1 only if the skill-less proof ruling puts it there, and round 4's combat integration.
+- **How are skills shared between settings: independent definitions, a shared optional pack, or roles without common skill ids?** Blocks round 1's skill-pack placement and dependencies, and round 4's firearms-skill placement.
+- **Where do starting recipe knowledge and the default start row belong?** Blocks default-row placement and the character-start contract, in round 1 only if the skill-less proof ruling puts that work there, and round 5's scenario integration.
+- **What should the UI show with zero skills?** Blocks zero-skill UI proof, in round 1 only if the skill-less proof ruling puts it there.
+- **How do competing skill providers interact?** Blocks provider admission, in round 1 only if the skill-less proof ruling puts it there.
 - **The name of `acidSpit`** once it is a core component. Blocks round 3's schema change.
 - **Who owns damage kinds**, code or content. Blocks round 3's damage-kind and resistance work.
 - **How scenario content is packed.** Blocks round 5 and the scenario entries of the save identity.
