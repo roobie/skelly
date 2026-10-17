@@ -52,6 +52,7 @@ import { opticViewSettings, projectLensAperture } from '../core/opticView.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { HELD_DISPLAY_KIND } from '../core/schema.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { createCompass } from './compass.ts';
 import {
   type FirearmAction,
@@ -262,8 +263,7 @@ export class HeldItems {
     this.restoreRummageSupport();
     this.sync();
     this.poseFirearms(firearmPoses);
-    const loweredPitchRadians =
-      this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.loweredPitchRadians ?? 0;
+    const { loweredPitchRadians } = firearmsCombatTuning(this.inventory.registry);
     const leadingSide = dominantSide(this.inventory.character);
     const readyPose = readiness ? readyFirearmPose(leadingSide) : undefined;
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;

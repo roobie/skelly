@@ -89,6 +89,8 @@ const content = [
 const fixture = `
 import '/src/ui/style.css';
 import uiFile from '/src/content/base/ui.json';
+import recipesFile from '/src/content/base/recipes.json';
+import { CORE_CONTENT_IDS } from '/src/core/contentIds.ts';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
@@ -100,7 +102,13 @@ import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
 import { applyUiTokens } from '/src/ui/uiTokens.ts';
-const { registry, issues } = buildRegistry([...${JSON.stringify(content)}, { source: 'ui.json', data: uiFile }]);
+const handlingSkills = recipesFile.skills.filter((skill) => skill.id === CORE_CONTENT_IDS.inventoryManagement);
+if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory skill');
+const { registry, issues } = buildRegistry([
+  ...${JSON.stringify(content)},
+  { source: 'ui.json', data: uiFile },
+  { source: 'inventory-skill-fixture', data: { skills: handlingSkills } },
+]);
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
 applyUiTokens(registry, document.documentElement);
 const inventory = new Inventory(registry);

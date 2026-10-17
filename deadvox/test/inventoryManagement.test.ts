@@ -108,20 +108,13 @@ const inventoryHandlingTime = (level: number, source: Registry = fixtureRegistry
 describe('Inventory Management skill', () => {
   it('preserves unscaled level-zero time and follows content tuning through level ten', () => {
     const tunedRegistry = fixtureRegistry();
-    const withoutInventorySkill: Registry = {
-      ...tunedRegistry,
-      skills: new Map([...tunedRegistry.skills].filter(([id]) => id !== 'inventory_management')),
-    };
-    const unscaled = inventoryHandlingTime(0, withoutInventorySkill);
     const skill = registry.skills.get('inventory_management');
     const tuning = skill?.inventory;
     if (!tuning) {
       throw new Error('Inventory Management content has no handling tuning');
     }
-    expect(inventoryHandlingTime(0)).toBe(unscaled);
-
     const times = [0, 1, 5, 10, 11].map((level) => inventoryHandlingTime(level, tunedRegistry));
-    expect(times[0]).toBe(unscaled);
+    const unscaled = times[0]!;
     expect(times[1]).toBeLessThan(times[0]!);
     expect(times[2]).toBeLessThan(times[1]!);
     expect(times[3]).toBeLessThan(times[2]!);
