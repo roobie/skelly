@@ -1217,6 +1217,7 @@ export const startPlay = (
     workOptions: (uid) => session.crafting.options(uid),
     character: () => session.character,
     body: () => sim.body,
+    slotLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.wearSlotLabels,
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
@@ -3487,6 +3488,7 @@ export const startPlay = (
       canStop: rest.canStop || waitAction !== undefined,
       sim,
       messagesVisible,
+      restLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.restLabels,
     });
   };
 

@@ -179,6 +179,7 @@ describe('furniture', () => {
       playWorldSound: (event, position) => {
         sounds.push({ event, position: [...position] });
       },
+      closeBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
     });
     const enqueue = (closing: boolean) =>
       queue.enqueueAction(DOOR_ACTION, 'Door', 0.1, { entityUid: door.uid, closing });
@@ -197,7 +198,7 @@ describe('furniture', () => {
     queue.tick(0.1);
     player = bodyAt([5, 0, 0.5]);
     enqueue(true);
-    expect(queue.tick(0.1).failed[0]?.reason).toBe("You're in the way");
+    expect(queue.tick(0.1).failed[0]?.reason).toBe('fixture player blocks');
     expect(door.open).toBe(true);
     expect(sounds[3]).toEqual({ event: 'door_blocked_close', position: [5, 2, 0.5] });
   });
