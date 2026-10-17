@@ -217,7 +217,7 @@ export const realize = (genome: Genome, options: RealizeOptions = {}): Realized 
   const supportBones = resolveSupportBones(template, body, voxels);
   const scaledBudgets = budgetsForGenome(template, genome, profile !== 'silhouette');
   // Silhouette LOD is a draw-cost contract: omit voxel/group budgets entirely. The recommended
-  // 1/2-block tier has BR's fixed 300-triangle cap; other sizes use the m1-scaled triangle ceiling.
+  // 1/2-block tier has BR's fixed cap, `FAR_LOD_HALF_BLOCK_TRIANGLE_CAP`; other sizes use the m1-scaled triangle ceiling.
   const budgets: RuleBudgets =
     profile === 'silhouette'
       ? {

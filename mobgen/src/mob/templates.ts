@@ -200,7 +200,8 @@ const acid: Template = {
   supportBones: SUPPORT_BONES,
   budgets: {
     totalVoxels: { min: 1100, max: 2600 },
-    totalTriangles: { min: 2600, max: 6000 },
+    // The bulky outline costs the most triangles at the 1/4-block far LOD, whose ceiling scales from this max.
+    totalTriangles: { min: 2600, max: 10_000 },
     groups: { head: { bones: ['head', 'jaw'], min: 55, max: 120 } },
   },
 };
