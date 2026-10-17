@@ -7,6 +7,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import type { Session } from '../src/game/session.ts';
 import { craftRows, craftStatus } from '../src/ui/craftReadout.ts';
@@ -48,7 +49,7 @@ describe('crafting read-only presentation', () => {
     inventory.add(broken, { kind: 'pile', pos: [0, 0, 0] });
     inventory.add(inventory.create('hammer'), { kind: 'pile', pos: [0, 0, 0] });
     inventory.add(inventory.create('rag', 3), { kind: 'pile', pos: [0, 0, 0] });
-    const reachSnapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const reachSnapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     const before = inventory.snapshotState();
     const rows = craftRows({ registry, character, reach: reachSnapshot, preferences: {}, startReason: undefined });
     expect(rows.every((row) => character.knownRecipes.has(row.id))).toBe(true);
@@ -164,7 +165,7 @@ describe('crafting read-only presentation', () => {
     item.work = { kind: 'craft', recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
     inventory.add(item, { kind: 'hand', side: 'right' });
     const character = new Character(registry);
-    const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     const session = {
       inventory,
       character,

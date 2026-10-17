@@ -8,6 +8,7 @@ import type { Rolled } from '../src/core/loot.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { HandlingRange } from '../src/core/range.ts';
 import { furnitureDistance, reachTuning } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
@@ -281,7 +282,7 @@ describe('the debug test-house range', () => {
       expect(fixture.body.pos[2] - fixture.body.halfWidth).toBeGreaterThan(fixture.rack.pos[2] + fixture.rack.size[2]);
       expect(
         furnitureDistance(
-          { inventory: fixture.inventory, position: fixture.body.pos, blockSize: fixture.blockSize },
+          { inventory: fixture.inventory, position: fixture.body.pos, blockSize: fixture.blockSize, clock: BASE_CLOCK },
           fixture.rack,
         ),
       ).toBeLessThanOrEqual(reachTuning(fixture.inventory.registry).reachMetres);

@@ -7,6 +7,7 @@ import { buildRegistry, type RecipeDef, type Registry } from '../src/core/conten
 import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 
 const inputs = readdirSync('src/content/base')
@@ -118,7 +119,7 @@ const stock = (
     }
     return item;
   });
-  const live = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
+  const live = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
   const snapshot: ReachSnapshot = {
     ...live,
     entries: live.entries.map((entry) => ({
@@ -135,12 +136,12 @@ describe('pure craft planner', () => {
     const recipeWithStation = { ...recipe([[{ item: 'rag', count: 1 }]]), workstation: 'fixture_station' };
     const near = stock([{ type: 'rag' }], definitions);
     near.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
-    const nearReach = bindReach({ inventory: near.inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const nearReach = bindReach({ inventory: near.inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     expect(planCraft(recipeWithStation, nearReach, character)).toMatchObject({ plan: { recipe: 'fixture' } });
 
     const far = stock([{ type: 'rag' }], definitions);
     far.inventory.entities.add({ type: 'fixture_bench', pos: [5, 0, 0], size: [1, 3, 1], facing: 'n' });
-    const farReach = bindReach({ inventory: far.inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const farReach = bindReach({ inventory: far.inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     expect(planCraft(recipeWithStation, farReach, character)).toMatchObject({
       missing: { workstation: 'fixture_station' },
     });
@@ -154,7 +155,7 @@ describe('pure craft planner', () => {
     };
     const staged = stock([{ type: 'rag' }], definitions);
     staged.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
-    const reach = bindReach({ inventory: staged.inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const reach = bindReach({ inventory: staged.inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     const result = planCraft(recipeWithStation, reach, character);
     expect(result).toMatchObject({ plan: { tools: [] } });
   });
@@ -164,7 +165,7 @@ describe('pure craft planner', () => {
     const recipeWithStation = { ...recipe([[{ item: 'rag', count: 1 }]]), workstation: 'fixture_station' };
     const staged = stock([{ type: 'rag' }], definitions);
     staged.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
-    const reach = bindReach({ inventory: staged.inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const reach = bindReach({ inventory: staged.inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     const result = planCraft(recipeWithStation, reach, character);
     expect('plan' in result && result.plan.work).toBe(recipeWithStation.timeGameMinutes * (1 - workFactorBonus));
   });
@@ -226,7 +227,7 @@ describe('pure craft planner', () => {
         }),
       ).toBe(true);
     }
-    const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     const before = inventory.snapshotState();
     const counted = (qualities: RecipeDef['qualities'], classes = 1) => {
       let reads = 0;
@@ -377,7 +378,7 @@ describe('pure craft planner', () => {
     const bag = inventory.create('school_backpack');
     expect(inventory.add(bag, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     expect(inventory.add(inventory.create('rag'), { kind: 'pocket', owner: bag, pocket: 0 })).toBe(true);
-    const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     expect(planCraft(recipe([[{ item: 'school_backpack', count: 1 }]]), snapshot, character)).toMatchObject({
       missing: { components: [{ alternatives: [{ item: 'school_backpack', needed: 1, available: 0 }] }] },
     });
@@ -436,7 +437,7 @@ describe('pure craft planner', () => {
       ).toBe(true);
     });
     inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
-    const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     expect(snapshot.entries).toHaveLength(200);
     const actor = new Character(benchmarkRegistry);
     actor.learnRecipes([...benchmarkRegistry.recipes.keys()]); // Isolate planning cost from reachable knowledge admission.

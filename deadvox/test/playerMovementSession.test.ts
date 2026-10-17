@@ -595,6 +595,7 @@ describe('clearing a downed shambler', () => {
           inventory: session.inventory,
           position: session.body.pos,
           blockSize: makeScale(0.5).blockSize,
+          clock: session.sim.clock,
         };
         expect(bodyDistance(player, zombie.body)).toBeGreaterThan(reachTuning(session.inventory.registry).reachMetres);
       },

@@ -98,6 +98,7 @@ import { HandlingQueue } from '/src/core/handling.ts';
 import { visibleGridName } from '/src/core/inventoryGridName.ts';
 import { buildBundledContent } from '/src/game/bundledContent.ts';
 const BUNDLED_CONTENT = buildBundledContent();
+import { requireDayCycle } from '/src/core/content.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
@@ -168,7 +169,7 @@ let needsText = 'health 100% · stamina 100%';
 const dispatches = [];
 let capToken;
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
-  reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
+  reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: { ratio: requireDayCycle(BUNDLED_CONTENT.registry).clockRatio, start: 0 } }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],

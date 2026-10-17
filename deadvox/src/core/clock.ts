@@ -41,9 +41,6 @@ export const resolveSpawnTime = (cycle: SpawnTimeCycle, time: SpawnTime): GameTi
 
 export type SpawnTimeWindowField = { [Property in 'window']?: SpawnTimeWindow };
 
-/** Calendar seconds per simulation second. 1:8 makes a game day 3 real hours. */
-export const CLOCK_RATIO = 8;
-
 export interface ClockSettings {
   /** Calendar seconds per simulation second. */
   readonly ratio: number;

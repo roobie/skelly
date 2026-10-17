@@ -10,6 +10,7 @@ import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
   BindingRegistry,
@@ -135,7 +136,7 @@ function setup(contentRegistry = registry) {
     throwItem: () => undefined,
   };
   const hooks = {
-    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
+    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => [0, 0, 0] as [number, number, number],
     nearby: () => [...inv.piles.values()],
     distance: () => 0,

@@ -6,6 +6,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bestPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Survival } from '../src/game/survival.ts';
@@ -93,7 +94,7 @@ const runtime = (handedness?: Character['handedness']) => {
   const notices: string[] = [];
   const simulation = new Simulation({ seed: 1 });
   const survival = new Survival(simulation, inventory, queue, {
-    reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1 }),
+    reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: (text) => notices.push(text),
     read: () => {

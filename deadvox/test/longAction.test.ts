@@ -9,6 +9,7 @@ import { craftActionHooks } from '../src/core/craftWork.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { craftingActivityTier } from '../src/core/skillTraining.ts';
 import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
@@ -65,7 +66,7 @@ const make = (
   const inv = saved ? Inventory.restoreState(contentRegistry, saved.inventory) : new Inventory(contentRegistry);
   const sim = new Simulation({ seed: 1 });
   const character = new Character(contentRegistry);
-  const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5 });
+  const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
   sim.actions.craft = craftActionHooks(inv, character, reach, () => [0, 0, 0]);
   sim.actions.reading = bookReadingHooks(inv, character);
   if (saved) {

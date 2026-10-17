@@ -5,6 +5,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { drainBurnLight, toggleLight } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Survival } from '../src/game/survival.ts';
 import { Simulation } from './simulationFixture.ts';
 
@@ -20,7 +21,7 @@ const setup = () => {
   const sim = new Simulation({ seed: 1 });
   const inventory = new Inventory(registry);
   const queue = new HandlingQueue(inventory);
-  const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
+  const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1, clock: BASE_CLOCK };
   const survival = new Survival(sim, inventory, queue, {
     reach: bindReach(player),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),

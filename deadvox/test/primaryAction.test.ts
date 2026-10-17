@@ -4,6 +4,7 @@ import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { ignitionTargetForHand, selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival } from '../src/game/survival.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
@@ -154,7 +155,7 @@ const hold = (right?: string, left?: string, handedness?: 'right' | 'left') => {
 const survivalFor = (inventory: Inventory) => {
   const sim = new Simulation({ seed: 1 });
   const queue = new HandlingQueue(inventory);
-  const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
+  const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1, clock: BASE_CLOCK };
   return new Survival(sim, inventory, queue, {
     reach: bindReach(player),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
@@ -246,7 +247,7 @@ describe('held-item hand action', () => {
     }
     const simulation = new Simulation({ seed: 1 });
     const queue = new HandlingQueue(inventory);
-    const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
+    const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1, clock: BASE_CLOCK };
     const survival = new Survival(simulation, inventory, queue, {
       reach: bindReach(player),
       feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
