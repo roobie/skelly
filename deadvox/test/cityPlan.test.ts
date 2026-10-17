@@ -9,13 +9,13 @@ import {
 } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
-import { siteGenerationOf, sitePalette } from '../src/core/sitePalette.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
+import { siteGenerationOf, sitePalette } from '../src/core/sitePalette.ts';
 import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
