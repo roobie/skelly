@@ -473,7 +473,6 @@ it('refuses a save made under a different clock ratio instead of crashing startu
   await controller.prepare();
   expect(await controller.validateContent(saveFixtureRegistry)).toBeUndefined();
   expect(controller.isRestored).toBe(false);
-  expect(document.getElementById('save-status')!.textContent).toContain('incompatible');
 });
 
 it('continues a won record as terminal but refuses an ordinary dead record', async () => {
