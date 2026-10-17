@@ -10,7 +10,7 @@ import {
 import { readGraphicsSettings, writeGraphicsSettings } from './graphicsSettings.ts';
 
 interface GraphicsTargets {
-  mood?: { setRenderScale: (value: number) => void; setBloomScale: (value: number) => void };
+  mood?: { setRenderScale: (value: number, explicit: boolean) => void; setBloomScale: (value: number) => void };
   shadows?: { setSmallSunMap: (value: boolean) => void };
   meshes: {
     setFastCamo: (value: boolean) => void;
@@ -72,7 +72,10 @@ export class GraphicsControls {
 
   private apply(): void {
     const { values } = this;
-    this.targets.mood?.setRenderScale(values.renderScale);
+    this.targets.mood?.setRenderScale(
+      values.renderScale,
+      this.overrides.renderScale !== undefined || this.settings.renderScale !== undefined,
+    );
     this.targets.mood?.setBloomScale(values.bloomScale);
     this.targets.shadows?.setSmallSunMap(values.smallSunMap);
     this.targets.meshes.setFastCamo(values.fastCamo);

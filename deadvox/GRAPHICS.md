@@ -50,6 +50,18 @@ Benchmarks use only effective mod defaults, ignoring machine preferences and deb
 URL overrides, because saved choices must not silently change the comparison workload.
 See `src/game/engine.ts`, `createEngine`, and `src/main.ts`.
 
+Automatic scene resolution follows GPU execution cost rather than frame intervals: reducing
+pixels cannot fix simulation work, browser scheduling or a slow display. Windowed measurements
+and a dead band suppress transient spikes and visible pumping; recovery reserves headroom for
+the next size instead of immediately undoing a reduction. Unsupported GPU timing leaves the
+content default intact. Explicit player or debug URL scene-scale choices suspend adaptation;
+clearing a player choice returns ownership to content. See `src/render/adaptiveScale.ts`,
+`AdaptiveScale`, `src/render/gpuFrameTime.ts`, `GpuFrameTime`, and
+`src/render/mood.ts`, `Mood.recordGpuTime`. Release post targets while a WebGL context is
+lost, before restored rendering can attach fresh resources: stale disposal listeners otherwise
+try to delete handles from the lost context on the first resolution change. See
+`src/render/mood.ts`, `Mood.releaseComposer`.
+
 Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's
 policy can change without stale defaults becoming machine preferences. Validate stored
 choices against the effective content policy before using them; unavailable storage must

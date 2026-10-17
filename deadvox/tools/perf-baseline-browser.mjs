@@ -58,6 +58,22 @@ export function install(engine) {
       segment.query = undefined;
       return false;
     });
+    reportGpuTimes();
+  }
+  function reportGpuTimes() {
+    for (const record of perf.records) {
+      if (
+        !record.gpuReported &&
+        record.segments.length > 0 &&
+        record.segments.every((segment) => segment.ms !== null)
+      ) {
+        record.gpuReported = true;
+        perf.engine.mood.recordGpuTime(
+          record.segments.reduce((sum, segment) => sum + segment.ms, 0),
+          record.renderScale,
+        );
+      }
+    }
   }
   function close() {
     if (!perf.query) {
@@ -98,7 +114,16 @@ export function install(engine) {
       return fn(now);
     }
     perf.before?.();
-    const record = { now, cpuMs: 0, phase: perf.phase, segments: [], actorDraws: 0, zombieDraws: 0, disjoint: false };
+    const record = {
+      now,
+      cpuMs: 0,
+      phase: perf.phase,
+      segments: [],
+      actorDraws: 0,
+      zombieDraws: 0,
+      disjoint: false,
+      renderScale: perf.engine.mood.renderScale,
+    };
     perf.current = record;
     perf.label = null;
     const start = performance.now();
@@ -196,6 +221,8 @@ export function install(engine) {
   };
   perf.attach = (runtime) => {
     Object.assign(perf, runtime);
+    // Reuse the enclosing whole/segmented probe: elapsed GPU queries cannot nest.
+    runtime.engine.mood.externalGpuTiming = true;
     runtime.view.zombieMeshes.group.userData.perfZombies = true;
     for (const key of ['zombieMeshes', 'playerMeshes']) {
       runtime.view[key].group.userData.perfCategory = 'actors';

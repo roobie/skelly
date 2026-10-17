@@ -15,7 +15,18 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
   const scale = { label: 'Fixture scale', min: 0.2, max: 1, default: 0.7 };
   const toggle = { label: 'Fixture toggle', options: [false, true], default: true };
   const tuning = {
-    renderScale: scale,
+    renderScale: {
+      ...scale,
+      adaptive: {
+        enabled: false,
+        targetRealMs: 10,
+        min: scale.min,
+        max: scale.max,
+        step: 0.1,
+        hysteresisRealMs: 1,
+        sampleWindow: 4,
+      },
+    },
     bloomScale: scale,
     smallSunMap: toggle,
     fastCamo: toggle,

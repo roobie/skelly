@@ -20,6 +20,13 @@ export interface TemporalField {
 
 /** Authored temporal schema fields; the lint rule checks this catalogue against schemas and base content. */
 export const TEMPORAL_FIELDS = [
+  { path: 'graphics[].renderScale.adaptive.targetRealMs', clock: 'Real', unit: 'Milliseconds', dimension: 'duration' },
+  {
+    path: 'graphics[].renderScale.adaptive.hysteresisRealMs',
+    clock: 'Real',
+    unit: 'Milliseconds',
+    dimension: 'duration',
+  },
   { path: 'scenarios.outbreakAgeGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'templates.decals[].variants[].ageingGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'mapPieces.decals[].variants[].ageingGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },

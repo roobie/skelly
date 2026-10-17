@@ -11,6 +11,45 @@ const { chromium } = await import('playwright');
 const leadingSlash = /^\//;
 const softwareRenderer = /swiftshader|llvmpipe|software|lavapipe/i;
 
+async function captureLook(page, directory, { route, mode, repeat }) {
+  if (mode !== 'whole' || repeat !== 1) {
+    return;
+  }
+  const look = await page.evaluate(() => {
+    const perf = globalThis.perfBaseline;
+    const { mood, renderer, config } = perf.engine;
+    const settled = mood.renderScale;
+    const seed = mood.frame;
+    const url = new URL(location.href);
+    url.searchParams.delete('skyRoute');
+    url.searchParams.set('freeze', '1');
+    url.searchParams.set(
+      'cam',
+      [
+        ...perf.session.body.pos.map((value) => value * config.scale.blockSize),
+        (perf.input.yaw * 180) / Math.PI,
+        (perf.input.pitch * 180) / Math.PI,
+        0,
+      ].join(','),
+    );
+    const images = [mood.graphicsTuning.renderScale.max, settled].map((scale) => {
+      mood.setRenderScale(scale);
+      mood.frame = seed;
+      perf.view.render();
+      url.searchParams.set('renderscale', String(scale));
+      return { scale, url: url.pathname + url.search, png: renderer.domElement.toDataURL('image/png').split(',')[1] };
+    });
+    return { images, position: perf.engine.camera.position.toArray() };
+  });
+  for (const [index, image] of look.images.entries()) {
+    const path = `${route.id}-look-${index === 0 ? 'full' : 'settled'}.png`;
+    await writeFile(resolve(directory, path), Buffer.from(image.png, 'base64'));
+    image.png = undefined;
+    image.path = path;
+  }
+  await writeFile(resolve(directory, `${route.id}-look.json`), JSON.stringify(look, null, 2));
+}
+
 const options = Object.fromEntries(
   process.argv.slice(2).map((arg) => {
     const at = arg.indexOf('=');
@@ -69,7 +108,11 @@ await build({
         }
         if (id.endsWith('/src/debug/skyRoute.ts')) {
           return once(
-            code,
+            once(
+              code,
+              'startedRealMs === undefined && active() && inputPermitsRoute()',
+              'startedRealMs === undefined && active() && inputPermitsRoute() && globalThis.perfBaseline.skyReady?.()',
+            ),
             '      frames.push({',
             '      if (globalThis.perfBaseline.current) globalThis.perfBaseline.current.phase = phase;\n      frames.push({',
           );
@@ -134,7 +177,7 @@ try {
         timeout: config.timeoutMs,
       });
       await page.locator('#go').click();
-      await waitFor(() => globalThis.perfBaseline?.worldLoading.ready, null, {
+      await waitFor(() => globalThis.perfBaseline?.worldLoading?.ready, null, {
         timeout: config.timeoutMs,
       });
       const identity = await page.evaluate(() => globalThis.perfBaseline.identity);
@@ -146,8 +189,13 @@ try {
           const perf = globalThis.perfBaseline;
           perf.mode = queryMode;
           perf.prepare();
+          perf.skyReady = () => perf.enabled && perf.records.length >= sampling.warmFrames;
+          perf.debug.handleAction('debug.noclip-toggle');
+          if (workload.driver === 'sky') {
+            // A stationary prewarm must not let the horde kill the player before route movement starts.
+            perf.debug.handleAction('debug.freeze-game');
+          }
           if (workload.driver !== 'sky') {
-            perf.debug.handleAction('debug.noclip-toggle');
             if (workload.spawnCount) {
               perf.debug.handleAction('debug.spawn-shamblers');
             }
@@ -159,6 +207,9 @@ try {
             frame = 0;
           };
           perf.before = () => {
+            if (workload.driver === 'sky' && perf.debug.frozen && perf.skyReady()) {
+              perf.debug.handleAction('debug.freeze-game');
+            }
             if (workload.driver === 'orbit') {
               perf.input.yaw =
                 yaw +
@@ -218,6 +269,7 @@ try {
           position: perf.engine.camera.position.toArray(),
           zombieCount: perf.zombieStore.size,
           drawingBuffer: [perf.engine.renderer.domElement.width, perf.engine.renderer.domElement.height],
+          renderScale: perf.engine.mood.renderScale,
           sky: document.querySelector('[data-sky-route] textarea')?.value,
         };
       });
@@ -239,6 +291,7 @@ try {
         throw new Error('Horde is not drawn');
       }
       await page.screenshot({ path: resolve(out, `${route.id}-${mode}-${repeat}.png`) });
+      await captureLook(page, out, { route, mode, repeat });
       const evidence = { route: route.id, mode, repeat, identity, errors, ...observation, records, summary };
       result.runs.push(evidence);
       await writeFile(resolve(out, `${route.id}-${mode}-${repeat}.json`), JSON.stringify(evidence));

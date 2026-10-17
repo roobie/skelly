@@ -50,8 +50,10 @@ import {
 } from '../core/mood.ts';
 import type { OpticLensFrame, ReticleKind } from '../core/opticView.ts';
 import type { Sky } from '../core/sky.ts';
+import { AdaptiveScale } from './adaptiveScale.ts';
 import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
 import { DrawPass } from './drawPass.ts';
+import { GpuFrameTime } from './gpuFrameTime.ts';
 import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
 import { createMoodOutputPass } from './moodOutput.ts';
@@ -82,6 +84,10 @@ export class Mood {
   private width = 1;
   private height = 1;
   private renderScaleValue: number;
+  private readonly adaptiveScale: AdaptiveScale;
+  private gpuProbe: GpuFrameTime | undefined;
+  externalGpuTiming = false;
+  private contextLost = false;
   private bloomScaleValue: number;
   private readonly graphicsTuning: GraphicsOptions;
   private frame = 0;
@@ -99,11 +105,19 @@ export class Mood {
 
   constructor(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, graphicsTuning: GraphicsOptions) {
     this.graphicsTuning = graphicsTuning;
-    this.renderScaleValue = graphicsTuning.renderScale.default;
+    this.adaptiveScale = new AdaptiveScale(graphicsTuning.renderScale);
+    this.renderScaleValue = this.adaptiveScale.scale;
     this.bloomScaleValue = graphicsTuning.bloomScale.default;
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
+    renderer.domElement.addEventListener('webglcontextlost', () => {
+      this.contextLost = true;
+      this.releaseComposer();
+    });
+    renderer.domElement.addEventListener('webglcontextrestored', () => {
+      this.contextLost = false;
+    });
     installAutoToneMapping();
   }
 
@@ -196,10 +210,21 @@ export class Mood {
     return this.renderScaleValue;
   }
 
-  setRenderScale(value: number): void {
+  setRenderScale(value: number, explicit = true): void {
     assertGraphicsValue(this.graphicsTuning, 'renderScale', value);
-    this.renderScaleValue = value;
-    this.composer?.setPixelRatio(this.renderer.getPixelRatio() * this.renderScaleValue);
+    this.adaptiveScale.setChoice(value, explicit);
+    this.applyRenderScale(this.adaptiveScale.scale);
+  }
+
+  recordGpuTime(ms: number, measuredScale: number): void {
+    this.applyRenderScale(this.adaptiveScale.sample(ms, measuredScale));
+  }
+
+  private applyRenderScale(value: number): void {
+    if (value !== this.renderScaleValue) {
+      this.renderScaleValue = value;
+      this.composer?.setPixelRatio(this.renderer.getPixelRatio() * value);
+    }
   }
 
   get bloomScale(): number {
@@ -224,6 +249,9 @@ export class Mood {
    * when post is on, onto the screen when it's off.
    */
   render(drawHands: () => void, opticFrame?: OpticLensFrame): void {
+    if (this.contextLost) {
+      return;
+    }
     // Crack check: only the clear colour changes (the fog on geometry keeps the sky colour), so
     // magenta shows exactly where no geometry covered the sample. Post-on scales it like the sky.
     const { background } = this.scene;
@@ -234,9 +262,24 @@ export class Mood {
       }
       this.scene.background = this.crackColor;
     }
+    let endQuery: (() => void) | undefined;
+    if (
+      this.adaptiveScale.active &&
+      !this.externalGpuTiming &&
+      this.state.post &&
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'visible'
+    ) {
+      this.gpuProbe ??= new GpuFrameTime(this.renderer.getContext() as WebGL2RenderingContext);
+      endQuery = this.gpuProbe.begin(
+        () => this.renderScale,
+        (ms, scale) => this.recordGpuTime(ms, scale),
+      );
+    }
     try {
       this.draw(drawHands, opticFrame);
     } finally {
+      endQuery?.();
       this.scene.background = background;
     }
   }
@@ -395,6 +438,22 @@ export class Mood {
     u.uHighlightTint!.value = [...params.highlightTint];
     u.uVignette!.value = film ? VIGNETTE : 0;
     u.uGrain!.value = film ? GRAIN : 0;
+  }
+
+  private releaseComposer(): void {
+    // Dispose while the context is lost: stale dispose listeners cannot delete foreign handles after restoration.
+    this.gpuProbe = undefined;
+    this.opticLens.dispose();
+    if (this.composer) {
+      for (const pass of this.composer.passes) {
+        pass.dispose();
+      }
+      this.composer.dispose();
+      this.composer = undefined;
+    }
+    this.bloomPass = undefined;
+    this.outputPass = undefined;
+    this.opticPass = undefined;
   }
 
   /** Built on first use, so a run that never turns post on (the benchmark) allocates no targets. */
