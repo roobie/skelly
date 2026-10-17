@@ -7,7 +7,7 @@ import type { FurnitureDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
-import type { DoorLockDef } from './schema.ts';
+import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
 
@@ -57,8 +57,6 @@ export interface EntitySpec {
   facing: Facing;
 }
 
-/** Search time in seconds: 1 s for a small container up to 3 s for a wardrobe (`DESIGN.md`, "Handling time"). */
-const SEARCH = { min: 1, max: 3, cellsForMax: 48 } as const;
 const DOOR_PANEL_THICKNESS = 0.06;
 const DOOR_FACE_CLEARANCE = 0.001;
 const DOOR_OPEN_TURN = { n: -Math.PI / 2, s: Math.PI / 2, e: -Math.PI / 2, w: Math.PI / 2 } as const;
@@ -132,9 +130,9 @@ const hatchPanel = (entity: BlockEntity, blockSize: number): DoorPanelBox => {
 export const panelFor = (entity: BlockEntity, definition: FurnitureDef, blockSize: number): DoorPanelBox =>
   definition.door?.hatch ? hatchPanel(entity, blockSize) : doorPanel(entity, blockSize, definition.shape !== undefined);
 
-export const searchTime = (def: FurnitureDef): number => {
+export const searchTime = (def: FurnitureDef, { search }: InventoryTuningDef): number => {
   const cells = (def.container?.pockets ?? []).reduce((sum, p) => sum + p.grid[0] * p.grid[1], 0);
-  return SEARCH.min + (SEARCH.max - SEARCH.min) * Math.min(1, cells / SEARCH.cellsForMax);
+  return search.minSimSeconds + (search.maxSimSeconds - search.minSimSeconds) * Math.min(1, cells / search.cellsForMax);
 };
 
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;

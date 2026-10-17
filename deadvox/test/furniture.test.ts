@@ -9,6 +9,7 @@ import { pickFurniture } from '../src/core/furniturePick.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { HANDLING, Inventory } from '../src/core/inventory.ts';
 import type { Body } from '../src/core/physics.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import {
   cellsOf,
@@ -146,10 +147,12 @@ describe('furniture', () => {
     queue.registerAction('test.search', () => {
       inv.entities.markSearched(cupboard);
     });
-    const time = searchTime(registry.furniture.get('kitchen_cupboard')!);
-    expect(time).toBeGreaterThanOrEqual(1);
-    expect(time).toBeLessThan(searchTime(registry.furniture.get('wardrobe')!));
-    expect(searchTime(registry.furniture.get('wardrobe')!)).toBeLessThanOrEqual(3);
+    const tuning = reachTuning(registry);
+    const { minSimSeconds, maxSimSeconds } = tuning.search;
+    const time = searchTime(registry.furniture.get('kitchen_cupboard')!, tuning);
+    expect(time).toBeGreaterThanOrEqual(minSimSeconds);
+    expect(time).toBeLessThan(searchTime(registry.furniture.get('wardrobe')!, tuning));
+    expect(searchTime(registry.furniture.get('wardrobe')!, tuning)).toBeLessThanOrEqual(maxSimSeconds);
     queue.enqueueAction('test.search', 'Search', time, { entityUid: cupboard.uid });
     queue.tick(time - 0.1);
     expect(cupboard.searched).toBe(false);

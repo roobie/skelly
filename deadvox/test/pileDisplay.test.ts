@@ -4,8 +4,9 @@ import { InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { ITEM_FLIGHT_SECONDS, itemFlightPoint } from '../src/core/itemThrow.ts';
+import { itemFlightPoint } from '../src/core/itemThrow.ts';
 import { pileBundleHeight } from '../src/core/pileLayout.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { PILE_DISPLAY_KIND } from '../src/core/schema.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { PileMeshes } from '../src/render/piles.ts';
@@ -16,6 +17,8 @@ const { registry: base } = buildRegistry(
     .sort()
     .map((source) => ({ source, data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')) as unknown })),
 );
+
+const { throwFlightSimSeconds: ITEM_FLIGHT_SECONDS, throwArcHeightMetres } = reachTuning(base);
 
 const fixtureRegistry = () => ({ ...base, items: new Map(base.items) });
 const pile = { kind: 'pile' as const, pos: [2, 0, 0] as [number, number, number] };
@@ -165,6 +168,7 @@ it('updates a reused arc after later-indexed arcs have landed', () => {
       origin,
       endpointBundle!.position.toArray() as [number, number, number],
       (landingTime - thirdStart) / ITEM_FLIGHT_SECONDS,
+      throwArcHeightMetres,
     ),
   );
   expect(activeThird.position.distanceTo(expected)).toBeLessThan(1e-5);
@@ -177,6 +181,7 @@ it('updates a reused arc after later-indexed arcs have landed', () => {
       origin,
       endpointBundle!.position.toArray() as [number, number, number],
       (nextTime - thirdStart) / ITEM_FLIGHT_SECONDS,
+      throwArcHeightMetres,
     ),
   );
   expect(activeThird.position.distanceTo(nextExpected)).toBeLessThan(1e-5);

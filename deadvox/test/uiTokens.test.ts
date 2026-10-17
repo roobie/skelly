@@ -24,6 +24,7 @@ const tuning = {
   refusalSound: refusalSound.id,
   restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
   doorCloseBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
+  itemActionLabels: { stripRound: 'fixture strip' },
   wearSlotLabels,
 };
 
@@ -61,11 +62,12 @@ it('rejects UI tuning without a refusal sound, or whose refusal sound is not loa
 });
 
 it('rejects UI tuning missing any player-facing text field, with no code default', () => {
-  const { restLabels: _r, doorCloseBlockedMessages: _d, wearSlotLabels: _w, ...bare } = tuning;
+  const { restLabels: _r, doorCloseBlockedMessages: _d, itemActionLabels: _i, wearSlotLabels: _w, ...bare } = tuning;
   const missing = validateContent({ source: 'no-text.json', data: { ui: [bare] } });
   expect(missing.map(({ path }) => path)).toEqual([
     'ui[0].restLabels',
     'ui[0].doorCloseBlockedMessages',
+    'ui[0].itemActionLabels',
     'ui[0].wearSlotLabels',
   ]);
   const { head: _h, ...partialSlots } = wearSlotLabels;
