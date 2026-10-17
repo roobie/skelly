@@ -128,6 +128,9 @@ interface HeldReadiness {
   readonly aimingDownSights: boolean;
 }
 
+/** The hand a carried item's tree path is rooted in. */
+const HELD_ROOT_PATH = /^inventory\.hands\.(left|right)\./;
+
 export interface HeldHandlingFrame {
   readonly firearms: readonly HeldFirearmPose[];
   readonly readiness?: HeldReadiness;
@@ -1142,7 +1145,7 @@ export class HeldItems {
     }
     for (const { item: found, path } of this.inventory.carriedTree()) {
       if (found === item) {
-        const side = /^inventory\.hands\.(left|right)\./.exec(path)?.[1] as HandSide | undefined;
+        const side = HELD_ROOT_PATH.exec(path)?.[1] as HandSide | undefined;
         return side && this.shown.get(this.inventory.hands[side]!.uid);
       }
     }
