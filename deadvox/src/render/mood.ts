@@ -98,7 +98,7 @@ export class Mood {
   private readonly crackColor = new Color();
   private composer: EffectComposer | undefined;
   private readonly drawPass = new DrawPass();
-  private readonly opticLens = new OpticLensRenderer();
+  private opticLens = new OpticLensRenderer();
   private opticPass: ShaderPass | undefined;
   private bloomPass: UnrealBloomPass | undefined;
   private outputPass: OutputPass | undefined;
@@ -441,16 +441,10 @@ export class Mood {
   }
 
   private releaseComposer(): void {
-    // Dispose while the context is lost: stale dispose listeners cannot delete foreign handles after restoration.
+    // Context loss already frees GPU storage; disposing stale handles only produces invalid deletes.
     this.gpuProbe = undefined;
-    this.opticLens.dispose();
-    if (this.composer) {
-      for (const pass of this.composer.passes) {
-        pass.dispose();
-      }
-      this.composer.dispose();
-      this.composer = undefined;
-    }
+    this.opticLens = new OpticLensRenderer();
+    this.composer = undefined;
     this.bloomPass = undefined;
     this.outputPass = undefined;
     this.opticPass = undefined;

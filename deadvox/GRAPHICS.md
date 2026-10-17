@@ -57,9 +57,10 @@ the next size instead of immediately undoing a reduction. Unsupported GPU timing
 content default intact. Explicit player or debug URL scene-scale choices suspend adaptation;
 clearing a player choice returns ownership to content. See `src/render/adaptiveScale.ts`,
 `AdaptiveScale`, `src/render/gpuFrameTime.ts`, `GpuFrameTime`, and
-`src/render/mood.ts`, `Mood.recordGpuTime`. Release post targets while a WebGL context is
-lost, before restored rendering can attach fresh resources: stale disposal listeners otherwise
-try to delete handles from the lost context on the first resolution change. See
+`src/render/mood.ts`, `Mood.recordGpuTime`. Abandon post targets when a WebGL context is
+lost: the context has already freed their GPU storage, while disposal would try to delete dead
+handles. Rebuilding after restoration also prevents stale disposal listeners from deleting old
+handles on the first resolution change. See
 `src/render/mood.ts`, `Mood.releaseComposer`.
 
 Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's

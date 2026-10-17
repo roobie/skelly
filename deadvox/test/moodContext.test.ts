@@ -26,7 +26,7 @@ vi.mock('three/addons/postprocessing/EffectComposer.js', () => {
   };
 });
 
-it('releases lost-context post targets before a later scale change and rebuilds them for rendering', () => {
+it('abandons lost-context post targets without deleting dead handles and rebuilds them for rendering', () => {
   const canvas = new EventTarget();
   const renderer = {
     domElement: canvas,
@@ -42,7 +42,7 @@ it('releases lost-context post targets before a later scale change and rebuilds 
   const old = owner.composers.at(-1)!;
   old.setPixelRatio.mockClear();
   canvas.dispatchEvent(new Event('webglcontextlost'));
-  expect(old.dispose).toHaveBeenCalled();
+  expect(old.dispose).not.toHaveBeenCalled();
   mood.setRenderScale(policy.renderScale.min);
   expect(old.setPixelRatio).not.toHaveBeenCalled();
   mood.render(() => undefined);
