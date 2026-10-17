@@ -5,6 +5,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import type { Site } from '../src/core/site.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { gameTimeOfDay, realSeconds } from '../src/core/time.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
@@ -171,7 +172,7 @@ describe('hamlet save/load continuation', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, scale, x, startZ));
+    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ));
     const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
     const cx = toChunk(x);
     const cz = toChunk(z);
@@ -272,7 +273,7 @@ describe('hamlet save/load continuation', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, scale, x, startZ));
+    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ));
     const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
     const cx = toChunk(x);
     const cz = toChunk(z);

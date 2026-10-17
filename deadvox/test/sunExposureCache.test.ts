@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import { parseTimeOfDay } from '../src/core/clock.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { SunExposureCache, sunExposedAt } from '../src/core/lights.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { realSeconds } from '../src/core/time.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
@@ -70,7 +71,7 @@ it('bounds daytime opacity queries to one column scan per source in a compressed
   }
   const x = cx * CHUNK + clearCell[0];
   const z = cz * CHUNK + clearCell[1];
-  const ground = fixtureHamlet.surface.height(x, z, terrainHeight(seed, scale, x, z));
+  const ground = fixtureHamlet.surface.height(x, z, terrainHeight(seed, terrainShapeOf(registry), scale, x, z));
   const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, z + 0.5];
 
   let opaqueCalls = 0;

@@ -9,6 +9,7 @@ import { stepBody } from '../src/core/physics.ts';
 import { HandlingRange } from '../src/core/range.ts';
 import { furnitureDistance, reachTuning } from '../src/core/reach.ts';
 import { World } from '../src/core/world.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
@@ -106,6 +107,7 @@ const buildRangeWalkFixture = () => {
   const maxZ = Math.ceil(Math.max(startZ, ...routeZs) + 2);
   const terrain: Terrain = {
     seed: config.seed,
+    shape: terrainShapeOf(registry),
     scale,
     blocks: {
       grass: registry.blockIds.get('grass')!,

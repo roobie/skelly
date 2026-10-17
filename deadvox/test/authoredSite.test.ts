@@ -29,6 +29,7 @@ import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
 import { rectsOverlap } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
@@ -305,6 +306,7 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
     for (const chunk of generateColumn(
       {
         seed,
+        shape: terrainShapeOf(registry),
         scale,
         blocks: {
           grass: registry.blockIds.get('grass')!,

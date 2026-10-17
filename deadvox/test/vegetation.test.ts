@@ -15,14 +15,13 @@ import { makeScale } from '../src/core/scale.ts';
 import { grow } from '../src/core/site.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
+import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import {
-  FOREST_DENSITY_FIELD,
   forestDensityAt,
   leafLitterAt,
   placeTree,
   rectsOverlap,
   stampTrees,
-  TREE_MIX,
   TreeIndex,
 } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
@@ -356,7 +355,7 @@ describe('passable but opaque vegetation', () => {
 
   it('keeps entire hamlet canopies and hedges off lots, road frontage/entrances, spawn and range', () => {
     const hamlet = new Hamlet(1, registry, scale);
-    expect(new Set(hamlet.trees.map((tree) => tree.shape))).toEqual(new Set(TREE_MIX));
+    expect(new Set(hamlet.trees.map((tree) => tree.shape))).toEqual(new Set(siteGenerationOf(registry).vegetation.treeMix));
     expect(hamlet.hedges.length).toBeGreaterThan(0);
     const required = [
       grow(hamlet.road, HAMLET.gap),
@@ -383,13 +382,13 @@ describe('passable but opaque vegetation', () => {
   it('keeps the seeded forest-density field smooth and seed-dependent', () => {
     const heading = [-0.9, 0.44];
     const unit = heading.map((value) => value / Math.hypot(...heading));
-    const { gain, wavelengthMetres } = FOREST_DENSITY_FIELD;
+    const { gain, wavelengthMetres } = siteGenerationOf(registry).vegetation.forestDensityField;
     const sampleStepMetres = 0.5;
     const stretchHalfExtentMetres = wavelengthMetres / 8;
     const sampleCount = Math.floor((2 * stretchHalfExtentMetres) / sampleStepMetres) + 1;
     const samples = Array.from({ length: sampleCount }, (_, index) => {
       const distance = -stretchHalfExtentMetres + index * sampleStepMetres;
-      return forestDensityAt(1, unit[0]! * distance, unit[1]! * distance);
+      return forestDensityAt(registry, 1, unit[0]! * distance, unit[1]! * distance);
     });
     const maxStepDifference = (3 * gain * sampleStepMetres) / wavelengthMetres;
 
@@ -400,10 +399,10 @@ describe('passable but opaque vegetation', () => {
 
     const x = unit[0]! * 96;
     const z = unit[1]! * 96;
-    const density = forestDensityAt(1, x, z);
+    const density = forestDensityAt(registry, 1, x, z);
     expect(density).toBeGreaterThanOrEqual(0);
     expect(density).toBeLessThanOrEqual(1);
-    expect(forestDensityAt(2, x, z)).not.toBe(density);
+    expect(forestDensityAt(registry, 2, x, z)).not.toBe(density);
   });
 
   it('indexes exclusive litter borders and preserves clipped voxel writes across negative and positive columns', () => {

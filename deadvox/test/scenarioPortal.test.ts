@@ -16,6 +16,7 @@ import {
   type stampPlacement,
 } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 
@@ -69,6 +70,7 @@ describe('owned hatch/ladder portal fixtures', () => {
     const solidId = registry.blockIds.get('fixture_solid')!;
     const terrain = {
       seed: 73,
+      shape: terrainShapeOf(registry),
       scale,
       blocks: { grass: solidId, dirt: solidId, rock: solidId, sand: solidId },
       surface: { height: () => floor, top: () => solidId },
