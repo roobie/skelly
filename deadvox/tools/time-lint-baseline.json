@@ -264,9 +264,6 @@
       "timeoutMs": 1,
       "timer": 1
     },
-    "game/session.ts": {
-      "expiresAt": 1
-    },
     "game/streamer.ts": {
       "genMs": 1,
       "meshMs": 1
