@@ -327,15 +327,36 @@ const WeaponSchema = strictObject({
   }),
 });
 
-const MeleeClassSchema = strictObject({
-  id: picklist(MELEE_DAMAGE_KINDS),
-  /** Fractional spread applied symmetrically around base weapon damage. */
-  damageVariance: Fraction,
-  headDamageMultiplier: Positive,
-  limbDamageMultiplier: Positive,
-  /** Multiplies swing speed; cooldown is divided by this value. */
-  speedMultiplier: Positive,
+/** The bare-handed attack, which no item supplies. */
+const UnarmedAttackSchema = strictObject({
+  damage: Positive,
+  /** Metres beyond the player's hand; the arm's reach is added when swinging. */
+  reach: Positive,
+  /** Sim seconds between swings. */
+  cooldownSimSeconds: PositiveSimSeconds,
+  stamina: NonNegative,
+  contactFraction: Fraction,
+  windupCapSimSeconds: PositiveSimSeconds,
+  impulse: NonNegative,
 });
+
+const MeleeClassSchema = pipe(
+  strictObject({
+    id: picklist([...MELEE_DAMAGE_KINDS, 'fists']),
+    /** Fractional spread applied symmetrically around base weapon damage. */
+    damageVariance: Fraction,
+    headDamageMultiplier: Positive,
+    limbDamageMultiplier: Positive,
+    /** Multiplies swing speed; cooldown is divided by this value. */
+    speedMultiplier: Positive,
+    /** Present exactly on the `fists` class, whose attack has no weapon item to carry it. */
+    unarmed: optional(UnarmedAttackSchema),
+  }),
+  check(
+    (meleeClass) => (meleeClass.id === 'fists') === (meleeClass.unarmed !== undefined),
+    'only the fists melee class carries an unarmed attack, and it must',
+  ),
+);
 
 const RoundFeedPoseSchema = pipe(
   strictObject({

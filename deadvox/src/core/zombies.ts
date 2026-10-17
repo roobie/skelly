@@ -76,21 +76,14 @@ const requiredFigureSeeds = (type: ZombieDef): readonly number[] => {
 export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
   type.model === 'amalgam' ? type.attack.reach * amalgamFigureForType(type, figureSeed).scale : type.attack.reach;
 
-/** Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it. */
+/**
+ * Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it.
+ * It applies to every melee weapon, not only the bare-handed attack, so it stays in code rather than on the fists class.
+ */
 export const PLAYER_ARM_REACH_M = 1.2;
 
 import { blastShare, bodyCentre, type ExplosiveSpec, inSight } from './explosive.ts';
 import type { PelletShot } from './pellets.ts';
-
-export const FISTS_MELEE = {
-  damage: 8,
-  reach: 0.1,
-  cooldown: 0.8,
-  stamina: 4,
-  impulse: 4,
-  contactFraction: 0.4,
-  windupCapSimSeconds: 0.25,
-} as const;
 
 /** A shot's or a blast's hit, dealt through the melee hit path without a swing to recover from. */
 const projectileWeapon = (damage: number, reach: number, impulse: number): MeleeWeapon => ({
@@ -3494,12 +3487,7 @@ export class ZombieSystem {
     return this.resolveMeleeNow(origin, direction, weapon, isFist) !== undefined;
   }
 
-  private resolveMeleeNow(
-    origin: Vec3,
-    direction: Vec3,
-    weapon: MeleeWeapon,
-    isFist = weapon === FISTS_MELEE,
-  ): EntityId | undefined {
+  private resolveMeleeNow(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
     const aim = this.targetAt({ origin, direction, weapon, isBlocked: this.options.isSolid });
     if (!aim?.inReach) {
       this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
@@ -3528,9 +3516,9 @@ export class ZombieSystem {
   }
 
   /** Immediate combat-query helper retained for deterministic geometry tests; play uses PlayerCombat. */
-  swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): EntityId | undefined {
+  swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
     this.options.onSound?.('melee_swing', copy(origin));
-    return this.resolveMeleeNow(origin, direction, weapon);
+    return this.resolveMeleeNow(origin, direction, weapon, isFist);
   }
 
   /** Applies one hit's damage and effects; returns where it struck an amalgam's flesh, for the caller to carve. */
