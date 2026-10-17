@@ -38,7 +38,8 @@ export interface ShamblerPoseInput {
   readonly stanceWeight?: number;
   /** Fixed-step hit reaction; omitted only for older snapshots/tests. */
   readonly hitFlinchTime?: number;
-  /** How far the spit's wind-up rears the head and chest back this tick, in degrees. */
+  /** How far the spit's wind-up rears the head and chest back this tick, in degrees. Hit regions share this pose, so
+   * a shot during the telegraph hits where the head is. */
   readonly spitPullbackDegrees?: { readonly head: number; readonly chest: number };
   readonly severed: readonly string[];
   readonly blockSize: number;

@@ -1682,7 +1682,8 @@ const AcidSpitSchema = pipe(
   strictObject({
     rangeBand: strictObject({ nearMetres: Positive, farMetres: Positive }),
     windupSimSeconds: PositiveSimSeconds,
-    /** How far the head and chest rear back by the end of the wind-up; the pose eases in with its progress. */
+    /** How far the head and chest rear back by the end of the wind-up; the pose eases in with its progress and moves
+     * the simulated hit regions with it (`docs/acid-zombie.md`, "The spit"). */
     pullbackDegrees: strictObject({
       head: pipe(NonNegative, maxValue(90, 'must be at most 90')),
       chest: pipe(NonNegative, maxValue(90, 'must be at most 90')),

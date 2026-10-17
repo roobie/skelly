@@ -22,6 +22,8 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 **Telegraph before damage.** The spit has a wind-up the player can see and hear, like the amalgam's tentacle and every melee swing: the head pulls back, the chest sac glows brighter and a wet sound plays from the zombie's position. Without a telegraph, a ranged hit reads as random damage from off-screen. The wind-up sound is the type's attack sound. See `DESIGN.md`, "Amalgam body and damage", and `src/core/schema.ts`, `ZombieSchema`.
 
+**The pull-back is simulation, not only its picture.** The wind-up pose feeds the same posed body as the hit regions, so the head and chest regions rear back with the head the player sees, and a shot during the telegraph hits where the head is. The pose follows the saved wind-up, so it is deterministic and survives a save. See `src/core/zombiePose.ts`, `withSpitPullback`, and `src/core/zombies.ts`, `posedRegionsForZombie`.
+
 **A hit during the wind-up cancels the spit.** A cancelled spit costs part of the cooldown, as a fraction in content, because that fraction decides how often a harassing spitter can fire while the player fights back. Cancelling makes fighting back an answer in itself, which suits an enemy meant to harass rather than to kill.
 
 **Sight, not hearing, starts a spit.** A zombie spits only at a player it sees, from inside its range band and sight cone. Heard or remembered stimuli move it, as they move any zombie, but they never aim a spit, so breaking sight always stops the next one. See `src/core/zombies.ts`, `seesPlayer`.
