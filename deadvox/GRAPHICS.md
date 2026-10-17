@@ -48,9 +48,13 @@ win over player choices, which must win over content defaults. Explicit false va
 choices, not absence. See `src/content/base/graphics.jsonnet`,
 `src/core/graphics.ts`, `resolveGraphics`, and `src/game/graphicsSettings.ts`.
 
-Benchmarks use only effective mod defaults, ignoring machine preferences and debug graphics
-URL overrides, because saved choices must not silently change the comparison workload.
-See `src/game/engine.ts`, `createEngine`, and `src/main.ts`.
+Benchmarks isolate machine preferences and debug graphics overrides so saved choices cannot
+silently change a comparison workload. Scene scale stays fixed at the content default because
+GPU-dependent adaptation would change the pixel workload during a run. Their look is independent
+of play defaults so visual-policy changes cannot redefine the benchmark. Content-owned benchmark
+weathering lets mods choose that workload without changing benchmark logic. See
+`src/game/engine.ts`, `createEngine`, `src/game/graphicsControls.ts`, `GraphicsControls`, and
+`src/bench/post.ts`, `BENCH_LOOK` and `applyBenchWeathering`.
 
 Automatic scene resolution follows GPU execution cost rather than frame intervals: reducing
 pixels cannot fix simulation work, browser scheduling or a slow display. Windowed measurements
@@ -64,10 +68,6 @@ lost: the context has already freed their GPU storage, while disposal would try 
 handles. Rebuilding after restoration also prevents stale disposal listeners from deleting old
 handles on the first resolution change. See
 `src/render/mood.ts`, `Mood.releaseComposer`.
-Benchmarks keep their look independent of play defaults so visual-policy changes cannot
-redefine a comparison workload. Content-owned benchmark weathering lets mods choose that
-workload without changing benchmark logic. See `src/bench/post.ts`, `BENCH_LOOK` and
-`applyBenchWeathering`.
 
 Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's
 policy can change without stale defaults becoming machine preferences. Validate stored

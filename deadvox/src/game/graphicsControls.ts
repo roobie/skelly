@@ -21,6 +21,7 @@ interface GraphicsTargets {
 
 export class GraphicsControls {
   private settings: GraphicsSettings;
+  private readonly source: 'player' | 'mod';
   readonly overrides: Readonly<GraphicsSettings>;
   readonly tuning: GraphicsOptions;
   private readonly targets: GraphicsTargets;
@@ -38,6 +39,7 @@ export class GraphicsControls {
   ) {
     const { source = 'player', debug, params, storage } = options;
     this.tuning = tuning;
+    this.source = source;
     this.targets = targets;
     this.storage = storage;
     this.settings = source === 'player' ? readGraphicsSettings(tuning, storage) : {};
@@ -74,7 +76,7 @@ export class GraphicsControls {
     const { values } = this;
     this.targets.mood?.setRenderScale(
       values.renderScale,
-      this.overrides.renderScale !== undefined || this.settings.renderScale !== undefined,
+      this.source === 'mod' || this.overrides.renderScale !== undefined || this.settings.renderScale !== undefined,
     );
     this.targets.mood?.setBloomScale(values.bloomScale);
     this.targets.shadows?.setSmallSunMap(values.smallSunMap);
