@@ -46,6 +46,7 @@ import {
 } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { OpticLensFrame, OpticViewSettings } from '../core/opticView.ts';
 import { opticViewSettings, projectLensAperture } from '../core/opticView.ts';
@@ -127,6 +128,9 @@ interface HeldReadiness {
   readonly progress: number;
   readonly aimingDownSights: boolean;
 }
+
+/** The hand a carried item's tree path is rooted in. */
+const HELD_ROOT_PATH = /^inventory\.hands\.(left|right)\./;
 
 export interface HeldHandlingFrame {
   readonly firearms: readonly HeldFirearmPose[];
@@ -1134,9 +1138,24 @@ export class HeldItems {
     arm.position.set(...transform.offset);
   }
 
+  /** The model drawn for an item: its own if held, else the held root's model that carries it (a mounted light). */
+  private shownModelOf(item: Item): Object3D | undefined {
+    const own = this.shown.get(item.uid);
+    if (own) {
+      return own;
+    }
+    for (const { item: found, path } of this.inventory.carriedTree()) {
+      if (found === item) {
+        const side = isInHeldItemSlotTree(path) ? (HELD_ROOT_PATH.exec(path)?.[1] as HandSide | undefined) : undefined;
+        return side && this.shown.get(this.inventory.hands[side]!.uid);
+      }
+    }
+    return undefined;
+  }
+
   /** Where a held item's lens is, in world metres; false if it isn't held. Call after `update`. */
   lensOf(item: Item, out: Vector3): boolean {
-    const lens = this.shown.get(item.uid)?.getObjectByName(LENS);
+    const lens = this.shownModelOf(item)?.getObjectByName(LENS);
     if (!lens) {
       return false;
     }
