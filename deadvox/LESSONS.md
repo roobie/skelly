@@ -2,6 +2,7 @@
 read_if:
   - you're changing an area with a lesson below
   - you're troubleshooting an input, browser, save, rendering or resource-lifetime problem
+  - you're changing new-world startup or gesture-gated pointer capture
   - you're changing save-worker timeout policy or interpreting its request diagnostics
   - you're sizing browser-stage budgets after adding pixel captures
   - you've solved a hard problem and need to preserve its reason
@@ -18,6 +19,8 @@ Apply mode-specific suppression when input is captured, using the mode at that e
 ## Browser readiness
 
 Before gameplay or debug commands, browser stages must wait for world readiness after each start or reload. A mounted debug UI, pointer lock or dismissed title menu does not certify readiness; commands under the loading mask are deliberately discarded. Observe the loading owner or the mounted mask's completed state, not optional external resources. See `src/game/worldLoading.ts`, `WorldLoading`, and `src/ui/worldLoading.ts`, `mountWorldLoading`.
+
+Request pointer capture before constructing a new world: synchronous setup can outlast the browser's transient user activation even within the click handler. Let the gesture handler return before setup so native capture can settle without competing with construction. Repeated acceptance while that work is pending must not create another survivor. A ready world with refused capture remains paused, so a debug route's missing output does not imply loading is still pending. See `src/main.ts`, `saveController.setNewWorldLauncher`, `src/game/input.ts`, `requestInputLock`, `src/ui/saveController.ts`, `confirmNewWorld`, and `test/browser/stairs.mjs`.
 
 Local pixel fixtures should load only the terrain needed by their observation. A nearby dropped-light check does not earn the cost of a distant view ring; full-ring readiness makes that unrelated work part of startup. Keep the pixel oracle and completed-readiness boundary intact rather than lengthening the wait. See `test/browser/primary-action-pixel.mjs`, `measureGlowstickFloor`.
 

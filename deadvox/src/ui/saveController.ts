@@ -121,7 +121,7 @@ export class SaveController {
   private deadRecord = false;
   private entered = false;
   private ready = false;
-  private newWorldLauncher: ((creation: HandedCharacter) => { enter: () => void }) | undefined;
+  private newWorldLauncher: ((creation: HandedCharacter) => Promise<{ enter: () => void }>) | undefined;
   private newWorldGoLabel = 'New world';
   private statusText = 'Checking saved worlds…';
   private snapshot: (() => Readonly<SaveSnapshot>) | undefined;
@@ -440,7 +440,7 @@ export class SaveController {
     return this.lastSaveCompletedAtRealTimestamp;
   }
 
-  setNewWorldLauncher(launcher: (creation: HandedCharacter) => { enter: () => void }): void {
+  setNewWorldLauncher(launcher: (creation: HandedCharacter) => Promise<{ enter: () => void }>): void {
     this.newWorldLauncher = launcher;
     this.render();
   }
@@ -632,7 +632,7 @@ export class SaveController {
     this.confirmNewWorld();
   }
 
-  private confirmNewWorld(): void {
+  private async confirmNewWorld(): Promise<void> {
     if (this.entered || !this.ready || !this.newWorldLauncher || this.protectedCurrent) {
       return;
     }
@@ -643,9 +643,11 @@ export class SaveController {
       return;
     }
     const creation: HandedCharacter = Object.freeze({ handedness });
+    this.ready = false;
+    this.render();
     let entry: { enter: () => void };
     try {
-      entry = this.newWorldLauncher(creation);
+      entry = await this.newWorldLauncher(creation);
     } catch (error) {
       this.newWorldLauncher = undefined;
       this.snapshot = undefined;
@@ -656,6 +658,7 @@ export class SaveController {
       this.render();
       return;
     }
+    this.ready = true;
     this.deadRecord = false;
     this.acknowledgedWin = false;
     this.entered = true;
