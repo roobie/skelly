@@ -1,17 +1,16 @@
 import type { Vec3 } from './coords.ts';
-import type { BlockDef } from './schema.ts';
+import type { BlockDef, SenseDef } from './schema.ts';
 import type { SoundEventId } from './soundEvents.ts';
 
 export type PlayerGait = 'still' | 'walking' | 'jogging' | 'sprinting';
 
-export const STEP_DISTANCE_METRES: Readonly<Record<Exclude<PlayerGait, 'still'>, number>> = {
-  walking: 0.75,
-  jogging: 1.2,
-  sprinting: 1.6,
-};
+export type FootstepTuning = SenseDef['footsteps'];
 
-export const HARD_LANDING_METRES = 2.5;
+export const stepDistanceMetres = (tuning: FootstepTuning, gait: Exclude<PlayerGait, 'still'>): number =>
+  tuning[`${gait}StepMetres`];
 
+// Mechanism, not a tunable: the stride-phase origin that puts the first footfall of a standing start
+// on the downbeat of the shared gait phase; moving it would desynchronise walking presentation from sound.
 const INITIAL_STRIDE_PHASE = 0.75;
 
 export interface FootstepClock {
@@ -44,11 +43,16 @@ const distanceToNextFootfall = (stridePhase: number, stepDistance: number): numb
 };
 
 /** Emits footfalls from travelled distance; stationary and airborne ticks freeze the shared gait phase. */
-export const advanceFootsteps = (clock: FootstepClock, gait: PlayerGait, travelledMetres: number): FootstepAdvance => {
+export const advanceFootsteps = (
+  clock: FootstepClock,
+  gait: PlayerGait,
+  travelledMetres: number,
+  tuning: FootstepTuning,
+): FootstepAdvance => {
   if (gait === 'still' || !(travelledMetres > 0)) {
     return { clock: { ...clock, gait: 'still', distanceUntilStep: 0 }, steps: 0 };
   }
-  const stepDistance = STEP_DISTANCE_METRES[gait];
+  const stepDistance = stepDistanceMetres(tuning, gait);
   const remaining =
     clock.gait === gait ? clock.distanceUntilStep : distanceToNextFootfall(clock.stridePhase, stepDistance);
   const stridePhase = clock.stridePhase + travelledMetres / (2 * stepDistance);
@@ -176,4 +180,5 @@ export const shamblerFootstepEventAt = (
   return undefined;
 };
 
-export const isHardLanding = (fallHeightMetres: number): boolean => fallHeightMetres >= HARD_LANDING_METRES;
+export const isHardLanding = (fallHeightMetres: number, tuning: FootstepTuning): boolean =>
+  fallHeightMetres >= tuning.hardLandingMetres;

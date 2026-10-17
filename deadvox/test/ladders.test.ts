@@ -5,7 +5,6 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { HARD_LANDING_METRES } from '../src/core/footsteps.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
 import type { HandSide } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
@@ -17,6 +16,7 @@ import { World } from '../src/core/world.ts';
 import { type MoveIntent, PLAYER } from '../src/game/player.ts';
 import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry, issues } = buildRegistry(
@@ -149,7 +149,7 @@ const oneHandedFoodType = itemDefs.find((def) => def.food && !def.twoHanded)!.id
  * A windowless block house whose flat roof stands higher than a hard landing, with a ladder of pieces against its
  * west wall up through the roof's layer, as authored roof-edge ladders are.
  */
-const roofHeight = Math.ceil(HARD_LANDING_METRES / scale.blockSize) + 2;
+const roofHeight = Math.ceil(BASE_SENSE_TUNING.footsteps.hardLandingMetres / scale.blockSize) + 2;
 const house: SolidAt = (x, y, z) => y === 0 || (x >= 0 && x < 8 && y >= 1 && y < 1 + roofHeight && z >= -4 && z < 6);
 const roofTop = 1 + roofHeight;
 const LADDER_FOOT: Vec3 = [-1, 1, 0];

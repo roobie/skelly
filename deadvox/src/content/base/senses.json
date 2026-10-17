@@ -9,6 +9,12 @@
         "sightRangeScale": 0.5,
         "speedMetresPerSimSecond": 1
       },
+      "footsteps": {
+        "hardLandingMetres": 2.5,
+        "joggingStepMetres": 1.2,
+        "sprintingStepMetres": 1.6000000000000001,
+        "walkingStepMetres": 0.75
+      },
       "id": "player",
       "light": {
         "lureRangeScale": 0.5,
@@ -26,6 +32,7 @@
         "backwardSpeedScale": 0.5,
         "sidewaysSpeedScale": 0.69999999999999996
       },
+      "vocalNoiseLifetimeSimSeconds": 0.5,
       "wall": {
         "clearCutoffHz": 18000,
         "clearGain": 1,

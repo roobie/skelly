@@ -95,6 +95,20 @@ playable-pack admission rather than inventing missing policy in a renderer. See
 `src/content/base/graphics.jsonnet`, `src/core/graphics.ts`, `GraphicsOptionsSchema`, and
 `src/core/content.ts`, `requiredContentIssues`.
 
+## Inventory action tunables and labels
+
+Inventory action timing and throw shape are tuning of the player's inventory row, and
+the label of an item action is player-facing text in the core ui row.
+Keeping them in content lets a mod retune or reword them without a code change. The schema
+requires every field, so a pack that omits one fails validation instead of silently
+inheriting a code default. Readers take the values from the registry. See
+`src/core/schema.ts`, `InventoryTuningSchema` and `UiTuningSchema`, and `src/core/reach.ts`,
+`reachTuning`.
+
+The handling range of the test range stays in code: it is debug layout geometry whose
+arithmetic belongs to the range builder, not a tunable a mod would reasonably change. See
+`src/core/range.ts`.
+
 ## Weathering profiles
 
 Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `WeatheringSchema` in `src/core/schema.ts` and `referenceIssues` in `src/core/content.ts`. `configFromUrl` in `src/game/config.ts` selects the site profile.
@@ -104,6 +118,12 @@ Weathering is a render-only content choice, not saved world state. Named profile
 One required row owns how the day reads, sun and sky and fog together, so a mod that changes the latitude or the mood needs no engine code. Every field is required, with no code default and no fallback, so a pack that omits one fails to load rather than playing under a hidden look. Looks are keyed by solar phase so an author edits a phase, not an index, and colours are hex that authors can read.
 
 Where each look sits in its phase and how looks blend stay in code. They are mechanism shared by every pack: a pack tunes how the dawn looks, not how the sky moves from night to dawn (`src/core/sky.ts`, `skyAt`). Tests take the cycle from base content through `test/dayPhaseFixture.ts` and never restate it. See `src/core/schema.ts`, `DayCycleSchema`, for what the row holds, and `src/core/weather.ts`, `skyInWeather`.
+
+## Footstep and vocal-noise tuning
+
+Footstep and vocal-noise tuning is a property of the player's body, so it lives in the player's sense row beside the other hearing tunables and a mod that changes the body needs no engine code. Every field is required, with no code default, so a pack that omits one fails to load. See `src/core/schema.ts`, `SenseSchema`.
+
+Two nearby constants stay in code on purpose. The stride-phase origin is mechanism: it aligns the first footfall with the shared gait phase that presentation and aim wobble also read, so a pack tuning spacing never needs it (`src/core/footsteps.ts`, `initialFootstepClock`). The hit-flinch duration is the length of mobgen's flinch clip, so a second copy in content could disagree with the animation it must match (`src/core/zombiePose.ts`, `HIT_FLINCH_DURATION`). Tests take the row from `test/senseFixture.ts`, `BASE_SENSE_TUNING`, and never restate it.
 
 ## Content test registries
 

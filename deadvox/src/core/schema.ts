@@ -227,6 +227,12 @@ const InventoryTuningSchema = strictObject({
   chestHeightMetres: Positive,
   /** Metres within which a looked-at furniture piece can be used. */
   useReachMetres: Positive,
+  /** Searching a container takes `minSimSeconds` for an empty one, rising linearly to `maxSimSeconds` at `cellsForMax` pocket cells. */
+  search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
+  /** Sim seconds a thrown item takes from the hand to where it lands. */
+  throwFlightSimSeconds: Positive,
+  /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
+  throwArcHeightMetres: NonNegative,
 });
 
 const UiTuningSchema = strictObject({
@@ -241,6 +247,8 @@ const UiTuningSchema = strictObject({
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
   doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
+  /** What the item action list calls an action whose wording does not depend on the item or wound. */
+  itemActionLabels: strictObject({ stripRound: Name }),
   /** What the inventory screen calls each wear slot. */
   wearSlotLabels: strictObject({
     head: Name,
@@ -2171,6 +2179,15 @@ const SenseSchema = strictObject({
     clearGain: Fraction,
     clearCutoffHz: Positive,
   }),
+  /** Footfall spacing per moving gait and the fall that lands hard; cadence and landing noise follow from these. */
+  footsteps: strictObject({
+    walkingStepMetres: Positive,
+    joggingStepMetres: Positive,
+    sprintingStepMetres: Positive,
+    hardLandingMetres: Positive,
+  }),
+  /** How long a player vocal noise stays audible to shamblers after it is emitted. */
+  vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
   light: strictObject({
     playerDaySightScale: Fraction,
     /** Reduce how far shamblers investigate non-player light sources. */
