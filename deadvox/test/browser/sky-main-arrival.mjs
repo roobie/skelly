@@ -26,7 +26,7 @@ export const mainSourceOverlays = [
 
 // A base view that still reads the look from core/mood.ts constants meets a branch whose content owns them
 // (core/lookDefaults.ts). The branch's core stays, so the base view takes the content look; a base that
-// already reads it from content needs no rewrite.
+// already reads it from content needs no rewrite. Remove this once the base view reads the look from content.
 function contentLookView(source) {
   if (!source.includes('DEFAULT_LOOK')) {
     return source;

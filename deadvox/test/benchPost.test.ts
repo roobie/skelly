@@ -25,6 +25,7 @@ describe('benchmark weathering', () => {
     const config = makeConfig(1, 64, { registry } as unknown as StartupContent);
     applyBenchWeathering(config);
     expect(config.weatheringProfileId).not.toBe(DEFAULT_WEATHERING_PROFILE_ID);
+    expect(config.weathering).toBeDefined();
     expect(config.weathering).toEqual(registry.weathering.get(config.weatheringProfileId));
   });
 });
