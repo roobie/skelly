@@ -32,6 +32,8 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.analgesic.fadeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'items.weapon.melee.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.weapon.melee.windupCapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'meleeClasses[].unarmed.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'meleeClasses[].unarmed.windupCapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.food.consumeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.analgesic.takeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.light.power.swapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
