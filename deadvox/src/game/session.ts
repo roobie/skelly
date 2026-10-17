@@ -1560,6 +1560,7 @@ export const createSession = (options: SessionOptions) => {
       const noise = registry.sounds.get(event)?.noise;
       playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
     },
+    closeBlockedMessages: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.doorCloseBlockedMessages,
   });
   registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
   sim.actions.prying = {

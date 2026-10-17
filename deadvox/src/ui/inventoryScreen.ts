@@ -56,18 +56,10 @@ export const targetForPackedFloorDrop = (
 
 /** Wear slots always shown, so there's somewhere to drop clothing and a slung long gun. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'legs', 'back', 'waist'];
-const SLOT_LABEL: Record<WearSlot, string> = {
-  head: 'Head',
-  torso: 'Torso',
-  legs: 'Legs',
-  back: 'Back',
-  waist: 'Waist',
-  hands: 'Hands',
-  feet: 'Feet',
-  shoulder: 'Shoulder',
-};
 
 export interface ScreenHooks {
+  /** What each wear slot is called; from the core ui content. */
+  slotLabels: Readonly<Record<WearSlot, string>>;
   reach: () => ReachSnapshot;
   /** The air block at the player's feet, where drops land. */
   feet: () => Vec3;
@@ -1110,7 +1102,7 @@ export class InventoryScreen {
       const item = this.inv.worn[slot];
       return {
         target: `worn:${slot}`,
-        label: SLOT_LABEL[slot],
+        label: this.hooks.slotLabels[slot],
         item: item ? this.itemViewModel(item, 'inv-item inv-item-slot') : undefined,
         pockets: item ? this.pocketsViewModel(item) : [],
       };
