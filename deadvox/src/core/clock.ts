@@ -10,7 +10,7 @@ import { type GameTimeOfDay, gameTimeOfDay, simTimestamp, simToGameTimestamp } f
 
 /** Names a spawn window may use for a time; the day cycle content gives them their values. */
 export const SPAWN_TIME_NAMES = ['midnight', 'dawn', 'noon', 'dusk'] as const;
-export type SpawnTimeName = (typeof SPAWN_TIME_NAMES)[number];
+type SpawnTimeName = (typeof SPAWN_TIME_NAMES)[number];
 export type SpawnTime = GameTimeOfDay | SpawnTimeName;
 
 /** The parts of the day cycle content that name spawn times. */

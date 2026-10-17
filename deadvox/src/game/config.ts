@@ -60,6 +60,20 @@ export type ActorRenderer = 'boxes' | 'detailed';
 const defaultStart = (content: StartupContent): number =>
   content.registry.dayCycle?.defaultStartGameTimeOfDay ?? defaultClock.start;
 
+/** `?time=` wins, then the layout's own time; the weathering test site defaults to noon. */
+const startTime = (
+  content: StartupContent,
+  site: string,
+  layoutTime: number | undefined,
+  requestedTime: string | null,
+): number => {
+  if (requestedTime !== null) {
+    return parseTimeOfDay(requestedTime) ?? defaultStart(content);
+  }
+  const noon = site === 'weatheringTest' ? content.registry.dayCycle?.noonGameTimeOfDay : undefined;
+  return layoutTime ?? noon ?? defaultStart(content);
+};
+
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
 export const makeConfig = (
   seed: number,
@@ -217,13 +231,7 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   config.authoredDecals = params.get('decals') !== '0';
   const layoutTime = content.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
   const requestedTime = params.get('time');
-  config.start =
-    requestedTime === null
-      ? (layoutTime ??
-        (config.site === 'weatheringTest'
-          ? (content.registry.dayCycle?.noonGameTimeOfDay ?? defaultStart(content))
-          : defaultStart(content)))
-      : (parseTimeOfDay(requestedTime) ?? defaultStart(content));
+  config.start = startTime(content, config.site, layoutTime, requestedTime);
   config.debug = params.get('debug') === '1';
   applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);

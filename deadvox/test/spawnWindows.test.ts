@@ -12,8 +12,7 @@ const cycle: SpawnTimeCycle = {
   noonGameTimeOfDay: 13 * 3600,
 };
 const sun = dayPhaseAt(cycle, 0);
-const dusk = sun.sunset;
-const dawn = sun.dawn;
+const { sunset: dusk, dawn } = sun;
 
 describe('spawn time windows', () => {
   it('resolves names against the day cycle: the sun for dawn and dusk, content for midnight and noon', () => {

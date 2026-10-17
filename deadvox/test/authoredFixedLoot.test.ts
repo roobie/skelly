@@ -1827,8 +1827,7 @@ describe('authored fixed loot', () => {
     const parsedTreelineThreats = parsedThreats.filter(({ position }) =>
       treelineThreats.some((spawn) => position.every((coordinate, axis) => coordinate === spawn.position[axis])),
     );
-    const hasDuskWindow = (spawn: SiteLayoutDef['shamblers'][number]) =>
-      spawn.window?.fromGameTimeOfDay === 'dusk';
+    const hasDuskWindow = (spawn: SiteLayoutDef['shamblers'][number]) => spawn.window?.fromGameTimeOfDay === 'dusk';
     expect(parsedRoadsideThreats.filter(hasDuskWindow)).toHaveLength(1);
     expect(parsedTreelineThreats.filter(hasDuskWindow)).toHaveLength(1);
     expect(parsedLayout.startTimeGameTimeOfDay).toBe(

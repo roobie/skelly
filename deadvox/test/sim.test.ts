@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { BODY_REGIONS } from '../src/core/body.ts';
 import {
   calendarAt,
@@ -9,7 +10,6 @@ import {
   simSecondsPerHour,
   skipTarget,
 } from '../src/core/clock.ts';
-import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { awakeRates } from '../src/core/needs.ts';

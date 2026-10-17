@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
+import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
@@ -266,16 +267,16 @@ describe('content', () => {
   });
 
   it('keeps the base day cycle authoritative over mod overrides', () => {
-    const baseCycle = baseRegistry.dayCycle!;
+    const authored = rawBaseDayCycle.dayCycle;
     const modCycle = {
-      ...baseCycle,
-      latitudeDegrees: baseCycle.latitudeDegrees > 80 ? baseCycle.latitudeDegrees - 7 : baseCycle.latitudeDegrees + 7,
+      ...authored,
+      latitudeDegrees: authored.latitudeDegrees > 80 ? authored.latitudeDegrees - 7 : authored.latitudeDegrees + 7,
     };
     const { registry } = buildRegistry([
-      { source: 'base/dayCycle.json', data: { dayCycle: baseCycle } },
+      { source: 'base/dayCycle.json', data: { dayCycle: authored } },
       { source: 'mod/dayCycle.json', data: { dayCycle: modCycle } },
     ]);
-    expect(registry.dayCycle).toEqual(baseCycle);
+    expect(registry.dayCycle).toEqual(baseRegistry.dayCycle);
   });
 
   it('keeps input instructions out of item descriptions', () => {

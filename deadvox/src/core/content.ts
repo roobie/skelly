@@ -242,8 +242,8 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     origins.set(`${section}:${id}`, { source, path: `${section}[${i}]` });
 
   for (const { source, file } of files) {
-    // Named spawn times resolve against this cycle at spawn time, so a pack's cycle overrides like any section.
-    if (file.dayCycle !== undefined) {
+    // Named spawn times and the default start resolve against one cycle, so the base's stays authoritative over mods.
+    if (file.dayCycle !== undefined && registry.dayCycle === undefined) {
       registry.dayCycle = file.dayCycle;
     }
     (file.blocks ?? []).forEach((block, i) => {
