@@ -1,10 +1,28 @@
 {
   "ui": [
     {
+      "doorCloseBlockedMessages": {
+        "other": "Something's in the way",
+        "player": "You're in the way"
+      },
       "hudScale": 1,
       "id": "core",
       "refusalSound": "player_nope",
-      "spacing": 1
+      "restLabels": {
+        "rest": "Resting",
+        "sleep": "Sleeping"
+      },
+      "spacing": 1,
+      "wearSlotLabels": {
+        "back": "Back",
+        "feet": "Feet",
+        "hands": "Hands",
+        "head": "Head",
+        "legs": "Legs",
+        "shoulder": "Shoulder",
+        "torso": "Torso",
+        "waist": "Waist"
+      }
     }
   ]
 }
