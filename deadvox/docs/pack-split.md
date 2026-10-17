@@ -61,7 +61,7 @@ The framework replaces each of these with a capability that content selects. A b
 
 **`acidSpit`, its glob and its puddle.** The mechanism is general: a seen target, a telegraphed wind-up that a hit cancels, line of sight checked at release, a simulated projectile with seeded aim, and a ground hazard that burns whoever stands in it (`docs/acid-zombie.md`, "Ability, not type"). None of that is acid-specific. Acid is a damage kind, and the hazard's burn is that damage kind applied over time. So the ability, the projectile and the hazard are core components, and the values tied to acid (its presentation and each type's resistance to it) are setting data.
 
-**Damage kinds are content.** Each pack declares its damage kinds, each with its class (melee or not), and code owns only the classes. That keeps code to capabilities rather than setting ids, and it lets a setting add a kind, such as fire or poison, without a code edit. So `src/core/body.ts` and `DAMAGE_KINDS`, and the acid-only `ZombieSchema`, `acidResistance`, leave code: resistance is keyed by declared kind.
+**Damage kinds are content.** Each pack declares its damage kinds, each with its class (melee or not), and code owns only the classes. That keeps code to capabilities rather than setting ids, and it lets a setting add a kind, such as fire or poison, without a code edit. So `src/core/body.ts`, `DAMAGE_KINDS` and `src/core/body.ts`, `MELEE_DAMAGE_KINDS` leave code, as does the acid-only `ZombieSchema`, `acidResistance`: resistance is keyed by declared kind.
 
 **Blocks and vegetation.** Natural terrain and materials that any age would have are core, and so are trees and foliage. Manufactured materials of a later age are setting. A block's footstep and foliage sounds follow the block.
 
