@@ -353,7 +353,7 @@ const MeleeClassSchema = pipe(
     unarmed: optional(UnarmedAttackSchema),
   }),
   check(
-    (meleeClass) => (meleeClass.id === 'fists') === (meleeClass.unarmed !== undefined),
+    (meleeClass) => (meleeClass.id === CORE_CONTENT_IDS.fistsMeleeClass) === (meleeClass.unarmed !== undefined),
     'only the fists melee class carries an unarmed attack, and it must',
   ),
 );
