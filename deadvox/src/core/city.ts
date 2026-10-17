@@ -16,7 +16,7 @@ export class StressCity extends CitySite {
         seed,
         registry,
         floor: terrainHeight(seed, terrainShapeOf(registry), scale, 0, 0),
-        grid: benchmarkCityGrid(),
+        grid: benchmarkCityGrid(registry),
         maxStoreys: Math.max(1, maxStoreys),
       }),
     );

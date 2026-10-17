@@ -2118,6 +2118,36 @@ const SiteGenerationSchema = strictObject({
     northSide: pipe(array(Id), minLength(1)),
     southSide: pipe(array(Id), minLength(1)),
   }),
+  // Where the hamlet may stand: a square grid of candidate sites around the world origin, scored on flatness.
+  placement: pipe(
+    strictObject({
+      gridStepMetres: PositiveMetres,
+      reachMetres: NonNegative,
+      sampleMetres: PositiveMetres,
+      lowestMetres: NonNegative,
+    }),
+    // The search walks whole grid steps out to the reach, so a fractional count would silently shrink it.
+    check(
+      ({ gridStepMetres, reachMetres }) => Number.isInteger(reachMetres / gridStepMetres),
+      'reach must be a whole number of grid steps',
+    ),
+  ),
+  // The street grid the stress-test city builds: it has no scenario, so its block geometry lives here.
+  stressCity: strictObject({
+    street: pipe(Count, minValue(4), maxValue(64)),
+    blockX: pipe(Count, minValue(8), maxValue(256)),
+    blockZ: pipe(Count, minValue(8), maxValue(256)),
+    pad: pipe(Count, minValue(2), maxValue(32)),
+    gap: pipe(Count, minValue(1), maxValue(32)),
+    blend: pipe(Count, maxValue(64)),
+    rows: pipe(
+      Count,
+      minValue(2),
+      maxValue(8),
+      check((value) => value % 2 === 0, 'needs paired rows'),
+    ),
+    reachMetres: PositiveMetres,
+  }),
 });
 const SenseSchema = strictObject({
   id: Id,

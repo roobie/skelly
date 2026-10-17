@@ -143,6 +143,8 @@ export const fixtureScenarioSources = (
               leafLitter: 'fixture_solid',
             },
             hamlet: { hedge: 'fixture_solid', northSide: ['fixture_house'], southSide: ['fixture_house'] },
+            placement: baseSite.placement,
+            stressCity: baseSite.stressCity,
           },
         ],
         furniture: [

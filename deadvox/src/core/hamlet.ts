@@ -58,17 +58,6 @@ export interface HamletSides {
   readonly southSide: readonly string[];
 }
 
-/** Only for `cityPlan.ts`, `benchmarkCityGrid`, which has no registry; the city stack moves it to content. */
-export const HAMLET_TEMPLATES: readonly string[] = [
-  'small_house',
-  'bungalow',
-  'corner_store',
-  'hardware_store',
-  'gas_station',
-  'shed',
-  'garage',
-];
-
 /** Also seeded by the static reachability check: roadside wanderers spawn independently of markers. */
 const HAMLET_WANDERER = 'shambler';
 const ZOMBIE_COUNT = [6, 10] as const;
@@ -188,9 +177,6 @@ export const hamletZombieSpawns = (
   }
   return spawns;
 };
-
-/** Where the hamlet may go: offsets from the world origin in metres, on a grid. */
-const SITE = { step: 32, reach: 160, sample: 4, lowest: 15 } as const;
 
 export interface Lot {
   readonly placement: Placement;
@@ -431,16 +417,17 @@ export class Hamlet implements Site {
     const s = this.scale.blockSize;
     let best: [number, number] = [0, 0];
     let bestScore = Number.POSITIVE_INFINITY;
-    const steps = SITE.reach / SITE.step;
+    const placement = siteGenerationOf(this.registry).placement;
+    const steps = placement.reachMetres / placement.gridStepMetres;
     for (let j = -steps; j <= steps; j++) {
       for (let i = -steps; i <= steps; i++) {
         // Centred on the grid point.
         const corner: [number, number] = [
-          Math.round((i * SITE.step) / s - width / 2),
-          Math.round((j * SITE.step) / s - depth / 2),
+          Math.round((i * placement.gridStepMetres) / s - width / 2),
+          Math.round((j * placement.gridStepMetres) / s - depth / 2),
         ];
         const { lo, hi } = this.heightRange(corner, width, depth);
-        const score = hi - lo + (lo < SITE.lowest ? 100 : 0) + Math.hypot(i, j) * 0.01;
+        const score = hi - lo + (lo < placement.lowestMetres ? 100 : 0) + Math.hypot(i, j) * 0.01;
         if (score < bestScore) {
           bestScore = score;
           best = corner;
@@ -455,8 +442,9 @@ export class Hamlet implements Site {
     const s = this.scale.blockSize;
     let lo = Number.POSITIVE_INFINITY;
     let hi = Number.NEGATIVE_INFINITY;
-    for (let z = 0; z <= depth; z += SITE.sample / s) {
-      for (let x = 0; x <= width; x += SITE.sample / s) {
+    const sample = siteGenerationOf(this.registry).placement.sampleMetres / s;
+    for (let z = 0; z <= depth; z += sample) {
+      for (let x = 0; x <= width; x += sample) {
         const h = terrainHeight(this.seed, this.shape, this.scale, x0 + x, z0 + z) * s;
         lo = Math.min(lo, h);
         hi = Math.max(hi, h);
