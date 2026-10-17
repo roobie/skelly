@@ -215,7 +215,7 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
   useUiTuning(tuning) {
     const ui = buildRegistry([
       ${JSON.stringify(refusalSound)},
-      { source: 'ui-tuning-fixture', data: { ui: [{ id: 'core', refusalSound: 'player_nope', ...tuning }] } },
+      { source: 'ui-tuning-fixture', data: { ui: [{ ...BUNDLED_CONTENT.registry.ui.get('core'), refusalSound: 'player_nope', ...tuning }] } },
     ]);
     if (ui.issues.length) throw Error('Invalid UI tuning fixture: ' + JSON.stringify(ui.issues));
     applyUiTokens(ui.registry, document.documentElement);
