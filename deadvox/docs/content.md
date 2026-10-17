@@ -101,9 +101,9 @@ Weathering is a render-only content choice, not saved world state. Named profile
 
 ## Day cycle
 
-The day cycle is one required row: the sun's place, the clock's anchors, the sky `looks` and the `weather` fog tuning. The looks and the weather fog are content because they are how the world reads, and a mod that changes the latitude or the mood should not need engine code. Every field is required, with no code default and no fallback, so a pack that omits one fails to load rather than playing under a hidden look. Looks are keyed by solar phase (`night`, `deepNight`, `dawn`, `day`, `dusk`) and colours are `#rrggbb` hex, which authors can read and which the schema turns into the renderer's numbers.
+One required row owns how the day reads, sun and sky and fog together, so a mod that changes the latitude or the mood needs no engine code. Every field is required, with no code default and no fallback, so a pack that omits one fails to load rather than playing under a hidden look. Looks are keyed by solar phase so an author edits a phase, not an index, and colours are hex that authors can read.
 
-Where each look sits in its phase and how looks blend stay in code. They are mechanism shared by every pack: a pack tunes how the dawn looks, not how the sky moves from night to dawn. Tests take the cycle from base content through `test/dayPhaseFixture.ts` and never restate it. See `src/core/schema.ts`, `DayCycleSchema`, `src/core/sky.ts` and `src/core/weather.ts`, `skyInWeather`.
+Where each look sits in its phase and how looks blend stay in code. They are mechanism shared by every pack: a pack tunes how the dawn looks, not how the sky moves from night to dawn. Tests take the cycle from base content through `test/dayPhaseFixture.ts` and never restate it. See `src/core/schema.ts`, `DayCycleSchema`, for what the row holds, and `src/core/weather.ts`, `skyInWeather`.
 
 ## Content test registries
 
