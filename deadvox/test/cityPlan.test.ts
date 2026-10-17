@@ -9,11 +9,13 @@ import {
 } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
+import { siteGenerationOf, sitePalette } from '../src/core/sitePalette.ts';
 import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -238,10 +240,14 @@ describe('one finished city plan', () => {
       hordeCases.length * GAUNTLET_SITE_MS,
     );
 
-    it('adds more stragglers when the scenario asks for extras', () => {
-      const base = populationOf({ extraStragglers: 0 }).spawns.length;
-      expect(populationOf({ extraStragglers: 3 }).spawns.length).toBeGreaterThan(base);
-    });
+    it(
+      'adds more stragglers when the scenario asks for extras',
+      () => {
+        const base = populationOf({ extraStragglers: 0 }).spawns.length;
+        expect(populationOf({ extraStragglers: 3 }).spawns.length).toBeGreaterThan(base);
+      },
+      2 * GAUNTLET_SITE_MS,
+    );
 
     it('leaves no zombies or hordes when settlement pressure and authored markers are both off', () => {
       const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
@@ -285,7 +291,7 @@ describe('one finished city plan', () => {
       scenario.city.pad +
       2 * Math.floor((scenario.city.blockZ - 2 * scenario.city.pad - scenario.city.street) / scenario.city.rows);
     expect(site.surface.top(scenario.city.street + scenario.city.pad + 2, alleyZ)).toBe(
-      admitted.registry.blockIds.get('asphalt'),
+      sitePalette(admitted.registry).paving,
     );
     expect(plan.structures.length).toBeGreaterThan(0);
     const occupied = (point: Vec3) =>
@@ -534,7 +540,21 @@ describe('one finished city plan', () => {
     expect(mod(plan.spawn[2], pitchZ)).toBeLessThan(grid.street);
     const site = new CitySite(73, registry, scale, plan);
     expect(site.surface.height(plan.spawn[0], plan.spawn[2], floor + 9)).toBe(floor);
-    expect(site.surface.top(plan.spawn[0], plan.spawn[2])).toBe(registry.blockIds.get('asphalt'));
+    expect(site.surface.top(plan.spawn[0], plan.spawn[2])).toBe(sitePalette(registry).paving);
+  });
+
+  it('paves its streets with the block the site palette names, not a fixed block id', () => {
+    const entry = siteGenerationOf(registry);
+    const other = [...registry.blockIds.keys()].find((name) => name !== entry.palette.paving)!;
+    const repaved = {
+      ...registry,
+      siteGeneration: new Map(registry.siteGeneration).set(CORE_CONTENT_IDS.authoredSite, {
+        ...entry,
+        palette: { ...entry.palette, paving: other },
+      }),
+    };
+    const site = new CitySite(73, repaved, scale, planned());
+    expect(site.surface.top(site.plan.spawn[0], site.plan.spawn[2])).toBe(registry.blockIds.get(other));
   });
 
   it('never stacks a template past its authored maxStoreys while an unlimited one still stacks', () => {

@@ -429,9 +429,6 @@ const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, str
 
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
-  if (!registry.blockIds.has('asphalt')) {
-    issues.push(['.city', 'city needs asphalt content']);
-  }
   const { city, serviceTemplate, population } = scenario;
   if (population.roadsideOffset * 2 >= city.street) {
     issues.push([

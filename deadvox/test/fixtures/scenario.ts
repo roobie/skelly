@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '../../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
 import { fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
@@ -112,6 +113,31 @@ export const fixtureScenarioSources = (
         blocks: [
           { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
           { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },
+        ],
+        siteGeneration: [
+          {
+            id: CORE_CONTENT_IDS.authoredSite,
+            topography: {
+              amplitudeMetres: 0,
+              wavelengthMetres: 1,
+              buildingMarginMetres: 0,
+              roadShoulderMetres: 0,
+              spawnMarginMetres: 0,
+            },
+            vegetation: {
+              woodlandEdgeWavelengthMetres: 1,
+              woodlandEdgeVariation: 0,
+              openDensity: 0,
+              obstacleMarginMetres: 0,
+            },
+            palette: {
+              terrain: { grass: 'fixture_solid', dirt: 'fixture_solid', rock: 'fixture_solid', sand: 'fixture_solid' },
+              paving: 'asphalt',
+              trees: { trunk: 'fixture_solid', branch: 'fixture_solid', leaves: 'fixture_solid' },
+              leafLitter: 'fixture_solid',
+            },
+            hamlet: { hedge: 'fixture_solid', northSide: ['fixture_house'], southSide: ['fixture_house'] },
+          },
         ],
         furniture: [
           {

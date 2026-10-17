@@ -3,6 +3,7 @@ import { StressCity } from '../src/core/city.ts';
 import { CITY } from '../src/core/cityPlan.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { sitePalette } from '../src/core/sitePalette.ts';
 import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 import { content as BUNDLED_CONTENT, siteFromUrl } from './fixtures/startupContent.ts';
@@ -15,7 +16,7 @@ describe('the stress-test city', () => {
     const city = new StressCity(2, registry, scale);
     expect(city.placements.length).toBeGreaterThan(0);
     const [x, , z] = city.spawn.pos.map((m) => m / scale.blockSize);
-    expect(city.surface.top(Math.floor(x!), Math.floor(z!))).toBe(registry.blockIds.get('asphalt'));
+    expect(city.surface.top(Math.floor(x!), Math.floor(z!))).toBe(sitePalette(registry).paving);
     expect(city.bounds.x1 - city.bounds.x0).toBeGreaterThanOrEqual(2 * CITY.reach);
     expect(city.plan.service).toBeUndefined();
     expect(city.zombiesIn(0, 0)).toEqual([]);
