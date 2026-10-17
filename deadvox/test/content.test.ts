@@ -4,6 +4,7 @@ import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type 
 import { describe, expect, it } from 'vitest';
 import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
+import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
 import { blockColors, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
@@ -266,17 +267,14 @@ describe('content', () => {
     expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
   });
 
-  it('keeps the base day cycle authoritative over mod overrides', () => {
+  it('resolves spawn names against the day cycle of the last file that defines one', () => {
     const authored = rawBaseDayCycle.dayCycle;
-    const modCycle = {
-      ...authored,
-      latitudeDegrees: authored.latitudeDegrees > 80 ? authored.latitudeDegrees - 7 : authored.latitudeDegrees + 7,
-    };
+    const modNoon = authored.noonGameTimeOfDay === '13:30' ? '14:30' : '13:30';
     const { registry } = buildRegistry([
       { source: 'base/dayCycle.json', data: { dayCycle: authored } },
-      { source: 'mod/dayCycle.json', data: { dayCycle: modCycle } },
+      { source: 'mod/dayCycle.json', data: { dayCycle: { ...authored, noonGameTimeOfDay: modNoon } } },
     ]);
-    expect(registry.dayCycle).toEqual(baseRegistry.dayCycle);
+    expect(resolveSpawnTime(registry.dayCycle!, 'noon')).toBe(parseTimeOfDay(modNoon));
   });
 
   it('keeps input instructions out of item descriptions', () => {

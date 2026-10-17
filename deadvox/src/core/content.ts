@@ -7,7 +7,7 @@
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import { scenarioPlanIssues } from './cityPlan.ts';
-import type { SpawnTimeWindow } from './clock.ts';
+import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import { lootTypeIssue } from './loot.ts';
@@ -242,8 +242,7 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     origins.set(`${section}:${id}`, { source, path: `${section}[${i}]` });
 
   for (const { source, file } of files) {
-    // Named spawn times and the default start resolve against one cycle, so the base's stays authoritative over mods.
-    if (file.dayCycle !== undefined && registry.dayCycle === undefined) {
+    if (file.dayCycle !== undefined) {
       registry.dayCycle = file.dayCycle;
     }
     (file.blocks ?? []).forEach((block, i) => {
@@ -935,27 +934,32 @@ const checkTemplates = (registry: Registry, report: Report) => {
   }
 };
 
-/** Named window times mean something only against a day cycle. */
+/** Named window times mean something only against a day cycle, and a window's ends must differ once resolved. */
 const checkSpawnWindows = (registry: Registry, report: Report) => {
-  if (registry.dayCycle !== undefined) {
-    return;
-  }
-  const named = (time: unknown): boolean => typeof time === 'string';
-  const windowNamed = (spawnWindow: SpawnTimeWindow | undefined): boolean =>
-    named(spawnWindow?.fromGameTimeOfDay) || named(spawnWindow?.toGameTimeOfDay);
-  const message = 'a named spawn time needs a day cycle';
+  const { dayCycle } = registry;
+  const check = (spawnWindow: SpawnTimeWindow | undefined, locate: (message: string) => void) => {
+    if (spawnWindow === undefined) {
+      return;
+    }
+    const { fromGameTimeOfDay: from, toGameTimeOfDay: to } = spawnWindow;
+    if (dayCycle === undefined) {
+      if (typeof from === 'string' || typeof to === 'string') {
+        locate('a named spawn time needs a day cycle');
+      }
+    } else if (to !== undefined && resolveSpawnTime(dayCycle, from) === resolveSpawnTime(dayCycle, to)) {
+      locate('from and to must differ');
+    }
+  };
   for (const template of registry.templates.values()) {
     for (const [char, entry] of Object.entries(template.palette)) {
-      if (typeof entry !== 'string' && windowNamed(entry.window)) {
-        report('templates', template.id, `.palette["${char}"].window`, message);
+      if (typeof entry !== 'string') {
+        check(entry.window, (message) => report('templates', template.id, `.palette["${char}"].window`, message));
       }
     }
   }
   for (const layout of registry.layouts.values()) {
     layout.shamblers?.forEach((shambler, index) => {
-      if (windowNamed(shambler.window)) {
-        report('layouts', layout.id, `.shamblers[${index}].window`, message);
-      }
+      check(shambler.window, (message) => report('layouts', layout.id, `.shamblers[${index}].window`, message));
     });
   }
 };

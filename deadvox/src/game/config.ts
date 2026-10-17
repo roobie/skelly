@@ -1,5 +1,5 @@
-import { defaultClock, parseTimeOfDay } from '../core/clock.ts';
-import type { Registry } from '../core/content.ts';
+import { parseTimeOfDay } from '../core/clock.ts';
+import { type Registry, requireDayCycle } from '../core/content.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
@@ -56,9 +56,7 @@ export interface GameConfig {
 
 export type ActorRenderer = 'boxes' | 'detailed';
 
-/** The loaded day cycle's start; core content's when a registry carries none (test fixtures). */
-const defaultStart = (content: StartupContent): number =>
-  content.registry.dayCycle?.defaultStartGameTimeOfDay ?? defaultClock.start;
+const defaultStart = (content: StartupContent): number => requireDayCycle(content.registry).defaultStartGameTimeOfDay;
 
 /** `?time=` wins, then the layout's own time; the weathering test site defaults to noon. */
 const startTime = (
@@ -70,8 +68,10 @@ const startTime = (
   if (requestedTime !== null) {
     return parseTimeOfDay(requestedTime) ?? defaultStart(content);
   }
-  const noon = site === 'weatheringTest' ? content.registry.dayCycle?.noonGameTimeOfDay : undefined;
-  return layoutTime ?? noon ?? defaultStart(content);
+  if (layoutTime !== undefined) {
+    return layoutTime;
+  }
+  return site === 'weatheringTest' ? requireDayCycle(content.registry).noonGameTimeOfDay : defaultStart(content);
 };
 
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */

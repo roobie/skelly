@@ -400,6 +400,27 @@ describe('authored layout acceptance', () => {
     });
   });
 
+  it('rejects a spawn window whose named and clock ends resolve to the same time', () => {
+    const noon = registry.dayCycle!.noonGameTimeOfDay;
+    const clockNoon = `${String(Math.floor(noon / 3600)).padStart(2, '0')}:${String(Math.floor((noon % 3600) / 60)).padStart(2, '0')}`;
+    const marker = {
+      ...layout.shamblers[0]!,
+      position: [5, 0.5, 5] as const,
+      window: { fromGameTimeOfDay: 'noon', toGameTimeOfDay: clockNoon },
+    };
+    const result = buildRegistry([
+      ...layoutValidationBase,
+      {
+        source: 'layout-test.json',
+        data: { layouts: [{ ...validationLayout('equal_window_fixture'), shamblers: [marker] }] },
+      },
+    ]);
+    expect(result.issues.map(({ path, message }) => [path, message])).toContainEqual([
+      expect.stringContaining('.shamblers[0].window'),
+      'from and to must differ',
+    ]);
+  });
+
   it('serves authored hordes only in the columns derived from their layout positions', () => {
     const playtest: SiteLayoutDef = {
       ...validationLayout('horde_columns_fixture'),
