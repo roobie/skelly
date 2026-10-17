@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { STAMINA } from '../src/core/needs.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import type { Site } from '../src/core/site.ts';
@@ -236,19 +235,20 @@ describe('hamlet save/load continuation', () => {
     expect(loadedJumping.player.body).toEqual(uninterrupted.player.body);
 
     intent = { ...IDLE, right: 1, sprint: true };
+    const stamina = uninterrupted.sim.body.staminaRules;
     const framesUntilWinded =
-      Math.ceil(((uninterrupted.sim.needs.stamina - STAMINA.winded) / -STAMINA.sprint) * 60) + 2;
+      Math.ceil(((uninterrupted.sim.needs.stamina - stamina.windedBelow) / stamina.sprintPerSimSecond) * 60) + 2;
     for (let frame = 0; frame < framesUntilWinded; frame++) {
       intent = { ...intent, right: frame % 60 < 30 ? 1 : -1 };
       advance(uninterrupted, 1);
       advance(loadedJumping, 1);
-      if (uninterrupted.sim.needs.stamina < STAMINA.winded) {
+      if (uninterrupted.sim.needs.stamina < stamina.windedBelow) {
         break;
       }
     }
     expect(uninterrupted.session.sprinting).toBe(true);
     expect(uninterrupted.sim.needs.stamina).toBeGreaterThan(0);
-    expect(uninterrupted.sim.needs.stamina).toBeLessThan(STAMINA.winded);
+    expect(uninterrupted.sim.needs.stamina).toBeLessThan(stamina.windedBelow);
     expect(loadedJumping.session.sprinting).toBe(true);
     const sprintSnapshot = capture(uninterrupted);
     expect(sprintSnapshot.character.player.sprinting).toBe(true);

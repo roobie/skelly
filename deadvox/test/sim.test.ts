@@ -12,7 +12,7 @@ import {
 } from '../src/core/clock.ts';
 import { SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
-import { awakeRates, SPAWN_NEEDS } from '../src/core/needs.ts';
+import { awakeRates } from '../src/core/needs.ts';
 import { SCHEDULER_TIME_EPSILON } from '../src/core/scheduler.ts';
 import type { BodyTuningDef, TreatmentDef } from '../src/core/schema.ts';
 import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
@@ -345,7 +345,7 @@ describe('Simulation', () => {
     const rates = awakeRates(plain.body);
     const tolerance = (Math.max(...Object.values(rates).map(Math.abs)) * 4) / 60;
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {
-      expect(plain.needs[need]).toBeCloseTo(SPAWN_NEEDS[need] + rates[need], 6);
+      expect(plain.needs[need]).toBeCloseTo(plain.body.spawnNeeds[need] + rates[need], 6);
       expect(Math.abs(fast.needs[need] - plain.needs[need])).toBeLessThanOrEqual(tolerance);
     }
   });
@@ -398,7 +398,7 @@ describe('Simulation', () => {
     sim.needs.fatigue = 89.9;
     sim.compress();
     runUntil(sim, HOUR);
-    expect(sim.compression.interruption).toBe("You're exhausted");
+    expect(sim.compression.interruption).toBe(sim.body.criticalNeeds.find((rule) => rule.need === 'fatigue')!.message);
     expect(sim.time).toBeLessThanOrEqual(HOUR + SCHEDULER_TIME_EPSILON);
   });
 
@@ -468,7 +468,9 @@ describe('Simulation', () => {
         advanceLiveFrame(sim, realSeconds(FRAME), until);
       }
       // Spawn needs run out of hydration and rest within about 5 game hours.
-      expect(sim.compression.interruption).toBe("You're parched");
+      expect(sim.compression.interruption).toBe(
+        sim.body.criticalNeeds.find((rule) => rule.need === 'hydration')!.message,
+      );
       expect(sim.time).toBeLessThan(until);
       expect(sim.needs.hydration).toBeLessThan(10);
     });
@@ -523,7 +525,7 @@ describe('Simulation', () => {
       let worstFrameTicks = 0;
       while (sim.time < until - 1e-6 && frames < 600) {
         // Keeps the needs from turning critical, which would interrupt the skip.
-        Object.assign(sim.needs, SPAWN_NEEDS);
+        Object.assign(sim.needs, sim.body.spawnNeeds);
         const before = ticks;
         advanceLiveFrame(sim, realSeconds(FRAME), until);
         worstFrameTicks = Math.max(worstFrameTicks, ticks - before);

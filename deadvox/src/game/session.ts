@@ -1429,9 +1429,12 @@ export const createSession = (options: SessionOptions) => {
       (intent.forward !== 0 || intent.right !== 0) &&
       !handling &&
       !readyGait &&
-      canSprint(sim.needs, sprinting);
+      canSprint(sim.needs, sprinting, sim.body.staminaRules);
     survival.setSprinting(sprinting);
-    stepStamina(sim.needs, dt, sprinting, bodyTuning.staminaRegenDelaySimSeconds);
+    stepStamina(sim.needs, dt, sprinting, {
+      ...sim.body.staminaRules,
+      staminaRegenDelaySimSeconds: bodyTuning.staminaRegenDelaySimSeconds,
+    });
     const readyFirearm = Object.values(inventory.hands).find((item) => item && registry.items.get(item.type)?.firearm);
     const readyMovementFactor =
       readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;

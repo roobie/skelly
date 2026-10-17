@@ -5,7 +5,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Body } from '../src/core/body.ts';
 import { defaultClock, hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { NEED_RATES, type Needs, type RecoveryState, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
+import { awakeRates, type Needs, type RecoveryState, stepNeeds } from '../src/core/needs.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { BodyTuningDef } from '../src/core/schema.ts';
 import { realSeconds, simSeconds } from '../src/core/time.ts';
@@ -23,6 +23,7 @@ const BASE_SOURCES = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const { registry } = buildRegistry(BASE_SOURCES);
 const SCALE = makeScale(0.5);
+const SPAWN_NEEDS: Needs = new Body(BODY_TUNING_FIXTURE).spawnNeeds;
 
 /** A Simulation wired to a RestController, the way the session wires them. */
 const REST_ANCHOR = 1;
@@ -87,10 +88,12 @@ describe('restKindForFurniture', () => {
 describe('stepNeeds with a custom fatigue rate', () => {
   it('recovers fatigue at the given rate, leaving the other needs alone', () => {
     const needs = { ...SPAWN_NEEDS, fatigue: 50 };
-    const rates = { ...NEED_RATES, fatigue: -20 };
-    stepNeeds(needs, new Body(BODY_TUNING_FIXTURE), 1, { rates });
+    const body = new Body(BODY_TUNING_FIXTURE);
+    const awake = awakeRates(body);
+    const rates = { ...awake, fatigue: -20 };
+    stepNeeds(needs, body, 1, { rates });
     expect(needs.fatigue).toBeCloseTo(30, 9);
-    expect(needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + NEED_RATES.calories, 9);
+    expect(needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + awake.calories, 9);
   });
 });
 

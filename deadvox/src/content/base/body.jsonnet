@@ -110,6 +110,19 @@ local normalSleep = 100 / normalSleepGameHours;
     bloodRecoveryPerSimSecond: 0.002,
     shockRecoveryPerSimSecond: 0.1,
     advancedInfectionHealthLossPerSimSecond: 0.0005,
+    needs: {
+      spawn: { calories: 40, hydration: 35, fatigue: 70, stamina: 100 },
+      drainPerGameHour: { calories: 3, hydration: 5 },
+      healthLossPerGameHour: { starving: 4, dehydrated: 8 },
+      stamina: { sprintPerSimSecond: 5, recoverPerSimSecond: 4, wornRecoveryFactor: 0.5, windedBelow: 10 },
+      full: { kcal: 2500, ml: 2500 },
+      critical: [
+        { need: 'calories', below: 10, message: "You're starving" },
+        { need: 'hydration', below: 10, message: "You're parched" },
+        { need: 'fatigue', above: 90, message: "You're exhausted" },
+      ],
+      badlyHurt: { below: 25, message: "You're badly hurt" },
+    },
     fatigueRisePerGameHour: 4,
     // Resting clears a fixed share of a normal sleep, so sitting never beats sleeping.
     restFatigueRecoveryPerGameHour: normalSleep * 0.3,
