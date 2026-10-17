@@ -17,6 +17,7 @@ import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } f
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
+import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const { registry } = startupContent();
 const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
@@ -27,7 +28,6 @@ const COMPOSED_LADDER = /composed ladder/;
 // The heavy cases are CPU-bound, so their timeouts scale with the simulated work and leave headroom for a shared
 // CPU, instead of vitest's flat default (#792).
 const WALK_MS_PER_STOREY = 4800;
-const GAUNTLET_SITE_MS = 7200;
 const scale = makeScale(0.5);
 const grid = cityGridOf(registry, profile.city);
 const base = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });

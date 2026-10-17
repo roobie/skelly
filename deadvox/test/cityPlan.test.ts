@@ -20,11 +20,9 @@ import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } 
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const BUNDLED_CONTENT = startupContent();
-// Building and certifying one bundled gauntlet city is CPU-bound, so the timeout scales with the sites built and
-// leaves headroom for a shared CPU, instead of vitest's flat default.
-const GAUNTLET_SITE_MS = 4000;
 
 const profile = fixtureScenario();
 const { registry, issues } = buildRegistry(fixtureScenarioSources(profile));
@@ -358,82 +356,78 @@ describe('one finished city plan', () => {
     },
   );
 
-  it(
-    'stands enclosure dressing above the surface without carving pits in its footprint',
-    () => {
-      const scenario = fixtureScenario();
-      scenario.city.perimeter = {
-        block: 'fixture_solid',
-        height: 6,
-        thickness: 2,
-        lining: { assembly: 'fixture_lining', pitch: 6 },
-        gate: { assembly: 'fixture_gate' },
-      };
-      const sources = fixtureScenarioSources(scenario);
-      sources.push({
-        source: 'enclosure-fixture.json',
-        data: {
-          templates: ['fixture_lining', 'fixture_gate'].map((id) => ({
-            id,
-            size: [4, 2, 2],
-            lootContext: registry.templates.get('fixture_house')!.lootContext,
-            palette: { '.': 'air', '=': 'fixture_solid' },
-            layers: [
-              ['....', '===='],
-              ['....', '===='],
-            ],
-          })),
-        },
-      });
-      const admitted = buildRegistry(sources);
-      expect(admitted.issues).toEqual([]);
-      const plan = buildCityPlan({
-        seed: 73,
-        registry: admitted.registry,
-        floor,
-        grid: cityGridOf(admitted.registry, scenario.city),
-        scenario,
-      });
-      const site = new CitySite(73, admitted.registry, scale, plan);
-      const dressings = plan.placements.filter(({ template }) =>
-        ['fixture_lining', 'fixture_gate'].includes(template.id),
-      );
-      expect(dressings.some(({ template }) => template.id === 'fixture_lining')).toBe(true);
-      expect(dressings.some(({ template }) => template.id === 'fixture_gate')).toBe(true);
-      const solid = admitted.registry.blockIds.get('fixture_solid')!;
-      const chunks = new Map<string, Chunk>();
-      for (const placement of dressings) {
-        const [width, depth] = footprint(placement);
-        const [x0, y0, z0] = placement.origin;
-        for (let z = z0; z < z0 + depth; z++) {
-          for (let x = x0; x < x0 + width; x++) {
-            const ground = site.surface.height(x, z, floor + 1);
-            expect(y0 + (placement.template.groundLayer ?? 0)).toBe(ground + 1);
-            const cell: Vec3 = [toChunk(x), toChunk(ground), toChunk(z)];
-            const key = cell.join(',');
-            let chunk = chunks.get(key);
-            if (!chunk) {
-              chunk = generateChunk(
-                {
-                  seed: 73,
-                  scale,
-                  surface: site.surface,
-                  blocks: { grass: solid, dirt: solid, rock: solid, sand: solid },
-                },
-                cell,
-              );
-              site.stamp(chunk);
-              chunks.set(key, chunk);
-            }
-            expect(admitted.registry.blocks[chunk.get(mod(x, CHUNK), mod(ground, CHUNK), mod(z, CHUNK))]!.solid).toBe(
-              true,
+  it('stands enclosure dressing above the surface without carving pits in its footprint', () => {
+    const scenario = fixtureScenario();
+    scenario.city.perimeter = {
+      block: 'fixture_solid',
+      height: 6,
+      thickness: 2,
+      lining: { assembly: 'fixture_lining', pitch: 6 },
+      gate: { assembly: 'fixture_gate' },
+    };
+    const sources = fixtureScenarioSources(scenario);
+    sources.push({
+      source: 'enclosure-fixture.json',
+      data: {
+        templates: ['fixture_lining', 'fixture_gate'].map((id) => ({
+          id,
+          size: [4, 2, 2],
+          lootContext: registry.templates.get('fixture_house')!.lootContext,
+          palette: { '.': 'air', '=': 'fixture_solid' },
+          layers: [
+            ['....', '===='],
+            ['....', '===='],
+          ],
+        })),
+      },
+    });
+    const admitted = buildRegistry(sources);
+    expect(admitted.issues).toEqual([]);
+    const plan = buildCityPlan({
+      seed: 73,
+      registry: admitted.registry,
+      floor,
+      grid: cityGridOf(admitted.registry, scenario.city),
+      scenario,
+    });
+    const site = new CitySite(73, admitted.registry, scale, plan);
+    const dressings = plan.placements.filter(({ template }) =>
+      ['fixture_lining', 'fixture_gate'].includes(template.id),
+    );
+    expect(dressings.some(({ template }) => template.id === 'fixture_lining')).toBe(true);
+    expect(dressings.some(({ template }) => template.id === 'fixture_gate')).toBe(true);
+    const solid = admitted.registry.blockIds.get('fixture_solid')!;
+    const chunks = new Map<string, Chunk>();
+    for (const placement of dressings) {
+      const [width, depth] = footprint(placement);
+      const [x0, y0, z0] = placement.origin;
+      for (let z = z0; z < z0 + depth; z++) {
+        for (let x = x0; x < x0 + width; x++) {
+          const ground = site.surface.height(x, z, floor + 1);
+          expect(y0 + (placement.template.groundLayer ?? 0)).toBe(ground + 1);
+          const cell: Vec3 = [toChunk(x), toChunk(ground), toChunk(z)];
+          const key = cell.join(',');
+          let chunk = chunks.get(key);
+          if (!chunk) {
+            chunk = generateChunk(
+              {
+                seed: 73,
+                scale,
+                surface: site.surface,
+                blocks: { grass: solid, dirt: solid, rock: solid, sand: solid },
+              },
+              cell,
             );
+            site.stamp(chunk);
+            chunks.set(key, chunk);
           }
+          expect(admitted.registry.blocks[chunk.get(mod(x, CHUNK), mod(ground, CHUNK), mod(z, CHUNK))]!.solid).toBe(
+            true,
+          );
         }
       }
-    },
-    GAUNTLET_SITE_MS,
-  );
+    }
+  });
 
   it('reports a gap when a stretch of the north wall is missing', () => {
     const scenario = fixtureScenario();
