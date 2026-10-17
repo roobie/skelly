@@ -1735,6 +1735,8 @@ const ZombieSchema = strictObject({
       deathBurst: strictObject({
         droplets: pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more')),
         speedMetresPerRealSecond: Positive,
+        /** The share of that speed the slowest droplet keeps, so the burst reads as a spray rather than a shell. */
+        slowestSpeedFraction: Fraction,
         sizeMetres: Positive,
       }),
     }),

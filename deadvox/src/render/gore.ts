@@ -55,8 +55,6 @@ const SEVERED_PART_SEVERITY = 0.2;
 const CARVED_CELL_SEVERITY = 0.01;
 const DROPLET_COLOR = 0x52_17_0f;
 const SPLAT_COLOR = 0x3a_0c_08;
-/** A burst droplet's speed varies down to this share of the type's speed, so the burst reads as a spray. */
-const BURST_SLOWEST_FRACTION = 0.5;
 const FACE_NORMAL = new Vector3(0, 0, 1);
 const AXES = [0, 1, 2] as const;
 
@@ -341,13 +339,13 @@ export class Gore {
     const { pos } = zombie.body;
     const [x, y, z] = humanoidSacOrigin(zombie.type.model, zombie.figureSeed, zombie.facing);
     this.origin.set(pos[0] * s + x, pos[1] * s + y, pos[2] * s + z);
-    const { droplets, speedMetresPerRealSecond, sizeMetres } = effects.deathBurst;
+    const { droplets, speedMetresPerRealSecond, slowestSpeedFraction, sizeMetres } = effects.deathBurst;
     const tint = acidTint(effects);
     for (let i = 0; i < droplets; i++) {
       const direction = this.scratch
         .set(this.rng.range(-1, 1), this.rng.range(-1, 1), this.rng.range(-1, 1))
         .normalize()
-        .multiplyScalar(speedMetresPerRealSecond * this.rng.range(BURST_SLOWEST_FRACTION, 1));
+        .multiplyScalar(speedMetresPerRealSecond * this.rng.range(slowestSpeedFraction, 1));
       if (!this.emit(this.origin, direction, sizeMetres, tint)) {
         return;
       }

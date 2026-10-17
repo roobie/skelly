@@ -869,6 +869,7 @@
         "deathBurst": {
           "droplets": 24,
           "sizeMetres": 0.02,
+          "slowestSpeedFraction": 0.5,
           "speedMetresPerRealSecond": 3.5
         },
         "drips": {

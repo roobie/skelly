@@ -525,7 +525,7 @@ local figureSeeds = std.range(1, 8);
       "acidEffects": {
         "color": "#9ad21e",
         "drips": { "perRealSecond": 1.5, "sizeMetres": 0.012 },
-        "deathBurst": { "droplets": 24, "speedMetresPerRealSecond": 3.5, "sizeMetres": 0.02 }
+        "deathBurst": { "droplets": 24, "speedMetresPerRealSecond": 3.5, "slowestSpeedFraction": 0.5, "sizeMetres": 0.02 }
       },
       "authoredOnly": true,
       "acidResistance": 1,
