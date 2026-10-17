@@ -116,6 +116,9 @@ const compareAllocation = (a: Allocation, b: Allocation): number => {
   return left.length - right.length;
 };
 
+/** Handling is authored in simulation seconds; plans and work durations are game seconds. */
+export const gatherGameSeconds = (handlingTime: number, clockRatio: number): number => handlingTime * clockRatio;
+
 /** Spec ordering within a type; retrieving a stack costs once, even for a partial count. */
 const allocate = (
   entries: readonly ReachEntry[],
@@ -134,7 +137,7 @@ const allocate = (
     const { location, handlingTime } = entry;
     const count = Math.min(item.count, remaining);
     allocation.components.push({ item, count, from: location });
-    allocation.gather += handlingTime * clockRatio;
+    allocation.gather += gatherGameSeconds(handlingTime, clockRatio);
     remaining -= count;
     if (remaining === 0) {
       return allocation;
