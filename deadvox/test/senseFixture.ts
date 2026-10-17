@@ -1,29 +1,25 @@
 import type { SenseDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+/** The bundled player row with only the values these fixtures deliberately set overridden. */
+export const BASE_SENSE_TUNING: SenseDef = buildBundledContent().registry.senses.get('player')!;
 
 export const TEST_SENSE_TUNING: SenseDef = {
-  id: 'player',
-  movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
-  chestEyeFraction: 0.62,
+  ...BASE_SENSE_TUNING,
   crouch: {
+    ...BASE_SENSE_TUNING.crouch,
     speedMetresPerSimSecond: simRate(0.8),
-    hearingRangeScale: 0.5,
-    sightRangeScale: 0.5,
     eyeDropMetres: 0.8,
-    bodyHeightMetres: 1.2,
   },
   wall: {
-    hearingRangeScale: 0.5,
+    ...BASE_SENSE_TUNING.wall,
     gain: 0.5,
     cutoffHz: 1200,
-    clearGain: 1,
-    clearCutoffHz: 18_000,
   },
   light: {
-    playerDaySightScale: 0,
-    lureRangeScale: 0.5,
+    ...BASE_SENSE_TUNING.light,
     throwMaxDistanceMetres: 8,
-    throwChargeSimSeconds: simSeconds(1.25),
     throwMinimumHoldSimSeconds: simSeconds(0.8),
     throwStanceDropHoldRealSeconds: 1,
     wornLightToggleHoldRealSeconds: 1,

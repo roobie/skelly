@@ -227,8 +227,6 @@ const setSessionFirearmsSkillZeroHandling = (
     mechanics.setSkillZeroHandlingFor(firearmUid, value);
   }
 };
-/** Seconds a player's noise stays audible to shamblers. */
-const VOCAL_NOISE_LIFETIME = 0.5;
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
 
 /** What the player is doing with the keyboard and mouse, read each tick. */
@@ -734,13 +732,13 @@ export const createSession = (options: SessionOptions) => {
       noiseId = playerAudio.vocalNoiseId;
     }
     const noisePosition = [...position] as Vec3;
-    const expiresAt = time + VOCAL_NOISE_LIFETIME;
+    const expiresAt = time + senseTuning.vocalNoiseLifetimeSimSeconds;
     if (emittedAsNoise) {
       playerAudio.vocalNoise = {
         id: noiseId!,
         pos: noisePosition,
         radiusMetres: emittedNoiseRadius,
-        expiresAt: time + VOCAL_NOISE_LIFETIME,
+        expiresAt,
       };
     }
     sim.events.emit({ kind: 'sound', ...sound });
@@ -963,7 +961,11 @@ export const createSession = (options: SessionOptions) => {
   };
   const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {
     if (body.onGround) {
-      if (!wasGrounded && airbornePeakY !== undefined && isHardLanding((airbornePeakY - body.pos[1]) * s)) {
+      if (
+        !wasGrounded &&
+        airbornePeakY !== undefined &&
+        isHardLanding((airbornePeakY - body.pos[1]) * s, senseTuning.footsteps)
+      ) {
         playPlayerSound('player_landing_hard', time);
       }
       airbornePeakY = undefined;
@@ -974,7 +976,12 @@ export const createSession = (options: SessionOptions) => {
       wasGrounded && body.onGround
         ? Math.hypot(body.pos[0] - previousPosition[0], body.pos[2] - previousPosition[2]) * s
         : 0;
-    const footsteps = advanceFootsteps(footstepClock, travelled > 0 ? playerMovement() : 'still', travelled);
+    const footsteps = advanceFootsteps(
+      footstepClock,
+      travelled > 0 ? playerMovement() : 'still',
+      travelled,
+      senseTuning.footsteps,
+    );
     footstepClock = footsteps.clock;
     for (let i = 0; i < footsteps.steps; i++) {
       const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), registry.blocks);
@@ -1452,7 +1459,7 @@ export const createSession = (options: SessionOptions) => {
     );
     const tools = debug?.();
     if (tools?.noclip) {
-      footstepClock = advanceFootsteps(footstepClock, 'still', 0).clock;
+      footstepClock = advanceFootsteps(footstepClock, 'still', 0, senseTuning.footsteps).clock;
       airbornePeakY = undefined;
       tools.stepNoclip({
         body,

@@ -10,7 +10,7 @@ import {
 } from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import { advanceFootsteps, initialFootstepClock, STEP_DISTANCE_METRES } from '../src/core/footsteps.ts';
+import { advanceFootsteps, initialFootstepClock, stepDistanceMetres } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
 import { startupContent } from './baseRegistry.ts';
 
@@ -18,6 +18,7 @@ const BUNDLED_CONTENT = startupContent();
 
 import { PLAYER } from '../src/game/player.ts';
 
+const footstepTuning = BUNDLED_CONTENT.registry.senses.get('player')!.footsteps;
 const stanceTuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')!.combat!.firearms!;
 const pumpHandling = BUNDLED_CONTENT.registry.items.get('pump_shotgun')!.firearm!.skillZeroHandling!;
 const pumpTuning = { ...stanceTuning, skillZeroHandling: pumpHandling };
@@ -479,7 +480,7 @@ const readiedWalkWobble = (
   let clock = initialFootstepClock();
   let peak = 0;
   for (let tick = 0; tick < 240; tick++) {
-    ({ clock } = advanceFootsteps(clock, 'walking', speed / 60));
+    ({ clock } = advanceFootsteps(clock, 'walking', speed / 60, footstepTuning));
     const frame = aim.advance(
       step({
         velocity: [0, 0, -speed / blockSize],
@@ -494,9 +495,9 @@ const readiedWalkWobble = (
 
 it('step-clock wobble forms an open, concave-down lune once per stride', () => {
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
-  const stepDistance = STEP_DISTANCE_METRES.walking;
+  const stepDistance = stepDistanceMetres(footstepTuning, 'walking');
   const sample = (distance: number) => {
-    const { clock } = advanceFootsteps(initialFootstepClock(), 'walking', distance);
+    const { clock } = advanceFootsteps(initialFootstepClock(), 'walking', distance, footstepTuning);
     return createAim().advance(
       step({
         stridePhase: clock.stridePhase,
@@ -535,7 +536,7 @@ it('bounds aim changes at gait switches and airborne freezes by steady-walk moti
   let steadyFrame = NEUTRAL_AIM;
   let steadyWalkBound = 0;
   for (let tick = 0; tick < 480; tick++) {
-    const next = advanceFootsteps(steadyClock, 'walking', travel);
+    const next = advanceFootsteps(steadyClock, 'walking', travel, footstepTuning);
     const frame = steadyAim.advance(aimStep(next.clock.stridePhase));
     if (tick > 0) {
       steadyWalkBound = Math.max(
@@ -551,17 +552,17 @@ it('bounds aim changes at gait switches and airborne freezes by steady-walk moti
   let transitionClock = initialFootstepClock();
   let transitionFrame = NEUTRAL_AIM;
   for (let tick = 0; tick < 120; tick++) {
-    const next = advanceFootsteps(transitionClock, 'walking', travel);
+    const next = advanceFootsteps(transitionClock, 'walking', travel, footstepTuning);
     transitionFrame = transitionAim.advance(aimStep(next.clock.stridePhase));
     transitionClock = next.clock;
   }
-  const jogging = advanceFootsteps(transitionClock, 'jogging', travel);
+  const jogging = advanceFootsteps(transitionClock, 'jogging', travel, footstepTuning);
   const joggingFrame = transitionAim.advance(aimStep(jogging.clock.stridePhase));
   const gaitChange = Math.hypot(joggingFrame.yaw - transitionFrame.yaw, joggingFrame.pitch - transitionFrame.pitch);
-  const airborne = advanceFootsteps(jogging.clock, 'still', 0);
+  const airborne = advanceFootsteps(jogging.clock, 'still', 0, footstepTuning);
   const airborneFrame = transitionAim.advance(aimStep(airborne.clock.stridePhase));
   const takeoff = Math.hypot(airborneFrame.yaw - joggingFrame.yaw, airborneFrame.pitch - joggingFrame.pitch);
-  const landed = advanceFootsteps(airborne.clock, 'walking', travel);
+  const landed = advanceFootsteps(airborne.clock, 'walking', travel, footstepTuning);
   const landedFrame = transitionAim.advance(aimStep(landed.clock.stridePhase));
   const landing = Math.hypot(landedFrame.yaw - airborneFrame.yaw, landedFrame.pitch - airborneFrame.pitch);
 
@@ -625,7 +626,7 @@ it('wobble can use its larger content bound without merging it into recoil', () 
   let clock = initialFootstepClock();
   let peak = 0;
   for (let tick = 0; tick < 240; tick++) {
-    ({ clock } = advanceFootsteps(clock, 'walking', speed / 60));
+    ({ clock } = advanceFootsteps(clock, 'walking', speed / 60, footstepTuning));
     const frame = aim.advance(
       step({
         velocity: [0, 0, -speed / blockSize],

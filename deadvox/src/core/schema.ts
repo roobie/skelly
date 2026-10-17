@@ -2116,6 +2116,15 @@ const SenseSchema = strictObject({
     clearGain: Fraction,
     clearCutoffHz: Positive,
   }),
+  /** Footfall spacing per moving gait and the fall that lands hard; cadence and landing noise follow from these. */
+  footsteps: strictObject({
+    walkingStepMetres: Positive,
+    joggingStepMetres: Positive,
+    sprintingStepMetres: Positive,
+    hardLandingMetres: Positive,
+  }),
+  /** How long a player vocal noise stays audible to shamblers after it is emitted. */
+  vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
   light: strictObject({
     playerDaySightScale: Fraction,
     /** Reduce how far shamblers investigate non-player light sources. */

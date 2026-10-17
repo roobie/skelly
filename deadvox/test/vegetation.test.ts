@@ -56,6 +56,8 @@ const senseTuning = {
     bodyHeightMetres: 1.2,
   },
   wall: soundTuning,
+  footsteps: registry.senses.get('player')!.footsteps,
+  vocalNoiseLifetimeSimSeconds: registry.senses.get('player')!.vocalNoiseLifetimeSimSeconds,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,
