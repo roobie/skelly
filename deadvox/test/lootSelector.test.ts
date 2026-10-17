@@ -4,6 +4,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
 import { gamePerHour, simSeconds } from '../src/core/time.ts';
+import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const context = { usage: ['Medical'], tier: 'Tier2' } as const;
 const itemDefinition = (id: string, usage: string[], tiers: string[]) => ({
@@ -17,6 +18,7 @@ const itemDefinition = (id: string, usage: string[], tiers: string[]) => ({
 });
 const fixture = () => {
   const result = buildRegistry([
+    playerInventorySource(),
     {
       source: 'selector-fixture',
       data: {

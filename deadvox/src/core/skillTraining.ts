@@ -32,7 +32,7 @@ export const firearmsCombatTuning = (registry: Registry) => {
   return tuning;
 };
 
-const skillActivityTraining =(registry: Registry, skillId: string, activityId: string) => {
+const skillActivityTraining = (registry: Registry, skillId: string, activityId: string) => {
   const activity = registry.skills.get(skillId)?.training?.activities?.[activityId];
   if (!activity) {
     throw new Error(`Missing training activity ${skillId}.${activityId}`);
