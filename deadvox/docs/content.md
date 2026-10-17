@@ -105,6 +105,12 @@ One required row owns how the day reads, sun and sky and fog together, so a mod 
 
 Where each look sits in its phase and how looks blend stay in code. They are mechanism shared by every pack: a pack tunes how the dawn looks, not how the sky moves from night to dawn (`src/core/sky.ts`, `skyAt`). Tests take the cycle from base content through `test/dayPhaseFixture.ts` and never restate it. See `src/core/schema.ts`, `DayCycleSchema`, for what the row holds, and `src/core/weather.ts`, `skyInWeather`.
 
+## Footstep and vocal-noise tuning
+
+Footfall spacing, the fall that lands hard and how long a vocal noise stays audible are properties of the player's body, so they live in the player's sense row beside the other hearing tunables and a mod that changes the body needs no engine code. Every field is required, with no code default, so a pack that omits one fails to load. See `src/core/schema.ts`, `SenseSchema`.
+
+Two nearby constants stay in code on purpose. The stride-phase origin is mechanism: it aligns the first footfall with the shared gait phase that presentation and aim wobble also read, so a pack tuning spacing never needs it (`src/core/footsteps.ts`, `initialFootstepClock`). The hit-flinch duration is the length of mobgen's flinch clip, so a second copy in content could disagree with the animation it must match (`src/core/zombiePose.ts`, `HIT_FLINCH_DURATION`). Tests take the row from `test/senseFixture.ts`, `BASE_SENSE_TUNING`, and never restate it.
+
 ## Content test registries
 
 Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`. Unrelated contract fixtures may author common-supply metadata through `test/economyFixtures.ts`, `buildFixtureRegistry`; admission tests must use raw sources so the fixture builder cannot conceal missing metadata.
