@@ -3,6 +3,7 @@ import type { ContentSource } from '../../src/core/content.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
 import { fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
+import { playerInventorySource } from './playerInventory.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
   id: 'fixture_scenario',
@@ -176,5 +177,6 @@ export const fixtureScenarioSources = (
         scenarios: [{ ...scenario, outbreakAgeGameHours: scenario.outbreakAgeGameHours / gameHours(1) }],
       },
     },
+    playerInventorySource(),
   ];
 };

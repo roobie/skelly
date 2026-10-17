@@ -8,6 +8,7 @@ import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
 import { options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const directory = join(import.meta.dirname, '../src/content/base');
 const { registry } = buildRegistry(
@@ -35,6 +36,7 @@ const setup = (handedness?: 'right' | 'left') => {
 
 const setupStackReuse = () => {
   const { registry: fixtureRegistry, issues } = buildRegistry([
+    playerInventorySource(),
     {
       source: 'quick-move-fixture.json',
       data: {
