@@ -28,11 +28,11 @@ import { pick, type Rng, range } from '../core/random.ts';
 import type { Genome, Template, Wound } from '../core/template.ts';
 import { voxelize } from '../core/voxelize.ts';
 
-export const SIDES = ['L', 'R'] as const;
+const SIDES = ['L', 'R'] as const;
 export type Side = (typeof SIDES)[number];
-export const sideSign = (s: Side): number => (s === 'L' ? -1 : 1);
+const sideSign = (s: Side): number => (s === 'L' ? -1 : 1);
 
-export const toRad = (deg: number): number => (deg * Math.PI) / 180;
+const toRad = (deg: number): number => (deg * Math.PI) / 180;
 
 /** Params sampled in this fixed order (see core/generate.ts's sampleParams). */
 export const HUMANOID_PARAM_ORDER = [
@@ -91,7 +91,7 @@ export const WOUNDABLE_BONES = [
 
 // ---- Reference proportions (fractions of `height`) ----
 // mobgen/reference/README.md, fgc_skeleton joint heights, converted to our axes.
-export const REF = {
+const REF = {
   topOfHead: 1.0,
   baseOfSkull: 0.897,
   jawHinge: 0.909,
@@ -269,7 +269,7 @@ export const mid = (a: Vec3, b: Vec3): Vec3 => scale(add(a, b), 0.5);
  * of a limb radius since bone lengths don't change). */
 export const FLESH_SCALE = 0.65;
 
-export const roundJoint = (childBone: string, center: Vec3, radius: number): Feature => ({
+const roundJoint = (childBone: string, center: Vec3, radius: number): Feature => ({
   bone: childBone,
   op: 'add',
   shape: { kind: 'ellipsoid', center, radii: [radius, radius, radius] },
@@ -291,7 +291,7 @@ export const ellipsoidFeature = (bone: string, center: Vec3, radii: Vec3, materi
   material,
 });
 
-export const boxFeature = (bone: string, center: Vec3, half: Vec3, round: number): Feature => ({
+const boxFeature = (bone: string, center: Vec3, half: Vec3, round: number): Feature => ({
   bone,
   op: 'add',
   shape: { kind: 'box', center, half, round },
@@ -302,8 +302,8 @@ export const boxFeature = (bone: string, center: Vec3, half: Vec3, round: number
 // X and Z sit at plain multiples, so x = 0 and x = ±n*v need no snapping to fall exactly on a column).
 // Snapping a feature's Y this way means a carve/paint reliably lands on one intended voxel row instead
 // of splitting across two.
-export const snapRow = (y: number, voxel: number): number => (Math.round(y / voxel - 0.5) + 0.5) * voxel;
-export const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * voxel;
+const snapRow = (y: number, voxel: number): number => (Math.round(y / voxel - 0.5) + 0.5) * voxel;
+const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * voxel;
 
 // Median default-voxel-size / median-template-height ratio: shambler 1/41.4,
 // runner 1/45 and brute 1/43. This calibrates the new metric face constants to
@@ -382,7 +382,7 @@ export const buildFaceLayout = (layout: JointLayout, p: HumanoidParams, voxelSiz
 
 /** A flat-bottomed sole from heel to toe (an ellipsoid centred between ankle and toe only touches the
  * ground at a single point near the middle — real feet, and the `grounded`/`balance` rules, need a sole). */
-export const footFeature = (bone: string, foot: readonly [Vec3, Vec3], hg: readonly [number, number]): Feature => {
+const footFeature = (bone: string, foot: readonly [Vec3, Vec3], hg: readonly [number, number]): Feature => {
   const [ankle, toe] = foot;
   const [h, g] = hg;
   const [, , toeZ] = toe;
@@ -536,7 +536,7 @@ export const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLay
 
 // ---- Clothes, hair, mottling and wounds (paint + carve) ----
 
-export const NOISE_SCALE = 0.1;
+const NOISE_SCALE = 0.1;
 
 export const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): Feature[] => {
   const h = layout.height;
