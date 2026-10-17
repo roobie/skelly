@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { skyAt as skyAtCycle } from '../src/core/sky.ts';
-import { clampFogginess, DEFAULT_FOGGINESS, skyInWeather } from '../src/core/weather.ts';
+import { clampFogginess, skyInWeather as skyInWeatherTuned, type WeatherTuning } from '../src/core/weather.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 const skyAt = (hour: number) => skyAtCycle(hour, BASE_DAY_CYCLE);
+const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaultFogginess;
+const skyInWeather = (
+  sky: ReturnType<typeof skyAt>,
+  weather: { fogginess: number },
+  tuning: WeatherTuning = BASE_DAY_CYCLE.weather,
+) => skyInWeatherTuned(sky, weather, tuning);
 
 const HOURS = Array.from({ length: 48 }, (_, i) => i / 2);
 const STEPS = [0, 0.1, 0.2, 0.3, 0.5, 0.8, 1];
 
 describe('fogginess in the sky', () => {
   it('is a light mist by default, at which the height fog is the keyframes own', () => {
-    expect(DEFAULT_FOGGINESS).toBe(0.2);
     for (const hour of HOURS) {
       const sky = skyAt(hour);
       expect(skyInWeather(sky, { fogginess: DEFAULT_FOGGINESS }).heightFog).toBeCloseTo(sky.heightFog, 12);
@@ -77,7 +82,7 @@ describe('fogginess steps', () => {
     expect(clampFogginess(0.300_000_000_000_000_04)).toBe(0.3);
     expect(clampFogginess(1.04)).toBe(1);
     expect(clampFogginess(-0.3)).toBe(0);
-    let fogginess = DEFAULT_FOGGINESS;
+    let fogginess = 0.2;
     for (let i = 0; i < 7; i++) {
       fogginess = clampFogginess(fogginess + 0.1);
     }

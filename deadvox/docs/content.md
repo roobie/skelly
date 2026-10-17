@@ -12,6 +12,7 @@ read_if:
   - you author decals or scenario outbreak age
   - you author a scenario, its start-building rooms or ways down, or move scenario rules from code into content
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
+  - you author or change the day cycle, the sky looks or the weather fog tuning
   - you change the debug kit ownership view
 ---
 
@@ -97,6 +98,12 @@ playable-pack admission rather than inventing missing policy in a renderer. See
 ## Weathering profiles
 
 Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `WeatheringSchema` in `src/core/schema.ts` and `referenceIssues` in `src/core/content.ts`. `configFromUrl` in `src/game/config.ts` selects the site profile.
+
+## Day cycle
+
+One required row owns how the day reads, sun and sky and fog together, so a mod that changes the latitude or the mood needs no engine code. Every field is required, with no code default and no fallback, so a pack that omits one fails to load rather than playing under a hidden look. Looks are keyed by solar phase so an author edits a phase, not an index, and colours are hex that authors can read.
+
+Where each look sits in its phase and how looks blend stay in code. They are mechanism shared by every pack: a pack tunes how the dawn looks, not how the sky moves from night to dawn (`src/core/sky.ts`, `skyAt`). Tests take the cycle from base content through `test/dayPhaseFixture.ts` and never restate it. See `src/core/schema.ts`, `DayCycleSchema`, for what the row holds, and `src/core/weather.ts`, `skyInWeather`.
 
 ## Content test registries
 

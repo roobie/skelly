@@ -19,7 +19,7 @@ const observation = {
   enforce: 'pre',
   transform(code, id) {
     if (id.endsWith('/src/debug/index.ts')) {
-      const marker = '  const initialLook = parseLookParams(new URLSearchParams(location.search));';
+      const marker = '  const initialLook = parseLookParams(new URLSearchParams(location.search), defaultFogginess);';
       assert(code.includes(marker), 'debug look observation point exists');
       return code.replace(marker, `  Object.assign(globalThis, { firefoxUiLook: look });\n${marker}`);
     }

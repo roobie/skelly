@@ -6,6 +6,7 @@
 // hook it will drive: set `Weather.fogginess` and the sky's fog follows. Pure; game/play.ts holds the
 // one `Weather` and applies `skyInWeather` to each frame's sky before render/sky.ts uses it.
 
+import type { DayCycleDef } from './schema.ts';
 import type { Sky } from './sky.ts';
 
 export interface Weather {
@@ -13,8 +14,8 @@ export interface Weather {
   fogginess: number;
 }
 
-/** A light mist. At this value the height fog has exactly the time-of-day keyframes' density. */
-export const DEFAULT_FOGGINESS = 0.2;
+/** The day cycle's weather tuning (`docs/content.md`, "Day cycle"). */
+export type WeatherTuning = DayCycleDef['weather'];
 
 /** Weathering profiles keep place-level age coherent while allowing distinct site moods. */
 export const DEFAULT_WEATHERING_PROFILE_ID = 'proper';
@@ -40,25 +41,20 @@ export const WEATHERING_RANGES = {
 /** Clamped to [0, 1] and rounded to a tenth, so repeated steps don't accumulate float error. */
 export const clampFogginess = (value: number): number => Math.min(1, Math.max(0, Math.round(value * 10) / 10));
 
-/** Height-fog density multiplier at fogginess 1; the keyframes' own density sits at DEFAULT_FOGGINESS × this. */
-const HEIGHT_FOG_GAIN = 1 / DEFAULT_FOGGINESS;
-/** How much of its keyframe value the distance fog's start and end lose at fogginess 1. */
-const NEAR_TIGHTEN = 0.85;
-const FAR_TIGHTEN = 0.6;
-
 /**
  * The sky with the weather's fog on top of the time-of-day keyframes: height-fog density scales
  * with fogginess (so dawn and night stay mistier than noon at any value, and 0 has no mist) and the
- * distance fog's start and end move in. Fractions only shrink, so the end stays inside the view
- * radius and, being what the camera's far plane follows, still ends in pure fog colour. Fogginess 0
- * leaves the keyframes' distances alone.
+ * distance fog's start and end move in. The tightening fractions only shrink, so the end stays inside
+ * the view radius and, being what the camera's far plane follows, still ends in pure fog colour.
+ * Fogginess 0 leaves the keyframes' distances alone. The keyframes' own height-fog density sits at the
+ * tuning's default fogginess, so the density gain is its reciprocal.
  */
-export const skyInWeather = (sky: Sky, weather: Weather): Sky => {
+export const skyInWeather = (sky: Sky, weather: Weather, tuning: WeatherTuning): Sky => {
   const fogginess = Math.min(1, Math.max(0, weather.fogginess));
   return {
     ...sky,
-    fogNear: sky.fogNear * (1 - NEAR_TIGHTEN * fogginess),
-    fogFar: sky.fogFar * (1 - FAR_TIGHTEN * fogginess),
-    heightFog: sky.heightFog * fogginess * HEIGHT_FOG_GAIN,
+    fogNear: sky.fogNear * (1 - tuning.nearTighten * fogginess),
+    fogFar: sky.fogFar * (1 - tuning.farTighten * fogginess),
+    heightFog: sky.heightFog * fogginess * (1 / tuning.defaultFogginess),
   };
 };

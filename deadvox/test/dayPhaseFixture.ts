@@ -1,9 +1,11 @@
+import { parse } from 'valibot';
 import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { CLOCK_RATIO, type ClockSettings, parseTimeOfDay, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { type DayCycle, type DayPhase, dayPhaseAt } from '../src/core/dayPhase.ts';
+import { type DayCycleDef, DayCycleSchema } from '../src/core/schema.ts';
 
-/** Base content's day cycle row, for tests that need a cycle without loading a registry. */
-export const BASE_DAY_CYCLE: DayCycle = coreDayCycle.dayCycle as DayCycle;
+/** Base content's day cycle row as the registry holds it, for tests that need a cycle without loading one. */
+export const BASE_DAY_CYCLE: DayCycleDef = parse(DayCycleSchema, coreDayCycle.dayCycle);
 
 /** The clock a session built from base content starts with. */
 export const BASE_CLOCK: ClockSettings = {
