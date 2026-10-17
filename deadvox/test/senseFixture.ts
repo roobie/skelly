@@ -2,9 +2,9 @@ import type { SenseDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 
-/** The bundled player row with only the values these fixtures deliberately set overridden. */
 export const BASE_SENSE_TUNING: SenseDef = buildBundledContent().registry.senses.get('player')!;
 
+/** The bundled player row with only the values these fixtures deliberately set overridden. */
 export const TEST_SENSE_TUNING: SenseDef = {
   ...BASE_SENSE_TUNING,
   crouch: {

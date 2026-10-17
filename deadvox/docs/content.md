@@ -107,7 +107,7 @@ Where each look sits in its phase and how looks blend stay in code. They are mec
 
 ## Footstep and vocal-noise tuning
 
-Footfall spacing, the fall that lands hard and how long a vocal noise stays audible are properties of the player's body, so they live in the player's sense row beside the other hearing tunables and a mod that changes the body needs no engine code. Every field is required, with no code default, so a pack that omits one fails to load. See `src/core/schema.ts`, `SenseSchema`.
+Footstep and vocal-noise tuning is a property of the player's body, so it lives in the player's sense row beside the other hearing tunables and a mod that changes the body needs no engine code. Every field is required, with no code default, so a pack that omits one fails to load. See `src/core/schema.ts`, `SenseSchema`.
 
 Two nearby constants stay in code on purpose. The stride-phase origin is mechanism: it aligns the first footfall with the shared gait phase that presentation and aim wobble also read, so a pack tuning spacing never needs it (`src/core/footsteps.ts`, `initialFootstepClock`). The hit-flinch duration is the length of mobgen's flinch clip, so a second copy in content could disagree with the animation it must match (`src/core/zombiePose.ts`, `HIT_FLINCH_DURATION`). Tests take the row from `test/senseFixture.ts`, `BASE_SENSE_TUNING`, and never restate it.
 
