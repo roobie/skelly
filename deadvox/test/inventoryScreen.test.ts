@@ -29,6 +29,7 @@ import {
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
@@ -135,7 +136,7 @@ function setup(contentRegistry = registry) {
     throwItem: () => undefined,
   };
   const hooks = {
-    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
+    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => [0, 0, 0] as [number, number, number],
     nearby: () => [...inv.piles.values()],
     distance: () => 0,
@@ -153,6 +154,16 @@ function setup(contentRegistry = registry) {
     character: () => character,
     body: () => body,
     needs: () => needs,
+    slotLabels: {
+      head: 'fixture head',
+      torso: 'fixture torso',
+      legs: 'fixture legs',
+      back: 'fixture back',
+      waist: 'fixture waist',
+      hands: 'fixture hands',
+      feet: 'fixture feet',
+      shoulder: 'fixture shoulder',
+    },
     wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
     attachmentCandidates: (_firearmUid: number, _slotId: string) => [beans],

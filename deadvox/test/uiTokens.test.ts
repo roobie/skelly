@@ -14,7 +14,19 @@ const refusalSound = {
   category: 'body',
   noise: { enabled: false, radiusMetres: 1 },
 };
-const tuning = { id: CORE_CONTENT_IDS.coreUi, spacing: 1, hudScale: 1, refusalSound: refusalSound.id };
+const wearSlotLabels = Object.fromEntries(
+  ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, `fixture ${slot}`]),
+);
+const tuning = {
+  id: CORE_CONTENT_IDS.coreUi,
+  spacing: 1,
+  hudScale: 1,
+  refusalSound: refusalSound.id,
+  restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
+  doorCloseBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
+  itemActionLabels: { stripRound: 'fixture strip' },
+  wearSlotLabels,
+};
 
 it('applies validated core-mod UI tuning to document-root CSS properties', () => {
   const { registry, issues } = buildRegistry([
@@ -47,6 +59,23 @@ it('rejects UI tuning without a refusal sound, or whose refusal sound is not loa
   expect(issues.map(({ path, message }) => [path, message])).toEqual([
     ['ui[0].refusalSound', `no sound event "${refusalSound.id}"`],
   ]);
+});
+
+it('rejects UI tuning missing any player-facing text field, with no code default', () => {
+  const { restLabels: _r, doorCloseBlockedMessages: _d, itemActionLabels: _i, wearSlotLabels: _w, ...bare } = tuning;
+  const missing = validateContent({ source: 'no-text.json', data: { ui: [bare] } });
+  expect(missing.map(({ path }) => path)).toEqual([
+    'ui[0].restLabels',
+    'ui[0].doorCloseBlockedMessages',
+    'ui[0].itemActionLabels',
+    'ui[0].wearSlotLabels',
+  ]);
+  const { head: _h, ...partialSlots } = wearSlotLabels;
+  const partial = validateContent({
+    source: 'partial-slots.json',
+    data: { ui: [{ ...tuning, wearSlotLabels: partialSlots }] },
+  });
+  expect(partial.map(({ path }) => path)).toEqual(['ui[0].wearSlotLabels.head']);
 });
 
 it('reports content without the core UI tuning at validation, not at startup', () => {

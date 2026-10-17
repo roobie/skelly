@@ -1,22 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { type DayCycle, type DayPhase, DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
-import { skyAt, sunDirection } from '../src/core/sky.ts';
-import { phaseMidpoint } from './dayPhaseFixture.ts';
+import { type DayCycle, type DayPhase, dayPhaseAt } from '../src/core/dayPhase.ts';
+import type { DayCycleDef } from '../src/core/schema.ts';
+import { skyAt as skyAtCycle, sunDirection as sunDirectionAtCycle } from '../src/core/sky.ts';
+import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
+const skyAt = (hour: number, cycle: DayCycleDef = BASE_DAY_CYCLE) => skyAtCycle(hour, cycle);
+const sunDirection = (hour: number) => sunDirectionAtCycle(hour, BASE_DAY_CYCLE);
 const hourAt = (seconds: number): number => seconds / 3600;
 const brightness = (hour: number) => {
   const sky = skyAt(hour);
   return sky.ambientIntensity + sky.lightIntensity;
 };
 
-const day = dayPhaseAt(DEFAULT_DAY_CYCLE, phaseMidpoint('day'));
-const otherCycle: DayCycle = {
-  ...DEFAULT_DAY_CYCLE,
+const day = dayPhaseAt(BASE_DAY_CYCLE, phaseMidpoint('day'));
+const otherCycle: DayCycleDef = {
+  ...BASE_DAY_CYCLE,
   latitudeDegrees:
-    DEFAULT_DAY_CYCLE.latitudeDegrees > 80
-      ? DEFAULT_DAY_CYCLE.latitudeDegrees - 7
-      : DEFAULT_DAY_CYCLE.latitudeDegrees + 7,
+    BASE_DAY_CYCLE.latitudeDegrees > 80 ? BASE_DAY_CYCLE.latitudeDegrees - 7 : BASE_DAY_CYCLE.latitudeDegrees + 7,
 };
 const phaseSamples = (cycle: DayCycle): { phase: DayPhase; time: number }[] => {
   const state = dayPhaseAt(cycle, 0);
@@ -37,11 +38,11 @@ const lookFields = (sky: ReturnType<typeof skyAt>) => {
 
 describe('sky', () => {
   it('keys the sky look to phase position across different solar cycles', () => {
-    const reference = phaseSamples(DEFAULT_DAY_CYCLE);
+    const reference = phaseSamples(BASE_DAY_CYCLE);
     const comparison = phaseSamples(otherCycle);
     reference.forEach(({ phase, time }, index) => {
       expect(comparison[index]!.phase).toBe(phase);
-      const first = lookFields(skyAt(hourAt(time), DEFAULT_DAY_CYCLE));
+      const first = lookFields(skyAt(hourAt(time), BASE_DAY_CYCLE));
       const second = lookFields(skyAt(hourAt(comparison[index]!.time), otherCycle));
       for (const key of Object.keys(first) as (keyof typeof first)[]) {
         const a = first[key];
@@ -60,7 +61,7 @@ describe('sky', () => {
   it('keeps sun direction and sky labels aligned with derived solar phases', () => {
     for (let minute = 0; minute < 24 * 60; minute++) {
       const time = minute * 60;
-      const state = dayPhaseAt(DEFAULT_DAY_CYCLE, time);
+      const state = dayPhaseAt(BASE_DAY_CYCLE, time);
       const hour = hourAt(time);
       expect(sunDirection(hour)[1] > 0, `sun at ${time}`).toBe(state.phase === 'day');
       expect(skyAt(hour).dayPhase, `sky at ${time}`).toBe(state.phase);

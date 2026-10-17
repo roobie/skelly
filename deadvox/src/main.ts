@@ -13,6 +13,7 @@ import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import { applyWeatheringConfig, configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
+import { requestInputLock } from './game/input.ts';
 import { inputBindings, keyboardInput, labelForAction } from './game/inputBindings.ts';
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from './game/inputReplay.ts';
 import { startPlay } from './game/play.ts';
@@ -20,12 +21,14 @@ import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
 import { tutorialRequested, tutorialUrl } from './game/tutorial.ts';
+import { WorldLoading } from './game/worldLoading.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
 import { chooseMods } from './ui/modsPanel.ts';
 import { contentLookup, SaveController } from './ui/saveController.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
+import { mountWorldLoading } from './ui/worldLoading.ts';
 
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
@@ -240,12 +243,30 @@ if (bench === 'report') {
       startPlay(engine, debugModule, { saveController, restore: restored, ...(skyRoute ? { skyRoute } : {}) });
       hideStartupScreen();
     } else {
-      saveController.setNewWorldLauncher((creation) => {
-        const entry = startPlay(engine, debugModule, {
-          saveController,
-          ...creation,
-          ...(skyRoute ? { skyRoute } : {}),
-        });
+      saveController.setNewWorldLauncher(async (creation) => {
+        // Capture transient activation before setup, then return the gesture handler before doing expensive work.
+        const target = engine.renderer?.domElement ?? view;
+        const locked = requestInputLock(target);
+        const owner = new WorldLoading(engine);
+        const draw = mountWorldLoading(owner);
+        await locked;
+        await new Promise<void>((done) => setTimeout(done, 0));
+        let entry: ReturnType<typeof startPlay>;
+        try {
+          entry = startPlay(engine, debugModule, {
+            saveController,
+            loading: { owner, draw },
+            ...creation,
+            ...(skyRoute ? { skyRoute } : {}),
+          });
+        } catch (error) {
+          owner.fail(error);
+          draw();
+          if (document.pointerLockElement === target) {
+            document.exitPointerLock();
+          }
+          throw error;
+        }
         return {
           enter: () => {
             overlay.classList.remove('startup-ready');

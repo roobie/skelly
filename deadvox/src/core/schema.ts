@@ -34,7 +34,7 @@ import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { hasSegment } from './authoredTerrain.mjs';
 import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind, MELEE_DAMAGE_KINDS } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
-import { parseSpawnTime } from './clock.ts';
+import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
@@ -54,6 +54,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
+import { TREE_SHAPES } from './treeShapes.ts';
 import { WEATHERING_RANGES } from './weather.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
@@ -220,6 +221,18 @@ const InventoryTuningSchema = strictObject({
   id: Id,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
+  /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
+  reachMetres: Positive,
+  /** Metres above the feet at which reach is measured. */
+  chestHeightMetres: Positive,
+  /** Metres within which a looked-at furniture piece can be used. */
+  useReachMetres: Positive,
+  /** Searching a container takes `minSimSeconds` for an empty one, rising linearly to `maxSimSeconds` at `cellsForMax` pocket cells. */
+  search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
+  /** Sim seconds a thrown item takes from the hand to where it lands. */
+  throwFlightSimSeconds: Positive,
+  /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
+  throwArcHeightMetres: NonNegative,
 });
 
 const UiTuningSchema = strictObject({
@@ -230,6 +243,23 @@ const UiTuningSchema = strictObject({
   hudScale: Positive,
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: picklist(SOUND_EVENT_IDS),
+  /** What the rest card calls each kind of rest. */
+  restLabels: strictObject({ rest: Name, sleep: Name }),
+  /** Why a door will not close: the player, or something else, is standing in its way. */
+  doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
+  /** What the item action list calls an action whose wording does not depend on the item or wound. */
+  itemActionLabels: strictObject({ stripRound: Name }),
+  /** What the inventory screen calls each wear slot. */
+  wearSlotLabels: strictObject({
+    head: Name,
+    torso: Name,
+    legs: Name,
+    back: Name,
+    waist: Name,
+    hands: Name,
+    feet: Name,
+    shoulder: Name,
+  }),
 });
 
 const SaveTuningSchema = strictObject({
@@ -321,15 +351,36 @@ const WeaponSchema = strictObject({
   }),
 });
 
-const MeleeClassSchema = strictObject({
-  id: picklist(MELEE_DAMAGE_KINDS),
-  /** Fractional spread applied symmetrically around base weapon damage. */
-  damageVariance: Fraction,
-  headDamageMultiplier: Positive,
-  limbDamageMultiplier: Positive,
-  /** Multiplies swing speed; cooldown is divided by this value. */
-  speedMultiplier: Positive,
+/** The bare-handed attack, which no item supplies. */
+const UnarmedAttackSchema = strictObject({
+  damage: Positive,
+  /** Metres beyond the player's hand; the arm's reach is added when swinging. */
+  reach: Positive,
+  /** Sim seconds between swings. */
+  cooldownSimSeconds: PositiveSimSeconds,
+  stamina: NonNegative,
+  contactFraction: Fraction,
+  windupCapSimSeconds: PositiveSimSeconds,
+  impulse: NonNegative,
 });
+
+const MeleeClassSchema = pipe(
+  strictObject({
+    id: picklist([...MELEE_DAMAGE_KINDS, 'fists']),
+    /** Fractional spread applied symmetrically around base weapon damage. */
+    damageVariance: Fraction,
+    headDamageMultiplier: Positive,
+    limbDamageMultiplier: Positive,
+    /** Multiplies swing speed; cooldown is divided by this value. */
+    speedMultiplier: Positive,
+    /** Present exactly on the `fists` class, whose attack has no weapon item to carry it. */
+    unarmed: optional(UnarmedAttackSchema),
+  }),
+  check(
+    (meleeClass) => (meleeClass.id === CORE_CONTENT_IDS.fistsMeleeClass) === (meleeClass.unarmed !== undefined),
+    'only the fists melee class carries an unarmed attack, and it must',
+  ),
+);
 
 const RoundFeedPoseSchema = pipe(
   strictObject({
@@ -487,7 +538,7 @@ const ExplosiveSchema = strictObject({
 const FirearmAttachmentEffectsSchema = strictObject({
   /** Fraction of the firearm's committed recoil kick removed at full condition. */
   recoilReduction: optional(Fraction),
-  /** Condition lost per committed shot. */
+  /** Condition lost per committed shot; absent means the attachment does not wear. */
   wearPerShot: optional(Fraction),
   /** Multipliers applied to the existing aim and stance response. */
   swayScale: optional(Positive),
@@ -1183,11 +1234,8 @@ const LootTableSchema = strictObject({
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
 const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
-const SpawnTime = pipe(
-  string(),
-  check((value) => parseSpawnTime(value) !== undefined, 'expected a named game time or HH:MM'),
-  transform((value) => gameTimeOfDay(parseSpawnTime(value)!)),
-);
+// Names stay names through parsing: the day cycle that gives them meaning is content too (`resolveSpawnTime`).
+const SpawnTime = union([picklist(SPAWN_TIME_NAMES), GameTimeOfDay], 'expected a named game time or HH:MM');
 const SpawnWindowSchema = pipe(
   strictObject({ fromGameTimeOfDay: SpawnTime, toGameTimeOfDay: optional(SpawnTime) }),
   check(
@@ -1391,10 +1439,57 @@ const CalendarDateSchema = pipe(
   }),
   check(({ month, day }) => day <= [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]!, 'invalid date'),
 );
-const DayCycleSchema = strictObject({
+const SkyColour = pipe(
+  string(),
+  regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb colour'),
+  transform((text): readonly [number, number, number] => {
+    const rgb = Number.parseInt(text.slice(1), 16);
+    return [((rgb >> 16) & 255) / 255, ((rgb >> 8) & 255) / 255, (rgb & 255) / 255];
+  }),
+);
+const UnitFraction = pipe(number(), finite(), minValue(0), maxValue(1));
+/** One sky look: the keyframe values the time of day blends between (core/sky.ts owns the blend). */
+const SkyLookSchema = strictObject({
+  sky: SkyColour,
+  lightColor: SkyColour,
+  lightIntensity: NonNegative,
+  ambientSky: SkyColour,
+  ambientGround: SkyColour,
+  ambientIntensity: NonNegative,
+  fogNear: UnitFraction,
+  fogFar: UnitFraction,
+  heightFog: NonNegative,
+  heightFogColor: SkyColour,
+  bloom: NonNegative,
+  tone: UnitFraction,
+});
+/** The weather's fog on top of the looks; fractions only shrink the distance fog, so both stay below 1. */
+const WeatherTuningSchema = strictObject({
+  /** The fogginess a session starts at; the looks' height fog is exactly their own density here. */
+  defaultFogginess: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
+  nearTighten: pipe(UnitFraction, maxValue(0.99)),
+  farTighten: pipe(UnitFraction, maxValue(0.99)),
+});
+export const DayCycleSchema = strictObject({
+  /** Calendar seconds per simulation second: how long a game day lasts in play. A new session takes it; a save keeps its own. */
+  clockRatio: Positive,
   latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
   date: CalendarDateSchema,
   twilight: literal('nautical'),
+  /** The keyframe looks by solar phase: night and deepNight around midnight, dawn and dusk at the sun's edge. */
+  looks: strictObject({
+    night: SkyLookSchema,
+    deepNight: SkyLookSchema,
+    dawn: SkyLookSchema,
+    day: SkyLookSchema,
+    dusk: SkyLookSchema,
+  }),
+  weather: WeatherTuningSchema,
+  /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
+  defaultStartGameTimeOfDay: GameTimeOfDay,
+  /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */
+  midnightGameTimeOfDay: GameTimeOfDay,
+  noonGameTimeOfDay: GameTimeOfDay,
 });
 const HalfMetres = pipe(
   Metres,
@@ -1533,6 +1628,21 @@ const StartDescentSchema = variant('kind', [
   }),
 ]);
 
+/** Block geometry of a street grid, in blocks; shared so a scenario city and the stress city keep the same limits. */
+const CityBlockGeometry = {
+  street: pipe(Count, minValue(4), maxValue(64)),
+  blockX: pipe(Count, minValue(8), maxValue(256)),
+  blockZ: pipe(Count, minValue(8), maxValue(256)),
+  pad: pipe(Count, minValue(2), maxValue(32)),
+  gap: pipe(Count, minValue(1), maxValue(32)),
+  blend: pipe(Count, maxValue(64)),
+  rows: pipe(
+    Count,
+    minValue(2),
+    maxValue(8),
+    check((value) => value % 2 === 0, 'needs paired rows'),
+  ),
+};
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -1593,20 +1703,7 @@ const ScenarioSchema = strictObject({
   city: strictObject({
     blocksX: pipe(Count, minValue(1), maxValue(4)),
     blocksZ: pipe(Count, minValue(1), maxValue(4)),
-    street: pipe(Count, minValue(4), maxValue(64)),
-    blockX: pipe(Count, minValue(8), maxValue(256)),
-    blockZ: pipe(Count, minValue(8), maxValue(256)),
-    pad: pipe(Count, minValue(2), maxValue(32)),
-    gap: pipe(Count, minValue(1), maxValue(32)),
-    blend: pipe(Count, maxValue(64)),
-    rows: optional(
-      pipe(
-        Count,
-        minValue(2),
-        maxValue(8),
-        check((value) => value % 2 === 0, 'needs paired rows'),
-      ),
-    ),
+    ...CityBlockGeometry,
     perimeter: optional(
       strictObject({
         block: Id,
@@ -1993,11 +2090,35 @@ const SiteGenerationSchema = strictObject({
     roadShoulderMetres: NonNegative,
     spawnMarginMetres: NonNegative,
   }),
+  // The natural ground every site stands on; metres, so a block size never changes the landscape.
+  terrain: pipe(
+    strictObject({
+      minHeightMetres: NonNegative,
+      maxHeightMetres: NonNegative,
+      beachBelowMetres: NonNegative,
+      dirtDepthMetres: NonNegative,
+      featureSizeMetres: PositiveMetres,
+      octaves: pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more')),
+    }),
+    check(({ minHeightMetres, maxHeightMetres }) => minHeightMetres < maxHeightMetres, 'min height must be below max'),
+  ),
   vegetation: strictObject({
     woodlandEdgeWavelengthMetres: PositiveMetres,
     woodlandEdgeVariation: pipe(Fraction, maxValue(0.5, 'must not exceed 0.5')),
     openDensity: Fraction,
     obstacleMarginMetres: NonNegative,
+    // One entry per draw, so repeating a shape weights it.
+    treeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
+    treeCellMetres: PositiveMetres,
+    hamletDensity: Fraction,
+    forestHalfExtentMetres: PositiveMetres,
+    forestDensityField: strictObject({
+      wavelengthMetres: PositiveMetres,
+      seedSalt: Count,
+      floor: Fraction,
+      gain: NonNegative,
+      ceiling: Fraction,
+    }),
   }),
   // One palette shared by every site kind: terrain, paving, trees and litter are block ids.
   palette: strictObject({
@@ -2010,6 +2131,26 @@ const SiteGenerationSchema = strictObject({
     hedge: Id,
     northSide: pipe(array(Id), minLength(1)),
     southSide: pipe(array(Id), minLength(1)),
+  }),
+  // Where the hamlet may stand: a square grid of candidate sites around the world origin, scored on flatness.
+  placement: pipe(
+    strictObject({
+      gridStepMetres: PositiveMetres,
+      reachMetres: NonNegative,
+      sampleMetres: PositiveMetres,
+      lowestMetres: NonNegative,
+    }),
+    // The search walks whole grid steps out to the reach, so a fractional count would silently shrink it.
+    check(
+      ({ gridStepMetres, reachMetres }) => Number.isInteger(reachMetres / gridStepMetres),
+      'reach must be a whole number of grid steps',
+    ),
+  ),
+  // The street grid the stress-test city builds: it has no scenario, so its block geometry lives here.
+  stressCity: strictObject({
+    ...CityBlockGeometry,
+    // Metres from the world origin the city must cover in each direction; the reader converts to blocks.
+    reachMetres: PositiveMetres,
   }),
 });
 const SenseSchema = strictObject({
@@ -2034,6 +2175,15 @@ const SenseSchema = strictObject({
     clearGain: Fraction,
     clearCutoffHz: Positive,
   }),
+  /** Footfall spacing per moving gait and the fall that lands hard; cadence and landing noise follow from these. */
+  footsteps: strictObject({
+    walkingStepMetres: Positive,
+    joggingStepMetres: Positive,
+    sprintingStepMetres: Positive,
+    hardLandingMetres: Positive,
+  }),
+  /** How long a player vocal noise stays audible to shamblers after it is emitted. */
+  vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
   light: strictObject({
     playerDaySightScale: Fraction,
     /** Reduce how far shamblers investigate non-player light sources. */
@@ -2169,6 +2319,47 @@ const PainTuningSchema = strictObject({
   ),
 });
 
+const NeedPercent = pipe(number(), minValue(0, 'must be 0 to 100'), maxValue(100, 'must be 0 to 100'));
+
+const CriticalNeedSchema = pipe(
+  strictObject({
+    need: picklist(['calories', 'hydration', 'fatigue']),
+    /** Critical while the need is under this. */
+    below: optional(NeedPercent),
+    /** Critical while the need is over this; fatigue has no upper cap. */
+    above: optional(NonNegative),
+    /** What the player is told when the need becomes critical. */
+    message: Name,
+  }),
+  check((rule) => (rule.below === undefined) !== (rule.above === undefined), 'needs exactly one of below and above'),
+);
+
+/** Survival needs and stamina. Vitals run 0 to 100; fatigue is sleep debt (`deadvox/src/core/needs.ts`). */
+const NeedsTuningSchema = strictObject({
+  /** The needs and stamina a new character starts with. */
+  spawn: strictObject({ calories: NeedPercent, hydration: NeedPercent, fatigue: NonNegative, stamina: NeedPercent }),
+  /** Calories and hydration lost per Game hour. */
+  drainPerGameHour: strictObject({ calories: GamePerHour, hydration: GamePerHour }),
+  /** Health lost per Game hour while calories or hydration sit at 0; both add up. */
+  healthLossPerGameHour: strictObject({ starving: GamePerHour, dehydrated: GamePerHour }),
+  stamina: strictObject({
+    /** Spent per Sim second of sprinting. */
+    sprintPerSimSecond: SimRate,
+    /** Recovered per Sim second when not sprinting. */
+    recoverPerSimSecond: SimRate,
+    /** Recovery is scaled by this while any critical need holds. */
+    wornRecoveryFactor: Fraction,
+    /** Below this stamina you're winded and can't start sprinting. */
+    windedBelow: NeedPercent,
+  }),
+  /** 100% calories is this many kilocalories, and 100% hydration this many millilitres. */
+  full: strictObject({ kcal: Positive, ml: Positive }),
+  /** Crossing one of these interrupts a long action and says its message. */
+  critical: array(CriticalNeedSchema),
+  /** Health falling under this from above interrupts a long action and says its message. */
+  badlyHurt: strictObject({ below: Positive, message: Name }),
+});
+
 const BodyTuningSchema = strictObject({
   id: Id,
   /** Game hours after a bleeding wound before an at-risk infection becomes early. */
@@ -2245,6 +2436,7 @@ const BodyTuningSchema = strictObject({
   shockRecoveryPerSimSecond: SimRate,
   /** Health lost per Sim second while infection is advanced. */
   advancedInfectionHealthLossPerSimSecond: SimRate,
+  needs: NeedsTuningSchema,
   /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
   fatigueRisePerGameHour: GamePerHour,
   /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
@@ -2397,6 +2589,7 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;
 export type TreatmentDef = InferOutput<typeof TreatmentSchema>;
 export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'];
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;

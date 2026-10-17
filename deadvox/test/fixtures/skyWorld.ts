@@ -1,4 +1,5 @@
 import graphicsFile from '../../src/content/base/graphics.json' with { type: 'json' };
+import siteGenerationFile from '../../src/content/base/site-generation.json' with { type: 'json' };
 import { BlockEntities } from '../../src/core/blockEntities.ts';
 import { Chunk } from '../../src/core/chunk.ts';
 import { worldOpaque } from '../../src/core/collision.ts';
@@ -22,6 +23,7 @@ function room(world: World, box: SkyBounds, wall: number): void {
   }
 }
 export const fixtureBox: SkyBounds = { min: [4, 1, 4], max: [13, 10, 13] };
+const baseSite = siteGenerationFile.siteGeneration[0] as (typeof siteGenerationFile.siteGeneration)[number];
 export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
   const { registry } = buildRegistry([
     { source: 'graphics.json', data: graphicsFile },
@@ -42,11 +44,14 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
               roadShoulderMetres: 0,
               spawnMarginMetres: 0,
             },
+            terrain: baseSite.terrain,
             vegetation: {
+              ...baseSite.vegetation,
               woodlandEdgeWavelengthMetres: 1,
               woodlandEdgeVariation: 0,
               openDensity: 0,
               obstacleMarginMetres: 0,
+              treeMix: ['broadleaf'],
             },
             palette: {
               terrain: { grass: 'fixture_wall', dirt: 'fixture_wall', rock: 'fixture_wall', sand: 'fixture_wall' },
@@ -55,6 +60,8 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
               leafLitter: 'fixture_leaves',
             },
             hamlet: { hedge: 'fixture_leaves', northSide: ['fixture_shell'], southSide: ['fixture_shell'] },
+            placement: baseSite.placement,
+            stressCity: baseSite.stressCity,
           },
         ],
         templates: [

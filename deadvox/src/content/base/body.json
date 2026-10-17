@@ -132,6 +132,53 @@
       },
       "minimumMovementSpeed": 0.5,
       "movementSlowdownPerDamage": 0.0050000000000000001,
+      "needs": {
+        "badlyHurt": {
+          "below": 25,
+          "message": "You're badly hurt"
+        },
+        "critical": [
+          {
+            "below": 10,
+            "message": "You're starving",
+            "need": "calories"
+          },
+          {
+            "below": 10,
+            "message": "You're parched",
+            "need": "hydration"
+          },
+          {
+            "above": 90,
+            "message": "You're exhausted",
+            "need": "fatigue"
+          }
+        ],
+        "drainPerGameHour": {
+          "calories": 3,
+          "hydration": 5
+        },
+        "full": {
+          "kcal": 2500,
+          "ml": 2500
+        },
+        "healthLossPerGameHour": {
+          "dehydrated": 8,
+          "starving": 4
+        },
+        "spawn": {
+          "calories": 40,
+          "fatigue": 70,
+          "hydration": 35,
+          "stamina": 100
+        },
+        "stamina": {
+          "recoverPerSimSecond": 4,
+          "sprintPerSimSecond": 5,
+          "windedBelow": 10,
+          "wornRecoveryFactor": 0.5
+        }
+      },
       "outerWearMultiplier": {
         "acid": 4,
         "blunt": 1,

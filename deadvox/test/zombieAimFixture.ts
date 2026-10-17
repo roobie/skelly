@@ -3,9 +3,10 @@ import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type CrosshairTarget, crosshairTarget } from '../src/core/crosshairTarget.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { FISTS_MELEE, ZombieSystem } from '../src/core/zombies.ts';
+import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 export const farWallTarget = (origin: Vec3, direction: Vec3, blockSize: number): CrosshairTarget => {

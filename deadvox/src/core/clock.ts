@@ -4,31 +4,42 @@
 export const SECONDS_PER_HOUR = 3600;
 export const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
 
-import { type DayCycle, DEFAULT_DAY_CYCLE, dayPhaseAt } from './dayPhase.ts';
+import { type DayCycle, dayPhaseAt } from './dayPhase.ts';
+import { type GameTimeOfDay, gameTimeOfDay, simTimestamp, simToGameTimestamp } from './time.ts';
 
-/** Authored calendar-time boundaries for time-windowed spawn markers. */
-const defaultDay = dayPhaseAt(DEFAULT_DAY_CYCLE, 0);
-export const SPAWN_TIMES = {
-  midnight: 0,
-  dawn: defaultDay.dawn,
-  noon: 12 * SECONDS_PER_HOUR,
-  dusk: defaultDay.sunset,
-} as const;
+/** Names a spawn window may use for a time; the day cycle content gives them their values. */
+export const SPAWN_TIME_NAMES = ['midnight', 'dawn', 'noon', 'dusk'] as const;
+type SpawnTimeName = (typeof SPAWN_TIME_NAMES)[number];
+export type SpawnTime = GameTimeOfDay | SpawnTimeName;
 
-import { type GameTimeOfDay, simTimestamp, simToGameTimestamp } from './time.ts';
-
-export interface SpawnTimeWindow {
-  fromGameTimeOfDay: GameTimeOfDay;
-  toGameTimeOfDay?: GameTimeOfDay | undefined;
+/** The parts of the day cycle content that name spawn times. */
+export interface SpawnTimeCycle extends DayCycle {
+  readonly midnightGameTimeOfDay: number;
+  readonly noonGameTimeOfDay: number;
 }
 
+export interface SpawnTimeWindow {
+  fromGameTimeOfDay: SpawnTime;
+  toGameTimeOfDay?: SpawnTime | undefined;
+}
+
+/** The one place a named spawn time becomes a time of day: dawn and dusk follow the cycle's sun. */
+export const resolveSpawnTime = (cycle: SpawnTimeCycle, time: SpawnTime): GameTimeOfDay => {
+  switch (time) {
+    case 'midnight':
+      return gameTimeOfDay(cycle.midnightGameTimeOfDay);
+    case 'noon':
+      return gameTimeOfDay(cycle.noonGameTimeOfDay);
+    case 'dawn':
+      return gameTimeOfDay(dayPhaseAt(cycle, 0).dawn);
+    case 'dusk':
+      return gameTimeOfDay(dayPhaseAt(cycle, 0).sunset);
+    default:
+      return time;
+  }
+};
+
 export type SpawnTimeWindowField = { [Property in 'window']?: SpawnTimeWindow };
-
-/** Calendar seconds per simulation second. 1:8 makes a game day 3 real hours. */
-export const CLOCK_RATIO = 8;
-
-// Default to a time when lighting is good and there's time before it becoming dark, because most of the time during development an evaluation looks at something, in which case good lighting conditions are useful.
-export const SPAWN_TIME = 10 * SECONDS_PER_HOUR;
 
 export interface ClockSettings {
   /** Calendar seconds per simulation second. */
@@ -36,8 +47,6 @@ export interface ClockSettings {
   /** Calendar seconds at simulation time 0, counted from midnight of day 1. */
   readonly start: number;
 }
-
-export const defaultClock: ClockSettings = { ratio: CLOCK_RATIO, start: SPAWN_TIME };
 
 /** Calendar seconds at a simulation time. */
 export const calendarAt = (clock: ClockSettings, simTime: number): number =>
@@ -96,21 +105,10 @@ export const parseTimeOfDay = (text: string): number | undefined => {
   return hours < 24 && minutes < 60 ? hours * SECONDS_PER_HOUR + minutes * 60 : undefined;
 };
 
-/** Named or numeric game-clock time used by authored spawn windows. */
-export const parseSpawnTime = (text: string, cycle: DayCycle = DEFAULT_DAY_CYCLE): number | undefined => {
-  if (text === 'dawn') {
-    return dayPhaseAt(cycle, 0).dawn;
-  }
-  if (text === 'dusk') {
-    return dayPhaseAt(cycle, 0).sunset;
-  }
-  return Object.hasOwn(SPAWN_TIMES, text) ? SPAWN_TIMES[text as keyof typeof SPAWN_TIMES] : parseTimeOfDay(text);
-};
-
 /** Time-of-day windows recur daily; an open-ended window stays eligible after its first start. */
-export const spawnWindowOpen = (calendar: number, timeWindow: SpawnTimeWindow): boolean => {
-  const from = timeWindow.fromGameTimeOfDay;
-  const to = timeWindow.toGameTimeOfDay;
+export const spawnWindowOpen = (calendar: number, timeWindow: SpawnTimeWindow, cycle: SpawnTimeCycle): boolean => {
+  const from = resolveSpawnTime(cycle, timeWindow.fromGameTimeOfDay);
+  const to = timeWindow.toGameTimeOfDay === undefined ? undefined : resolveSpawnTime(cycle, timeWindow.toGameTimeOfDay);
   if (from === undefined || (to !== undefined && !Number.isFinite(to))) {
     return false;
   }

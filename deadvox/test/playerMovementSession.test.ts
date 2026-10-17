@@ -5,7 +5,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
-import { bodyDistance, INVENTORY_REACH } from '../src/core/reach.ts';
+import { bodyDistance, reachTuning } from '../src/core/reach.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
@@ -13,10 +13,11 @@ import { compileTemplate, footprint, type Placement, placedBlockAt } from '../sr
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { FISTS_MELEE, type Zombie } from '../src/core/zombies.ts';
+import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { type MoveIntent, PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
 const { registry, issues } = buildRegistry(
@@ -594,8 +595,9 @@ describe('clearing a downed shambler', () => {
           inventory: session.inventory,
           position: session.body.pos,
           blockSize: makeScale(0.5).blockSize,
+          clock: session.sim.clock,
         };
-        expect(bodyDistance(player, zombie.body)).toBeGreaterThan(INVENTORY_REACH);
+        expect(bodyDistance(player, zombie.body)).toBeGreaterThan(reachTuning(session.inventory.registry).reachMetres);
       },
     ],
   ])('leaves the body lying there when finishing it off is %s', (_, interrupt, premise) => {

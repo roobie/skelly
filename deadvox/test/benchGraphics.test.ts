@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import baseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { buildRegistry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { resolveGraphics } from '../src/core/graphics.ts';
@@ -22,6 +23,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
     cachedSurfaceNoise: toggle,
   };
   const content = buildRegistry([
+    { source: 'base/dayCycle.json', data: baseDayCycle },
     { source: 'fixture', data: { graphics: [{ id: CORE_CONTENT_IDS.coreGraphics, ...tuning }] } },
   ]);
   const { registry } = content;

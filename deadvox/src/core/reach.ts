@@ -3,20 +3,26 @@
 
 import type { BlockEntity } from './blockEntities.ts';
 import { dominantSide } from './character.ts';
+import type { ClockSettings } from './clock.ts';
+import type { Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import type { Inventory, Location, Pile } from './inventory.ts';
 import type { Item } from './items.ts';
 import { itemRoots, walkItemTree } from './itemTree.ts';
 import type { Body } from './physics.ts';
+import type { InventoryTuningDef } from './schema.ts';
 
-export const INVENTORY_REACH = 2;
-export const INVENTORY_CHEST = 1;
+/** The reach distances, in metres; required core content guarantees the row. */
+export const reachTuning = (registry: Registry): InventoryTuningDef => registry.inventory.get(CORE_CONTENT_IDS.player)!;
 
 export interface ReachPlayer {
   readonly inventory: Inventory;
   /** Unrounded physics feet, in blocks. A getter may follow the live body. */
   readonly position: Vec3;
   readonly blockSize: number;
+  /** The session's clock; it turns handling seconds into the game seconds a craft plan states. */
+  readonly clock: ClockSettings;
 }
 
 export interface ReachEntry {
@@ -34,7 +40,7 @@ export interface ReachSnapshot {
   readonly piles: readonly Pile[];
   /** Includes unsearched furniture so callers can offer Search, never its contents. */
   readonly furniture: readonly BlockEntity[];
-  /** Furniture workstation components whose nearest box point is within INVENTORY_REACH. */
+  /** Furniture workstation components whose nearest box point is within the reach tuning. */
   readonly workstations: readonly {
     entity: BlockEntity;
     id: string;
@@ -51,13 +57,14 @@ export const pileDistance = (position: Vec3, pile: Vec3, blockSize: number): num
 export const furnitureDistance = (player: ReachPlayer, entity: BlockEntity): number =>
   player.inventory.entities.distance(entity, [
     player.position[0],
-    player.position[1] + INVENTORY_CHEST / player.blockSize,
+    player.position[1] + reachTuning(player.inventory.registry).chestHeightMetres / player.blockSize,
     player.position[2],
   ]) * player.blockSize;
 
 /** Chest to nearest point of a body's box, as for furniture. */
 export const bodyDistance = (player: ReachPlayer, body: Pick<Body, 'pos' | 'halfWidth' | 'height'>): number => {
-  const chest: Vec3 = [player.position[0], player.position[1] + INVENTORY_CHEST / player.blockSize, player.position[2]];
+  const chestHeight = reachTuning(player.inventory.registry).chestHeightMetres;
+  const chest: Vec3 = [player.position[0], player.position[1] + chestHeight / player.blockSize, player.position[2]];
   const low: Vec3 = [body.pos[0] - body.halfWidth, body.pos[1], body.pos[2] - body.halfWidth];
   const high: Vec3 = [body.pos[0] + body.halfWidth, body.pos[1] + body.height, body.pos[2] + body.halfWidth];
   const gaps = chest.map((value, axis) => value - Math.min(Math.max(value, low[axis]!), high[axis]!));
@@ -65,10 +72,10 @@ export const bodyDistance = (player: ReachPlayer, body: Pick<Body, 'pos' | 'half
 };
 
 const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
-  pileDistance(player.position, position, player.blockSize) <= INVENTORY_REACH;
+  pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres;
 
 const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
-  furnitureDistance(player, entity) <= INVENTORY_REACH;
+  furnitureDistance(player, entity) <= reachTuning(player.inventory.registry).reachMetres;
 
 /** Generic spatial collection: not inventory admission. */
 const pilesInRadius = (inventory: Inventory, position: Vec3, radiusBlocks: number): Pile[] => {
@@ -111,7 +118,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
   ) {
     return previous.snapshot;
   }
-  const piles = pilesInRadius(inventory, position, INVENTORY_REACH / blockSize);
+  const piles = pilesInRadius(inventory, position, reachTuning(inventory.registry).reachMetres / blockSize);
   const furniture = [...inventory.entities.all]
     .filter((entity) => entity.pockets !== undefined && furnitureInReach(player, entity))
     .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b));

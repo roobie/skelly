@@ -84,7 +84,11 @@ export const gauntletFlow = async (browser, baseUrl) => {
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
     await page.click('#go');
     await page.waitForFunction(
-      () => globalThis.gauntletWitness?.input.locked && !globalThis.gauntletWitness.session.sim.paused,
+      () =>
+        globalThis.worldLoadWitness?.worldLoading.ready &&
+        globalThis.gauntletWitness.input.locked &&
+        !globalThis.gauntletWitness.input.menuPointer &&
+        !globalThis.gauntletWitness.session.sim.paused,
     );
     await page.evaluate(() => {
       const w = globalThis.gauntletWitness;
@@ -241,7 +245,11 @@ export const gauntletFlow = async (browser, baseUrl) => {
       await page.click('#go');
     }
     await page.waitForFunction(
-      () => globalThis.gauntletWitness.input.locked && !globalThis.gauntletWitness.session.sim.paused,
+      () =>
+        globalThis.worldLoadWitness?.worldLoading.ready &&
+        globalThis.gauntletWitness.input.locked &&
+        !globalThis.gauntletWitness.input.menuPointer &&
+        !globalThis.gauntletWitness.session.sim.paused,
     );
     const journey = await page.evaluate(async () => {
       const w = globalThis.gauntletWitness;
@@ -531,7 +539,10 @@ export const gauntletFlow = async (browser, baseUrl) => {
       await deadPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
       await deadPage.click('#go');
       await deadPage.waitForFunction(
-        () => globalThis.gauntletWitness?.session && !globalThis.gauntletWitness.session.sim.paused,
+        () =>
+          globalThis.worldLoadWitness?.worldLoading.ready &&
+          globalThis.gauntletWitness.input.locked &&
+          !globalThis.gauntletWitness.session.sim.paused,
       );
       await deadPage.evaluate(() =>
         globalThis.gauntletWitness.session.sim.hurt(9999, 'gauntlet death boundary fixture'),

@@ -2,20 +2,12 @@
 // systems registered on it. Pure, so scenario tests run it headless.
 
 import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
-import { type ClockSettings, calendarAt, defaultClock, simToGameHours } from './clock.ts';
+import { type ClockSettings, calendarAt, simToGameHours } from './clock.ts';
 import { Compression, type CompressionLimits, type CompressionOwner, longActionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
-import {
-  awakeRates,
-  causeOf,
-  type Needs,
-  needsAllowRecovery,
-  type RecoveryState,
-  SPAWN_NEEDS,
-  stepNeeds,
-} from './needs.ts';
+import { awakeRates, causeOf, type Needs, needsAllowRecovery, type RecoveryState, stepNeeds } from './needs.ts';
 import type { AnalgesicLookup } from './pain.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
@@ -57,7 +49,7 @@ export interface SimOptions {
   analgesics?: AnalgesicLookup;
   /** The content cap of each compressing long action. */
   compressionCaps: CompressionCaps;
-  clock?: ClockSettings;
+  clock: ClockSettings;
 }
 
 /** Needs tick at 1 Hz; under compression their step grows to 30 s, 4 game minutes at 1:8. */
@@ -71,7 +63,7 @@ export class Simulation {
   readonly events = new EventQueue<Timed<SimEvent>>();
   readonly compression: Compression;
   readonly actions: LongActions;
-  readonly needs: Needs = { ...SPAWN_NEEDS };
+  readonly needs: Needs;
   readonly body: Body;
   /** Esc pauses everything; the inventory screen doesn't. */
   paused = false;
@@ -85,8 +77,9 @@ export class Simulation {
 
   constructor(options: SimOptions) {
     this.seed = options.seed;
-    this.clock = options.clock ?? defaultClock;
+    this.clock = options.clock;
     this.body = new Body(options.bodyTuning, undefined, undefined, options.analgesics);
+    this.needs = this.body.spawnNeeds;
     this.compressionCaps = options.compressionCaps;
     // A start without its own limits (debug compression, a restored skip) passes time like a wait.
     this.compression = new Compression(longActionLimits(options.compressionCaps.wait));

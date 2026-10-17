@@ -5,8 +5,8 @@ import { type AimStep, assertAimState } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import type { Item } from '../src/core/items.ts';
-import { ITEM_FLIGHT_SECONDS } from '../src/core/itemThrow.ts';
 import { pelletShot } from '../src/core/pellets.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import {
   decodeSave,
   encodeSave,
@@ -731,7 +731,8 @@ it('hides a committed pile item during its arc and lands at its current model po
   const throws = new ItemThrows(registry, models, 0.5);
   const piles = new PileMeshes(0.5, models);
   const startedAtSimSeconds = runtime.sim.time;
-  const landingAt = startedAtSimSeconds + ITEM_FLIGHT_SECONDS;
+  const flightSimSeconds = reachTuning(registry).throwFlightSimSeconds;
+  const landingAt = startedAtSimSeconds + flightSimSeconds;
   throws.spawn(
     { item: rifle, itemUid: placed.item.uid, origin: [0, 1, 0], startedAtSimSeconds, landingAt },
     runtime.inventory,
@@ -739,7 +740,7 @@ it('hides a committed pile item during its arc and lands at its current model po
 
   ready = true;
   models.version += 1;
-  throws.update(startedAtSimSeconds + ITEM_FLIGHT_SECONDS / 2, runtime.inventory);
+  throws.update(startedAtSimSeconds + flightSimSeconds / 2, runtime.inventory);
   piles.sync(runtime.inventory, throws.hiddenItemUids);
   expect(throws.hiddenItemUids.has(placed.item.uid)).toBe(true);
   expect(piles.group.children.some((object) => object instanceof Group)).toBe(false);

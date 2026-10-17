@@ -6,6 +6,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ContentFile } from '../src/core/schema.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { footprint } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -55,6 +56,7 @@ it('keeps the street surface under every placed item standing on a street cell',
   const site = new CitySite(1, registry, scale, plan);
   const terrain = {
     seed: 1,
+    shape: terrainShapeOf(registry),
     scale,
     surface: site.surface,
     blocks: { grass: 1000, dirt: 1001, rock: 1002, sand: 1003 },

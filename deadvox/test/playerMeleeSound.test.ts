@@ -2,9 +2,9 @@ import { expect, it } from 'vitest';
 import { makeScale } from '../src/core/scale.ts';
 import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
-import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const registry = baseRegistry();
 const seed = 73;

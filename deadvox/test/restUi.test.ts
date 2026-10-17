@@ -8,19 +8,23 @@ import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { restViewModel } from '../src/ui/rest.ts';
 import { Simulation } from './simulationFixture.ts';
 
+const restLabels = { rest: 'fixture rest', sleep: 'fixture sleep' };
+const hiddenMessages = { messagesVisible: false, restLabels };
+
 describe('restViewModel', () => {
   it('is invisible with no action running', () => {
     const sim = new Simulation({ seed: 1 });
-    expect(restViewModel(undefined, false, sim, false).visible).toBe(false);
+    expect(restViewModel(undefined, false, sim, hiddenMessages).visible).toBe(false);
   });
 
-  it('shows the label, clock and progress, with no prompt while not interrupted', () => {
+  it('shows the content label for the rest kind, the clock and progress, with no prompt while not interrupted', () => {
     const sim = new Simulation({ seed: 1 });
-    const action: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 50 };
+    const action: RestAction = { kind: 'sleep', furnitureUid: 1, rate: -30, startFatigue: 50 };
     sim.needs.fatigue = 25;
-    const vm = restViewModel(action, false, sim, false);
+    const vm = restViewModel(action, false, sim, hiddenMessages);
     expect(vm.visible).toBe(true);
-    expect(vm.label).toBe(action.label);
+    expect(vm.label).toBe(restLabels.sleep);
+    expect(restViewModel({ ...action, kind: 'rest' }, false, sim, hiddenMessages).label).toBe(restLabels.rest);
     expect(vm.percent).toBe(50);
     expect(vm.prompt).toBeUndefined();
     expect(vm.clock).toBe(formatClock(sim.calendar));
@@ -31,12 +35,15 @@ describe('restViewModel', () => {
     sim.needs.fatigue = 0;
     const wakeAt = sim.time + simSecondsPerHour(sim.clock) * 8;
     expect(sim.actions.startRest('sleep', -10, 1, { wakeAt })).toBeUndefined();
-    expect(restViewModel(sim.actions.rest, false, sim, false)).toMatchObject({ visible: true, percent: 0 });
+    expect(restViewModel(sim.actions.rest, false, sim, hiddenMessages)).toMatchObject({
+      visible: true,
+      percent: 0,
+    });
     const slept = () => (sim.actions.job?.jobType === 'sleep' ? sim.actions.job.elapsed : 0);
     for (let i = 0; i < 5000 && slept() === 0; i++) {
       advanceLiveFrame(sim, realSeconds(1 / 60));
     }
-    const { visible, percent } = restViewModel(sim.actions.rest, false, sim, false);
+    const { visible, percent } = restViewModel(sim.actions.rest, false, sim, hiddenMessages);
     expect(visible).toBe(true);
     expect(percent).toBeGreaterThan(0);
     expect(percent).toBeLessThan(100);
@@ -48,17 +55,16 @@ describe('restViewModel', () => {
     const onset: RestAction = {
       kind: 'sleep',
       furnitureUid: 1,
-      label: 'Sleeping',
       rate: -30,
       startFatigue: 40,
       sleepOnset: { durationGameSeconds: 100, elapsedGameSeconds: 50 },
     };
-    const onsetVm = restViewModel(onset, true, sim, false);
+    const onsetVm = restViewModel(onset, true, sim, hiddenMessages);
     expect(onsetVm.percent).toBe(50);
     expect(onsetVm.stopHint).toContain(stopKey);
     expect(onsetVm.canStop).toBe(true);
-    const asleep: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 40 };
-    const asleepVm = restViewModel(asleep, false, sim, false);
+    const asleep: RestAction = { kind: 'sleep', furnitureUid: 1, rate: -30, startFatigue: 40 };
+    const asleepVm = restViewModel(asleep, false, sim, hiddenMessages);
     expect(asleepVm.stopHint).toBe('');
     expect(asleepVm.canStop).toBe(false);
   });
@@ -73,19 +79,11 @@ describe('restViewModel', () => {
     expect(sim.compression.active).toBe(false);
     expect(sim.compression.interruption).toBe(reason);
 
-    const action: RestAction = { kind: 'rest', furnitureUid: 1, label: 'Resting', rate: -15, startFatigue: 40 };
-    const hidden = restViewModel(
-      action,
-      true,
-      sim,
-      hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }).messages,
-    );
-    const visible = restViewModel(
-      action,
-      true,
-      sim,
-      hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }).messages,
-    );
+    const action: RestAction = { kind: 'rest', furnitureUid: 1, rate: -15, startFatigue: 40 };
+    const messagesVisible = (messages: boolean) =>
+      hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages }).messages;
+    const hidden = restViewModel(action, true, sim, { messagesVisible: messagesVisible(false), restLabels });
+    const visible = restViewModel(action, true, sim, { messagesVisible: messagesVisible(true), restLabels });
     expect(hidden.prompt).toBeUndefined();
     expect(visible.prompt).toBe(reason);
   });

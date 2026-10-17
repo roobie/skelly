@@ -13,7 +13,6 @@ import {
   skillSaturation,
 } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
@@ -51,6 +50,7 @@ import { itemIds, itemRoots, savedItemTree, type TreeLocation, walkItemTree } fr
 import type { Rolled } from './loot.ts';
 import { magazineWellCalibre, slotsReason } from './magazine.ts';
 import type { WearSlot } from './schema.ts';
+import { inventoryManagementTuning } from './skillTraining.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /** Handling tunables in seconds (`DESIGN.md`, "Handling time"). */
@@ -64,10 +64,7 @@ export const HANDLING = {
 } as const;
 
 const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
-  const tuning = registry.skills.get(CORE_CONTENT_IDS.inventoryManagement)?.inventory;
-  if (!tuning) {
-    return 1;
-  }
+  const tuning = inventoryManagementTuning(registry);
   const level = skillEffectLevel(character.skills?.inventory_management ?? SKILL_LEVEL_MIN);
   return skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
 };

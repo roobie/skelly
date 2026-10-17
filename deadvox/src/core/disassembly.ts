@@ -1,7 +1,7 @@
 // Content-owned yields for taking apart a finished item; work progress stays with Inventory.
 import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import type { ItemDef } from './content.ts';
-import { indexCraftReach } from './crafting.ts';
+import { gatherGameSeconds, indexCraftReach } from './crafting.ts';
 import type { Item } from './items.ts';
 import { isEmpty } from './items.ts';
 import type { ReachSnapshot } from './reach.ts';
@@ -110,13 +110,14 @@ export const planDisassembly = (
   );
   const toolLevels = Object.fromEntries([...qualities].map((quality) => [quality, qualityLevel(quality)]));
   const work = disassemblyWorkTime(definition);
+  const gather = gatherGameSeconds(entry.handlingTime, reach.player.clock.ratio);
   return {
     kind: 'disassembly',
     source,
     outputs: disassemblyOutputs(definition, skillLevel, (quality) => toolLevels[quality] ?? 0),
     skillLevel,
     toolLevels,
-    gather: entry.handlingTime,
-    duration: entry.handlingTime + work,
+    gather,
+    duration: gather + work,
   };
 };

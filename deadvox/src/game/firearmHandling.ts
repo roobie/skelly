@@ -1223,11 +1223,7 @@ export class FirearmMechanics {
   advanceTo(time: number): void {
     this.observedAtSimSeconds = time;
     this.revolvers.advance();
-    for (const { item } of this.inventory.items()) {
-      if (item.firearm?.cylinder && !this.held(item.uid)) {
-        this.revolvers.cancel(item.uid);
-      }
-    }
+    this.revolvers.cancelUnheld();
     for (const uid of this.active) {
       this.advanceItem(uid, time);
     }

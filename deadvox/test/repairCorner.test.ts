@@ -10,6 +10,7 @@ import { bindReach } from '../src/core/reach.ts';
 import { gameMinutes } from '../src/core/time.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
 import { populateTestHouseRepairCorner } from '../src/game/testHouse.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 const { registry: baseRegistry } = buildRegistry(
   readdirSync('src/content/base')
@@ -156,7 +157,7 @@ describe('test-house repair corner', () => {
     addRepairCorner(inventory, 'testHouse');
     const piles = [...inventory.items()].filter(({ location }) => location.kind === 'pile');
     const targetUids = targetUidsFor(piles);
-    const reach = bindReach({ inventory, position: cornerPosition(inventory), blockSize: 0.5 });
+    const reach = bindReach({ inventory, position: cornerPosition(inventory), blockSize: 0.5, clock: BASE_CLOCK });
     const character = repairCharacter();
     const checks = repairRecipes.map((recipe) => repairPlanCheck({ recipe, piles, reach, character, targetUids }));
 

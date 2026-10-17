@@ -8,6 +8,7 @@ import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type Readable } from '../src
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { startupContent } from './baseRegistry.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -15,12 +16,14 @@ import { createSession, IDLE } from '../src/game/session.ts';
 import { Survival } from '../src/game/survival.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { playerInventorySource } from './fixtures/playerInventory.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const readable = { title: 'Placeholder', text: 'PLAIN\tPLACEHOLDER\r\n\nSecond paragraph.' };
 const admit = (value: Readable) =>
   buildRegistry([
+    playerInventorySource(),
     {
       source: 'fixture.json',
       data: {
@@ -79,7 +82,7 @@ describe('authored readable text', () => {
     const { registry, issues } = admit(readable);
     expect(issues).toEqual([]);
     const inventory = new Inventory(registry);
-    const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 });
+    const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
     const sim = new Simulation({ seed: 1 });
     const queue = new HandlingQueue(inventory);
     const shown: Readonly<Readable>[] = [];
@@ -110,7 +113,12 @@ describe('authored readable text', () => {
     expect(issues).toEqual([]);
     const shown: Readonly<Readable>[] = [];
     const session = createSession({
-      registry: { ...registry, zombies: BUNDLED_CONTENT.registry.zombies },
+      registry: {
+        ...registry,
+        zombies: BUNDLED_CONTENT.registry.zombies,
+        dayCycle: BUNDLED_CONTENT.registry.dayCycle,
+        ui: BUNDLED_CONTENT.registry.ui,
+      },
       world: new World(),
       isSolid: () => false,
       isOpaque: () => false,

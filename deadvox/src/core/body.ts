@@ -1,6 +1,6 @@
 import { SECONDS_PER_HOUR } from './clock.ts';
 import { type ModifiedEffect, type Modifier, type ModifierActor, modified } from './modifiers.ts';
-import type { RecoveryState } from './needs.ts';
+import type { CriticalRule, Needs, NourishmentScale, RecoveryState, StaminaRules } from './needs.ts';
 import {
   type AnalgesicLookup,
   ageDoses,
@@ -247,6 +247,39 @@ export class Body implements ModifierActor {
 
   // Needs and sleep read their content rates here, once each, so the body's modifier point can wrap them.
   // Content rates load per Game second; the needs step works in Game hours.
+
+  /** The needs and stamina a new character starts with. */
+  get spawnNeeds(): Needs {
+    return { ...this.tuning.needs.spawn, staminaRegenDelayRemainingSimSeconds: 0 };
+  }
+
+  /** Calories and hydration lost per Game hour. */
+  get needDrainPerGameHour(): Readonly<{ calories: number; hydration: number }> {
+    const { calories, hydration } = this.tuning.needs.drainPerGameHour;
+    return { calories: calories * SECONDS_PER_HOUR, hydration: hydration * SECONDS_PER_HOUR };
+  }
+
+  /** Health lost per Game hour while calories, or hydration, sit at 0. */
+  get healthLossPerGameHour(): Readonly<{ starving: number; dehydrated: number }> {
+    const { starving, dehydrated } = this.tuning.needs.healthLossPerGameHour;
+    return { starving: starving * SECONDS_PER_HOUR, dehydrated: dehydrated * SECONDS_PER_HOUR };
+  }
+
+  get criticalNeeds(): readonly CriticalRule[] {
+    return this.tuning.needs.critical;
+  }
+
+  get badlyHurt(): Readonly<{ below: number; message: string }> {
+    return this.tuning.needs.badlyHurt;
+  }
+
+  get staminaRules(): StaminaRules {
+    return { ...this.tuning.needs.stamina, critical: this.tuning.needs.critical };
+  }
+
+  get nourishmentScale(): NourishmentScale {
+    return this.tuning.needs.full;
+  }
 
   /** Sleep debt accrued per Game hour awake. */
   get fatigueRisePerGameHour(): number {

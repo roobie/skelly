@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { skyAt } from '../src/core/sky.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { NEAR_FIELD_M } from '../src/render/lightFalloff.ts';
-import { phaseMidpoint } from './dayPhaseFixture.ts';
+import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
-const scaleAt = (hour: number): number => flashlightDaylightScale(skyAt(hour));
+const scaleAt = (hour: number): number => flashlightDaylightScale(skyAt(hour, BASE_DAY_CYCLE));
 
 describe('flashlight daylight scale', () => {
   it('preserves the flashlight at full night and dims it under the full-day sky', () => {
@@ -25,7 +25,7 @@ describe('flashlight daylight scale', () => {
     expect(beams.length).toBeGreaterThan(0);
     for (const light of beams) {
       const pool = (light.intensity / (3 + NEAR_FIELD_M) ** light.beam!.decay) * scaleAt(hour);
-      expect(pool).toBeLessThan(skyAt(hour).lightIntensity);
+      expect(pool).toBeLessThan(skyAt(hour, BASE_DAY_CYCLE).lightIntensity);
     }
   });
 
@@ -40,7 +40,7 @@ describe('flashlight daylight scale', () => {
   });
 
   it('fades over the twilight, not within a few minutes', () => {
-    const phases = dayPhaseAt(DEFAULT_DAY_CYCLE, 0);
+    const phases = dayPhaseAt(BASE_DAY_CYCLE, 0);
     const wrap = (time: number): number => ((time % SECONDS_PER_DAY) + SECONDS_PER_DAY) % SECONDS_PER_DAY;
     for (const [start, end] of [
       [phases.sunset, phases.nightfall],

@@ -3,16 +3,16 @@
 // speed while streaming. Each phase records frame times; moving phases also record
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
-import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
-import type { Registry } from '../core/content.ts';
+import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
+import { dayPhaseAt } from '../core/dayPhase.ts';
 import type { Body } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
+import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
-import { FOREST_DENSITY_FIELD, FOREST_HALF_EXTENT_METRES, TREE_CELL_METRES, TREE_MIX } from '../core/vegetation.ts';
 import { figureSeedPool } from '../core/zombieFigure.ts';
 import { ZombieSystem } from '../core/zombies.ts';
 import { type SiteName, siteFromUrl } from '../game/config.ts';
@@ -128,27 +128,30 @@ export const nextUrl = (run: BenchRun, seed: number): string => {
   return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${shamblers}${postUrlPart(run.post)}${quick}`;
 };
 
-export const forestWorkload = (seed: number, density: number | null) => ({
-  seed,
-  density,
-  densityField: density === null ? FOREST_DENSITY_FIELD : null,
-  extentMetres: 2 * FOREST_HALF_EXTENT_METRES,
-  cellMetres: TREE_CELL_METRES,
-  shapeMix: TREE_MIX,
-  foliage: 'passable-opaque' as const,
-  routes: {
-    heading: HEADING,
-    lookSeconds: DURATIONS.full.look,
-    jogSeconds: DURATIONS.full.jog,
-    jogMetresPerSecond: PLAYER.jog,
-    sprintSeconds: DURATIONS.full.sprint,
-    sprintMetresPerSecond: PLAYER.sprint,
-  },
-});
+export const forestWorkload = (registry: Pick<Registry, 'siteGeneration'>, seed: number, density: number | null) => {
+  const { vegetation } = siteGenerationOf(registry);
+  return {
+    seed,
+    density,
+    densityField: density === null ? vegetation.forestDensityField : null,
+    extentMetres: 2 * vegetation.forestHalfExtentMetres,
+    cellMetres: vegetation.treeCellMetres,
+    shapeMix: vegetation.treeMix,
+    foliage: 'passable-opaque' as const,
+    routes: {
+      heading: HEADING,
+      lookSeconds: DURATIONS.full.look,
+      jogSeconds: DURATIONS.full.jog,
+      jogMetresPerSecond: PLAYER.jog,
+      sprintSeconds: DURATIONS.full.sprint,
+      sprintMetresPerSecond: PLAYER.sprint,
+    },
+  };
+};
 
 export const benchSiteLabel = (run: BenchRun): string =>
   ({
-    forest: run.density === null ? 'forest, seeded density field (0.2–0.75)' : `forest, density ${run.density}`,
+    forest: run.density === null ? 'forest, seeded density field' : `forest, density ${run.density}`,
     city: `city, up to ${run.storeys} storeys`,
     hamlet: 'hamlet',
     testHouse: 'test house',
@@ -168,12 +171,13 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   document.getElementById('overlay')!.hidden = true;
   const startTime = parseTimeOfDay(run.time ?? '12:00')!;
   const hour = hourOfDay(startTime);
+  const dayCycle = requireDayCycle(engine.registry);
   if (run.time !== undefined) {
-    applySky(engine.sky, skyAt(hour));
+    applySky(engine.sky, skyAt(hour, dayCycle));
   }
   const lightFixture = createBenchLightFixture(engine, startTime);
   window.addEventListener('pagehide', lightFixture.dispose, { once: true });
-  const daylightScale = flashlightDaylightScale(skyAt(hour));
+  const daylightScale = flashlightDaylightScale(skyAt(hour, dayCycle));
   const gl = renderer.getContext();
   const pixel = new Uint8Array(4);
   const drawScene = benchDraw(engine, run.post, hour);
@@ -188,7 +192,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
           startedAt: new Date().toISOString(),
           quick: run.quick,
           site: benchSiteLabel(run),
-          ...(run.site === 'forest' ? { forest: forestWorkload(config.seed, run.density) } : {}),
+          ...(run.site === 'forest' ? { forest: forestWorkload(engine.registry, config.seed, run.density) } : {}),
           time: run.time ?? '12:00',
           ...(run.post ? { post: true } : {}),
           lightWorkload: {
@@ -279,7 +283,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         seed: config.seed,
         bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
         compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
-        clock: { ratio: CLOCK_RATIO, start: startTime },
+        clock: { ratio: dayCycle.clockRatio, start: startTime },
       });
       simulation.godMode = true;
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
@@ -299,7 +303,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
           lit: true,
           lightSeenFrom,
         }),
-        dayPhase: () => dayPhaseAt(DEFAULT_DAY_CYCLE, startTime),
+        dayPhase: () => dayPhaseAt(dayCycle, startTime),
         hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),
       });
       spawnShamblerRing({

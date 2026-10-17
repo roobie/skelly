@@ -352,7 +352,7 @@ export class Survival {
       this.hooks.notice(`The ${def.name.toLowerCase()} was rotten`);
       this.sim.hurt(def.food!.poisonHealth!, 'food poisoning');
     } else {
-      consume(this.sim.needs, def.food!);
+      consume(this.sim.needs, def.food!, this.sim.body.nourishmentScale);
     }
     this.hooks.consumed?.(item.type);
   }

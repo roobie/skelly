@@ -1,5 +1,6 @@
 import { SKILL_LEVEL_MAX } from './character.ts';
 import type { Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 
 export const craftingActivityTier = (requiredLevel: number, offset: number): number => {
   if (
@@ -12,6 +13,23 @@ export const craftingActivityTier = (requiredLevel: number, offset: number): num
     throw new Error('Invalid crafting skill tier input');
   }
   return Math.min(SKILL_LEVEL_MAX, requiredLevel + offset);
+};
+
+// The skill schema's completeness check makes these tunings present on a loaded core skill.
+export const inventoryManagementTuning = (registry: Registry) => {
+  const tuning = registry.skills.get(CORE_CONTENT_IDS.inventoryManagement)?.inventory;
+  if (!tuning) {
+    throw new Error(`Missing inventory tuning on skill ${CORE_CONTENT_IDS.inventoryManagement}`);
+  }
+  return tuning;
+};
+
+export const firearmsCombatTuning = (registry: Registry) => {
+  const tuning = registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
+  if (!tuning) {
+    throw new Error(`Missing firearms tuning on skill ${CORE_CONTENT_IDS.firearmsCombat}`);
+  }
+  return tuning;
 };
 
 const skillActivityTraining = (registry: Registry, skillId: string, activityId: string) => {

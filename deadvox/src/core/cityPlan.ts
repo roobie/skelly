@@ -1,7 +1,6 @@
 import { PLAYER, sprintJumpRise } from '../game/player.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { HAMLET_TEMPLATES } from './hamlet.ts';
 import { hash3, pickWeighted, Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
@@ -9,6 +8,7 @@ import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
 import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
 import type { MapPoolDef, ScenarioDef } from './schema.ts';
 import type { Rect } from './site.ts';
+import { hamletTemplateIds, siteGenerationOf } from './sitePalette.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { BlockBox } from './structure.ts';
 import {
@@ -23,7 +23,6 @@ import {
   templateResolves,
 } from './templates.ts';
 
-export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
 interface PoolRef {
   readonly id: string;
   readonly style?: string | undefined;
@@ -64,20 +63,19 @@ export interface CityPlan {
   readonly composition: ScenarioComposition | undefined;
 }
 
-export const benchmarkCityGrid = (): CityGrid => ({
-  street: CITY.street,
-  blockX: CITY.blockX,
-  blockZ: CITY.blockZ,
-  pad: CITY.pad,
-  gap: CITY.gap,
-  blend: CITY.blend,
-  blocksX: Math.ceil(CITY.reach / (CITY.street + CITY.blockX)),
-  blocksZ: Math.ceil(CITY.reach / (CITY.street + CITY.blockZ)),
-  templates: HAMLET_TEMPLATES.map((id) => ({ id, weight: 1 })),
-});
+export const benchmarkCityGrid = (registry: Registry): CityGrid => {
+  const { reachMetres, ...geometry } = siteGenerationOf(registry).stressCity;
+  const reach = reachMetres / BLOCK_SIZE;
+  return {
+    ...geometry,
+    blocksX: Math.ceil(reach / (geometry.street + geometry.blockX)),
+    blocksZ: Math.ceil(reach / (geometry.street + geometry.blockZ)),
+    templates: hamletTemplateIds(registry).map((id) => ({ id, weight: 1 })),
+  };
+};
 
 export const cityRowDepth = (grid: Pick<CityShape, 'blockZ' | 'pad' | 'rows' | 'street'>): number =>
-  Math.floor((grid.blockZ - 2 * grid.pad - ((grid.rows ?? 2) / 2 - 1) * grid.street) / (grid.rows ?? 2));
+  Math.floor((grid.blockZ - 2 * grid.pad - (grid.rows / 2 - 1) * grid.street) / grid.rows);
 
 /** The street grid alone: every cell's street and block, out to the street along each edge. */
 const cityCore = (grid: CityShape): Rect => {
@@ -363,7 +361,7 @@ const poolStyleIssue = (
 /** Building slots every plan has: each row of each non-service block holds at least one building. */
 const guaranteedSlots = (city: ScenarioDef['city'], incidental: number, hasStart: boolean): number => {
   const blocks = 4 * city.blocksX * city.blocksZ - 1 - Number(hasStart);
-  return blocks * ((city.rows ?? 2) - (incidental > 0 ? 1 : 0));
+  return blocks * (city.rows - (incidental > 0 ? 1 : 0));
 };
 
 /** Building slots the edge ring always has: one per cell along each side. */
@@ -428,9 +426,6 @@ const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, str
 
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
-  if (!registry.blockIds.has('asphalt')) {
-    issues.push(['.city', 'city needs asphalt content']);
-  }
   const { city, serviceTemplate, population } = scenario;
   if (population.roadsideOffset * 2 >= city.street) {
     issues.push([
@@ -597,7 +592,7 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
       counts.set(rowKey(building), (counts.get(rowKey(building)) ?? 0) + 1);
     }
     const limit = Math.min(maxStoreys, registry.templates.get(building.id)?.maxStoreys ?? maxStoreys);
-    const storeys = 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * limit);
+    const storeys = 1 + Math.floor(hash3(seed, i, j * grid.rows + row, k + 1000) * limit);
     const template = compiled(building, storeys, `city:${i},${j}/row:${row}/building:${k}`);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const bank = j * pitchZ + cityRowStart(grid, row);
@@ -936,7 +931,7 @@ export const buildCityPlan = ({
       if (start && i === startCell[0] && j === startCell[1]) {
         return [start];
       }
-      return Array.from({ length: grid.rows ?? 2 }, (_, row) => fillRow(context, [i, j], row)).flat();
+      return Array.from({ length: grid.rows }, (_, row) => fillRow(context, [i, j], row)).flat();
     });
   };
   const placements = fillWithQuotas(context, fillCells, scenario ? `scenario:${scenario.id}:city` : 'city');

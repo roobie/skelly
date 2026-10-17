@@ -10,6 +10,7 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { FirearmMechanics, spentCaseItemId } from '../src/game/firearmHandling.ts';
+import { RevolverHandling } from '../src/game/revolverHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { content } from './fixtures/startupContent.ts';
 
@@ -135,6 +136,69 @@ const fixture = () => {
 };
 
 describe('revolver cylinder handling', () => {
+  it.each(['release', 'dump', 'pull', 'cock'] as const)(
+    'owner cancellation matches the full inventory scan for %s after moving between steps',
+    (operation) => {
+      const make = () => {
+        const { inventory, gun } = fixture();
+        const queue = new HandlingQueue(inventory);
+        const events: string[] = [];
+        const owner = new RevolverHandling(inventory, queue, {
+          factor: () => 1,
+          sound: (event) => events.push(event),
+          eject: () => events.push('eject'),
+          caseType: () => spentCaseItemId('fixture-revolver'),
+        });
+        return { inventory, gun, queue, events, owner };
+      };
+      const optimized = make();
+      const plain = make();
+      const cancel = (f: ReturnType<typeof make>) => {
+        f.owner.advance();
+        if (f === optimized) {
+          f.owner.cancelUnheld();
+        } else {
+          for (const { item } of f.inventory.items()) {
+            if (item.firearm?.cylinder && !Object.values(f.inventory.hands).includes(item)) {
+              f.owner.cancel(item.uid);
+            }
+          }
+        }
+      };
+      const state = (f: ReturnType<typeof make>) => ({
+        jobs: structuredClone(f.queue.jobs),
+        firearm: snapshotFirearm(f.gun.firearm!),
+        events: f.events,
+      });
+      for (const f of [optimized, plain]) {
+        if (operation === 'dump') {
+          expect(f.owner.dump(f.gun, 0)).toBeUndefined();
+        } else if (operation === 'pull') {
+          f.owner.pull(f.gun, 0, () => f.events.push('shot'));
+        } else {
+          expect(f.owner.cock(f.gun, 0)).toBeUndefined();
+          if (operation === 'release') {
+            f.owner.release(f.gun.uid, 0);
+          }
+        }
+        cancel(f);
+        expect(f.queue.busy).toBe(true);
+        expect(f.inventory.move(f.gun, { kind: 'pile', pos: [0, 1, 0] }).ok).toBe(true);
+        cancel(f);
+        expect(f.queue.busy).toBe(false);
+        expect(f.inventory.move(f.gun, { kind: 'hand', side: 'right' }).ok).toBe(true);
+        expect(f.owner.load(f.gun, 1)).toBeUndefined();
+        const [job] = f.queue.jobs;
+        expect(job).toBeDefined();
+        expect(f.queue.tick(job!.duration).failed).toEqual([]);
+        cancel(f);
+      }
+      expect(state(optimized)).toEqual(state(plain));
+      expect(optimized.queue.busy).toBe(false);
+      expect(optimized.gun.firearm!.cylinder!.open).toBe(true);
+    },
+  );
+
   it('loads only with the non-gun hand free, whichever hand holds the gun', () => {
     for (const side of ['right', 'left'] as const) {
       const f = fixture();

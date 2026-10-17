@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '../../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
 import { fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
+import { playerInventorySource } from './playerInventory.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
   id: 'fixture_scenario',
@@ -30,6 +32,7 @@ export const fixtureScenario = (): ScenarioDef => ({
     pad: 2,
     gap: 2,
     blend: 4,
+    rows: 2,
     pool: 'fixture_pool',
   },
 });
@@ -103,6 +106,9 @@ export const fixtureScenarioSources = (
   const {
     compression: [compression],
   } = JSON.parse(readFileSync('src/content/base/compression.json', 'utf8'));
+  const {
+    siteGeneration: [baseSite],
+  } = JSON.parse(readFileSync('src/content/base/site-generation.json', 'utf8'));
   return [
     {
       source: 'scenario-fixture.json',
@@ -110,6 +116,36 @@ export const fixtureScenarioSources = (
         blocks: [
           { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
           { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },
+        ],
+        siteGeneration: [
+          {
+            id: CORE_CONTENT_IDS.authoredSite,
+            topography: {
+              amplitudeMetres: 0,
+              wavelengthMetres: 1,
+              buildingMarginMetres: 0,
+              roadShoulderMetres: 0,
+              spawnMarginMetres: 0,
+            },
+            terrain: baseSite.terrain,
+            vegetation: {
+              ...baseSite.vegetation,
+              woodlandEdgeWavelengthMetres: 1,
+              woodlandEdgeVariation: 0,
+              openDensity: 0,
+              obstacleMarginMetres: 0,
+              treeMix: ['broadleaf'],
+            },
+            palette: {
+              terrain: { grass: 'fixture_solid', dirt: 'fixture_solid', rock: 'fixture_solid', sand: 'fixture_solid' },
+              paving: 'asphalt',
+              trees: { trunk: 'fixture_solid', branch: 'fixture_solid', leaves: 'fixture_solid' },
+              leafLitter: 'fixture_solid',
+            },
+            hamlet: { hedge: 'fixture_solid', northSide: ['fixture_house'], southSide: ['fixture_house'] },
+            placement: baseSite.placement,
+            stressCity: baseSite.stressCity,
+          },
         ],
         furniture: [
           {
@@ -176,5 +212,6 @@ export const fixtureScenarioSources = (
         scenarios: [{ ...scenario, outbreakAgeGameHours: scenario.outbreakAgeGameHours / gameHours(1) }],
       },
     },
+    playerInventorySource(),
   ];
 };

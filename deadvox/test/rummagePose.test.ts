@@ -14,6 +14,7 @@ import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { firearmsSkillSource, playerInventorySource } from './fixtures/playerInventory.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -185,6 +186,8 @@ it('held-display capability selects the raised compass display and rummage grip 
   const context = { fillRect: vi.fn(), fillText: vi.fn(), beginPath: vi.fn(), arc: vi.fn(), stroke: vi.fn() };
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
   const content = buildRegistry([
+    playerInventorySource(),
+    firearmsSkillSource(),
     {
       source: 'compass-rummage-fixture.json',
       data: {

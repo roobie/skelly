@@ -5,11 +5,18 @@ import {
   advanceFootsteps,
   footstepEventAt,
   footstepEventForBlock,
-  HARD_LANDING_METRES,
   initialFootstepClock,
   isHardLanding,
-  STEP_DISTANCE_METRES,
+  stepDistanceMetres,
 } from '../src/core/footsteps.ts';
+import { BASE_SENSE_TUNING } from './senseFixture.ts';
+
+const tuning = BASE_SENSE_TUNING.footsteps;
+const STEP_DISTANCE_METRES = {
+  walking: stepDistanceMetres(tuning, 'walking'),
+  jogging: stepDistanceMetres(tuning, 'jogging'),
+  sprinting: stepDistanceMetres(tuning, 'sprinting'),
+};
 
 const soundsSource = {
   source: 'sounds.json',
@@ -76,9 +83,9 @@ describe('player footsteps', () => {
   it('uses the configured walking, jogging, and sprinting distances between footfalls', () => {
     for (const gait of ['walking', 'jogging', 'sprinting'] as const) {
       const distance = STEP_DISTANCE_METRES[gait];
-      const half = advanceFootsteps(initialFootstepClock(), gait, distance / 2);
+      const half = advanceFootsteps(initialFootstepClock(), gait, distance / 2, tuning);
       expect(half.steps).toBe(0);
-      const full = advanceFootsteps(half.clock, gait, distance / 2);
+      const full = advanceFootsteps(half.clock, gait, distance / 2, tuning);
       expect(full.steps).toBe(1);
       expect(full.clock.distanceUntilStep).toBeCloseTo(distance);
       expect(full.clock.stridePhase).toBeCloseTo((initialFootstepClock().stridePhase + 0.5) % 1);
@@ -87,9 +94,9 @@ describe('player footsteps', () => {
   });
 
   it('preserves stride phase across gait changes and airborne ticks', () => {
-    const walking = advanceFootsteps(initialFootstepClock(), 'walking', 0.5);
+    const walking = advanceFootsteps(initialFootstepClock(), 'walking', 0.5, tuning);
     const joggingTravel = 0.1;
-    const jogging = advanceFootsteps(walking.clock, 'jogging', joggingTravel);
+    const jogging = advanceFootsteps(walking.clock, 'jogging', joggingTravel, tuning);
     expect(jogging.steps).toBe(0);
     expect(jogging.clock.stridePhase).toBeCloseTo(
       walking.clock.stridePhase + joggingTravel / (2 * STEP_DISTANCE_METRES.jogging),
@@ -99,7 +106,7 @@ describe('player footsteps', () => {
       (phaseToNextFootfall === 0 ? 0.5 : phaseToNextFootfall) * 2 * STEP_DISTANCE_METRES.jogging,
     );
 
-    const airborne = advanceFootsteps(jogging.clock, 'still', 0);
+    const airborne = advanceFootsteps(jogging.clock, 'still', 0, tuning);
     expect(airborne.steps).toBe(0);
     expect(airborne.clock).toMatchObject({
       gait: 'still',
@@ -107,16 +114,16 @@ describe('player footsteps', () => {
       stridePhase: jogging.clock.stridePhase,
       stepIndex: jogging.clock.stepIndex,
     });
-    const landed = advanceFootsteps(airborne.clock, 'walking', joggingTravel);
+    const landed = advanceFootsteps(airborne.clock, 'walking', joggingTravel, tuning);
     expect(landed.clock.stridePhase).toBeCloseTo(
       airborne.clock.stridePhase + joggingTravel / (2 * STEP_DISTANCE_METRES.walking),
     );
   });
 
-  it('plays a hard landing at and above a 2.5 m drop, not below it', () => {
-    expect(HARD_LANDING_METRES).toBe(2.5);
-    expect(isHardLanding(2.49)).toBe(false);
-    expect(isHardLanding(2.5)).toBe(true);
-    expect(isHardLanding(3.2)).toBe(true);
+  it('plays a hard landing at and above the authored drop, not below it', () => {
+    const { hardLandingMetres } = tuning;
+    expect(isHardLanding(hardLandingMetres - 0.01, tuning)).toBe(false);
+    expect(isHardLanding(hardLandingMetres, tuning)).toBe(true);
+    expect(isHardLanding(hardLandingMetres + 0.7, tuning)).toBe(true);
   });
 });

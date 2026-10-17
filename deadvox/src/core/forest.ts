@@ -4,9 +4,8 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Scale } from './scale.ts';
 import { type Rect, rectDistance, type Site } from './site.ts';
-import { sitePalette } from './sitePalette.ts';
+import { siteGenerationOf, sitePalette, terrainShapeOf } from './sitePalette.ts';
 import {
-  FOREST_HALF_EXTENT_METRES,
   forestDensityAt,
   leafLitterAt,
   stampTrees,
@@ -24,10 +23,10 @@ export class Forest implements Site {
   private readonly treeIndex: TreeIndex;
 
   constructor(seed: number, registry: Registry, scale: Scale, density: number | null = null) {
-    const reach = FOREST_HALF_EXTENT_METRES / scale.blockSize;
+    const reach = siteGenerationOf(registry).vegetation.forestHalfExtentMetres / scale.blockSize;
     this.bounds = { x0: -reach, z0: -reach, x1: reach, z1: reach };
     // Flat inland ground isolates tree cost; extent covers the full 162m route plus the view radius.
-    const floor = Math.max(Math.ceil(16 / scale.blockSize), terrainHeight(seed, scale, 0, 0));
+    const floor = Math.max(Math.ceil(16 / scale.blockSize), terrainHeight(seed, terrainShapeOf(registry), scale, 0, 0));
     this.spawn = { pos: [0, (floor + 1) * scale.blockSize, 0], yaw: 0 };
     const clearing = 4 / scale.blockSize;
     this.trees = vegetationPlacements({
@@ -35,7 +34,7 @@ export class Forest implements Site {
       registry,
       scale,
       area: this.bounds,
-      density: density ?? ((x, z) => forestDensityAt(seed, x, z)),
+      density: density ?? ((x, z) => forestDensityAt(registry, seed, x, z)),
       ground: () => floor,
       reserved: [{ x0: -clearing, z0: -clearing, x1: clearing, z1: clearing }],
     });

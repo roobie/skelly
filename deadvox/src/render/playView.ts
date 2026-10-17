@@ -3,9 +3,9 @@
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
+import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { dayCycleFor } from '../core/dayPhase.ts';
 import type { EntityStore } from '../core/entities.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -15,7 +15,7 @@ import type { Body } from '../core/physics.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
-import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
+import { skyInWeather, type Weather } from '../core/weather.ts';
 import { amalgamTypeOf, figureSeedPool } from '../core/zombieFigure.ts';
 import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
@@ -139,7 +139,7 @@ export const createPlayView = (
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
-  const dayCycle = dayCycleFor(registry.dayCycle);
+  const dayCycle = requireDayCycle(registry);
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
@@ -153,7 +153,7 @@ export const createPlayView = (
     mood.restore(DEFAULT_MOOD);
     shadows.restore(DEFAULT_SHADOWS);
   }
-  const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
+  const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
   const models = new ModelLibrary(registry, report);
   const playerPalette = registry.figures.get(CORE_CONTENT_IDS.player)!.palette;
   const piles = new PileMeshes(s, models, config.seed);
@@ -322,7 +322,7 @@ export const createPlayView = (
       blastFlashes.update(dt);
       acidEffects.sync(acidGlobs, registry.zombies, dt);
       const hour = hourOfDay(calendar);
-      const sky = skyInWeather(skyAt(hour, dayCycle), weather);
+      const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
       furniture.sync(entities);
       decals?.sync(entities);
