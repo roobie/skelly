@@ -117,12 +117,14 @@ performance changes. See
 [CHALLENGES.md](CHALLENGES.md) for active performance constraints.
 
 Render scale adapts by default, so slower machines trade sharpness for frame
-rate and faster ones keep the full image. Content must at least be able to
+rate and faster ones keep the full image. The trade must not depend on enabling
+post effects or reduce the readability of separate UI layers. Content must at least be able to
 switch adaptation off and tune it, so a mod can choose a fixed scale or a
-different trade (`PILLARS.md`, "Content forward compatibility"). The adaptive
-default awaits the adaptive render-scale work under #680; until it lands,
-content sets a fixed default. See `src/content/base/graphics.jsonnet` and
-`src/render/mood.ts`, `Mood.setRenderScale`. Look changes made for performance
+different trade (`PILLARS.md`, "Content forward compatibility"). Explicit player
+choices retain ownership rather than being overwritten by adaptation. See
+`src/content/base/graphics.jsonnet`, `src/render/adaptiveScale.ts`, `AdaptiveScale`,
+`src/render/mood.ts`, `Mood.setRenderScale`, and `src/render/screenScale.ts`, `ScreenScale`.
+Look changes made for performance
 follow `deadvox/GRAPHICS.md`, "Look decisions".
 
 Half-metre blocks keep doorways, furniture and interiors at human scale, and

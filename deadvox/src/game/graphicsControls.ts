@@ -10,7 +10,7 @@ import {
 import { readGraphicsSettings, writeGraphicsSettings } from './graphicsSettings.ts';
 
 interface GraphicsTargets {
-  mood?: { setRenderScale: (value: number) => void; setBloomScale: (value: number) => void };
+  mood?: { setRenderScale: (value: number, explicit: boolean) => void; setBloomScale: (value: number) => void };
   shadows?: { setSmallSunMap: (value: boolean) => void };
   meshes: {
     setFastCamo: (value: boolean) => void;
@@ -21,6 +21,7 @@ interface GraphicsTargets {
 
 export class GraphicsControls {
   private settings: GraphicsSettings;
+  private readonly source: 'player' | 'mod';
   readonly overrides: Readonly<GraphicsSettings>;
   readonly tuning: GraphicsOptions;
   private readonly targets: GraphicsTargets;
@@ -38,6 +39,7 @@ export class GraphicsControls {
   ) {
     const { source = 'player', debug, params, storage } = options;
     this.tuning = tuning;
+    this.source = source;
     this.targets = targets;
     this.storage = storage;
     this.settings = source === 'player' ? readGraphicsSettings(tuning, storage) : {};
@@ -72,7 +74,10 @@ export class GraphicsControls {
 
   private apply(): void {
     const { values } = this;
-    this.targets.mood?.setRenderScale(values.renderScale);
+    this.targets.mood?.setRenderScale(
+      values.renderScale,
+      this.source === 'mod' || this.overrides.renderScale !== undefined || this.settings.renderScale !== undefined,
+    );
     this.targets.mood?.setBloomScale(values.bloomScale);
     this.targets.shadows?.setSmallSunMap(values.smallSunMap);
     this.targets.meshes.setFastCamo(values.fastCamo);

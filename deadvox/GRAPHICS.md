@@ -32,7 +32,7 @@ Post-processing and shadows support the intended mood. Compare the same workload
 
 Tone mapping, display transfer and colour grading share a fullscreen draw because storing and sampling an intermediate display-space image adds GPU work without adding an effect. Grade remains after tone mapping and transfer so its controls keep their display-referred meaning; bloom stays before them in linear light. See `src/render/moodOutput.ts`, `createMoodOutputPass`, and `src/render/mood.ts`, `Mood`.
 
-A performance change may alter the default look only slightly, and each such change needs the operator's by-eye approval of a before/after comparison (`docs/PROCESS.md`, "Reviews by eye and by play"): a person's eye, not a metric, judges whether a change is small, so a measured cost reduction alone never authorizes it. Scale the post-chain inputs rather than the canvas so DOM/HUD readability and display-space film stay independent of scene resolution. The direct no-post path remains unscaled. See `src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`.
+A performance change may alter the default look only slightly, and each such change needs the operator's by-eye approval of a before/after comparison (`docs/PROCESS.md`, "Reviews by eye and by play"): a person's eye, not a metric, judges whether a change is small, so a measured cost reduction alone never authorizes it. Reduce scene resolution rather than canvas resolution so DOM/HUD readability and display-space film stay independent of scene sharpness. Resolution policy must not depend on enabling post effects. See `src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`, and `src/render/screenScale.ts`, `ScreenScale`.
 
 Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `src/render/shadows.ts`, `Shadows.setSmallSunMap`.
 
@@ -48,13 +48,29 @@ win over player choices, which must win over content defaults. Explicit false va
 choices, not absence. See `src/content/base/graphics.jsonnet`,
 `src/core/graphics.ts`, `resolveGraphics`, and `src/game/graphicsSettings.ts`.
 
-Benchmarks use only effective mod defaults, ignoring machine preferences and debug graphics
-URL overrides, because saved choices must not silently change the comparison workload.
-See `src/game/engine.ts`, `createEngine`, and `src/main.ts`.
+Benchmarks isolate machine preferences and debug graphics overrides so saved choices cannot
+silently change a comparison workload. Scene scale stays fixed at the content default because
+GPU-dependent adaptation would change the pixel workload during a run. Their look is independent
+of play defaults so visual-policy changes cannot redefine the benchmark. Content-owned benchmark
+weathering lets mods choose that workload without changing benchmark logic. See
+`src/game/engine.ts`, `createEngine`, `src/game/graphicsControls.ts`, `GraphicsControls`, and
+`src/bench/post.ts`, `BENCH_LOOK` and `applyBenchWeathering`.
 
-Benchmarks also fix their own look and weathering, so a change to the play default cannot
-change what they measure. The weathering is a content profile, not a code constant, so a mod
-sees it. See `src/bench/post.ts`, `BENCH_LOOK` and `applyBenchWeathering`.
+Automatic scene resolution applies with or without post effects, because choosing the plain
+look must not disable the machine's quality trade. It follows GPU execution cost rather than
+frame intervals: reducing pixels cannot fix simulation work, browser scheduling or a slow display. Windowed measurements
+and a dead band suppress transient spikes and visible pumping; recovery reserves headroom for
+the next size instead of immediately undoing a reduction. Unsupported GPU timing leaves the
+content default intact. Explicit player or debug URL scene-scale choices suspend adaptation;
+clearing a player choice returns ownership to content. See `src/render/adaptiveScale.ts`,
+`AdaptiveScale`, `src/render/gpuFrameTime.ts`, `GpuFrameTime`, and
+`src/render/mood.ts`, `Mood.recordGpuTime`. Plain presentation copies already display-encoded
+pixels so scaling cannot apply tone mapping or display transfer twice; see
+`src/render/screenScale.ts`, `ScreenScale`. Abandon scene and post targets when a WebGL context is
+lost: the context has already freed their GPU storage, while disposal would try to delete dead
+handles. Rebuilding after restoration also prevents stale disposal listeners from deleting old
+handles on the first resolution change. See
+`src/render/mood.ts`, `Mood.releaseComposer`.
 
 Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's
 policy can change without stale defaults becoming machine preferences. Validate stored

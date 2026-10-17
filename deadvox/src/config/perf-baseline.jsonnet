@@ -2,7 +2,7 @@
   viewport: { width: 1672, height: 832 },
   deviceScaleFactor: 1.5,
   repeats: 3,
-  warmFrames: 180,
+  warmFrames: 300,
   sampleFrames: 240,
   timeoutMs: 240000,
   queryDrainMs: 30000,

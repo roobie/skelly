@@ -47,6 +47,13 @@ streaming or idle evidence. Preserve raw profiles so a ranking can be investigat
 of treating incomplete sampling as proof that a subsystem is free.
 
 See `deadvox/tools/perf-baseline-stats.mjs`, `summarize`, for the JSON summary contract.
+Scene attribution must be independent of post effects so plain rendering cannot be mistaken
+for an undrawn workload. The measurement adapter reuses the enclosing GPU probe for resolution
+adaptation because elapsed queries cannot nest. Record the effective scene scale with each frame so delayed
+results from an older size cannot steer the resized target. Warm-up must allow resolution to
+settle before comparing sustained-load costs; see `deadvox/tools/perf-baseline-browser.mjs`,
+`install`, and `deadvox/src/config/perf-baseline.jsonnet`.
+
 Raw warm frames accompany each summary, enabling different aggregation without repeating
 the expensive hardware run. Compare repeat spreads as well as pooled results; no automatic
 pass/fail claim substitutes for the operator's fidelity approval.
