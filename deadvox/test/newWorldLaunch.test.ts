@@ -171,9 +171,10 @@ it('refuses a live record marked dead and starts a new world without replacement
   let launches = 0;
   controller.setNewWorldLauncher(() => {
     launches += 1;
-    return { enter: () => undefined };
+    return Promise.resolve({ enter: () => undefined });
   });
   document.getElementById('go')!.click();
+  await Promise.resolve();
   expect(document.getElementById('save-confirmation')!.hidden).toBe(true);
   expect(launches).toBe(1);
 });
@@ -260,8 +261,9 @@ it('keeps the marker for a same-world save and clears it after another world sav
     await encode(next);
     return { generation: next, slot: 'b', backend: 'indexeddb' };
   });
-  controller.setNewWorldLauncher(() => ({ enter: () => undefined }));
+  controller.setNewWorldLauncher(async () => ({ enter: () => undefined }));
   document.getElementById('go')!.click();
+  await Promise.resolve();
 
   const internal = controller as unknown as { savedGeneration: number; checkpoints: { nextAt: number } };
   const generationBeforeDeath = internal.savedGeneration;
@@ -306,7 +308,7 @@ it('protects a save whose pending ladder grab names no climbable instead of ente
   });
 });
 
-it('creates and binds only on resource-ready acceptance and enters after controller commitment', async () => {
+it('creates and binds once across pending launch clicks and enters after controller commitment', async () => {
   const controller = title();
   const actors: Character[] = [];
   const events: string[] = [];
@@ -316,7 +318,18 @@ it('creates and binds only on resource-ready acceptance and enters after control
   await controller.prepare();
   document.getElementById('go')!.click();
   expect(controller.isEntered).toBe(false);
-  controller.setNewWorldLauncher(() => {
+  let releaseConstruction!: () => void;
+  const construction = new Promise<void>((done) => {
+    releaseConstruction = done;
+  });
+  let didEnter!: () => void;
+  const entered = new Promise<void>((done) => {
+    didEnter = done;
+  });
+  let launches = 0;
+  controller.setNewWorldLauncher(async () => {
+    launches += 1;
+    await construction;
     expect(controller.isEntered).toBe(false);
     actors.push(new Character(buildRegistry([]).registry));
     events.push('create');
@@ -333,6 +346,7 @@ it('creates and binds only on resource-ready acceptance and enters after control
       enter: () => {
         expect(controller.isEntered).toBe(true);
         events.push('enter');
+        didEnter();
       },
     };
   });
@@ -340,6 +354,13 @@ it('creates and binds only on resource-ready acceptance and enters after control
   document.getElementById('save-replace-confirm')!.click();
   expect(actors).toHaveLength(0);
   document.getElementById('go')!.click();
+  expect(controller.isEntered).toBe(false);
+  expect(document.getElementById('go')!.getAttribute('aria-disabled')).toBe('true');
+  document.getElementById('go')!.click();
+  expect(launches).toBe(1);
+  expect(actors).toHaveLength(0);
+  releaseConstruction();
+  await entered;
   expect(events).toEqual(['create', 'bind', 'enter']);
   expect(actors).toHaveLength(1);
   expect(bind).toHaveBeenCalledTimes(1);
@@ -354,12 +375,35 @@ it('does not commit or retry partial initialization after the launch callback fa
   let attempts = 0;
   controller.setNewWorldLauncher(() => {
     attempts += 1;
-    throw new Error('Fixture initialization failure');
+    return Promise.reject(new Error('Fixture initialization failure'));
   });
   document.getElementById('go')!.click();
+  await Promise.resolve();
   expect(controller.isEntered).toBe(false);
   document.getElementById('go')!.click();
   expect(attempts).toBe(1);
+});
+
+it('reports entry rejection and prevents retrying the partially entered world', async () => {
+  const controller = title();
+  await controller.prepare();
+  const failure = new Error('Fixture entry failure');
+  let launches = 0;
+  controller.setNewWorldLauncher(() => {
+    launches += 1;
+    return Promise.resolve({
+      enter: () => {
+        throw failure;
+      },
+    });
+  });
+  document.getElementById('go')!.click();
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(document.getElementById('save-status')!.textContent).toContain(failure.message);
+  expect(controller.isEntered).toBe(false);
+  document.getElementById('go')!.click();
+  expect(launches).toBe(1);
 });
 
 it('refuses invalid creation choice and freezes Left only on accepted creation', async () => {
@@ -370,7 +414,7 @@ it('refuses invalid creation choice and freezes Left only on accepted creation',
   controller.setNewWorldLauncher((creation) => {
     expect(Object.isFrozen(creation)).toBe(true);
     actors.push(new Character(buildRegistry([]).registry, creation));
-    return { enter: () => undefined };
+    return Promise.resolve({ enter: () => undefined });
   });
   select.value = 'invalid fixture value';
   document.getElementById('go')!.click();
@@ -383,6 +427,7 @@ it('refuses invalid creation choice and freezes Left only on accepted creation',
   document.getElementById('go')!.click();
   expect(actors).toHaveLength(1);
   expect(actors[0]!.handedness).toBe('left');
+  await Promise.resolve();
 });
 
 it('acknowledges only the won checkpoint and keeps a failed completion visible for retry', async () => {

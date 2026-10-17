@@ -152,7 +152,7 @@ export class GameAudio {
     return [...this.recentSounds];
   }
 
-  /** Must be called synchronously from a user gesture. */
+  /** Deferred entry may need a fresh gesture; play retries unlocking on its first pointerdown. */
   unlock(): void {
     if (!this.context) {
       this.context = new AudioContext();

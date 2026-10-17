@@ -573,6 +573,7 @@ export interface StartPlayOptions {
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
+  readonly loading?: { readonly owner: WorldLoading; readonly draw: () => void };
   readonly replay?: {
     readonly inputs: ReplayInputData;
     readonly endStateFingerprint: string;
@@ -580,6 +581,14 @@ export interface StartPlayOptions {
     readonly startState: ReplayStartState;
   };
 }
+
+const playLoadingFor = (engine: Engine, options: StartPlayOptions) => {
+  if (options.loading) {
+    return options.loading;
+  }
+  const owner = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
+  return { owner, draw: mountWorldLoading(owner) };
+};
 
 const configureReplayStreaming = (engine: Engine, replay: StartPlayOptions['replay']): void => {
   if (replay) {
@@ -640,8 +649,7 @@ export const startPlay = (
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
-  const worldLoading = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
-  const drawWorldLoading = mountWorldLoading(worldLoading);
+  const { owner: worldLoading, draw: drawWorldLoading } = playLoadingFor(engine, options);
   configureRestoreFailure(streamer, options.saveController);
   configureReplayStreaming(engine, options.replay);
   const { scale } = config;
