@@ -632,7 +632,23 @@ export class SaveController {
     this.confirmNewWorld();
   }
 
-  private async confirmNewWorld(): Promise<void> {
+  private confirmNewWorld(): void {
+    this.launchNewWorld().catch((error: unknown) => this.failNewWorld(error));
+  }
+
+  private failNewWorld(error: unknown): void {
+    this.ready = false;
+    this.entered = false;
+    this.newWorldLauncher = undefined;
+    this.snapshot = undefined;
+    this.simTime = undefined;
+    this.worldOptions = undefined;
+    this.failure = `Could not start the world: ${errorMessage(error)}`;
+    this.statusText = this.failure;
+    this.render();
+  }
+
+  private async launchNewWorld(): Promise<void> {
     if (this.entered || !this.ready || !this.newWorldLauncher || this.protectedCurrent) {
       return;
     }
@@ -645,19 +661,7 @@ export class SaveController {
     const creation: HandedCharacter = Object.freeze({ handedness });
     this.ready = false;
     this.render();
-    let entry: { enter: () => void };
-    try {
-      entry = await this.newWorldLauncher(creation);
-    } catch (error) {
-      this.newWorldLauncher = undefined;
-      this.snapshot = undefined;
-      this.simTime = undefined;
-      this.worldOptions = undefined;
-      this.failure = `Could not start the world: ${errorMessage(error)}`;
-      this.statusText = this.failure;
-      this.render();
-      return;
-    }
+    const entry = await this.newWorldLauncher(creation);
     this.ready = true;
     this.deadRecord = false;
     this.acknowledgedWin = false;

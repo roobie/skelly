@@ -384,6 +384,28 @@ it('does not commit or retry partial initialization after the launch callback fa
   expect(attempts).toBe(1);
 });
 
+it('reports entry rejection and prevents retrying the partially entered world', async () => {
+  const controller = title();
+  await controller.prepare();
+  const failure = new Error('Fixture entry failure');
+  let launches = 0;
+  controller.setNewWorldLauncher(() => {
+    launches += 1;
+    return Promise.resolve({
+      enter: () => {
+        throw failure;
+      },
+    });
+  });
+  document.getElementById('go')!.click();
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(document.getElementById('save-status')!.textContent).toContain(failure.message);
+  expect(controller.isEntered).toBe(false);
+  document.getElementById('go')!.click();
+  expect(launches).toBe(1);
+});
+
 it('refuses invalid creation choice and freezes Left only on accepted creation', async () => {
   const controller = title();
   await controller.prepare();
