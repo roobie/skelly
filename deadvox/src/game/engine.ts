@@ -8,7 +8,8 @@ import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, Web
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
-import { DAY_SKY } from '../core/sky.ts';
+import { requireDayCycle } from '../core/content.ts';
+import { skyAt } from '../core/sky.ts';
 import { footprint } from '../core/templates.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
@@ -84,7 +85,7 @@ export function createEngine(
   const sunRig = new Group();
   sunRig.add(sky.light, sky.light.target);
   scene.add(sky.ambient, sunRig);
-  applySky(sky, DAY_SKY);
+  applySky(sky, skyAt(12, requireDayCycle(config.content.registry)));
 
   const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
   meshes.setWeathering(config.weathering, config.weatheringSplit);

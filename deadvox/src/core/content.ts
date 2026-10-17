@@ -1277,16 +1277,23 @@ export const REQUIRED_CORE_CONTENT = [
   ...SOUND_EVENT_IDS.map((id) => ({ section: 'sounds' as const, id })),
 ] as const satisfies readonly { section: Exclude<ContentSection, 'blocks'>; id: string }[];
 
-export const requiredContentIssues = (registry: Registry): ContentIssue[] =>
-  REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(({ section, id }) => {
-    let message = `missing required content "${id}"`;
-    if (section === 'sounds') {
-      message = `missing required sound event "${id}"`;
-    } else if (section === 'ui') {
-      message = `missing required UI tuning "${id}"`;
-    }
-    return { source: 'core content', path: section, message };
-  });
+export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
+  const issues: ContentIssue[] = REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(
+    ({ section, id }) => {
+      let message = `missing required content "${id}"`;
+      if (section === 'sounds') {
+        message = `missing required sound event "${id}"`;
+      } else if (section === 'ui') {
+        message = `missing required UI tuning "${id}"`;
+      }
+      return { source: 'core content', path: section, message };
+    },
+  );
+  if (registry.dayCycle === undefined) {
+    issues.push({ source: 'core content', path: 'dayCycle', message: 'missing required day cycle' });
+  }
+  return issues;
+};
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is

@@ -5,7 +5,7 @@ import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { dayCycleFor } from '../core/dayPhase.ts';
+import { requireDayCycle } from '../core/content.ts';
 import type { EntityStore } from '../core/entities.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -139,7 +139,7 @@ export const createPlayView = (
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
-  const dayCycle = dayCycleFor(registry.dayCycle);
+  const dayCycle = requireDayCycle(registry);
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
