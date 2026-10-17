@@ -12,6 +12,7 @@ import { type BlockBox, stampChunk } from '../src/core/structure.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
 import { gameHours } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const registry = baseRegistry();
 const profile = [...registry.scenarios.values()].find((row) => row.composition)!;
@@ -89,37 +90,47 @@ it('keeps every start-storey container reachable from the roof through supported
   }
 });
 
-it('honours the authored start cell and refuses a cell outside the street grid', () => {
-  const own = structuredClone(profile);
-  const cell = plan.candidates[0]!;
-  own.composition!.start.cell = [...cell];
-  expect(scenarioStartIssues(registry, own)).toEqual([]);
-  const moved = buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own });
-  expect(moved.composition!.start.placement.origin).not.toEqual(start.placement.origin);
-  expect(moved.candidates).not.toContainEqual(cell);
-  expect(scenarioCertificate(new CitySite(9, registry, scale, moved)).issues).toEqual([]);
-  own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
-  expect(scenarioStartIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
-});
+it(
+  'honours the authored start cell and refuses a cell outside the street grid',
+  () => {
+    const own = structuredClone(profile);
+    const cell = plan.candidates[0]!;
+    own.composition!.start.cell = [...cell];
+    expect(scenarioStartIssues(registry, own)).toEqual([]);
+    const moved = buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own });
+    expect(moved.composition!.start.placement.origin).not.toEqual(start.placement.origin);
+    expect(moved.candidates).not.toContainEqual(cell);
+    expect(scenarioCertificate(new CitySite(9, registry, scale, moved)).issues).toEqual([]);
+    own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
+    expect(scenarioStartIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
+  },
+  GAUNTLET_SITE_MS,
+);
 
-it('refuses a start roof that can clear the wall, with or without a ring', () => {
-  const own = structuredClone(profile);
-  const template = structuredClone(registry.mapAssemblies.get(own.composition!.start.template)!);
-  template.id = 'fixture_tall_start';
-  template.size[1] = 1000;
-  const fixtures = { ...registry, mapAssemblies: new Map(registry.mapAssemblies).set(template.id, template) };
-  own.composition!.start.template = template.id;
-  own.composition!.start.cell = [-own.city.blocksX, -own.city.blocksZ];
-  for (const ring of [profile.city.ring, undefined]) {
-    own.city.ring = ring;
-    own.composition!.start.cell = [-own.city.blocksX, -own.city.blocksZ];
-    expect(scenarioPlanIssues(fixtures, own).some(([path]) => path === '.composition.start.template')).toBe(true);
-    template.size[1] = registry.mapAssemblies.get(profile.composition!.start.template)!.size[1];
-    own.composition!.start.cell = [...profile.composition!.start.cell];
-    expect(scenarioPlanIssues(fixtures, own).filter(([path]) => path.startsWith('.composition.start'))).toEqual([]);
+// Each ring case validates the whole scenario twice, which costs about a site's build.
+const roofRings = [profile.city.ring, undefined];
+it(
+  'refuses a start roof that can clear the wall, with or without a ring',
+  () => {
+    const own = structuredClone(profile);
+    const template = structuredClone(registry.mapAssemblies.get(own.composition!.start.template)!);
+    template.id = 'fixture_tall_start';
     template.size[1] = 1000;
-  }
-});
+    const fixtures = { ...registry, mapAssemblies: new Map(registry.mapAssemblies).set(template.id, template) };
+    own.composition!.start.template = template.id;
+    own.composition!.start.cell = [-own.city.blocksX, -own.city.blocksZ];
+    for (const ring of roofRings) {
+      own.city.ring = ring;
+      own.composition!.start.cell = [-own.city.blocksX, -own.city.blocksZ];
+      expect(scenarioPlanIssues(fixtures, own).some(([path]) => path === '.composition.start.template')).toBe(true);
+      template.size[1] = registry.mapAssemblies.get(profile.composition!.start.template)!.size[1];
+      own.composition!.start.cell = [...profile.composition!.start.cell];
+      expect(scenarioPlanIssues(fixtures, own).filter(([path]) => path.startsWith('.composition.start'))).toEqual([]);
+      template.size[1] = 1000;
+    }
+  },
+  roofRings.length * GAUNTLET_SITE_MS,
+);
 
 it('refuses a start overtopped by a building in either city pool', () => {
   for (const ring of [false, true]) {
