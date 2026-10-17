@@ -30,68 +30,6 @@ export function mainOverlayPath(root, id) {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
-// Remove once d391 is merged and main's sources no longer use the terrain and forest constants or the shapeless
-// terrain calls; each rewrite only applies while its marker is in main's source. The branch moved those tunables
-// into content, so main's copies take the terrain shape and forest settings from the registry the way the branch does.
-const TERRAIN_SHAPE_REWRITES = {
-  'bench/run.ts': {
-    marker: 'FOREST_DENSITY_FIELD',
-    edits: [
-      [
-        "import { FOREST_DENSITY_FIELD, FOREST_HALF_EXTENT_METRES, TREE_CELL_METRES, TREE_MIX } from '../core/vegetation.ts';",
-        "import { siteGenerationOf } from '../core/sitePalette.ts';",
-      ],
-      [
-        'export const forestWorkload = (seed: number, density: number | null) => ({',
-        'export const forestWorkload = (registry: Parameters<typeof siteGenerationOf>[0], seed: number, density: number | null) => ({',
-      ],
-      [
-        'density === null ? FOREST_DENSITY_FIELD : null',
-        'density === null ? siteGenerationOf(registry).vegetation.forestDensityField : null',
-      ],
-      ['2 * FOREST_HALF_EXTENT_METRES', '2 * siteGenerationOf(registry).vegetation.forestHalfExtentMetres'],
-      ['cellMetres: TREE_CELL_METRES', 'cellMetres: siteGenerationOf(registry).vegetation.treeCellMetres'],
-      ['shapeMix: TREE_MIX', 'shapeMix: siteGenerationOf(registry).vegetation.treeMix'],
-      ['forestWorkload(config.seed, run.density)', 'forestWorkload(engine.registry, config.seed, run.density)'],
-    ],
-  },
-  'game/worldSetup.ts': {
-    marker: 'terrainHeightMetres(seed, HOUSE_OFFSET',
-    edits: [
-      [
-        "import { sitePalette } from '../core/sitePalette.ts';",
-        "import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';",
-      ],
-      [
-        'terrainHeightMetres(seed, HOUSE_OFFSET[0] + LOT_CENTRE[0], HOUSE_OFFSET[1] + LOT_CENTRE[1])',
-        'terrainHeightMetres(seed, terrainShapeOf(registry), HOUSE_OFFSET[0] + LOT_CENTRE[0], HOUSE_OFFSET[1] + LOT_CENTRE[1])',
-      ],
-      ['worldGroundAt({ seed, scale, surface', 'worldGroundAt({ seed, shape: terrainShapeOf(registry), scale, surface'],
-      [
-        '    terrain: sitePalette(registry).terrain,',
-        '    terrain: sitePalette(registry).terrain,\n    shape: terrainShapeOf(registry),',
-      ],
-    ],
-  },
-  'game/streamer.ts': {
-    marker: 'blocks: terrain, scale',
-    edits: [
-      [
-        '{ seed, blocks: terrain, scale, surface, stamp }',
-        '{ seed, blocks: terrain, shape: this.opts.shape, scale, surface, stamp }',
-      ],
-    ],
-  },
-};
-
-function withBranchTerrainShape(relative, source) {
-  const rewrite = TERRAIN_SHAPE_REWRITES[relative];
-  if (!(rewrite && source.includes(rewrite.marker))) {
-    return source;
-  }
-  return rewrite.edits.reduce((text, [from, to]) => text.replaceAll(from, to), source);
-}
-
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
@@ -180,7 +118,6 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
               '  globalThis.mainArrival.engineReadyRealMs=performance.now();\n  return {\n    ...worldSetup,',
             );
           }
-          source = withBranchTerrainShape(relative, source);
           if (relative === 'game/streamer.ts') {
             source = source.replace(
               '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
