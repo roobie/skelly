@@ -487,7 +487,7 @@ const ExplosiveSchema = strictObject({
 const FirearmAttachmentEffectsSchema = strictObject({
   /** Fraction of the firearm's committed recoil kick removed at full condition. */
   recoilReduction: optional(Fraction),
-  /** Condition lost per committed shot. */
+  /** Condition lost per committed shot; absent means the attachment does not wear. */
   wearPerShot: optional(Fraction),
   /** Multipliers applied to the existing aim and stance response. */
   swayScale: optional(Positive),
