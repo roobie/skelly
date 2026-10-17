@@ -288,6 +288,12 @@ try {
           : observation.records.slice(0, config.sampleFrames);
       const summary = summarize(records, mode);
       if (route.spawnCount && summary.zombieDrawFrames !== summary.frames) {
+        const rejected = `${route.id}-${mode}-${repeat}-rejected`;
+        await writeFile(
+          resolve(out, `${rejected}.json`),
+          JSON.stringify({ route, mode, repeat, identity, errors, ...observation, records, summary }),
+        );
+        await page.screenshot({ path: resolve(out, `${rejected}.png`) });
         throw new Error('Horde is not drawn');
       }
       await page.screenshot({ path: resolve(out, `${route.id}-${mode}-${repeat}.png`) });

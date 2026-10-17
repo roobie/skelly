@@ -145,6 +145,21 @@ export function install(engine) {
   };
   engine.meshes.group.userData.perfCategory = 'chunks';
   const direct = renderer.renderBufferDirect.bind(renderer);
+  const render = renderer.render.bind(renderer);
+  renderer.render = (root, ...args) => {
+    if (!perf.current || root !== engine.scene || perf.base !== 'other') {
+      return render(root, ...args);
+    }
+    const previous = perf.base;
+    perf.base = 'scene';
+    scope('scene');
+    try {
+      return render(root, ...args);
+    } finally {
+      perf.base = previous;
+      scope(previous);
+    }
+  };
   function categoryOf(object) {
     for (let parent = object; parent; parent = parent.parent) {
       if (parent.userData.perfCategory) {
@@ -205,13 +220,13 @@ export function install(engine) {
       } else if (pass === composer.passes.at(-1)) {
         label = 'output';
       }
-      const render = pass.render.bind(pass);
+      const renderPass = pass.render.bind(pass);
       pass.render = (...args) => {
         const previous = perf.base;
         perf.base = label;
         scope(label);
         try {
-          return render(...args);
+          return renderPass(...args);
         } finally {
           perf.base = previous;
           scope(previous);
