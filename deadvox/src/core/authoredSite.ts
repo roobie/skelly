@@ -37,7 +37,6 @@ import {
   forestDensityAt,
   leafLitterAt,
   stampTrees,
-  TREE_MIX,
   TreeIndex,
   type TreePlacement,
   vegetationPlacements,
@@ -285,9 +284,9 @@ export class AuthoredSite implements Site {
         ) {
           return 0;
         }
-        return Math.max(tuning.vegetation.openDensity, woodlandDensityAt(x, z)) * forestDensityAt(seed, x, z);
+        return Math.max(tuning.vegetation.openDensity, woodlandDensityAt(x, z)) * forestDensityAt(registry, seed, x, z);
       },
-      shapeMix: (x, z) => (woodlandDensityAt(x, z) > 0 ? TREE_MIX : ['young']),
+      shapeMix: (x, z) => (woodlandDensityAt(x, z) > 0 ? tuning.vegetation.treeMix : ['young']),
       ground: (x, z) => height(x, z, layout.ground / s),
       reserved: [
         ...reserved,

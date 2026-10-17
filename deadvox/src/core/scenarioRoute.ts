@@ -6,7 +6,7 @@ import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { raycast } from './raycast.ts';
 import { reachTuning } from './reach.ts';
 import { makeScale } from './scale.ts';
-import { sitePalette } from './sitePalette.ts';
+import { sitePalette, terrainShapeOf } from './sitePalette.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { footprint, type Placement } from './templates.ts';
 import { World } from './world.ts';
@@ -64,6 +64,7 @@ export class ScenarioRouteSpace {
       seed: site.seed,
       scale: makeScale(HAMLET_BLOCK_SIZE),
       blocks: sitePalette(site.registry).terrain,
+      shape: terrainShapeOf(site.registry),
       surface: site.surface,
     };
     this.solid = worldSolid(this.world, site.registry, this.entities);

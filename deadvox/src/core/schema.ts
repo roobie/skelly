@@ -2018,11 +2018,35 @@ const SiteGenerationSchema = strictObject({
     roadShoulderMetres: NonNegative,
     spawnMarginMetres: NonNegative,
   }),
+  // The natural ground every site stands on; metres, so a block size never changes the landscape.
+  terrain: pipe(
+    strictObject({
+      minHeightMetres: NonNegative,
+      maxHeightMetres: NonNegative,
+      beachBelowMetres: NonNegative,
+      dirtDepthMetres: NonNegative,
+      featureSizeMetres: PositiveMetres,
+      octaves: pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more')),
+    }),
+    check(({ minHeightMetres, maxHeightMetres }) => minHeightMetres < maxHeightMetres, 'min height must be below max'),
+  ),
   vegetation: strictObject({
     woodlandEdgeWavelengthMetres: PositiveMetres,
     woodlandEdgeVariation: pipe(Fraction, maxValue(0.5, 'must not exceed 0.5')),
     openDensity: Fraction,
     obstacleMarginMetres: NonNegative,
+    // One entry per draw, so repeating a shape weights it.
+    treeMix: pipe(array(picklist(['broadleaf', 'conifer', 'young'])), minLength(1)),
+    treeCellMetres: PositiveMetres,
+    hamletDensity: Fraction,
+    forestHalfExtentMetres: PositiveMetres,
+    forestDensityField: strictObject({
+      wavelengthMetres: PositiveMetres,
+      seedSalt: Count,
+      floor: Fraction,
+      gain: NonNegative,
+      ceiling: Fraction,
+    }),
   }),
   // One palette shared by every site kind: terrain, paving, trees and litter are block ids.
   palette: strictObject({

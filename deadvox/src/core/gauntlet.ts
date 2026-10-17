@@ -8,6 +8,7 @@ import type { Scale } from './scale.ts';
 import { scenarioCertificate } from './scenarioCertificate.ts';
 import type { ScenarioDef } from './schema.ts';
 import { type HordeSpawn, rectDistance, type ZombieSpawn } from './site.ts';
+import { terrainShapeOf } from './sitePalette.ts';
 import { footprint, type Placement, placedSpawns } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
@@ -38,7 +39,7 @@ export class GauntletSite extends CitySite {
       buildCityPlan({
         seed,
         registry,
-        floor: terrainHeight(seed, scale, 0, 0),
+        floor: terrainHeight(seed, terrainShapeOf(registry), scale, 0, 0),
         grid: cityGridOf(registry, scenario.city),
         scenario,
       }),

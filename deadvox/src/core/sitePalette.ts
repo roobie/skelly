@@ -2,7 +2,7 @@
 // validation (`checkSiteGeneration` in `content.ts`) guarantees every name exists.
 import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
-import type { TerrainBlocks } from './worldgen.ts';
+import type { TerrainBlocks, TerrainShape } from './worldgen.ts';
 
 export interface SitePalette {
   readonly terrain: TerrainBlocks;
@@ -24,7 +24,10 @@ export const siteGenerationOf = (registry: Pick<Registry, 'siteGeneration'>) => 
   return entry;
 };
 
-export const sitePalette = (registry: Pick<Registry, 'siteGeneration' | 'blockIds'>): SitePalette => {
+export const terrainShapeOf = (registry: Pick<Registry, 'siteGeneration'>): TerrainShape =>
+  siteGenerationOf(registry).terrain;
+
+export const sitePalette =(registry: Pick<Registry, 'siteGeneration' | 'blockIds'>): SitePalette => {
   const { palette, hamlet } = siteGenerationOf(registry);
   const block = (name: string): number => {
     const id = registry.blockIds.get(name);

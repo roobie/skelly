@@ -13,7 +13,7 @@ import type { SkyResult } from '../core/skyTransport.ts';
 import type { BlockBox } from '../core/structure.ts';
 import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
-import { generateColumn, type Surface, type TerrainBlocks } from '../core/worldgen.ts';
+import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
 
@@ -33,6 +33,7 @@ export interface StreamerOptions {
   meshes: ChunkMeshes;
   seed: number;
   terrain: TerrainBlocks;
+  shape: TerrainShape;
   colors: Uint8Array;
   /** Surface pattern id per block id, for the mesher. */
   patterns: Uint8Array;
@@ -370,10 +371,10 @@ export class Streamer {
     if (this.generated.has(col)) {
       return false;
     }
-    const { world, seed, terrain, scale, structures, surface, stamp, stats } = this.opts;
+    const { world, seed, terrain, shape, scale, structures, surface, stamp, stats } = this.opts;
     const start = performance.now();
     try {
-      const column = generateColumn({ seed, blocks: terrain, scale, surface, stamp }, cx, cz, structures);
+      const column = generateColumn({ seed, blocks: terrain, shape, scale, surface, stamp }, cx, cz, structures);
       stats?.genMs.push(performance.now() - start);
       for (const chunk of column) {
         if (world.getChunk(chunk.cx, chunk.cy, chunk.cz)) {

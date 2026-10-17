@@ -1,5 +1,6 @@
 import { blockId, type Registry } from '../core/content.ts';
 import type { Site } from '../core/site.ts';
+import { terrainShapeOf } from '../core/sitePalette.ts';
 import type { MetreBox } from '../core/structure.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import type { Surface } from '../core/worldgen.ts';
@@ -21,7 +22,7 @@ export class DebugWeatheringTestSite implements Site {
   constructor(config: GameConfig, registry: Registry) {
     const { seed, scale } = config;
     const { blockSize } = scale;
-    const floor = Math.round(terrainHeightMetres(seed, 0, 0) / blockSize) * blockSize;
+    const floor = Math.round(terrainHeightMetres(seed, terrainShapeOf(registry), 0, 0) / blockSize) * blockSize;
     const concrete = blockId(registry, 'concrete');
     const brick = blockId(registry, 'brick');
     const planks = blockId(registry, 'planks');
