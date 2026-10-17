@@ -4,9 +4,9 @@
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
 import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
-import type { Registry } from '../core/content.ts';
+import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
+import { dayPhaseAt } from '../core/dayPhase.ts';
 import type { Body } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
@@ -171,12 +171,13 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   document.getElementById('overlay')!.hidden = true;
   const startTime = parseTimeOfDay(run.time ?? '12:00')!;
   const hour = hourOfDay(startTime);
+  const dayCycle = requireDayCycle(engine.registry);
   if (run.time !== undefined) {
-    applySky(engine.sky, skyAt(hour));
+    applySky(engine.sky, skyAt(hour, dayCycle));
   }
   const lightFixture = createBenchLightFixture(engine, startTime);
   window.addEventListener('pagehide', lightFixture.dispose, { once: true });
-  const daylightScale = flashlightDaylightScale(skyAt(hour));
+  const daylightScale = flashlightDaylightScale(skyAt(hour, dayCycle));
   const gl = renderer.getContext();
   const pixel = new Uint8Array(4);
   const drawScene = benchDraw(engine, run.post, hour);
@@ -302,7 +303,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
           lit: true,
           lightSeenFrom,
         }),
-        dayPhase: () => dayPhaseAt(DEFAULT_DAY_CYCLE, startTime),
+        dayPhase: () => dayPhaseAt(dayCycle, startTime),
         hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),
       });
       spawnShamblerRing({

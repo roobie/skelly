@@ -20,10 +20,10 @@ import {
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { CHUNK } from '../src/core/coords.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, SHADOW_DISTANCES } from '../src/core/mood.ts';
-import { skyAt, sunShadowStrength } from '../src/core/sky.ts';
+import { skyAt as skyAtCycle, sunShadowStrength } from '../src/core/sky.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
 import { startupContent } from './baseRegistry.ts';
 
@@ -45,10 +45,12 @@ import {
   sunShadowTexelSize,
   withinRange,
 } from '../src/render/shadows.ts';
+import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
 
+const skyAt = (hour: number) => skyAtCycle(hour, BASE_DAY_CYCLE);
 const strengthAt = (hour: number): number => sunShadowStrength(skyAt(hour).lightIntensity);
-const cycle = dayPhaseAt(DEFAULT_DAY_CYCLE, 0);
+const cycle = dayPhaseAt(BASE_DAY_CYCLE, 0);
 
 describe('sun shadow strength', () => {
   it('lets no direct light past the map at any hour, low sun and night included (#562)', () => {

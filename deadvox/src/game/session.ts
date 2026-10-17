@@ -10,13 +10,13 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
-import type { RecipeDef, Registry } from '../core/content.ts';
+import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
-import { dayCycleFor, dayPhaseAt } from '../core/dayPhase.ts';
+import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
 import {
@@ -580,7 +580,7 @@ const observeScenarioMovement = (
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
-  const dayCycle = dayCycleFor(registry.dayCycle);
+  const dayCycle = requireDayCycle(registry);
   const shamblerVoice = shamblerVoiceLaw(figureSeedPool(registry.zombies));
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;

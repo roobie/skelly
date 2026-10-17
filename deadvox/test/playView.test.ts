@@ -27,6 +27,7 @@ import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { createPlayView } from '../src/render/playView.ts';
 import { Skylight } from '../src/render/skylight.ts';
+import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { skyWorldFixture } from './fixtures/skyWorld.ts';
 import { makeConfig } from './fixtures/startupContent.ts';
@@ -190,7 +191,7 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
     shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
-  const daylight = skyAt(12);
+  const daylight = skyAt(12, BASE_DAY_CYCLE);
   const updateFrame = () => {
     view.updateHeld(0, restingHands, flashlight);
     view.prepareLighting(daylight);

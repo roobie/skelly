@@ -7,6 +7,7 @@
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import { scenarioPlanIssues } from './cityPlan.ts';
+import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import { lootTypeIssue } from './loot.ts';
@@ -207,6 +208,14 @@ export const validateContent = (source: ContentSource): ContentIssue[] => parseC
 
 // ---- merging ----
 
+/** The day cycle content; a spawn window's named times and the default start need it. */
+export const requireDayCycle = (registry: Registry): DayCycleDef => {
+  if (registry.dayCycle === undefined) {
+    throw new Error('content defines no day cycle');
+  }
+  return registry.dayCycle;
+};
+
 /** Where the definition that won came from, for issues found after merging. */
 interface Origin {
   source: string;
@@ -233,9 +242,7 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     origins.set(`${section}:${id}`, { source, path: `${section}[${i}]` });
 
   for (const { source, file } of files) {
-    // Named spawn times are resolved during schema parsing against the authored base cycle.
-    // Keep that cycle authoritative so later mods cannot make parsed dawn/dusk values drift.
-    if (file.dayCycle !== undefined && registry.dayCycle === undefined) {
+    if (file.dayCycle !== undefined) {
       registry.dayCycle = file.dayCycle;
     }
     (file.blocks ?? []).forEach((block, i) => {
@@ -927,6 +934,36 @@ const checkTemplates = (registry: Registry, report: Report) => {
   }
 };
 
+/** Named window times mean something only against a day cycle, and a window's ends must differ once resolved. */
+const checkSpawnWindows = (registry: Registry, report: Report) => {
+  const { dayCycle } = registry;
+  const check = (spawnWindow: SpawnTimeWindow | undefined, locate: (message: string) => void) => {
+    if (spawnWindow === undefined) {
+      return;
+    }
+    const { fromGameTimeOfDay: from, toGameTimeOfDay: to } = spawnWindow;
+    if (dayCycle === undefined) {
+      if (typeof from === 'string' || typeof to === 'string') {
+        locate('a named spawn time needs a day cycle');
+      }
+    } else if (to !== undefined && resolveSpawnTime(dayCycle, from) === resolveSpawnTime(dayCycle, to)) {
+      locate('from and to must differ');
+    }
+  };
+  for (const template of registry.templates.values()) {
+    for (const [char, entry] of Object.entries(template.palette)) {
+      if (typeof entry !== 'string') {
+        check(entry.window, (message) => report('templates', template.id, `.palette["${char}"].window`, message));
+      }
+    }
+  }
+  for (const layout of registry.layouts.values()) {
+    layout.shamblers?.forEach((shambler, index) => {
+      check(shambler.window, (message) => report('layouts', layout.id, `.shamblers[${index}].window`, message));
+    });
+  }
+};
+
 const checkSiteGeneration = (registry: Registry, report: Report) => {
   for (const entry of registry.siteGeneration.values()) {
     const { terrain, trees, ...single } = entry.palette;
@@ -1206,6 +1243,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
+  checkSpawnWindows(registry, report);
   checkSiteGeneration(registry, report);
   for (const issue of mapKitIssues(registry)) {
     report(issue.section, issue.id, issue.path, issue.message);
@@ -1239,16 +1277,23 @@ export const REQUIRED_CORE_CONTENT = [
   ...SOUND_EVENT_IDS.map((id) => ({ section: 'sounds' as const, id })),
 ] as const satisfies readonly { section: Exclude<ContentSection, 'blocks'>; id: string }[];
 
-export const requiredContentIssues = (registry: Registry): ContentIssue[] =>
-  REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(({ section, id }) => {
-    let message = `missing required content "${id}"`;
-    if (section === 'sounds') {
-      message = `missing required sound event "${id}"`;
-    } else if (section === 'ui') {
-      message = `missing required UI tuning "${id}"`;
-    }
-    return { source: 'core content', path: section, message };
-  });
+export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
+  const issues: ContentIssue[] = REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(
+    ({ section, id }) => {
+      let message = `missing required content "${id}"`;
+      if (section === 'sounds') {
+        message = `missing required sound event "${id}"`;
+      } else if (section === 'ui') {
+        message = `missing required UI tuning "${id}"`;
+      }
+      return { source: 'core content', path: section, message };
+    },
+  );
+  if (registry.dayCycle === undefined) {
+    issues.push({ source: 'core content', path: 'dayCycle', message: 'missing required day cycle' });
+  }
+  return issues;
+};
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is

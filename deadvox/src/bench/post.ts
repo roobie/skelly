@@ -6,6 +6,7 @@
 // parameters those read (test/site-launcher.test.mjs); this is a benchmark option, like the debug look
 // parameters, not something to launch from the site page.
 
+import { requireDayCycle } from '../core/content.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather } from '../core/weather.ts';
@@ -50,7 +51,7 @@ export const benchDraw = (
   applyLook(renderer, engine.meshes, DEFAULT_LOOK);
   mood.restore(DEFAULT_MOOD);
   shadows.restore(DEFAULT_SHADOWS);
-  const sky = skyInWeather(skyAt(hour), { fogginess: DEFAULT_FOGGINESS });
+  const sky = skyInWeather(skyAt(hour, requireDayCycle(engine.registry)), { fogginess: DEFAULT_FOGGINESS });
   mood.setSky(sky);
   const sunStrength = sunShadowStrength(sky.lightIntensity);
   return () => {

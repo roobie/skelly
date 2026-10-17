@@ -1,5 +1,5 @@
-import { parseTimeOfDay, SPAWN_TIME, SPAWN_TIMES } from '../core/clock.ts';
-import type { Registry } from '../core/content.ts';
+import { parseTimeOfDay } from '../core/clock.ts';
+import { type Registry, requireDayCycle } from '../core/content.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
@@ -56,6 +56,24 @@ export interface GameConfig {
 
 export type ActorRenderer = 'boxes' | 'detailed';
 
+const defaultStart = (content: StartupContent): number => requireDayCycle(content.registry).defaultStartGameTimeOfDay;
+
+/** `?time=` wins, then the layout's own time; the weathering test site defaults to noon. */
+const startTime = (
+  content: StartupContent,
+  site: string,
+  layoutTime: number | undefined,
+  requestedTime: string | null,
+): number => {
+  if (requestedTime !== null) {
+    return parseTimeOfDay(requestedTime) ?? defaultStart(content);
+  }
+  if (layoutTime !== undefined) {
+    return layoutTime;
+  }
+  return site === 'weatheringTest' ? requireDayCycle(content.registry).noonGameTimeOfDay : defaultStart(content);
+};
+
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
 export const makeConfig = (
   seed: number,
@@ -71,7 +89,7 @@ export const makeConfig = (
     scale,
     radiusM,
     radiusChunks: chunksFor(scale, radiusM),
-    start: SPAWN_TIME,
+    start: defaultStart(content),
     debug: false,
     site: 'hamlet',
     authoredDecals: true,
@@ -213,10 +231,7 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   config.authoredDecals = params.get('decals') !== '0';
   const layoutTime = content.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
   const requestedTime = params.get('time');
-  config.start =
-    requestedTime === null
-      ? (layoutTime ?? (config.site === 'weatheringTest' ? SPAWN_TIMES.noon : SPAWN_TIME))
-      : (parseTimeOfDay(requestedTime) ?? SPAWN_TIME);
+  config.start = startTime(content, config.site, layoutTime, requestedTime);
   config.debug = params.get('debug') === '1';
   applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);

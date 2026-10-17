@@ -30,6 +30,50 @@ export function mainOverlayPath(root, id) {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
+const REQUIRE_DAY_CYCLE_IMPORT = "import { requireDayCycle } from '../core/content.ts';\n";
+
+// Remove once d389 is merged and main's sources no longer use DAY_SKY, dayCycleFor or DEFAULT_DAY_CYCLE;
+// each rewrite only applies while its marker is in main's source. The branch removed those code defaults,
+// so main's copies take the day cycle from the registry the way the branch does.
+const DAY_CYCLE_REWRITES = {
+  'game/engine.ts': {
+    marker: 'DAY_SKY',
+    edits: [
+      [
+        "import { DAY_SKY } from '../core/sky.ts';",
+        `${REQUIRE_DAY_CYCLE_IMPORT}import { skyAt } from '../core/sky.ts';`,
+      ],
+      ['applySky(sky, DAY_SKY);', 'applySky(sky, skyAt(12, requireDayCycle(config.content.registry)));'],
+    ],
+  },
+  'render/playView.ts': {
+    marker: 'dayCycleFor',
+    edits: [
+      ["import { dayCycleFor } from '../core/dayPhase.ts';\n", REQUIRE_DAY_CYCLE_IMPORT],
+      ['dayCycleFor(registry.dayCycle)', 'requireDayCycle(registry)'],
+    ],
+  },
+  'bench/run.ts': {
+    marker: 'DEFAULT_DAY_CYCLE',
+    edits: [
+      [
+        "import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';",
+        `${REQUIRE_DAY_CYCLE_IMPORT}import { dayPhaseAt } from '../core/dayPhase.ts';`,
+      ],
+      ['skyAt(hour)', 'skyAt(hour, requireDayCycle(engine.registry))'],
+      ['dayPhaseAt(DEFAULT_DAY_CYCLE, startTime)', 'dayPhaseAt(requireDayCycle(engine.registry), startTime)'],
+    ],
+  },
+};
+
+function withBranchDayCycle(relative, source) {
+  const rewrite = DAY_CYCLE_REWRITES[relative];
+  if (!(rewrite && source.includes(rewrite.marker))) {
+    return source;
+  }
+  return rewrite.edits.reduce((text, [from, to]) => text.replaceAll(from, to), source);
+}
+
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
@@ -114,6 +158,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
               )
               .replace('weapon: FISTS_MELEE,', 'weapon: unarmedMeleeWeapon(registry.meleeClasses),');
           }
+          source = withBranchDayCycle(relative, source);
           if (relative === 'game/streamer.ts') {
             source = source.replace(
               '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
