@@ -5,6 +5,7 @@ import { applyBenchWeathering, benchDraw, benchPostFromUrl, postUrlPart } from '
 import { benchRunFromUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { DEFAULT_WEATHERING_PROFILE_ID } from '../src/core/weather.ts';
 import type { StartupContent } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
@@ -20,11 +21,11 @@ const { registry } = buildRegistry(
 );
 
 describe('benchmark weathering', () => {
-  it('does not follow the play default, so changing the default look leaves the bench workload alone', () => {
+  it('uses its own registry profile, not the play default, so retuning the default leaves the bench workload alone', () => {
     const config = makeConfig(1, 64, { registry } as unknown as StartupContent);
-    const playStrength = config.weathering?.strength ?? 0;
     applyBenchWeathering(config);
-    expect(config.weathering?.strength).toBeGreaterThan(playStrength);
+    expect(config.weatheringProfileId).not.toBe(DEFAULT_WEATHERING_PROFILE_ID);
+    expect(config.weathering).toEqual(registry.weathering.get(config.weatheringProfileId));
   });
 });
 

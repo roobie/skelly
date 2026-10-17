@@ -24,6 +24,28 @@ export const mainSourceOverlays = [
   'worker/protocol.ts',
 ];
 
+// A base view that still reads the look from core/mood.ts constants meets a branch whose content owns them
+// (core/lookDefaults.ts). The branch's core stays, so the base view takes the content look; a base that
+// already reads it from content needs no rewrite.
+function contentLookView(source) {
+  if (!source.includes('DEFAULT_LOOK')) {
+    return source;
+  }
+  const rewritten = source
+    .replace(
+      "import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';",
+      "import { lookDefaultsOf } from '../core/lookDefaults.ts';\nimport { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';",
+    )
+    .replace(
+      'applyLook(renderer, meshes, DEFAULT_LOOK);\n    mood.restore(DEFAULT_MOOD);',
+      'applyLook(renderer, meshes, lookOf(lookDefaultsOf(registry)));\n    mood.restore(moodOf(lookDefaultsOf(registry)));',
+    );
+  if (rewritten.includes('DEFAULT_LOOK')) {
+    throw new Error('Main view still reads DEFAULT_LOOK; update contentLookView in sky-main-arrival.mjs');
+  }
+  return rewritten;
+}
+
 export function mainOverlayPath(root, id) {
   const [path] = id.split('?');
   const prefix = `${resolve(root)}/src/`;
@@ -98,6 +120,9 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           }
           if (relative === 'core/authoredSite.ts' || relative === 'content/base/templates-stairs.json') {
             source = fixtureTransform(source, id) ?? source;
+          }
+          if (relative === 'render/playView.ts') {
+            source = contentLookView(source);
           }
           if (relative === 'game/engine.ts') {
             source = source.replace(
