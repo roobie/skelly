@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import { dominantSide, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { defaultClock } from '../src/core/clock.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import type { Item } from '../src/core/items.ts';
 import { pocketGroundItem, stowTarget, toHands } from '../src/core/options.ts';
@@ -44,6 +43,7 @@ import {
 } from '../src/game/replayCommands.ts';
 import { PHYSICS_RATE } from '../src/game/session.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
   addFixtureColumn,
@@ -1101,7 +1101,7 @@ describe('input replay', () => {
     const marker: ZombieSpawn = {
       type: 'shambler',
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
-      window: { fromGameTimeOfDay: gameTimeOfDay(defaultClock.start + 1) },
+      window: { fromGameTimeOfDay: gameTimeOfDay(BASE_CLOCK.start + 1) },
     };
     const site: Site = {
       surface: fixtureHamlet.surface,

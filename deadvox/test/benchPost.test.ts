@@ -3,6 +3,7 @@ import { benchDraw, benchPostFromUrl, postUrlPart } from '../src/bench/post.ts';
 import { benchRunFromUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
+import { startupContent } from './baseRegistry.ts';
 
 const params = (query: string) => new URLSearchParams(query);
 
@@ -31,6 +32,7 @@ describe('benchmark post-processing option', () => {
     let captured: { calls: number; triangles: number } | undefined;
     const engine = {
       renderer: { info, toneMapping: 0, toneMappingExposure: 1 },
+      registry: startupContent().registry,
       scene: {},
       camera: { position: {} },
       meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },

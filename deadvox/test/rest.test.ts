@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Body } from '../src/core/body.ts';
-import { defaultClock, hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
+import { hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { awakeRates, type Needs, type RecoveryState, stepNeeds } from '../src/core/needs.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -13,9 +13,10 @@ import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
-const HOUR = simSecondsPerHour(defaultClock);
+const HOUR = simSecondsPerHour(BASE_CLOCK);
 const BASE = 'src/content/base';
 const BASE_SOURCES = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
@@ -285,7 +286,7 @@ describe('waking with an alarm', () => {
   it('ends awake when the selected alarm hour arrives during sleep onset', () => {
     const sim = new Simulation({
       seed: 1,
-      clock: { ...defaultClock, start: 11 * SECONDS_PER_HOUR - 60 },
+      clock: { ...BASE_CLOCK, start: 11 * SECONDS_PER_HOUR - 60 },
     });
     const { rest } = makeRest({ hasAlarm: () => true }, sim);
     sim.needs.fatigue = 0;
@@ -359,7 +360,7 @@ describe('waking with an alarm', () => {
       entities,
       scale: SCALE,
       seed: 1,
-      start: defaultClock.start,
+      start: BASE_CLOCK.start,
       spawn: [0, 1, 0],
       ready: () => true,
       controls: {
@@ -550,7 +551,7 @@ describe('Session long-action input lock', () => {
       entities,
       scale: SCALE,
       seed: 1,
-      start: defaultClock.start,
+      start: BASE_CLOCK.start,
       spawn: [0, 1, 0],
       ready: () => true,
       controls: {
@@ -593,7 +594,7 @@ describe('Session long-action input lock', () => {
       entities,
       scale: SCALE,
       seed: 1,
-      start: defaultClock.start,
+      start: BASE_CLOCK.start,
       spawn: [0, 1, 0],
       ready: () => true,
       controls: {
@@ -650,7 +651,7 @@ describe('Session long-action input lock', () => {
       entities,
       scale: SCALE,
       seed: 1,
-      start: defaultClock.start,
+      start: BASE_CLOCK.start,
       spawn: [0, 1, 0],
       ready: () => true,
       controls: {
@@ -701,7 +702,7 @@ describe('long-action interruptions', () => {
       scale: SCALE,
       seed: 1,
       // Daylight, so the shambler sees the sleeper.
-      start: defaultClock.start,
+      start: BASE_CLOCK.start,
       spawn: [0, 1, 0],
       ready: () => true,
       controls: {

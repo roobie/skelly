@@ -5,6 +5,7 @@ import { SunExposureCache, sunExposedAt } from '../src/core/lights.ts';
 import { realSeconds } from '../src/core/time.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
+import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import {
   createRuntime,
   fixtureColumns,
@@ -33,7 +34,9 @@ it('matches vertical ray exposure above and below the top blocker in a column', 
   ];
   let firstColumnQueries = 0;
   for (const [index, position] of positions.entries()) {
-    expect(cache.isExposedAt(position, 12)).toBe(sunExposedAt({ position, gameHours: 12, skyTop: 15, isOpaque }));
+    expect(cache.isExposedAt(position, 12, BASE_DAY_CYCLE)).toBe(
+      sunExposedAt({ position, gameHours: 12, cycle: BASE_DAY_CYCLE, skyTop: 15, isOpaque }),
+    );
     if (index === 0) {
       firstColumnQueries = cacheQueries;
       expect(firstColumnQueries).toBeGreaterThan(0);
