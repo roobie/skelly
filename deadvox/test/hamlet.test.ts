@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { HAMLET, Hamlet, hamletZombieSpawns } from '../src/core/hamlet.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { hamletTemplateIds } from '../src/core/sitePalette.ts';
+import { hamletTemplateIds, terrainShapeOf } from '../src/core/sitePalette.ts';
 import { cellsOf } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
@@ -16,6 +16,7 @@ const id = (name: string) => registry.blockIds.get(name)!;
 const generate = (hamlet: Hamlet, seed: number, columns: [number, number][]) => {
   const terrain: Terrain = {
     seed,
+    shape: terrainShapeOf(registry),
     scale,
     blocks: { grass: id('grass'), dirt: id('dirt'), rock: id('stone'), sand: id('sand') },
     surface: hamlet.surface,

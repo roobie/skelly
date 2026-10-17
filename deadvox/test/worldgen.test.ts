@@ -1,33 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { CHUNK } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import {
-  generateChunk,
-  generateColumn,
-  MAX_HEIGHT_M,
-  MIN_HEIGHT_M,
-  terrainHeight,
-  terrainHeightMetres,
-} from '../src/core/worldgen.ts';
+import { generateChunk, generateColumn, terrainHeight, terrainHeightMetres } from '../src/core/worldgen.ts';
+import { baseTerrainShape } from './baseRegistry.ts';
 
 const blocks = { air: 0, grass: 1, dirt: 2, rock: 3, sand: 4 };
+const shape = baseTerrainShape();
 const metre = makeScale(1);
 const half = makeScale(0.5);
 
 describe('worldgen', () => {
   it('is deterministic for a seed and varies between seeds', () => {
-    const a = generateChunk({ seed: 42, blocks, scale: half }, [3, 1, -2]);
-    const b = generateChunk({ seed: 42, blocks, scale: half }, [3, 1, -2]);
-    const c = generateChunk({ seed: 43, blocks, scale: half }, [3, 1, -2]);
+    const a = generateChunk({ seed: 42, blocks, shape, scale: half }, [3, 1, -2]);
+    const b = generateChunk({ seed: 42, blocks, shape, scale: half }, [3, 1, -2]);
+    const c = generateChunk({ seed: 43, blocks, shape, scale: half }, [3, 1, -2]);
     expect(a.toArray()).toEqual(b.toArray());
     expect(a.toArray()).not.toEqual(c.toArray());
   });
 
   it('keeps heights in range', () => {
     for (let i = 0; i < 2000; i++) {
-      const h = terrainHeightMetres(7, i * 13 - 9000, i * 7 - 3000);
-      expect(h).toBeGreaterThanOrEqual(MIN_HEIGHT_M);
-      expect(h).toBeLessThan(MAX_HEIGHT_M);
+      const h = terrainHeightMetres(7, shape, i * 13 - 9000, i * 7 - 3000);
+      expect(h).toBeGreaterThanOrEqual(shape.minHeightMetres);
+      expect(h).toBeLessThan(shape.maxHeightMetres);
     }
   });
 
@@ -35,14 +30,14 @@ describe('worldgen', () => {
     for (let i = 0; i < 200; i++) {
       const [xm, zm] = [i * 3.7 - 300, i * 2.3 + 100];
       const surface = (s: typeof half) =>
-        (terrainHeight(5, s, Math.floor(xm / s.blockSize), Math.floor(zm / s.blockSize)) + 1) * s.blockSize;
+        (terrainHeight(5, shape, s, Math.floor(xm / s.blockSize), Math.floor(zm / s.blockSize)) + 1) * s.blockSize;
       // Different block sizes sample slightly different points and round differently.
       expect(Math.abs(surface(metre) - surface(half))).toBeLessThanOrEqual(1.5);
     }
   });
 
   it('fills each column up to its height with a grass or sand top', () => {
-    const column = generateColumn({ seed: 5, blocks, scale: half }, 0, 0);
+    const column = generateColumn({ seed: 5, blocks, shape, scale: half }, 0, 0);
     const levels = column.map((chunk) => chunk.cy);
     expect(levels.length).toBeGreaterThan(0);
     expect(levels.every((level, index) => index === 0 || level === levels[index - 1]! + 1)).toBe(true);
@@ -55,7 +50,7 @@ describe('worldgen', () => {
       [17, 3],
       [31, 31],
     ] as const) {
-      const h = terrainHeight(5, half, x, z);
+      const h = terrainHeight(5, shape, half, x, z);
       expect([blocks.grass, blocks.sand]).toContain(at(x, h, z));
       expect(at(x, h + 1, z)).toBe(blocks.air);
       expect(at(x, h - 6, z)).toBe(blocks.rock);
@@ -63,7 +58,7 @@ describe('worldgen', () => {
   });
 
   it('stamps structures into the chunks they overlap', () => {
-    const column = generateColumn({ seed: 5, blocks, scale: half }, 0, 0, [
+    const column = generateColumn({ seed: 5, blocks, shape, scale: half }, 0, 0, [
       { min: [2, 150, 2], max: [3, 151, 3], block: 9 },
     ]);
     const top = column.find((c) => c.cy === 4)!;
@@ -71,7 +66,7 @@ describe('worldgen', () => {
   });
 
   it('stores chunks that are all one block as a single id', () => {
-    const column = generateColumn({ seed: 5, blocks, scale: half }, 0, 0);
+    const column = generateColumn({ seed: 5, blocks, shape, scale: half }, 0, 0);
     expect(column[0]?.uniformId).toBe(blocks.rock); // deep underground
     expect(column.at(-1)?.uniformId).toBe(blocks.air); // sky
     expect(column.filter((c) => c.uniformId === undefined).length).toBeLessThanOrEqual(2);

@@ -12,7 +12,7 @@ import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
-import { sitePalette } from '../src/core/sitePalette.ts';
+import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -306,6 +306,7 @@ it(
     const request = (site: CitySite, order: readonly Vec3[]) => {
       const terrain = {
         seed: site.seed,
+        shape: terrainShapeOf(registry),
         scale,
         surface: site.surface,
         blocks: sitePalette(registry).terrain,

@@ -19,7 +19,7 @@ import {
   type Site,
   type ZombieSpawn,
 } from './site.ts';
-import { type SitePalette, sitePalette } from './sitePalette.ts';
+import { type SitePalette, siteGenerationOf, sitePalette, terrainShapeOf } from './sitePalette.ts';
 import { type BlockBox, stampChunk } from './structure.ts';
 import {
   compileTemplate,
@@ -30,15 +30,8 @@ import {
   stampPlacement,
   type Turn,
 } from './templates.ts';
-import {
-  DEFAULT_TREE_DENSITY,
-  leafLitterAt,
-  stampTrees,
-  TreeIndex,
-  type TreePlacement,
-  vegetationPlacements,
-} from './vegetation.ts';
-import { type Surface, terrainHeight } from './worldgen.ts';
+import { leafLitterAt, stampTrees, TreeIndex, type TreePlacement, vegetationPlacements } from './vegetation.ts';
+import { type Surface, type TerrainShape, terrainHeight } from './worldgen.ts';
 
 /** Templates are drawn in half-metre blocks. */
 export const HAMLET_BLOCK_SIZE = 0.5;
@@ -225,6 +218,7 @@ export class Hamlet implements Site {
   readonly registry: Registry;
   private readonly scale: Scale;
   private readonly palette: SitePalette;
+  private readonly shape: TerrainShape;
   /** Road heights from `roadHeights[0]` at x = road.x0. */
   private readonly roadHeights: Int32Array;
   private readonly zombieSpawns: ZombieSpawn[] = [];
@@ -238,6 +232,7 @@ export class Hamlet implements Site {
     this.scale = scale;
     this.registry = registry;
     this.palette = sitePalette(registry);
+    this.shape = terrainShapeOf(registry);
     const layout = this.layout();
     const [ox, oz] = this.site(layout.width, layout.depth);
     this.road = { x0: ox, z0: oz + layout.roadZ, x1: ox + layout.width, z1: oz + layout.roadZ + HAMLET.road };
@@ -249,7 +244,7 @@ export class Hamlet implements Site {
       const rect = { x0: ox + x, z0: oz + z, x1: ox + x + w, z1: oz + z + d };
       const cx = Math.floor((rect.x0 + rect.x1) / 2);
       const cz = Math.floor((rect.z0 + rect.z1) / 2);
-      const floor = terrainHeight(seed, scale, cx, cz);
+      const floor = terrainHeight(seed, this.shape, scale, cx, cz);
       return {
         placement: { template: compiled, origin: [rect.x0, floor, rect.z0], turn },
         rect: grow(rect, HAMLET.pad),
@@ -285,7 +280,7 @@ export class Hamlet implements Site {
       ],
       yaw: -Math.PI / 2, // east, down the road
     };
-    const ground = (x: number, z: number) => this.height(x, z, terrainHeight(seed, scale, x, z));
+    const ground = (x: number, z: number) => this.height(x, z, terrainHeight(seed, this.shape, scale, x, z));
     this.hedges = this.lots
       .filter((_, index) => index % 2 === 0)
       .flatMap((lot) => {
@@ -302,7 +297,7 @@ export class Hamlet implements Site {
       registry,
       scale,
       area: this.bounds,
-      density: DEFAULT_TREE_DENSITY,
+      density: siteGenerationOf(registry).vegetation.hamletDensity,
       ground,
       reserved: [
         grow(this.road, HAMLET.gap),
@@ -462,7 +457,7 @@ export class Hamlet implements Site {
     let hi = Number.NEGATIVE_INFINITY;
     for (let z = 0; z <= depth; z += SITE.sample / s) {
       for (let x = 0; x <= width; x += SITE.sample / s) {
-        const h = terrainHeight(this.seed, this.scale, x0 + x, z0 + z) * s;
+        const h = terrainHeight(this.seed, this.shape, this.scale, x0 + x, z0 + z) * s;
         lo = Math.min(lo, h);
         hi = Math.max(hi, h);
       }
@@ -475,7 +470,7 @@ export class Hamlet implements Site {
     const { x0, x1, z0, z1 } = this.road;
     const cz = Math.floor((z0 + z1) / 2);
     const r = HAMLET.roadSmoothing;
-    const natural = (x: number) => terrainHeight(this.seed, this.scale, x, cz);
+    const natural = (x: number) => terrainHeight(this.seed, this.shape, this.scale, x, cz);
     const out = new Int32Array(x1 - x0);
     for (let x = x0; x < x1; x++) {
       let sum = 0;

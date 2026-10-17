@@ -15,7 +15,7 @@ import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
-import { siteGenerationOf, sitePalette } from '../src/core/sitePalette.ts';
+import { siteGenerationOf, sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -412,6 +412,7 @@ describe('one finished city plan', () => {
             chunk = generateChunk(
               {
                 seed: 73,
+                shape: terrainShapeOf(registry),
                 scale,
                 surface: site.surface,
                 blocks: { grass: solid, dirt: solid, rock: solid, sand: solid },

@@ -7,6 +7,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { doorPlan } from '../src/core/options.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import {
   compileTemplate,
   type Facing,
@@ -69,6 +70,7 @@ describe('owned hatch/ladder portal fixtures', () => {
     const solidId = registry.blockIds.get('fixture_solid')!;
     const terrain = {
       seed: 73,
+      shape: terrainShapeOf(registry),
       scale,
       blocks: { grass: solidId, dirt: solidId, rock: solidId, sand: solidId },
       surface: { height: () => floor, top: () => solidId },

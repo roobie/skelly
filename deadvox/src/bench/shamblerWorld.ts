@@ -4,6 +4,7 @@ import type { Registry } from '../core/content.ts';
 import { CHUNK, toChunk } from '../core/coords.ts';
 import { HAMLET_BLOCK_SIZE, Hamlet } from '../core/hamlet.ts';
 import { chunksFor, makeScale } from '../core/scale.ts';
+import { terrainShapeOf } from '../core/sitePalette.ts';
 import { World } from '../core/world.ts';
 import { generateColumn, worldGroundAt } from '../core/worldgen.ts';
 import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
@@ -33,11 +34,12 @@ export const createHeadlessShamblerWorld = (seed: number, registry: Registry): H
   const block = (id: string): number => registry.blockIds.get(id)!;
   const blocks = { grass: block('grass'), dirt: block('dirt'), rock: block('stone'), sand: block('sand') };
   const { surface } = site;
+  const shape = terrainShapeOf(registry);
   const stamp = (chunk: Parameters<Hamlet['stamp']>[0]) => site.stamp(chunk);
   const engineWorld: HeadlessShamblerWorld = {
     config: { scale },
     spawn: site.spawn,
-    groundAt: (xm, zm) => worldGroundAt({ seed, scale, surface, xm, zm }),
+    groundAt: (xm, zm) => worldGroundAt({ seed, shape, scale, surface, xm, zm }),
     isSolid: worldSolid(world, registry, entities),
     isOpaque: worldOpaque(world, registry, entities),
     world,
@@ -53,7 +55,7 @@ export const createHeadlessShamblerWorld = (seed: number, registry: Registry): H
   const centerZ = toChunk(Math.floor(site.spawn.pos[2] / scale.blockSize));
   for (let cz = centerZ - radiusChunks; cz <= centerZ + radiusChunks; cz++) {
     for (let cx = centerX - radiusChunks; cx <= centerX + radiusChunks; cx++) {
-      const column = generateColumn({ seed, blocks, scale, surface, stamp }, cx, cz, []);
+      const column = generateColumn({ seed, blocks, shape, scale, surface, stamp }, cx, cz, []);
       for (const chunk of column) {
         world.addChunk(chunk);
       }

@@ -9,11 +9,30 @@
         "roadShoulderMetres": 4,
         "spawnMarginMetres": 8
       },
+      "terrain": {
+        "minHeightMetres": 8,
+        "maxHeightMetres": 56,
+        "beachBelowMetres": 14,
+        "dirtDepthMetres": 2,
+        "featureSizeMetres": 96,
+        "octaves": 4
+      },
       "vegetation": {
         "woodlandEdgeWavelengthMetres": 20,
         "woodlandEdgeVariation": 0.3,
         "openDensity": 0.035,
-        "obstacleMarginMetres": 1
+        "obstacleMarginMetres": 1,
+        "treeMix": ["broadleaf", "broadleaf", "conifer", "young"],
+        "treeCellMetres": 8,
+        "hamletDensity": 0.5,
+        "forestHalfExtentMetres": 384,
+        "forestDensityField": {
+          "wavelengthMetres": 128,
+          "seedSalt": 137,
+          "floor": 0.2,
+          "gain": 1,
+          "ceiling": 0.75
+        }
       },
       "palette": {
         "terrain": { "grass": "grass", "dirt": "dirt", "rock": "rock", "sand": "sand" },

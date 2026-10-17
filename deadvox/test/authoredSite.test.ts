@@ -23,6 +23,7 @@ import { HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from '../src/core/hamlet.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
@@ -306,6 +307,7 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
     for (const chunk of generateColumn(
       {
         seed,
+        shape: terrainShapeOf(registry),
         scale,
         blocks: {
           grass: registry.blockIds.get('grass')!,

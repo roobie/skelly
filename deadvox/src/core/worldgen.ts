@@ -12,6 +12,16 @@ export interface TerrainBlocks {
   sand: number;
 }
 
+/** The natural ground's recipe, from site-generation content. All lengths are metres. */
+export interface TerrainShape {
+  readonly minHeightMetres: number;
+  readonly maxHeightMetres: number;
+  readonly beachBelowMetres: number;
+  readonly dirtDepthMetres: number;
+  readonly featureSizeMetres: number;
+  readonly octaves: number;
+}
+
 /**
  * Changes to the natural ground, such as flattened lots and roads. Both are pure
  * functions of the column, so any chunk can be generated on its own.
@@ -27,6 +37,7 @@ export interface Surface {
 export interface Terrain {
   seed: number;
   blocks: TerrainBlocks;
+  shape: TerrainShape;
   scale: Scale;
   surface?: Surface | undefined;
   /** Writes buildings into a chunk once its terrain is done. */
@@ -40,31 +51,31 @@ export interface ColumnSurface {
 }
 
 // Terrain is defined in metres, so every block size gives the same landscape.
-export const MIN_HEIGHT_M = 8;
-export const MAX_HEIGHT_M = 56;
-const BEACH_BELOW_M = 14;
-const DIRT_DEPTH_M = 2;
-const FEATURE_SIZE_M = 96;
 
 /** Ground height in metres at a point in metres. */
-export const terrainHeightMetres = (seed: number, xm: number, zm: number): number =>
-  MIN_HEIGHT_M + fbm2(seed, xm / FEATURE_SIZE_M, zm / FEATURE_SIZE_M, 4) * (MAX_HEIGHT_M - MIN_HEIGHT_M);
+export const terrainHeightMetres = (seed: number, shape: TerrainShape, xm: number, zm: number): number =>
+  shape.minHeightMetres +
+  fbm2(seed, xm / shape.featureSizeMetres, zm / shape.featureSizeMetres, shape.octaves) *
+    (shape.maxHeightMetres - shape.minHeightMetres);
 
 /** Y (in blocks) of the top solid block of the column at block (x, z). Sampled at the block's centre. */
-export const terrainHeight = (seed: number, scale: Scale, x: number, z: number): number => {
+// biome-ignore lint/complexity/useMaxParams: Numeric block coordinates avoid a per-sample tuple allocation on the generation hot path.
+export const terrainHeight = (seed: number, shape: TerrainShape, scale: Scale, x: number, z: number): number => {
   const s = scale.blockSize;
-  return Math.floor(terrainHeightMetres(seed, (x + 0.5) * s, (z + 0.5) * s) / s);
+  return Math.floor(terrainHeightMetres(seed, shape, (x + 0.5) * s, (z + 0.5) * s) / s);
 };
 
 /** Ground surface height in metres, matching the game engine for natural or site-shaped terrain. */
 export const worldGroundAt = ({
   seed,
+  shape,
   scale,
   surface,
   xm,
   zm,
 }: {
   seed: number;
+  shape: TerrainShape;
   scale: Scale;
   surface: Surface | undefined;
   xm: number;
@@ -72,27 +83,28 @@ export const worldGroundAt = ({
 }): number => {
   const s = scale.blockSize;
   if (!surface) {
-    return Math.floor(terrainHeightMetres(seed, xm, zm) / s) * s + s;
+    return Math.floor(terrainHeightMetres(seed, shape, xm, zm) / s) * s + s;
   }
   const x = Math.floor(xm / s);
   const z = Math.floor(zm / s);
-  return (surface.height(x, z, terrainHeight(seed, scale, x, z)) + 1) * s;
+  return (surface.height(x, z, terrainHeight(seed, shape, scale, x, z)) + 1) * s;
 };
 
 /** Top block heights for a chunk column, CHUNK×CHUNK, indexed x + CHUNK * z. */
-const columnHeights = (seed: number, scale: Scale, cx: number, cz: number): Int32Array => {
+// biome-ignore lint/complexity/useMaxParams: Numeric chunk coordinates avoid a per-column tuple allocation on the generation hot path.
+const columnHeights = (seed: number, shape: TerrainShape, scale: Scale, cx: number, cz: number): Int32Array => {
   const out = new Int32Array(CHUNK * CHUNK);
   for (let lz = 0; lz < CHUNK; lz++) {
     for (let lx = 0; lx < CHUNK; lx++) {
-      out[lx + CHUNK * lz] = terrainHeight(seed, scale, cx * CHUNK + lx, cz * CHUNK + lz);
+      out[lx + CHUNK * lz] = terrainHeight(seed, shape, scale, cx * CHUNK + lx, cz * CHUNK + lz);
     }
   }
   return out;
 };
 
 /** A column's heights with the surface's changes applied. */
-const columnSurface = ({ seed, scale, surface }: Terrain, cx: number, cz: number): ColumnSurface => {
-  const heights = columnHeights(seed, scale, cx, cz);
+const columnSurface = ({ seed, shape, scale, surface }: Terrain, cx: number, cz: number): ColumnSurface => {
+  const heights = columnHeights(seed, shape, scale, cx, cz);
   const tops = new Int32Array(CHUNK * CHUNK).fill(-1);
   if (surface) {
     for (let lz = 0; lz < CHUNK; lz++) {
@@ -108,22 +120,22 @@ const columnSurface = ({ seed, scale, surface }: Terrain, cx: number, cz: number
 };
 
 /** The block at height y in a column whose top block is at h (both in blocks), unless `top` replaces it. */
-const blockAt = ({ blocks, scale }: Terrain, y: number, h: number, top: number): number => {
+const blockAt = ({ blocks, shape, scale }: Terrain, y: number, h: number, top: number): number => {
   if (y === h) {
     if (top >= 0) {
       return top;
     }
-    return h * scale.blockSize < BEACH_BELOW_M ? blocks.sand : blocks.grass;
+    return h * scale.blockSize < shape.beachBelowMetres ? blocks.sand : blocks.grass;
   }
-  return y > h - DIRT_DEPTH_M / scale.blockSize ? blocks.dirt : blocks.rock;
+  return y > h - shape.dirtDepthMetres / scale.blockSize ? blocks.dirt : blocks.rock;
 };
 
 export const generateChunk = (terrain: Terrain, [cx, cy, cz]: Vec3, column = columnSurface(terrain, cx, cz)): Chunk => {
-  const { blocks, scale } = terrain;
+  const { blocks, shape, scale } = terrain;
   const { heights, tops } = column;
   const y0 = cy * CHUNK;
   // Entirely below the dirt layer of every column: all stone, no per-block writes.
-  if (y0 + CHUNK - 1 <= Math.min(...heights) - DIRT_DEPTH_M / scale.blockSize) {
+  if (y0 + CHUNK - 1 <= Math.min(...heights) - shape.dirtDepthMetres / scale.blockSize) {
     return new Chunk(cx, cy, cz, blocks.rock);
   }
   const chunk = new Chunk(cx, cy, cz);

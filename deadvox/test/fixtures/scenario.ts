@@ -106,6 +106,9 @@ export const fixtureScenarioSources = (
   const {
     compression: [compression],
   } = JSON.parse(readFileSync('src/content/base/compression.json', 'utf8'));
+  const {
+    siteGeneration: [baseSite],
+  } = JSON.parse(readFileSync('src/content/base/site-generation.json', 'utf8'));
   return [
     {
       source: 'scenario-fixture.json',
@@ -124,11 +127,14 @@ export const fixtureScenarioSources = (
               roadShoulderMetres: 0,
               spawnMarginMetres: 0,
             },
+            terrain: baseSite.terrain,
             vegetation: {
+              ...baseSite.vegetation,
               woodlandEdgeWavelengthMetres: 1,
               woodlandEdgeVariation: 0,
               openDensity: 0,
               obstacleMarginMetres: 0,
+              treeMix: ['broadleaf'],
             },
             palette: {
               terrain: { grass: 'fixture_solid', dirt: 'fixture_solid', rock: 'fixture_solid', sand: 'fixture_solid' },

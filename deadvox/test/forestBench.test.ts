@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { type BenchRecord, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
 import { benchRunFromUrl, benchSiteLabel, forestWorkload, nextUrl } from '../src/bench/run.ts';
-import { configFromUrl, siteFromUrl } from './fixtures/startupContent.ts';
+import { siteGenerationOf } from '../src/core/sitePalette.ts';
+import { configFromUrl, content, siteFromUrl } from './fixtures/startupContent.ts';
 
 it('parses forest density strictly, including zero/one, without silently switching the requested site', () => {
   for (const density of ['0', '0.25', '1']) {
@@ -58,19 +59,19 @@ describe('forest benchmark workload identity', () => {
       startedAt: 'first-look',
       quick: false,
       site: benchSiteLabel(run),
-      forest: forestWorkload(1, run.density),
+      forest: forestWorkload(content.registry, 1, run.density),
       runs: [],
     };
     const json = JSON.parse(JSON.stringify(record)) as BenchRecord;
+    const { vegetation } = siteGenerationOf(content.registry);
     expect(json.forest).toMatchObject({
       seed: 1,
       density: null,
-      densityField: { wavelengthMetres: 128, seedSalt: 137, floor: 0.2, gain: 1, ceiling: 0.75 },
-      extentMetres: 768,
-      cellMetres: 8,
+      densityField: vegetation.forestDensityField,
+      extentMetres: 2 * vegetation.forestHalfExtentMetres,
+      cellMetres: vegetation.treeCellMetres,
       foliage: 'passable-opaque',
-      shapeMix: ['broadleaf', 'broadleaf', 'conifer', 'young'],
-      routes: { heading: [-0.9, 0.44], lookSeconds: 12, jogSeconds: 15, sprintSeconds: 15 },
+      shapeMix: vegetation.treeMix,
     });
     const route = json.forest!.routes;
     const distance = route.jogSeconds * route.jogMetresPerSecond + route.sprintSeconds * route.sprintMetresPerSecond;
