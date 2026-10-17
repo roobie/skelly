@@ -1058,8 +1058,7 @@ describe('content', () => {
   });
 
   it('reports a missing day cycle as a load error', () => {
-    const { dayCycle: _dayCycle, ...withoutDayCycle } = baseRegistry;
-    expect(requiredContentIssues(withoutDayCycle)).toContainEqual({
+    expect(requiredContentIssues({ ...baseRegistry, dayCycle: undefined })).toContainEqual({
       source: 'core content',
       path: 'dayCycle',
       message: 'missing required day cycle',
