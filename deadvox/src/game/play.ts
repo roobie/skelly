@@ -32,6 +32,7 @@ import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
+import { reachTuning } from '../core/reach.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { pileScatterPlacements } from '../core/scatterPile.ts';
 import { discoveryForPlan } from '../core/scenarioDiscovery.ts';
@@ -264,8 +265,6 @@ const guardDebugErrorFrame = (
     return frame(now);
   };
 };
-/** Metres: how far away you can open a door or search a container you're looking at. */
-export const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
@@ -2334,7 +2333,7 @@ export const startPlay = (
       entities,
       origin: eye(),
       direction: lookDir(),
-      maxDistance: USE_REACH / s,
+      maxDistance: reachTuning(registry).useReachMetres / s,
       blockSize: s,
       worldSeed: config.seed,
       isSolid: engine.isOpaque,
@@ -3422,7 +3421,7 @@ export const startPlay = (
     debugTools.drawInteractionRay({
       origin: eye(),
       direction: lookDir(),
-      reachMetres: USE_REACH,
+      reachMetres: reachTuning(registry).useReachMetres,
       frame: nowMs,
       ...(interactionDistanceBlocks === undefined ? {} : { interactionDistanceBlocks }),
     });

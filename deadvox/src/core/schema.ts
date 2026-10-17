@@ -220,6 +220,12 @@ const InventoryTuningSchema = strictObject({
   id: Id,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
+  /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
+  reachMetres: Positive,
+  /** Metres above the feet at which reach is measured. */
+  chestHeightMetres: Positive,
+  /** Metres within which a looked-at furniture piece can be used. */
+  useReachMetres: Positive,
 });
 
 const UiTuningSchema = strictObject({
@@ -2437,6 +2443,7 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;
 export type TreatmentDef = InferOutput<typeof TreatmentSchema>;
 export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'];
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;

@@ -40,7 +40,7 @@ const content = [
   {
     source: 'inventory-scroll-fixture',
     data: {
-      inventory: [{ id: 'player', containerMaxWidthCells: 5 }],
+      inventory: [{ id: 'player', containerMaxWidthCells: 5, reachMetres: 2, chestHeightMetres: 1, useReachMetres: 2 }],
       furniture: [
         {
           id: 'scroll_rack',

@@ -3,12 +3,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, compileTemplate, type Facing } from '../src/core/templates.ts';
-import { USE_REACH } from '../src/game/play.ts';
 import { PLAYER } from '../src/game/player.ts';
 
 const sources = readdirSync('src/content/base')
@@ -185,7 +185,7 @@ describe('authored medical site', () => {
     const withinUseReach = frontReachable.some(([px, , pz]) => {
       const dx = Math.max(x - px, 0, px - (x + pieceWidth));
       const dz = Math.max(z - pz, 0, pz - (z + pieceDepth));
-      return Math.hypot(dx, dz) * BLOCK_SIZE <= USE_REACH;
+      return Math.hypot(dx, dz) * BLOCK_SIZE <= reachTuning(result.registry).useReachMetres;
     });
     expect(withinUseReach).toBe(true);
   });

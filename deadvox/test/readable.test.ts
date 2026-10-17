@@ -15,12 +15,14 @@ import { createSession, IDLE } from '../src/game/session.ts';
 import { Survival } from '../src/game/survival.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { playerInventorySource } from './fixtures/playerInventory.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const readable = { title: 'Placeholder', text: 'PLAIN\tPLACEHOLDER\r\n\nSecond paragraph.' };
 const admit = (value: Readable) =>
   buildRegistry([
+    playerInventorySource(),
     {
       source: 'fixture.json',
       data: {
