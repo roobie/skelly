@@ -417,7 +417,7 @@ export class Hamlet implements Site {
     const s = this.scale.blockSize;
     let best: [number, number] = [0, 0];
     let bestScore = Number.POSITIVE_INFINITY;
-    const placement = siteGenerationOf(this.registry).placement;
+    const { placement } = siteGenerationOf(this.registry);
     const steps = placement.reachMetres / placement.gridStepMetres;
     for (let j = -steps; j <= steps; j++) {
       for (let i = -steps; i <= steps; i++) {

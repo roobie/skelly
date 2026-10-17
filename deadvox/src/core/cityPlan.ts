@@ -7,8 +7,8 @@ import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } 
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
 import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
 import type { MapPoolDef, ScenarioDef } from './schema.ts';
-import { hamletTemplateIds, siteGenerationOf } from './sitePalette.ts';
 import type { Rect } from './site.ts';
+import { hamletTemplateIds, siteGenerationOf } from './sitePalette.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { BlockBox } from './structure.ts';
 import {
