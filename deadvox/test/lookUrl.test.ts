@@ -1,10 +1,9 @@
 import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS, DEFAULT_TORCH, SHADOW_DISTANCES } from '../src/core/mood.ts';
-import { DEFAULT_FOGGINESS } from '../src/core/weather.ts';
 import { LookControls } from '../src/debug/look.ts';
 import {
-  DEFAULT_LOOK_URL_STATE,
+  defaultLookUrlState,
   LOOK_PARAMS,
   type LookUrlState,
   lookUrl,
@@ -13,11 +12,15 @@ import {
 } from '../src/debug/lookUrl.ts';
 import { setAutoToneWeight } from '../src/render/autoTone.ts';
 import { hotCheckUniform } from '../src/render/hotCheck.ts';
+import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 
-const parse = (query: string) => parseLookParams(new URLSearchParams(query));
-const write = (query: string, state: LookUrlState) => writeLookParams(new URLSearchParams(query), state).toString();
+const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaultFogginess;
+const DEFAULT_LOOK_URL_STATE = defaultLookUrlState(DEFAULT_FOGGINESS);
+const parse = (query: string) => parseLookParams(new URLSearchParams(query), DEFAULT_FOGGINESS);
+const write = (query: string, state: LookUrlState) =>
+  writeLookParams(new URLSearchParams(query), state, { defaultFogginess: DEFAULT_FOGGINESS }).toString();
 
 describe('look URL parameters', () => {
   it('reads defaults from an empty query', () => {
@@ -255,9 +258,9 @@ describe('look URL parameters', () => {
     expect(write('debug=1&tone=none&seed=5&exposure=2&time=20%3A30&site=testHouse', state)).toBe(
       'debug=1&seed=5&time=20%3A30&site=testHouse&tone=agx',
     );
-    expect(lookUrl('http://localhost:5173/play?debug=1&time=20:30&srgb=0#x', state)).toBe(
-      'http://localhost:5173/play?debug=1&time=20:30&tone=agx#x',
-    );
+    expect(
+      lookUrl('http://localhost:5173/play?debug=1&time=20:30&srgb=0#x', state, { defaultFogginess: DEFAULT_FOGGINESS }),
+    ).toBe('http://localhost:5173/play?debug=1&time=20:30&tone=agx#x');
   });
 });
 

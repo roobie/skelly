@@ -1341,7 +1341,8 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
   twilight gives long daylight without modeling seasonal change. The day cycle is
   required content with no code default, so a pack without one fails to load rather
   than silently playing under a hidden sun. See
-  `src/content/base/dayCycle.json`, `dayCycle`, for its authored settings. Sky,
+  `src/content/base/dayCycle.json`, `dayCycle`, for its authored settings, sky
+  looks and weather fog included (`docs/content.md`, "Day cycle"). Sky,
   sight blending, horde roaming and named spawn windows follow solar boundaries
   rather than fixed clock hours. Hordes roam from sunset through dawn
   until sunrise, and spawn words resolve from those same boundaries. Terrain height

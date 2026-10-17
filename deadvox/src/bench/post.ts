@@ -9,7 +9,7 @@
 import { requireDayCycle } from '../core/content.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
-import { DEFAULT_FOGGINESS, skyInWeather } from '../core/weather.ts';
+import { skyInWeather } from '../core/weather.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { applyLook } from '../render/look.ts';
 
@@ -51,7 +51,8 @@ export const benchDraw = (
   applyLook(renderer, engine.meshes, DEFAULT_LOOK);
   mood.restore(DEFAULT_MOOD);
   shadows.restore(DEFAULT_SHADOWS);
-  const sky = skyInWeather(skyAt(hour, requireDayCycle(engine.registry)), { fogginess: DEFAULT_FOGGINESS });
+  const dayCycle = requireDayCycle(engine.registry);
+  const sky = skyInWeather(skyAt(hour, dayCycle), { fogginess: dayCycle.weather.defaultFogginess }, dayCycle.weather);
   mood.setSky(sky);
   const sunStrength = sunShadowStrength(sky.lightIntensity);
   return () => {

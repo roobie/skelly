@@ -1,6 +1,6 @@
 // Debug look settings as URL query parameters, so a look survives a reload and can be shared.
 // Only the debug tools read or write these (`?debug=1`); every other parameter is left alone.
-// Absent parameters mean the game's default look (DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_FOGGINESS), and
+// Absent parameters mean the game's default look (DEFAULT_LOOK, DEFAULT_MOOD, the day cycle's default fogginess), and
 // only deviations from it are written.
 //
 //   tone=none|agx|aces|neutral|auto  tone mapping (J); omitted for auto (Neutral by day, ACES by night, by the sky)
@@ -45,7 +45,7 @@ import {
   type ShadowState,
 } from '../core/mood.ts';
 import type { WeatheringDef } from '../core/schema.ts';
-import { clampFogginess, DEFAULT_FOGGINESS } from '../core/weather.ts';
+import { clampFogginess } from '../core/weather.ts';
 import { WEATHERING_URL_PARAMS, type WeatheringUrlState, writeWeatheringParams } from '../core/weatheringUrl.ts';
 import { TONE_MODES } from '../render/look.ts';
 
@@ -62,16 +62,24 @@ export interface LookUrlState extends LookState, MoodState {
   hotCheck: boolean;
 }
 
-export const DEFAULT_LOOK_URL_STATE: LookUrlState = {
+/** The state no parameter departs from; the default fogginess is content (the day cycle's weather), so the caller names it. */
+export const defaultLookUrlState = (defaultFogginess: number): LookUrlState => ({
   ...DEFAULT_LOOK,
   ...DEFAULT_MOOD,
-  fogginess: DEFAULT_FOGGINESS,
+  fogginess: defaultFogginess,
   torch: DEFAULT_TORCH,
   shadows: DEFAULT_SHADOWS,
   freeze: false,
   crackCheck: false,
   hotCheck: false,
-};
+});
+
+/** What the written parameters are measured against: the content's default fogginess, and the weathering state to write. */
+export interface LookUrlDefaults {
+  defaultFogginess: number;
+  weathering?: WeatheringUrlState | undefined;
+  profiles?: ReadonlyMap<string, WeatheringDef>;
+}
 
 export const LOOK_PARAMS = [
   'tone',
@@ -104,7 +112,7 @@ const numberParam = (params: URLSearchParams, name: string): number => {
   return text === null || text.trim() === '' ? Number.NaN : Number(text);
 };
 
-export const parseLookParams = (params: URLSearchParams): LookUrlState => {
+export const parseLookParams = (params: URLSearchParams, defaultFogginess: number): LookUrlState => {
   const tone = params.get('tone') ?? '';
   const exposure = numberParam(params, 'exposure');
   const grade = numberParam(params, 'grade');
@@ -120,7 +128,7 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
     grade: Number.isFinite(grade) ? clampGrade(grade) : DEFAULT_GRADE,
     // The tone mapper's own value is not an override: it keeps following the tone mapper.
     bloomClip: clip === fixedBloomClip(toneKey) ? null : clip,
-    fogginess: Number.isFinite(fogginess) ? clampFogginess(fogginess) : DEFAULT_FOGGINESS,
+    fogginess: Number.isFinite(fogginess) ? clampFogginess(fogginess) : defaultFogginess,
     torch: clampTorch(numberParam(params, 'torch')),
     tone: toneKey,
     exposure: Number.isFinite(exposure) ? clampExposure(exposure) : DEFAULT_LOOK.exposure,
@@ -161,8 +169,7 @@ const writeMoodParams = (next: URLSearchParams, state: LookUrlState): void => {
 export const writeLookParams = (
   params: URLSearchParams,
   state: LookUrlState,
-  weathering?: WeatheringUrlState,
-  profiles: ReadonlyMap<string, WeatheringDef> = new Map(),
+  { defaultFogginess, weathering, profiles = new Map() }: LookUrlDefaults,
 ): URLSearchParams => {
   const next = new URLSearchParams(params);
   for (const name of LOOK_PARAMS) {
@@ -187,7 +194,7 @@ export const writeLookParams = (
     next.set('freeze', '1');
   }
   writeMoodParams(next, state);
-  if (state.fogginess !== DEFAULT_FOGGINESS) {
+  if (state.fogginess !== defaultFogginess) {
     next.set('fog', state.fogginess.toFixed(1));
   }
   if (state.torch !== DEFAULT_TORCH) {
@@ -217,14 +224,9 @@ const writeCheckParams = (next: URLSearchParams, { crackCheck, hotCheck }: LookU
 };
 
 /** `href` with the look parameters set from `state`; other parameters, path and hash are kept. */
-export const lookUrl = (
-  href: string,
-  state: LookUrlState,
-  weathering?: WeatheringUrlState,
-  profiles: ReadonlyMap<string, WeatheringDef> = new Map(),
-): string => {
+export const lookUrl = (href: string, state: LookUrlState, defaults: LookUrlDefaults): string => {
   const url = new URL(href);
   // ':' is legal in a query, and a kept `time=20:30` reads better than `time=20%3A30`.
-  url.search = writeLookParams(url.searchParams, state, weathering, profiles).toString().replace(/%3A/g, ':');
+  url.search = writeLookParams(url.searchParams, state, defaults).toString().replace(/%3A/g, ':');
   return url.toString();
 };
