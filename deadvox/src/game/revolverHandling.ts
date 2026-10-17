@@ -277,6 +277,21 @@ export class RevolverHandling {
     }
   }
 
+  cancelUnheld(): void {
+    // Only these owner-held continuations can be changed by cancellation; idle world items cannot.
+    const candidates = new Set([...this.releasing, ...this.dumping, ...this.pulls.keys()]);
+    for (const job of this.queue.jobs) {
+      if (job.kind === 'action' && job.jobType.startsWith('revolver.') && typeof job.params.uid === 'number') {
+        candidates.add(job.params.uid);
+      }
+    }
+    for (const uid of candidates) {
+      if (!this.held(uid) && this.inventory.itemByUid(uid)?.firearm?.cylinder) {
+        this.cancel(uid);
+      }
+    }
+  }
+
   cancel(uid: number): void {
     const job = this.job(uid);
     if (job) {
