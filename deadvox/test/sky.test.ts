@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { type DayCycle, type DayPhase, dayPhaseAt } from '../src/core/dayPhase.ts';
+import type { DayCycleDef } from '../src/core/schema.ts';
 import { skyAt as skyAtCycle, sunDirection as sunDirectionAtCycle } from '../src/core/sky.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
-const skyAt = (hour: number, cycle: DayCycle = BASE_DAY_CYCLE) => skyAtCycle(hour, cycle);
+const skyAt = (hour: number, cycle: DayCycleDef = BASE_DAY_CYCLE) => skyAtCycle(hour, cycle);
 const sunDirection = (hour: number) => sunDirectionAtCycle(hour, BASE_DAY_CYCLE);
 const hourAt = (seconds: number): number => seconds / 3600;
 const brightness = (hour: number) => {
@@ -13,7 +14,7 @@ const brightness = (hour: number) => {
 };
 
 const day = dayPhaseAt(BASE_DAY_CYCLE, phaseMidpoint('day'));
-const otherCycle: DayCycle = {
+const otherCycle: DayCycleDef = {
   ...BASE_DAY_CYCLE,
   latitudeDegrees:
     BASE_DAY_CYCLE.latitudeDegrees > 80 ? BASE_DAY_CYCLE.latitudeDegrees - 7 : BASE_DAY_CYCLE.latitudeDegrees + 7,

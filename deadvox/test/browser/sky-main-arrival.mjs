@@ -74,6 +74,30 @@ function withBranchDayCycle(relative, source) {
   return rewrite.edits.reduce((text, [from, to]) => text.replaceAll(from, to), source);
 }
 
+// Remove once d392 is merged and main's playView.ts no longer imports DEFAULT_FOGGINESS; the rewrite only
+// applies while that marker is in main's source. The branch moved the weather tunables into the day cycle.
+const WEATHER_TUNING_REWRITES = {
+  'render/playView.ts': {
+    marker: 'DEFAULT_FOGGINESS',
+    edits: [
+      ['import { DEFAULT_FOGGINESS, skyInWeather, type Weather }', 'import { skyInWeather, type Weather }'],
+      ['{ fogginess: DEFAULT_FOGGINESS }', '{ fogginess: dayCycle.weather.defaultFogginess }'],
+      [
+        'skyInWeather(skyAt(hour, dayCycle), weather)',
+        'skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather)',
+      ],
+    ],
+  },
+};
+
+function withBranchWeatherTuning(relative, source) {
+  const rewrite = WEATHER_TUNING_REWRITES[relative];
+  if (!(rewrite && source.includes(rewrite.marker))) {
+    return source;
+  }
+  return rewrite.edits.reduce((text, [from, to]) => text.replaceAll(from, to), source);
+}
+
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
@@ -159,6 +183,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
               .replace('weapon: FISTS_MELEE,', 'weapon: unarmedMeleeWeapon(registry.meleeClasses),');
           }
           source = withBranchDayCycle(relative, source);
+          source = withBranchWeatherTuning(relative, source);
           if (relative === 'game/streamer.ts') {
             source = source.replace(
               '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
