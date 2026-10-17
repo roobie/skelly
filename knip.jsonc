@@ -27,7 +27,12 @@
         "/test/fixtures/descentLid.ts",
         "/test/fixtures/scenarioStart.ts",
         "/test/browser/sky-selection.ts",
-        "/test/browser/interaction-marker-lighting.ts"
+        "/test/browser/interaction-marker-lighting.ts",
+        "/src/spikes/expressions/contract.ts",
+        "/src/spikes/expressions/starlark.ts",
+        "/src/spikes/expressions/luau.ts",
+        "/src/spikes/expressions/benchmark.ts",
+        "/test/expressionWasmCases.ts"
       ],
       "entry": [
         "index.html!",
@@ -40,6 +45,8 @@
         "src/debug/vehicleSpike.ts!",
         "src/soundsPage.ts!",
         "tools/bench-expressions.mjs",
+        "tools/probe-wasm-expressions.mjs",
+        "src/spikes/expressions/benchmark.ts",
         "tools/bench-rigid-body.mjs",
         "tools/bench-zombie-swings.mjs",
         "tools/ui-browser-contract.mjs",

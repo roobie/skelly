@@ -38,7 +38,7 @@ function checkProfile(node: ASTNode): void {
   }
 }
 
-export const cel: Candidate = {
+export const cel = {
   name: 'cel-js-8.0.0-profile-1',
   load(source, schema, result) {
     try {
@@ -72,4 +72,4 @@ export const cel: Candidate = {
       });
     }
   },
-};
+} satisfies Candidate;

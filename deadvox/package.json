@@ -50,7 +50,9 @@
     "es-module-lexer": "^3.0.2",
     "fake-indexeddb": "6.2.4",
     "happy-dom": "20.14.5",
+    "luau-web": "1.4.0",
     "playwright": "^1.63.0",
+    "starlark-wasm": "0.0.4",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"

@@ -3,7 +3,7 @@ import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import bodyContent from '../src/content/base/body.json' with { type: 'json' };
 import { Body } from '../src/core/body.ts';
-import { needsAllowRecovery, type RecoveryState, SPAWN_NEEDS } from '../src/core/needs.ts';
+import { needsAllowRecovery, type RecoveryState } from '../src/core/needs.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
 import { cel } from '../src/spikes/expressions/cel.ts';
 import {
@@ -41,7 +41,7 @@ for (const candidate of [small, cel]) {
       for (const state of states) {
         const ceiling = body.healthRecoveryFatigueCeiling(state);
         for (const row of rows) {
-          const expected = needsAllowRecovery({ ...SPAWN_NEEDS, ...row }, body, state);
+          const expected = needsAllowRecovery({ ...body.spawnNeeds, ...row }, body, state);
           results.add(expected);
           expect(
             program.evaluate({
@@ -124,23 +124,25 @@ for (const candidate of [small, cel]) {
       expect(() => candidate.load('powered.constructor', panelSchema, 'boolean')).toThrow();
     });
 
-    it('reports undeclared fields and operand type errors as named load issues before evaluation', () => {
-      for (const [expression, detail] of [
-        ['calories >= missingFloor', 'missingFloor'],
-        ['calories && hasCeiling', 'bool'],
-      ]) {
-        const loaded = loadContentRule(
-          candidate,
-          { source: 'fixture.json', path: '.sleepHealsPredicate', expression: expression! },
-          sleepSchema,
-          'boolean',
-        );
-        expect(loaded.program).toBeUndefined();
-        expect(loaded.issues).toEqual([
-          { source: 'fixture.json', path: '.sleepHealsPredicate', message: expect.stringContaining(detail!) },
-        ]);
-      }
-      const loaded = loadContentRule(
+    it('reports undeclared fields and operand type errors as named load issues before evaluation', async () => {
+      await Promise.all(
+        [
+          ['calories >= missingFloor', 'missingFloor'],
+          ['calories && hasCeiling', 'bool'],
+        ].map(async ([expression, detail]) => {
+          const loaded = await loadContentRule(
+            candidate,
+            { source: 'fixture.json', path: '.sleepHealsPredicate', expression: expression! },
+            sleepSchema,
+            'boolean',
+          );
+          expect(loaded.program).toBeUndefined();
+          expect(loaded.issues).toEqual([
+            { source: 'fixture.json', path: '.sleepHealsPredicate', message: expect.stringContaining(detail!) },
+          ]);
+        }),
+      );
+      const loaded = await loadContentRule(
         candidate,
         { source: 'fixture.json', path: '.sleepHealsPredicate', expression: rules.sleepHealsPredicate },
         sleepSchema,

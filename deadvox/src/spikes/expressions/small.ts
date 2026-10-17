@@ -224,7 +224,7 @@ function print(node: Node): string {
 function unreachable(node: never): never {
   return issue(`invalid AST: ${String(node)}`);
 }
-export const small: Candidate = {
+export const small = {
   name: 'small-profile-1',
   load(source, schema, result) {
     try {
@@ -246,4 +246,4 @@ export const small: Candidate = {
       });
     }
   },
-};
+} satisfies Candidate;

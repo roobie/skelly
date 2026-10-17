@@ -6,7 +6,8 @@ export type Schema = Readonly<Record<string, ValueType>>;
 export type Inputs = Readonly<Record<string, Scalar>>;
 export interface Program {
   readonly canonical: string;
-  evaluate: (inputs: Inputs) => Scalar;
+  evaluate: (inputs: Inputs) => Scalar | Promise<Scalar>;
+  dispose?: () => void;
 }
 export function serializeIdentity(candidate: Candidate, program: Program, schema: Schema, result: ValueType): string {
   return JSON.stringify({
@@ -24,20 +25,20 @@ export function serializeIdentity(candidate: Candidate, program: Program, schema
 
 export interface Candidate {
   readonly name: string;
-  load: (source: string, schema: Schema, result: ValueType) => Program;
+  load: (source: string, schema: Schema, result: ValueType) => Program | Promise<Program>;
 }
 export class ExpressionIssue extends Error {
   override readonly name = 'ExpressionIssue';
 }
 
-export function loadContentRule(
+export async function loadContentRule(
   candidate: Candidate,
   location: { source: string; path: string; expression: string },
   schema: Schema,
   result: ValueType,
-): { program: Program | undefined; issues: ContentIssue[] } {
+): Promise<{ program: Program | undefined; issues: ContentIssue[] }> {
   try {
-    return { program: candidate.load(location.expression, schema, result), issues: [] };
+    return { program: await candidate.load(location.expression, schema, result), issues: [] };
   } catch (error) {
     if (!(error instanceof ExpressionIssue)) {
       throw error;
