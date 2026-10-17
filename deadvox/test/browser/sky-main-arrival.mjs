@@ -30,44 +30,62 @@ export function mainOverlayPath(root, id) {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
-const REQUIRE_DAY_CYCLE_IMPORT = "import { requireDayCycle } from '../core/content.ts';\n";
-
-// Remove once d389 is merged and main's sources no longer use DAY_SKY, dayCycleFor or DEFAULT_DAY_CYCLE;
-// each rewrite only applies while its marker is in main's source. The branch removed those code defaults,
-// so main's copies take the day cycle from the registry the way the branch does.
-const DAY_CYCLE_REWRITES = {
-  'game/engine.ts': {
-    marker: 'DAY_SKY',
-    edits: [
-      [
-        "import { DAY_SKY } from '../core/sky.ts';",
-        `${REQUIRE_DAY_CYCLE_IMPORT}import { skyAt } from '../core/sky.ts';`,
-      ],
-      ['applySky(sky, DAY_SKY);', 'applySky(sky, skyAt(12, requireDayCycle(config.content.registry)));'],
-    ],
-  },
-  'render/playView.ts': {
-    marker: 'dayCycleFor',
-    edits: [
-      ["import { dayCycleFor } from '../core/dayPhase.ts';\n", REQUIRE_DAY_CYCLE_IMPORT],
-      ['dayCycleFor(registry.dayCycle)', 'requireDayCycle(registry)'],
-    ],
-  },
+// Remove once d391 is merged and main's sources no longer use the terrain and forest constants or the shapeless
+// terrain calls; each rewrite only applies while its marker is in main's source. The branch moved those tunables
+// into content, so main's copies take the terrain shape and forest settings from the registry the way the branch does.
+const TERRAIN_SHAPE_REWRITES = {
   'bench/run.ts': {
-    marker: 'DEFAULT_DAY_CYCLE',
+    marker: 'FOREST_DENSITY_FIELD',
     edits: [
       [
-        "import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';",
-        `${REQUIRE_DAY_CYCLE_IMPORT}import { dayPhaseAt } from '../core/dayPhase.ts';`,
+        "import { FOREST_DENSITY_FIELD, FOREST_HALF_EXTENT_METRES, TREE_CELL_METRES, TREE_MIX } from '../core/vegetation.ts';",
+        "import { siteGenerationOf } from '../core/sitePalette.ts';",
       ],
-      ['skyAt(hour)', 'skyAt(hour, requireDayCycle(engine.registry))'],
-      ['dayPhaseAt(DEFAULT_DAY_CYCLE, startTime)', 'dayPhaseAt(requireDayCycle(engine.registry), startTime)'],
+      [
+        'export const forestWorkload = (seed: number, density: number | null) => ({',
+        'export const forestWorkload = (registry: Parameters<typeof siteGenerationOf>[0], seed: number, density: number | null) => ({',
+      ],
+      [
+        'density === null ? FOREST_DENSITY_FIELD : null',
+        'density === null ? siteGenerationOf(registry).vegetation.forestDensityField : null',
+      ],
+      ['2 * FOREST_HALF_EXTENT_METRES', '2 * siteGenerationOf(registry).vegetation.forestHalfExtentMetres'],
+      ['cellMetres: TREE_CELL_METRES', 'cellMetres: siteGenerationOf(registry).vegetation.treeCellMetres'],
+      ['shapeMix: TREE_MIX', 'shapeMix: siteGenerationOf(registry).vegetation.treeMix'],
+      ['forestWorkload(config.seed, run.density)', 'forestWorkload(engine.registry, config.seed, run.density)'],
+    ],
+  },
+  'game/worldSetup.ts': {
+    marker: 'terrainHeightMetres(seed, HOUSE_OFFSET',
+    edits: [
+      [
+        "import { sitePalette } from '../core/sitePalette.ts';",
+        "import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';",
+      ],
+      [
+        'terrainHeightMetres(seed, HOUSE_OFFSET[0] + LOT_CENTRE[0], HOUSE_OFFSET[1] + LOT_CENTRE[1])',
+        'terrainHeightMetres(seed, terrainShapeOf(registry), HOUSE_OFFSET[0] + LOT_CENTRE[0], HOUSE_OFFSET[1] + LOT_CENTRE[1])',
+      ],
+      ['worldGroundAt({ seed, scale, surface', 'worldGroundAt({ seed, shape: terrainShapeOf(registry), scale, surface'],
+      [
+        '    terrain: sitePalette(registry).terrain,',
+        '    terrain: sitePalette(registry).terrain,\n    shape: terrainShapeOf(registry),',
+      ],
+    ],
+  },
+  'game/streamer.ts': {
+    marker: 'blocks: terrain, scale',
+    edits: [
+      [
+        '{ seed, blocks: terrain, scale, surface, stamp }',
+        '{ seed, blocks: terrain, shape: this.opts.shape, scale, surface, stamp }',
+      ],
     ],
   },
 };
 
-function withBranchDayCycle(relative, source) {
-  const rewrite = DAY_CYCLE_REWRITES[relative];
+function withBranchTerrainShape(relative, source) {
+  const rewrite = TERRAIN_SHAPE_REWRITES[relative];
   if (!(rewrite && source.includes(rewrite.marker))) {
     return source;
   }
@@ -158,7 +176,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
               )
               .replace('weapon: FISTS_MELEE,', 'weapon: unarmedMeleeWeapon(registry.meleeClasses),');
           }
-          source = withBranchDayCycle(relative, source);
+          source = withBranchTerrainShape(relative, source);
           if (relative === 'game/streamer.ts') {
             source = source.replace(
               '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
