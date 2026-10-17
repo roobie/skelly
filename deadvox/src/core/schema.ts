@@ -1626,6 +1626,21 @@ const StartDescentSchema = variant('kind', [
   }),
 ]);
 
+/** Block geometry of a street grid, in blocks; shared so a scenario city and the stress city keep the same limits. */
+const CityBlockGeometry = {
+  street: pipe(Count, minValue(4), maxValue(64)),
+  blockX: pipe(Count, minValue(8), maxValue(256)),
+  blockZ: pipe(Count, minValue(8), maxValue(256)),
+  pad: pipe(Count, minValue(2), maxValue(32)),
+  gap: pipe(Count, minValue(1), maxValue(32)),
+  blend: pipe(Count, maxValue(64)),
+  rows: pipe(
+    Count,
+    minValue(2),
+    maxValue(8),
+    check((value) => value % 2 === 0, 'needs paired rows'),
+  ),
+};
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -1686,18 +1701,7 @@ const ScenarioSchema = strictObject({
   city: strictObject({
     blocksX: pipe(Count, minValue(1), maxValue(4)),
     blocksZ: pipe(Count, minValue(1), maxValue(4)),
-    street: pipe(Count, minValue(4), maxValue(64)),
-    blockX: pipe(Count, minValue(8), maxValue(256)),
-    blockZ: pipe(Count, minValue(8), maxValue(256)),
-    pad: pipe(Count, minValue(2), maxValue(32)),
-    gap: pipe(Count, minValue(1), maxValue(32)),
-    blend: pipe(Count, maxValue(64)),
-    rows: pipe(
-      Count,
-      minValue(2),
-      maxValue(8),
-      check((value) => value % 2 === 0, 'needs paired rows'),
-    ),
+    ...CityBlockGeometry,
     perimeter: optional(
       strictObject({
         block: Id,
@@ -2142,18 +2146,8 @@ const SiteGenerationSchema = strictObject({
   ),
   // The street grid the stress-test city builds: it has no scenario, so its block geometry lives here.
   stressCity: strictObject({
-    street: pipe(Count, minValue(4), maxValue(64)),
-    blockX: pipe(Count, minValue(8), maxValue(256)),
-    blockZ: pipe(Count, minValue(8), maxValue(256)),
-    pad: pipe(Count, minValue(2), maxValue(32)),
-    gap: pipe(Count, minValue(1), maxValue(32)),
-    blend: pipe(Count, maxValue(64)),
-    rows: pipe(
-      Count,
-      minValue(2),
-      maxValue(8),
-      check((value) => value % 2 === 0, 'needs paired rows'),
-    ),
+    ...CityBlockGeometry,
+    // Metres from the world origin the city must cover in each direction; the reader converts to blocks.
     reachMetres: PositiveMetres,
   }),
 });

@@ -65,10 +65,11 @@ export interface CityPlan {
 
 export const benchmarkCityGrid = (registry: Registry): CityGrid => {
   const { reachMetres, ...geometry } = siteGenerationOf(registry).stressCity;
+  const reach = reachMetres / BLOCK_SIZE;
   return {
     ...geometry,
-    blocksX: Math.ceil(reachMetres / (geometry.street + geometry.blockX)),
-    blocksZ: Math.ceil(reachMetres / (geometry.street + geometry.blockZ)),
+    blocksX: Math.ceil(reach / (geometry.street + geometry.blockX)),
+    blocksZ: Math.ceil(reach / (geometry.street + geometry.blockZ)),
     templates: hamletTemplateIds(registry).map((id) => ({ id, weight: 1 })),
   };
 };

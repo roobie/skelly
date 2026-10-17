@@ -16,7 +16,7 @@ describe('the stress-test city', () => {
     expect(city.placements.length).toBeGreaterThan(0);
     const [x, , z] = city.spawn.pos.map((m) => m / scale.blockSize);
     expect(city.surface.top(Math.floor(x!), Math.floor(z!))).toBe(sitePalette(registry).paving);
-    expect(city.bounds.x1 - city.bounds.x0).toBeGreaterThanOrEqual(
+    expect((city.bounds.x1 - city.bounds.x0) * scale.blockSize).toBeGreaterThanOrEqual(
       2 * siteGenerationOf(registry).stressCity.reachMetres,
     );
     expect(city.plan.service).toBeUndefined();
