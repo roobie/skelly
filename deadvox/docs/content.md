@@ -97,8 +97,8 @@ playable-pack admission rather than inventing missing policy in a renderer. See
 
 ## Inventory action tunables and labels
 
-Search duration, item-throw flight time and arc height are tuning of the player's
-inventory row, and the label of an item action is player-facing text in the core ui row.
+Inventory action timing and throw shape are tuning of the player's inventory row, and
+the label of an item action is player-facing text in the core ui row.
 Keeping them in content lets a mod retune or reword them without a code change. The schema
 requires every field, so a pack that omits one fails validation instead of silently
 inheriting a code default. Readers take the values from the registry. See

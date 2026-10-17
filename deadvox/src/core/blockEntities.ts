@@ -57,7 +57,6 @@ export interface EntitySpec {
   facing: Facing;
 }
 
-/** Search time in seconds: 1 s for a small container up to 3 s for a wardrobe (`DESIGN.md`, "Handling time"). */
 const DOOR_PANEL_THICKNESS = 0.06;
 const DOOR_FACE_CLEARANCE = 0.001;
 const DOOR_OPEN_TURN = { n: -Math.PI / 2, s: Math.PI / 2, e: -Math.PI / 2, w: Math.PI / 2 } as const;
