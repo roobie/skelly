@@ -1,11 +1,9 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { worldSolid } from '../src/core/collision.ts';
-import { blockId, buildRegistry } from '../src/core/content.ts';
+import { blockId } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -29,17 +27,9 @@ import {
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const base = 'src/content/base';
-const { registry, issues } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
-);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 const SHELL_LOAD_SECONDS = registry.items.get('pump_shotgun')!.firearm!.roundLoadSimSeconds!;
 const shellType = 'shell_12_gauge_00_buck';
 const hullType = 'spent_case_12_h_gauge_h_00_h_buck';

@@ -1,5 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
@@ -15,24 +14,12 @@ import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio, VOICE_CAPS } from '../src/game/audio.ts';
 import { firearmShotEmission, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { startupContent } from './baseRegistry.ts';
 
 const audios: GameAudio[] = [];
 const GUNSHOT_CAP = VOICE_CAPS.get('gunshot')!;
 const SHOT_BURST = GUNSHOT_CAP + 1;
-const base = 'src/content/base';
-const baseRegistryBuild = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: `../content/base/${file}`,
-      data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown,
-    })),
-);
-if (baseRegistryBuild.issues.length > 0) {
-  throw new Error(`Invalid base content fixture: ${JSON.stringify(baseRegistryBuild.issues)}`);
-}
-const baseRegistry = baseRegistryBuild.registry;
+const baseRegistry = startupContent().registry;
 const senseTuning = {
   id: 'fixture_player',
   movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },

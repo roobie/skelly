@@ -1,9 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { searchTime } from '../src/core/blockEntities.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
-import { buildRegistry, type ItemDef, type Registry } from '../src/core/content.ts';
+import type { ItemDef, Registry } from '../src/core/content.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -12,18 +10,10 @@ import { reachTuning } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { advance, capture, createRuntime } from './snapshotTestSupport.ts';
 
-const BASE = 'src/content/base';
-const { registry, issues } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSeconds;
 
 const fixtureRegistry = (): Registry => {

@@ -2,21 +2,16 @@ import { readFileSync } from 'node:fs';
 import { Box3, LoadingManager, PerspectiveCamera, Quaternion, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
 import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  Object.keys(import.meta.glob('../src/content/base/*.json', { eager: true })).map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(file.replace('../', ''), 'utf8')) as unknown,
-  })),
-);
+const registry = baseRegistry();
 const { palette } = registry.figures.get('player')!;
 Object.defineProperty(globalThis, 'self', { configurable: true, value: globalThis });
 const gltfLoader = new GLTFLoader(new LoadingManager());

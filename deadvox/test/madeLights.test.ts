@@ -1,21 +1,14 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { drainBurnLight, toggleLight } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Survival } from '../src/game/survival.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 
-const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
-const { registry } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => read(`src/content/base/${file}`)),
-);
+const registry = baseRegistry();
 
 const setup = () => {
   const sim = new Simulation({ seed: 1 });

@@ -1,25 +1,16 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { applyBenchWeathering, benchDraw, benchPostFromUrl, postUrlPart } from '../src/bench/post.ts';
 import { benchRunFromUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID } from '../src/core/weather.ts';
 import type { StartupContent } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
-import { startupContent } from './baseRegistry.ts';
+import { baseRegistry, startupContent } from './baseRegistry.ts';
 
 const params = (query: string) => new URLSearchParams(query);
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 
 describe('benchmark weathering', () => {
   it('uses its own registry profile, not the play default, so retuning the default leaves the bench workload alone', () => {

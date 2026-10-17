@@ -1,31 +1,22 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../src/core/firearmAttachments.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf, weightOf } from '../src/core/items.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
+import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 
-const base = 'src/content/base';
-const sources = readdirSync(base)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
-const { registry: baseRegistry, issues } = buildRegistry(sources);
-if (issues.length > 0) {
-  throw new Error(`Fixture content is invalid: ${JSON.stringify(issues)}`);
-}
+const baseRegistry = loadBaseRegistry();
 const freshRegistry = () => ({
   ...baseRegistry,
   items: new Map(baseRegistry.items),
   models: new Map(baseRegistry.models),
 });
 
-const exportedDefault = (registry: ReturnType<typeof buildRegistry>['registry']) => {
+const exportedDefault = (registry: Registry) => {
   const firearmModel = registry.models.get(defOf(registry, 'rifle_assault').model!)!;
   const [attachment] = firearmModel.attachments ?? [];
   if (!attachment) {

@@ -1,19 +1,12 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { HeldItems } from '../src/render/hands.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 
-const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
-const { registry } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => read(`src/content/base/${file}`)),
-);
+const registry = baseRegistry();
 
 it('resolves the lens of a light mounted on a held weapon through the weapon model', () => {
   const mounted = withDefaultMountedLight(registry, 'rifle_assault', 'flashlight');
