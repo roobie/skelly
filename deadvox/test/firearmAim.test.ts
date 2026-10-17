@@ -9,6 +9,7 @@ const BUNDLED_CONTENT = startupContent();
 
 import { firearmBoreRay, firearmBoreTarget } from '../src/game/firearmAim.ts';
 import { playCrosshairFrame, projectCrosshairScreenPosition } from '../src/ui/playHud.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { farWallTarget, zombieAimFixture } from './zombieAimFixture.ts';
 
 const boreModel = {
@@ -28,7 +29,7 @@ it('chooses a bore-line zombie in front of a far wall', () => {
 
   expect(surface.distanceMetres).toBeGreaterThan(zombie.distanceMetres);
 
-  const result = firearmBoreTarget({ eye, direction, surface, zombies: system, blockSize });
+  const result = firearmBoreTarget({ eye, direction, surface, zombies: system, blockSize, weapon: FISTS_MELEE });
   const zombiePoint = eye.map((value, axis) => value + direction[axis]! * (zombie.distanceMetres / blockSize)) as Vec3;
 
   expect(result.point).toEqual(zombiePoint);

@@ -3,10 +3,10 @@ import { dominantSide, offSide } from '../src/core/character.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveContentKind } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);

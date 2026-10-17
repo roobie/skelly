@@ -1046,6 +1046,18 @@ describe('content', () => {
     });
   });
 
+  it('reports a missing fists melee class as a load error', () => {
+    const withoutFists = {
+      ...baseRegistry,
+      meleeClasses: new Map([...baseRegistry.meleeClasses].filter(([id]) => id !== CORE_CONTENT_IDS.fistsMeleeClass)),
+    };
+    expect(requiredContentIssues(withoutFists)).toContainEqual({
+      source: 'core content',
+      path: 'meleeClasses',
+      message: `missing required content "${CORE_CONTENT_IDS.fistsMeleeClass}"`,
+    });
+  });
+
   it('reports a missing sound event even when another is defined', () => {
     const retainedId = SOUND_EVENT_IDS.at(-1)!;
     const missingId = SOUND_EVENT_IDS.find((id) => id !== retainedId);

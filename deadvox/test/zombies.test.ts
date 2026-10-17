@@ -34,7 +34,6 @@ import {
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import {
   ACTIVE_ZOMBIE_RADIUS_METRES,
-  FISTS_MELEE,
   type HitImpulse,
   hearPlayer,
   hearVocalNoise,
@@ -49,6 +48,7 @@ import {
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
@@ -391,7 +391,10 @@ describe('zombie attack moves', () => {
 });
 
 describe('melee hit sounds', () => {
-  const emittedFor = (weapon: import('../src/core/zombies.ts').MeleeWeapon): { hit: boolean; events: string[] } => {
+  const emittedFor = (
+    weapon: import('../src/core/zombies.ts').MeleeWeapon,
+    isFist = false,
+  ): { hit: boolean; events: string[] } => {
     const emitted: string[] = [];
     const system = new ZombieSystem({
       ...senses(() => player([100, 2, 0])),
@@ -401,7 +404,7 @@ describe('melee hit sounds', () => {
     const zombie = system.store.get(id)!;
     zombie.modeTimer = 1000;
     const ray = regionRay(zombie, 'torso');
-    const hit = system.swing(ray.origin, ray.direction, weapon);
+    const hit = system.swing(ray.origin, ray.direction, weapon, isFist);
     return {
       hit: hit === id,
       events: emitted.filter((event) => event === 'melee_hit' || event === 'melee_hit_fist'),
@@ -409,7 +412,7 @@ describe('melee hit sounds', () => {
   };
 
   it('emits exactly one fist impact and no weapon impact for a fist hit', () => {
-    const result = emittedFor(FISTS_MELEE);
+    const result = emittedFor(FISTS_MELEE, true);
     expect(result.hit).toBe(true);
     expect(result.events).toEqual(['melee_hit_fist']);
   });

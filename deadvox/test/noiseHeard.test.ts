@@ -18,7 +18,7 @@ import type { SimEvent, Timed } from '../src/core/sim.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { figureSeedPool } from '../src/core/zombieFigure.ts';
-import { FISTS_MELEE, hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
+import { hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
 import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
 import { firearmShotEmission, firearmShotSoundEvents } from '../src/game/audioPresentation.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
@@ -28,6 +28,7 @@ import { startPlayerMelee } from '../src/game/melee.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(

@@ -25,7 +25,6 @@ import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/co
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
-import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
@@ -37,6 +36,7 @@ import {
   PlayerMeshes,
 } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
