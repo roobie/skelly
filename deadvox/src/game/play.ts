@@ -21,12 +21,7 @@ import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
-import {
-  hasMetThrowMinimumHold,
-  ITEM_FLIGHT_SECONDS,
-  throwDistanceForItem,
-  traceItemLanding,
-} from '../core/itemThrow.ts';
+import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
@@ -2644,7 +2639,7 @@ export const startPlay = (
       body.pos[2] * s + throwOffset[2],
     ];
     const startedAtSimSeconds = sim.time;
-    const landingAt = startedAtSimSeconds + ITEM_FLIGHT_SECONDS;
+    const landingAt = startedAtSimSeconds + reachTuning(registry).throwFlightSimSeconds;
     const landed = session.throwCharge.place(item, hand, target);
     if (!landed.landed) {
       if (landed.reason) {
@@ -2661,6 +2656,7 @@ export const startPlay = (
       from,
       direction: lookDir(),
       distanceMetres,
+      arcHeightMetres: reachTuning(registry).throwArcHeightMetres,
       blockSize: s,
       minY: scale.minCy * CHUNK,
       isSolid: engine.isSolid,

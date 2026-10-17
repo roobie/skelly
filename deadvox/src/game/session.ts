@@ -1784,7 +1784,7 @@ export const createSession = (options: SessionOptions) => {
       queue.enqueueAction(
         'furniture.search',
         `Search the ${nameOf(entity)}`,
-        inventory.scaleHandlingTime(searchTime(entities.defOf(entity))),
+        inventory.scaleHandlingTime(searchTime(entities.defOf(entity), reachTuning(inventory.registry))),
         {
           entityUid: entity.uid,
         },

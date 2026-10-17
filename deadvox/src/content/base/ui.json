@@ -7,6 +7,9 @@
       },
       "hudScale": 1,
       "id": "core",
+      "itemActionLabels": {
+        "stripRound": "Strip a round"
+      },
       "refusalSound": "player_nope",
       "restLabels": {
         "rest": "Resting",
