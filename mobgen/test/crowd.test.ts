@@ -15,7 +15,9 @@ import {
   crowdTexelIndex,
   crowdTextureLayout,
   isSeveredInMask,
+  packBloodiness,
   packCrowdBoneMatrix,
+  packGlow,
   packSeveredMask,
 } from '../src/mob/crowd.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
@@ -167,6 +169,21 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
       packSeveredMask(data, layout, 0, [index]);
       expect(isSeveredInMask(data, layout, 0, index)).toBe(true);
     }
+  });
+
+  it('packs glow beside the severed mask and bloodiness in the shared texel without clobbering either', () => {
+    const layout = crowdTextureLayout(CROWD_MASK_BITS_PER_TEXEL, 2);
+    const data = new Float32Array(layout.width * layout.height * 4);
+    packSeveredMask(data, layout, 0, [3]);
+    packBloodiness(data, layout, 0, 0.5);
+    packGlow(data, layout, 0, { eye: 1.5, acid: 0.25 });
+    packGlow(data, layout, 1, { eye: 0, acid: 0 });
+    const texel = crowdMaskTexelIndex(layout, 0);
+    expect(isSeveredInMask(data, layout, 0, 3)).toBe(true);
+    expect(data[texel + 1]).toBe(0.5);
+    expect([data[texel + 2], data[texel + 3]]).toEqual([1.5, 0.25]);
+    const other = crowdMaskTexelIndex(layout, 1);
+    expect([data[other + 2], data[other + 3]]).toEqual([0, 0]);
   });
 
   it('rejects severed bone indices outside the allocated crowd slot', () => {

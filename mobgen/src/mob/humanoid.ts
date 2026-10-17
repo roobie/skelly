@@ -29,7 +29,7 @@ import type { Genome, Template, Wound } from '../core/template.ts';
 import { voxelize } from '../core/voxelize.ts';
 
 const SIDES = ['L', 'R'] as const;
-type Side = (typeof SIDES)[number];
+export type Side = (typeof SIDES)[number];
 const sideSign = (s: Side): number => (s === 'L' ? -1 : 1);
 
 const toRad = (deg: number): number => (deg * Math.PI) / 180;
@@ -113,7 +113,7 @@ const SHIN_FRAC = REF.kneeY - REF.ankleY; // 0.217
 /** A vector of length `len`, pointing up but tilted forward by `tiltDeg` (positive = toward -Z). */
 const leanUp = (len: number, tiltDeg: number): Vec3 => scale(applyDir(rotation(rotX(-tiltDeg)), UP), len);
 
-interface JointLayout {
+export interface JointLayout {
   readonly height: number;
   readonly pelvis: { readonly bottom: Vec3; readonly top: Vec3 };
   readonly spine: { readonly head: Vec3; readonly tail: Vec3 };
@@ -135,7 +135,7 @@ interface JointLayout {
 
 /** Pure geometry: every joint position in the rest pose, from height and proportion params.
  * Shared by the builder (flesh placement) and the gait (leg IK targets, bone lengths). */
-const jointLayout = (p: HumanoidParams): JointLayout => {
+export const jointLayout = (p: HumanoidParams): JointLayout => {
   const h = p.height;
   const hunchSpine = p.hunch * 0.3;
   const hunchChest = p.hunch * 0.65;
@@ -234,7 +234,7 @@ const makeLeg = (h: number, p: HumanoidParams, side: Side, geo: LegGeometry): Jo
 
 // ---- Bones ----
 
-const buildBones = (layout: JointLayout): Body['bones'] => {
+export const buildBones = (layout: JointLayout): Body['bones'] => {
   const bones: Body['bones'][number][] = [
     { id: 'pelvis', parent: null, head: layout.pelvis.bottom, tail: layout.pelvis.top },
     { id: 'spine', parent: 'pelvis', head: layout.spine.head, tail: layout.spine.tail },
@@ -262,12 +262,12 @@ export const FEET_BONES = SIDES.map((s) => `foot.${s}`);
 
 // ---- Flesh, clothes, face, wounds ----
 
-const mid = (a: Vec3, b: Vec3): Vec3 => scale(add(a, b), 0.5);
+export const mid = (a: Vec3, b: Vec3): Vec3 => scale(add(a, b), 0.5);
 
 /** Linear radii below were authored generously; this scales total flesh volume down to match
  * mobgen/reference/README.md's voxel counts (volume, and so voxel count, scales roughly as the square
  * of a limb radius since bone lengths don't change). */
-const FLESH_SCALE = 0.65;
+export const FLESH_SCALE = 0.65;
 
 const roundJoint = (childBone: string, center: Vec3, radius: number): Feature => ({
   bone: childBone,
@@ -277,14 +277,14 @@ const roundJoint = (childBone: string, center: Vec3, radius: number): Feature =>
   blend: 0.035,
 });
 
-const capsuleFeature = (bone: string, a: Vec3, b: Vec3, radii: readonly [number, number]): Feature => ({
+export const capsuleFeature = (bone: string, a: Vec3, b: Vec3, radii: readonly [number, number]): Feature => ({
   bone,
   op: 'add',
   shape: { kind: 'capsule', a, b, ra: radii[0], rb: radii[1] },
   material: 'skin',
 });
 
-const ellipsoidFeature = (bone: string, center: Vec3, radii: Vec3, material: Material = 'skin'): Feature => ({
+export const ellipsoidFeature = (bone: string, center: Vec3, radii: Vec3, material: Material = 'skin'): Feature => ({
   bone,
   op: 'add',
   shape: { kind: 'ellipsoid', center, radii },
@@ -312,7 +312,7 @@ const FACE_HEIGHT_RATIO = 1 / 43;
 
 /** Metric face dimensions with grid-snapped landmarks, shared between buildFlesh (which shapes the
  * head/jaw around them) and buildClothes (which paints/carves eyes and mouth onto them). */
-interface FaceLayout {
+export interface FaceLayout {
   readonly voxel: number;
   /** Metric face scale: height × headScale × calibrated dimensionless ratio. */
   readonly scale: number;
@@ -334,7 +334,7 @@ interface FaceLayout {
   readonly mouthZ: number;
 }
 
-const buildFaceLayout = (layout: JointLayout, p: HumanoidParams, voxelSize: number): FaceLayout => {
+export const buildFaceLayout = (layout: JointLayout, p: HumanoidParams, voxelSize: number): FaceLayout => {
   const v = voxelSize;
   const faceScale = layout.height * FACE_HEIGHT_RATIO * p.headScale;
   const headCenter = mid(layout.head.head, layout.head.tail);
@@ -395,7 +395,7 @@ const footFeature = (bone: string, foot: readonly [Vec3, Vec3], hg: readonly [nu
   return { bone, op: 'add', shape: { kind: 'box', center, half, round: 0.014 * h * g }, material: 'skin' };
 };
 
-const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): Feature[] => {
+export const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): Feature[] => {
   const h = layout.height;
   // Radii below were authored generously and then measured against the reference voxel counts
   // (mobgen/reference/README.md); FLESH_SCALE brings total body volume in line without re-deriving
@@ -538,7 +538,7 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): F
 
 const NOISE_SCALE = 0.1;
 
-const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): Feature[] => {
+export const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): Feature[] => {
   const h = layout.height;
   const features: Feature[] = [];
 
@@ -613,6 +613,42 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
     });
   }
 
+  features.push(...buildFaceDetail(face, p.jawOpen));
+
+  // Bruises: low-probability mottling over skin anywhere on the body.
+  features.push({
+    bone: 'chest',
+    op: 'paint',
+    shape: { kind: 'box', center: [0, h * 0.5, 0], half: [h * 0.4, h * 0.55, h * 0.35], round: 0 },
+    material: 'bruise',
+    onto: ['skin'],
+    noise: { scale: 0.09, threshold: 0.09 },
+  });
+
+  return features;
+};
+
+/** The open-mouth carve's half extents, centred on the face's mouth point; see buildFaceDetail. */
+export const mouthOpening = (face: FaceLayout, jawOpen: number): { readonly center: Vec3; readonly half: Vec3 } => {
+  const mouthHalf = mouthLineHalf(face);
+  // Grows downward only, off a fixed top edge (the mouth line's own top, always a safe margin below
+  // the face plate) — an open mouth is the lower jaw dropping, not the upper lip rising. Growing both
+  // ways from a shifting centre let a wide-open (jawOpen near 1) carve reach up into the face plate's
+  // own territory and cut off a piece of it (see mobgen bugfix — a `floaters` failure at max jawOpen
+  // combined with extreme hunch/headTilt traced to exactly this).
+  const top = face.mouthY + mouthHalf[1];
+  const bottom = face.mouthY - mouthHalf[1] - 1.8 * face.scale * jawOpen;
+  return {
+    center: [0, (top + bottom) / 2, face.mouthZ],
+    half: [mouthHalf[0] * 0.85, (top - bottom) / 2, mouthHalf[2] + 0.4 * face.scale * jawOpen],
+  };
+};
+
+const mouthLineHalf = (face: FaceLayout): Vec3 => [1.3 * face.scale, 0.32 * face.scale, 0.45 * face.scale];
+
+/** Eye sockets and the mouth, carved and painted onto a face layout. */
+const buildFaceDetail = (face: FaceLayout, jawOpen: number): Feature[] => {
+  const features: Feature[] = [];
   // Eye socket dimensions are metric; their centers use grid-snapped rows/columns, and the paint is
   // placed one voxel forward from the carve center. Fine sockets may vanish at coarse LOD. x = ±v is an
   // exact voxel column (worldPosition uses plain multiples of v for X), so the eyes stay symmetric.
@@ -638,23 +674,19 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
 
   // Mouth: a metric dark line at the jaw/head boundary; jawOpen carves it into an open mouth. Like other
   // sub-voxel face details, it may vanish at coarse LOD.
-  const mouthHalf: Vec3 = [1.3 * face.scale, 0.32 * face.scale, 0.45 * face.scale];
   features.push({
     bone: 'jaw',
     op: 'paint',
-    shape: { kind: 'box', center: [0, face.mouthY, face.mouthZ], half: mouthHalf, round: 0.15 * face.scale },
+    shape: {
+      kind: 'box',
+      center: [0, face.mouthY, face.mouthZ],
+      half: mouthLineHalf(face),
+      round: 0.15 * face.scale,
+    },
     material: 'mouth',
   });
-  if (p.jawOpen > 0.02) {
-    // Grows downward only, off a fixed top edge (the mouth line's own top, always a safe margin below
-    // the face plate) — an open mouth is the lower jaw dropping, not the upper lip rising. Growing both
-    // ways from a shifting centre let a wide-open (jawOpen near 1) carve reach up into the face plate's
-    // own territory and cut off a piece of it (see mobgen bugfix — a `floaters` failure at max jawOpen
-    // combined with extreme hunch/headTilt traced to exactly this).
-    const top = face.mouthY + mouthHalf[1];
-    const bottom = face.mouthY - mouthHalf[1] - 1.8 * face.scale * p.jawOpen;
-    const openHalf: Vec3 = [mouthHalf[0] * 0.85, (top - bottom) / 2, mouthHalf[2] + 0.4 * face.scale * p.jawOpen];
-    const openCenter: Vec3 = [0, (top + bottom) / 2, face.mouthZ];
+  if (jawOpen > 0.02) {
+    const { center: openCenter, half: openHalf } = mouthOpening(face, jawOpen);
     features.push({
       bone: 'jaw',
       op: 'carve',
@@ -680,21 +712,10 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
       material: 'mouth',
     });
   }
-
-  // Bruises: low-probability mottling over skin anywhere on the body.
-  features.push({
-    bone: 'chest',
-    op: 'paint',
-    shape: { kind: 'box', center: [0, h * 0.5, 0], half: [h * 0.4, h * 0.55, h * 0.35], round: 0 },
-    material: 'bruise',
-    onto: ['skin'],
-    noise: { scale: 0.09, threshold: 0.09 },
-  });
-
   return features;
 };
 
-const boneFleshRadius = (boneId: string, layout: JointLayout, p: HumanoidParams): number => {
+export const boneFleshRadius = (boneId: string, layout: JointLayout, p: HumanoidParams): number => {
   const h = layout.height;
   const g = p.girth * FLESH_SCALE;
   const base = boneId.split('.')[0]!;
@@ -722,11 +743,11 @@ const boneById = (bones: Body['bones'], id: string): Body['bones'][number] => {
   return bone;
 };
 
-const buildWounds = (
+/** `fleshRadius` gives each bone's flesh depth, so a wound carves at the plan's own surface. */
+export const buildWounds = (
   bones: Body['bones'],
-  layout: JointLayout,
-  p: HumanoidParams,
   wounds: readonly Wound[],
+  fleshRadius: (boneId: string) => number,
 ): Feature[] => {
   const features: Feature[] = [];
   for (const w of wounds) {
@@ -738,7 +759,7 @@ const buildWounds = (
     const angle = toRad(w.angle);
     const outward = add(scale(perp0, Math.cos(angle)), scale(perp1, Math.sin(angle)));
     const center = add(bone.head, scale(sub(bone.tail, bone.head), w.t));
-    const surface = add(center, scale(outward, boneFleshRadius(w.bone, layout, p)));
+    const surface = add(center, scale(outward, fleshRadius(w.bone)));
     features.push({
       bone: w.bone,
       op: 'carve',
@@ -778,7 +799,7 @@ export const hslToRgb = (hDeg: number, s: number, l: number): Vec3 => {
   return [r1 + m, g1 + m, b1 + m];
 };
 
-const buildPalette = (p: HumanoidParams): Record<Material, Vec3> => ({
+export const buildPalette = (p: HumanoidParams): Record<Material, Vec3> => ({
   skin: hslToRgb(p.skinHue, p.skinSat, p.skinLight),
   bruise: [0.34, 0.27, 0.33],
   shirt: hslToRgb(p.shirtHue, 0.32, p.shirtLight),
@@ -789,6 +810,7 @@ const buildPalette = (p: HumanoidParams): Record<Material, Vec3> => ({
   mouth: [0.24, 0.05, 0.06],
   gore: [0.32, 0.09, 0.06],
   bone: [0.85, 0.82, 0.72],
+  acid: [0.42, 0.62, 0.12],
 });
 
 // ---- Build & sample ----
@@ -801,7 +823,7 @@ export const buildHumanoid = (genome: Genome): Body => {
   const features = [
     ...buildFlesh(layout, p, face),
     ...buildClothes(layout, p, face),
-    ...buildWounds(bones, layout, p, genome.wounds),
+    ...buildWounds(bones, genome.wounds, (id) => boneFleshRadius(id, layout, p)),
   ];
   return { bones, features, palette: buildPalette(p) };
 };

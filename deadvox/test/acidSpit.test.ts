@@ -3,8 +3,10 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { type AcidSpitRelease, acidSpitWindupProgress, type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
+import { acidSpitWindupProgress, posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { type AcidSpitRelease, type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { zombieGlow } from '../src/render/zombieGlow.ts';
 import { startupContent } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -232,7 +234,7 @@ describe('acid spit', () => {
     expect(returning.zombie.spitWindup + regained.releases.length).toBeGreaterThan(0);
   });
 
-  it('round-trips mid-wind-up state so the restored zombie releases the same aim', () => {
+  it('round-trips mid-wind-up state so the restored zombie releases the same aim, glowing and posed or not', () => {
     const h = harness(() => sensed(PLAYER_POS));
     const { id, zombie } = spawn(h);
     frames(h.system, Math.floor(WIND_FRAMES / 2));
@@ -246,8 +248,15 @@ describe('acid spit', () => {
     expect(restored.spitWait).toBe(zombie.spitWait);
 
     frames(h.system, WIND_FRAMES);
-    frames(twin.system, WIND_FRAMES);
+    const glows: number[] = [];
+    for (let frame = 0; frame < WIND_FRAMES; frame++) {
+      twin.system.tick(1 / 60);
+      glows.push(zombieGlow(restored).acid);
+      posedShambler(zombiePoseInputFor(restored, id, BLOCK_SIZE));
+    }
+    expect(new Set(glows).size).toBeGreaterThan(1);
     expect(h.releases).toHaveLength(1);
     expect(twin.releases).toEqual(h.releases);
+    expect(twin.system.snapshotState()).toEqual(h.system.snapshotState());
   });
 });

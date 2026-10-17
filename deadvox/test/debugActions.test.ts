@@ -103,10 +103,12 @@ describe('debug action dispatch', () => {
     dispatchDebugAction(actions, 'debug.spawn-runner');
     dispatchDebugAction(actions, 'debug.spawn-crawler');
     dispatchDebugAction(actions, 'debug.spawn-amalgam');
+    dispatchDebugAction(actions, 'debug.spawn-acid-zombie');
     expect(spawnRequests).toEqual([
       { typeId: 'runner', count: 1 },
       { typeId: 'crawler', count: 1 },
       { typeId: 'amalgam', count: 1 },
+      { typeId: 'acid_zombie', count: 1 },
     ]);
     expect(dispatchDebugAction(actions, 'fixture.unknown')).toBe(false);
   });

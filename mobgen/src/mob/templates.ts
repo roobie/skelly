@@ -4,6 +4,7 @@
 // dispatch by name alone.
 
 import { registerTemplate, type Template } from '../core/template.ts';
+import './acid.ts';
 import { FEET_BONES } from './humanoid.ts';
 
 const SUPPORT_BONES = FEET_BONES;
@@ -152,8 +153,64 @@ const brute: Template = {
   },
 };
 
-export const TEMPLATES: readonly Template[] = [shambler, runner, crawler, brute];
-export const HUMANOID_TEMPLATES = TEMPLATES.filter((template) => template.bodyPlan === 'humanoid');
+const acid: Template = {
+  name: 'acid',
+  description: 'Bulky and hunched, forward head, glowing acid sac on the chest, acid drool, dark rags.',
+  bodyPlan: 'acid',
+  voxelSize: 0.5 / 12,
+  bodyMassKg: 110,
+  massFractions: HUMANOID_MASS_FRACTIONS,
+  params: {
+    ...shamblerParams,
+    height: { min: 1.55, max: 1.9 },
+    girth: { min: 1.15, max: 1.45 },
+    shoulderWidth: { min: 1.2, max: 1.5 },
+    hipWidth: { min: 1.0, max: 1.25 },
+    hunch: { min: 18, max: 32 },
+    headTilt: { choices: [5, 10, 15, 20] },
+    kneeBend: { min: 8, max: 20 },
+    jawOpen: { choices: [0.4, 0.6, 0.8, 1] },
+    earSize: { choices: [0, 0, 0, 0, 0.18] },
+    skinHue: { min: 35, max: 70 },
+    skinSat: { min: 0.08, max: 0.22 },
+    skinLight: { min: 0.32, max: 0.5 },
+    shirtLight: { min: 0.1, max: 0.28 },
+    pantsLight: { min: 0.08, max: 0.25 },
+    shirtTear: { min: 0.1, max: 0.35 },
+    pantsTear: { min: 0.05, max: 0.3 },
+    hairCover: { min: 0, max: 0.4 },
+    armSwing: { min: 3, max: 10 },
+    armRaise: { choices: [0, 0, 0, 10, 20] },
+    limp: { min: 0, max: 0.35 },
+    strideFactor: { min: 0.7, max: 0.95 },
+    pelvisSway: { min: 2, max: 6 },
+    sacSize: { min: 0.8, max: 1.2 },
+    sacDrop: { min: 0, max: 1 },
+    sacSide: { min: -0.6, max: 0.6 },
+    sacVeins: { min: 0, max: 0.25 },
+    acidHue: { min: 75, max: 105 },
+    acidLight: { min: 0.45, max: 0.6 },
+    eyeLight: { min: 0.55, max: 0.7 },
+    droolLength: { choices: [0, 0.4, 0.7, 1] },
+    humpSize: { choices: [0, 0, 0.5, 1] },
+    bellySize: { choices: [0, 0.5, 1] },
+    armAsym: { min: -1, max: 1 },
+    blisterCover: { min: 0, max: 0.08 },
+  },
+  supportBones: SUPPORT_BONES,
+  budgets: {
+    totalVoxels: { min: 1100, max: 2600 },
+    // The bulky outline costs the most triangles at the 1/4-block far LOD, whose ceiling scales from this max.
+    totalTriangles: { min: 2600, max: 10_000 },
+    groups: { head: { bones: ['head', 'jaw'], min: 55, max: 120 } },
+  },
+};
+
+export const TEMPLATES: readonly Template[] = [shambler, runner, crawler, brute, acid];
+/** The acid plan keeps the humanoid skeleton (mob/acid.ts), so it walks, idles and reacts as one. */
+export const onHumanoidSkeleton = (template: Template): boolean =>
+  template.bodyPlan === 'humanoid' || template.bodyPlan === 'acid';
+export const HUMANOID_TEMPLATES = TEMPLATES.filter(onHumanoidSkeleton);
 for (const t of TEMPLATES) {
   registerTemplate(t);
 }

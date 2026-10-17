@@ -14,8 +14,26 @@ export interface Bone {
   readonly tail: Vec3;
 }
 
-export const MATERIALS = ['skin', 'bruise', 'shirt', 'pants', 'shoe', 'hair', 'eye', 'mouth', 'gore', 'bone'] as const;
+export const MATERIALS = [
+  'skin',
+  'bruise',
+  'shirt',
+  'pants',
+  'shoe',
+  'hair',
+  'eye',
+  'mouth',
+  'gore',
+  'bone',
+  'acid',
+] as const;
 export type Material = (typeof MATERIALS)[number];
+
+/** Materials a host may light per actor. Each glows only as brightly as the host says, so a body whose
+ * host gives these no level (a shambler's dark eyes) renders unlit. At most two: the crowd texture has two
+ * free channels for their levels (see mob/crowd.ts, packGlow). */
+export const GLOW_MATERIALS = ['eye', 'acid'] as const satisfies readonly Material[];
+export type GlowMaterial = (typeof GLOW_MATERIALS)[number];
 
 interface NoiseGate {
   /** noise3 is sampled at world position / scale (metres per noise cell). */
@@ -25,7 +43,7 @@ interface NoiseGate {
 }
 
 export interface Feature {
-  /** The bone this feature is anchored to. For 'paint', this is bookkeeping only:
+  /** The bone this feature is anchored to. For 'paint', this is bookkeeping unless `ownerOnly` is set:
    *  paint is tested against every filled voxel by world position, not by owner. */
   readonly bone: string;
   readonly op: 'add' | 'carve' | 'paint';
@@ -36,6 +54,9 @@ export interface Feature {
   readonly noise?: NoiseGate;
   /** Paint only: apply only where the current material is one of these. Unset = any material. */
   readonly onto?: readonly Material[];
+  /** Paint only: apply only to voxels `bone` owns, so a part that must leave with its bone keeps its look
+   *  off the neighbours it touches. */
+  readonly ownerOnly?: boolean;
 }
 
 export interface Body {

@@ -38,6 +38,9 @@ export interface ShamblerPoseInput {
   readonly stanceWeight?: number;
   /** Fixed-step hit reaction; omitted only for older snapshots/tests. */
   readonly hitFlinchTime?: number;
+  /** How far the spit's wind-up rears the head and chest back this tick, in degrees. Hit regions share this pose, so
+   * a shot during the telegraph hits where the head is. */
+  readonly spitPullbackDegrees?: { readonly head: number; readonly chest: number };
   readonly severed: readonly string[];
   readonly blockSize: number;
 }
@@ -47,6 +50,20 @@ export interface PoseRootOverride {
   readonly facing: Vec3;
   readonly headYaw: number;
 }
+
+/** Share of the spit's wind-up elapsed, 0 when not winding up; the sac glow and head pull-back follow it. */
+export const acidSpitWindupProgress = (zombie: Zombie): number => {
+  const spit = zombie.type.acidSpit;
+  return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
+};
+
+const spitPullbackFor = (zombie: Zombie): Pick<ShamblerPoseInput, 'spitPullbackDegrees'> => {
+  const progress = acidSpitWindupProgress(zombie);
+  const pullback = zombie.type.acidSpit?.pullbackDegrees;
+  return pullback && progress > 0
+    ? { spitPullbackDegrees: { head: pullback.head * progress, chest: pullback.chest * progress } }
+    : {};
+};
 
 export const zombiePoseInputFor = (
   zombie: Zombie,
@@ -73,6 +90,7 @@ export const zombiePoseInputFor = (
     idleTime: zombie.wanderClock,
     ...(zombie.stanceWeight === undefined ? {} : { stanceWeight: zombie.stanceWeight }),
     ...(zombie.hitFlinchTime === undefined ? {} : { hitFlinchTime: zombie.hitFlinchTime }),
+    ...spitPullbackFor(zombie),
     severed: zombie.severed,
     blockSize,
   };
@@ -184,6 +202,19 @@ const withAttackPose = (context: ModelPoseContext, base: Pose, attackTime: numbe
   return context.model === 'crawler' ? groundCrawlerPose(context.figure.realized, attacked) : attacked;
 };
 
+/** Positive pitch tips an upright bone backward, so the spitter rears before it releases. */
+const withSpitPullback = (base: Pose, pullback: ShamblerPoseInput['spitPullbackDegrees']): Pose =>
+  pullback === undefined
+    ? base
+    : {
+        ...base,
+        rotations: {
+          ...base.rotations,
+          chest: mulMM(base.rotations.chest ?? IDENTITY_M, rotX(pullback.chest)),
+          head: mulMM(base.rotations.head ?? IDENTITY_M, rotX(pullback.head)),
+        },
+      };
+
 const withHitFlinch = (context: ModelPoseContext, base: Pose, time: number, side: number): Pose => {
   if (context.model === 'crawler') {
     return crawlerHitPose(context.figure.realized, base, time, side);
@@ -262,7 +293,7 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
       ? crawlerGaitPose(figure.realized, input.gaitPhase, input.speed)
       : walkPose(actor, clock, input.speed, { idle });
   const context = { model, figure, actor };
-  const basePose = withAttackPose(context, walk, attackTime);
+  const basePose = withSpitPullback(withAttackPose(context, walk, attackTime), input.spitPullbackDegrees);
   const headPose: Pose =
     input.headYaw === 0
       ? basePose

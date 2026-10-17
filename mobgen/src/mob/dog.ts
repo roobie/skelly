@@ -309,6 +309,7 @@ const buildPalette = (p: DogParams): Record<Material, Vec3> => {
     mouth: [0.22, 0.05, 0.06],
     gore: [0.32, 0.09, 0.06],
     bone: [0.85, 0.82, 0.72],
+    acid: [0.42, 0.62, 0.12],
   };
 };
 

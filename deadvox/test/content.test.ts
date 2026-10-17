@@ -378,6 +378,19 @@ describe('content', () => {
     ).toContain(mismatch);
   });
 
+  it('rejects acidEffects on a body that grows no acid sac', () => {
+    const zombieFile = base.find(({ source }) => source === 'zombies.json')!;
+    const data = structuredClone(zombieFile.data) as { zombies: { id: string; acidEffects?: unknown }[] };
+    const acid = data.zombies.find(({ id }) => id === 'acid_zombie')!;
+    const shambler = data.zombies.findIndex(({ id }) => id === 'shambler');
+    data.zombies[shambler]!.acidEffects = acid.acidEffects;
+    const { issues } = buildRegistry([{ source: zombieFile.source, data }]);
+
+    expect(issues.filter(({ path }) => path.endsWith('.acidEffects')).map(({ path }) => path)).toEqual([
+      `zombies[${shambler}].acidEffects`,
+    ]);
+  });
+
   it('keeps runner attack damage within the shambler damage ceilings', () => {
     const shambler = baseRegistry.zombies.get('shambler')!;
     const runner = baseRegistry.zombies.get('runner')!;

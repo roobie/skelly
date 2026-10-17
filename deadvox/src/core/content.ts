@@ -26,11 +26,13 @@ import {
   type RecipeDef,
   type SiteLayoutDef,
   type TemplateDef,
+  type ZombieDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { ownershipShapeIssues } from './templateOwnership.ts';
 import { templateDoorIssues, templateSpatialIssues, templateSpawnClearanceIssues } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
+import { humanoidHasAcidSac } from './zombieFigure.ts';
 
 export type {
   FigureDef,
@@ -951,6 +953,23 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
   }
 };
 
+/** Any body may carry `acidEffects` if it grows the sac, so a later tier with its own model needs no code edit. */
+const checkAcidSac = (zombie: ZombieDef, report: Report): void => {
+  if (zombie.model === 'amalgam') {
+    report('zombies', zombie.id, '.acidEffects', 'the amalgam body grows no acid sac');
+    return;
+  }
+  const bare = (zombie.figureSeeds ?? []).filter((seed) => !humanoidHasAcidSac(zombie.model, seed));
+  if (bare.length > 0) {
+    report(
+      'zombies',
+      zombie.id,
+      '.acidEffects',
+      `model "${zombie.model}" grows no acid sac on figure seeds ${bare.join(', ')}`,
+    );
+  }
+};
+
 const checkZombies = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const zombie of registry.zombies.values()) {
@@ -966,6 +985,9 @@ const checkZombies = (registry: Registry, report: Report) => {
       if (!registry.sounds.has(event)) {
         report('zombies', zombie.id, `.sounds.${key}`, `no sound event "${event}"`);
       }
+    }
+    if (zombie.acidEffects !== undefined) {
+      checkAcidSac(zombie, report);
     }
   }
 };

@@ -25,7 +25,7 @@ Mobgen keeps body construction independent of feasibility rules and rendering so
 
 ## Body-plan constraints
 
-The crawler is a distinct prone creature, not a humanoid gait variant: its arm-drag silhouette and trailing leg stumps define its identity. Other proposed forms need their own body plans. See `src/mob/crawler.ts`, `crawlerPose`, `crawlerGaitPose`, `crawlerHitPose`, and `test/crawler.test.ts`.
+The crawler is a distinct prone creature, not a humanoid gait variant: its arm-drag silhouette and trailing leg stumps define its identity. Other proposed forms need their own body plans. The acid zombie is its own body plan on the humanoid skeleton; see `docs/acid-zombie-body.md`. See `src/mob/crawler.ts`, `crawlerPose`, `crawlerGaitPose`, `crawlerHitPose`, and `test/crawler.test.ts`.
 
 The dog shambler is a quadruped: four paws, a hanging head and a limping diagonal gait whose opposite-corner pairs (fore-left with hind-right, fore-right with hind-left) define it, so it is its own body plan rather than a crouched humanoid. The four paws are the declared supports, and the template is `comparison-only` (`src/core/template.ts`, `TemplateStatus`): it is kept to compare gaits against other quadrupeds, is not fit for a player to meet, and so is never shipped. Consumers refuse it through `consumableTemplate` and the viewer labels it. See `src/mob/dog.ts`, `buildDog`, `dogPose`, `dogGaitPose`, `dogHitPose`, `src/mob/dogTemplate.ts`, `dogTemplate`, and `test/dog.test.ts`.
 

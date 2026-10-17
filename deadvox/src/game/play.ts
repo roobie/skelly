@@ -936,8 +936,8 @@ export const startPlay = (
     onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
-    // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ZombieMeshes leaves
-    // them undefined.
+    // corpse, blood for every wound and an acid sac's burst. Only MobActorMeshes implements the zombie hooks;
+    // ZombieMeshes leaves them undefined.
     zombieEffects: {
       onWound: (_id, _zombie, hit, damage) => view.gore.spray(hit, damage),
       onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
@@ -946,7 +946,10 @@ export const startPlay = (
         view.gore.carved(hit, cells.length);
       },
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
-      onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
+      onDeath: (id, zombie) => {
+        zombieMeshes.zombieDied?.(id, zombie, [...body.pos]);
+        view.gore.burst(zombie);
+      },
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
       onMeleeContact: (impulse) => view.recoil(impulse),
     },

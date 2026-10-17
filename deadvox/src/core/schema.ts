@@ -1640,7 +1640,7 @@ export type ZombieRegions = Record<string, number>;
 
 const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
 
-const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'amalgam']);
+const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'amalgam', 'acid']);
 
 const ZOMBIE_ABILITIES = [
   'grab',
@@ -1686,6 +1686,12 @@ const AcidSpitSchema = pipe(
   strictObject({
     rangeBand: strictObject({ nearMetres: Positive, farMetres: Positive }),
     windupSimSeconds: PositiveSimSeconds,
+    /** How far the head and chest rear back by the end of the wind-up; the pose eases in with its progress and moves
+     * the simulated hit regions with it (`docs/acid-zombie.md`, "The spit"). */
+    pullbackDegrees: strictObject({
+      head: pipe(NonNegative, maxValue(90, 'must be at most 90')),
+      chest: pipe(NonNegative, maxValue(90, 'must be at most 90')),
+    }),
     cooldownSimSeconds: PositiveSimSeconds,
     /** Fraction of the cooldown a spit cancelled by a hit costs. */
     cancelPenaltyFraction: Fraction,
@@ -1717,6 +1723,29 @@ const ZombieSchema = strictObject({
   model: ZOMBIE_MODEL,
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
+  /** How brightly the model's glowing materials light (see `mobgen/src/core/body.ts`, `GLOW_MATERIALS`); omitted
+   * is unlit. The acid level rises from idle to charged with the spit's wind-up (`docs/acid-zombie.md`, "Model"). */
+  glow: optional(
+    pipe(
+      strictObject({ eye: NonNegative, acid: strictObject({ idle: NonNegative, charged: NonNegative }) }),
+      check(({ acid }) => acid.idle <= acid.charged, 'acid glow must not dim during the wind-up'),
+    ),
+  ),
+  /** Presentation-only acid: drool dripping from the jaw while alive and the sac bursting on death
+   * (`docs/acid-zombie.md`, "Model"). The simulation never reads it. */
+  acidEffects: optional(
+    strictObject({
+      color: Color,
+      drips: strictObject({ perRealSecond: NonNegative, sizeMetres: Positive }),
+      deathBurst: strictObject({
+        droplets: pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more')),
+        speedMetresPerRealSecond: Positive,
+        /** The share of that speed the slowest droplet keeps, so the burst reads as a spray rather than a shell. */
+        slowestSpeedFraction: Fraction,
+        sizeMetres: Positive,
+      }),
+    }),
+  ),
   /** Mobgen figure seeds an individual of this type is drawn from. Every model but the amalgam, whose figure seed is fixed, defines them. */
   figureSeeds: optional(
     pipe(
@@ -2378,6 +2407,10 @@ const SECTION_DESCRIPTOR = {
         check(
           (types) => types.every(zombieAcidSpitMatchesAbility),
           'acidSpit tunables must match the acidSpit ability',
+        ),
+        check(
+          (types) => types.every((zombie) => zombie.model !== 'amalgam' || zombie.acidSpit === undefined),
+          'an amalgam has no jaw to spit acid from',
         ),
       ),
     ),

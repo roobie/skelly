@@ -33,6 +33,7 @@ const PALETTE: Record<Material, readonly [number, number, number]> = {
   mouth: [0, 0, 0],
   gore: [0, 0, 0],
   bone: [0, 0, 0],
+  acid: [0, 0, 0],
 };
 
 describe('voxelize', () => {

@@ -10,7 +10,7 @@ export type ParamSpec =
   | { readonly min: number; readonly max: number }
   | { readonly choices: readonly number[] };
 
-export type BodyPlan = 'humanoid' | 'crawler' | 'dog' | 'amalgam';
+export type BodyPlan = 'humanoid' | 'crawler' | 'dog' | 'amalgam' | 'acid';
 type SupportBones = readonly string[] | 'ground-contacts';
 
 /** Consumer readiness. A `'comparison-only'` template is kept to be compared against others and must

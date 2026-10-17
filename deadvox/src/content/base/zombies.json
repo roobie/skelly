@@ -864,6 +864,19 @@
     },
     {
       "abilities": ["acidSpit"],
+      "acidEffects": {
+        "color": "#9ad21e",
+        "deathBurst": {
+          "droplets": 24,
+          "sizeMetres": 0.02,
+          "slowestSpeedFraction": 0.5,
+          "speedMetresPerRealSecond": 3.5
+        },
+        "drips": {
+          "perRealSecond": 1.5,
+          "sizeMetres": 0.012
+        }
+      },
       "acidResistance": 1,
       "acidSpit": {
         "cancelPenaltyFraction": 0.5,
@@ -906,6 +919,10 @@
           "damagePerSimSecond": 2,
           "lifetimeSimSeconds": 8,
           "radiusMetres": 0.80000000000000004
+        },
+        "pullbackDegrees": {
+          "chest": 10,
+          "head": 25
         },
         "rangeBand": {
           "farMetres": 12,
@@ -1007,6 +1024,13 @@
       },
       "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
+      "glow": {
+        "acid": {
+          "charged": 2.5,
+          "idle": 0.5
+        },
+        "eye": 1.5
+      },
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
@@ -1061,7 +1085,7 @@
           "pierce": 0
         }
       },
-      "model": "shambler",
+      "model": "acid",
       "name": "Acid zombie",
       "nightSight": 10,
       "regions": {

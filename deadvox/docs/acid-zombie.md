@@ -22,6 +22,8 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 **Telegraph before damage.** The spit has a wind-up the player can see and hear, like the amalgam's tentacle and every melee swing: the head pulls back, the chest sac glows brighter and a wet sound plays from the zombie's position. Without a telegraph, a ranged hit reads as random damage from off-screen. The wind-up sound is the type's attack sound. See `DESIGN.md`, "Amalgam body and damage", and `src/core/schema.ts`, `ZombieSchema`.
 
+**The pull-back is simulation, not only its picture.** The wind-up pose feeds the same posed body as the hit regions, so the head and chest regions rear back with the head the player sees, and a shot during the telegraph hits where the head is. The pose follows the saved wind-up, so it is deterministic and survives a save. See `src/core/zombiePose.ts`, `withSpitPullback`, and `src/core/zombies.ts`, `posedRegionsForZombie`.
+
 **A hit during the wind-up cancels the spit.** A cancelled spit costs part of the cooldown, as a fraction in content, because that fraction decides how often a harassing spitter can fire while the player fights back. Cancelling makes fighting back an answer in itself, which suits an enemy meant to harass rather than to kill.
 
 **Sight, not hearing, starts a spit.** A zombie spits only at a player it sees, from inside its range band and sight cone. Heard or remembered stimuli move it, as they move any zombie, but they never aim a spit, so breaking sight always stops the next one. See `src/core/zombies.ts`, `seesPlayer`.
@@ -82,6 +84,8 @@ The acid zombie gets its own mobgen body, built from the ground up, not a recolo
 - glowing green eyes;
 - acid drooling from the mouth, with drips that fall to the ground.
 
-The body is a mobgen design task for an opus designer and opus coder pair; it adds a `model` entry for the type. See `mobgen/PROJECT.md` and `src/core/schema.ts`, `ZombieSchema`, `model`.
+The body is a mobgen design task for an opus designer and opus coder pair; it adds a `model` entry for the type. See `mobgen/docs/acid-zombie-body.md` and `src/core/schema.ts`, `ZombieSchema`, `model`.
+
+The drips and the sac's burst on death are gore, so they are presentation only and never reach saves or replays. They leave from the generated jaw and from the acid the chest owns, so they come from the mouth and sac the player sees on every figure seed. Their rate, size, speed and colour are the type's content. Any type may carry them if every figure seed it draws grows the sac, and validation checks that body rather than the model's name: a later tier with its own body needs no code edit, and a body without a sac fails at load instead of bursting from nowhere. See `src/core/schema.ts`, `acidEffects`; `src/core/content.ts`, `checkAcidSac`; `src/core/zombieFigure.ts`, `humanoidMouthOrigin` and `humanoidSacOrigin`; and `src/render/gore.ts`, `Gore`.
 
 Player-visible text follows `INTERFACE.md`, "Text": the type's name is a label, and the burn shows through bodily cues and the body panel, never as narration.

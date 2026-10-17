@@ -43,6 +43,7 @@ import type { SoundEventId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
+import { humanoidMouthOrigin } from './zombieFigure.ts';
 import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 import {
@@ -342,7 +343,7 @@ export interface Zombie {
    * hit resolves (hurtPlayer or a miss) if the target is still in reach/LOS. */
   attackWindup: number;
   /** `acidSpit` telegraph: seconds left in the wind-up, 0 = not winding up. Progress for presentation is
-   * `acidSpitWindupProgress`. */
+   * `acidSpitWindupProgress` in `src/core/zombiePose.ts`. */
   spitWindup: number;
   /** Seconds until the next spit may start; counts down whatever the zombie is doing. */
   spitWait: number;
@@ -821,12 +822,15 @@ const clearLine = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
   return lineDistance > 0 && raycast(from, unit(toward), lineDistance, isSolid) === undefined;
 };
 
-/** Where a spit leaves a zombie: its grab height, which stands in for the mouth until the model gives one. */
-const spitOrigin = (zombiePos: Vec3, blockSize: number): Vec3 => [
-  zombiePos[0],
-  zombiePos[1] + PLAYER_CHEST_METRES / blockSize,
-  zombiePos[2],
-];
+/** Where a spit leaves a zombie: its generated mouth. */
+const spitOrigin = (zombie: Zombie, zombiePos: Vec3, blockSize: number): Vec3 => {
+  const offset = humanoidMouthOrigin(zombie.type.model, zombie.figureSeed, zombie.facing);
+  return [
+    zombiePos[0] + offset[0] / blockSize,
+    zombiePos[1] + offset[1] / blockSize,
+    zombiePos[2] + offset[2] / blockSize,
+  ];
+};
 
 /** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
 const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
@@ -834,10 +838,6 @@ const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Ve
     player.eyeHeightMetres === undefined ? PLAYER_CHEST_METRES : player.eyeHeightMetres * tuning.chestEyeFraction;
   return [player.pos[0], player.pos[1] + metres / blockSize, player.pos[2]];
 };
-
-/** The mouth-to-chest line at release, by the same rule as a melee strike. */
-const spitLineClear = (zombiePos: Vec3, chest: Vec3, blockSize: number, isSolid: SolidAt): boolean =>
-  clearLine(spitOrigin(zombiePos, blockSize), chest, isSolid);
 
 /** What a released spit hands the simulation: the glob's start, its seeded direction and the hit moves it carries. */
 export interface AcidSpitRelease {
@@ -867,12 +867,6 @@ type GlobContact =
   | { kind: 'solid'; distance: number; normal: Vec3 }
   | { kind: 'player'; distance: number }
   | { kind: 'zombie'; distance: number; hit: RegionHit };
-
-/** Share of the wind-up elapsed, 0 when not winding up; presentation reads it for the sac glow and head pull. */
-export const acidSpitWindupProgress = (zombie: Zombie): number => {
-  const spit = zombie.type.acidSpit;
-  return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
-};
 
 /** A spitter that sees the player inside its range band stands and faces; outside the band it closes in. */
 const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
@@ -2979,11 +2973,11 @@ export class ZombieSystem {
         return;
       }
       const chest = spitChest(player, this.options.tuning, blockSize);
-      if (!spitLineClear(pos, chest, blockSize, isSolid)) {
+      const origin = spitOrigin(zombie, pos, blockSize);
+      if (!clearLine(origin, chest, isSolid)) {
         return;
       }
       zombie.spitWait = spit.cooldownSimSeconds;
-      const origin = spitOrigin(pos, blockSize);
       const spread = (zombie.spitRng.range(-1, 1) * spit.spreadDegrees * Math.PI) / 180;
       const toPlayer = sub(chest, origin);
       const heading = headingAt(angleOf(toPlayer) + spread);

@@ -1,4 +1,4 @@
-import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
+import { BoxGeometry, CircleGeometry, Color, InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
@@ -6,6 +6,7 @@ import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { HitImpulse, Zombie } from '../src/core/zombies.ts';
 import { DROPLET_CAP, DROPLET_SPAWNS_PER_FRAME, Gore, type GoreBodies, SPLAT_CAP } from '../src/render/gore.ts';
 import { PLAYER_BODY_REAR_OFFSET, PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
+import { startupContent } from './baseRegistry.ts';
 
 const floor = (_x: number, y: number, _z: number) => y < 0;
 // A heavy downward hit just above the floor, so most droplets land within a few updates.
@@ -100,6 +101,46 @@ describe('Gore', () => {
     expect(gore.activeDroplets).toBeGreaterThan(0);
     gore.update(3, floor, { ...bodies, player: { ...bodies.player!, drip: () => undefined } });
     expect(gore.activeDroplets).toBe(0);
+    gore.dispose();
+  });
+
+  it('colours droplets and splats by what threw them, even in a slot an acid droplet used before', () => {
+    const acid = startupContent().registry.zombies.get('acid_zombie')!;
+    const acidHex = new Color(acid.acidEffects!.color).getHex();
+    const dying = {
+      type: acid,
+      figureSeed: acid.figureSeeds![0]!,
+      facing: [0, 0, 1],
+      body: { pos: [0.5, 0, 0.5] },
+    } as unknown as Zombie;
+    const gore = new Gore(BLOCK_SIZE);
+    const mesh = <G>(geometry: new () => G) =>
+      gore.group.children.find(
+        (child): child is InstancedMesh => child instanceof InstancedMesh && child.geometry instanceof geometry,
+      )!;
+    // The instance buffer holds float32, so colours compare as the hex they round to.
+    const isAcid = (of: InstancedMesh, slot: number) => {
+      const color = new Color();
+      of.getColorAt(slot, color);
+      return color.getHex() === acidHex;
+    };
+    const slots = (count: number) => Array.from({ length: count }, (_, slot) => slot);
+
+    gore.burst(dying);
+    const thrown = gore.activeDroplets;
+    expect(thrown).toBeGreaterThan(0);
+    expect(slots(thrown).every((slot) => isAcid(mesh(BoxGeometry), slot))).toBe(true);
+    gore.update(3, floor);
+    expect(gore.activeSplats).toBeGreaterThan(0);
+    expect(slots(gore.activeSplats).every((slot) => isAcid(mesh(CircleGeometry), slot))).toBe(true);
+
+    for (let frame = 0; frame * DROPLET_SPAWNS_PER_FRAME < DROPLET_CAP * 2; frame++) {
+      for (let spray = 0; spray < DROPLET_CAP; spray++) {
+        gore.spray(lowHit, 100);
+      }
+      gore.update(1 / 60, floor);
+    }
+    expect(slots(thrown).some((slot) => isAcid(mesh(BoxGeometry), slot))).toBe(false);
     gore.dispose();
   });
 
