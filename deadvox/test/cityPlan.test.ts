@@ -218,12 +218,16 @@ describe('one finished city plan', () => {
       return { spawns, hordes };
     };
 
-    it('supplies ordinary wanderers and hordes even when city buildings have no spawn markers', () => {
-      const { spawns, hordes } = populationOf({});
-      expect(spawns.length).toBeGreaterThan(0);
-      expect(hordes.length).toBeGreaterThan(0);
-      expect(hordes.every((horde) => horde.members > 0)).toBe(true);
-    });
+    it(
+      'supplies ordinary wanderers and hordes even when city buildings have no spawn markers',
+      () => {
+        const { spawns, hordes } = populationOf({});
+        expect(spawns.length).toBeGreaterThan(0);
+        expect(hordes.length).toBeGreaterThan(0);
+        expect(hordes.every((horde) => horde.members > 0)).toBe(true);
+      },
+      GAUNTLET_SITE_MS,
+    );
 
     // Each case builds the whole city and certifies it again, though only the population differs. Zero and two cover
     // "none" and "distinct streets"; a 1-horde case adds nothing, since a count slip shows at 0 or 2 too.
@@ -249,15 +253,23 @@ describe('one finished city plan', () => {
       2 * GAUNTLET_SITE_MS,
     );
 
-    it('leaves no zombies or hordes when settlement pressure and authored markers are both off', () => {
-      const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
-      expect(spawns).toEqual([]);
-      expect(hordes).toEqual([]);
-    });
+    it(
+      'leaves no zombies or hordes when settlement pressure and authored markers are both off',
+      () => {
+        const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
+        expect(spawns).toEqual([]);
+        expect(hordes).toEqual([]);
+      },
+      GAUNTLET_SITE_MS,
+    );
 
-    it('rejects more hordes than the city has street groups', () => {
-      expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
-    });
+    it(
+      'rejects more hordes than the city has street groups',
+      () => {
+        expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
+      },
+      GAUNTLET_SITE_MS,
+    );
   });
 
   it('fills paired inner banks while keeping alleys, perimeter gates and the service reserve clear', () => {
@@ -346,78 +358,82 @@ describe('one finished city plan', () => {
     },
   );
 
-  it('stands enclosure dressing above the surface without carving pits in its footprint', () => {
-    const scenario = fixtureScenario();
-    scenario.city.perimeter = {
-      block: 'fixture_solid',
-      height: 6,
-      thickness: 2,
-      lining: { assembly: 'fixture_lining', pitch: 6 },
-      gate: { assembly: 'fixture_gate' },
-    };
-    const sources = fixtureScenarioSources(scenario);
-    sources.push({
-      source: 'enclosure-fixture.json',
-      data: {
-        templates: ['fixture_lining', 'fixture_gate'].map((id) => ({
-          id,
-          size: [4, 2, 2],
-          lootContext: registry.templates.get('fixture_house')!.lootContext,
-          palette: { '.': 'air', '=': 'fixture_solid' },
-          layers: [
-            ['....', '===='],
-            ['....', '===='],
-          ],
-        })),
-      },
-    });
-    const admitted = buildRegistry(sources);
-    expect(admitted.issues).toEqual([]);
-    const plan = buildCityPlan({
-      seed: 73,
-      registry: admitted.registry,
-      floor,
-      grid: cityGridOf(admitted.registry, scenario.city),
-      scenario,
-    });
-    const site = new CitySite(73, admitted.registry, scale, plan);
-    const dressings = plan.placements.filter(({ template }) =>
-      ['fixture_lining', 'fixture_gate'].includes(template.id),
-    );
-    expect(dressings.some(({ template }) => template.id === 'fixture_lining')).toBe(true);
-    expect(dressings.some(({ template }) => template.id === 'fixture_gate')).toBe(true);
-    const solid = admitted.registry.blockIds.get('fixture_solid')!;
-    const chunks = new Map<string, Chunk>();
-    for (const placement of dressings) {
-      const [width, depth] = footprint(placement);
-      const [x0, y0, z0] = placement.origin;
-      for (let z = z0; z < z0 + depth; z++) {
-        for (let x = x0; x < x0 + width; x++) {
-          const ground = site.surface.height(x, z, floor + 1);
-          expect(y0 + (placement.template.groundLayer ?? 0)).toBe(ground + 1);
-          const cell: Vec3 = [toChunk(x), toChunk(ground), toChunk(z)];
-          const key = cell.join(',');
-          let chunk = chunks.get(key);
-          if (!chunk) {
-            chunk = generateChunk(
-              {
-                seed: 73,
-                scale,
-                surface: site.surface,
-                blocks: { grass: solid, dirt: solid, rock: solid, sand: solid },
-              },
-              cell,
+  it(
+    'stands enclosure dressing above the surface without carving pits in its footprint',
+    () => {
+      const scenario = fixtureScenario();
+      scenario.city.perimeter = {
+        block: 'fixture_solid',
+        height: 6,
+        thickness: 2,
+        lining: { assembly: 'fixture_lining', pitch: 6 },
+        gate: { assembly: 'fixture_gate' },
+      };
+      const sources = fixtureScenarioSources(scenario);
+      sources.push({
+        source: 'enclosure-fixture.json',
+        data: {
+          templates: ['fixture_lining', 'fixture_gate'].map((id) => ({
+            id,
+            size: [4, 2, 2],
+            lootContext: registry.templates.get('fixture_house')!.lootContext,
+            palette: { '.': 'air', '=': 'fixture_solid' },
+            layers: [
+              ['....', '===='],
+              ['....', '===='],
+            ],
+          })),
+        },
+      });
+      const admitted = buildRegistry(sources);
+      expect(admitted.issues).toEqual([]);
+      const plan = buildCityPlan({
+        seed: 73,
+        registry: admitted.registry,
+        floor,
+        grid: cityGridOf(admitted.registry, scenario.city),
+        scenario,
+      });
+      const site = new CitySite(73, admitted.registry, scale, plan);
+      const dressings = plan.placements.filter(({ template }) =>
+        ['fixture_lining', 'fixture_gate'].includes(template.id),
+      );
+      expect(dressings.some(({ template }) => template.id === 'fixture_lining')).toBe(true);
+      expect(dressings.some(({ template }) => template.id === 'fixture_gate')).toBe(true);
+      const solid = admitted.registry.blockIds.get('fixture_solid')!;
+      const chunks = new Map<string, Chunk>();
+      for (const placement of dressings) {
+        const [width, depth] = footprint(placement);
+        const [x0, y0, z0] = placement.origin;
+        for (let z = z0; z < z0 + depth; z++) {
+          for (let x = x0; x < x0 + width; x++) {
+            const ground = site.surface.height(x, z, floor + 1);
+            expect(y0 + (placement.template.groundLayer ?? 0)).toBe(ground + 1);
+            const cell: Vec3 = [toChunk(x), toChunk(ground), toChunk(z)];
+            const key = cell.join(',');
+            let chunk = chunks.get(key);
+            if (!chunk) {
+              chunk = generateChunk(
+                {
+                  seed: 73,
+                  scale,
+                  surface: site.surface,
+                  blocks: { grass: solid, dirt: solid, rock: solid, sand: solid },
+                },
+                cell,
+              );
+              site.stamp(chunk);
+              chunks.set(key, chunk);
+            }
+            expect(admitted.registry.blocks[chunk.get(mod(x, CHUNK), mod(ground, CHUNK), mod(z, CHUNK))]!.solid).toBe(
+              true,
             );
-            site.stamp(chunk);
-            chunks.set(key, chunk);
           }
-          expect(admitted.registry.blocks[chunk.get(mod(x, CHUNK), mod(ground, CHUNK), mod(z, CHUNK))]!.solid).toBe(
-            true,
-          );
         }
       }
-    }
-  });
+    },
+    GAUNTLET_SITE_MS,
+  );
 
   it('reports a gap when a stretch of the north wall is missing', () => {
     const scenario = fixtureScenario();
@@ -479,29 +495,33 @@ describe('one finished city plan', () => {
     expect(scenarioPlanIssues(admitted, scenario).map(([path]) => path)).toContain('.city.ring.pool');
   });
 
-  it('keeps every gauntlet spawn inside the walled area and clear of the wall', () => {
-    const native = BUNDLED_CONTENT.registry;
-    const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-    const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
-    const spawns: { pos: Vec3 }[] = [];
-    for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
-      for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
-        spawns.push(...site.zombiesIn(cx, cz), ...site.hordesIn(cx, cz));
+  it(
+    'keeps every gauntlet spawn inside the walled area and clear of the wall',
+    () => {
+      const native = BUNDLED_CONTENT.registry;
+      const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
+      const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
+      const spawns: { pos: Vec3 }[] = [];
+      for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
+        for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
+          spawns.push(...site.zombiesIn(cx, cz), ...site.hordesIn(cx, cz));
+        }
       }
-    }
-    expect(spawns.length).toBeGreaterThan(0);
-    const inWall = ([x, y, z]: Vec3) =>
-      site.plan.structures.some(
-        ({ min, max }) => x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
-      );
-    for (const { pos } of spawns) {
-      expect(pos[0]).toBeGreaterThanOrEqual(site.bounds.x0);
-      expect(pos[0]).toBeLessThan(site.bounds.x1);
-      expect(pos[2]).toBeGreaterThanOrEqual(site.bounds.z0);
-      expect(pos[2]).toBeLessThan(site.bounds.z1);
-      expect(inWall(pos)).toBe(false);
-    }
-  });
+      expect(spawns.length).toBeGreaterThan(0);
+      const inWall = ([x, y, z]: Vec3) =>
+        site.plan.structures.some(
+          ({ min, max }) => x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
+        );
+      for (const { pos } of spawns) {
+        expect(pos[0]).toBeGreaterThanOrEqual(site.bounds.x0);
+        expect(pos[0]).toBeLessThan(site.bounds.x1);
+        expect(pos[2]).toBeGreaterThanOrEqual(site.bounds.z0);
+        expect(pos[2]).toBeLessThan(site.bounds.z1);
+        expect(inWall(pos)).toBe(false);
+      }
+    },
+    GAUNTLET_SITE_MS,
+  );
 
   it('reserves each candidate/turn class inside the apron and keeps ordinary rows out of street space', () => {
     const plan = planned();
