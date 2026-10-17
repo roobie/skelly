@@ -1227,6 +1227,7 @@ export const REQUIRED_CORE_CONTENT = [
   { section: 'compression', id: CORE_CONTENT_IDS.player },
   { section: 'figures', id: CORE_CONTENT_IDS.player },
   { section: 'inventory', id: CORE_CONTENT_IDS.player },
+  { section: 'meleeClasses', id: CORE_CONTENT_IDS.fistsMeleeClass },
   { section: 'saves', id: CORE_CONTENT_IDS.autosave },
   { section: 'senses', id: CORE_CONTENT_IDS.player },
   { section: 'siteGeneration', id: CORE_CONTENT_IDS.authoredSite },

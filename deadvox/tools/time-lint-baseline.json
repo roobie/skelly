@@ -146,7 +146,7 @@
     },
     "core/zombies.ts": {
       "attackWindup": 3,
-      "cooldown": 3,
+      "cooldown": 2,
       "expiresAt": 1,
       "hitFlinchTime": 2,
       "idleSoundTimer": 3,
@@ -205,7 +205,7 @@
       "p95Ms": 3
     },
     "game/melee.ts": {
-      "cooldown": 3
+      "cooldown": 4
     },
     "game/play.ts": {
       "duration": 1,

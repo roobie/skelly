@@ -8,10 +8,11 @@ import {
   posedShamblerRegionBoxes,
   type ZombieRegion,
 } from '../src/core/zombieRegions.ts';
-import { FISTS_MELEE, PLAYER_ARM_REACH_M, ZombieSystem } from '../src/core/zombies.ts';
+import { PLAYER_ARM_REACH_M, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const registry = baseRegistry();

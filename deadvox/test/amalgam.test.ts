@@ -28,7 +28,6 @@ import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
   activeAmalgamMembers,
-  FISTS_MELEE,
   PLAYER_CHEST_METRES,
   type PlayerSense,
   ZombieSystem,
@@ -36,6 +35,7 @@ import {
 } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, contentLookup, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 

@@ -1,4 +1,5 @@
 import type { MeleeClassDef } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Needs } from '../core/needs.ts';
 import { spendStamina } from '../core/needs.ts';
 import { type BeginMeleeSwing, copyMeleeWeapon, type PlayerCombat } from '../core/playerCombat.ts';
@@ -24,6 +25,23 @@ export const meleeWeaponFromContent = (weapon: ContentMeleeWeapon): MeleeWeapon 
     ...(weapon.speedMultiplier === undefined ? {} : { speedMultiplier: weapon.speedMultiplier }),
     type: weapon.type,
   });
+
+/** The bare-handed attack from the required fists class; its absence is a content error, never a code default. */
+export const unarmedMeleeWeapon = (meleeClasses: ReadonlyMap<string, MeleeClassDef>): MeleeWeapon => {
+  const unarmed = meleeClasses.get(CORE_CONTENT_IDS.fistsMeleeClass)?.unarmed;
+  if (unarmed === undefined) {
+    throw new Error(`Missing required melee class "${CORE_CONTENT_IDS.fistsMeleeClass}"`);
+  }
+  return copyMeleeWeapon({
+    damage: unarmed.damage,
+    reach: unarmed.reach,
+    cooldown: unarmed.cooldownSimSeconds,
+    contactFraction: unarmed.contactFraction,
+    windupCapSimSeconds: unarmed.windupCapSimSeconds,
+    stamina: unarmed.stamina,
+    impulse: unarmed.impulse,
+  });
+};
 
 export const shouldEnterMeleeReady = (input: {
   rightMouseHeld: boolean;

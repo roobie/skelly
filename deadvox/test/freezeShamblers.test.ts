@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
-import { FISTS_MELEE, type MeleeResult, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
+import { type MeleeResult, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const registry = baseRegistry();

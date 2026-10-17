@@ -28,6 +28,7 @@ import type {
 import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
+import { unarmedMeleeWeapon } from '../game/melee.ts';
 import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { comboBox } from '../ui/comboBox.ts';
@@ -1423,6 +1424,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             surface: target,
             zombies,
             blockSize: engine.config.scale.blockSize,
+            weapon: unarmedMeleeWeapon(engine.registry.meleeClasses),
           })
         : undefined;
     const distanceMetres = aimTarget?.distanceMetres ?? target?.distanceMetres;

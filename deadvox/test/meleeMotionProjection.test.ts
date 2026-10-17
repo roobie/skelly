@@ -5,10 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
-import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
 import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
