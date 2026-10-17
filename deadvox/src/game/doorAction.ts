@@ -7,7 +7,6 @@ import type { Body } from '../core/physics.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 
 export const DOOR_ACTION = 'furniture.door';
-const DOOR_CLOSE_MESSAGES = { player: "You're in the way", other: "Something's in the way" } as const;
 
 const doorCenter = (entity: BlockEntity): Vec3 => [
   entity.pos[0] + entity.size[0] / 2,
@@ -27,9 +26,18 @@ export interface DoorActionOptions {
   player: () => Body;
   others: () => Iterable<Body>;
   playWorldSound: (event: SoundEventId, position: Vec3) => void;
+  /** What the refusal says, by who blocks the door; from the core ui content. */
+  closeBlockedMessages: Readonly<Record<'player' | 'other', string>>;
 }
 
-export const registerDoorAction = ({ queue, inventory, player, others, playWorldSound }: DoorActionOptions): void => {
+export const registerDoorAction = ({
+  queue,
+  inventory,
+  player,
+  others,
+  playWorldSound,
+  closeBlockedMessages,
+}: DoorActionOptions): void => {
   const { entities } = inventory;
   const openClose = (entity: BlockEntity, opening: boolean): string | undefined => {
     const center = doorCenter(entity);
@@ -44,7 +52,7 @@ export const registerDoorAction = ({ queue, inventory, player, others, playWorld
     }
     const blocker = entities.closeDoor(entity, player(), others());
     playWorldSound(blocker ? 'door_blocked_close' : 'door_close', center);
-    return blocker ? DOOR_CLOSE_MESSAGES[blocker] : undefined;
+    return blocker ? closeBlockedMessages[blocker] : undefined;
   };
   queue.registerAction(DOOR_ACTION, (params) => {
     const uid = params.entityUid;

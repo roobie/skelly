@@ -237,6 +237,21 @@ const UiTuningSchema = strictObject({
   hudScale: Positive,
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: picklist(SOUND_EVENT_IDS),
+  /** What the rest card calls each kind of rest. */
+  restLabels: strictObject({ rest: Name, sleep: Name }),
+  /** Why a door will not close: the player, or something else, is standing in its way. */
+  doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
+  /** What the inventory screen calls each wear slot. */
+  wearSlotLabels: strictObject({
+    head: Name,
+    torso: Name,
+    legs: Name,
+    back: Name,
+    waist: Name,
+    hands: Name,
+    feet: Name,
+    shoulder: Name,
+  }),
 });
 
 const SaveTuningSchema = strictObject({

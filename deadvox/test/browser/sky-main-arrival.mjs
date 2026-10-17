@@ -167,15 +167,6 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
               '  globalThis.mainArrival.engineReadyRealMs=performance.now();\n  return {\n    ...worldSetup,',
             );
           }
-          // Remove once d386 is merged and main's play.ts no longer imports FISTS_MELEE; it only applies while it does.
-          if (relative === 'game/play.ts' && source.includes('FISTS_MELEE')) {
-            source = source
-              .replace(
-                "import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';",
-                "import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';\nimport { unarmedMeleeWeapon } from './melee.ts';",
-              )
-              .replace('weapon: FISTS_MELEE,', 'weapon: unarmedMeleeWeapon(registry.meleeClasses),');
-          }
           source = withBranchTerrainShape(relative, source);
           if (relative === 'game/streamer.ts') {
             source = source.replace(

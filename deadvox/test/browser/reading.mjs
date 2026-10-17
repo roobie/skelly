@@ -407,7 +407,10 @@ try {
     const progressHandle = await page.waitForFunction(() => {
       const { session, restViewModel } = globalThis.readingWitness;
       const gauge = document.querySelector('#rest [role="progressbar"]');
-      const vm = restViewModel(session.rest.action, true, session.sim, true);
+      const vm = restViewModel(session.rest.action, true, session.sim, {
+        messagesVisible: true,
+        restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
+      });
       if (
         !(gauge && session.rest.action?.sleepOnset) ||
         vm.percent <= 0 ||

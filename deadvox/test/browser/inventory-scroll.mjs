@@ -173,6 +173,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
   body: () => body, character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
+  slotLabels: Object.fromEntries(['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, 'fixture ' + slot])),
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
@@ -214,7 +215,7 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
   useUiTuning(tuning) {
     const ui = buildRegistry([
       ${JSON.stringify(refusalSound)},
-      { source: 'ui-tuning-fixture', data: { ui: [{ id: 'core', refusalSound: 'player_nope', ...tuning }] } },
+      { source: 'ui-tuning-fixture', data: { ui: [{ ...BUNDLED_CONTENT.registry.ui.get('core'), refusalSound: 'player_nope', ...tuning }] } },
     ]);
     if (ui.issues.length) throw Error('Invalid UI tuning fixture: ' + JSON.stringify(ui.issues));
     applyUiTokens(ui.registry, document.documentElement);
