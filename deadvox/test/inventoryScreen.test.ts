@@ -29,6 +29,7 @@ import {
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
@@ -135,7 +136,7 @@ function setup(contentRegistry = registry) {
     throwItem: () => undefined,
   };
   const hooks = {
-    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
+    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => [0, 0, 0] as [number, number, number],
     nearby: () => [...inv.piles.values()],
     distance: () => 0,

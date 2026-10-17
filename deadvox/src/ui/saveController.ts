@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
 import type { HandedCharacter } from '../core/character.ts';
-import type { Registry } from '../core/content.ts';
+import { type Registry, requireDayCycle } from '../core/content.ts';
 import {
   type ActiveBrowserMod,
   type ActiveBundledMod,
@@ -394,6 +394,10 @@ export class SaveController {
         version: this.identityValue!.components,
         contentLookup: (kind, id) => contentLookup(registry, kind, id),
       });
+      const { ratio } = decoded.snapshot.character.simulation.clock;
+      if (ratio !== requireDayCycle(registry).clockRatio) {
+        throw new Error('the save was made under a different clock ratio');
+      }
       this.restored = decoded.snapshot;
       this.acknowledgedWin = Boolean(
         decoded.snapshot.character.scenarioRun &&

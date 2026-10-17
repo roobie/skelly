@@ -1,6 +1,6 @@
 import { parse } from 'valibot';
 import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
-import { CLOCK_RATIO, type ClockSettings, parseTimeOfDay, SECONDS_PER_DAY } from '../src/core/clock.ts';
+import { type ClockSettings, parseTimeOfDay, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { type DayCycle, type DayPhase, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { type DayCycleDef, DayCycleSchema } from '../src/core/schema.ts';
 
@@ -9,7 +9,7 @@ export const BASE_DAY_CYCLE: DayCycleDef = parse(DayCycleSchema, coreDayCycle.da
 
 /** The clock a session built from base content starts with. */
 export const BASE_CLOCK: ClockSettings = {
-  ratio: CLOCK_RATIO,
+  ratio: BASE_DAY_CYCLE.clockRatio,
   start: parseTimeOfDay(coreDayCycle.dayCycle.defaultStartGameTimeOfDay)!,
 };
 

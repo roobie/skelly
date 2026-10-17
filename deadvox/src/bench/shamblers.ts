@@ -1,7 +1,7 @@
 // The shambler mode of the shared ?bench= harness. It loads the hamlet, runs the
 // real fixed-step ZombieSystem and player physics, and records frame/tick/render costs.
 
-import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
@@ -123,7 +123,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       seed: run.seed,
       bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
       compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
-      clock: { ratio: CLOCK_RATIO, start: startTime },
+      clock: { ratio: dayCycle.clockRatio, start: startTime },
     });
     simulation.godMode = true;
     zombies = new ZombieSystem({

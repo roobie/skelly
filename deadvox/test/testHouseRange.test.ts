@@ -17,6 +17,7 @@ import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.
 import { GARDEN_GATE, HOUSE_OFFSET } from '../src/game/testHouse.ts';
 import { isTestHouseRangeStockItem } from '../src/game/testHouseRange.ts';
 import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { content as BUNDLED_CONTENT, makeConfig } from './fixtures/startupContent.ts';
 import { buildTestHouseRangeRoute, routeMovementInput } from './testHouseRangeRoute.ts';
 
@@ -281,7 +282,7 @@ describe('the debug test-house range', () => {
       expect(fixture.body.pos[2] - fixture.body.halfWidth).toBeGreaterThan(fixture.rack.pos[2] + fixture.rack.size[2]);
       expect(
         furnitureDistance(
-          { inventory: fixture.inventory, position: fixture.body.pos, blockSize: fixture.blockSize },
+          { inventory: fixture.inventory, position: fixture.body.pos, blockSize: fixture.blockSize, clock: BASE_CLOCK },
           fixture.rack,
         ),
       ).toBeLessThanOrEqual(reachTuning(fixture.inventory.registry).reachMetres);

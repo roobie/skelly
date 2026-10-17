@@ -1,5 +1,6 @@
 {
   "dayCycle": {
+    "clockRatio": 8,
     "latitudeDegrees": 40,
     "date": {
       "month": 6,

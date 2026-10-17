@@ -8,6 +8,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { gameMinutes } from '../src/core/time.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const base = 'src/content/base';
@@ -92,7 +93,7 @@ describe('authored disassembly yields', () => {
     });
     const inventory = new Inventory(testRegistry);
     const position: [number, number, number] = [0, 0, 0];
-    const reach = bindReach({ inventory, position, blockSize: 0.5 });
+    const reach = bindReach({ inventory, position, blockSize: 0.5, clock: BASE_CLOCK });
     const source = inventory.create('portable_radio');
     const ruinedKnife = inventory.create('kitchen_knife');
     ruinedKnife.condition = 0;

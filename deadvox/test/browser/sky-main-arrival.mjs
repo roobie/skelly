@@ -30,6 +30,17 @@ export function mainOverlayPath(root, id) {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
+// Remove once d397 is merged and main's bench/run.ts no longer imports CLOCK_RATIO (issue #854). The branch moved the
+// ratio into the day-cycle content, so main's copy takes it from the day cycle it already reads.
+function withBranchClockRatio(relative, source) {
+  if (relative !== 'bench/run.ts' || !source.includes('CLOCK_RATIO')) {
+    return source;
+  }
+  return source
+    .replace('import { CLOCK_RATIO, hourOfDay', 'import { hourOfDay')
+    .replace('ratio: CLOCK_RATIO', 'ratio: dayCycle.clockRatio');
+}
+
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
@@ -99,25 +110,13 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (relative === 'core/authoredSite.ts' || relative === 'content/base/templates-stairs.json') {
             source = fixtureTransform(source, id) ?? source;
           }
-          // Remove with d393 (#854): main's play.ts still imports the throw constants that d393 moved into content.
-          if (relative === 'game/play.ts' && source.includes('ITEM_FLIGHT_SECONDS')) {
-            source = source
-              .replace('  ITEM_FLIGHT_SECONDS,\n', '')
-              .replace(
-                'startedAtSimSeconds + ITEM_FLIGHT_SECONDS',
-                'startedAtSimSeconds + reachTuning(registry).throwFlightSimSeconds',
-              )
-              .replace(
-                '      distanceMetres,\n      blockSize: s,',
-                '      distanceMetres,\n      arcHeightMetres: reachTuning(registry).throwArcHeightMetres,\n      blockSize: s,',
-              );
-          }
           if (relative === 'game/engine.ts') {
             source = source.replace(
               '  return {\n    ...worldSetup,',
               '  globalThis.mainArrival.engineReadyRealMs=performance.now();\n  return {\n    ...worldSetup,',
             );
           }
+          source = withBranchClockRatio(relative, source);
           if (relative === 'game/streamer.ts') {
             source = source.replace(
               '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
