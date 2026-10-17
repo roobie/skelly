@@ -106,6 +106,7 @@ describe('door locks', () => {
       player: () => ({ pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0.2, height: 1.8, onGround: true }),
       others: () => [],
       playWorldSound: () => undefined,
+      closeBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
     });
     for (const piece of doors) {
       const spawn = site
@@ -165,6 +166,7 @@ describe('door locks', () => {
       player: () => ({ pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0.2, height: 1.8, onGround: true }),
       others: () => [],
       playWorldSound: () => undefined,
+      closeBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
     });
     queue.enqueueAction(DOOR_ACTION, 'Unlock', 0.3, { entityUid: door.uid, locked: false });
     queue.tick(0.1);
@@ -184,6 +186,7 @@ describe('door locks', () => {
       player: () => ({ pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0.2, height: 1.8, onGround: true }),
       others: () => [],
       playWorldSound: (event) => sounds.push(event),
+      closeBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
     });
     queue.enqueueAction(DOOR_ACTION, 'Unlock', 0.3, { entityUid: door.uid, locked: false });
     queue.tick(0.1);

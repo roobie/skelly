@@ -1,7 +1,6 @@
 import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SHADOWS, DEFAULT_TORCH, lookOf, moodOf, SHADOW_DISTANCES } from '../src/core/mood.ts';
-import { DEFAULT_FOGGINESS } from '../src/core/weather.ts';
 import { LookControls } from '../src/debug/look.ts';
 import {
   defaultLookUrlState,
@@ -13,14 +12,17 @@ import {
 } from '../src/debug/lookUrl.ts';
 import { setAutoToneWeight } from '../src/render/autoTone.ts';
 import { hotCheckUniform } from '../src/render/hotCheck.ts';
+import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
-const DEFAULT_LOOK_URL_STATE = defaultLookUrlState(LOOK_FIXTURE);
-const parse = (query: string) => parseLookParams(new URLSearchParams(query), LOOK_FIXTURE);
+const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaultFogginess;
+const URL_DEFAULTS = { look: LOOK_FIXTURE, defaultFogginess: DEFAULT_FOGGINESS };
+const DEFAULT_LOOK_URL_STATE = defaultLookUrlState(URL_DEFAULTS);
+const parse = (query: string) => parseLookParams(new URLSearchParams(query), URL_DEFAULTS);
 const write = (query: string, state: LookUrlState) =>
-  writeLookParams(new URLSearchParams(query), state, LOOK_FIXTURE).toString();
+  writeLookParams(new URLSearchParams(query), state, URL_DEFAULTS).toString();
 
 describe('look URL parameters', () => {
   it('reads defaults from an empty query', () => {
@@ -258,7 +260,7 @@ describe('look URL parameters', () => {
     expect(write('debug=1&tone=none&seed=5&exposure=2&time=20%3A30&site=testHouse', state)).toBe(
       'debug=1&seed=5&time=20%3A30&site=testHouse&tone=agx',
     );
-    expect(lookUrl('http://localhost:5173/play?debug=1&time=20:30&srgb=0#x', state, LOOK_FIXTURE)).toBe(
+    expect(lookUrl('http://localhost:5173/play?debug=1&time=20:30&srgb=0#x', state, URL_DEFAULTS)).toBe(
       'http://localhost:5173/play?debug=1&time=20:30&tone=agx#x',
     );
   });

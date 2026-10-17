@@ -4,8 +4,8 @@ import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
 const sources = readdirSync(BASE)

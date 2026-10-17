@@ -17,13 +17,13 @@ import {
   rectDistance,
   standingHeight,
 } from '../src/core/authoredTerrain.mjs';
-import { SPAWN_TIMES } from '../src/core/clock.ts';
 import type { Registry } from '../src/core/content.ts';
 import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
 import { HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from '../src/core/hamlet.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
@@ -57,6 +57,8 @@ const validationLayout = (id: string): SiteLayoutDef => ({
 const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
 const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
 const layoutValidationBase = [
+  // Named spawn windows resolve against a day cycle.
+  base.find(({ source }) => source === 'dayCycle.json')!,
   {
     source: 'layout-validation-support.json',
     data: {
@@ -305,6 +307,7 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
     for (const chunk of generateColumn(
       {
         seed,
+        shape: terrainShapeOf(registry),
         scale,
         blocks: {
           grass: registry.blockIds.get('grass')!,
@@ -366,13 +369,13 @@ describe('authored layout acceptance', () => {
     expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
     const admitted = result.registry.layouts.get(layout.id)!;
     const placement = placementOf(result.registry, admitted.buildings[0]!);
-    const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === SPAWN_TIMES.dusk)!;
-    expect(expected.window).toEqual({ fromGameTimeOfDay: SPAWN_TIMES.dusk });
+    const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === 'dusk')!;
+    expect(expected.window).toEqual({ fromGameTimeOfDay: 'dusk' });
     const site = new AuthoredSite(1, result.registry, scale, admitted);
     expect(site.zombiesIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
       type: 'shambler',
       pos: expected.pos,
-      window: { fromGameTimeOfDay: SPAWN_TIMES.dusk },
+      window: { fromGameTimeOfDay: 'dusk' },
     });
   });
   it('carries a spawn window from an authored marker into its world column', () => {
@@ -395,8 +398,29 @@ describe('authored layout acceptance', () => {
     expect(site.zombiesIn(toChunk(x), toChunk(z))).toContainEqual({
       type: marker.type,
       pos: [x, marker.position[1] / scale.blockSize, z],
-      window: { fromGameTimeOfDay: SPAWN_TIMES.dusk },
+      window: { fromGameTimeOfDay: 'dusk' },
     });
+  });
+
+  it('rejects a spawn window whose named and clock ends resolve to the same time', () => {
+    const noon = registry.dayCycle!.noonGameTimeOfDay;
+    const clockNoon = `${String(Math.floor(noon / 3600)).padStart(2, '0')}:${String(Math.floor((noon % 3600) / 60)).padStart(2, '0')}`;
+    const marker = {
+      ...layout.shamblers[0]!,
+      position: [5, 0.5, 5] as const,
+      window: { fromGameTimeOfDay: 'noon', toGameTimeOfDay: clockNoon },
+    };
+    const result = buildRegistry([
+      ...layoutValidationBase,
+      {
+        source: 'layout-test.json',
+        data: { layouts: [{ ...validationLayout('equal_window_fixture'), shamblers: [marker] }] },
+      },
+    ]);
+    expect(result.issues.map(({ path, message }) => [path, message])).toContainEqual([
+      expect.stringContaining('.shamblers[0].window'),
+      'from and to must differ',
+    ]);
   });
 
   it('serves authored hordes only in the columns derived from their layout positions', () => {

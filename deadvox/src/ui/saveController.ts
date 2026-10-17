@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
 import type { HandedCharacter } from '../core/character.ts';
-import type { Registry } from '../core/content.ts';
+import { type Registry, requireDayCycle } from '../core/content.ts';
 import {
   type ActiveBrowserMod,
   type ActiveBundledMod,
@@ -121,7 +121,7 @@ export class SaveController {
   private deadRecord = false;
   private entered = false;
   private ready = false;
-  private newWorldLauncher: ((creation: HandedCharacter) => { enter: () => void }) | undefined;
+  private newWorldLauncher: ((creation: HandedCharacter) => Promise<{ enter: () => void }>) | undefined;
   private newWorldGoLabel = 'New world';
   private statusText = 'Checking saved worlds…';
   private snapshot: (() => Readonly<SaveSnapshot>) | undefined;
@@ -394,6 +394,10 @@ export class SaveController {
         version: this.identityValue!.components,
         contentLookup: (kind, id) => contentLookup(registry, kind, id),
       });
+      const { ratio } = decoded.snapshot.character.simulation.clock;
+      if (ratio !== requireDayCycle(registry).clockRatio) {
+        throw new Error('the save was made under a different clock ratio');
+      }
       this.restored = decoded.snapshot;
       this.acknowledgedWin = Boolean(
         decoded.snapshot.character.scenarioRun &&
@@ -440,7 +444,7 @@ export class SaveController {
     return this.lastSaveCompletedAtRealTimestamp;
   }
 
-  setNewWorldLauncher(launcher: (creation: HandedCharacter) => { enter: () => void }): void {
+  setNewWorldLauncher(launcher: (creation: HandedCharacter) => Promise<{ enter: () => void }>): void {
     this.newWorldLauncher = launcher;
     this.render();
   }
@@ -633,6 +637,22 @@ export class SaveController {
   }
 
   private confirmNewWorld(): void {
+    this.launchNewWorld().catch((error: unknown) => this.failNewWorld(error));
+  }
+
+  private failNewWorld(error: unknown): void {
+    this.ready = false;
+    this.entered = false;
+    this.newWorldLauncher = undefined;
+    this.snapshot = undefined;
+    this.simTime = undefined;
+    this.worldOptions = undefined;
+    this.failure = `Could not start the world: ${errorMessage(error)}`;
+    this.statusText = this.failure;
+    this.render();
+  }
+
+  private async launchNewWorld(): Promise<void> {
     if (this.entered || !this.ready || !this.newWorldLauncher || this.protectedCurrent) {
       return;
     }
@@ -643,19 +663,10 @@ export class SaveController {
       return;
     }
     const creation: HandedCharacter = Object.freeze({ handedness });
-    let entry: { enter: () => void };
-    try {
-      entry = this.newWorldLauncher(creation);
-    } catch (error) {
-      this.newWorldLauncher = undefined;
-      this.snapshot = undefined;
-      this.simTime = undefined;
-      this.worldOptions = undefined;
-      this.failure = `Could not start the world: ${errorMessage(error)}`;
-      this.statusText = this.failure;
-      this.render();
-      return;
-    }
+    this.ready = false;
+    this.render();
+    const entry = await this.newWorldLauncher(creation);
+    this.ready = true;
     this.deadRecord = false;
     this.acknowledgedWin = false;
     this.entered = true;

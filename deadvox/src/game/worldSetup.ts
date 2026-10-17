@@ -14,7 +14,7 @@ import type { Scale } from '../core/scale.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
-import { sitePalette } from '../core/sitePalette.ts';
+import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
 import { type Surface, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
@@ -71,7 +71,14 @@ export const testHouseScene = (config: GameConfig, registry: Registry) => {
   const { seed, scale } = config;
   const id = (name: string) => blockId(registry, name);
   // The test house sits on a level lot at a whole-metre height, so it lines up with any block size.
-  const floor = Math.round(terrainHeightMetres(seed, HOUSE_OFFSET[0] + LOT_CENTRE[0], HOUSE_OFFSET[1] + LOT_CENTRE[1]));
+  const floor = Math.round(
+    terrainHeightMetres(
+      seed,
+      terrainShapeOf(registry),
+      HOUSE_OFFSET[0] + LOT_CENTRE[0],
+      HOUSE_OFFSET[1] + LOT_CENTRE[1],
+    ),
+  );
   const house = testHouse(
     [HOUSE_OFFSET[0], floor, HOUSE_OFFSET[1]],
     {
@@ -289,8 +296,10 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: FurnitureSpawn[] } = built
     ? { structures: [], spawn: built.spawn, furniture: house?.furniture ?? [] }
     : (house ?? testHouseScene(config, registry));
+  const shape = terrainShapeOf(registry);
   // Without a site this is the formula the 1.0 and 1.1 benchmarks used, so their results still compare.
-  const groundAt = (xm: number, zm: number): number => worldGroundAt({ seed, scale, surface: built?.surface, xm, zm });
+  const groundAt = (xm: number, zm: number): number =>
+    worldGroundAt({ seed, shape, scale, surface: built?.surface, xm, zm });
   const houseLootPoints = lootPointsByColumn(house?.lootSources ?? []);
 
   const world = new World();
@@ -301,6 +310,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     meshes,
     seed,
     terrain: sitePalette(registry).terrain,
+    shape,
     colors: blockColors(registry),
     patterns: blockPatterns(registry),
     weatherable: blockWeatherability(registry),

@@ -21,6 +21,13 @@
         clearGain: 1,
         clearCutoffHz: 18000,
       },
+      footsteps: {
+        walkingStepMetres: 0.75,
+        joggingStepMetres: 1.2,
+        sprintingStepMetres: 1.6,
+        hardLandingMetres: 2.5,
+      },
+      vocalNoiseLifetimeSimSeconds: 0.5,
       light: {
         playerDaySightScale: 0,
         lureRangeScale: 0.5,

@@ -5,7 +5,7 @@ import { type CrosshairTarget, crosshairAimPoint, SHOT_TRACE_RANGE_BLOCKS } from
 import { heldFirearmTransform } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
-import { FISTS_MELEE, type ZombieAim, type ZombieSystem } from '../core/zombies.ts';
+import type { MeleeWeapon, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 
 export interface FirearmBoreRayInput {
   readonly model: ModelDef;
@@ -105,15 +105,18 @@ export const firearmBoreTarget = ({
   surface,
   zombies,
   blockSize,
+  weapon,
 }: {
   readonly eye: Vec3;
   readonly direction: Vec3;
   readonly surface: CrosshairTarget | undefined;
   readonly zombies: ZombieSystem;
   readonly blockSize: number;
+  /** Only its reach decides the aim's `inReach`; the bore ray itself is not a melee swing. */
+  readonly weapon: MeleeWeapon;
 }): FirearmBoreTarget => {
   const rayDirection = normalizeDirection(direction);
-  const zombie = zombies.aimAt(eye, rayDirection, FISTS_MELEE);
+  const zombie = zombies.aimAt(eye, rayDirection, weapon);
   const zombieDistanceBlocks = zombie ? zombie.distanceMetres / blockSize : undefined;
   const point = crosshairAimPoint(eye, rayDirection, surface, zombieDistanceBlocks);
   const distanceBlocks = Math.min(

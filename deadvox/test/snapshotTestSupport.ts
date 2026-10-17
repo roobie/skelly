@@ -1,6 +1,5 @@
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
-import { defaultClock } from '../src/core/clock.ts';
 import { worldSolid } from '../src/core/collision.ts';
 import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -16,11 +15,13 @@ import {
 import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { BodyTuningDef } from '../src/core/schema.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withPlayerBodyTuning } from './simulationFixture.ts';
 
 const registry = baseRegistry();
@@ -58,6 +59,7 @@ for (let cz = toChunk(fixtureHamlet.bounds.z0); cz <= toChunk(fixtureHamlet.boun
 }
 const fixtureTerrain: Terrain = {
   seed,
+  shape: terrainShapeOf(registry),
   blocks: { grass: blockId('grass'), dirt: blockId('dirt'), rock: blockId('stone'), sand: blockId('sand') },
   scale,
   surface: fixtureHamlet.surface,
@@ -200,7 +202,7 @@ export function createRuntime(
     entities: sharedEntities,
     scale,
     seed,
-    start: options.start ?? defaultClock.start,
+    start: options.start ?? BASE_CLOCK.start,
     spawn,
     wobbleFlatOverride: options.wobbleFlatOverride,
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,

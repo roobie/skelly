@@ -2,7 +2,8 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { getBuildRevision } from '../core/buildInfo.ts';
 import { dominantSide } from '../core/character.ts';
-import { formatClock, SPAWN_TIME } from '../core/clock.ts';
+import { formatClock } from '../core/clock.ts';
+import { requireDayCycle } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import {
@@ -29,6 +30,7 @@ import type {
 import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
+import { unarmedMeleeWeapon } from '../game/melee.ts';
 import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { comboBox } from '../ui/comboBox.ts';
@@ -366,6 +368,7 @@ const panelTemplate = ({
   changeWeatheringColor,
   copyWeatheringValues,
   weatheringCopyStatus,
+  clockInputValue,
 }: {
   open: boolean;
   groups: readonly GroupView[];
@@ -417,6 +420,7 @@ const panelTemplate = ({
   changeWeatheringColor: (field: WeatheringColorField, value: string) => void;
   copyWeatheringValues: () => void;
   weatheringCopyStatus: string;
+  clockInputValue: string;
 }): TemplateResult => {
   // What each group shows besides its action buttons.
   const extras: Partial<Record<GroupId, TemplateResult | typeof nothing>> = {
@@ -468,7 +472,7 @@ const panelTemplate = ({
       <div class="debug-actions"><button id="reveal-zombies" type="button" aria-pressed=${revealZombies} @click=${toggleReveal}>Reveal zombies · ${revealZombies ? 'ON' : 'OFF'}</button></div>
     `,
     time: html`
-      <label>Set time <input id="debug-time" type="time" value=${formatClock(SPAWN_TIME).slice(-5)} /> <button id="set-debug-time" type="button" @click=${(
+      <label>Set time <input id="debug-time" type="time" value=${clockInputValue} /> <button id="set-debug-time" type="button" @click=${(
         event: Event,
       ) => {
         const root = (event.currentTarget as HTMLElement).parentElement;
@@ -1159,7 +1163,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         }
       : {}),
   });
-  const initialLook = parseLookParams(new URLSearchParams(location.search), lookDefaults);
+  const { defaultFogginess } = requireDayCycle(hooks.engine.registry).weather;
+  const initialLook = parseLookParams(new URLSearchParams(location.search), {
+    look: lookDefaults,
+    defaultFogginess,
+  });
   look.restore(initialLook);
   // `?cam=` puts the player at a saved view instead of the spawn or a save's position (the body moves; saves
   // only ever record the body, never this URL). Mid-air the player falls, unless `freeze=1` or noclip holds
@@ -1193,12 +1201,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
-    const next = lookUrl(
-      location.href,
-      lookState(),
-      lookDefaults,
-      look.weatheringState && { state: look.weatheringState, profiles: hooks.engine.registry.weathering },
-    );
+    const next = lookUrl(location.href, lookState(), {
+      look: lookDefaults,
+      defaultFogginess,
+      weathering: look.weatheringState,
+      profiles: hooks.engine.registry.weathering,
+    });
     if (next !== location.href) {
       history.replaceState(history.state, '', next);
     }
@@ -1431,6 +1439,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             surface: target,
             zombies,
             blockSize: engine.config.scale.blockSize,
+            weapon: unarmedMeleeWeapon(engine.registry.meleeClasses),
           })
         : undefined;
     const distanceMetres = aimTarget?.distanceMetres ?? target?.distanceMetres;
@@ -1616,6 +1625,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           changeWeatheringColor,
           copyWeatheringValues,
           weatheringCopyStatus,
+          clockInputValue: formatClock(requireDayCycle(hooks.engine.registry).defaultStartGameTimeOfDay).slice(-5),
         }),
         host,
       );
@@ -1691,7 +1701,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       pitchRad: hooks.input.pitch,
       buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
-      url: camUrl(lookUrl(location.href, lookState(), lookDefaults), {
+      url: camUrl(lookUrl(location.href, lookState(), { look: lookDefaults, defaultFogginess }), {
         position: hooks.body.pos.map((v) => v * metres) as Vec3,
         yaw: hooks.input.yaw,
         pitch: hooks.input.pitch,

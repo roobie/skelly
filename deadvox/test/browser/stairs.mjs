@@ -192,6 +192,19 @@ try {
     await dialog.dismiss();
   });
   await page.addInitScript(initializeSkyTiming);
+  if (mode === 'camo') {
+    await page.addInitScript(() => {
+      globalThis.camoPointerRequests = [];
+      const request = Element.prototype.requestPointerLock;
+      Element.prototype.requestPointerLock = function (...args) {
+        globalThis.camoPointerRequests.push({
+          active: navigator.userActivation.isActive,
+          playMounted: Boolean(globalThis.stairsWitness),
+        });
+        return request.apply(this, args);
+      };
+    });
+  }
   await page.addInitScript(() => {
     globalThis.nativeGateEvents = [];
     for (const type of ['keydown', 'keyup']) {
@@ -263,6 +276,32 @@ try {
     await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
   });
   if (mode === 'camo') {
+    const requests = await page.evaluate(() => globalThis.camoPointerRequests);
+    assert.deepEqual(requests, [{ active: true, playMounted: false }], 'capture the gesture before world construction');
+    // Loading owns its work-scaled deadline; a mounted debug panel is not a readiness signal.
+    await timePhase('camo-world-ready', () =>
+      page.evaluate(
+        () =>
+          new Promise((done, reject) => {
+            const loading = document.querySelector('#world-loading');
+            const observer = new MutationObserver(check);
+            function check() {
+              if (loading.dataset.state === 'loading') {
+                return;
+              }
+              observer.disconnect();
+              if (loading.dataset.state === 'ready') {
+                done();
+              } else {
+                reject(new Error(loading.textContent));
+              }
+            }
+            observer.observe(loading, { attributes: true, attributeFilter: ['data-state'] });
+            check();
+          }),
+      ),
+    );
+    await page.waitForFunction(() => Boolean(document.pointerLockElement));
     await page.waitForFunction(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value));
     const diagnostic = await page.locator('[data-sky-route] textarea').inputValue();
     assert.equal(JSON.parse(diagnostic).geometry, null, 'a rejected route must not probe an unrelated scene');

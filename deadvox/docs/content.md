@@ -12,6 +12,7 @@ read_if:
   - you author decals or scenario outbreak age
   - you author a scenario, its start-building rooms or ways down, or move scenario rules from code into content
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
+  - you author or change the day cycle, the sky looks or the weather fog tuning
   - you change the debug kit ownership view
 ---
 
@@ -94,9 +95,35 @@ playable-pack admission rather than inventing missing policy in a renderer. See
 `src/content/base/graphics.jsonnet`, `src/core/graphics.ts`, `GraphicsOptionsSchema`, and
 `src/core/content.ts`, `requiredContentIssues`.
 
+## Inventory action tunables and labels
+
+Inventory action timing and throw shape are tuning of the player's inventory row, and
+the label of an item action is player-facing text in the core ui row.
+Keeping them in content lets a mod retune or reword them without a code change. The schema
+requires every field, so a pack that omits one fails validation instead of silently
+inheriting a code default. Readers take the values from the registry. See
+`src/core/schema.ts`, `InventoryTuningSchema` and `UiTuningSchema`, and `src/core/reach.ts`,
+`reachTuning`.
+
+The handling range of the test range stays in code: it is debug layout geometry whose
+arithmetic belongs to the range builder, not a tunable a mod would reasonably change. See
+`src/core/range.ts`.
+
 ## Weathering profiles
 
 Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `WeatheringSchema` in `src/core/schema.ts` and `referenceIssues` in `src/core/content.ts`. `configFromUrl` in `src/game/config.ts` selects the site profile.
+
+## Day cycle
+
+One required row owns how the day reads, sun and sky and fog together, and how long a game day lasts in play, so a mod that changes the latitude, the mood or the pace of the day needs no engine code. A new session takes the pace from content; a save keeps the pace it was saved with, and restoring it under different content is refused rather than silently retimed. Every field is required, with no code default and no fallback, so a pack that omits one fails to load rather than playing under a hidden look. Looks are keyed by solar phase so an author edits a phase, not an index, and colours are hex that authors can read.
+
+Where each look sits in its phase and how looks blend stay in code. They are mechanism shared by every pack: a pack tunes how the dawn looks, not how the sky moves from night to dawn (`src/core/sky.ts`, `skyAt`). Tests take the cycle from base content through `test/dayPhaseFixture.ts` and never restate it. See `src/core/schema.ts`, `DayCycleSchema`, for what the row holds, and `src/core/weather.ts`, `skyInWeather`.
+
+## Footstep and vocal-noise tuning
+
+Footstep and vocal-noise tuning is a property of the player's body, so it lives in the player's sense row beside the other hearing tunables and a mod that changes the body needs no engine code. Every field is required, with no code default, so a pack that omits one fails to load. See `src/core/schema.ts`, `SenseSchema`.
+
+Two nearby constants stay in code on purpose. The stride-phase origin is mechanism: it aligns the first footfall with the shared gait phase that presentation and aim wobble also read, so a pack tuning spacing never needs it (`src/core/footsteps.ts`, `initialFootstepClock`). The hit-flinch duration is the length of mobgen's flinch clip, so a second copy in content could disagree with the animation it must match (`src/core/zombiePose.ts`, `HIT_FLINCH_DURATION`). Tests take the row from `test/senseFixture.ts`, `BASE_SENSE_TUNING`, and never restate it.
 
 ## Content test registries
 
@@ -123,11 +150,15 @@ Fixed loot takes eligibility from its resolved authored source context, not a co
 
 Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `siteGeneration` in `src/core/schema.ts`, `site-generation.json`, and `AuthoredSite` in `src/core/authoredSite.ts`.
 
-Every site kind shares one block palette in the same entry, so a block choice has a single content home. Hamlet-only choices (hedge and the template pools) sit apart in its `hamlet` field. Code reads them through `sitePalette` in `src/core/sitePalette.ts`; names that resolve to nothing are validation errors (`checkSiteGeneration` in `src/core/content.ts`), never a runtime fallback. The one exception is `benchmarkCityGrid` in `src/core/cityPlan.ts`, which has no registry and keeps the hamlet template list in `HAMLET_TEMPLATES` in `src/core/hamlet.ts` until the city sweep under #393 reads it from content.
+Terrain shape and the tree and forest tunables are required `siteGeneration` fields (see `src/core/schema.ts`, `siteGeneration`) with no code default, so a mod can reshape the landscape and woods without touching logic and a missing value fails validation instead of silently using a stale one. Code receives the terrain values as one explicit shape (`terrainShapeOf` in `src/core/sitePalette.ts`) rather than reading module constants, so every caller names the world it generates. Geometry, such as tree crowns and placement jitter, and bench-only mechanism values stay in code because they are not tuning a mod should change.
+
+Every site kind shares one block palette in the same entry, so a block choice has a single content home. Hamlet-only choices (hedge and the template pools) sit apart in its `hamlet` field. Code reads them through `sitePalette` in `src/core/sitePalette.ts`; names that resolve to nothing are validation errors (`checkSiteGeneration` in `src/core/content.ts`), never a runtime fallback.
+
+Site placement and the stress-test city's block geometry are required fields of the same entry (`SiteGenerationSchema` in `src/core/schema.ts`). The stress-test city has no scenario to carry its street grid, so the entry does; a scenario's own city fields stay on the scenario. Making them required keeps a missing value a validation error, not a silent code default.
 
 Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
-Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, "Spawning"; see `PaletteThingSchema` in `src/core/schema.ts` and `SPAWN_TIMES` in `src/core/clock.ts`.
+Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, "Spawning"; see `PaletteThingSchema` in `src/core/schema.ts` and `resolveSpawnTime` in `src/core/clock.ts`, which gives the names their times from the day cycle content.
 
 A map piece makes a cell a spawn point through a palette `spawn` entry with an optional `chance`; a 1x1x1 marker piece is air that claims its cell and carries one such entry. A slot offers weighted marker pieces, and its pick, drawn once when the assembly compiles, decides the zombie type, while `chance` rolls per world. Lab threat varies by overriding the slot choices; see `src/content/base/gauntlet-lab-threat.libsonnet`, `markerPiece`.
 

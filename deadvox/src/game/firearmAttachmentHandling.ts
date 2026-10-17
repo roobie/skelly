@@ -8,6 +8,7 @@ import { defOf, type Item } from '../core/items.ts';
 import { slotsReason } from '../core/magazine.ts';
 import { opticViewSettings } from '../core/opticView.ts';
 import { stowTarget } from '../core/options.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 
 const ATTACHMENT_ACTION = 'firearm.attachment';
 
@@ -34,10 +35,7 @@ export const ATTACHMENT_WORK_SKILL = CORE_CONTENT_IDS.firearmsCombat;
 export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'action' && job.jobType === ATTACHMENT_ACTION;
 
 const attachmentWorkSeconds = (inventory: Inventory): number => {
-  const tuning = inventory.registry.skills.get(ATTACHMENT_WORK_SKILL)?.combat?.firearms;
-  if (!tuning) {
-    return HANDLING.ground;
-  }
+  const tuning = firearmsCombatTuning(inventory.registry);
   const level = skillEffectLevel(inventory.character.skills?.[ATTACHMENT_WORK_SKILL] ?? SKILL_LEVEL_MIN);
   return HANDLING.ground * skillSaturation(level, tuning.attachmentFactorFloor, tuning.attachmentFactorHalfLifeLevels);
 };

@@ -7,6 +7,7 @@ import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import type { Scale } from './scale.ts';
 import { type FurnitureSpawn, furnitureOf, lootSourcesOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
+import { sitePalette } from './sitePalette.ts';
 import { stampChunk } from './structure.ts';
 import { footprint, type Placement, stampPlacement } from './templates.ts';
 import type { Surface } from './worldgen.ts';
@@ -19,21 +20,17 @@ export class CitySite implements Site {
   readonly plan: CityPlan;
   readonly spawn: Site['spawn'];
   protected readonly byColumn = new Map<string, Placement[]>();
-  private readonly asphalt: number;
+  private readonly paving: number;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
 
   constructor(seed: number, registry: Registry, scale: Scale, plan: CityPlan) {
     if (scale.blockSize !== HAMLET_BLOCK_SIZE) {
       throw new Error(`the city's templates need ${HAMLET_BLOCK_SIZE} m blocks`);
     }
-    const asphalt = registry.blockIds.get('asphalt');
-    if (asphalt === undefined) {
-      throw new Error('City content needs asphalt');
-    }
     this.seed = seed;
     this.registry = registry;
     this.plan = plan;
-    this.asphalt = asphalt;
+    this.paving = sitePalette(registry).paving;
     this.lootColumns = lootPointsByColumn(
       plan.placements.flatMap((placement) =>
         lootSourcesOf(
@@ -97,7 +94,7 @@ export class CitySite implements Site {
         const localZ = mod(z, grid.street + grid.blockZ);
         const alley = alleys.some((start) => localZ >= start && localZ < start + grid.street);
         const street = mod(x, grid.street + grid.blockX) < grid.street || localZ < grid.street || alley;
-        return central || (rectDistance(core, x, z) === 0 && street) ? this.asphalt : undefined;
+        return central || (rectDistance(core, x, z) === 0 && street) ? this.paving : undefined;
       },
     };
   }

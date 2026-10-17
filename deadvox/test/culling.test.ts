@@ -9,7 +9,7 @@ const BUNDLED_CONTENT = startupContent();
 
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { applySky, type SkyTargets } from '../src/render/sky.ts';
-import { phaseMidpoint } from './dayPhaseFixture.ts';
+import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 /** One upward face covering a chunk's bottom layer: a flat patch of ground. */
 const floor: MeshData = {
@@ -58,14 +58,14 @@ describe('culling', () => {
   it('puts the far plane where the fog ends, day and night', () => {
     const { scene, camera, sky } = setup();
     for (const hour of [dayHour, nightHour]) {
-      applySky(sky, skyAt(hour));
+      applySky(sky, skyAt(hour, BASE_DAY_CYCLE));
       const fog = scene.fog as { far: number };
       expect(camera.far).toBe(fog.far);
       expect(camera.far).toBeLessThanOrEqual(RADIUS_M);
     }
-    applySky(sky, skyAt(dayHour));
+    applySky(sky, skyAt(dayHour, BASE_DAY_CYCLE));
     const day = camera.far;
-    applySky(sky, skyAt(nightHour));
+    applySky(sky, skyAt(nightHour, BASE_DAY_CYCLE));
     expect(camera.far).toBeLessThan(day / 2);
     // The projection follows, so culling does too.
     const fresh = camera.clone();
@@ -75,7 +75,7 @@ describe('culling', () => {
 
   it('shows chunks ahead, and hides those behind the camera or beyond the fog', () => {
     const scene = setup();
-    applySky(scene.sky, skyAt(dayHour)); // fog ends before the view radius
+    applySky(scene.sky, skyAt(dayHour, BASE_DAY_CYCLE)); // fog ends before the view radius
     const c = CHUNK; // in blocks: 16 m at 0.5 m blocks
     scene.meshes.set('ahead', [-c / 2, 0, -2 * c], floor); // 16–32 m ahead
     scene.meshes.set('behind', [-c / 2, 0, 2 * c], floor);
@@ -86,7 +86,7 @@ describe('culling', () => {
 
   it('culls with the tight box, not the whole chunk', () => {
     const scene = setup();
-    applySky(scene.sky, skyAt(dayHour));
+    applySky(scene.sky, skyAt(dayHour, BASE_DAY_CYCLE));
     const fogFar = scene.camera.far;
     // Just past the far plane: the chunk's 16 m sphere would reach back inside it, but its
     // flat floor at the chunk's near edge is still beyond.

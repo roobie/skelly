@@ -1,5 +1,5 @@
 import { type SpawnTimeWindow, spawnWindowOpen } from './clock.ts';
-import type { Registry } from './content.ts';
+import { type Registry, requireDayCycle } from './content.ts';
 import type { Site, ZombieSpawn } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { ZombieSystem } from './zombies.ts';
@@ -70,7 +70,7 @@ export class ZombieSpawner {
     for (const [key, { spawn }] of pending) {
       if (this.spawned.has(key)) {
         this.pending.delete(key);
-      } else if (spawnWindowOpen(calendar, spawn.window)) {
+      } else if (spawnWindowOpen(calendar, spawn.window, requireDayCycle(registry))) {
         this.spawnOnce(key, spawn, registry, zombies);
         this.pending.delete(key);
       }

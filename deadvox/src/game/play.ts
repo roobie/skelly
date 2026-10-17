@@ -21,12 +21,7 @@ import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
-import {
-  hasMetThrowMinimumHold,
-  ITEM_FLIGHT_SECONDS,
-  throwDistanceForItem,
-  traceItemLanding,
-} from '../core/itemThrow.ts';
+import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
@@ -40,7 +35,7 @@ import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
-import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
+import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
@@ -146,6 +141,7 @@ import {
   shouldBlockFromEnGarde,
   shouldEnterMeleeReady,
   startPlayerMelee,
+  unarmedMeleeWeapon,
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
@@ -577,6 +573,7 @@ export interface StartPlayOptions {
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
+  readonly loading?: { readonly owner: WorldLoading; readonly draw: () => void };
   readonly replay?: {
     readonly inputs: ReplayInputData;
     readonly endStateFingerprint: string;
@@ -584,6 +581,14 @@ export interface StartPlayOptions {
     readonly startState: ReplayStartState;
   };
 }
+
+const playLoadingFor = (engine: Engine, options: StartPlayOptions) => {
+  if (options.loading) {
+    return options.loading;
+  }
+  const owner = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
+  return { owner, draw: mountWorldLoading(owner) };
+};
 
 const configureReplayStreaming = (engine: Engine, replay: StartPlayOptions['replay']): void => {
   if (replay) {
@@ -644,8 +649,7 @@ export const startPlay = (
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
-  const worldLoading = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
-  const drawWorldLoading = mountWorldLoading(worldLoading);
+  const { owner: worldLoading, draw: drawWorldLoading } = playLoadingFor(engine, options);
   configureRestoreFailure(streamer, options.saveController);
   configureReplayStreaming(engine, options.replay);
   const { scale } = config;
@@ -1216,6 +1220,7 @@ export const startPlay = (
     workOptions: (uid) => session.crafting.options(uid),
     character: () => session.character,
     body: () => sim.body,
+    slotLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.wearSlotLabels,
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
@@ -2642,7 +2647,7 @@ export const startPlay = (
       body.pos[2] * s + throwOffset[2],
     ];
     const startedAtSimSeconds = sim.time;
-    const landingAt = startedAtSimSeconds + ITEM_FLIGHT_SECONDS;
+    const landingAt = startedAtSimSeconds + reachTuning(registry).throwFlightSimSeconds;
     const landed = session.throwCharge.place(item, hand, target);
     if (!landed.landed) {
       if (landed.reason) {
@@ -2659,6 +2664,7 @@ export const startPlay = (
       from,
       direction: lookDir(),
       distanceMetres,
+      arcHeightMetres: reachTuning(registry).throwArcHeightMetres,
       blockSize: s,
       minY: scale.minCy * CHUNK,
       isSolid: engine.isSolid,
@@ -2735,7 +2741,7 @@ export const startPlay = (
       }
     }
     return {
-      weapon: FISTS_MELEE,
+      weapon: unarmedMeleeWeapon(registry.meleeClasses),
       profile: 'fists',
       ...(preferredHand === undefined ? {} : { hand: preferredHand }),
       twoHanded: false,
@@ -2749,8 +2755,8 @@ export const startPlay = (
       return;
     }
     const selected = meleeSelection(preferredHand);
-    const classTuning = selected.profile === 'fists' ? undefined : registry.meleeClasses.get(selected.profile);
-    if (selected.profile !== 'fists' && classTuning === undefined) {
+    const classTuning = registry.meleeClasses.get(selected.profile);
+    if (classTuning === undefined) {
       throw new Error(`Missing melee class tuning for ${selected.profile}`);
     }
     const swingWeapon = resolvePlayerMeleeWeapon(
@@ -3250,6 +3256,7 @@ export const startPlay = (
       surface,
       zombies: zombieSystem,
       blockSize: s,
+      weapon: unarmedMeleeWeapon(registry.meleeClasses),
     });
   };
 
@@ -3485,6 +3492,7 @@ export const startPlay = (
       canStop: rest.canStop || waitAction !== undefined,
       sim,
       messagesVisible,
+      restLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.restLabels,
     });
   };
 

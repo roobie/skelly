@@ -1,8 +1,10 @@
+import type { ClockSettings } from '../src/core/clock.ts';
 import type { Registry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
 import { gameHours, gameMinutes, gamePerHour, realSeconds, simRate, simSeconds } from '../src/core/time.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   id: 'player-fixture',
@@ -156,13 +158,15 @@ export const COMPRESSION_CAPS_FIXTURE: CompressionCaps = {
 
 export class Simulation extends CoreSimulation {
   constructor(
-    options: Omit<SimOptions, 'bodyTuning' | 'compressionCaps'> & {
+    options: Omit<SimOptions, 'bodyTuning' | 'compressionCaps' | 'clock'> & {
       bodyTuning?: BodyTuningDef;
       compressionCaps?: CompressionCaps;
+      clock?: ClockSettings;
     },
   ) {
     super({
       ...options,
+      clock: options.clock ?? BASE_CLOCK,
       bodyTuning: options.bodyTuning ?? BODY_TUNING_FIXTURE,
       compressionCaps: options.compressionCaps ?? COMPRESSION_CAPS_FIXTURE,
     });

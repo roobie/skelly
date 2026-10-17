@@ -12,11 +12,12 @@ import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
-import { sitePalette } from '../src/core/sitePalette.ts';
+import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
+import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const { registry } = startupContent();
 const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
@@ -27,7 +28,6 @@ const COMPOSED_LADDER = /composed ladder/;
 // The heavy cases are CPU-bound, so their timeouts scale with the simulated work and leave headroom for a shared
 // CPU, instead of vitest's flat default (#792).
 const WALK_MS_PER_STOREY = 4800;
-const GAUNTLET_SITE_MS = 7200;
 const scale = makeScale(0.5);
 const grid = cityGridOf(registry, profile.city);
 const base = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
@@ -306,6 +306,7 @@ it(
     const request = (site: CitySite, order: readonly Vec3[]) => {
       const terrain = {
         seed: site.seed,
+        shape: terrainShapeOf(registry),
         scale,
         surface: site.surface,
         blocks: sitePalette(registry).terrain,

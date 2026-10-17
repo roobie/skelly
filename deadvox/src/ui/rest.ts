@@ -1,6 +1,6 @@
 import { html, render, type TemplateResult } from 'lit-html';
 import { calendarAt, formatClock } from '../core/clock.ts';
-import type { RestAction } from '../core/longAction.ts';
+import type { RestAction, RestKind } from '../core/longAction.ts';
 import type { Simulation } from '../core/sim.ts';
 import { labelForAction } from '../game/inputBindings.ts';
 import { activityProgress } from './activityProgress.ts';
@@ -19,17 +19,23 @@ export interface RestViewModel {
   readonly prompt: string | undefined;
 }
 
+export interface RestViewOptions {
+  readonly messagesVisible: boolean;
+  /** What the card calls each kind of rest; from the core ui content. */
+  readonly restLabels: Readonly<Record<RestKind, string>>;
+}
+
 export const restViewModel = (
   action: RestAction | WaitViewAction | undefined,
   canStop: boolean,
   sim: Simulation,
-  messagesVisible: boolean,
+  { messagesVisible, restLabels }: RestViewOptions,
 ): RestViewModel => {
   if (!action) {
     return { visible: false, label: '', clock: '', percent: 0, stopHint: '', canStop: false, prompt: undefined };
   }
   let percent = 0;
-  let label: string = action.label;
+  let label: string = 'startFatigue' in action ? restLabels[action.kind] : action.label;
   if ('startFatigue' in action && action.sleepOnset !== undefined) {
     percent = Math.min(100, (action.sleepOnset.elapsedGameSeconds / action.sleepOnset.durationGameSeconds) * 100);
     label = 'Falling asleep';
@@ -76,14 +82,16 @@ export const renderRest = ({
   canStop,
   sim,
   messagesVisible,
+  restLabels,
 }: {
   root: HTMLElement;
   action: RestAction | WaitViewAction | undefined;
   canStop: boolean;
   sim: Simulation;
   messagesVisible: boolean;
+  restLabels: Readonly<Record<RestKind, string>>;
 }): void => {
-  const vm = restViewModel(action, canStop, sim, messagesVisible);
+  const vm = restViewModel(action, canStop, sim, { messagesVisible, restLabels });
   root.hidden = !vm.visible;
   if (vm.visible) {
     render(restTemplate(vm), root);

@@ -5,12 +5,7 @@ import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
-import {
-  footstepEventForBlock,
-  type PlayerGait,
-  STEP_DISTANCE_METRES,
-  shamblerFootstepEventForBlock,
-} from '../src/core/footsteps.ts';
+import { footstepEventForBlock, type PlayerGait, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
 import type { Item } from '../src/core/items.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -18,7 +13,7 @@ import type { SimEvent, Timed } from '../src/core/sim.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { figureSeedPool } from '../src/core/zombieFigure.ts';
-import { FISTS_MELEE, hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
+import { hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
 import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
 import { firearmShotEmission, firearmShotSoundEvents } from '../src/game/audioPresentation.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
@@ -28,6 +23,7 @@ import { startPlayerMelee } from '../src/game/melee.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -226,7 +222,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       }
     }
     observe(scenario, 'footstep surfaces available', surfaces.size > 0);
-    const gaits = Object.keys(STEP_DISTANCE_METRES) as Exclude<PlayerGait, 'still'>[];
+    const gaits: Exclude<PlayerGait, 'still'>[] = ['walking', 'jogging', 'sprinting'];
     for (const [event, block] of surfaces) {
       for (const gait of gaits) {
         coverFootstep(scenario, event, block, gait);

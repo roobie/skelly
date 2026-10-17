@@ -1,10 +1,91 @@
 {
   "dayCycle": {
+    "clockRatio": 8,
     "latitudeDegrees": 40,
     "date": {
       "month": 6,
       "day": 25
     },
-    "twilight": "nautical"
+    "twilight": "nautical",
+    "defaultStartGameTimeOfDay": "10:00",
+    "midnightGameTimeOfDay": "00:00",
+    "noonGameTimeOfDay": "12:00",
+    "looks": {
+      "night": {
+        "sky": "#0a0d12",
+        "lightColor": "#7d8ca8",
+        "lightIntensity": 0.12,
+        "ambientSky": "#3a465a",
+        "ambientGround": "#100e0c",
+        "ambientIntensity": 0.22,
+        "fogNear": 0.1,
+        "fogFar": 0.5,
+        "heightFog": 0.01,
+        "heightFogColor": "#1c2430",
+        "bloom": 0.5,
+        "tone": 1
+      },
+      "deepNight": {
+        "sky": "#040508",
+        "lightColor": "#6a7690",
+        "lightIntensity": 0.05,
+        "ambientSky": "#1c2330",
+        "ambientGround": "#050505",
+        "ambientIntensity": 0.1,
+        "fogNear": 0.05,
+        "fogFar": 0.35,
+        "heightFog": 0.012,
+        "heightFogColor": "#121821",
+        "bloom": 0.55,
+        "tone": 1
+      },
+      "dawn": {
+        "sky": "#8a807e",
+        "lightColor": "#f0b088",
+        "lightIntensity": 0.7,
+        "ambientSky": "#b8b0b0",
+        "ambientGround": "#4a4038",
+        "ambientIntensity": 0.8,
+        "fogNear": 0.3,
+        "fogFar": 0.8,
+        "heightFog": 0.014,
+        "heightFogColor": "#b09a90",
+        "bloom": 0.2,
+        "tone": 0.85
+      },
+      "day": {
+        "sky": "#a9bfd0",
+        "lightColor": "#fff2dd",
+        "lightIntensity": 1.6,
+        "ambientSky": "#dfe8f0",
+        "ambientGround": "#5a4a3a",
+        "ambientIntensity": 1.3,
+        "fogNear": 0.6,
+        "fogFar": 0.95,
+        "heightFog": 0.002,
+        "heightFogColor": "#b4c6d4",
+        "bloom": 0.08,
+        "tone": 0
+      },
+      "dusk": {
+        "sky": "#6e5e5c",
+        "lightColor": "#e89868",
+        "lightIntensity": 0.6,
+        "ambientSky": "#9a8c90",
+        "ambientGround": "#3a302a",
+        "ambientIntensity": 0.7,
+        "fogNear": 0.3,
+        "fogFar": 0.8,
+        "heightFog": 0.008,
+        "heightFogColor": "#8a6e66",
+        "bloom": 0.25,
+        "tone": 0.85
+      }
+    },
+    "weather": {
+      "defaultFogginess": 0.2,
+      "nearTighten": 0.85,
+      "farTighten": 0.6
+    }
   }
 }

@@ -4,8 +4,9 @@ import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { PILE_GRID } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
-import { ITEM_ARC_HEIGHT_METRES, ITEM_FLIGHT_SECONDS, itemFlightPoint } from '../core/itemThrow.ts';
+import { itemFlightPoint } from '../core/itemThrow.ts';
 import { effectivePileDisplay, effectivePileItemPosition } from '../core/pileDisplay.ts';
+import { reachTuning } from '../core/reach.ts';
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -55,7 +56,7 @@ export class ItemThrows {
       item,
       itemUid = item.uid,
       startedAtSimSeconds = 0,
-      landingAt = ITEM_FLIGHT_SECONDS,
+      landingAt = startedAtSimSeconds + reachTuning(this.registry).throwFlightSimSeconds,
     }: {
       origin: Vec3;
       item: Item;
@@ -201,12 +202,17 @@ export class ItemThrows {
   }
 
   private drawFlight(flight: Flight, progress: number): void {
-    const point = itemFlightPoint(flight.start.toArray() as Vec3, flight.end.toArray() as Vec3, progress);
+    const { throwArcHeightMetres } = reachTuning(this.registry);
+    const point = itemFlightPoint(
+      flight.start.toArray() as Vec3,
+      flight.end.toArray() as Vec3,
+      progress,
+      throwArcHeightMetres,
+    );
     flight.group.position.set(...point);
     flight.direction.subVectors(flight.end, flight.start);
     flight.direction.y +=
-      (Math.cos(Math.PI * progress) * ITEM_ARC_HEIGHT_METRES * Math.PI) /
-      (flight.landingAt - flight.startedAtSimSeconds);
+      (Math.cos(Math.PI * progress) * throwArcHeightMetres * Math.PI) / (flight.landingAt - flight.startedAtSimSeconds);
     flight.group.quaternion.setFromUnitVectors(flight.modelVisual ? RIGHT : UP, flight.direction.normalize());
   }
 }

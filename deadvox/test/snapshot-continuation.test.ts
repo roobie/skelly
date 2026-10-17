@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
+import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import type { Site } from '../src/core/site.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
-import { gameTimeOfDay, realSeconds } from '../src/core/time.ts';
+import { realSeconds } from '../src/core/time.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
 import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
@@ -113,10 +114,11 @@ describe('hamlet save/load continuation', () => {
   });
 
   it('loads a closed-window marker from a save and spawns it in the background tier when the window opens', () => {
-    const start = SPAWN_TIMES.dusk - 60;
+    const dusk = resolveSpawnTime(registry.dayCycle!, 'dusk');
+    const start = dusk - 60;
     const [cx, cz] = fixtureZombieColumn;
     const pos: [number, number, number] = [cx * 32 + 20, 1, cz * 32 + 20];
-    const marker = { type: 'shambler', pos, window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) } };
+    const marker = { type: 'shambler', pos, window: { fromGameTimeOfDay: dusk } };
     const timedSite = {
       surface: { height: (_x: number, _z: number, natural: number) => natural, top: () => undefined },
       spawn: { pos: [0, 0, 0] as [number, number, number], yaw: 0 },
@@ -136,7 +138,7 @@ describe('hamlet save/load continuation', () => {
       [...loaded.zombies.store.entries()].filter(([, zombie]) => zombie.home.every((v, i) => v === pos[i]));
     expect(atHome()).toHaveLength(0);
     advance(loaded, 456);
-    expect(loaded.sim.calendar).toBeGreaterThan(SPAWN_TIMES.dusk);
+    expect(loaded.sim.calendar).toBeGreaterThan(dusk);
     expect(atHome()).toHaveLength(1);
     expect(atHome()[0]?.[1].tier).toBe('background');
     expect(loaded.spawner.snapshotState()).toContain(key);
@@ -171,7 +173,11 @@ describe('hamlet save/load continuation', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, scale, x, startZ));
+    const ground = fixtureHamlet.surface.height(
+      x,
+      startZ,
+      terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),
+    );
     const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
     const cx = toChunk(x);
     const cz = toChunk(z);
@@ -272,7 +278,11 @@ describe('hamlet save/load continuation', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, scale, x, startZ));
+    const ground = fixtureHamlet.surface.height(
+      x,
+      startZ,
+      terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),
+    );
     const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
     const cx = toChunk(x);
     const cz = toChunk(z);

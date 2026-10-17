@@ -3,6 +3,7 @@
 
 import type { BlockEntity } from './blockEntities.ts';
 import { dominantSide } from './character.ts';
+import type { ClockSettings } from './clock.ts';
 import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
@@ -20,6 +21,8 @@ export interface ReachPlayer {
   /** Unrounded physics feet, in blocks. A getter may follow the live body. */
   readonly position: Vec3;
   readonly blockSize: number;
+  /** The session's clock; it turns handling seconds into the game seconds a craft plan states. */
+  readonly clock: ClockSettings;
 }
 
 export interface ReachEntry {

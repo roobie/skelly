@@ -2,7 +2,7 @@
 // systems registered on it. Pure, so scenario tests run it headless.
 
 import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
-import { type ClockSettings, calendarAt, defaultClock, simToGameHours } from './clock.ts';
+import { type ClockSettings, calendarAt, simToGameHours } from './clock.ts';
 import { Compression, type CompressionLimits, type CompressionOwner, longActionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
@@ -49,7 +49,7 @@ export interface SimOptions {
   analgesics?: AnalgesicLookup;
   /** The content cap of each compressing long action. */
   compressionCaps: CompressionCaps;
-  clock?: ClockSettings;
+  clock: ClockSettings;
 }
 
 /** Needs tick at 1 Hz; under compression their step grows to 30 s, 4 game minutes at 1:8. */
@@ -77,7 +77,7 @@ export class Simulation {
 
   constructor(options: SimOptions) {
     this.seed = options.seed;
-    this.clock = options.clock ?? defaultClock;
+    this.clock = options.clock;
     this.body = new Body(options.bodyTuning, undefined, undefined, options.analgesics);
     this.needs = this.body.spawnNeeds;
     this.compressionCaps = options.compressionCaps;

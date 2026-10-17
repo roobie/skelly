@@ -2,7 +2,7 @@ import { NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { GRAPHICS_KEYS, GRAPHICS_KNOBS } from '../src/core/graphics.ts';
 import { SHADOW_DISTANCES } from '../src/core/mood.ts';
-import { DEFAULT_FOGGINESS, type Weather } from '../src/core/weather.ts';
+import type { Weather } from '../src/core/weather.ts';
 import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
@@ -10,6 +10,7 @@ import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 import { inputBindings } from '../src/game/inputBindings.ts';
 import { TONE_MODES } from '../src/render/look.ts';
+import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
@@ -141,7 +142,7 @@ const makeActions = (
   let patterns = true;
   let occlusion = true;
   const mood = new FakeMood();
-  const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
+  const weather: Weather = { fogginess: BASE_DAY_CYCLE.weather.defaultFogginess };
   const shadows = new FakeShadows();
   const flashlight = { strength: 1 };
   const look = new LookControls(

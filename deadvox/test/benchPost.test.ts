@@ -9,6 +9,7 @@ import { DEFAULT_WEATHERING_PROFILE_ID } from '../src/core/weather.ts';
 import type { StartupContent } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
+import { startupContent } from './baseRegistry.ts';
 
 const params = (query: string) => new URLSearchParams(query);
 
@@ -55,6 +56,7 @@ describe('benchmark post-processing option', () => {
     let captured: { calls: number; triangles: number } | undefined;
     const engine = {
       renderer: { info, toneMapping: 0, toneMappingExposure: 1 },
+      registry: startupContent().registry,
       scene: {},
       camera: { position: {} },
       meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },

@@ -7,6 +7,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
 import { options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
@@ -21,7 +22,7 @@ const { registry } = buildRegistry(
 const setup = (handedness?: 'right' | 'left') => {
   const character = new Character(registry, handedness ? { handedness } : {});
   const inventory = new Inventory(registry, undefined, undefined, character);
-  const player: ReachPlayer = { inventory, position: [0.5, 0, 0.5], blockSize: 1 };
+  const player: ReachPlayer = { inventory, position: [0.5, 0, 0.5], blockSize: 1, clock: BASE_CLOCK };
   const view = bindReach(player);
   const queue = new HandlingQueue(inventory);
   const add = (type: string, target: Parameters<Inventory['add']>[1], count = 1) => {
@@ -64,7 +65,7 @@ const setupStackReuse = () => {
     throw new Error(`Invalid quick-move fixture: ${issues.map((issue) => issue.message).join('; ')}`);
   }
   const inventory = new Inventory(fixtureRegistry);
-  const view = bindReach({ inventory, position: [0.5, 0, 0.5], blockSize: 1 });
+  const view = bindReach({ inventory, position: [0.5, 0, 0.5], blockSize: 1, clock: BASE_CLOCK });
   const queue = new HandlingQueue(inventory);
   const add = (type: string, target: Parameters<Inventory['add']>[1], count = 1) => {
     const item = inventory.create(type, count);
@@ -94,6 +95,7 @@ it.each(['plain', 'nested'] as const)('%s ground items cross the absolute 2m bou
     inventory: t.inventory,
     position: [0.5 - 1.999 / blockSize, 0, 0.5] as [number, number, number],
     blockSize,
+    clock: BASE_CLOCK,
   };
   const view = bindReach(player);
   expect(view().entries.some((entry) => entry.item === item)).toBe(true);
@@ -127,7 +129,7 @@ it('lists workstation components only when their furniture box is within two met
   });
   const fixtureRegistry = { ...registry, furniture: fixtureFurniture };
   const inventory = new Inventory(fixtureRegistry);
-  const player: ReachPlayer = { inventory, position: [0, 0, 0], blockSize: 0.5 };
+  const player: ReachPlayer = { inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK };
   const view = bindReach(player);
   const near = inventory.entities.add({
     type: 'fixture_reach_station',

@@ -16,6 +16,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const { registry } = buildRegistry(
@@ -33,7 +34,7 @@ const make = (handedness?: HandSide) => {
   const queue = new HandlingQueue(inventory);
   const sim = new Simulation({ seed: 1 });
   const position: [number, number, number] = [0, 0, 0];
-  const reach = bindReach({ inventory, position, blockSize: 0.5 });
+  const reach = bindReach({ inventory, position, blockSize: 0.5, clock: BASE_CLOCK });
   sim.actions.craft = craftActionHooks(inventory, character, reach, () => position);
   const commands = new CraftCommands({ inventory, character, sim, queue, reach });
   for (const [type, count] of [

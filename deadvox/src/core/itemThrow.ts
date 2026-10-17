@@ -3,9 +3,6 @@ import type { Vec3 } from './coords.ts';
 import { type Item, weightOf } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 
-export const ITEM_FLIGHT_SECONDS = 0.75;
-export const ITEM_ARC_HEIGHT_METRES = 1.1;
-
 export const hasMetThrowMinimumHold = (heldSimSeconds: number, minimumHoldSimSeconds: number): boolean =>
   heldSimSeconds >= minimumHoldSimSeconds;
 
@@ -33,11 +30,11 @@ export const throwDistanceForItem = (
   return maximumDistanceMetres * rangeFactor * chargeFraction;
 };
 
-export const itemFlightPoint = (from: Vec3, to: Vec3, progress: number): Vec3 => {
+export const itemFlightPoint = (from: Vec3, to: Vec3, progress: number, arcHeightMetres: number): Vec3 => {
   const t = Math.max(0, Math.min(1, progress));
   return [
     from[0] + (to[0] - from[0]) * t,
-    from[1] + (to[1] - from[1]) * t + Math.sin(Math.PI * t) * ITEM_ARC_HEIGHT_METRES,
+    from[1] + (to[1] - from[1]) * t + Math.sin(Math.PI * t) * arcHeightMetres,
     from[2] + (to[2] - from[2]) * t,
   ];
 };
@@ -56,6 +53,7 @@ export const traceItemLanding = ({
   from,
   direction,
   distanceMetres,
+  arcHeightMetres,
   blockSize,
   minY,
   isSolid,
@@ -63,6 +61,7 @@ export const traceItemLanding = ({
   from: Vec3;
   direction: Vec3;
   distanceMetres: number;
+  arcHeightMetres: number;
   blockSize: number;
   minY: number;
   isSolid: SolidAt;
@@ -78,7 +77,7 @@ export const traceItemLanding = ({
   const steps = Math.max(1, Math.ceil(distanceMetres / stepMetres));
   let lastSafe = from;
   for (let step = 0; step <= steps; step++) {
-    const point = itemFlightPoint(from, to, step / steps);
+    const point = itemFlightPoint(from, to, step / steps, arcHeightMetres);
     if (isSolid(Math.floor(point[0] / blockSize), Math.floor(point[1] / blockSize), Math.floor(point[2] / blockSize))) {
       return step === 0 ? undefined : settleOnWorld(lastSafe, blockSize, minY, isSolid);
     }

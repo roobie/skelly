@@ -8,6 +8,7 @@ import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf } from '../src/core/items.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
@@ -108,20 +109,13 @@ const inventoryHandlingTime = (level: number, source: Registry = fixtureRegistry
 describe('Inventory Management skill', () => {
   it('preserves unscaled level-zero time and follows content tuning through level ten', () => {
     const tunedRegistry = fixtureRegistry();
-    const withoutInventorySkill: Registry = {
-      ...tunedRegistry,
-      skills: new Map([...tunedRegistry.skills].filter(([id]) => id !== 'inventory_management')),
-    };
-    const unscaled = inventoryHandlingTime(0, withoutInventorySkill);
     const skill = registry.skills.get('inventory_management');
     const tuning = skill?.inventory;
     if (!tuning) {
       throw new Error('Inventory Management content has no handling tuning');
     }
-    expect(inventoryHandlingTime(0)).toBe(unscaled);
-
     const times = [0, 1, 5, 10, 11].map((level) => inventoryHandlingTime(level, tunedRegistry));
-    expect(times[0]).toBe(unscaled);
+    const unscaled = times[0]!;
     expect(times[1]).toBeLessThan(times[0]!);
     expect(times[2]).toBeLessThan(times[1]!);
     expect(times[3]).toBeLessThan(times[2]!);
@@ -223,7 +217,7 @@ describe('Inventory Management skill', () => {
 
   it('scales furniture searches and trains only after a successful search', () => {
     const durations: number[] = [];
-    const searchBase = searchTime(registry.furniture.get('kitchen_cupboard')!);
+    const searchBase = searchTime(registry.furniture.get('kitchen_cupboard')!, reachTuning(registry));
     for (const level of [0, 5, 10]) {
       const runtime = createRuntime();
       runtime.session.character.skills.inventory_management = level;
