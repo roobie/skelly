@@ -1,6 +1,6 @@
 // The mood pass: bloom, colour grade, vignette and film grain on top of the scene, plus the
-// height-fog mist. All of it is optional and cheap; with `post` off the frame is drawn
-// straight to the screen with `renderer.render`, exactly as before the pass existed.
+// height-fog mist. With `post` off, direct display shading is preserved and a smaller scene
+// viewport can be copied and presented full-size without enabling any mood effects.
 //
 // Pipeline (post on), all in an MSAA half-float linear target until the last step:
 //   RenderPass (scene) -> hands -> bloom -> output (tone mapping + sRGB + grade/film) -> screen
@@ -58,6 +58,7 @@ import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
 import { createMoodOutputPass } from './moodOutput.ts';
 import { OpticLensRenderer, opticLensPass } from './opticLens.ts';
+import { ScreenScale } from './screenScale.ts';
 
 const RETICLE_UNIFORM: Record<ReticleKind, number> = { dot: 0, crosshair: 1, chevron: 2 };
 
@@ -97,6 +98,7 @@ export class Mood {
   private crackOn = false;
   private readonly crackColor = new Color();
   private composer: EffectComposer | undefined;
+  private screenScale: ScreenScale | undefined;
   private readonly drawPass = new DrawPass();
   private opticLens = new OpticLensRenderer();
   private opticPass: ShaderPass | undefined;
@@ -266,7 +268,6 @@ export class Mood {
     if (
       this.adaptiveScale.active &&
       !this.externalGpuTiming &&
-      this.state.post &&
       typeof document !== 'undefined' &&
       document.visibilityState === 'visible'
     ) {
@@ -298,9 +299,17 @@ export class Mood {
       const { renderer } = this;
       const chosen = renderer.toneMapping;
       renderer.toneMapping = screenToneMapping(chosen);
-      try {
+      const draw = () => {
         renderer.render(this.scene, this.camera);
         drawHands();
+      };
+      try {
+        if (this.renderScaleValue < 1) {
+          this.screenScale ??= new ScreenScale();
+          this.screenScale.render(renderer, this.renderScaleValue, draw);
+        } else {
+          draw();
+        }
       } finally {
         renderer.toneMapping = chosen;
       }
@@ -443,6 +452,7 @@ export class Mood {
   private releaseComposer(): void {
     // Context loss already frees GPU storage; disposing stale handles only produces invalid deletes.
     this.gpuProbe = undefined;
+    this.screenScale = undefined;
     this.opticLens = new OpticLensRenderer();
     this.composer = undefined;
     this.bloomPass = undefined;
