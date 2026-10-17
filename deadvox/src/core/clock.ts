@@ -4,7 +4,6 @@
 export const SECONDS_PER_HOUR = 3600;
 export const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
 
-import coreDayCycle from '../content/base/dayCycle.json' with { type: 'json' };
 import { type DayCycle, dayPhaseAt } from './dayPhase.ts';
 import { type GameTimeOfDay, gameTimeOfDay, simTimestamp, simToGameTimestamp } from './time.ts';
 
@@ -107,12 +106,6 @@ export const parseTimeOfDay = (text: string): number | undefined => {
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
   return hours < 24 && minutes < 60 ? hours * SECONDS_PER_HOUR + minutes * 60 : undefined;
-};
-
-/** Core content's default start; the game reads its loaded registry instead (`registry.dayCycle`). */
-export const defaultClock: ClockSettings = {
-  ratio: CLOCK_RATIO,
-  start: parseTimeOfDay(coreDayCycle.dayCycle.defaultStartGameTimeOfDay)!,
 };
 
 /** Time-of-day windows recur daily; an open-ended window stays eligible after its first start. */

@@ -4,7 +4,7 @@
 // with it.
 
 import type { Vec3 } from './coords.ts';
-import { type DayCycle, type DayPhase, type DayPhaseState, DEFAULT_DAY_CYCLE, dayPhaseAt } from './dayPhase.ts';
+import { type DayCycle, type DayPhase, type DayPhaseState, dayPhaseAt } from './dayPhase.ts';
 
 /** sRGB in [0, 1], as in CSS hex colours. */
 export type Rgb = readonly [number, number, number];
@@ -198,14 +198,13 @@ const lookAt = (state: DayPhaseState, time: number): Look => {
 };
 
 /** Sun direction from the single latitude/date model, with east/up/north axes. */
-export const sunDirection = (hour: number, cycle: DayCycle = DEFAULT_DAY_CYCLE): Vec3 =>
-  dayPhaseAt(cycle, hour * 3600).sunDirection;
+export const sunDirection = (hour: number, cycle: DayCycle): Vec3 => dayPhaseAt(cycle, hour * 3600).sunDirection;
 
 /** Lowest elevation of the main light, so it never grazes the ground at sunrise and sunset. */
 const MIN_LIGHT_Y = 0.2;
 
 /** The sky, light and fog at a local solar hour in [0, 24). */
-export const skyAt = (hour: number, cycle: DayCycle = DEFAULT_DAY_CYCLE): Sky => {
+export const skyAt = (hour: number, cycle: DayCycle): Sky => {
   const time = hour * 3600;
   const state = dayPhaseAt(cycle, time);
   // The light follows the sun's continuous arc; the night palette supplies the moon-like light.
@@ -222,6 +221,3 @@ export const skyAt = (hour: number, cycle: DayCycle = DEFAULT_DAY_CYCLE): Sky =>
  * stays dark at every hour.
  */
 export const sunShadowStrength = (lightIntensity: number): number => (lightIntensity > 0 ? 1 : 0);
-
-/** The daytime look, for the benchmark. */
-export const DAY_SKY: Sky = skyAt(12);

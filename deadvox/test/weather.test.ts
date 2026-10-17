@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { skyAt } from '../src/core/sky.ts';
+import { skyAt as skyAtCycle } from '../src/core/sky.ts';
 import { clampFogginess, DEFAULT_FOGGINESS, skyInWeather } from '../src/core/weather.ts';
-import { phaseMidpoint } from './dayPhaseFixture.ts';
+import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
+
+const skyAt = (hour: number) => skyAtCycle(hour, BASE_DAY_CYCLE);
 
 const HOURS = Array.from({ length: 48 }, (_, i) => i / 2);
 const STEPS = [0, 0.1, 0.2, 0.3, 0.5, 0.8, 1];

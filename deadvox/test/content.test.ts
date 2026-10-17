@@ -1057,6 +1057,14 @@ describe('content', () => {
     });
   });
 
+  it('reports a missing day cycle as a load error', () => {
+    expect(requiredContentIssues({ ...baseRegistry, dayCycle: undefined })).toContainEqual({
+      source: 'core content',
+      path: 'dayCycle',
+      message: 'missing required day cycle',
+    });
+  });
+
   it('reports a missing sound event even when another is defined', () => {
     const retainedId = SOUND_EVENT_IDS.at(-1)!;
     const missingId = SOUND_EVENT_IDS.find((id) => id !== retainedId);

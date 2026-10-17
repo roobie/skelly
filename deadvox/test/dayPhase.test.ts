@@ -2,9 +2,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { sunExposedAt } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
@@ -18,7 +18,7 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
-const cycle = registry.dayCycle ?? DEFAULT_DAY_CYCLE;
+const cycle = requireDayCycle(registry);
 const shambler = registry.zombies.get('shambler')!;
 const scale = makeScale(0.5);
 const floor = (_x: number, y: number) => y === 0;

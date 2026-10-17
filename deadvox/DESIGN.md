@@ -1338,7 +1338,9 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
   night range through twilight and reduced when you crouch), hearing (noise events)
   and smell (a trail the player leaves, which rain washes out). The base pack's
   day cycle applies to every site; its late-June, mid-latitude cycle with nautical
-  twilight gives long daylight without modeling seasonal change. See
+  twilight gives long daylight without modeling seasonal change. The day cycle is
+  required content with no code default, so a pack without one fails to load rather
+  than silently playing under a hidden sun. See
   `src/content/base/dayCycle.json`, `dayCycle`, for its authored settings. Sky,
   sight blending, horde roaming and named spawn windows follow solar boundaries
   rather than fixed clock hours. Hordes roam from sunset through dawn
