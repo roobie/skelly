@@ -75,7 +75,7 @@ export class CitySite implements Site {
   get surface(): Surface {
     const { grid, bounds, core, floor } = this.plan;
     const alleys = Array.from(
-      { length: (grid.rows ?? 2) / 2 - 1 },
+      { length: grid.rows / 2 - 1 },
       (_, pair) => cityRowStart(grid, pair * 2) + 2 * cityRowDepth(grid),
     );
     return {

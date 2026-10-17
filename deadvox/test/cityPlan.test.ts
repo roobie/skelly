@@ -283,7 +283,7 @@ describe('one finished city plan', () => {
     const alleyZ =
       scenario.city.street +
       scenario.city.pad +
-      2 * Math.floor((scenario.city.blockZ - 2 * scenario.city.pad - scenario.city.street) / scenario.city.rows!);
+      2 * Math.floor((scenario.city.blockZ - 2 * scenario.city.pad - scenario.city.street) / scenario.city.rows);
     expect(site.surface.top(scenario.city.street + scenario.city.pad + 2, alleyZ)).toBe(
       admitted.registry.blockIds.get('asphalt'),
     );

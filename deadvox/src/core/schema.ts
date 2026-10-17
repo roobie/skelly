@@ -1599,13 +1599,11 @@ const ScenarioSchema = strictObject({
     pad: pipe(Count, minValue(2), maxValue(32)),
     gap: pipe(Count, minValue(1), maxValue(32)),
     blend: pipe(Count, maxValue(64)),
-    rows: optional(
-      pipe(
-        Count,
-        minValue(2),
-        maxValue(8),
-        check((value) => value % 2 === 0, 'needs paired rows'),
-      ),
+    rows: pipe(
+      Count,
+      minValue(2),
+      maxValue(8),
+      check((value) => value % 2 === 0, 'needs paired rows'),
     ),
     perimeter: optional(
       strictObject({
