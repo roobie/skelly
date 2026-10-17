@@ -11,7 +11,7 @@ function compareId(a: { id: string }, b: { id: string }): number {
   return a.id < b.id ? -1 : 1;
 }
 
-export const modProfile = 'cel-js-8.0.0-mod-spike-1';
+export const modProfile = 'cel-js-8.0.0-mod-spike-2';
 export const modLimits = Object.freeze({
   source: 4096,
   nodes: 256,
@@ -73,6 +73,7 @@ interface LoadedRule {
   def: RuleDef;
   when: Program;
   effects: Program;
+  stateKeys: ReadonlySet<string>;
 }
 interface LoadedFunction {
   owner: string;
@@ -168,7 +169,9 @@ export function compileModExpression(
     result,
     functions,
     states,
+    label = 'expression',
   }: {
+    label?: string;
     schema: Readonly<Record<string, string>>;
     result: string;
     functions: Map<string, LoadedFunction>;
@@ -176,35 +179,46 @@ export function compileModExpression(
   },
 ): Program {
   const env = boundedEnvironment(source);
+  let activeFrame: { failure?: { error: unknown } } | undefined;
+  function register<Args extends unknown[], Result>(signature: string, handler: (...args: Args) => Result): void {
+    env.registerFunction(signature, (...args: Args) => {
+      try {
+        return handler(...args);
+      } catch (error) {
+        // CEL may discard a callback exception after evaluating a decisive boolean.
+        if (activeFrame) {
+          activeFrame.failure ??= { error };
+        }
+        throw error;
+      }
+    });
+  }
   env.registerType('Effect', { fields: { kind: 'string', key: 'string', amount: 'double' } });
   for (const [key, type] of Object.entries(schema)) {
     env.registerVariable(key, type);
   }
   for (const [key, math] of Object.entries(maths)) {
-    env.registerFunction(`${key}(${new Array(math.arity).fill('double').join(',')}): double`, (...args: number[]) =>
+    register(`${key}(${new Array(math.arity).fill('double').join(',')}): double`, (...args: number[]) =>
       finite(math.run(...args.map(finite))),
     );
   }
   for (const [key, verb] of Object.entries(verbs)) {
-    env.registerFunction(
-      `${key}(${verb.arity === 2 ? 'string,double' : 'double'}): Effect`,
-      (...args: (string | number)[]) => {
-        const amount = finite(args.at(-1));
-        if (verb.kind !== 'change' && amount < 0) {
-          throw new Error('negative engine effect');
-        }
-        return { kind: verb.kind, key: verb.arity === 2 ? args[0] : 'bound-target', amount };
-      },
-    );
+    register(`${key}(${verb.arity === 2 ? 'string,double' : 'double'}): Effect`, (...args: (string | number)[]) => {
+      const amount = finite(args.at(-1));
+      if (verb.kind !== 'change' && amount < 0) {
+        throw new Error('negative engine effect');
+      }
+      return { kind: verb.kind, key: verb.arity === 2 ? args[0] : 'bound-target', amount };
+    });
   }
-  env.registerFunction('rank(double, list<double>): double', (value: number, bands: number[]) => {
+  register('rank(double, list<double>): double', (value: number, bands: number[]) => {
     finite(value);
     if (bands.length > limits.collection) {
       throw new Error('bands limit');
     }
     return bands.filter((threshold) => value >= finite(threshold)).length;
   });
-  env.registerFunction(
+  register(
     'weighted(double, list<double>, list<Effect>): list<Effect>',
     (roll: number, weights: number[], effects: Effect[]) => {
       finite(roll);
@@ -231,7 +245,7 @@ export function compileModExpression(
     },
   );
   for (const [key, fn] of functions) {
-    env.registerFunction(`${key}(${fn.def.params.map(() => 'double').join(',')}): double`, (...args: number[]) =>
+    register(`${key}(${fn.def.params.map(() => 'double').join(',')}): double`, (...args: number[]) =>
       finite(fn.program.run(Object.fromEntries(fn.def.params.map((param, i) => [param, finite(args[i])])))),
     );
   }
@@ -337,14 +351,23 @@ export function compileModExpression(
     canonical: serialize(parsed.ast),
     cost: total,
     run: (input) => {
+      const previous = activeFrame;
+      const frame: { failure?: { error: unknown } } = {};
+      activeFrame = frame;
       try {
-        return parsed(input) as unknown;
+        const value = parsed(input) as unknown;
+        if (frame.failure) {
+          throw frame.failure.error;
+        }
+        return value;
       } catch (error) {
         const { node } = error as { node?: { start?: number } };
         throw new Error(
-          `${error instanceof Error ? error.message : String(error)} at offset ${node?.start ?? parsed.ast.start}`,
+          `${label}: ${error instanceof Error ? error.message : String(error)} at offset ${node?.start ?? parsed.ast.start}`,
           { cause: error },
         );
+      } finally {
+        activeFrame = previous;
       }
     },
   };
@@ -584,6 +607,7 @@ export class ModHarness {
           }
         }
         const program = compileModExpression(entry.def.expression, {
+          label: `${entry.owner}:functions.${entry.def.name}`,
           schema: Object.fromEntries(entry.def.params.map((p) => [p, 'double'])),
           result: 'double',
           functions: scope,
@@ -652,6 +676,7 @@ export class ModHarness {
           this.rules.set(def.id, {
             mod: pack.id,
             def,
+            stateKeys: states,
             when: compileModExpression(def.when, { schema: modVariables, result: 'bool', functions: scope, states }),
             effects: compileModExpression(def.effects, {
               schema: modVariables,
@@ -718,6 +743,7 @@ export class ModHarness {
     const { rng } = this;
     const totals = { ...this.totals };
     let current: LoadedRule | undefined;
+    let path = 'tick';
     try {
       if (!['cast', 'decay'].includes(event)) {
         throw new Error(`unknown event ${event}`);
@@ -728,6 +754,7 @@ export class ModHarness {
       const safe = snapshot(input);
       const fire = (rule: LoadedRule, depth: number): void => {
         current = rule;
+        path = `rules.${rule.def.id}`;
         if (depth > limits.chain) {
           throw new Error('rule chain depth limit');
         }
@@ -738,12 +765,14 @@ export class ModHarness {
         result.spent += cost;
         const context = {
           ...safe,
-          state: new Map(Object.entries(this.values)),
+          state: new Map(Object.entries(this.values).filter(([key]) => rule.stateKeys.has(key))),
           target: new Map(Object.entries(safe.target)),
           roll: this.random(),
         };
+        path = `rules.${rule.def.id}.when`;
         const matches = rule.when.run(context) as boolean;
         if (matches) {
+          path = `rules.${rule.def.id}.effects`;
           this.apply(rule.effects.run(context) as Effect[], result);
           result.fired.push(rule.def.id);
         }
@@ -763,7 +792,7 @@ export class ModHarness {
       this.totals = totals;
       result.effects = [];
       result.fired = [];
-      result.issues.push(location(current?.mod ?? 'engine', current ? `rules.${current.def.id}` : 'tick', error));
+      result.issues.push(location(current?.mod ?? 'engine', path, error));
     }
     return result;
   }

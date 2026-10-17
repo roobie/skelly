@@ -46,19 +46,34 @@ imports the harness. The dummy engine applies counter changes and accumulates ef
 engine-bound actor ledger, not a world simulation. World verbs remain engine work.
 
 CEL supplies the parser, AST locations, typed function signatures, list/map evaluation and
-all/exists macros. The harness supplies visibility, function-body compilation and replacement,
-event ordering, effect validation, seeded draws, counter ownership and save validation. This keeps
-language implementation in the package rather than rebuilding an evaluator in the engine. Named
-functions cannot capture mutable game state: callers pass numeric snapshots explicitly.
+all/exists macros. The harness supplies dependency-scoped symbols and state snapshots,
+function-body compilation and replacement, event ordering, effect validation, seeded draws,
+counter ownership and save validation. State snapshots contain only the rule's own and visible
+dependencies' keys, so aggregate membership and equality cannot reveal independent mods' state.
+This keeps language implementation in the package rather than rebuilding an evaluator in the
+engine. Named functions cannot capture mutable game state: callers pass numeric snapshots
+explicitly.
 
 Native double arithmetic can silently produce infinity even inside a predicate. The mod profile
 therefore admits arithmetic through typed, finite-checking functions rather than native arithmetic
 operators. The package refuses replacement of its built-in numeric operator overloads; wrapping a
 final result alone would miss invalid intermediate values. See `celMods.ts`, `maths`, and
-`../../../test/celModsSpike.test.ts` for the executable hazard probe. This is a profile restriction,
-not a claim that CEL lacks arithmetic. It trades familiar operator syntax for a small checked
-host-function boundary; choosing operator syntax would require numeric range analysis or evaluator
-instrumentation before claiming the same error contract.
+`../../../test/celModsSpike.test.ts` for the executable hazard probe. This is harness-supplied
+arithmetic, not evidence for safe native operator syntax. Choosing operator syntax would require
+numeric range analysis or evaluator instrumentation before claiming the same error contract.
+
+CEL's logical operators and macros can recover from an evaluated callback exception when another
+operand supplies a decisive result. The spike's strict checked-callback contract therefore needs
+an out-of-band failure latch per evaluation; see `celMods.ts`, `compileModExpression`. Every
+registered callback records failure before throwing, and a recovered result is rejected before
+any effect application. Named bodies enforce the same boundary, and their failures propagate
+through the caller's latch. Unevaluated short-circuit branches record no failure. This owns an
+engine-boundary error policy, not a replacement evaluator or a production adoption decision.
+CEL-native errors that never enter a checked callback retain CEL's recoverable semantics.
+
+Runtime issues identify the rule's predicate or effects expression; named-body errors also identify
+the defining mod and function. Offsets may fall back to the expression root for callback errors,
+so this is partial author-facing location evidence, not exact subexpression source mapping.
 
 Termination relies on rejecting recursion, dynamic dispatch, unbounded collections and nested
 macros, not on an unavailable interpreter instruction counter. Bounded all/exists over literal or
@@ -69,11 +84,12 @@ branches. It is conservative work accounting, not a millisecond deadline or a CE
 meter. Host callbacks must remain synchronous and bounded; widening callbacks or macros requires
 revisiting that proof. Runtime input size validation is part of the proof, not optional hygiene.
 
-Each rule reads a fresh snapshot after preceding effects; failure discards the whole tick's ledger,
-counters and random draws. This representative transaction prevents partial effects after a budget
-or arithmetic failure. It is not a production engine transaction design. The fixture's decay event
-stands in for an engine game-time timer: no scheduler, NPC lifecycle, continuous modifier system or
-re-entrant event emission is proved. Those contracts belong to #313.
+Each rule reads a fresh scoped snapshot after preceding effects. A propagated CEL error, latched
+checked-callback failure, rejected engine write or budget failure discards the whole tick's ledger,
+counters and random draws. This prevents partial effects without treating CEL's native recoverable
+errors as JavaScript exceptions. It is not a production engine transaction design. The fixture's
+decay event stands in for an engine game-time timer: no scheduler, NPC lifecycle, continuous
+modifier system or re-entrant event emission is proved. Those contracts belong to #313.
 
 ## Exercised, not chosen
 

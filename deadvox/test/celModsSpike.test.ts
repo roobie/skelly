@@ -1,5 +1,5 @@
 import { Environment } from '@marcbachmann/cel-js';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   type Effect,
   type ModDef,
@@ -104,14 +104,16 @@ describe('restricted CEL mod harness (not shipped)', () => {
         .reverse()
         .map((mod) => ({ ...mod, rules: mod.rules.reverse() })),
     );
+    const selected = normal.functions.get('mom_cost')!;
+    expect(selected.owner).toBe('resonance');
+    const replacementBody = vi.spyOn(selected.program, 'run');
     const a = normal.tick('cast', input, budget);
+    expect(replacementBody).toHaveBeenCalled();
+    replacementBody.mockRestore();
     expect(a.issues).toEqual([]);
     expect(reversed.tick('cast', input, budget)).toEqual(a);
     expect(a.fired.indexOf('mom:power')).toBeLessThan(a.fired.indexOf('resonance:echo'));
     expect(a.fired).toContain('resonance:echo');
-    const base = harness(mods().filter((m) => m.id !== 'resonance'));
-    const baseSpend = base.tick('cast', input, budget).effects.find((e) => e.kind === 'spend')!.amount;
-    expect(a.effects.find((e) => e.kind === 'spend')!.amount).toBeLessThan(baseSpend);
     const absent = harness(mods().filter((m) => m.id !== 'attune'));
     expect(absent.tick('cast', input, budget).fired).not.toContain('resonance:echo');
   });
@@ -214,6 +216,82 @@ describe('restricted CEL mod harness (not shipped)', () => {
     }
   });
 
+  it.each(['"owner:counter" in state', 'state == {"owner:counter": 1.0}'])(
+    'hides foreign state from aggregate reads unless a dependency grants visibility: %s',
+    (when) => {
+      const defs = fixture('[damage(1.0)]', when);
+      defs.push({
+        id: 'owner',
+        dependencies: [],
+        functions: [],
+        state: [{ key: 'owner:counter', min: 0, max: 2, initial: 1, bands: [] }],
+        rules: [],
+      });
+      const hidden = harness(defs).tick('cast', input, budget);
+      expect(hidden.issues).toEqual([]);
+      expect(hidden.fired).toEqual([]);
+      defs[0]!.dependencies = ['owner'];
+      const visible = harness(defs).tick('cast', input, budget);
+      expect(visible.issues).toEqual([]);
+      expect(visible.fired).toContain('fixture:rule');
+    },
+  );
+
+  it.each([
+    ['divide(1.0, level) > 0.0 || true', '[damage(1.0)]', false],
+    ['exp(intellect) > 0.0 || true', '[damage(1.0)]', false],
+    ['divide(1.0, level) > 0.0 && false', '[damage(1.0)]', false],
+    ['[0.0, 1.0].exists(x, divide(1.0, x) > 0.0)', '[damage(1.0)]', false],
+    ['[0.0, 1.0].exists(x, fixture_risky(x) > 0.0)', '[damage(1.0)]', true],
+    ['true', '[damage((fixture_risky(level) > 0.0 || true) ? 1.0 : 0.0)]', true],
+  ])('rejects evaluated callback failures even when CEL suppresses them: %s / %s', (when, effects, named) => {
+    const defs = fixture(effects, when);
+    defs[0]!.functions.push({ name: 'risky', params: ['n'], expression: 'divide(1.0, n)' });
+    defs[0]!.state.push({ key: 'fixture:counter', min: 0, max: 2, initial: 0, bands: [] });
+    defs[0]!.rules.unshift({
+      id: 'fixture:a_commit',
+      event: 'cast',
+      when: 'true',
+      effects: '[change("fixture:counter", 1.0), overload(1.0)]',
+    });
+    const h = harness(defs);
+    const before = h.save();
+    const result = h.tick('cast', { ...input, intellect: 1000, level: 0 }, budget);
+    expect(result.issues).toEqual([
+      {
+        source: 'fixture',
+        path: `rules.fixture:rule.${when === 'true' ? 'effects' : 'when'}`,
+        message: expect.stringContaining('offset'),
+      },
+    ]);
+    if (named) {
+      expect(result.issues[0]!.message).toContain('fixture:functions.risky');
+    }
+    expect(result.effects).toEqual([]);
+    expect(result.fired).toEqual([]);
+    expect(h.save()).toBe(before);
+  });
+
+  it.each([
+    'true || divide(1.0, level) > 0.0',
+    '!(false && divide(1.0, level) > 0.0)',
+    '[1.0, 0.0].exists(x, divide(1.0, x) > 0.0)',
+    'true ? true : exp(intellect) > 0.0',
+  ])('does not fail for checked callbacks in branches never evaluated: %s', (when) => {
+    const h = harness(fixture('[damage(1.0)]', when));
+    const result = h.tick('cast', { ...input, intellect: 1000, level: 0 }, budget);
+    expect(result.issues).toEqual([]);
+    expect(result.fired).toContain('fixture:rule');
+  });
+
+  it('clears a suppressed callback failure before the next evaluation of the same program', () => {
+    const h = harness(fixture('[damage(1.0)]', 'divide(1.0, level) > 0.0 || true'));
+    expect(h.tick('cast', { ...input, level: 0 }, budget).issues.length).toBeGreaterThan(0);
+    const success = h.tick('cast', input, budget);
+    expect(success.issues).toEqual([]);
+    expect(success.fired).toContain('fixture:rule');
+  });
+
   it('admits bounded maps, list membership and all/exists without unbounded macros', () => {
     const h = harness(
       fixture(
@@ -248,7 +326,7 @@ describe('restricted CEL mod harness (not shipped)', () => {
       const before = h.save();
       const result = h.tick('cast', { ...input, intellect: 1000, level: 0 }, budget);
       expect(result.issues).toEqual([
-        { source: 'fixture', path: 'rules.fixture:rule', message: expect.stringContaining('offset') },
+        { source: 'fixture', path: 'rules.fixture:rule.effects', message: expect.stringContaining('offset') },
       ]);
       expect(h.save()).toBe(before);
       expect(result.effects).toEqual([]);
