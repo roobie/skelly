@@ -11,7 +11,12 @@ import { type BlockBox, type MetreBox, rasterize, stampChunk } from './structure
 export type TreeShape = 'broadleaf' | 'conifer' | 'young';
 
 /** Smooth seeded value noise with broad plateaus; the field's tuning is site-generation content. Coordinates are metres. */
-export const forestDensityAt = (registry: Pick<Registry, 'siteGeneration'>, seed: number, x: number, z: number): number => {
+export const forestDensityAt = (
+  registry: Pick<Registry, 'siteGeneration'>,
+  seed: number,
+  x: number,
+  z: number,
+): number => {
   const field = siteGenerationOf(registry).vegetation.forestDensityField;
   return Math.min(
     field.ceiling,

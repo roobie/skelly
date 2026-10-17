@@ -71,7 +71,14 @@ export const testHouseScene = (config: GameConfig, registry: Registry) => {
   const { seed, scale } = config;
   const id = (name: string) => blockId(registry, name);
   // The test house sits on a level lot at a whole-metre height, so it lines up with any block size.
-  const floor = Math.round(terrainHeightMetres(seed, terrainShapeOf(registry), HOUSE_OFFSET[0] + LOT_CENTRE[0], HOUSE_OFFSET[1] + LOT_CENTRE[1]));
+  const floor = Math.round(
+    terrainHeightMetres(
+      seed,
+      terrainShapeOf(registry),
+      HOUSE_OFFSET[0] + LOT_CENTRE[0],
+      HOUSE_OFFSET[1] + LOT_CENTRE[1],
+    ),
+  );
   const house = testHouse(
     [HOUSE_OFFSET[0], floor, HOUSE_OFFSET[1]],
     {

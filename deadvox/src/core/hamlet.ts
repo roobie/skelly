@@ -30,13 +30,7 @@ import {
   stampPlacement,
   type Turn,
 } from './templates.ts';
-import {
-  leafLitterAt,
-  stampTrees,
-  TreeIndex,
-  type TreePlacement,
-  vegetationPlacements,
-} from './vegetation.ts';
+import { leafLitterAt, stampTrees, TreeIndex, type TreePlacement, vegetationPlacements } from './vegetation.ts';
 import { type Surface, type TerrainShape, terrainHeight } from './worldgen.ts';
 
 /** Templates are drawn in half-metre blocks. */

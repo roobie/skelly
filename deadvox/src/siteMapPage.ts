@@ -192,7 +192,14 @@ const sampleGround = async () => {
       const { z: zm } = siteMapRasterToWorld(0, row + 0.5, mapGrid);
       for (let column = 0; column < width; column += 1) {
         const { x: xm } = siteMapRasterToWorld(column + 0.5, row + 0.5, mapGrid);
-        heights[column + row * width] = worldGroundAt({ seed, shape: terrain.shape, scale, surface: site?.surface, xm, zm });
+        heights[column + row * width] = worldGroundAt({
+          seed,
+          shape: terrain.shape,
+          scale,
+          surface: site?.surface,
+          xm,
+          zm,
+        });
       }
     },
     (rows) => {

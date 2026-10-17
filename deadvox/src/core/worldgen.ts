@@ -59,6 +59,7 @@ export const terrainHeightMetres = (seed: number, shape: TerrainShape, xm: numbe
     (shape.maxHeightMetres - shape.minHeightMetres);
 
 /** Y (in blocks) of the top solid block of the column at block (x, z). Sampled at the block's centre. */
+// biome-ignore lint/complexity/useMaxParams: Numeric block coordinates avoid a per-sample tuple allocation on the generation hot path.
 export const terrainHeight = (seed: number, shape: TerrainShape, scale: Scale, x: number, z: number): number => {
   const s = scale.blockSize;
   return Math.floor(terrainHeightMetres(seed, shape, (x + 0.5) * s, (z + 0.5) * s) / s);
@@ -90,6 +91,7 @@ export const worldGroundAt = ({
 };
 
 /** Top block heights for a chunk column, CHUNK×CHUNK, indexed x + CHUNK * z. */
+// biome-ignore lint/complexity/useMaxParams: Numeric chunk coordinates avoid a per-column tuple allocation on the generation hot path.
 const columnHeights = (seed: number, shape: TerrainShape, scale: Scale, cx: number, cz: number): Int32Array => {
   const out = new Int32Array(CHUNK * CHUNK);
   for (let lz = 0; lz < CHUNK; lz++) {

@@ -27,7 +27,7 @@ export const siteGenerationOf = (registry: Pick<Registry, 'siteGeneration'>) => 
 export const terrainShapeOf = (registry: Pick<Registry, 'siteGeneration'>): TerrainShape =>
   siteGenerationOf(registry).terrain;
 
-export const sitePalette =(registry: Pick<Registry, 'siteGeneration' | 'blockIds'>): SitePalette => {
+export const sitePalette = (registry: Pick<Registry, 'siteGeneration' | 'blockIds'>): SitePalette => {
   const { palette, hamlet } = siteGenerationOf(registry);
   const block = (name: string): number => {
     const id = registry.blockIds.get(name);

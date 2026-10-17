@@ -16,8 +16,8 @@ import {
 import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { BodyTuningDef } from '../src/core/schema.ts';
-import { World } from '../src/core/world.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
+import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';

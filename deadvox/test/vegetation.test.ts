@@ -13,9 +13,9 @@ import { PlayerCombat } from '../src/core/playerCombat.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { grow } from '../src/core/site.ts';
+import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
-import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -355,7 +355,9 @@ describe('passable but opaque vegetation', () => {
 
   it('keeps entire hamlet canopies and hedges off lots, road frontage/entrances, spawn and range', () => {
     const hamlet = new Hamlet(1, registry, scale);
-    expect(new Set(hamlet.trees.map((tree) => tree.shape))).toEqual(new Set(siteGenerationOf(registry).vegetation.treeMix));
+    expect(new Set(hamlet.trees.map((tree) => tree.shape))).toEqual(
+      new Set(siteGenerationOf(registry).vegetation.treeMix),
+    );
     expect(hamlet.hedges.length).toBeGreaterThan(0);
     const required = [
       grow(hamlet.road, HAMLET.gap),

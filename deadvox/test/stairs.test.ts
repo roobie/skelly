@@ -8,10 +8,10 @@ import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { CONTACT_SKIN, stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { TemplateDef } from '../src/core/schema.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, placedPoint, type Turn } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { createPlayerBody, physicsFor } from '../src/game/player.ts';
 

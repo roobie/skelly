@@ -9,8 +9,8 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
 import type { Body } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
-import { skyAt } from '../core/sky.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
+import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
 import { figureSeedPool } from '../core/zombieFigure.ts';
@@ -131,21 +131,21 @@ export const nextUrl = (run: BenchRun, seed: number): string => {
 export const forestWorkload = (registry: Pick<Registry, 'siteGeneration'>, seed: number, density: number | null) => {
   const { vegetation } = siteGenerationOf(registry);
   return {
-  seed,
-  density,
-  densityField: density === null ? vegetation.forestDensityField : null,
-  extentMetres: 2 * vegetation.forestHalfExtentMetres,
-  cellMetres: vegetation.treeCellMetres,
-  shapeMix: vegetation.treeMix,
-  foliage: 'passable-opaque' as const,
-  routes: {
-    heading: HEADING,
-    lookSeconds: DURATIONS.full.look,
-    jogSeconds: DURATIONS.full.jog,
-    jogMetresPerSecond: PLAYER.jog,
-    sprintSeconds: DURATIONS.full.sprint,
-    sprintMetresPerSecond: PLAYER.sprint,
-  },
+    seed,
+    density,
+    densityField: density === null ? vegetation.forestDensityField : null,
+    extentMetres: 2 * vegetation.forestHalfExtentMetres,
+    cellMetres: vegetation.treeCellMetres,
+    shapeMix: vegetation.treeMix,
+    foliage: 'passable-opaque' as const,
+    routes: {
+      heading: HEADING,
+      lookSeconds: DURATIONS.full.look,
+      jogSeconds: DURATIONS.full.jog,
+      jogMetresPerSecond: PLAYER.jog,
+      sprintSeconds: DURATIONS.full.sprint,
+      sprintMetresPerSecond: PLAYER.sprint,
+    },
   };
 };
 

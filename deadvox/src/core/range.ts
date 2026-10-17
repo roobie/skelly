@@ -46,7 +46,9 @@ export class HandlingRange {
       z1: centreZ + HANDLING_RANGE.width / 2,
     };
     this.blendBounds = grow(this.rect, this.blend);
-    this.floor = floor ?? terrainHeight(seed, terrainShapeOf(registry), scale, Math.floor((this.rect.x0 + this.rect.x1) / 2), centreZ);
+    this.floor =
+      floor ??
+      terrainHeight(seed, terrainShapeOf(registry), scale, Math.floor((this.rect.x0 + this.rect.x1) / 2), centreZ);
     const lineX = this.rect.x0 + HANDLING_RANGE.firingLineOffset;
     this.firingLine = {
       x0: lineX,

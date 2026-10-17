@@ -7,6 +7,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { doorPlan } from '../src/core/options.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import {
   compileTemplate,
   type Facing,
@@ -16,7 +17,6 @@ import {
   type stampPlacement,
 } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 

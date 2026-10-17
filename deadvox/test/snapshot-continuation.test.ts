@@ -172,7 +172,11 @@ describe('hamlet save/load continuation', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ));
+    const ground = fixtureHamlet.surface.height(
+      x,
+      startZ,
+      terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),
+    );
     const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
     const cx = toChunk(x);
     const cz = toChunk(z);
@@ -273,7 +277,11 @@ describe('hamlet save/load continuation', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ));
+    const ground = fixtureHamlet.surface.height(
+      x,
+      startZ,
+      terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),
+    );
     const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
     const cx = toChunk(x);
     const cz = toChunk(z);

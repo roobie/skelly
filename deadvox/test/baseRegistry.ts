@@ -18,5 +18,5 @@ export const baseRegistry = (): Registry => deserialize(readFileSync(inject('bas
 
 export const baseTerrainShape = (): TerrainShape => terrainShapeOf(baseRegistry());
 
-export const startupContent =(): StartupContent =>
+export const startupContent = (): StartupContent =>
   deserialize(readFileSync(inject('startupContentPath'))) as StartupContent;

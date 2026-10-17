@@ -6,8 +6,8 @@ import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { footprint } from '../src/core/templates.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
+import { footprint } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 
