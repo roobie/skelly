@@ -367,7 +367,7 @@ const panelTemplate = ({
   changeWeatheringColor,
   copyWeatheringValues,
   weatheringCopyStatus,
-  initialTime,
+  clockInputValue,
 }: {
   open: boolean;
   groups: readonly GroupView[];
@@ -419,7 +419,7 @@ const panelTemplate = ({
   changeWeatheringColor: (field: WeatheringColorField, value: string) => void;
   copyWeatheringValues: () => void;
   weatheringCopyStatus: string;
-  initialTime: string;
+  clockInputValue: string;
 }): TemplateResult => {
   // What each group shows besides its action buttons.
   const extras: Partial<Record<GroupId, TemplateResult | typeof nothing>> = {
@@ -471,7 +471,7 @@ const panelTemplate = ({
       <div class="debug-actions"><button id="reveal-zombies" type="button" aria-pressed=${revealZombies} @click=${toggleReveal}>Reveal zombies · ${revealZombies ? 'ON' : 'OFF'}</button></div>
     `,
     time: html`
-      <label>Set time <input id="debug-time" type="time" value=${initialTime} /> <button id="set-debug-time" type="button" @click=${(
+      <label>Set time <input id="debug-time" type="time" value=${clockInputValue} /> <button id="set-debug-time" type="button" @click=${(
         event: Event,
       ) => {
         const root = (event.currentTarget as HTMLElement).parentElement;
@@ -1613,7 +1613,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           changeWeatheringColor,
           copyWeatheringValues,
           weatheringCopyStatus,
-          initialTime: formatClock(requireDayCycle(hooks.engine.registry).defaultStartGameTimeOfDay).slice(-5),
+          clockInputValue: formatClock(requireDayCycle(hooks.engine.registry).defaultStartGameTimeOfDay).slice(-5),
         }),
         host,
       );
