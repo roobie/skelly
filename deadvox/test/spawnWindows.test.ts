@@ -1,31 +1,42 @@
 import { describe, expect, it } from 'vitest';
-import { parseSpawnTime, SECONDS_PER_DAY, SPAWN_TIMES, spawnWindowOpen } from '../src/core/clock.ts';
+import { resolveSpawnTime, SECONDS_PER_DAY, type SpawnTimeCycle, spawnWindowOpen } from '../src/core/clock.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { gameTimeOfDay } from '../src/core/time.ts';
 
+// A cycle that differs from core content in every named time, so a test passes only by reading the cycle it is given.
+const cycle: SpawnTimeCycle = {
+  latitudeDegrees: 55,
+  date: { month: 12, day: 1 },
+  twilight: 'nautical',
+  midnightGameTimeOfDay: 1800,
+  noonGameTimeOfDay: 13 * 3600,
+};
+const sun = dayPhaseAt(cycle, 0);
+const dusk = sun.sunset;
+const dawn = sun.dawn;
+
 describe('spawn time windows', () => {
-  it('parses named and clock-formatted game times', () => {
-    expect(parseSpawnTime('dusk')).toBe(SPAWN_TIMES.dusk);
-    expect(parseSpawnTime('06:30')).toBeDefined();
-    expect(parseSpawnTime('sunset')).toBeUndefined();
-    expect(parseSpawnTime('24:00')).toBeUndefined();
+  it('resolves names against the day cycle: the sun for dawn and dusk, content for midnight and noon', () => {
+    expect(resolveSpawnTime(cycle, 'dawn')).toBe(dawn);
+    expect(resolveSpawnTime(cycle, 'dusk')).toBe(dusk);
+    expect(resolveSpawnTime(cycle, 'midnight')).toBe(cycle.midnightGameTimeOfDay);
+    expect(resolveSpawnTime(cycle, 'noon')).toBe(cycle.noonGameTimeOfDay);
+    expect(resolveSpawnTime(cycle, gameTimeOfDay(5000))).toBe(5000);
   });
 
   it('treats bounded windows as daily half-open intervals, including overnight ranges', () => {
-    const window = {
-      fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk),
-      toGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dawn),
-    };
-    expect(spawnWindowOpen(SPAWN_TIMES.dusk - 1, window)).toBe(false);
-    expect(spawnWindowOpen(SPAWN_TIMES.dusk, window)).toBe(true);
-    expect(spawnWindowOpen(SPAWN_TIMES.dusk + 1, window)).toBe(true);
-    expect(spawnWindowOpen(SPAWN_TIMES.dawn, window)).toBe(false);
-    expect(spawnWindowOpen(SECONDS_PER_DAY + SPAWN_TIMES.dusk, window)).toBe(true);
+    const window = { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' } as const;
+    expect(spawnWindowOpen(dusk - 1, window, cycle)).toBe(false);
+    expect(spawnWindowOpen(dusk, window, cycle)).toBe(true);
+    expect(spawnWindowOpen(dusk + 1, window, cycle)).toBe(true);
+    expect(spawnWindowOpen(dawn, window, cycle)).toBe(false);
+    expect(spawnWindowOpen(SECONDS_PER_DAY + dusk, window, cycle)).toBe(true);
   });
 
   it('keeps an open-ended window eligible after its first opening', () => {
-    const window = { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) };
-    expect(spawnWindowOpen(SPAWN_TIMES.dusk - 1, window)).toBe(false);
-    expect(spawnWindowOpen(SPAWN_TIMES.dusk, window)).toBe(true);
-    expect(spawnWindowOpen(SECONDS_PER_DAY + SPAWN_TIMES.dawn, window)).toBe(true);
+    const window = { fromGameTimeOfDay: 'dusk' } as const;
+    expect(spawnWindowOpen(dusk - 1, window, cycle)).toBe(false);
+    expect(spawnWindowOpen(dusk, window, cycle)).toBe(true);
+    expect(spawnWindowOpen(SECONDS_PER_DAY + dawn, window, cycle)).toBe(true);
   });
 });

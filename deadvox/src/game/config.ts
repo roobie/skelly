@@ -1,4 +1,4 @@
-import { parseTimeOfDay, SPAWN_TIME, SPAWN_TIMES } from '../core/clock.ts';
+import { defaultClock, parseTimeOfDay } from '../core/clock.ts';
 import type { Registry } from '../core/content.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
@@ -56,6 +56,10 @@ export interface GameConfig {
 
 export type ActorRenderer = 'boxes' | 'detailed';
 
+/** The loaded day cycle's start; core content's when a registry carries none (test fixtures). */
+const defaultStart = (content: StartupContent): number =>
+  content.registry.dayCycle?.defaultStartGameTimeOfDay ?? defaultClock.start;
+
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
 export const makeConfig = (
   seed: number,
@@ -71,7 +75,7 @@ export const makeConfig = (
     scale,
     radiusM,
     radiusChunks: chunksFor(scale, radiusM),
-    start: SPAWN_TIME,
+    start: defaultStart(content),
     debug: false,
     site: 'hamlet',
     authoredDecals: true,
@@ -215,8 +219,11 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   const requestedTime = params.get('time');
   config.start =
     requestedTime === null
-      ? (layoutTime ?? (config.site === 'weatheringTest' ? SPAWN_TIMES.noon : SPAWN_TIME))
-      : (parseTimeOfDay(requestedTime) ?? SPAWN_TIME);
+      ? (layoutTime ??
+        (config.site === 'weatheringTest'
+          ? (content.registry.dayCycle?.noonGameTimeOfDay ?? defaultStart(content))
+          : defaultStart(content)))
+      : (parseTimeOfDay(requestedTime) ?? defaultStart(content));
   config.debug = params.get('debug') === '1';
   applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);

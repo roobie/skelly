@@ -6,10 +6,10 @@ import {
   nextTimeOfDay,
   parseTimeOfDay,
   SECONDS_PER_DAY,
-  SPAWN_TIME,
   simSecondsPerHour,
   skipTarget,
 } from '../src/core/clock.ts';
+import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { awakeRates } from '../src/core/needs.ts';
@@ -57,10 +57,9 @@ const runUntil = (sim: Simulation, until: number): number => {
 };
 
 describe('clock', () => {
-  it('starts at SPAWN_TIME in daylight and advances the calendar at the clock ratio', () => {
+  it("starts at the day cycle's default start in daylight and advances the calendar at the clock ratio", () => {
     const start = calendarAt(defaultClock, 0);
-    expect(defaultClock.start).toBe(SPAWN_TIME);
-    expect(start).toBe(SPAWN_TIME);
+    expect(start).toBe(parseTimeOfDay(coreDayCycle.dayCycle.defaultStartGameTimeOfDay));
     const phase = dayPhaseAt(DEFAULT_DAY_CYCLE, start);
     expect(phase.phase).toBe('day');
     expect(phase.sunset).toBeGreaterThan(start);

@@ -17,7 +17,6 @@ import {
   rectDistance,
   standingHeight,
 } from '../src/core/authoredTerrain.mjs';
-import { SPAWN_TIMES } from '../src/core/clock.ts';
 import type { Registry } from '../src/core/content.ts';
 import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
 import { HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from '../src/core/hamlet.ts';
@@ -57,6 +56,8 @@ const validationLayout = (id: string): SiteLayoutDef => ({
 const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
 const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
 const layoutValidationBase = [
+  // Named spawn windows resolve against a day cycle.
+  base.find(({ source }) => source === 'dayCycle.json')!,
   {
     source: 'layout-validation-support.json',
     data: {
@@ -366,13 +367,13 @@ describe('authored layout acceptance', () => {
     expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
     const admitted = result.registry.layouts.get(layout.id)!;
     const placement = placementOf(result.registry, admitted.buildings[0]!);
-    const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === SPAWN_TIMES.dusk)!;
-    expect(expected.window).toEqual({ fromGameTimeOfDay: SPAWN_TIMES.dusk });
+    const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === 'dusk')!;
+    expect(expected.window).toEqual({ fromGameTimeOfDay: 'dusk' });
     const site = new AuthoredSite(1, result.registry, scale, admitted);
     expect(site.zombiesIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
       type: 'shambler',
       pos: expected.pos,
-      window: { fromGameTimeOfDay: SPAWN_TIMES.dusk },
+      window: { fromGameTimeOfDay: 'dusk' },
     });
   });
   it('carries a spawn window from an authored marker into its world column', () => {
@@ -395,7 +396,7 @@ describe('authored layout acceptance', () => {
     expect(site.zombiesIn(toChunk(x), toChunk(z))).toContainEqual({
       type: marker.type,
       pos: [x, marker.position[1] / scale.blockSize, z],
-      window: { fromGameTimeOfDay: SPAWN_TIMES.dusk },
+      window: { fromGameTimeOfDay: 'dusk' },
     });
   });
 
