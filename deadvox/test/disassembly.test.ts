@@ -105,6 +105,36 @@ describe('authored disassembly yields', () => {
     expect(plan?.outputs).toEqual([{ item: 'scrap_metal', count: 1 }]);
   });
 
+  it('states gather in game seconds, scaling the retrieval handling by the session clock', () => {
+    const testRegistry = { ...registry, items: new Map(registry.items) };
+    const radio = testRegistry.items.get('portable_radio')!;
+    testRegistry.items.set('portable_radio', {
+      ...radio,
+      salvage: undefined,
+      salvageTimeGameMinutes: undefined,
+      disassembly: {
+        timeGameMinutes: gameMinutes(1),
+        skill: 'crafting',
+        yields: [{ item: 'scrap_metal', count: 2, fractions: [1], rounding: 'floor' }],
+      },
+    });
+    const inventory = new Inventory(testRegistry);
+    const position: [number, number, number] = [0, 0, 0];
+    const source = inventory.create('portable_radio');
+    expect(inventory.add(source, { kind: 'pile', pos: position })).toBe(true);
+    const planAt = (ratio: number) => {
+      const reach = bindReach({ inventory, position, blockSize: 0.5, clock: { ...BASE_CLOCK, ratio } })();
+      return { reach, plan: planDisassembly(source, reach, new Character(testRegistry))! };
+    };
+    const slow = planAt(BASE_CLOCK.ratio);
+    const fast = planAt(BASE_CLOCK.ratio * 2);
+    const handling = slow.reach.entries.find((entry) => entry.item === source)!.handlingTime;
+    expect(handling).toBeGreaterThan(0);
+    expect(slow.plan.gather).toBe(handling * BASE_CLOCK.ratio);
+    expect(fast.plan.gather).toBe(slow.plan.gather * 2);
+    expect(fast.plan.duration - fast.plan.gather).toBeCloseTo(slow.plan.duration - slow.plan.gather);
+  });
+
   it('adds the best reachable tool modifier before applying the yield rounding', () => {
     const item = definition([
       {
