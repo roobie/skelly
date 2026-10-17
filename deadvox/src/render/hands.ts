@@ -46,6 +46,7 @@ import {
 } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { OpticLensFrame, OpticViewSettings } from '../core/opticView.ts';
 import { opticViewSettings, projectLensAperture } from '../core/opticView.ts';
@@ -1145,7 +1146,7 @@ export class HeldItems {
     }
     for (const { item: found, path } of this.inventory.carriedTree()) {
       if (found === item) {
-        const side = HELD_ROOT_PATH.exec(path)?.[1] as HandSide | undefined;
+        const side = isInHeldItemSlotTree(path) ? (HELD_ROOT_PATH.exec(path)?.[1] as HandSide | undefined) : undefined;
         return side && this.shown.get(this.inventory.hands[side]!.uid);
       }
     }

@@ -27,3 +27,16 @@ it('resolves the lens of a light mounted on a held weapon through the weapon mod
   expect(held.lensOf(light, new Vector3())).toBe(true);
   held.dispose();
 });
+
+it('gives a light in a pocket of a held container no lens', () => {
+  const inventory = new Inventory(registry);
+  const bag = inventory.create('school_backpack');
+  const light = inventory.create('flashlight');
+  expect(inventory.add(bag, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(inventory.add(light, { kind: 'pocket', owner: bag, pocket: 0 })).toBe(true);
+  expect(toggleLight(registry, light, 0)).toBeUndefined();
+  const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
+  held.update(new PerspectiveCamera());
+  expect(held.lensOf(light, new Vector3())).toBe(false);
+  held.dispose();
+});
