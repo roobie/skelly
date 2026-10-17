@@ -227,6 +227,12 @@ const InventoryTuningSchema = strictObject({
   chestHeightMetres: Positive,
   /** Metres within which a looked-at furniture piece can be used. */
   useReachMetres: Positive,
+  /** Searching a container takes `minSimSeconds` for an empty one, rising linearly to `maxSimSeconds` at `cellsForMax` pocket cells. */
+  search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
+  /** Sim seconds a thrown item takes from the hand to where it lands. */
+  throwFlightSimSeconds: Positive,
+  /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
+  throwArcHeightMetres: NonNegative,
 });
 
 const UiTuningSchema = strictObject({
@@ -241,6 +247,8 @@ const UiTuningSchema = strictObject({
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
   doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
+  /** What the item action list calls an action whose wording does not depend on the item or wound. */
+  itemActionLabels: strictObject({ stripRound: Name }),
   /** What the inventory screen calls each wear slot. */
   wearSlotLabels: strictObject({
     head: Name,
@@ -1618,6 +1626,21 @@ const StartDescentSchema = variant('kind', [
   }),
 ]);
 
+/** Block geometry of a street grid, in blocks; shared so a scenario city and the stress city keep the same limits. */
+const CityBlockGeometry = {
+  street: pipe(Count, minValue(4), maxValue(64)),
+  blockX: pipe(Count, minValue(8), maxValue(256)),
+  blockZ: pipe(Count, minValue(8), maxValue(256)),
+  pad: pipe(Count, minValue(2), maxValue(32)),
+  gap: pipe(Count, minValue(1), maxValue(32)),
+  blend: pipe(Count, maxValue(64)),
+  rows: pipe(
+    Count,
+    minValue(2),
+    maxValue(8),
+    check((value) => value % 2 === 0, 'needs paired rows'),
+  ),
+};
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -1678,18 +1701,7 @@ const ScenarioSchema = strictObject({
   city: strictObject({
     blocksX: pipe(Count, minValue(1), maxValue(4)),
     blocksZ: pipe(Count, minValue(1), maxValue(4)),
-    street: pipe(Count, minValue(4), maxValue(64)),
-    blockX: pipe(Count, minValue(8), maxValue(256)),
-    blockZ: pipe(Count, minValue(8), maxValue(256)),
-    pad: pipe(Count, minValue(2), maxValue(32)),
-    gap: pipe(Count, minValue(1), maxValue(32)),
-    blend: pipe(Count, maxValue(64)),
-    rows: pipe(
-      Count,
-      minValue(2),
-      maxValue(8),
-      check((value) => value % 2 === 0, 'needs paired rows'),
-    ),
+    ...CityBlockGeometry,
     perimeter: optional(
       strictObject({
         block: Id,
@@ -2118,6 +2130,26 @@ const SiteGenerationSchema = strictObject({
     northSide: pipe(array(Id), minLength(1)),
     southSide: pipe(array(Id), minLength(1)),
   }),
+  // Where the hamlet may stand: a square grid of candidate sites around the world origin, scored on flatness.
+  placement: pipe(
+    strictObject({
+      gridStepMetres: PositiveMetres,
+      reachMetres: NonNegative,
+      sampleMetres: PositiveMetres,
+      lowestMetres: NonNegative,
+    }),
+    // The search walks whole grid steps out to the reach, so a fractional count would silently shrink it.
+    check(
+      ({ gridStepMetres, reachMetres }) => Number.isInteger(reachMetres / gridStepMetres),
+      'reach must be a whole number of grid steps',
+    ),
+  ),
+  // The street grid the stress-test city builds: it has no scenario, so its block geometry lives here.
+  stressCity: strictObject({
+    ...CityBlockGeometry,
+    // Metres from the world origin the city must cover in each direction; the reader converts to blocks.
+    reachMetres: PositiveMetres,
+  }),
 });
 const SenseSchema = strictObject({
   id: Id,
@@ -2141,6 +2173,15 @@ const SenseSchema = strictObject({
     clearGain: Fraction,
     clearCutoffHz: Positive,
   }),
+  /** Footfall spacing per moving gait and the fall that lands hard; cadence and landing noise follow from these. */
+  footsteps: strictObject({
+    walkingStepMetres: Positive,
+    joggingStepMetres: Positive,
+    sprintingStepMetres: Positive,
+    hardLandingMetres: Positive,
+  }),
+  /** How long a player vocal noise stays audible to shamblers after it is emitted. */
+  vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
   light: strictObject({
     playerDaySightScale: Fraction,
     /** Reduce how far shamblers investigate non-player light sources. */

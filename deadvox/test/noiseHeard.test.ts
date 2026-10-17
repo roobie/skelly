@@ -5,12 +5,7 @@ import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
-import {
-  footstepEventForBlock,
-  type PlayerGait,
-  STEP_DISTANCE_METRES,
-  shamblerFootstepEventForBlock,
-} from '../src/core/footsteps.ts';
+import { footstepEventForBlock, type PlayerGait, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
 import type { Item } from '../src/core/items.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -227,7 +222,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       }
     }
     observe(scenario, 'footstep surfaces available', surfaces.size > 0);
-    const gaits = Object.keys(STEP_DISTANCE_METRES) as Exclude<PlayerGait, 'still'>[];
+    const gaits: Exclude<PlayerGait, 'still'>[] = ['walking', 'jogging', 'sprinting'];
     for (const [event, block] of surfaces) {
       for (const gait of gaits) {
         coverFootstep(scenario, event, block, gait);
