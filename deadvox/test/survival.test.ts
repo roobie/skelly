@@ -6,11 +6,14 @@ import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
-import { canSprint, consume, type Needs, SPAWN_NEEDS, STAMINA, stepNeeds, stepStamina } from '../src/core/needs.ts';
+import { canSprint, consume, type Needs, stepNeeds, stepStamina } from '../src/core/needs.ts';
 import { gameHours, gameSeconds } from '../src/core/time.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock); // 450 simulation seconds
+const fixtureBody = new Body(BODY_TUNING_FIXTURE);
+const SPAWN_NEEDS: Needs = fixtureBody.spawnNeeds;
+const STAMINA = fixtureBody.staminaRules;
 const base = (file: string): ContentSource => {
   const source = `src/content/base/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
@@ -171,9 +174,10 @@ describe('food', () => {
 
   it('feeds you', () => {
     const needs = { ...SPAWN_NEEDS };
-    consume(needs, beans.food!);
-    expect(needs.calories).toBeCloseTo(40 + (350 / 2500) * 100, 9);
-    expect(needs.hydration).toBeCloseTo(35 + (100 / 2500) * 100, 9);
+    const full = fixtureBody.nourishmentScale;
+    consume(needs, beans.food!, full);
+    expect(needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + (beans.food!.calories / full.kcal) * 100, 9);
+    expect(needs.hydration).toBeCloseTo(SPAWN_NEEDS.hydration + (beans.food!.water / full.ml) * 100, 9);
   });
 });
 
@@ -225,34 +229,34 @@ describe('flashlight', () => {
 describe('stamina', () => {
   it('runs out after 20 s of sprinting, and you need some back before sprinting again', () => {
     const needs = { ...SPAWN_NEEDS };
-    stepStamina(needs, 20, true);
+    stepStamina(needs, 20, true, STAMINA);
     expect(needs.stamina).toBe(0);
-    expect(canSprint(needs, true)).toBe(false);
-    stepStamina(needs, 2, false);
-    expect(canSprint(needs, false)).toBe(false);
-    stepStamina(needs, 0.5, false);
-    expect(needs.stamina).toBe(STAMINA.recover * 2.5);
-    expect(canSprint(needs, false)).toBe(true);
+    expect(canSprint(needs, true, STAMINA)).toBe(false);
+    stepStamina(needs, 2, false, STAMINA);
+    expect(canSprint(needs, false, STAMINA)).toBe(false);
+    stepStamina(needs, 0.5, false, STAMINA);
+    expect(needs.stamina).toBe(STAMINA.recoverPerSimSecond * 2.5);
+    expect(canSprint(needs, false, STAMINA)).toBe(true);
   });
 
   it('waits out the remaining simulation-time delay before stamina recovers', () => {
     const needs = { ...SPAWN_NEEDS };
-    const delay = BODY_TUNING_FIXTURE.staminaRegenDelaySimSeconds;
-    stepStamina(needs, needs.stamina / -STAMINA.sprint, true, delay);
+    const delayed = { ...STAMINA, staminaRegenDelaySimSeconds: BODY_TUNING_FIXTURE.staminaRegenDelaySimSeconds };
+    stepStamina(needs, needs.stamina / STAMINA.sprintPerSimSecond, true, delayed);
     expect(needs.stamina).toBe(0);
     const remaining = needs.staminaRegenDelayRemainingSimSeconds;
     expect(remaining).toBeGreaterThan(0);
 
-    stepStamina(needs, remaining / 2, false, delay);
+    stepStamina(needs, remaining / 2, false, delayed);
     expect(needs.stamina).toBe(0);
-    stepStamina(needs, remaining, false, delay);
+    stepStamina(needs, remaining, false, delayed);
     expect(needs.stamina).toBeGreaterThan(0);
   });
 
   it('comes back at half speed when you are worn down', () => {
     const needs = { ...SPAWN_NEEDS, stamina: 0, hydration: 5 };
-    stepStamina(needs, 1, false);
-    expect(needs.stamina).toBe(STAMINA.recover * STAMINA.worn);
+    stepStamina(needs, 1, false, STAMINA);
+    expect(needs.stamina).toBe(STAMINA.recoverPerSimSecond * STAMINA.wornRecoveryFactor);
   });
 });
 

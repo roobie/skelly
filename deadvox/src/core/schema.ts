@@ -221,6 +221,12 @@ const InventoryTuningSchema = strictObject({
   id: Id,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
+  /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
+  reachMetres: Positive,
+  /** Metres above the feet at which reach is measured. */
+  chestHeightMetres: Positive,
+  /** Metres within which a looked-at furniture piece can be used. */
+  useReachMetres: Positive,
 });
 
 const UiTuningSchema = strictObject({
@@ -1600,13 +1606,11 @@ const ScenarioSchema = strictObject({
     pad: pipe(Count, minValue(2), maxValue(32)),
     gap: pipe(Count, minValue(1), maxValue(32)),
     blend: pipe(Count, maxValue(64)),
-    rows: optional(
-      pipe(
-        Count,
-        minValue(2),
-        maxValue(8),
-        check((value) => value % 2 === 0, 'needs paired rows'),
-      ),
+    rows: pipe(
+      Count,
+      minValue(2),
+      maxValue(8),
+      check((value) => value % 2 === 0, 'needs paired rows'),
     ),
     perimeter: optional(
       strictObject({
@@ -2170,6 +2174,47 @@ const PainTuningSchema = strictObject({
   ),
 });
 
+const NeedPercent = pipe(number(), minValue(0, 'must be 0 to 100'), maxValue(100, 'must be 0 to 100'));
+
+const CriticalNeedSchema = pipe(
+  strictObject({
+    need: picklist(['calories', 'hydration', 'fatigue']),
+    /** Critical while the need is under this. */
+    below: optional(NeedPercent),
+    /** Critical while the need is over this; fatigue has no upper cap. */
+    above: optional(NonNegative),
+    /** What the player is told when the need becomes critical. */
+    message: Name,
+  }),
+  check((rule) => (rule.below === undefined) !== (rule.above === undefined), 'needs exactly one of below and above'),
+);
+
+/** Survival needs and stamina. Vitals run 0 to 100; fatigue is sleep debt (`deadvox/src/core/needs.ts`). */
+const NeedsTuningSchema = strictObject({
+  /** The needs and stamina a new character starts with. */
+  spawn: strictObject({ calories: NeedPercent, hydration: NeedPercent, fatigue: NonNegative, stamina: NeedPercent }),
+  /** Calories and hydration lost per Game hour. */
+  drainPerGameHour: strictObject({ calories: GamePerHour, hydration: GamePerHour }),
+  /** Health lost per Game hour while calories or hydration sit at 0; both add up. */
+  healthLossPerGameHour: strictObject({ starving: GamePerHour, dehydrated: GamePerHour }),
+  stamina: strictObject({
+    /** Spent per Sim second of sprinting. */
+    sprintPerSimSecond: SimRate,
+    /** Recovered per Sim second when not sprinting. */
+    recoverPerSimSecond: SimRate,
+    /** Recovery is scaled by this while any critical need holds. */
+    wornRecoveryFactor: Fraction,
+    /** Below this stamina you're winded and can't start sprinting. */
+    windedBelow: NeedPercent,
+  }),
+  /** 100% calories is this many kilocalories, and 100% hydration this many millilitres. */
+  full: strictObject({ kcal: Positive, ml: Positive }),
+  /** Crossing one of these interrupts a long action and says its message. */
+  critical: array(CriticalNeedSchema),
+  /** Health falling under this from above interrupts a long action and says its message. */
+  badlyHurt: strictObject({ below: Positive, message: Name }),
+});
+
 const BodyTuningSchema = strictObject({
   id: Id,
   /** Game hours after a bleeding wound before an at-risk infection becomes early. */
@@ -2246,6 +2291,7 @@ const BodyTuningSchema = strictObject({
   shockRecoveryPerSimSecond: SimRate,
   /** Health lost per Sim second while infection is advanced. */
   advancedInfectionHealthLossPerSimSecond: SimRate,
+  needs: NeedsTuningSchema,
   /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
   fatigueRisePerGameHour: GamePerHour,
   /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
@@ -2418,6 +2464,7 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;
 export type TreatmentDef = InferOutput<typeof TreatmentSchema>;
 export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'];
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;

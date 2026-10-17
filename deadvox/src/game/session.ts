@@ -49,13 +49,7 @@ import { PlayerCombat } from '../core/playerCombat.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
 import type { SolidAt } from '../core/raycast.ts';
-import {
-  bindReach,
-  pileDistance as distanceToPile,
-  furnitureDistance,
-  INVENTORY_CHEST,
-  INVENTORY_REACH,
-} from '../core/reach.ts';
+import { bindReach, pileDistance as distanceToPile, furnitureDistance, reachTuning } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
@@ -669,7 +663,11 @@ export const createSession = (options: SessionOptions) => {
   };
   const reach = bindReach(reachPlayer);
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
-  const chest = (): Vec3 => [body.pos[0], body.pos[1] + INVENTORY_CHEST / s, body.pos[2]];
+  const chest = (): Vec3 => [
+    body.pos[0],
+    body.pos[1] + reachTuning(inventory.registry).chestHeightMetres / s,
+    body.pos[2],
+  ];
   const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
 
   const bodyTuning = playerBodyTuning(registry, options.scenario?.body);
@@ -1429,9 +1427,12 @@ export const createSession = (options: SessionOptions) => {
       (intent.forward !== 0 || intent.right !== 0) &&
       !handling &&
       !readyGait &&
-      canSprint(sim.needs, sprinting);
+      canSprint(sim.needs, sprinting, sim.body.staminaRules);
     survival.setSprinting(sprinting);
-    stepStamina(sim.needs, dt, sprinting, bodyTuning.staminaRegenDelaySimSeconds);
+    stepStamina(sim.needs, dt, sprinting, {
+      ...sim.body.staminaRules,
+      staminaRegenDelaySimSeconds: bodyTuning.staminaRegenDelaySimSeconds,
+    });
     const readyFirearm = Object.values(inventory.hands).find((item) => item && registry.items.get(item.type)?.firearm);
     const readyMovementFactor =
       readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
@@ -1645,7 +1646,7 @@ export const createSession = (options: SessionOptions) => {
         entities,
         origin: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
         direction: aimDirection(yaw, pitch, NEUTRAL_AIM),
-        maxDistance: INVENTORY_REACH / s,
+        maxDistance: reachTuning(inventory.registry).reachMetres / s,
         blockSize: s,
         isSolid: options.isOpaque,
       });

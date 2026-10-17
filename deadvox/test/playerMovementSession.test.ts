@@ -5,7 +5,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
-import { bodyDistance, INVENTORY_REACH } from '../src/core/reach.ts';
+import { bodyDistance, reachTuning } from '../src/core/reach.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
@@ -595,7 +595,7 @@ describe('clearing a downed shambler', () => {
           position: session.body.pos,
           blockSize: makeScale(0.5).blockSize,
         };
-        expect(bodyDistance(player, zombie.body)).toBeGreaterThan(INVENTORY_REACH);
+        expect(bodyDistance(player, zombie.body)).toBeGreaterThan(reachTuning(session.inventory.registry).reachMetres);
       },
     ],
   ])('leaves the body lying there when finishing it off is %s', (_, interrupt, premise) => {
