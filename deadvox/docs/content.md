@@ -94,6 +94,20 @@ playable-pack admission rather than inventing missing policy in a renderer. See
 `src/content/base/graphics.jsonnet`, `src/core/graphics.ts`, `GraphicsOptionsSchema`, and
 `src/core/content.ts`, `requiredContentIssues`.
 
+## Inventory action tunables and labels
+
+Search duration, item-throw flight time and arc height are tuning of the player's
+inventory row, and the label of an item action is player-facing text in the core ui row.
+Keeping them in content lets a mod retune or reword them without a code change. The schema
+requires every field, so a pack that omits one fails validation instead of silently
+inheriting a code default. Readers take the values from the registry. See
+`src/core/schema.ts`, `InventoryTuningSchema` and `UiTuningSchema`, and `src/core/reach.ts`,
+`reachTuning`.
+
+The handling range of the test range stays in code: it is debug layout geometry whose
+arithmetic belongs to the range builder, not a tunable a mod would reasonably change. See
+`src/core/range.ts`.
+
 ## Weathering profiles
 
 Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `WeatheringSchema` in `src/core/schema.ts` and `referenceIssues` in `src/core/content.ts`. `configFromUrl` in `src/game/config.ts` selects the site profile.
