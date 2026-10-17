@@ -114,7 +114,12 @@
     },
     {
       // Standalone Node benchmarks import game systems and print measured timings.
-      "includes": ["**/src/bench/*-cpu.mjs", "**/deadvox/tools/bench-zombie-swings.mjs"],
+      "includes": [
+        "**/src/bench/*-cpu.mjs",
+        "**/deadvox/tools/bench-zombie-swings.mjs",
+        "deadvox/tools/bench-expressions.mjs",
+        "deadvox/tools/probe-wasm-expressions.mjs"
+      ],
       "linter": {
         "rules": {
           "correctness": { "noNodejsModules": "off" },

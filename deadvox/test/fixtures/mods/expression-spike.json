@@ -1,0 +1,24 @@
+{
+  "panelEffect": "powered && authorized && !doorOpen ? \"open-door\" : \"none\"",
+  "sleepHealsPredicate": "recoveryPerGameHour > 0.0 && calories >= caloriesFloor && hydration >= hydrationFloor && (!hasCeiling || fatigue <= fatigueCeiling)",
+  "wasm": {
+    "luau": {
+      "float": "numerator / denominator",
+      "panelEffect": "if powered and authorized and not doorOpen then \"open-door\" else \"none\"",
+      "runaway": "while true do end",
+      "sleepHealsPredicate": "recoveryPerGameHour > 0.0 and calories >= caloriesFloor and hydration >= hydrationFloor and (not hasCeiling or fatigue <= fatigueCeiling)",
+      "stateful": "calories = calories",
+      "undeclared": "calories >= missingFloor",
+      "wrongOperand": "calories < hasCeiling"
+    },
+    "starlark": {
+      "float": "numerator / denominator",
+      "panelEffect": "\"open-door\" if powered and authorized and not doorOpen else \"none\"",
+      "runaway": "def loop():\n    return loop()\nloop()",
+      "sleepHealsPredicate": "recoveryPerGameHour > 0.0 and calories >= caloriesFloor and hydration >= hydrationFloor and (not hasCeiling or fatigue <= fatigueCeiling)",
+      "stateful": "calories = calories",
+      "undeclared": "calories >= missingFloor",
+      "wrongOperand": "calories < hasCeiling"
+    }
+  }
+}

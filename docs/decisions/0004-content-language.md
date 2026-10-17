@@ -37,9 +37,18 @@ continual rain; rules may read weather through an event such as `weather_changed
 contract open.
 
 The runtime-function format and its event, effect, composition and persistence contracts remain
-open in #313. The content extraction tracked by #393 does not settle that format. A design
-spike compares a small expression evaluator with CEL and tests one content area and one runtime
-function before any format becomes stable.
+open in #313. The content extraction tracked by #393 does not settle that format. The isolated
+comparison in `deadvox/test/expressionSpike.test.ts` and `deadvox/test/expressionWasmCases.ts`,
+`wasmCases`, exercises recovery and an engine-bound panel effect. See
+`deadvox/src/spikes/expressions/contract.ts`, `Candidate`, and
+`deadvox/src/spikes/expressions/README.md`, "Published runtime boundary", for the boundary and the
+reason for stopped candidates. The measurement probes are `deadvox/tools/bench-expressions.mjs`
+and `deadvox/tools/probe-wasm-expressions.mjs`; browser timing uses
+`deadvox/src/spikes/expressions/benchmark.ts`, `benchmarkWasmExpressions`.
+This is evidence for a format proposal, not adoption: restricted language profiles do not establish
+the safety or cost of unrestricted runtimes, and scalar effects do not establish the wider event or
+composition contracts. Mind Over Matter's required scope remains open; each candidate needs that
+scope established before a stable format is chosen.
 
 ## When
 
