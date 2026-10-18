@@ -807,12 +807,18 @@ outer-layer wear for both blows and continuous exposure: a stronger burn must
 corrode faster without depending on frame size. A blow is one exposure; continuous
 contact and its lingering burn retain a single wound draw per region and damage
 kind. Accumulating damage can cross stronger thresholds, but cannot heal an
-existing wound. See `src/core/body.ts`, `Body.bleedingTierForHit` and
+existing wound. Rates are starting points tuned by play, not calibrated to a
+reference attack: a per-damage rate cannot preserve every attack's per-hit
+outcome, so feel takes precedence over a fixed balance point.
+See `src/core/body.ts`, `Body.bleedingTierForHit` and
 `bleedingWound`; `src/core/damageExposure.ts`, `DamageExposures`.
 
 Lingering damage belongs to the damage kind, not a particular enemy. Its rate
 tapers linearly after contact ends, and re-entry before it ends retains the
-exposure's damage and draw. Ending an exposure early removes the burn, not damage,
+exposure's damage and draw. A lingering hit starts its tail at hit damage divided
+by linger duration, so the tail adds half the immediate hit. Stronger globs are
+intentional: this relation avoids another independently balanced attack value.
+Ending an exposure early removes the burn, not damage,
 wear or wounds already taken. Long actions cannot run during contact or its tail;
 a persistent refusal owns that constraint instead of an interrupt every step.
 Blows still interrupt when they land. See `src/core/sim.ts`, `Simulation.expose`,

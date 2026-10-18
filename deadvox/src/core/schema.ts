@@ -2448,7 +2448,6 @@ const BodyTuningSchema = strictObject({
     picklist(DAMAGE_KINDS),
     strictObject({
       simSeconds: PositiveSimSeconds,
-      hitRatePerDamage: NonNegativeSimRate,
     }),
   ),
   landing: strictObject({

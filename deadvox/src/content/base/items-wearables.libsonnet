@@ -10,7 +10,7 @@
         "slot": "legs",
         "encumbrance": 10,
         "warmth": 10,
-        "wearPerHit": 0.01
+        "wearPerDamage": 0.0012
       },
       "container": {
         "pockets": [
@@ -31,7 +31,7 @@
         "slot": "legs",
         "encumbrance": 12,
         "warmth": 12,
-        "wearPerHit": 0.01
+        "wearPerDamage": 0.0012
       },
       "container": {
         "pockets": [
@@ -52,7 +52,7 @@
         "slot": "torso",
         "encumbrance": 8,
         "warmth": 25,
-        "wearPerHit": 0.012
+        "wearPerDamage": 0.0015
       },
       "container": { "pockets": [{ "name": "front", "grid": [3, 2], "handlingSimSeconds": 0.5 }] }
     },
@@ -66,7 +66,7 @@
         "slot": "torso",
         "encumbrance": 12,
         "warmth": 35,
-        "wearPerHit": 0.008
+        "wearPerDamage": 0.001
       },
       "container": {
         "pockets": [
@@ -86,7 +86,7 @@
         "slot": "torso",
         "encumbrance": 6,
         "warmth": 5,
-        "wearPerHit": 0.015
+        "wearPerDamage": 0.002
       },
       "container": {
         "pockets": [

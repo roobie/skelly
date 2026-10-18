@@ -125,6 +125,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'body.knockoutSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'body.staminaRegenDelaySimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'body.treatmentSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'body.linger.acid.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'body.landing.safeSpeedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'body.bleeding.tiers[].bloodLossPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'body.bleeding.tiers[].closeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

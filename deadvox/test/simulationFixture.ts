@@ -17,7 +17,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
   outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
   exposureRefusal: 'Fixture exposure',
-  linger: { acid: { simSeconds: simSeconds(3), hitRatePerDamage: simRate(0.2) } },
+  linger: { acid: { simSeconds: simSeconds(3) } },
   landing: {
     safeSpeedMetresPerSimSecond: simRate(8),
     damagePerSquaredSpeed: 0.25,

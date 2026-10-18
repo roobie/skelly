@@ -10,11 +10,11 @@
         "tiers": [
           {
             "bloodLossPerSimSecond": 0.002,
-            "chance": {
-              "acid": 0.050000000000000003,
-              "blunt": 0.10000000000000001,
-              "cut": 0.40000000000000002,
-              "pierce": 0.29999999999999999
+            "chancePerDamage": {
+              "acid": 0.0060000000000000001,
+              "blunt": 0.012,
+              "cut": 0.050000000000000003,
+              "pierce": 0.040000000000000001
             },
             "closeSimSeconds": 180,
             "drip": {
@@ -30,11 +30,11 @@
           },
           {
             "bloodLossPerSimSecond": 0.014999999999999999,
-            "chance": {
-              "acid": 0.02,
-              "blunt": 0.029999999999999999,
-              "cut": 0.34999999999999998,
-              "pierce": 0.40000000000000002
+            "chancePerDamage": {
+              "acid": 0.0025000000000000001,
+              "blunt": 0.0040000000000000001,
+              "cut": 0.040000000000000001,
+              "pierce": 0.050000000000000003
             },
             "closeSimSeconds": 7200,
             "drip": {
@@ -51,11 +51,11 @@
           },
           {
             "bloodLossPerSimSecond": 0.12,
-            "chance": {
+            "chancePerDamage": {
               "acid": 0,
-              "blunt": 0.01,
-              "cut": 0.14999999999999999,
-              "pierce": 0.14999999999999999
+              "blunt": 0.0011999999999999999,
+              "cut": 0.02,
+              "pierce": 0.02
             },
             "closeSimSeconds": 21600,
             "drip": {
@@ -72,11 +72,11 @@
           },
           {
             "bloodLossPerSimSecond": 1.6699999999999999,
-            "chance": {
+            "chancePerDamage": {
               "acid": 0,
-              "blunt": 0.002,
-              "cut": 0.050000000000000003,
-              "pierce": 0.029999999999999999
+              "blunt": 0.00025000000000000001,
+              "cut": 0.0060000000000000001,
+              "pierce": 0.0040000000000000001
             },
             "closeSimSeconds": 86400,
             "drip": {
@@ -97,6 +97,7 @@
         ]
       },
       "bloodRecoveryPerSimSecond": 0.002,
+      "exposureRefusal": "You're burning",
       "fatigueRisePerGameHour": 4,
       "healthRecoveryFatigueCeiling": {
         "awake": 80
@@ -129,6 +130,11 @@
           }
         ],
         "safeSpeedMetresPerSimSecond": 11.5
+      },
+      "linger": {
+        "acid": {
+          "simSeconds": 5
+        }
       },
       "minimumMovementSpeed": 0.5,
       "movementSlowdownPerDamage": 0.0050000000000000001,

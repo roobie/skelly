@@ -74,7 +74,7 @@ describe('item wear', () => {
     expect(otherWorn.condition).toBe(1);
   });
 
-  it('scales the wear on a hit by the damage kind’s multiplier', () => {
+  it('scales wear by received damage and the damage kind’s multiplier', () => {
     const inventory = new Inventory(hitRegistry);
     const outer = inventory.create('jacket');
     expect(inventory.add(outer, { kind: 'worn' })).toBe(true);

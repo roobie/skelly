@@ -192,7 +192,7 @@ export class DamageExposures {
       throw new Error('Invalid body damage');
     }
     const linger = this.tuning.linger[kind];
-    if (!linger || amount === 0 || linger.hitRatePerDamage === 0) {
+    if (!linger || amount === 0) {
       return undefined;
     }
     const exposure = this.exposure(region, kind);
@@ -200,7 +200,7 @@ export class DamageExposures {
     exposure.sources.push({
       id: `hit:${this.nextId()}`,
       cause,
-      rate: amount * linger.hitRatePerDamage,
+      rate: amount / linger.simSeconds,
       remaining: linger.simSeconds,
     });
     return exposure;

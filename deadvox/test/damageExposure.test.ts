@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { type DamageExposure, DamageExposures } from '../src/core/damageExposure.ts';
 import type { BodyTuningDef } from '../src/core/schema.ts';
-import { simRate, simSeconds } from '../src/core/time.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const tuning: BodyTuningDef = {
   ...BODY_TUNING_FIXTURE,
-  linger: { acid: { simSeconds: simSeconds(2), hitRatePerDamage: simRate(0.25) } },
+  linger: { acid: { simSeconds: simSeconds(2) } },
   bleeding: {
     ...BODY_TUNING_FIXTURE.bleeding,
     tiers: BODY_TUNING_FIXTURE.bleeding.tiers.map((tier, index) => ({
@@ -89,6 +89,21 @@ describe('damage exposure', () => {
     expect(exposure.refusal).toBeUndefined();
     exposure.advance(duration, apply);
     expect(damage).toBeCloseTo((rate * duration) / 2, 12);
+  });
+
+  it('a hit tail adds half its immediate damage without an independent rate value', () => {
+    const exposures = new DamageExposures(tuning, () => 0.5);
+    const damage = 4;
+    const exposure = exposures.hit(damage, 'fixture glob', 'torso', 'acid')!;
+    const immediate = exposure.damage;
+    let tail = 0;
+    exposures.advance(tuning.linger.acid!.simSeconds, (amount) => {
+      tail += amount;
+    });
+    expect(immediate).toBe(damage);
+    expect(tail).toBeCloseTo(damage / 2, 12);
+    expect(exposure.damage).toBeCloseTo(immediate + tail, 12);
+    expect(exposures.refusal).toBeUndefined();
   });
 
   it('re-entry before the tail ends keeps accumulated damage and its threshold', () => {
