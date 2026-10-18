@@ -519,7 +519,8 @@ body.unconscious::after {
 #overlay.startup-ready.saved-choice #title-choice-heading {
   margin: 0 0 1rem;
 }
-#overlay.startup-ready.saved-choice #new-character-options {
+#overlay.startup-ready.saved-choice #new-character-options,
+#overlay.startup-ready.saved-choice #mod-options fieldset {
   margin: 0 0 0.75rem;
 }
 #overlay.startup-ready.saved-choice .go {
