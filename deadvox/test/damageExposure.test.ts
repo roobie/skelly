@@ -45,7 +45,7 @@ const runContact = (step: number) => {
   return {
     draws,
     beforeTail,
-    refusal: exposures.refusal,
+    refusal: exposures.refusal(),
     accumulated: contact.damage,
     health: body.health,
     bleeding: body.wounds.leftLeg?.bleeding,
@@ -86,7 +86,7 @@ describe('damage exposure', () => {
     expect(damage - first).toBeLessThan(first);
     exposure.advance(duration, apply);
     expect(damage).toBeCloseTo((rate * duration) / 2, 12);
-    expect(exposure.refusal).toBeUndefined();
+    expect(exposure.refusal()).toBeUndefined();
     exposure.advance(duration, apply);
     expect(damage).toBeCloseTo((rate * duration) / 2, 12);
   });
@@ -94,7 +94,7 @@ describe('damage exposure', () => {
   it('a hit tail adds half its immediate damage without an independent rate value', () => {
     const exposures = new DamageExposures(tuning, () => 0.5);
     const damage = 4;
-    const exposure = exposures.hit(damage, 'fixture glob', 'torso', 'acid')!;
+    const exposure = exposures.hit(damage, 'fixture glob', 'torso', { kind: 'acid' })!;
     const immediate = exposure.damage;
     let tail = 0;
     exposures.advance(tuning.linger.acid!.simSeconds, (amount) => {
@@ -103,7 +103,7 @@ describe('damage exposure', () => {
     expect(immediate).toBe(damage);
     expect(tail).toBeCloseTo(damage / 2, 12);
     expect(exposure.damage).toBeCloseTo(immediate + tail, 12);
-    expect(exposures.refusal).toBeUndefined();
+    expect(exposures.refusal()).toBeUndefined();
   });
 
   it('re-entry before the tail ends keeps accumulated damage and its threshold', () => {
@@ -118,6 +118,8 @@ describe('damage exposure', () => {
     expect(after.exposures[0]!.damage).toBeGreaterThan(0);
     expect(after.exposures[0]!.damage).toBe(before.exposures[0]!.damage);
     expect(after.exposures[0]!.roll).toBe(before.exposures[0]!.roll);
+    // The refreshed record carries no key the new contact lacks, not even an undefined one.
+    expect(after.exposures[0]!.sources).toStrictEqual([{ id: 'pool', rate: 2, cause: 'fixture burn' }]);
   });
 
   it('a glob hit starts a continuous tail and ending that kind stops further damage', () => {
@@ -149,7 +151,7 @@ describe('damage exposure', () => {
     sim.leaveExposure('pool');
     expect(sim.actions.startWait()).toBeDefined();
     sim.frame(simSeconds(tuning.linger.acid!.simSeconds));
-    expect(sim.exposures.refusal).toBeUndefined();
+    expect(sim.actionRefusal).toBeUndefined();
     expect(sim.actions.startWait()).toBeUndefined();
   });
 

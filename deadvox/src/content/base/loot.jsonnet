@@ -61,6 +61,7 @@ local pills(weight, least, parts, of) =
         table('gauntlet_home_gun', 1),
         item('jeans', 3, condition=[0.5, 1]),
         item('cargo_pants', 2, condition=[0.5, 1]),
+        item('rubber_boots', 1, condition=[0.5, 1]),
         item('hoodie', 3, condition=[0.5, 1]),
         item('jacket', 2, condition=[0.5, 1]),
         item('school_backpack', 1, condition=[0.6, 1]),

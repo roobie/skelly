@@ -27,6 +27,9 @@ export type MeleeDamageKind = (typeof MELEE_DAMAGE_KINDS)[number];
 /** What a hit does to flesh; weapons, enemy attacks, bleeding and shock all read it. */
 export const DAMAGE_KINDS = [...MELEE_DAMAGE_KINDS, 'acid'] as const;
 export type DamageKind = (typeof DAMAGE_KINDS)[number];
+/** Contacts that meet a content-chosen wear slot before the region's outermost one. */
+export const TOUCHES = ['ground', 'hand'] as const;
+export type Touch = (typeof TOUCHES)[number];
 const INFECTION_STAGES = ['none', 'early', 'advanced', 'resolved'] as const;
 type InfectionStage = (typeof INFECTION_STAGES)[number];
 type BleedingTierDef = BodyTuningDef['bleeding']['tiers'][number];

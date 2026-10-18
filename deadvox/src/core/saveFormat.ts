@@ -1,6 +1,6 @@
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
-import { BODY_REGIONS, DAMAGE_KINDS, MELEE_DAMAGE_KINDS } from './body.ts';
+import { BODY_REGIONS, DAMAGE_KINDS, MELEE_DAMAGE_KINDS, TOUCHES } from './body.ts';
 import { getBuildRevision } from './buildInfo.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
@@ -327,6 +327,7 @@ const simulationFields = {
             cause: str({ nonEmpty: true }),
             rate: nonNegative,
             remaining: opt(positive),
+            touch: opt(enumeration(TOUCHES)),
           }),
         ),
       }),

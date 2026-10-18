@@ -357,6 +357,28 @@ describe('acid puddle', () => {
     expect(h.session.sim.body.pain.felt).toBeGreaterThan(0);
   });
 
+  it('lets a player in acid-impervious boots stand in it unharmed and unrefused', () => {
+    const h = missedSpit();
+    const worn = ['jeans', 'rubber_boots'].map((type) => {
+      const item = h.session.inventory.create(type);
+      expect(h.session.inventory.add(item, { kind: 'worn' })).toBe(true);
+      return { item, condition: item.condition };
+    });
+    const { health } = h.session.sim.body;
+    const contacts = vi.spyOn(h.session.sim, 'expose');
+    h.burns.mockClear();
+    h.walkTo(h.session.zombies.acidPuddles[0]!.pos);
+    h.frames(30);
+    expect(h.session.zombies.acidPuddles).toHaveLength(1);
+    expect(contacts).toHaveBeenCalled();
+    expect(h.burns).not.toHaveBeenCalled();
+    expect(h.session.sim.body.health).toBeGreaterThanOrEqual(health);
+    for (const { item, condition } of worn) {
+      expect(item.condition).toBe(condition);
+    }
+    expect(h.session.sim.actions.startWait()).toBeUndefined();
+  });
+
   it('burns a shambler standing in it but not an acid-immune zombie', () => {
     const h = missedSpit();
     const { pos } = h.session.zombies.acidPuddles[0]!;

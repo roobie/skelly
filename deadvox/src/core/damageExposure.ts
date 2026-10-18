@@ -1,4 +1,4 @@
-import { BODY_REGIONS, type BodyRegion, DAMAGE_KINDS, type DamageKind } from './body.ts';
+import { BODY_REGIONS, type BodyRegion, DAMAGE_KINDS, type DamageKind, TOUCHES, type Touch } from './body.ts';
 import type { BodyTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -7,6 +7,7 @@ interface ExposureSource {
   cause: string;
   rate: number;
   remaining?: number | undefined;
+  touch?: Touch | undefined;
 }
 
 export interface ExposureContact {
@@ -15,6 +16,7 @@ export interface ExposureContact {
   cause: string;
   region: BodyRegion;
   kind: DamageKind;
+  touch?: Touch | undefined;
 }
 
 export interface DamageExposure {
@@ -62,8 +64,12 @@ export class DamageExposures {
     return this.state.exposures.length > 0;
   }
 
-  get refusal(): string | undefined {
-    return this.active ? this.tuning.exposureRefusal : undefined;
+  /** Only a source that still harms refuses: worn protection lifts the refusal with the damage. */
+  refusal(blocked: (exposure: DamageExposure, touch: Touch | undefined) => boolean = () => false): string | undefined {
+    const harming = this.state.exposures.some((exposure) =>
+      exposure.sources.some((source) => !blocked(exposure, source.touch)),
+    );
+    return harming ? this.tuning.exposureRefusal : undefined;
   }
 
   get simTimestamp(): number {
@@ -126,6 +132,7 @@ export class DamageExposures {
         ids.has(source.id) ||
         !Number.isFinite(source.rate) ||
         source.rate <= 0 ||
+        (source.touch !== undefined && !TOUCHES.includes(source.touch)) ||
         (source.remaining !== undefined &&
           (!(linger && Number.isFinite(source.remaining)) ||
             source.remaining <= 0 ||
@@ -160,7 +167,7 @@ export class DamageExposures {
     return exposure;
   }
 
-  contact({ id, rate, cause, region, kind }: ExposureContact): void {
+  contact({ id, rate, cause, region, kind, touch }: ExposureContact): void {
     if (!Number.isFinite(rate) || rate < 0) {
       throw new Error('Invalid exposure rate');
     }
@@ -169,12 +176,12 @@ export class DamageExposures {
       return;
     }
     const exposure = this.exposure(region, kind);
+    const refreshed: ExposureSource = touch === undefined ? { id, rate, cause } : { id, rate, cause, touch };
     const index = exposure.sources.findIndex((entry) => entry.id === id);
-    const source = { id, rate, cause };
-    if (index < 0) {
-      exposure.sources.push(source);
+    if (index >= 0) {
+      exposure.sources[index] = refreshed;
     } else {
-      exposure.sources[index] = source;
+      exposure.sources.push(refreshed);
     }
   }
 
@@ -190,7 +197,12 @@ export class DamageExposures {
     this.prune();
   }
 
-  hit(amount: number, cause: string, region: BodyRegion, kind: DamageKind): DamageExposure | undefined {
+  hit(
+    amount: number,
+    cause: string,
+    region: BodyRegion,
+    { kind, touch }: { readonly kind: DamageKind; readonly touch?: Touch | undefined },
+  ): DamageExposure | undefined {
     if (!Number.isFinite(amount) || amount < 0) {
       throw new Error('Invalid body damage');
     }
@@ -205,6 +217,7 @@ export class DamageExposures {
       cause,
       rate: amount / linger.simSeconds,
       remaining: linger.simSeconds,
+      ...(touch && { touch }),
     });
     return exposure;
   }
@@ -213,7 +226,11 @@ export class DamageExposures {
     this.state.exposures = this.state.exposures.filter((exposure) => exposure.kind !== kind);
   }
 
-  advance(seconds: number, apply: (amount: number, cause: string, exposure: DamageExposure) => void): void {
+  advance(
+    seconds: number,
+    apply: (amount: number, cause: string, exposure: DamageExposure, touch: Touch | undefined) => void,
+    blocked: (exposure: DamageExposure, touch: Touch | undefined) => boolean = () => false,
+  ): void {
     if (!Number.isFinite(seconds) || seconds < 0) {
       throw new Error('Invalid exposure step');
     }
@@ -221,9 +238,10 @@ export class DamageExposures {
     for (const exposure of this.state.exposures) {
       for (const source of exposure.sources) {
         const amount = sourceDamage(source, seconds, this.tuning.linger[exposure.kind]?.simSeconds);
-        if (amount > 0) {
+        // A blocked source still runs down its tail, so taking the protection off mid-tail harms only for the rest.
+        if (amount > 0 && !blocked(exposure, source.touch)) {
           exposure.damage += amount;
-          apply(amount, source.cause, exposure);
+          apply(amount, source.cause, exposure, source.touch);
         }
       }
     }

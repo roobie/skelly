@@ -1,44 +1,53 @@
-import type { BodyRegion } from './body.ts';
+import type { BodyRegion, DamageKind, Touch } from './body.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
-import type { WearSlot } from './schema.ts';
+import type { BodyTuningDef } from './schema.ts';
 
-type PlayerHitArea = Extract<WearSlot, 'head' | 'torso' | 'legs'>;
+/** The worn item a hit on the region meets first (`DESIGN.md`, "Worn coverage"). */
+const wornItemMet = (
+  inventory: Inventory,
+  tuning: BodyTuningDef,
+  region: BodyRegion,
+  touch?: Touch,
+): Item | undefined => {
+  const slots = tuning.coverage[region];
+  const first = touch && tuning.touchFirst[touch];
+  const touched = first && slots.includes(first) ? inventory.worn[first] : undefined;
+  return touched ?? slots.map((slot) => inventory.worn[slot]).find((item) => item !== undefined);
+};
 
-/** Maps a body region to the outermost worn item covering it. */
-const outermostWornOver = (inventory: Inventory, area: PlayerHitArea): Item | undefined => inventory.worn[area];
+const imperviousTo = (inventory: Inventory, item: Item | undefined, kind: DamageKind): boolean =>
+  item !== undefined && (defOf(inventory.registry, item.type).wearable?.imperviousTo?.includes(kind) ?? false);
+
+export interface PlayerHit {
+  readonly region: BodyRegion;
+  readonly damage: number;
+  readonly kind: DamageKind;
+  readonly touch?: Touch | undefined;
+}
 
 export const wearOnPlayerHit = (
   inventory: Inventory,
-  region: BodyRegion,
-  damage: number,
-  wearMultiplier: number,
+  tuning: BodyTuningDef,
+  { region, damage, kind, touch }: PlayerHit,
 ): void => {
-  let area: PlayerHitArea;
-  switch (region) {
-    case 'head':
-      area = 'head';
-      break;
-    case 'torso':
-    case 'leftArm':
-    case 'rightArm':
-      area = 'torso';
-      break;
-    case 'leftLeg':
-    case 'rightLeg':
-      area = 'legs';
-      break;
-    default: {
-      const exhaustive: never = region;
-      throw exhaustive;
-    }
+  const item = wornItemMet(inventory, tuning, region, touch);
+  if (!item || imperviousTo(inventory, item, kind)) {
+    return;
   }
-  const item = outermostWornOver(inventory, area);
-  const rate = item && defOf(inventory.registry, item.type).wearable?.wearPerDamage;
-  if (item && rate !== undefined) {
-    inventory.changeCondition(item.uid, -rate * damage * wearMultiplier);
+  const rate = defOf(inventory.registry, item.type).wearable?.wearPerDamage;
+  if (rate !== undefined) {
+    inventory.changeCondition(item.uid, -rate * damage * tuning.outerWearMultiplier[kind]);
   }
 };
+
+/** The player's worn items as the simulation's impact hooks, so every caller wires wear the same way. */
+export const playerWearHooks = (inventory: Inventory, tuning: BodyTuningDef) => ({
+  onImpact: (damage: number, region: BodyRegion, kind: DamageKind, touch?: Touch) =>
+    wearOnPlayerHit(inventory, tuning, { region, damage, kind, touch }),
+  impervious: (region: BodyRegion, kind: DamageKind, touch?: Touch) =>
+    imperviousTo(inventory, wornItemMet(inventory, tuning, region, touch), kind),
+});
 
 export const wearMeleeWeaponOnHit = (inventory: Inventory, uid: number): void => {
   const item = inventory.itemByUid(uid);

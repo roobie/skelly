@@ -30,7 +30,7 @@ local commonItems = [
   'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'screwdriver', 'wrench',
   'improvised_suppressor', 'compass', 'crowbar', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener',
   'baseball_bat', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'lighter', 'matches',
-  'jeans', 'cargo_pants', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
+  'jeans', 'cargo_pants', 'rubber_boots', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
   'shed_key', 'pump_shotgun', 'sample_note', 'stick', 'wax', 'wooden_plank', 'repair_kit', 'copper_wire', 'field_patch',
 ];
 local residential = [

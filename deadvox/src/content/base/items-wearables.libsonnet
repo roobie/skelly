@@ -22,6 +22,20 @@
       }
     },
     {
+      "id": "rubber_boots",
+      "name": "Rubber boots",
+      "category": "clothing",
+      "weight": 1800,
+      "size": [2, 3],
+      "wearable": {
+        "slot": "feet",
+        "encumbrance": 8,
+        "warmth": 5,
+        "wearPerDamage": 0.0012,
+        "imperviousTo": ["acid"]
+      }
+    },
+    {
       "id": "cargo_pants",
       "name": "Cargo pants",
       "category": "clothing",

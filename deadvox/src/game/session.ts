@@ -62,7 +62,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
-import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
+import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
 import { SEVERED_ITEM } from '../core/zombieRegionNames.ts';
@@ -675,8 +675,7 @@ export const createSession = (options: SessionOptions) => {
   const sim = new Simulation({
     seed,
     bodyTuning,
-    onImpact: (amount, region, kind) =>
-      wearOnPlayerHit(inventory, region, amount, bodyTuning.outerWearMultiplier[kind]),
+    ...playerWearHooks(inventory, bodyTuning),
     analgesics: (item) => registry.items.get(item)?.analgesic,
     compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),
     clock: { ratio: dayCycle.clockRatio, start: options.start },

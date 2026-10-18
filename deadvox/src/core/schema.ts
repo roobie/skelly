@@ -33,7 +33,15 @@ import {
 } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { hasSegment } from './authoredTerrain.mjs';
-import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind, MELEE_DAMAGE_KINDS } from './body.ts';
+import {
+  BODY_REGIONS,
+  type BodyRegion,
+  DAMAGE_KINDS,
+  type DamageKind,
+  MELEE_DAMAGE_KINDS,
+  TOUCHES,
+  type Touch,
+} from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
@@ -294,6 +302,13 @@ const WearableSchema = strictObject({
   encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
   warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
   wearPerDamage: optional(NonNegative),
+  /** Damage kinds that neither reach the wearer through it nor wear it (`DESIGN.md`, "Worn coverage"). */
+  imperviousTo: optional(
+    pipe(
+      array(picklist(DAMAGE_KINDS)),
+      check((kinds) => new Set(kinds).size === kinds.length, 'impervious damage kinds must be unique'),
+    ),
+  ),
 });
 
 const FoodSchema = pipe(
@@ -2308,6 +2323,13 @@ const WeatheringSchema = strictObject({
 const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) =>
   strictObject(Object.fromEntries(DAMAGE_KINDS.map((kind) => [kind, value])) as Record<DamageKind, S>);
 
+const WearSlotSchema = picklist(WEAR_SLOTS);
+
+const CoveringSlots = pipe(
+  array(WearSlotSchema),
+  check((slots) => new Set(slots).size === slots.length, 'covering slots must be unique'),
+);
+
 /** One bleeding tier; the list runs mildest first (`DESIGN.md`, "Bleeding"). */
 const BleedingTierSchema = strictObject({
   id: Id,
@@ -2426,123 +2448,151 @@ const NeedsTuningSchema = strictObject({
   badlyHurt: strictObject({ below: Positive, message: Name }),
 });
 
-const BodyTuningSchema = strictObject({
-  id: Id,
-  /** Game hours after a bleeding wound before an at-risk infection becomes early. */
-  infectionOnsetGameHours: PositiveGameHours,
-  /** Game hours the early infection stage remains treatable with antiseptic. */
-  antisepticWindowGameHours: PositiveGameHours,
-  infectionChance: Fraction,
-  /** Sim seconds that the player remains unconscious. */
-  knockoutSimSeconds: PositiveSimSeconds,
-  /** Sim seconds to wait after stamina reaches zero before recovery begins. */
-  staminaRegenDelaySimSeconds: PositiveSimSeconds,
-  /** Player eye height in metres while unconscious and prone. */
-  proneEyeHeightMetres: Positive,
-  /** Shock damage per point of health damage, by the hit's damage kind. */
-  shockPerDamage: perDamageKind(NonNegative),
-  /** How much harder a hit of each damage kind wears the outermost worn item on the struck region; 1 is the item's own rate. */
-  outerWearMultiplier: perDamageKind(NonNegative),
-  exposureRefusal: Name,
-  linger: record(
-    picklist(DAMAGE_KINDS),
-    strictObject({
-      simSeconds: PositiveSimSeconds,
+const BodyTuningSchema = pipe(
+  strictObject({
+    id: Id,
+    /** Game hours after a bleeding wound before an at-risk infection becomes early. */
+    infectionOnsetGameHours: PositiveGameHours,
+    /** Game hours the early infection stage remains treatable with antiseptic. */
+    antisepticWindowGameHours: PositiveGameHours,
+    infectionChance: Fraction,
+    /** Sim seconds that the player remains unconscious. */
+    knockoutSimSeconds: PositiveSimSeconds,
+    /** Sim seconds to wait after stamina reaches zero before recovery begins. */
+    staminaRegenDelaySimSeconds: PositiveSimSeconds,
+    /** Player eye height in metres while unconscious and prone. */
+    proneEyeHeightMetres: Positive,
+    /** Shock damage per point of health damage, by the hit's damage kind. */
+    shockPerDamage: perDamageKind(NonNegative),
+    /** How much harder a hit of each damage kind wears the outermost worn item on the struck region; 1 is the item's own rate. */
+    outerWearMultiplier: perDamageKind(NonNegative),
+    /** The wear slots covering each region, outermost first; a hit meets the first one worn (`DESIGN.md`, "Worn coverage"). */
+    coverage: strictObject(
+      Object.fromEntries(BODY_REGIONS.map((region) => [region, CoveringSlots])) as Record<
+        BodyRegion,
+        typeof CoveringSlots
+      >,
+    ),
+    /** The slot each touch meets first, where that slot covers the touched region. */
+    touchFirst: strictObject(
+      Object.fromEntries(TOUCHES.map((touch) => [touch, WearSlotSchema])) as Record<Touch, typeof WearSlotSchema>,
+    ),
+    exposureRefusal: Name,
+    linger: record(
+      picklist(DAMAGE_KINDS),
+      strictObject({
+        simSeconds: PositiveSimSeconds,
+      }),
+    ),
+    landing: strictObject({
+      safeSpeedMetresPerSimSecond: SimRate,
+      damagePerSquaredSpeed: Positive,
+      damageSpread: pipe(
+        strictObject({ min: Positive, max: Positive }),
+        check(({ min, max }) => min <= max, 'min must not be more than max'),
+      ),
+      kind: picklist(DAMAGE_KINDS),
+      cause: Name,
+      regions: pipe(
+        array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
+        nonEmpty('needs at least one landing region'),
+        check(
+          (regions) => new Set(regions.map(({ region }) => region)).size === regions.length,
+          'landing regions must be unique',
+        ),
+      ),
     }),
-  ),
-  landing: strictObject({
-    safeSpeedMetresPerSimSecond: SimRate,
-    damagePerSquaredSpeed: Positive,
-    damageSpread: pipe(
-      strictObject({ min: Positive, max: Positive }),
+    /** Sim seconds required to apply wound treatment. */
+    treatmentSimSeconds: PositiveSimSeconds,
+    /** The range each treatment application's strength is multiplied by, rolled per application. */
+    treatmentSpread: pipe(
+      strictObject({ min: NonNegative, max: Positive }),
       check(({ min, max }) => min <= max, 'min must not be more than max'),
     ),
-    kind: picklist(DAMAGE_KINDS),
-    cause: Name,
-    regions: pipe(
-      array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
-      nonEmpty('needs at least one landing region'),
-      check(
-        (regions) => new Set(regions.map(({ region }) => region)).size === regions.length,
-        'landing regions must be unique',
-      ),
+    /** Shock restored when the player wakes, on a 0–100 scale. */
+    wakeShock: pipe(
+      Positive,
+      check((value) => value < 100, 'must be below 100'),
     ),
-  }),
-  /** Sim seconds required to apply wound treatment. */
-  treatmentSimSeconds: PositiveSimSeconds,
-  /** The range each treatment application's strength is multiplied by, rolled per application. */
-  treatmentSpread: pipe(
-    strictObject({ min: NonNegative, max: Positive }),
-    check(({ min, max }) => min <= max, 'min must not be more than max'),
-  ),
-  /** Shock restored when the player wakes, on a 0–100 scale. */
-  wakeShock: pipe(
-    Positive,
-    check((value) => value < 100, 'must be below 100'),
-  ),
-  /** The bleeding tiers, and when and with what line bleeding refuses time compression. */
-  bleeding: strictObject({
-    refusal: Name,
-    /** Total blood loss per Sim second at or above which bleeding refuses compression; 0 means any bleeding. */
-    blockCompressionAtLossPerSimSecond: NonNegativeSimRate,
-    tiers: pipe(
-      array(BleedingTierSchema),
-      nonEmpty('needs at least one tier'),
-      check((tiers) => new Set(tiers.map(({ id }) => id)).size === tiers.length, 'bleeding tier ids must be unique'),
-      check(
-        (tiers) =>
-          tiers.every(
-            (tier, index) => index === 0 || tier.bloodLossPerSimSecond > tiers[index - 1]!.bloodLossPerSimSecond,
-          ),
-        'each bleeding tier must lose blood faster than the one before it',
+    /** The bleeding tiers, and when and with what line bleeding refuses time compression. */
+    bleeding: strictObject({
+      refusal: Name,
+      /** Total blood loss per Sim second at or above which bleeding refuses compression; 0 means any bleeding. */
+      blockCompressionAtLossPerSimSecond: NonNegativeSimRate,
+      tiers: pipe(
+        array(BleedingTierSchema),
+        nonEmpty('needs at least one tier'),
+        check((tiers) => new Set(tiers.map(({ id }) => id)).size === tiers.length, 'bleeding tier ids must be unique'),
+        check(
+          (tiers) =>
+            tiers.every(
+              (tier, index) => index === 0 || tier.bloodLossPerSimSecond > tiers[index - 1]!.bloodLossPerSimSecond,
+            ),
+          'each bleeding tier must lose blood faster than the one before it',
+        ),
       ),
-    ),
-  }),
-  pain: PainTuningSchema,
-  /** Blood recovered per Sim second when no wound bleeds. */
-  bloodRecoveryPerSimSecond: SimRate,
-  /** Shock recovered per Sim second outside a knockout. */
-  shockRecoveryPerSimSecond: SimRate,
-  /** Health lost per Sim second while infection is advanced. */
-  advancedInfectionHealthLossPerSimSecond: SimRate,
-  needs: NeedsTuningSchema,
-  /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
-  fatigueRisePerGameHour: GamePerHour,
-  /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
-  restFatigueRecoveryPerGameHour: GamePerHour,
-  /** Fatigue cleared per Game hour asleep at rest quality 1: a normal sleep. */
-  sleepFatigueRecoveryPerGameHour: GamePerHour,
-  /** Sleep onset gets shorter as fatigue rises, reaching its minimum at the authored threshold. */
-  sleepOnset: pipe(
-    strictObject({
-      minGameMinutes: PositiveGameMinutes,
-      maxGameMinutes: PositiveGameMinutes,
-      fatigueAtMinimum: Positive,
     }),
-    check(({ minGameMinutes, maxGameMinutes }) => minGameMinutes <= maxGameMinutes, 'minimum must not exceed maximum'),
-  ),
-  /** The share of a normal sleep's recovery at rest quality 0; it rises linearly to all of it at 1. */
-  roughSleepShare: Fraction,
-  /** Health, and each region's damage, recovered per Game hour while needs are at their floor or above and fatigue under its ceiling. */
-  healthRecoveryPerGameHour: GamePerHour,
-  /** The lowest calories and hydration at which health and regions still recover. */
-  healthRecoveryNeedsFloor: strictObject({ calories: NonNegative, hydration: NonNegative }),
-  /** The highest fatigue at which health and regions still recover, awake and asleep; a state left out has none. */
-  healthRecoveryFatigueCeiling: strictObject({ awake: optional(NonNegative), asleep: optional(NonNegative) }),
-  /** Multiplies health, regional and blood recovery while asleep. */
-  sleepRecoveryFactor: Positive,
-  /** Aim sway added per point of torso damage. */
-  aimSwayPerDamage: Positive,
-  /** Swing slowdown added per point of arm damage. */
-  swingSlowdownPerDamage: Positive,
-  /** Movement slowdown added per point of leg damage. */
-  movementSlowdownPerDamage: Positive,
-  /** Lowest movement-speed multiplier caused by leg damage. */
-  minimumMovementSpeed: pipe(
-    Positive,
-    check((value) => value <= 1, 'must not exceed 1'),
-  ),
-});
+    pain: PainTuningSchema,
+    /** Blood recovered per Sim second when no wound bleeds. */
+    bloodRecoveryPerSimSecond: SimRate,
+    /** Shock recovered per Sim second outside a knockout. */
+    shockRecoveryPerSimSecond: SimRate,
+    /** Health lost per Sim second while infection is advanced. */
+    advancedInfectionHealthLossPerSimSecond: SimRate,
+    needs: NeedsTuningSchema,
+    /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
+    fatigueRisePerGameHour: GamePerHour,
+    /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
+    restFatigueRecoveryPerGameHour: GamePerHour,
+    /** Fatigue cleared per Game hour asleep at rest quality 1: a normal sleep. */
+    sleepFatigueRecoveryPerGameHour: GamePerHour,
+    /** Sleep onset gets shorter as fatigue rises, reaching its minimum at the authored threshold. */
+    sleepOnset: pipe(
+      strictObject({
+        minGameMinutes: PositiveGameMinutes,
+        maxGameMinutes: PositiveGameMinutes,
+        fatigueAtMinimum: Positive,
+      }),
+      check(
+        ({ minGameMinutes, maxGameMinutes }) => minGameMinutes <= maxGameMinutes,
+        'minimum must not exceed maximum',
+      ),
+    ),
+    /** The share of a normal sleep's recovery at rest quality 0; it rises linearly to all of it at 1. */
+    roughSleepShare: Fraction,
+    /** Health, and each region's damage, recovered per Game hour while needs are at their floor or above and fatigue under its ceiling. */
+    healthRecoveryPerGameHour: GamePerHour,
+    /** The lowest calories and hydration at which health and regions still recover. */
+    healthRecoveryNeedsFloor: strictObject({ calories: NonNegative, hydration: NonNegative }),
+    /** The highest fatigue at which health and regions still recover, awake and asleep; a state left out has none. */
+    healthRecoveryFatigueCeiling: strictObject({ awake: optional(NonNegative), asleep: optional(NonNegative) }),
+    /** Multiplies health, regional and blood recovery while asleep. */
+    sleepRecoveryFactor: Positive,
+    /** Aim sway added per point of torso damage. */
+    aimSwayPerDamage: Positive,
+    /** Swing slowdown added per point of arm damage. */
+    swingSlowdownPerDamage: Positive,
+    /** Movement slowdown added per point of leg damage. */
+    movementSlowdownPerDamage: Positive,
+    /** Lowest movement-speed multiplier caused by leg damage. */
+    minimumMovementSpeed: pipe(
+      Positive,
+      check((value) => value <= 1, 'must not exceed 1'),
+    ),
+  }),
+  // A touch slot that covers no region would never be met, so the touch would silently fall back to coverage.
+  rawCheck(({ dataset, addIssue }) => {
+    if (!dataset.typed) {
+      return;
+    }
+    const covering = new Set(Object.values(dataset.value.coverage).flat());
+    for (const touch of TOUCHES) {
+      if (!covering.has(dataset.value.touchFirst[touch])) {
+        addIssue({ message: `touchFirst.${touch} must name a slot that covers some region` });
+      }
+    }
+  }),
+);
 
 const RecipeSchema = strictObject({
   id: Id,

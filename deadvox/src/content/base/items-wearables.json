@@ -43,6 +43,24 @@
     },
     {
       "category": "clothing",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "rubber_boots",
+      "name": "Rubber boots",
+      "size": [2, 3],
+      "wearable": {
+        "encumbrance": 8,
+        "imperviousTo": ["acid"],
+        "slot": "feet",
+        "warmth": 5,
+        "wearPerDamage": 0.0011999999999999999
+      },
+      "weight": 1800
+    },
+    {
+      "category": "clothing",
       "container": {
         "pockets": [
           {

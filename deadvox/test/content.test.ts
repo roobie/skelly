@@ -427,6 +427,22 @@ describe('content', () => {
     expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ chest: 1 })] } })).not.toEqual([]);
   });
 
+  it('accepts a touch slot covering some regions only, and rejects one covering none', () => {
+    const body = baseRegistry.body.get('player')!;
+    const handSlot = body.touchFirst.hand;
+    const withoutHandSlot = Object.fromEntries(
+      Object.entries(body.coverage).map(([region, slots]) => [region, slots.filter((slot) => slot !== handSlot)]),
+    );
+    const messages = (candidate: typeof body) =>
+      validateContent({ source: 'body.json', data: { body: [candidate] } }).map(({ message }) => message);
+
+    expect(Object.values(body.coverage).some((slots) => !slots.includes(handSlot))).toBe(true);
+    expect(messages(body)).toEqual([]);
+    expect(messages({ ...body, coverage: withoutHandSlot as typeof body.coverage })).toEqual([
+      expect.stringContaining('touchFirst.hand must name a slot that covers some region'),
+    ]);
+  });
+
   it('requires amalgam zombie regions to match the manifest classes exactly', () => {
     for (const [regionId, change] of [
       ['member.leftLeg', 'remove'],

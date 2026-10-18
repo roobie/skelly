@@ -3217,6 +3217,7 @@ export class ZombieSystem {
             cause: `a ${type.name.toLowerCase()}`,
             region,
             kind: 'acid',
+            touch: 'ground',
           });
         } else {
           this.options.onPlayerLeaveExposure?.(id);

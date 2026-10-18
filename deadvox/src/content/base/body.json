@@ -97,6 +97,14 @@
         ]
       },
       "bloodRecoveryPerSimSecond": 0.002,
+      "coverage": {
+        "head": ["head"],
+        "leftArm": ["torso", "hands"],
+        "leftLeg": ["legs", "feet"],
+        "rightArm": ["torso", "hands"],
+        "rightLeg": ["legs", "feet"],
+        "torso": ["torso"]
+      },
       "exposureRefusal": "You're burning",
       "fatigueRisePerGameHour": 4,
       "healthRecoveryFatigueCeiling": {
@@ -271,6 +279,10 @@
       "sleepRecoveryFactor": 2,
       "staminaRegenDelaySimSeconds": 5,
       "swingSlowdownPerDamage": 0.01,
+      "touchFirst": {
+        "ground": "feet",
+        "hand": "hands"
+      },
       "treatmentSimSeconds": 8,
       "treatmentSpread": {
         "max": 1.5,

@@ -1,7 +1,7 @@
 // The simulation core: clock, scheduler, events, compression and pause, with the
 // systems registered on it. Pure, so scenario tests run it headless.
 
-import { Body, type BodyImpact, type BodyRegion, type BodyState, type DamageKind } from './body.ts';
+import { Body, type BodyImpact, type BodyRegion, type BodyState, type DamageKind, type Touch } from './body.ts';
 import { type ClockSettings, calendarAt, simToGameHours } from './clock.ts';
 import { Compression, type CompressionLimits, type CompressionOwner, longActionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
@@ -33,8 +33,8 @@ export type SimEvent =
 
 export type Timed<E> = E & { readonly time: number };
 
-/** A hit's effects; the body's bleeding tiers decide from its kind whether and how badly it bleeds. */
-export type HitEffects = Omit<BodyImpact, 'bleeding'>;
+/** A hit's effects; the body's bleeding tiers decide from its kind whether and how badly it bleeds. A touch chooses the worn slot it meets first. */
+export type HitEffects = Omit<BodyImpact, 'bleeding'> & { touch?: Touch };
 
 export interface SimulationState {
   seed: number;
@@ -57,7 +57,9 @@ export interface SimOptions {
   /** The content cap of each compressing long action. */
   compressionCaps: CompressionCaps;
   clock: ClockSettings;
-  onImpact?: (amount: number, region: BodyRegion, kind: DamageKind) => void;
+  onImpact?: (amount: number, region: BodyRegion, kind: DamageKind, touch?: Touch) => void;
+  /** Whether what the hit meets first keeps this kind off the region; such a hit lands nowhere. */
+  impervious?: (region: BodyRegion, kind: DamageKind, touch?: Touch) => boolean;
 }
 
 /** Needs tick at 1 Hz; under compression their step grows to 30 s, 4 game minutes at 1:8. */
@@ -75,6 +77,7 @@ export class Simulation {
   readonly body: Body;
   readonly exposures: DamageExposures;
   private readonly onImpact: SimOptions['onImpact'];
+  private readonly impervious: NonNullable<SimOptions['impervious']>;
   /** Esc pauses everything; the inventory screen doesn't. */
   paused = false;
   /** Set when health reaches 0; from then on nothing advances. */
@@ -90,6 +93,7 @@ export class Simulation {
     this.clock = options.clock;
     this.body = new Body(options.bodyTuning, undefined, undefined, options.analgesics);
     this.onImpact = options.onImpact;
+    this.impervious = options.impervious ?? (() => false);
     this.exposures = new DamageExposures(options.bodyTuning, (id) => this.rng(`exposure:${id}`).next());
     this.scheduler.register({
       id: 'damage-exposure',
@@ -262,8 +266,14 @@ export class Simulation {
   /** A hit of a damage kind may open a bleeding wound (`Body.bleedingTierForHit`). */
   hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: HitEffects = {}): void {
     this.advanceExposuresTo(this.time);
+    if (effects.kind !== undefined && this.impervious(region, effects.kind, effects.touch)) {
+      return;
+    }
     this.takeDamage(cause, () => {
-      const exposure = effects.kind === undefined ? undefined : this.exposures.hit(amount, cause, region, effects.kind);
+      const exposure =
+        effects.kind === undefined
+          ? undefined
+          : this.exposures.hit(amount, cause, region, { kind: effects.kind, touch: effects.touch });
       return this.impact(amount, region, effects, exposure);
     });
   }
@@ -273,7 +283,11 @@ export class Simulation {
       return;
     }
     this.advanceExposuresTo(this.time);
-    this.exposures.contact(contact);
+    if (this.impervious(contact.region, contact.kind, contact.touch)) {
+      this.exposures.leave(contact.id);
+    } else {
+      this.exposures.contact(contact);
+    }
     this.checkInterruptions();
   }
 
@@ -288,13 +302,28 @@ export class Simulation {
   }
 
   private advanceExposuresTo(time: number): void {
-    this.exposures.advance(Math.max(0, time - this.exposures.simTimestamp), (amount, cause, exposure) => {
-      this.takeDamage(cause, () => this.impact(amount, exposure.region, { kind: exposure.kind }, exposure), false);
-    });
+    this.exposures.advance(
+      Math.max(0, time - this.exposures.simTimestamp),
+      (amount, cause, exposure, touch) => {
+        this.takeDamage(
+          cause,
+          () => this.impact(amount, exposure.region, { kind: exposure.kind, ...(touch && { touch }) }, exposure),
+          false,
+        );
+      },
+      this.exposureBlocked,
+    );
+  }
+
+  private readonly exposureBlocked = (exposure: DamageExposure, touch: Touch | undefined): boolean =>
+    this.impervious(exposure.region, exposure.kind, touch);
+
+  private get exposureRefusal(): string | undefined {
+    return this.exposures.refusal(this.exposureBlocked);
   }
 
   get actionRefusal(): string | undefined {
-    return this.exposures.refusal ?? this.body.actionRefusal;
+    return this.exposureRefusal ?? this.body.actionRefusal;
   }
 
   private openedBleedingTier(
@@ -319,7 +348,15 @@ export class Simulation {
     return bleeding;
   }
 
-  private impact(amount: number, region: BodyRegion, effects: HitEffects, exposure?: DamageExposure): number {
+  private impact(
+    amount: number,
+    region: BodyRegion,
+    { touch, ...effects }: HitEffects,
+    exposure?: DamageExposure,
+  ): number {
+    if (effects.kind !== undefined && this.impervious(region, effects.kind, touch)) {
+      return 0;
+    }
     const bleeding =
       effects.kind === undefined ? undefined : this.openedBleedingTier(amount, region, effects.kind, exposure);
     const woundAlreadyExists = this.body.wounds[region] !== null;
@@ -334,7 +371,7 @@ export class Simulation {
       exposure.infectionAtRisk = infectionAtRisk;
     }
     if (effects.kind !== undefined) {
-      this.onImpact?.(amount, region, effects.kind);
+      this.onImpact?.(amount, region, effects.kind, touch);
     }
     return this.body.impact(amount, region, {
       ...effects,
@@ -403,8 +440,9 @@ export class Simulation {
    * too fast; emitted interruptions still stop it.
    */
   compressLongAction(jobType: keyof CompressionCaps): { ok: true } | { ok: false; reason: string } {
-    if (this.exposures.refusal) {
-      return { ok: false, reason: this.exposures.refusal };
+    const refusal = this.exposureRefusal;
+    if (refusal) {
+      return { ok: false, reason: refusal };
     }
     return this.compression.start(
       this.body.compressionRefusal,
@@ -461,7 +499,7 @@ export class Simulation {
 
   private interruptExposure(): boolean {
     const action = this.actions.job;
-    const reason = this.exposures.refusal;
+    const reason = this.exposureRefusal;
     if (!action || action.stopped || reason === undefined) {
       return false;
     }
