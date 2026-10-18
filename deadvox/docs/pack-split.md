@@ -35,7 +35,7 @@ Classify an entry, not a file. A file that mixes kinds is split along its entrie
 
 **Skill entries are never core content.** Skill support stays in the engine and must work with zero skills. Keeping the actual skills outside core forces a clean, provider-neutral contract instead of reliance on built-in ids. That boundary matters especially when mods can drive behaviour through the expression language. Whether a setting pack or a shared optional pack supplies skills remains open.
 
-**An entry that names a skill is not core either.** It moves up to the pack that supplies its skill, even when it would otherwise pass the genre test, as the wooden plank's disassembly and the torch recipe would. Keeping it in core would need a skill-free variant or an abstract role standing in for the skill: a second contract kept only so that one entry can sit lower. Moving it keeps the downward-only rule free of exceptions.
+**An entry that names a skill is not core either.** It moves out of core into a setting, even when it would otherwise pass the genre test, as a recipe that names a crafting skill would. Where within a setting's packs it lands waits on the skill-sharing question. Keeping it in core would need a skill-free variant or an abstract role standing in for the skill: a second contract kept only so that one entry can sit lower. Moving it keeps the downward-only rule free of exceptions.
 
 For other entries:
 
@@ -104,7 +104,7 @@ What must move before the check can pass:
 
 1. **Pack folders and ordered loading.** The single base folder becomes one folder per pack. `src/game/bundledContent.ts`, `buildBundledContent` and `src/cli/validate.ts`, `validate` load packs in their declared order, and the base content hash in `vite.config.ts` becomes one hash per pack. Folder names wait on the pack-id ruling.
 2. **Requirements split by pack.** `REQUIRED_CORE_CONTENT` requires no skill entry. Where skill requirements live follows the policy-owner question. Setting sound rows become setting requirements until the sound-selection round replaces the code list.
-3. **Core entries cleared of higher-layer references.** The check finds them. Entries that name a skill move up with their skill, and other references follow the classification rule.
+3. **Core entries cleared of higher-layer references.** The check finds them. Entries that name a skill move into a setting, and other references follow the classification rule.
 
 The round passes when the core-alone check, the full-stack validate with reachability, the deadvox unit suite and a save round trip all pass.
 
