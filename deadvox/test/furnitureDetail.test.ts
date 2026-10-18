@@ -89,6 +89,40 @@ describe('furniture detail', () => {
     expect((furniture.group.children[0] as Mesh).geometry).toBe(geometry);
   });
 
+  it('paints shape boxes with their own colour, falling back to the furniture colour', () => {
+    const { registry, issues } = buildRegistry([
+      {
+        source: 'tinted.json',
+        data: {
+          furniture: [
+            {
+              id: 'tinted_heap',
+              name: 'Heap',
+              size: [2, 1, 2],
+              color: '#102030',
+              shape: [
+                { position: [0, 0, 0], size: [1, 0.5, 1], color: '#ff0000' },
+                { position: [1, 0, 1], size: [1, 0.5, 1] },
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(registry);
+    const meshes = new FurnitureMeshes(0.5);
+    entities.add({ type: 'tinted_heap', size: [2, 1, 2], pos: [0, 0, 0], facing: 'n' });
+    meshes.sync(entities);
+    const mesh = meshes.group.children[0] as Mesh;
+    const colors = mesh.geometry.getAttribute('color');
+    const painted = new Set<string>();
+    for (let vertex = 0; vertex < colors.count; vertex++) {
+      painted.add([colors.getX(vertex), colors.getY(vertex), colors.getZ(vertex)].map((c) => c.toFixed(3)).join());
+    }
+    expect(painted.size).toBe(2);
+  });
+
   it('rejects detail on furniture whose other visual authority would hide it', () => {
     const definition = definitions[0]!;
     for (const extra of [
