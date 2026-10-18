@@ -7,6 +7,7 @@ read_if:
   - you write a browser test or CI script that opens the game with a prepared URL
   - you change how the bench reads its run parameters or sets up its world
   - you build browser loading of Jsonnet mods
+  - you change whether or where the core mod loads
 tags: [deadvox, adr, mods, url, debug, testing]
 ---
 
@@ -43,7 +44,9 @@ The project owes no backwards compatibility. See
 
 ## Decision
 
-The core mod is always loaded. Everything that sets up a world or a player comes from mods;
+The core mod loads first by default; see
+`deadvox/docs/pack-split.md`, "Core is the default first pack, not a required one".
+Everything that sets up a world or a player comes from mods;
 the URL only names which extra mods to load. Ad hoc developer state lives in one object in
 the URL hash. Player choices live in player options. The query keeps only the mod list and
 harness switches. Each home answers one question:
@@ -116,7 +119,7 @@ panel. An unknown id stops startup with the usual diagnostics. The mods panel mo
 own `?modpanel` switch.
 
 URL mods and panel mods combine, so a demo can be tried with a player's own mods. Load
-order is the core mod, then URL mods in URL order, then enabled panel mods in panel order.
+order is the bundled packs, then URL mods in URL order, then enabled panel mods in panel order.
 Later packs replace earlier definitions, so a panel mod can override a demo. Saves record
 every admitted pack in that order, through the existing identity in
 `deadvox/src/core/saveFormat.ts`, `currentSaveVersionIdentity`. A world started under a

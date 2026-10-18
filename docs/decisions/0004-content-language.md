@@ -44,12 +44,13 @@ and boundaries still open. Weather simulation stays in code while mods configure
 continual rain; rules may read weather through an event such as `weather_changed`, with the event
 contract open.
 
-A mod changes a core tuning value only through a modifier hook that core declares, never by
-replacing the value. A declared hook names what a mod may change, so core keeps authority over the
-mechanism the value tunes, and a diagnostic can name every mod that modified it; replacement would
-let one mod silently take the value over from core and from every other mod. The hook vocabulary,
-the order in which several mods' modifiers stack, and whether a setting pack may replace core
-values remain open.
+The core mod is a pack like any other, with no extra protection or privilege. A mod changes a core
+tuning value as it changes any pack's value, through a declared override that depends on the owner
+(`docs/decisions/0007-typed-field-patches.md`, "Decision"), and a stack may leave core out
+(`deadvox/docs/pack-split.md`, "Core is the default first pack, not a required one"). One rule for
+every pack is simpler than a privileged core, and the mod author owns the consequences of what
+they override. Modifier hooks remain a mechanism, not the only way to change core tuning; their
+vocabulary and the order in which several mods' modifiers stack remain open.
 
 A save whose mod state no longer matches the mod is refused, as a pack mismatch is; see
 `deadvox/docs/decisions/0002-saves.md`, "Compatibility". The game and the modding framework own
