@@ -189,7 +189,17 @@ describe('one finished city plan', () => {
     const solid = native.blocks.find((block) => block.solid)!.id;
     const cityRegistry = {
       ...native,
-      templates: new Map([...native.templates, [fixture.id, { ...fixture, palette: { '=': solid, C: solid } }]]),
+      templates: new Map([
+        ...native.templates,
+        [
+          fixture.id,
+          {
+            ...fixture,
+            eligibility: { settlementKinds: [bundled.city.settlementKind] },
+            palette: { '=': solid, C: solid },
+          },
+        ],
+      ]),
       mapPools: new Map([
         ...native.mapPools,
         [

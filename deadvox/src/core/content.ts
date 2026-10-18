@@ -6,7 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
-import { scenarioPlanIssues } from './cityPlan.ts';
+import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
@@ -1266,6 +1266,9 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     checkLayoutReferences(layout, registry, report);
   }
   checkScenarios(registry, report);
+  for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
+    report(section, id, path, message);
+  }
   return issues;
 };
 

@@ -99,6 +99,7 @@ local slot(id, piece, at, size, turn=0) = {
   choices: [{ ref: { kind: 'piece', id: piece }, weight: 1 }],
 };
 local building(id, context, shellId, roomId) = {
+  eligibility: { settlementKinds: ['city'] },
   id: id, size: [18, 9, 16], lootContext: context,
   slots: [
     slot('ground', 'gauntlet_city_ground', [0, 0, 0], [18, 1, 16]),

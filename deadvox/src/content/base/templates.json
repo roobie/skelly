@@ -1,6 +1,9 @@
 {
   "templates": [
     {
+      "eligibility": {
+        "settlementKinds": ["city"]
+      },
       "id": "shed",
       "layers": [
         ["========", "========", "========", "========", "========", "========"],
@@ -38,6 +41,9 @@
       "size": [8, 6, 6]
     },
     {
+      "eligibility": {
+        "settlementKinds": ["city"]
+      },
       "id": "small_house",
       "layers": [
         [
@@ -207,6 +213,9 @@
       "size": [20, 8, 14]
     },
     {
+      "eligibility": {
+        "settlementKinds": ["city"]
+      },
       "id": "bungalow",
       "layers": [
         [
@@ -405,6 +414,9 @@
       "size": [24, 8, 16]
     },
     {
+      "eligibility": {
+        "settlementKinds": ["city"]
+      },
       "id": "corner_store",
       "layers": [
         [
@@ -590,6 +602,9 @@
       "size": [20, 8, 16]
     },
     {
+      "eligibility": {
+        "settlementKinds": ["city"]
+      },
       "id": "gas_station",
       "layers": [
         [
@@ -881,6 +896,9 @@
       "size": [16, 9, 26]
     },
     {
+      "eligibility": {
+        "settlementKinds": ["city"]
+      },
       "id": "hardware_store",
       "layers": [
         [
@@ -1006,6 +1024,9 @@
       "size": [18, 7, 12]
     },
     {
+      "eligibility": {
+        "settlementKinds": ["city"]
+      },
       "id": "garage",
       "layers": [
         [

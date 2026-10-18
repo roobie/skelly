@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { StressCity } from '../src/core/city.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { siteGenerationOf, sitePalette } from '../src/core/sitePalette.ts';
+import { sitePalette } from '../src/core/sitePalette.ts';
 import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 import { content as BUNDLED_CONTENT, siteFromUrl } from './fixtures/startupContent.ts';
@@ -17,7 +17,7 @@ describe('the stress-test city', () => {
     const [x, , z] = city.spawn.pos.map((m) => m / scale.blockSize);
     expect(city.surface.top(Math.floor(x!), Math.floor(z!))).toBe(sitePalette(registry).paving);
     expect((city.bounds.x1 - city.bounds.x0) * scale.blockSize).toBeGreaterThanOrEqual(
-      2 * siteGenerationOf(registry).stressCity.reachMetres,
+      2 * [...registry.cityBenchmarks.values()][0]!.reachMetres,
     );
     expect(city.plan.service).toBeUndefined();
     expect(city.zombiesIn(0, 0)).toEqual([]);

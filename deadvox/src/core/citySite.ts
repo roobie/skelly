@@ -1,11 +1,12 @@
 import { smoothstep } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
-import { type CityPlan, cityRowDepth, cityRowStart } from './cityPlan.ts';
+import { type CityPlan, cityRowStart } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import type { Scale } from './scale.ts';
+import { cityRowDepth } from './settlementPools.ts';
 import { type FurnitureSpawn, furnitureOf, lootSourcesOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { stampChunk } from './structure.ts';
