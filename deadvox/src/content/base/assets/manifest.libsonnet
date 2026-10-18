@@ -84,7 +84,69 @@
       "licence": "CC0-1.0",
       "download": "equipment_clicks3.wav",
       "files": ["assets/audio/rifle-bolt-cycle-01.ogg", "assets/audio/revolver-case-pick-01.ogg"],
-      "changes": "Slices 12.10–13.72 s (bolt-action cocking cycle) and 7.95–8.20 s (light click, the revolver case pick and the dry-fire stand-in). Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+      "changes": "Slices 12.10–13.72 s (bolt-action cocking cycle) and 7.95–8.20 s (light click, the revolver case pick). Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "DSLR Camera Sounds",
+      "url": "https://freesound.org/people/Rvgerxini/sounds/571483/",
+      "author": "Rvgerxini",
+      "licence": "CC0-1.0",
+      "download": "571483__rvgerxini__dslr-camera-sounds.mp3",
+      "files": [
+        "assets/audio/firearm-dry-click-01.ogg",
+        "assets/audio/firearm-dry-click-02.ogg",
+        "assets/audio/firearm-dry-click-03.ogg"
+      ],
+      "changes": "Three isolated short clicks, 2.79–2.90, 6.455–6.565 and 7.45–7.53 s, as a closed-action dry fire; the longer motor runs are left out. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Huge Explosion",
+      "url": "https://freesound.org/people/florianreichelt/sounds/459973/",
+      "author": "florianreichelt",
+      "licence": "CC0-1.0",
+      "download": "459973__florianreichelt__huge-explosion.mp3",
+      "files": ["assets/audio/grenade-blast-01.ogg", "assets/audio/grenade-blast-02.ogg"],
+      "changes": "The two blasts with their tails, 6.22–7.92 s and 8.18–10.45 s; the quiet lead-in and the late rumble are left out. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Light wooshes",
+      "url": "https://freesound.org/people/florianreichelt/sounds/447806/",
+      "author": "florianreichelt",
+      "licence": "CC0-1.0",
+      "download": "447806__florianreichelt__light-wooshes.wav",
+      "files": [
+        "assets/audio/melee-swing-light-01.ogg",
+        "assets/audio/melee-swing-light-02.ogg",
+        "assets/audio/melee-swing-light-03.ogg"
+      ],
+      "changes": "Three single wooshes, 4.20–4.70, 6.55–7.05 and 8.20–8.80 s, for light blades. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Whoosh",
+      "url": "https://freesound.org/people/qubodup/sounds/60013/",
+      "author": "qubodup",
+      "licence": "CC0-1.0",
+      "download": "60013__qubodup__whoosh.flac",
+      "files": ["assets/audio/melee-swing-heavy-01.ogg"],
+      "changes": "Whole file, 0–0.426 s, for heavy swings. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Metal Impact",
+      "url": "https://freesound.org/people/Rickplayer/sounds/530486/",
+      "author": "Rickplayer",
+      "licence": "CC0-1.0",
+      "download": "530486__rickplayer__metal-impact.mp3",
+      "files": ["assets/audio/melee-hit-metal-01.ogg"],
+      "changes": "The strike and its ring, 0.06–0.85 s, as a metal layer on melee hits. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Hitting metal pole",
+      "url": "https://freesound.org/people/colorsCrimsonTears/sounds/531378/",
+      "author": "colorsCrimsonTears",
+      "licence": "CC0-1.0",
+      "download": "531378__colorscrimsontears__hitting-metal-pole.wav",
+      "files": ["assets/audio/melee-hit-metal-02.ogg", "assets/audio/melee-hit-metal-03.ogg"],
+      "changes": "Single strikes 0.02–0.26 s (ring cut at the next strike) and 1.61–1.82 s (the last), as a metal layer on melee hits. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
     },
     {
       "title": "Gun Reload Sound Effects",

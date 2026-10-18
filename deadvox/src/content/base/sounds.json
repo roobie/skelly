@@ -92,7 +92,11 @@
     },
     {
       "id": "firearm_dry_click",
-      "variants": ["assets/audio/revolver-case-pick-01.ogg"],
+      "variants": [
+        "assets/audio/firearm-dry-click-01.ogg",
+        "assets/audio/firearm-dry-click-02.ogg",
+        "assets/audio/firearm-dry-click-03.ogg"
+      ],
       "gain": 0.3,
       "pitchJitter": [0.95, 1.05],
       "gainJitter": [0.95, 1.05],
@@ -116,9 +120,9 @@
     },
     {
       "id": "grenade_blast",
-      "variants": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"],
+      "variants": ["assets/audio/grenade-blast-01.ogg", "assets/audio/grenade-blast-02.ogg"],
       "gain": 1,
-      "pitchJitter": [0.55, 0.65],
+      "pitchJitter": [0.95, 1.05],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
       "category": "world",
@@ -379,12 +383,12 @@
     {
       "id": "melee_swing_light",
       "variants": [
-        "assets/audio/melee-swing-01.ogg",
-        "assets/audio/melee-swing-02.ogg",
-        "assets/audio/melee-swing-03.ogg"
+        "assets/audio/melee-swing-light-01.ogg",
+        "assets/audio/melee-swing-light-02.ogg",
+        "assets/audio/melee-swing-light-03.ogg"
       ],
       "gain": 0.45,
-      "pitchJitter": [1.12, 1.22],
+      "pitchJitter": [0.96, 1.06],
       "gainJitter": [0.9, 1.1],
       "minIntervalSimSeconds": 0.3,
       "category": "world",
@@ -392,13 +396,9 @@
     },
     {
       "id": "melee_swing_heavy",
-      "variants": [
-        "assets/audio/melee-swing-01.ogg",
-        "assets/audio/melee-swing-02.ogg",
-        "assets/audio/melee-swing-03.ogg"
-      ],
+      "variants": ["assets/audio/melee-swing-heavy-01.ogg"],
       "gain": 0.6,
-      "pitchJitter": [0.8, 0.88],
+      "pitchJitter": [0.86, 0.98],
       "gainJitter": [0.9, 1.1],
       "minIntervalSimSeconds": 0.5,
       "category": "world",
@@ -431,9 +431,13 @@
     },
     {
       "id": "melee_hit_metal",
-      "variants": ["assets/audio/melee-hit-01.ogg", "assets/audio/melee-hit-03.ogg"],
+      "variants": [
+        "assets/audio/melee-hit-metal-01.ogg",
+        "assets/audio/melee-hit-metal-02.ogg",
+        "assets/audio/melee-hit-metal-03.ogg"
+      ],
       "gain": 0.35,
-      "pitchJitter": [1.7, 1.85],
+      "pitchJitter": [0.95, 1.05],
       "gainJitter": [0.9, 1.1],
       "minIntervalSimSeconds": 0.08,
       "category": "world",
