@@ -33,7 +33,15 @@ import {
 } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { hasSegment } from './authoredTerrain.mjs';
-import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind, MELEE_DAMAGE_KINDS } from './body.ts';
+import {
+  BODY_REGIONS,
+  type BodyRegion,
+  DAMAGE_KINDS,
+  type DamageKind,
+  MELEE_DAMAGE_KINDS,
+  TOUCHES,
+  type Touch,
+} from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
@@ -294,6 +302,13 @@ const WearableSchema = strictObject({
   encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
   warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
   wearPerDamage: optional(NonNegative),
+  /** Damage kinds that neither reach the wearer through it nor wear it (`DESIGN.md`, "Worn coverage"). */
+  imperviousTo: optional(
+    pipe(
+      array(picklist(DAMAGE_KINDS)),
+      check((kinds) => new Set(kinds).size === kinds.length, 'impervious damage kinds must be unique'),
+    ),
+  ),
 });
 
 const FoodSchema = pipe(
@@ -2308,6 +2323,13 @@ const WeatheringSchema = strictObject({
 const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) =>
   strictObject(Object.fromEntries(DAMAGE_KINDS.map((kind) => [kind, value])) as Record<DamageKind, S>);
 
+const WearSlotSchema = picklist(WEAR_SLOTS);
+
+const CoveringSlots = pipe(
+  array(WearSlotSchema),
+  check((slots) => new Set(slots).size === slots.length, 'covering slots must be unique'),
+);
+
 /** One bleeding tier; the list runs mildest first (`DESIGN.md`, "Bleeding"). */
 const BleedingTierSchema = strictObject({
   id: Id,
@@ -2443,6 +2465,17 @@ const BodyTuningSchema = strictObject({
   shockPerDamage: perDamageKind(NonNegative),
   /** How much harder a hit of each damage kind wears the outermost worn item on the struck region; 1 is the item's own rate. */
   outerWearMultiplier: perDamageKind(NonNegative),
+  /** The wear slots covering each region, outermost first; a hit meets the first one worn (`DESIGN.md`, "Worn coverage"). */
+  coverage: strictObject(
+    Object.fromEntries(BODY_REGIONS.map((region) => [region, CoveringSlots])) as Record<
+      BodyRegion,
+      typeof CoveringSlots
+    >,
+  ),
+  /** The slot each touch meets first, where that slot covers the touched region. */
+  touchFirst: strictObject(
+    Object.fromEntries(TOUCHES.map((touch) => [touch, WearSlotSchema])) as Record<Touch, typeof WearSlotSchema>,
+  ),
   exposureRefusal: Name,
   linger: record(
     picklist(DAMAGE_KINDS),

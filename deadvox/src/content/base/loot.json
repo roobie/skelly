@@ -117,6 +117,11 @@
         },
         {
           "condition": [0.5, 1],
+          "item": "rubber_boots",
+          "weight": 1
+        },
+        {
+          "condition": [0.5, 1],
           "item": "hoodie",
           "weight": 3
         },

@@ -16,6 +16,15 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   proneEyeHeightMetres: 0.2,
   shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
   outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
+  coverage: {
+    head: ['head'],
+    torso: ['torso'],
+    leftArm: ['torso', 'hands'],
+    rightArm: ['torso', 'hands'],
+    leftLeg: ['legs', 'feet'],
+    rightLeg: ['legs', 'feet'],
+  },
+  touchFirst: { ground: 'feet', hand: 'hands' },
   exposureRefusal: 'Fixture exposure',
   linger: { acid: { simSeconds: simSeconds(3) } },
   landing: {
