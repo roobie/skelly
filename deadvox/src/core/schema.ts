@@ -364,6 +364,12 @@ const WeaponSchema = strictObject({
     limbDamageMultiplier: optional(Positive),
     /** Overrides the weapon class's swing-speed multiplier. */
     speedMultiplier: optional(Positive),
+    /** Swing presentation event; absent uses the shared swing. */
+    swingSound: optional(picklist(SOUND_EVENT_IDS)),
+    /** Hit presentation event; absent uses the shared hit. */
+    hitSound: optional(picklist(SOUND_EVENT_IDS)),
+    /** Played over the hit, such as a metal ring for a metal weapon. */
+    hitLayerSound: optional(picklist(SOUND_EVENT_IDS)),
     type: picklist(MELEE_DAMAGE_KINDS),
   }),
 });
@@ -428,6 +434,10 @@ const FirearmSchema = strictObject({
   shotSound: picklist(SOUND_EVENT_IDS),
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
   suppressedShotSound: optional(picklist(SOUND_EVENT_IDS)),
+  /** Trigger pulled on an empty chamber; absent stays silent. The revolver's cylinder has its own click. */
+  dryFireSound: optional(picklist(SOUND_EVENT_IDS)),
+  /** Working the action by hand; absent uses the pump's rack or the shared charging handle. */
+  chargeSound: optional(picklist(SOUND_EVENT_IDS)),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */

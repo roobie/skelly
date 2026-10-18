@@ -1072,8 +1072,8 @@ export const createSession = (options: SessionOptions) => {
     onPlayerLeaveExposure: (source) => sim.leaveExposure(source),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
     onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
-    onSound: (event, position, zombie) => {
-      if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {
+    onSound: (event, position, zombie, playerMelee) => {
+      if (playerMelee) {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',

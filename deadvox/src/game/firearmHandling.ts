@@ -609,6 +609,7 @@ export class FirearmMechanics {
       return false;
     }
     if (this.fireReason(item.uid)) {
+      this.dryFire(item, input.simTime);
       return false;
     }
     const data = firearmHandlingFor(item, this.inventory.registry);
@@ -652,6 +653,15 @@ export class FirearmMechanics {
       return this.commitRevolverShot(commit);
     }
     return pump ? this.commitPumpShot(commit) : this.commitBallisticShot(commit);
+  }
+
+  /** The hammer or striker falls only on a closed action; the revolver clicks through its own cylinder rules. */
+  private dryFire(item: Item, time: number): void {
+    const sound = defOf(this.inventory.registry, item.type).firearm?.dryFireSound;
+    const state = item.firearm;
+    if (sound !== undefined && !state?.cylinder && !state?.actionOpen && state?.chamber !== 'round') {
+      this.onSound(sound, undefined, time);
+    }
   }
 
   private deferRevolverPull(input: FirearmShotInput, item: Item): boolean | undefined {
@@ -1207,7 +1217,8 @@ export class FirearmMechanics {
       duration,
       { uid },
     );
-    this.onSound(pump ? 'shotgun_rack_back' : 'rifle_charge', undefined, time);
+    const chargeSound = defOf(this.inventory.registry, item.type).firearm?.chargeSound;
+    this.onSound(chargeSound ?? (pump ? 'shotgun_rack_back' : 'rifle_charge'), undefined, time);
   }
 
   pauseTo(time: number): void {

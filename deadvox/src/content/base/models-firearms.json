@@ -9,11 +9,13 @@
       },
       "firearm": {
         "bolt": true,
+        "chargeSound": "rifle_bolt_cycle",
         "dispersionRadians": 0.0060000000000000001,
+        "dryFireSound": "firearm_dry_click",
         "handling": {},
         "recoilKickRadians": 0.025000000000000001,
         "roundLoadSimSeconds": 1.2,
-        "shotSound": "gunshot",
+        "shotSound": "gunshot_tikka",
         "skillZeroHandling": {
           "automaticFollowup": {
             "recoilKickScale": 12,
@@ -92,6 +94,7 @@
       },
       "firearm": {
         "dispersionRadians": 0.012,
+        "dryFireSound": "firearm_dry_click",
         "handling": {
           "magazine": {
             "insertSimSeconds": 3,
@@ -130,6 +133,7 @@
       },
       "firearm": {
         "dispersionRadians": 0.017999999999999999,
+        "dryFireSound": "firearm_dry_click",
         "handling": {
           "magazine": {
             "insertSimSeconds": 3,

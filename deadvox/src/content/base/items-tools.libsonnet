@@ -19,6 +19,11 @@ local melee(type, damage, reach, cooldownSimSeconds, stamina, impulse, wearPerHi
   },
 };
 
+// A weapon without these keeps the shared swing and hit (`DESIGN.md`, "Weapon sounds").
+local lightSwing = { melee+: { swingSound: 'melee_swing_light' } };
+local heavySwing = { melee+: { swingSound: 'melee_swing_heavy' } };
+local metalRing = { melee+: { hitLayerSound: 'melee_hit_metal' } };
+
 // A battery beam: an LED light whose cone is shaped by `beam` and which drains AA batteries.
 local batteryBeam(radius, seenFrom, intensity, beam, chargePerGameHour) = {
   radius: radius,
@@ -71,7 +76,7 @@ local items = [
     description: 'Pries open doors and crates. Also a weapon.',
     model: 'crowbar',
     tool: { qualities: { prying: 3, hammering: 1 } },
-    weapon: melee('blunt', damage=14, reach=0.6, cooldownSimSeconds=1.1, stamina=8, impulse=8, wearPerHit=0.015),
+    weapon: melee('blunt', damage=14, reach=0.6, cooldownSimSeconds=1.1, stamina=8, impulse=8, wearPerHit=0.015) + heavySwing + metalRing,
   },
   {
     id: 'hammer',
@@ -81,7 +86,7 @@ local items = [
     size: [1, 3],
     model: 'hammer',
     tool: { qualities: { hammering: 2 } },
-    weapon: melee('blunt', damage=10, reach=0.4, cooldownSimSeconds=0.8, stamina=5, impulse=6, wearPerHit=0.012),
+    weapon: melee('blunt', damage=10, reach=0.4, cooldownSimSeconds=0.8, stamina=5, impulse=6, wearPerHit=0.012) + metalRing,
   },
   {
     id: 'kitchen_knife',
@@ -91,7 +96,7 @@ local items = [
     size: [1, 3],
     model: 'kitchen_knife',
     tool: { qualities: { cutting: 2 } },
-    weapon: melee('cut', damage=8, reach=0.25, cooldownSimSeconds=0.5, stamina=3, impulse=3.5, wearPerHit=0.025),
+    weapon: melee('cut', damage=8, reach=0.25, cooldownSimSeconds=0.5, stamina=3, impulse=3.5, wearPerHit=0.025) + lightSwing,
   },
   {
     id: 'kabar',
@@ -101,7 +106,7 @@ local items = [
     size: [1, 3],
     model: 'kabar',
     tool: { qualities: { cutting: 2 } },
-    weapon: melee('cut', damage=9, reach=0.3, cooldownSimSeconds=0.55, stamina=3.5, impulse=4, wearPerHit=0.025),
+    weapon: melee('cut', damage=9, reach=0.3, cooldownSimSeconds=0.55, stamina=3.5, impulse=4, wearPerHit=0.025) + lightSwing,
   },
   {
     id: 'machete',
@@ -111,7 +116,7 @@ local items = [
     size: [1, 4],
     model: 'machete',
     tool: { qualities: { cutting: 2 } },
-    weapon: melee('cut', damage=11, reach=0.45, cooldownSimSeconds=0.75, stamina=5, impulse=4.5, wearPerHit=0.02),
+    weapon: melee('cut', damage=11, reach=0.45, cooldownSimSeconds=0.75, stamina=5, impulse=4.5, wearPerHit=0.02) + lightSwing,
   },
   {
     id: 'can_opener',
@@ -129,7 +134,7 @@ local items = [
     size: [1, 6],
     model: 'baseball_bat',
     twoHanded: true,
-    weapon: melee('blunt', damage=15, reach=0.8, cooldownSimSeconds=1.2, stamina=9, impulse=10, wearPerHit=0.01),
+    weapon: melee('blunt', damage=15, reach=0.8, cooldownSimSeconds=1.2, stamina=9, impulse=10, wearPerHit=0.01) + heavySwing,
   },
   {
     id: 'steel_pipe',
@@ -138,7 +143,7 @@ local items = [
     weight: 1800,
     size: [1, 6],
     model: 'steel_pipe',
-    weapon: melee('blunt', damage=13, reach=0.6, cooldownSimSeconds=1.2, stamina=9, impulse=8, wearPerHit=0.015),
+    weapon: melee('blunt', damage=13, reach=0.6, cooldownSimSeconds=1.2, stamina=9, impulse=8, wearPerHit=0.015) + heavySwing + metalRing,
   },
   {
     id: 'flashlight',

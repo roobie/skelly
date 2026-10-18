@@ -15,7 +15,8 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
         recoilKickRadians: 0.025, dispersionRadians: 0.006,
-        shotSound: 'gunshot', suppressedShotSound: 'gunshot_m4_suppressed',
+        shotSound: 'gunshot_tikka', suppressedShotSound: 'gunshot_m4_suppressed',
+        dryFireSound: 'firearm_dry_click', chargeSound: 'rifle_bolt_cycle',
         skillZeroHandling: {
           singleShot: { recoilKickScale: 6, recoilRecoveryScale: 0.5, variance: 20 },
           automaticFollowup: { recoilKickScale: 12, recoilRecoveryScale: 0.25, variance: 40 },
@@ -62,6 +63,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         "recoilKickRadians": 0.006,
         "shotSound": "gunshot_m4",
         "suppressedShotSound": "gunshot_m4_suppressed",
+        "dryFireSound": "firearm_dry_click",
         "skillZeroHandling": {
           "automaticFollowup": { "recoilKickScale": 7, "recoilRecoveryScale": 0.4, "variance": 25 },
           "singleShot": { "recoilKickScale": 3, "recoilRecoveryScale": 0.75, "variance": 15 }
@@ -81,6 +83,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         "dispersionRadians": 0.017999999999999999,
         "recoilKickRadians": 0.012,
         "shotSound": "gunshot",
+        "dryFireSound": "firearm_dry_click",
         "skillZeroHandling": {
           "automaticFollowup": { "recoilKickScale": 12, "recoilRecoveryScale": 0.25, "variance": 40 },
           "singleShot": { "recoilKickScale": 6, "recoilRecoveryScale": 0.5, "variance": 20 }

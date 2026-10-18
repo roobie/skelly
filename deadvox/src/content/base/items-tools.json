@@ -35,9 +35,11 @@
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 1.1000000000000001,
           "damage": 14,
+          "hitLayerSound": "melee_hit_metal",
           "impulse": 8,
           "reach": 0.59999999999999998,
           "stamina": 8,
+          "swingSound": "melee_swing_heavy",
           "type": "blunt",
           "wearPerHit": 0.014999999999999999,
           "windupCapSimSeconds": 0.25
@@ -65,6 +67,7 @@
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 0.80000000000000004,
           "damage": 10,
+          "hitLayerSound": "melee_hit_metal",
           "impulse": 6,
           "reach": 0.40000000000000002,
           "stamina": 5,
@@ -98,6 +101,7 @@
           "impulse": 3.5,
           "reach": 0.25,
           "stamina": 3,
+          "swingSound": "melee_swing_light",
           "type": "cut",
           "wearPerHit": 0.025000000000000001,
           "windupCapSimSeconds": 0.25
@@ -128,6 +132,7 @@
           "impulse": 4,
           "reach": 0.29999999999999999,
           "stamina": 3.5,
+          "swingSound": "melee_swing_light",
           "type": "cut",
           "wearPerHit": 0.025000000000000001,
           "windupCapSimSeconds": 0.25
@@ -158,6 +163,7 @@
           "impulse": 4.5,
           "reach": 0.45000000000000001,
           "stamina": 5,
+          "swingSound": "melee_swing_light",
           "type": "cut",
           "wearPerHit": 0.02,
           "windupCapSimSeconds": 0.25
@@ -200,6 +206,7 @@
           "impulse": 10,
           "reach": 0.80000000000000004,
           "stamina": 9,
+          "swingSound": "melee_swing_heavy",
           "type": "blunt",
           "wearPerHit": 0.01,
           "windupCapSimSeconds": 0.25
@@ -222,9 +229,11 @@
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 1.2,
           "damage": 13,
+          "hitLayerSound": "melee_hit_metal",
           "impulse": 8,
           "reach": 0.59999999999999998,
           "stamina": 9,
+          "swingSound": "melee_swing_heavy",
           "type": "blunt",
           "wearPerHit": 0.014999999999999999,
           "windupCapSimSeconds": 0.25

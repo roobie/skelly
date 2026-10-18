@@ -256,10 +256,7 @@ const TRIGGER_ENTRIES = [
     },
   ],
   ['rifle_bolt_cycle', { trigger: 'Double-press R with the hunting rifle in hand to work the bolt.' }],
-  [
-    'firearm_dry_click',
-    { trigger: 'Pull the trigger of a magazine gun or the hunting rifle with an empty chamber.' },
-  ],
+  ['firearm_dry_click', { trigger: 'Pull the trigger of a magazine gun or the hunting rifle with an empty chamber.' }],
   [
     'magazine_round_insert',
     {
@@ -280,7 +277,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger:
         'With an AR or AK in hand, hold R to change or insert a magazine, or tap then hold R to remove it. The job finishes even if R is released.',
-      note: 'BMacZero’s clip loads, BR’s pick on br-674.',
+      note: 'BMacZero’s clip loads, BR’s pick.',
     },
   ],
   [
@@ -343,32 +340,26 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
     'melee_hit_fist',
     'Placeholder: BR approved this stand-in (2026-10-02); replace when a better fist-hit source is found.',
   ],
-  ['melee_swing_light', 'Placeholder: the shared swings pitched up until BR’s picked whooshes (br-680) are fetched.'],
-  ['melee_swing_heavy', 'Placeholder: the shared swings pitched down until BR’s picked whooshes (br-680) are fetched.'],
-  ['melee_hit_metal', 'Placeholder: the melee hits pitched up until BR’s picked metal impact (br-681) is fetched.'],
-  ['gunshot_tikka', 'FFSL Tikka T3 near take, BR’s pick on br-670 and br-679; awaiting BR’s listen.'],
-  ['revolver_shot', 'FFSL S&W 642 near take, BR’s pick on br-675; a .38 Special may sound quieter than the game’s .357.'],
+  ['melee_swing_light', 'Placeholder: the shared swings pitched up until BR’s picked whooshes are fetched.'],
+  ['melee_swing_heavy', 'Placeholder: the shared swings pitched down until BR’s picked whooshes are fetched.'],
+  ['melee_hit_metal', 'Placeholder: the melee hits pitched up until BR’s picked metal impact is fetched.'],
+  ['gunshot_tikka', 'FFSL Tikka T3 near take, BR’s pick; awaiting BR’s listen.'],
+  ['revolver_shot', 'FFSL S&W 642 near take, BR’s pick; a .38 Special may sound quieter than the game’s .357.'],
   [
     'revolver_hammer_cock',
-    'Cut from the S&W 642 raw takes by waveform, not by ear (br-676); the 642 hides its hammer, so check the label.',
+    'Cut from the S&W 642 raw takes by waveform, not by ear; the 642 hides its hammer, so check the label.',
   ],
-  ['revolver_dry_click', 'Cut from the S&W 642 raw takes by waveform, not by ear (br-676); awaiting BR’s listen.'],
-  ['revolver_crane_open', 'Cut from the S&W 642 raw takes by waveform, not by ear (br-676); awaiting BR’s listen.'],
-  ['revolver_crane_close', 'Cut from the S&W 642 raw takes by waveform, not by ear (br-676); awaiting BR’s listen.'],
-  ['revolver_eject', 'Cut from the S&W 642 raw takes by waveform, not by ear (br-676); awaiting BR’s listen.'],
-  [
-    'revolver_case_pick',
-    'Equipment Clicks III fallback: the S&W 642 takes hold no case pick (br-676); awaiting BR’s listen.',
-  ],
-  ['revolver_round_insert', 'Cut from the S&W 642 raw takes by waveform, not by ear (br-676); awaiting BR’s listen.'],
-  ['rifle_bolt_cycle', 'Equipment Clicks III bolt cocking, BR’s pick on br-671; awaiting BR’s listen.'],
-  [
-    'firearm_dry_click',
-    'Placeholder: an Equipment Clicks III click until BR’s picked DSLR click (br-677) is fetched.',
-  ],
+  ['revolver_dry_click', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['revolver_crane_open', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['revolver_crane_close', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['revolver_eject', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['revolver_case_pick', 'Equipment Clicks III fallback: the S&W 642 takes hold no case pick; awaiting BR’s listen.'],
+  ['revolver_round_insert', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['rifle_bolt_cycle', 'Equipment Clicks III bolt cocking, BR’s pick; awaiting BR’s listen.'],
+  ['firearm_dry_click', 'Placeholder: an Equipment Clicks III click until BR’s picked DSLR click is fetched.'],
   ['gunshot', 'Approved; AKM variants used for the AK-pattern rifle and firearms without a dedicated shot profile.'],
   ['gunshot_pbs1_reference', 'Reserved PBS-1 suppressed AKM alternatives; not used by gameplay.'],
-  ['gunshot_m4', 'FFSL AR-15 near take, BR’s pick on br-673 and br-679; awaiting BR’s listen.'],
+  ['gunshot_m4', 'FFSL AR-15 near take, BR’s pick; awaiting BR’s listen.'],
   [
     'gunshot_m4_suppressed',
     'CC0 synthesised suppressed M4 shot used when a real suppressor is fitted to the AR-pattern rifle.',

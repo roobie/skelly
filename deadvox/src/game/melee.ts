@@ -23,6 +23,9 @@ export const meleeWeaponFromContent = (weapon: ContentMeleeWeapon): MeleeWeapon 
     ...(weapon.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: weapon.headDamageMultiplier }),
     ...(weapon.limbDamageMultiplier === undefined ? {} : { limbDamageMultiplier: weapon.limbDamageMultiplier }),
     ...(weapon.speedMultiplier === undefined ? {} : { speedMultiplier: weapon.speedMultiplier }),
+    ...(weapon.swingSound === undefined ? {} : { swingSound: weapon.swingSound }),
+    ...(weapon.hitSound === undefined ? {} : { hitSound: weapon.hitSound }),
+    ...(weapon.hitLayerSound === undefined ? {} : { hitLayerSound: weapon.hitLayerSound }),
     type: weapon.type,
   });
 

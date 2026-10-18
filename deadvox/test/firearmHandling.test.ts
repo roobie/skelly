@@ -18,6 +18,7 @@ import type { Item } from '../src/core/items.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
 import { pileScatterPlacements } from '../src/core/scatterPile.ts';
+import { SOUND_EVENT_IDS, type SoundEventId } from '../src/core/soundEvents.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
@@ -95,6 +96,24 @@ const { registry: skillZeroRegistry } = buildRegistry([
     },
   },
 ]);
+/** Base content with every firearm's dry fire set to `dryFireSound`, or removed, so no assertion leans on a content pick. */
+const firearmsWithDryFire = (dryFireSound: SoundEventId | undefined): Registry =>
+  buildRegistry(
+    base.map(({ source, data }) => {
+      const content = data as { items?: { firearm?: { dryFireSound?: SoundEventId } }[] };
+      if (!content.items) {
+        return { source, data };
+      }
+      const items = content.items.map((item) => {
+        if (!item.firearm) {
+          return item;
+        }
+        const { dryFireSound: _authored, ...firearm } = item.firearm;
+        return { ...item, firearm: dryFireSound === undefined ? firearm : { ...firearm, dryFireSound } };
+      });
+      return { source, data: { ...content, items } };
+    }),
+  ).registry;
 const caseType = spentCaseItemId('5.56x45');
 const worldVector = (vector: readonly number[], yaw: number, pitch: number): [number, number, number] => {
   const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
@@ -121,7 +140,7 @@ type MechanicsOptions = ConstructorParameters<typeof FirearmMechanics>[2];
 /** A charged rifle in the right hand, with mechanics built from `options` over the default held pose. */
 const armed = (
   options: Partial<MechanicsOptions> = {},
-  { content = registry, type }: { content?: Registry; type?: string } = {},
+  { content = registry, type, rounds }: { content?: Registry; type?: string; rounds?: number } = {},
 ) => {
   const inventory = new Inventory(content);
   const queue = new HandlingQueue(inventory);
@@ -132,7 +151,10 @@ const armed = (
     onEjection: () => undefined,
     ...options,
   });
-  const { rifle } = chargedRifle(inventory, queue, mechanics, type ? { type } : {});
+  const { rifle } = chargedRifle(inventory, queue, mechanics, {
+    ...(type ? { type } : {}),
+    ...(rounds === undefined ? {} : { rounds }),
+  });
   return { inventory, queue, mechanics, rifle };
 };
 const shotInput = (item: Item, simTime: number): FirearmShotInput => ({ ...fixturePose(), item, seed: 71, simTime });
@@ -749,6 +771,22 @@ describe('rifle firearm handling', () => {
     expect(mechanics.fireReason(rifle.uid)).toBeDefined();
     expect(mechanics.fire(shotInput(rifle, 1 + elapsed))).toBe(false);
     expect(inventory.snapshotState()).toEqual(before);
+  });
+
+  it("clicks the gun's own dry fire when the trigger falls on a run-dry chamber, and stays silent without one", () => {
+    const [dryFireSound] = SOUND_EVENT_IDS;
+    const pullAfterLastRound = (content: Registry): SoundEventId[] => {
+      const sounds: SoundEventId[] = [];
+      const { mechanics, rifle } = armed({ onSound: (event) => sounds.push(event) }, { content, rounds: 1 });
+      expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
+      mechanics.advanceTo(3);
+      expect(rifle.firearm?.chamber).not.toBe('round');
+      sounds.length = 0;
+      expect(mechanics.fire(shotInput(rifle, 3))).toBe(false);
+      return sounds;
+    };
+    expect(pullAfterLastRound(firearmsWithDryFire(dryFireSound))).toEqual([dryFireSound]);
+    expect(pullAfterLastRound(firearmsWithDryFire(undefined))).toEqual([]);
   });
 
   it('uses exported charge duration in the handling queue and prevents firing during the hand action', () => {

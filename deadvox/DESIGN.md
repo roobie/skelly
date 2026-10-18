@@ -38,6 +38,7 @@ read_if:
   - you're changing content-defined UI spacing or HUD scale, or choosing rem or px for a UI length
   - you're changing startup content selection or browser mod admission
   - you're changing game audio or its relationship to simulation events
+  - you're choosing or changing weapon sounds (shots, handling, dry fire, melee swings and hits)
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
@@ -1076,6 +1077,30 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   player, who is the listener. Simulation sound/noise events keep their source
   positions for zombie hearing, while independent world sources remain
   positional. See `playPlayerSound` and `playWorldSound` in `src/game/session.ts`.
+
+### Weapon sounds
+
+- **Recordings of the same kind of gun.** A shot recorded from a real gun of the same
+  action and a close cartridge beats a synth or a repitched borrow, because a borrowed
+  report makes a gun sound like another one. Where no free recording of the exact
+  cartridge exists, the nearest real one stands in, and its gain and pitch live in
+  content so a tweak after a listen is a content edit. A synth stays only where it
+  already reads as its gun; a suppressed shot keeps its synth until a recording of one
+  exists.
+- **Near takes.** Shots play from the shooter's position, so the close recording
+  matches what the shooter hears; distance comes from the game's own playback and
+  hearing, not from room tone baked into a take.
+- **Handling from the same gun first.** Mechanics heard from the recorded gun's own
+  takes match its shot; a click pack fills only the parts those takes lack.
+- **Dry fire on every gun that can run dry with the action closed.** A silent trigger
+  hides that the gun is empty; the click tells the player before the next shot is
+  needed. Dry fire is a sound per gun in content, so a gun without one stays silent
+  rather than borrowing another gun's click. See `src/game/firearmHandling.ts`,
+  `dryFire`.
+- **Melee sounds by weapon weight and material.** A knife and a bat should not sound
+  alike, so a melee weapon can name its own swing, its own hit and a layer over the
+  hit, such as a metal ring for a metal striker. A weapon that names none keeps the
+  shared swing and hit. See `src/core/zombies.ts`, `MeleeWeapon`.
 
 ## Damage, destruction and dismemberment
 
