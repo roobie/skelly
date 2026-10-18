@@ -12,7 +12,7 @@ local tipped(id, from, name, axes, reverse, drop) = {
        shape: [
          {
            position: [
-             if i == reverse then source(from).size[axes[i]] - box.position[axes[i]] - box.size[axes[i]]
+             if i == reverse then std.round((source(from).size[axes[i]] - box.position[axes[i]] - box.size[axes[i]]) * 1e6) / 1e6
              else box.position[axes[i]]
              for i in std.range(0, 2)
            ],
@@ -29,8 +29,8 @@ local fill(size, char) = [[std.join('', [char for x in std.range(1, size[0])]) f
   furniture: [
     tipped('chair_on_back', 'chair', 'Chair on its back', forward, 1, ['rest']),
     tipped('chair_on_side', 'chair', 'Chair on its side', sideways, 0, ['rest']),
-    // Empty and decorative. The crate is mirror-symmetric, so no axis reverses; mirroring would only add float noise below zero.
-    tipped('crate_overturned', 'crate', 'Overturned crate', [0, 1, 2], -1, ['container', 'loot']),
+    // Empty and decorative. Only y reverses, so the lid ends up on the floor; x and z stay in place.
+    tipped('crate_overturned', 'crate', 'Overturned crate', [0, 1, 2], 1, ['container', 'loot']),
     tipped('shelf_fallen', 'shelf', 'Fallen shelf', forward, 1, []),
     tipped('shelf_on_side', 'shelf', 'Shelf on its side', sideways, 0, []),
     tipped('wardrobe_fallen', 'wardrobe', 'Fallen wardrobe', forward, 1, []),
