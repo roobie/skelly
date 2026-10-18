@@ -7,6 +7,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
 import { options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
+import type { FurnitureDef } from '../src/core/schema.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
@@ -134,6 +135,35 @@ it('a solid wall between chest and container puts it out of reach until the wall
   obstacles.version += 1;
   expect(view().furniture).toContain(entity);
   expect(inventory.canReachEntity(entity)).toBe(true);
+});
+
+it.each([
+  {
+    surround: 'a container flush in a wall row, from beside the wall',
+    kind: (definition: FurnitureDef) => Boolean(definition.container),
+    pos: [2, 0, 0] as const,
+    size: () => [1, 1, 1] as const,
+    isSolid: (x: number, _y: number, z: number) => z === 0 && (x === 1 || x === 3),
+    position: [4.5, 0, -0.5] as const,
+    listed: true,
+  },
+  {
+    surround: 'a hatch flush in the floor, from beside it',
+    kind: (definition: FurnitureDef) => Boolean(definition.door?.hatch),
+    pos: [0, -1, 0] as const,
+    size: (definition: FurnitureDef) => definition.size,
+    isSolid: (_x: number, y: number) => y === -1,
+    position: [3.5, 0, 1.5] as const,
+    listed: false,
+  },
+])('reaches $surround through the face the chest sees', ({ kind, pos, size, isSolid, position, listed }) => {
+  const inventory = new Inventory(registry);
+  const obstacles = { isSolid, version: 0 };
+  const view = bindReach({ inventory, position: [...position], blockSize: 0.5, clock: BASE_CLOCK, obstacles });
+  const def = [...registry.furniture.values()].find(kind)!;
+  const entity = inventory.entities.add({ type: def.id, pos: [...pos], size: [...size(def)], facing: 'n' })!;
+  expect(inventory.canReachEntity(entity)).toBe(true);
+  expect(view().furniture.includes(entity)).toBe(listed);
 });
 
 it('lists workstation components only when their furniture box is within two metres', () => {

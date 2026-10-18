@@ -84,8 +84,9 @@ export const bodyDistance = (player: ReachPlayer, body: Pick<Body, 'pos' | 'half
 const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
   pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres;
 
-// Aim just inside the box so a line grazing its edge cannot end in the wall beside it.
-const INSIDE_BOX_BLOCKS = 1e-3;
+// Stop just short of the face: a line that ends inside the box crosses the cell beside it
+// whenever the player stands off the face, refusing a door or a wall-row shelf in plain view.
+const FACE_GAP_BLOCKS = 1e-3;
 
 const clearLine = (player: ReachPlayer, entity: BlockEntity, obstacles: ReachObstacles): boolean => {
   const { entities, registry } = player.inventory;
@@ -94,17 +95,8 @@ const clearLine = (player: ReachPlayer, entity: BlockEntity, obstacles: ReachObs
     player.position[1] + reachTuning(registry).chestHeightMetres / player.blockSize,
     player.position[2],
   ];
-  const target = chest.map((value, axis) => {
-    const low = entity.pos[axis]! + INSIDE_BOX_BLOCKS;
-    const high = entity.pos[axis]! + entity.size[axis]! - INSIDE_BOX_BLOCKS;
-    return Math.min(Math.max(value, low), high);
-  }) as Vec3;
-  const offset = target.map((value, axis) => value - chest[axis]!) as Vec3;
-  const length = Math.hypot(...offset);
-  if (length === 0) {
-    return true;
-  }
-  const direction = offset.map((value) => value / length) as Vec3;
+  const low = entity.pos;
+  const high = entity.pos.map((value, axis) => value + entity.size[axis]!);
   const blocked = (x: number, y: number, z: number): boolean => {
     const occupant = entities.at(x, y, z);
     if (!occupant) {
@@ -112,7 +104,29 @@ const clearLine = (player: ReachPlayer, entity: BlockEntity, obstacles: ReachObs
     }
     return occupant.uid !== entity.uid && Boolean(entities.defOf(occupant).door) && entities.blocks(occupant);
   };
-  return raycast(chest, direction, length, blocked) === undefined;
+  const reaches = (target: Vec3): boolean => {
+    const offset = target.map((value, axis) => value - chest[axis]!) as Vec3;
+    const length = Math.hypot(...offset);
+    if (length === 0) {
+      return true;
+    }
+    const direction = offset.map((value) => value / length) as Vec3;
+    return raycast(chest, direction, length, blocked) === undefined;
+  };
+  // The face nearest the chest on each axis the chest lies outside of.
+  const faceTargets = chest.flatMap((value, axis) => {
+    if (value >= low[axis]! && value <= high[axis]!) {
+      return [];
+    }
+    const plane = value < low[axis]! ? low[axis]! - FACE_GAP_BLOCKS : high[axis]! + FACE_GAP_BLOCKS;
+    const target = chest.map((other, otherAxis) =>
+      otherAxis === axis
+        ? plane
+        : Math.min(Math.max(other, low[otherAxis]! + FACE_GAP_BLOCKS), high[otherAxis]! - FACE_GAP_BLOCKS),
+    ) as Vec3;
+    return [target];
+  });
+  return faceTargets.length === 0 || faceTargets.some(reaches);
 };
 
 const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
