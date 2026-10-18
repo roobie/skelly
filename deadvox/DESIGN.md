@@ -375,6 +375,11 @@ movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`
 `src/core/citySite.ts`, `CitySite`; and `src/content/base/gauntlet-city.libsonnet`,
 `templates`.
 
+The start tower guarantees a melee weapon and revolver ammunition instead of
+rolling for them, because the player who spawns on the roof can meet a fight
+before reaching the city and a roll that came up empty would leave them
+unarmed. See `src/content/base/gauntlet-start-rooms.libsonnet`, `loot`.
+
 Marker-only population omits the ordinary settlement's wanderers and horde, making
 empty marker sets silently remove street pressure. A scenario therefore scales the
 ordinary settlement policy by building groups, not by the reserved campus's empty
