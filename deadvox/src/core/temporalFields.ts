@@ -107,6 +107,7 @@ export const TEMPORAL_FIELDS = [
     dimension: 'duration',
   },
   { path: 'skills.combat.melee.joltRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  { path: 'skills.combat.melee.deflectRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'senses.crouch.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'senses.vocalNoiseLifetimeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'senses.light.throwChargeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

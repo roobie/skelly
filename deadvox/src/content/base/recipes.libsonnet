@@ -77,7 +77,9 @@
           "staminaCostFloor": 0.35,
           "staminaCostHalfLifeLevels": 3,
           "joltPerAbsorbedPoint": 0.08,
-          "joltRealSeconds": 0.08
+          "joltRealSeconds": 0.08,
+          "deflectRiseMetres": 0.04,
+          "deflectRealSeconds": 0.25
         }
       }
     }

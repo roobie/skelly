@@ -12,6 +12,9 @@ export interface MeleeCombatTuning {
   readonly staminaCostHalfLifeLevels: number;
   readonly joltPerAbsorbedPoint: number;
   readonly joltRealSeconds: number;
+  /** How far the arms rise, in metres, on a block that absorbs enough to reach full jolt strength. */
+  readonly deflectRiseMetres: number;
+  readonly deflectRealSeconds: number;
 }
 
 export interface MeleeCombatEffects {
@@ -90,10 +93,18 @@ export interface BlockJolt {
   /** From 0 to 1. */
   readonly strength: number;
   readonly realSeconds: number;
+  /** Metres the arms rise to deflect the blow; scales with the same strength. */
+  readonly rise: number;
+  readonly riseRealSeconds: number;
 }
 
-/** The held weapon's jolt on a block; zero strength or duration shows none. */
-export const blockJolt = (absorbed: number, tuning: MeleeCombatTuning): BlockJolt => ({
-  strength: Math.min(1, Math.max(0, absorbed * tuning.joltPerAbsorbedPoint)),
-  realSeconds: tuning.joltRealSeconds,
-});
+/** The held weapon's jolt and arm rise on a block; zero strength or duration shows none. */
+export const blockJolt = (absorbed: number, tuning: MeleeCombatTuning): BlockJolt => {
+  const strength = Math.min(1, Math.max(0, absorbed * tuning.joltPerAbsorbedPoint));
+  return {
+    strength,
+    realSeconds: tuning.joltRealSeconds,
+    rise: strength * tuning.deflectRiseMetres,
+    riseRealSeconds: tuning.deflectRealSeconds,
+  };
+};

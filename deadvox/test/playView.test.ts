@@ -303,10 +303,25 @@ describe('play presentation ownership', () => {
     view.recoil(12);
     expect(recoilNow(0)).toBeGreaterThan(0);
     expect(recoilNow(10)).toBe(0);
-    view.block({ strength: 0, realSeconds: 0.5 });
+    view.block({ strength: 0, realSeconds: 0.5, rise: 0, riseRealSeconds: 0.5 });
     expect(recoilNow(0)).toBe(0);
-    view.block({ strength: 0.1, realSeconds: 0.5 });
+    view.block({ strength: 0.1, realSeconds: 0.5, rise: 0, riseRealSeconds: 0.5 });
     expect(recoilNow(0)).toBeLessThanOrEqual(0.1);
+    view.dispose();
+  });
+
+  it('raises the arms when a block deflects a hit and lets them settle once the rise ends', () => {
+    const { view } = fixture();
+    const update = vi.spyOn(view.held, 'update').mockImplementation(() => undefined);
+    const liftNow = (dt: number) => {
+      view.updateHeld(dt, restingHands, undefined);
+      return update.mock.lastCall![3]?.lift;
+    };
+    expect(liftNow(0)).toBe(0);
+    view.block({ strength: 0.5, realSeconds: 0.05, rise: 0.02, riseRealSeconds: 0.4 });
+    expect(liftNow(0.1)).toBeGreaterThan(0);
+    expect(liftNow(10)).toBe(0);
+    expect(liftNow(0.1)).toBe(0);
     view.dispose();
   });
 

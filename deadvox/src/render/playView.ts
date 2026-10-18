@@ -234,6 +234,9 @@ export const createPlayView = (
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
   let meleeRecoilDuration = 0;
+  let deflectRise = 0;
+  let deflectTime = 0;
+  let deflectDuration = 0;
   const updateThirdPersonCamera = ({
     eye,
     stepOffset,
@@ -313,15 +316,20 @@ export const createPlayView = (
     },
     // A block shares the hit recoil so a parried blow jolts the held weapon the same way; the hurt flash
     // separately scales with whatever damage got through. A zero-strength or zero-duration cue leaves the envelope alone, and a
-    // finished envelope's strength is not carried into the next one.
-    block: ({ strength, realSeconds }: BlockJolt) => {
+    // finished envelope's strength is not carried into the next one. The arm rise is its own envelope with the same
+    // rules, because it outlasts the jolt.
+    block: ({ strength, realSeconds, rise, riseRealSeconds }: BlockJolt) => {
       const cue = Math.max(0, Math.min(1, strength));
-      if (cue === 0 || !(realSeconds > 0)) {
-        return;
+      if (cue > 0 && realSeconds > 0) {
+        meleeRecoilStrength = meleeRecoilTime > 0 ? Math.max(meleeRecoilStrength, cue) : cue;
+        meleeRecoilDuration = realSeconds;
+        meleeRecoilTime = realSeconds;
       }
-      meleeRecoilStrength = meleeRecoilTime > 0 ? Math.max(meleeRecoilStrength, cue) : cue;
-      meleeRecoilDuration = realSeconds;
-      meleeRecoilTime = realSeconds;
+      if (rise > 0 && riseRealSeconds > 0) {
+        deflectRise = deflectTime > 0 ? Math.max(deflectRise, rise) : rise;
+        deflectDuration = riseRealSeconds;
+        deflectTime = riseRealSeconds;
+      }
     },
     syncWorld: ({
       calendar,
@@ -410,7 +418,12 @@ export const createPlayView = (
         meleeRecoilDuration > 0
           ? meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / meleeRecoilDuration))
           : 0;
-      held.update(camera, pose, recoil, handling);
+      deflectTime = Math.max(0, deflectTime - dt);
+      const lift =
+        deflectDuration > 0 && deflectTime > 0
+          ? deflectRise * Math.sin(Math.PI * (1 - deflectTime / deflectDuration))
+          : 0;
+      held.update(camera, pose, recoil, { ...handling, lift });
       flashlight.update({ registry, lit: light, held, camera, inventory });
       lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: cameraDaylightScale });
     },

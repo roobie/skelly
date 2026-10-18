@@ -2124,6 +2124,8 @@ const SkillSchema = pipe(
             staminaCostHalfLifeLevels: Positive,
             joltPerAbsorbedPoint: NonNegative,
             joltRealSeconds: NonNegative,
+            deflectRiseMetres: NonNegative,
+            deflectRealSeconds: NonNegative,
           }),
         ),
       }),
