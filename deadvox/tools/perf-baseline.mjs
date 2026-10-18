@@ -10,6 +10,7 @@ import { rankProfile, summarize } from './perf-baseline-stats.mjs';
 const { chromium } = await import('playwright');
 const leadingSlash = /^\//;
 const softwareRenderer = /swiftshader|llvmpipe|software|lavapipe/i;
+const radeonRenderer = /ANGLE \(AMD,|Radeon/i;
 
 async function captureLook(page, directory, { route, mode, repeat }) {
   if (mode !== 'whole' || repeat !== 1) {
@@ -99,6 +100,14 @@ await build({
             '    this.composer = composer;\n    globalThis.perfBaseline.wrapPasses(composer);',
           );
         }
+        if (options.acidGlow === '1' && id.endsWith('/src/game/play.ts')) {
+          const spike = fileURLToPath(new URL('./acid-glow-spike-browser.mjs', import.meta.url));
+          return `import { installAcidGlow } from ${JSON.stringify(spike)};\n${once(
+            code,
+            '  startRealFrames(frame);',
+            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, zombieStore });\n  installAcidGlow(globalThis.perfBaseline);\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
+          )}`;
+        }
         if (id.endsWith('/src/game/play.ts')) {
           return once(
             code,
@@ -147,9 +156,10 @@ try {
     channel: 'chromium',
     headless: false,
     ...(options.executable ? { executablePath: options.executable } : {}),
-    args: ['--use-gl=angle', '--use-angle=gl-egl', '--ignore-gpu-blocklist', '--enable-gpu'],
+    args: ['--use-gl=angle', `--use-angle=${options.angle ?? 'gl-egl'}`, '--ignore-gpu-blocklist', '--enable-gpu'],
   });
   result.chromium = browser.version();
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keep collection acceptance inside the page lifetime's try/finally.
   async function run(route, mode, repeat) {
     console.info(`START ${repeat} ${route.id} ${mode}`);
     const page = await browser.newPage({ viewport: config.viewport, deviceScaleFactor: config.deviceScaleFactor });
@@ -184,6 +194,9 @@ try {
       if (softwareRenderer.test(identity.renderer)) {
         throw new Error(`Not a real GPU: ${identity.renderer}`);
       }
+      if (options.acidGlow === '1' && !radeonRenderer.test(identity.renderer)) {
+        throw new Error(`Acid spike requires the Radeon: ${identity.renderer}`);
+      }
       await page.evaluate(
         ({ route: workload, mode: queryMode, config: sampling }) => {
           const perf = globalThis.perfBaseline;
@@ -198,6 +211,9 @@ try {
           if (workload.driver !== 'sky') {
             if (workload.spawnCount) {
               perf.debug.handleAction('debug.spawn-shamblers');
+            }
+            if (workload.freezeGame && !perf.debug.frozen) {
+              perf.debug.handleAction('debug.freeze-game');
             }
             perf.session.body.pos[1] += (workload.liftMetres ?? 0) / perf.engine.config.scale.blockSize;
           }
@@ -265,6 +281,7 @@ try {
         const perf = globalThis.perfBaseline;
         return {
           records: perf.records,
+          acidGlow: perf.acidGlow,
           visibility: document.visibilityState,
           position: perf.engine.camera.position.toArray(),
           zombieCount: perf.zombieStore.size,
@@ -287,6 +304,18 @@ try {
           ? observation.records.filter((record) => record.phase === 'warm')
           : observation.records.slice(0, config.sampleFrames);
       const summary = summarize(records, mode);
+      if (options.acidGlow === '1') {
+        const spike = observation.acidGlow;
+        if (
+          records.some(
+            (record) =>
+              record.acidActors !== spike.fixtureCount ||
+              (spike.option !== 'baseline' && record.acidSelected !== Math.ceil(spike.fixtureCount * spike.share)),
+          )
+        ) {
+          throw new Error('Acid fixture did not draw the requested actor/glow counts');
+        }
+      }
       if (route.spawnCount && summary.zombieDrawFrames !== summary.frames) {
         const rejected = `${route.id}-${mode}-${repeat}-rejected`;
         await writeFile(
@@ -305,6 +334,27 @@ try {
         `END ${repeat} ${route.id} ${mode}: GPU ${summary.wholeFrameGpuMs?.p50}, interval ${summary.frameIntervalMs.p50}`,
       );
       await writeFile(resolve(out, 'baseline.json'), JSON.stringify(result, null, 2));
+    } catch (error) {
+      await page.screenshot({ path: resolve(out, `${route.id}-${mode}-${repeat}-failed.png`) });
+      await writeFile(
+        resolve(out, `${route.id}-${mode}-${repeat}-failed.json`),
+        JSON.stringify(
+          {
+            error: String(error),
+            errors,
+            page: await page.evaluate(() => ({
+              text: document.body.innerText,
+              identity: globalThis.perfBaseline?.identity,
+              attached: Boolean(globalThis.perfBaseline?.worldLoading),
+              ready: globalThis.perfBaseline?.worldLoading?.ready,
+              acidGlow: globalThis.perfBaseline?.acidGlow,
+            })),
+          },
+          null,
+          2,
+        ),
+      );
+      throw error;
     } finally {
       await page.close();
     }

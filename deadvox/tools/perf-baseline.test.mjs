@@ -1,9 +1,30 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { test } from 'node:test';
+import { installFixture } from './acid-glow-spike-browser.mjs';
 import { install } from './perf-baseline-browser.mjs';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
+
+test('spike translations restore before a cached pose is reused', () => {
+  const original = Float32Array.from([1, 0, 0, 2, 0, 1, 0, 3, 0, 0, 1, 4, 0, 0, 0, 0]);
+  const reads = [];
+  const crowd = {
+    layout: { width: 4, bonesPerSlot: 1 },
+    textureData: original.slice(),
+    texture: {},
+    states: new Map([[1, { globalRow: 0, lastPlacement: { x: 2, y: 3, z: 4 } }]]),
+    sync: () => reads.push(crowd.textureData.slice()),
+  };
+  const store = new Map([[1, { type: { model: 'shambler' } }]]);
+  installFixture(crowd, 1);
+  crowd.sync(store);
+  const first = crowd.textureData.slice();
+  assert.notDeepEqual(first, original);
+  crowd.sync(store);
+  assert.deepEqual(crowd.textureData, first);
+  assert.deepEqual(reads, [original, original]);
+});
 
 test('non-post scene draws count submitted zombies without a composer', () => {
   const previous = globalThis.perfBaseline;
