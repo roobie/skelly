@@ -93,6 +93,7 @@ export class Simulation {
     this.exposures = new DamageExposures(options.bodyTuning, (id) => this.rng(`exposure:${id}`).next());
     this.scheduler.register({
       id: 'damage-exposure',
+      enabled: () => this.exposures.active,
       rate: 60,
       maxStep: NEEDS_MAX_STEP,
       tick: (_dt, time) => this.advanceExposuresTo(time),

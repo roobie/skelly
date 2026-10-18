@@ -12,6 +12,8 @@ export interface SystemSpec {
    * grows its step. Defaults to 1 / rate: the step never grows (physics).
    */
   readonly maxStep?: number;
+  /** Dormant systems must not split unrelated work or catch up time before they became active. */
+  readonly enabled?: () => boolean;
   /** One step of `dt` simulation seconds, ending at simulation time `time`. */
   readonly tick: (dt: number, time: number) => void;
 }
@@ -34,6 +36,7 @@ interface Entry {
   /** Simulation time this system has been stepped up to. */
   done: number;
   ticks: number;
+  suspended: boolean;
 }
 
 /** Float slack when comparing accumulated step times. */
@@ -76,6 +79,7 @@ export class Scheduler {
       const cursor = byId.get(entry.spec.id)!;
       entry.done = cursor.done;
       entry.ticks = cursor.ticks;
+      entry.suspended = entry.spec.enabled?.() === false;
     }
     this.time = state.time;
   }
@@ -97,7 +101,14 @@ export class Scheduler {
       throw new Error(`System ${spec.id} is already registered`);
     }
     const step = 1 / spec.rate;
-    this.entries.push({ spec, step, maxStep: Math.max(step, spec.maxStep ?? step), done: this.time, ticks: 0 });
+    this.entries.push({
+      spec,
+      step,
+      maxStep: Math.max(step, spec.maxStep ?? step),
+      done: this.time,
+      ticks: 0,
+      suspended: spec.enabled?.() === false,
+    });
   }
 
   /** The step a system takes at compression c. */
@@ -133,11 +144,17 @@ export class Scheduler {
       this.time = Math.max(this.time, entry.done);
       entry.spec.tick(step, entry.done);
       if (halt?.()) {
+        for (const system of this.entries) {
+          this.syncSuspension(system);
+        }
         return this.time - start;
       }
     }
     // A tick may end up to the epsilon past `target`; time must not step back below what ticks observed.
     this.time = Math.max(this.time, target);
+    for (const system of this.entries) {
+      this.syncSuspension(system);
+    }
     return dt;
   }
 
@@ -145,11 +162,27 @@ export class Scheduler {
     return Math.min(entry.maxStep, entry.step * Math.max(1, c));
   }
 
+  private syncSuspension(entry: Entry): boolean {
+    if (entry.spec.enabled?.() === false) {
+      entry.done = this.time;
+      entry.suspended = true;
+      return false;
+    }
+    if (entry.suspended) {
+      entry.done = this.time;
+      entry.suspended = false;
+    }
+    return true;
+  }
+
   /** The system whose next tick ends first, if it ends by `target`; ties go to the first registered. */
   private nextDue(target: number, c: number): Entry | undefined {
     let best: Entry | undefined;
     let bestEnd = target + SCHEDULER_TIME_EPSILON;
     for (const entry of this.entries) {
+      if (!this.syncSuspension(entry)) {
+        continue;
+      }
       const end = entry.done + this.stepFor(entry, c);
       if (end <= bestEnd - (best ? SCHEDULER_TIME_EPSILON : 0)) {
         best = entry;

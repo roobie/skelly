@@ -821,7 +821,10 @@ intentional: this relation avoids another independently balanced attack value.
 Ending an exposure early removes the burn, not damage,
 wear or wounds already taken. Long actions cannot run during contact or its tail;
 a persistent refusal owns that constraint instead of an interrupt every step.
-Blows still interrupt when they land. See `src/core/sim.ts`, `Simulation.expose`,
+Blows still interrupt when they land. An idle exposure system must not fragment
+unrelated action timing or replay; it only imposes tick boundaries while a burn
+is live. See `src/core/scheduler.ts`, `SystemSpec.enabled`;
+`src/core/sim.ts`, `Simulation.expose`,
 `Simulation.leaveExposure`, `Simulation.endExposure` and `Simulation.actionRefusal`;
 `src/core/longAction.ts`, `LongActions.interruptExposure`.
 

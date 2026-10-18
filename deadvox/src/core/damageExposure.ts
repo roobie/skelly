@@ -58,8 +58,12 @@ export class DamageExposures {
     this.draw = draw;
   }
 
+  get active(): boolean {
+    return this.state.exposures.length > 0;
+  }
+
   get refusal(): string | undefined {
-    return this.state.exposures.length > 0 ? this.tuning.exposureRefusal : undefined;
+    return this.active ? this.tuning.exposureRefusal : undefined;
   }
 
   get simTimestamp(): number {
