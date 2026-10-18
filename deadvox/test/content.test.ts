@@ -289,10 +289,13 @@ describe('content', () => {
     const swapped = [keys[0]!, keys[2]!, keys[1]!, ...keys.slice(3)];
     // The night's end and the dawn's start are one instant, which the blend cannot tell apart.
     const sharedInstant = keys.map((key, index) => (index === 3 ? { ...key, at: 1 } : key));
+    // The last key at the dusk's end is the first key's instant a cycle later (nightfall).
+    const wrapped = [...keys, { phase: 'dusk' as const, at: 1, look: 'day' as const }];
     const issuesFor = (candidate: typeof keys): string[] =>
       safeParse(DayCycleSchema, { ...rawBaseDayCycle.dayCycle, keys: candidate }).issues?.map((i) => i.message) ?? [];
     expect(issuesFor(swapped)).toContainEqual(expect.stringContaining('keys[2].at'));
     expect(issuesFor(sharedInstant)).toContainEqual(expect.stringContaining('keys[4].at'));
+    expect(issuesFor(wrapped)).toContainEqual(expect.stringContaining(`keys[${keys.length}].at`));
   });
 
   it('keeps input instructions out of item descriptions', () => {

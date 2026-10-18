@@ -1481,7 +1481,8 @@ const SkyKeySchema = strictObject({
 });
 /**
  * The blend sorts keys by time and wraps the last to the first, so two keys at one instant would
- * make the blend span a whole day. Keys therefore run in cycle order, strictly later each time.
+ * make the blend span a whole day. Keys therefore run in cycle order, strictly later each time,
+ * and the last stays short of the first a cycle later.
  */
 const SkyKeysSchema = pipe(
   array(SkyKeySchema),
@@ -1490,14 +1491,16 @@ const SkyKeysSchema = pipe(
     if (!dataset.typed) {
       return;
     }
-    let previous = -1;
-    dataset.value.forEach((key, index) => {
-      const position = SKY_PHASES.indexOf(key.phase) + key.at;
-      if (position <= previous) {
+    const positions = dataset.value.map((key) => SKY_PHASES.indexOf(key.phase) + key.at);
+    positions.forEach((position, index) => {
+      if (index > 0 && position <= positions[index - 1]!) {
         addIssue({ message: `keys[${index}].at must come strictly after the key before it in cycle order` });
       }
-      previous = position;
     });
+    const last = positions.length - 1;
+    if (positions[last]! >= positions[0]! + SKY_PHASES.length) {
+      addIssue({ message: `keys[${last}].at must come strictly before the first key a cycle later` });
+    }
   }),
 );
 export const DayCycleSchema = strictObject({
