@@ -156,9 +156,10 @@ ability to evaluate a pure expression.
   sees them; whole replacement or load-time patching still belongs to the content loader.
 - **UI:** UI policy is not exercised or chosen. Read-only declarations or custom panels require
   renderer contracts; they do not follow from collection evaluation.
-- **Core tuning:** declared modifier hooks are the game's rule (`../../../../docs/decisions/0004-content-language.md`,
-  "Runtime design") but are not exercised. They need engine authorization and identity; exposing more
-  numeric inputs alone does not authorize writes.
+- **Core tuning:** a mod changes a core value as it changes any pack's value
+  (`../../../../docs/decisions/0004-content-language.md`, "Runtime design"); this is not exercised.
+  Overrides need engine authorization and identity; exposing more numeric inputs alone does not
+  authorize writes.
 - **Save mismatch:** strict mod-identity/state rejection is exercised and is the game's rule
   (`../../../docs/decisions/0002-saves.md`, "Compatibility"); no save migration is implied.
 

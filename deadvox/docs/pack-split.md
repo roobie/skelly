@@ -8,7 +8,8 @@ read_if:
   - you're designing skill providers or behaviour when a stack defines no skills
   - you're deciding whether combat policy, a skill's effect or starting recipe knowledge belongs to core, a setting or a scenario
   - you're packing scenario content or declaring the packs a mod requires
-  - you're letting a mod change a core tunable
+  - you're letting a setting or a mod change a core value
+  - you're building a stack without the core pack
 tags: [deadvox, content, mods, packs, design]
 ---
 
@@ -23,12 +24,14 @@ This doc is a design plan for #637. Where the plan depends on a question that is
 From the bottom up:
 
 - **Engine:** TypeScript mechanisms. It is not a pack and holds no content.
-- **Core pack:** genre-neutral content that every game on the engine needs.
+- **Core pack:** genre-neutral content that any game on the engine can build on.
 - **Setting pack:** one setting's things and creatures, such as this game's guns, ammunition, grenades and zombie types.
 - **Scenario content:** content for one authored run, map or test flow, such as the gauntlet, the playtest fixtures and the tutorial. Each scenario has its own pack, which the scenario selects, so one run's content never shows up in another's registry. Templates that several scenarios reuse go in a shared scenario pack below them, so that reuse neither copies entries between scenario packs nor pushes them into the setting.
 - **Mods:** bundled mods and browser mods, applied on top in their selected order (`docs/content.md`, "Bundled mods"; `docs/content.md`, "Browser mod identity").
 
 The core pack is `deadvox.core`. This game's setting is Upheaval, in the pack `deadvox.upheaval`: a setting named for the game's mood keeps the id distinctive, and a second setting sits beside it under a name of its own.
+
+**Core is the default first pack, not a required one.** Core is a pack like any other: it gets no privilege and no protection, and a stack may leave `deadvox.core` out when its packs provide every role and requirement that core provides. One rule for every pack is simpler than a privileged core. The core-owned required ids tie a stack to core (see "Capabilities, not ids"), so running without core waits on round 6.
 
 **Dependencies point down only.** A pack may reference ids in its own layer and in the layers below it, and never above. The engine references no content id at all. The reason is substitution: a medieval setting replaces the setting pack whole, so a core entry that names a setting id would break it, and engine code that names a setting id would need a code edit for every new setting. One-way references also make the load order follow from the layering instead of from file names.
 
@@ -50,7 +53,7 @@ For other entries:
 
 **References decide the lowest possible layer.** An entry can sit no lower than the highest layer it references. A loot table that names a setting item is setting content, whatever the table's purpose. Moving a referenced entry down so that its referrer can follow is a classification decision of its own and needs the same test. It must never be a side effect.
 
-**Tunables of a core mechanism are core.** Values that tune the mechanism itself, such as player body, senses and needs, belong with the mechanism's pack, even when this setting chose them. A mod changes a core tunable only through a modifier hook that core declares, never by replacing the value; the hook vocabulary and the order in which modifiers stack are open (`../../docs/decisions/0004-content-language.md`, "Runtime design"). Whether a setting pack may replace core values is open.
+**Tunables of a core mechanism are core.** Values that tune the mechanism itself, such as player body, senses and needs, belong with the mechanism's pack, even when this setting chose them. A setting or a mod changes a core value as it changes any pack's value: it declares the override and depends on the owner (`docs/decisions/0007-typed-field-patches.md`, "Decision"), and two packs setting one field fail closed. The pack that overrides a value owns the consequences. Actor-carried modifiers remain a mechanism for changing a value (`PILLARS.md`, "Content forward compatibility"), not the only one.
 
 ### Hard cases
 
@@ -80,7 +83,7 @@ The framework replaces each of these with a capability that content selects. A b
 
 **One skill provider per mechanism role.** A mechanism that reads a skill, such as aiming or item handling, reads it through a role, and at most one skill in a stack drives each role. That replaces the fixed skill ids that combat and handling code reads without asking every item or activity to name a skill, and without a rule for combining several skills into one value.
 
-**Competing providers fail closed.** A pack may take over a role only by declaring the override and depending, directly or transitively, on the pack that owns the role. Any other second provider fails the load with a conflict message naming the role, both packs and the fix. Load order alone never decides, because the order in which a player happens to enable mods says nothing about which one meant to win. The dependency makes an override deliberate: the overriding pack names what it takes over and always loads after the owner. The overridden skill stays defined but stops driving the role. The same rule governs two mods setting one field; see `docs/decisions/0007-typed-field-patches.md`, "Decision". Admitting an override needs the pack dependencies that round 1 adds to the loader.
+**Competing providers fail closed.** A pack may take over a role only by declaring the override and depending, directly or transitively, on the pack that owns the role. Any other second provider fails the load with a conflict message naming the role, both packs and the fix. Load order alone never decides, because the order in which a player happens to enable mods says nothing about which one meant to win. The dependency makes an override deliberate: the overriding pack names what it takes over and always loads after the owner. The overridden skill leaves the stack's live skills: it shows nowhere, gains nothing, and the save holds nothing for it. A save is refused under another pack set (`docs/decisions/0002-saves.md`, "Compatibility"), so anything kept for the overridden skill could never come back into play, and hiding it with no record is the least state. The same rule governs two mods setting one field; see `docs/decisions/0007-typed-field-patches.md`, "Decision". Admitting an override needs the pack dependencies that round 1 adds to the loader.
 
 **Combat atoms are core; their policy is setting content that skills modify.** Core keeps the combat mechanisms, such as aiming, blocking and item handling, because the game is essentially about combat and every setting needs them. Policy on top of a mechanism, such as a sway while aiming and its penalties, is setting content, because a setting or a mod may not use it at all. A skill, where a setting has one, only modifies that policy, so a setting can have the policy without any skill system. In a core-only stack the mechanisms run with no modifiers. Round 4 moves that policy out of the skills.
 
@@ -92,7 +95,7 @@ The framework replaces each of these with a capability that content selects. A b
 
 `PILLARS.md`, "Content forward compatibility" already rules that content identity is not a code selector. #393 inventories the tunables that still live in TypeScript; this plan does not repeat that inventory. The pack split needs the other half of that rule: content ids and setting names that TypeScript names directly. They come in four shapes:
 
-- **Required ids:** `src/core/contentIds.ts`, `CORE_CONTENT_IDS`, and `src/core/content.ts`, `REQUIRED_CORE_CONTENT`. Engine-wide rows such as the player's body and the autosave policy are core requirements and may stay as ids that the core owns. A requirement that names a setting entry moves to that setting's requirements or becomes a capability.
+- **Required ids:** `src/core/contentIds.ts`, `CORE_CONTENT_IDS`, and `src/core/content.ts`, `REQUIRED_CORE_CONTENT`. Engine-wide rows such as the player's body and the autosave policy are core requirements and may stay as ids that the core owns until round 6 makes them capabilities, so that a stack without core can claim them. A requirement that names a setting entry moves to that setting's requirements or becomes a capability.
 - **Picklists of setting names in the schema:** the creature model and footstep family above, and the sound event list.
 - **Branches on a content name:** the body-plan branches above, `src/render/mobActors.ts`, and the debug loadouts in `src/debug/debugLoadout.ts`.
 - **Setting names in the save identity:** `src/core/saveFormat.ts`, `defaultVersion` keys its generator versions by creature model name and names a single base pack.
@@ -124,6 +127,7 @@ Each round leaves the game playable and keeps the core-alone check green.
 3. **Creature framework.** The creature section becomes `actors`. Body plan, footstep family and spawn role become capabilities. The model-name branches and the hamlet type ids leave code. Acid's values move to the setting. Damage kinds become pack-declared and resistance is keyed by declared kind. Zombie types move to the setting pack. Check: the core-alone check with no creature type, and an admission test showing that a creature with a new id and an existing body plan loads without a code edit.
 4. **Ranged split and combat policy.** Ranged tunables stay in core. Firearms, ammunition, attachments and explosives move to the setting pack, and debug loadouts come from content. The firearms skill is setting content, and combat reads it through its role. Aiming, blocking and handling policy leaves the skills for setting content that the skills modify (see "Skill providers"). Check: the core-alone check with no firearm, and a full-stack firing and grenade flow in an existing browser stage.
 5. **Scenario content.** The gauntlet, the playtest fixtures and the tutorial each move into their own scenario pack, and templates they share go in the shared scenario pack. A new character's starting recipe knowledge comes from the scenario's start content, because what a character knows at the start is part of a run's setup, not of a skill. Check: each playable stack validates with reachability, and the core plus the setting validate without scenario content.
+6. **Run without core.** Core-owned requirements become capabilities that any pack can claim, so a stack whose packs provide every role and requirement that core provides loads without `deadvox.core`. Check: such a stack validates, and a stack with no claimant for a required capability is refused with a message naming it.
 
 **Save identity.** `src/core/saveFormat.ts`, `currentSaveVersionIdentity` already records an ordered list of packs, each with an id, a version and a canonical hash, and `contentPackDifferences` refuses a world under different packs (`docs/decisions/0002-saves.md`, "Compatibility"). The list takes its shape in round 1: one entry per bundled pack in load order, each hashed on its own, followed by bundled and browser mods as they are recorded already. Hashing per pack is what lets a refusal name which pack changed. A run's scenario pack and the shared scenario pack are entries in that list like any other pack. Round 3 rekeys the generator versions by body plan instead of creature model name. No migration is owed for saves before v1.0 beta (`AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
 
@@ -131,8 +135,6 @@ Each round leaves the game playable and keeps the core-alone check green.
 
 Each question is open on #637. When it is ruled, the rule and its reason replace the conditional passages above.
 
-- **Does an overridden skill stay visible, and does it keep its saved experience?** Blocks provider override admission.
 - **Where does the default start row belong?** Blocks default-row placement in round 5.
 - **The shared scenario pack's name.** Blocks its folder in round 5.
-- **May a setting pack replace core values, or does it use declared hooks like a mod?** Blocks a setting pack changing a core tunable.
 - **The names of an ability's composed parts.** Deferred until the expression language (#313) settles how abilities compose; round 3 leaves the ability's shape and name alone.
