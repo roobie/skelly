@@ -1068,6 +1068,8 @@ export const createSession = (options: SessionOptions) => {
       });
     },
     onAcidPlayerHit: (hit) => applyZombiePlayerHit(sim, hit),
+    onPlayerExposure: (contact) => sim.expose(contact),
+    onPlayerLeaveExposure: (source) => sim.leaveExposure(source),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
     onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
     onSound: (event, position, zombie) => {

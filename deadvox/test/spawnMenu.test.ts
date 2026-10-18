@@ -112,6 +112,7 @@ describe('spawnMenuViewModel', () => {
     } as unknown as DebugHooks;
     const actions = createDebugActions({
       hooks,
+      zombieTypes: [],
       look: new LookControls(
         { toneMapping: NoToneMapping, toneMappingExposure: 1 },
         {

@@ -37,7 +37,7 @@ export interface GroupDef {
 export const DEBUG_GROUPS: readonly GroupDef[] = [
   { id: 'tools', title: 'Tools' },
   { id: 'survival', title: 'Survival' },
-  { id: 'shamblers', title: 'Shamblers' },
+  { id: 'shamblers', title: 'Zombies' },
   { id: 'time', title: 'Time' },
   {
     id: 'look',
@@ -124,8 +124,10 @@ export const actionsByGroup = <T extends { readonly group: GroupId }>(
   DEBUG_GROUPS.map((def) => ({ def, actions: actions.filter((action) => action.group === def.id) }));
 
 /** What a group header shows: its keys, or its hint when it has none. */
-export const keysAtAGlance = (def: GroupDef, actions: readonly { readonly key: string }[]): string =>
-  actions.length > 0 ? actions.map((action) => action.key).join(' · ') : (def.hint ?? '');
+export const keysAtAGlance = (def: GroupDef, actions: readonly { readonly key: string }[]): string => {
+  const keys = actions.map((action) => action.key).filter(Boolean);
+  return keys.length > 0 ? keys.join(' · ') : (def.hint ?? '');
+};
 
 /** The bare parameter name of a `name=values` hint. */
 export const paramName = (param: string): string => param.split('=')[0]!;

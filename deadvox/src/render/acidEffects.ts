@@ -1,5 +1,6 @@
-import { Group, Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
+import { CircleGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
 import type { AcidGlobState } from '../core/acidGlob.ts';
+import type { AcidPuddleState } from '../core/acidPuddle.ts';
 import type { ZombieDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 
@@ -10,6 +11,9 @@ export class AcidEffects {
   private readonly geometry = new SphereGeometry(1, 8, 6);
   private readonly globs: Mesh<SphereGeometry, MeshBasicMaterial>[] = [];
   private readonly splashes: { mesh: Mesh<SphereGeometry, MeshBasicMaterial>; age: number; look: Appearance }[] = [];
+
+  private readonly puddleGeometry = new CircleGeometry(1, 24);
+  private readonly puddles: Mesh<CircleGeometry, MeshBasicMaterial>[] = [];
 
   private readonly blockSize: number;
 
@@ -28,7 +32,38 @@ export class AcidEffects {
     this.splashes.push({ mesh, age: 0, look });
   }
 
-  sync(states: readonly Readonly<AcidGlobState>[], types: ReadonlyMap<string, ZombieDef>, dt: number): void {
+  sync(
+    states: readonly Readonly<AcidGlobState>[],
+    puddles: readonly Readonly<AcidPuddleState>[],
+    types: ReadonlyMap<string, ZombieDef>,
+    dt: number,
+  ): void {
+    while (this.puddles.length > puddles.length) {
+      const mesh = this.puddles.pop()!;
+      mesh.removeFromParent();
+      mesh.material.dispose();
+    }
+    for (const [index, state] of puddles.entries()) {
+      let mesh = this.puddles[index];
+      if (!mesh) {
+        mesh = new Mesh(
+          this.puddleGeometry,
+          new MeshBasicMaterial({
+            side: DoubleSide,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1,
+          }),
+        );
+        mesh.rotation.x = -Math.PI / 2;
+        this.group.add(mesh);
+        this.puddles.push(mesh);
+      }
+      const spit = types.get(state.type)!.acidSpit!;
+      mesh.material.color.set(spit.presentation.color);
+      mesh.scale.setScalar(spit.puddle.radiusMetres);
+      mesh.position.set(state.pos[0] * this.blockSize, state.pos[1] * this.blockSize, state.pos[2] * this.blockSize);
+    }
     while (this.globs.length > states.length) {
       const mesh = this.globs.pop()!;
       mesh.removeFromParent();
@@ -64,6 +99,11 @@ export class AcidEffects {
 
   dispose(): void {
     this.geometry.dispose();
+    this.puddleGeometry.dispose();
+    for (const mesh of this.puddles) {
+      mesh.material.dispose();
+    }
+    this.puddles.length = 0;
     for (const mesh of this.globs) {
       mesh.material.dispose();
     }
