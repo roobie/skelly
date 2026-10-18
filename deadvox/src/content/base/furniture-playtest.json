@@ -92,7 +92,8 @@
       },
       "id": "dead_officer_body",
       "name": "Dead military officer",
-      "size": [4, 1, 2]
+      "size": [4, 1, 2],
+      "solid": false
     },
     {
       "color": "#666c70",

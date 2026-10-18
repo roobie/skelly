@@ -36,6 +36,7 @@ local plaque(id, name, color, readable) = {
       name: 'Dead military officer',
       size: [4, 1, 2],
       color: '#554f43',
+      solid: false,
       container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
     },
     {

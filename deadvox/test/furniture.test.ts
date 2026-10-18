@@ -387,6 +387,26 @@ describe('furniture', () => {
     expect(panelBounds.max.z).toBeLessThanOrEqual(bodyBounds.min.z);
   });
 
+  it('lets a body walk through a corpse loot container yet keeps it pickable', () => {
+    const definition = registry.furniture.get('dead_officer_body')!;
+    const entities = new BlockEntities(registry);
+    const corpse = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
+
+    expect(definition.container).toBeDefined();
+    expect(entities.at(5, 1, 8)).toBe(corpse);
+    expect(entities.isSolid(5, 1, 8)).toBe(false);
+    expect(
+      pickFurniture({
+        entities,
+        origin: [5.5, 1.5, 6],
+        direction: [0, 0, 1],
+        maxDistance: 4,
+        blockSize: BLOCK_SIZE,
+        isSolid: (x, y, z) => entities.isSolid(x, y, z),
+      }),
+    ).toBe(corpse);
+  });
+
   it('shares the renderer door-panel transform with the core box within 1 mm for every facing/state', () => {
     const entities = new BlockEntities(registry);
     const facings: Facing[] = ['n', 'e', 's', 'w'];
