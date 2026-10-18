@@ -3,7 +3,7 @@ import { live } from 'lit-html/directives/live.js';
 import { getBuildRevision } from '../core/buildInfo.ts';
 import { dominantSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
-import { requireDayCycle } from '../core/content.ts';
+import { requireDayCycle, type ZombieDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import {
@@ -230,7 +230,7 @@ const soundLogTemplate = (readout: DebugReadout): TemplateResult => html`
 
 const actionButton = (action: ActionView): TemplateResult => html`
   <button type="button" data-debug-action=${action.id} @click=${action.run}>
-    ${action.label} (${action.key})${action.state ? ` · ${action.state}` : ''}
+    ${action.label}${action.key ? ` (${action.key})` : ''}${action.state ? ` · ${action.state}` : ''}
   </button>
 `;
 
@@ -592,6 +592,7 @@ interface ActionContext {
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
   spawnZombie: (typeId: string, count: number) => void;
+  zombieTypes: Iterable<Pick<ZombieDef, 'id' | 'name'>>;
   isAimEnabled: () => boolean;
   toggleAim: () => void;
   isFrozen: () => boolean;
@@ -616,6 +617,7 @@ export const createDebugActions = ({
   shamblerCount,
   spawnShambler,
   spawnZombie,
+  zombieTypes,
   isAimEnabled,
   toggleAim,
   isFrozen,
@@ -746,24 +748,12 @@ export const createDebugActions = ({
           hooks.emitTestNoise();
         },
       },
-      {
-        id: 'debug.spawn-runner',
-        label: 'Spawn runner',
-        group: 'shamblers',
-        run: () => spawnZombie('runner', 1),
-      },
-      {
-        id: 'debug.spawn-crawler',
-        label: 'Spawn crawler',
-        group: 'shamblers',
-        run: () => spawnZombie('crawler', 1),
-      },
-      {
-        id: 'debug.spawn-amalgam',
-        label: 'Spawn amalgam',
-        group: 'shamblers',
-        run: () => spawnZombie('amalgam', 1),
-      },
+      ...Array.from(zombieTypes, (type) => ({
+        id: `debug.spawn-zombie.${type.id}`,
+        label: `Spawn ${type.name}`,
+        group: 'shamblers' as const,
+        run: () => spawnZombie(type.id, 1),
+      })),
       {
         id: 'debug.melee-aim-toggle',
         label: 'Melee aim boxes',
@@ -996,7 +986,7 @@ export const createDebugActions = ({
   ).map((action) => ({
     ...action,
     get key() {
-      return labelForAction(action.id);
+      return inputBindings.binding(action.id) ? labelForAction(action.id) : '';
     },
   }));
 
@@ -1271,6 +1261,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   // MenuPointer routes the wheel to the pane under the cursor, including this panel.
   const actions = createDebugActions({
     hooks,
+    zombieTypes: hooks.engine.registry.zombies.values(),
     impactLaser: hooks.impactLaser,
     interactionRay: {
       enabled: () => interactionRayEnabled,

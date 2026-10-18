@@ -294,7 +294,7 @@ try {
   assert.equal(bandagesAfterConfirm, bandagesBeforeConfirm + 1, 'plain Enter spawns the selected item');
   await page.keyboard.press('Enter');
   assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
-  await pressAction(page, 'debug.spawn-runner');
+  await pressAction(page, 'debug.spawn-zombie.runner');
   await page.waitForFunction(
     () =>
       [...globalThis.firefoxUiTest.session.zombies.store.entries()].some(([, zombie]) => zombie.type.id === 'runner'),
@@ -309,7 +309,7 @@ try {
       throw new Error('debug runner spawn did not select the registered mobgen model');
     }
   });
-  await pressAction(page, 'debug.spawn-crawler');
+  await pressAction(page, 'debug.spawn-zombie.crawler');
   await pressAction(page, 'debug.spawn-shamblers');
   await page.waitForFunction(
     () => {
