@@ -43,7 +43,7 @@ describe('voxelize', () => {
     const body: Body = {
       bones: [{ id: 'ball', parent: null, head: center, tail: center }],
       features: [{ bone: 'ball', op: 'add', shape: { kind: 'ellipsoid', center, radii: [r, r, r] }, material: 'skin' }],
-      palette: PALETTE,
+      materials: Object.fromEntries(Object.entries(PALETTE).map(([name, color]) => [name, { color, emissive: 0 }])),
     };
     const voxels = voxelize(body, v, 1);
     let filled = 0;

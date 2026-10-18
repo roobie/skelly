@@ -4,8 +4,9 @@ import { add, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, scale, sub, type Vec3 }
 import { aabbOf } from '../core/sdf.ts';
 import type { Genome, Wound } from '../core/template.ts';
 import type { Voxels } from '../core/voxelize.ts';
+import { heightHeadBudgets } from './budgets.ts';
 import { severedBoneSet } from './dismember.ts';
-import { buildHumanoid, HUMANOID_PARAM_ORDER, sampleWounds, WOUNDABLE_BONES } from './humanoid.ts';
+import { buildHumanoid, HUMANOID_LIMB_BONES, HUMANOID_PARAM_ORDER, sampleWounds, WOUNDABLE_BONES } from './humanoid.ts';
 
 export const MIN_AMALGAM_MEMBERS = 3;
 export const AMALGAM_MEMBER_IDS = [0, 1, 2, 3, 4] as const;
@@ -166,11 +167,11 @@ const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
       blend: height * 0.02,
     },
   ];
-  let palette: Body['palette'] | undefined;
+  let materials: Body['materials'] | undefined;
 
   for (const member of AMALGAM_MEMBER_IDS.slice(0, memberCount)) {
     const memberBody = buildHumanoid(humanoidGenome(genome, member));
-    palette ??= memberBody.palette;
+    materials ??= memberBody.materials;
     const root = memberBody.bones.find((bone) => bone.id === 'pelvis')?.head;
     if (!root) {
       throw new Error(`amalgam member ${member} has no pelvis root`);
@@ -262,10 +263,10 @@ const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
     );
   }
 
-  if (!palette) {
+  if (!materials) {
     throw new Error('amalgam has no member modules');
   }
-  return { bones, features, jointAdjacencyPolicy: 'reserve-overlaps', palette };
+  return { bones, features, jointAdjacencyPolicy: 'reserve-overlaps', materials };
 };
 
 registerBodyPlan('amalgam', {
@@ -273,6 +274,8 @@ registerBodyPlan('amalgam', {
   build: buildAmalgam,
   paramOrder: AMALGAM_PARAM_ORDER,
   woundBones: WOUND_BONES,
+  budgets: heightHeadBudgets,
+  limbBones: AMALGAM_MEMBER_IDS.flatMap((member) => HUMANOID_LIMB_BONES.map((id) => memberBone(member, id))),
 });
 
 interface AmalgamRegion {

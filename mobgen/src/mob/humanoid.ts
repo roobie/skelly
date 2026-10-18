@@ -25,8 +25,10 @@ import {
   type Vec3,
 } from '../core/math.ts';
 import { pick, type Rng, range } from '../core/random.ts';
-import type { Genome, Template, Wound } from '../core/template.ts';
+import { type Genome, type Template, templateByName, type Wound } from '../core/template.ts';
 import { voxelize } from '../core/voxelize.ts';
+import { heightHeadBudgets } from './budgets.ts';
+import { resolveMaterials } from './materials.ts';
 
 const SIDES = ['L', 'R'] as const;
 type Side = (typeof SIDES)[number];
@@ -248,8 +250,8 @@ const buildBones = (layout: JointLayout): Body['bones'] => {
     const leg = layout.leg[side];
     bones.push(
       { id: `upperArm.${side}`, parent: 'chest', head: arm.shoulder, tail: arm.elbow },
-      { id: `forearm.${side}`, parent: `upperArm.${side}`, head: arm.elbow, tail: arm.wrist },
-      { id: `hand.${side}`, parent: `forearm.${side}`, head: arm.wrist, tail: arm.handTip },
+      { id: `forearm.${side}`, parent: `upperArm.${side}`, head: arm.elbow, tail: arm.wrist, marrowMaterial: 'skin' },
+      { id: `hand.${side}`, parent: `forearm.${side}`, head: arm.wrist, tail: arm.handTip, marrowMaterial: 'skin' },
       { id: `thigh.${side}`, parent: 'pelvis', head: leg.hip, tail: leg.knee },
       { id: `shin.${side}`, parent: `thigh.${side}`, head: leg.knee, tail: leg.ankle },
       { id: `foot.${side}`, parent: `shin.${side}`, head: leg.ankle, tail: leg.toe },
@@ -756,40 +758,9 @@ const buildWounds = (
   return features;
 };
 
-// ---- Colour ----
-
-/** The 6 60-degree wedges of the HSL hue wheel, each giving [r, g, b] before adding the lightness offset m. */
-const HUE_WEDGES: readonly (readonly [number, (c: number, x: number) => Vec3])[] = [
-  [60, (c, x) => [c, x, 0]],
-  [120, (c, x) => [x, c, 0]],
-  [180, (c, x) => [0, c, x]],
-  [240, (c, x) => [0, x, c]],
-  [300, (c, x) => [x, 0, c]],
-  [360, (c, x) => [c, 0, x]],
-];
-
-export const hslToRgb = (hDeg: number, s: number, l: number): Vec3 => {
-  const h = ((hDeg % 360) + 360) % 360;
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-  const wedge = HUE_WEDGES.find(([max]) => h < max) ?? HUE_WEDGES.at(-1)!;
-  const [r1, g1, b1] = wedge[1](c, x);
-  return [r1 + m, g1 + m, b1 + m];
-};
-
-const buildPalette = (p: HumanoidParams): Record<Material, Vec3> => ({
-  skin: hslToRgb(p.skinHue, p.skinSat, p.skinLight),
-  bruise: [0.34, 0.27, 0.33],
-  shirt: hslToRgb(p.shirtHue, 0.32, p.shirtLight),
-  pants: hslToRgb(p.pantsHue, 0.28, p.pantsLight),
-  shoe: [0.12, 0.1, 0.09],
-  hair: [0.11, 0.09, 0.08],
-  eye: [0.06, 0.06, 0.06],
-  mouth: [0.24, 0.05, 0.06],
-  gore: [0.32, 0.09, 0.06],
-  bone: [0.85, 0.82, 0.72],
-});
+export const HUMANOID_LIMB_BONES = SIDES.flatMap((side) =>
+  ['upperArm', 'forearm', 'thigh', 'shin'].map((segment) => `${segment}.${side}`),
+);
 
 // ---- Build & sample ----
 
@@ -803,7 +774,7 @@ export const buildHumanoid = (genome: Genome): Body => {
     ...buildClothes(layout, p, face),
     ...buildWounds(bones, layout, p, genome.wounds),
   ];
-  return { bones, features, palette: buildPalette(p) };
+  return { bones, features, materials: resolveMaterials(templateByName(genome.template), p) };
 };
 
 const LOWER_CRAWLER_BONE = /^(shin|foot)\./;
@@ -932,6 +903,8 @@ registerBodyPlan('humanoid', {
   build: (genome) => buildHumanoid(genome),
   paramOrder: HUMANOID_PARAM_ORDER,
   woundBones: WOUNDABLE_BONES,
+  budgets: heightHeadBudgets,
+  limbBones: HUMANOID_LIMB_BONES,
 });
 
 registerBodyPlan('crawler', {
@@ -939,4 +912,6 @@ registerBodyPlan('crawler', {
   build: (genome) => amputateCrawlerLegs(buildHumanoid(genome), genome),
   paramOrder: HUMANOID_PARAM_ORDER,
   woundBones: WOUNDABLE_BONES,
+  budgets: heightHeadBudgets,
+  limbBones: HUMANOID_LIMB_BONES.filter((id) => !LOWER_CRAWLER_BONE.test(id)),
 });

@@ -175,7 +175,7 @@ const buildSkinnedGeometry = (realized: Realized): BufferGeometry => {
     const vertices = mesh.positions.length / 3;
     positions.set(mesh.positions, vertexOffset * 3);
     normals.set(mesh.normals, vertexOffset * 3);
-    colors.set(vertexColors(mesh.colors, body.palette), vertexOffset * 3);
+    colors.set(vertexColors(mesh.colors, body.materials, realized.voxels), vertexOffset * 3);
     for (let v = 0; v < vertices; v++) {
       skinIndex[(vertexOffset + v) * 4] = boneIndex;
       skinWeight[(vertexOffset + v) * 4] = 1;
@@ -227,7 +227,7 @@ const buildCrowdGeometry = (realized: Realized): BufferGeometry => {
     const vertices = mesh.positions.length / 3;
     positions.set(mesh.positions, vertexOffset * 3);
     normals.set(mesh.normals, vertexOffset * 3);
-    colors.set(vertexColors(mesh.colors, body.palette), vertexOffset * 3);
+    colors.set(vertexColors(mesh.colors, body.materials, realized.voxels), vertexOffset * 3);
     boneIndexAttr.fill(boneIndex, vertexOffset, vertexOffset + vertices);
     for (let v = 0; v < vertices; v++) {
       neighbourBoneAttr[vertexOffset + v] = mesh.neighbourBone[v]!;
@@ -254,7 +254,7 @@ export const buildPoolRender = (entry: PoolEntry, mode: Mode): PoolRender => {
   if (mode === 'bones') {
     const geometries = new Map<number, BufferGeometry>();
     for (const [boneIndex, boneMesh] of entry.realized.meshes) {
-      geometries.set(boneIndex, geometryOf(boneMesh, entry.realized.body.palette));
+      geometries.set(boneIndex, geometryOf(boneMesh, entry.realized.body.materials, entry.realized.voxels));
     }
     return { kind: 'bones', geometries };
   }

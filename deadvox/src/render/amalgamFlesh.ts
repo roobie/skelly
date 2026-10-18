@@ -1,9 +1,9 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves through this package's aliases.
-import type { Material } from '@mobgen/core/body.ts';
+import type { Body } from '@mobgen/core/body.ts';
 import type { Realized } from '@mobgen/core/generate.ts';
-import { type Mat3, type Vec3 as MobVec3, mat3ToQuat, quatToMat3 } from '@mobgen/core/math.ts';
+import { type Mat3, mat3ToQuat, quatToMat3 } from '@mobgen/core/math.ts';
 import { type BoneMesh, meshBones } from '@mobgen/core/mesh.ts';
-import { materialOf, shadeOf, worldPosition } from '@mobgen/core/voxelize.ts';
+import { materialOf, shadeOf, type Voxels, worldPosition } from '@mobgen/core/voxelize.ts';
 import { BufferAttribute, BufferGeometry, type Color, type Group, Mesh, MeshLambertMaterial } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import { type Quaternion, type RigidBody, type RigidWorld, stepRigidBody } from '../core/rigidBody.ts';
@@ -18,11 +18,15 @@ import { castsAndReceives } from './shadowFlags.ts';
  * mobgen's own node_modules) — palette-index colour bytes to per-vertex RGB. */
 const SHADE_FACTORS = [0.72, 0.88, 1.04, 1.2] as const;
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
-const vertexColorsFrom = (colorBytes: Uint8Array, palette: Readonly<Record<Material, MobVec3>>): Float32Array => {
+const vertexColorsFrom = (
+  colorBytes: Uint8Array,
+  materials: Body['materials'],
+  voxels: Pick<Voxels, 'materials'>,
+): Float32Array => {
   const out = new Float32Array(colorBytes.length * 3);
   for (let v = 0; v < colorBytes.length; v++) {
     const byte = colorBytes[v]!;
-    const base = palette[materialOf(byte)];
+    const base = materials[materialOf(voxels, byte)]!.color;
     const factor = SHADE_FACTORS[shadeOf(byte)] ?? 1;
     out[v * 3] = clamp01(base[0] * factor);
     out[v * 3 + 1] = clamp01(base[1] * factor);
@@ -48,7 +52,8 @@ interface CarvedFaces {
  * skinIndex/skinWeight, fetched straight from the shared bone texture in the vertex shader. */
 export const mergeBoneMeshes = (
   meshes: ReadonlyMap<number, BoneMesh>,
-  palette: Readonly<Record<Material, MobVec3>>,
+  materials: Body['materials'],
+  voxels: Pick<Voxels, 'materials'>,
   carved?: CarvedFaces,
 ): BufferGeometry => {
   let vertexCount = 0;
@@ -73,7 +78,7 @@ export const mergeBoneMeshes = (
     const vertices = mesh.positions.length / 3;
     positions.set(mesh.positions, vertexOffset * 3);
     normals.set(mesh.normals, vertexOffset * 3);
-    colors.set(vertexColorsFrom(mesh.colors, palette), vertexOffset * 3);
+    colors.set(vertexColorsFrom(mesh.colors, materials, voxels), vertexOffset * 3);
     boneIndexAttr.fill(boneIndex, vertexOffset, vertexOffset + vertices);
     for (let v = 0; v < vertices; v++) {
       const inner = carved !== undefined && mesh.neighbourBone[v] === carved.neighbour;
@@ -119,7 +124,7 @@ export const buildCarvedGeometry = (realized: Realized, carved: readonly number[
   }
   const meshes = meshBones({ ...voxels, owner }, hole + 1);
   meshes.delete(hole);
-  return mergeBoneMeshes(meshes, body.palette, { neighbour: hole, color: interior });
+  return mergeBoneMeshes(meshes, body.materials, voxels, { neighbour: hole, color: interior });
 };
 
 /** The flesh one hit knocked out, where it was on the body when it came away. */
@@ -195,7 +200,7 @@ export class FleshChunks {
       centre[1] += point[1] / cells.length;
       centre[2] += point[2] / cells.length;
     }
-    const geometry = mergeBoneMeshes(meshBones({ ...voxels, owner }, body.bones.length), body.palette);
+    const geometry = mergeBoneMeshes(meshBones({ ...voxels, owner }, body.bones.length), body.materials, voxels);
     geometry.translate(-centre[0], -centre[1], -centre[2]);
     geometry.scale(scale, scale, scale);
     geometry.computeBoundingBox();

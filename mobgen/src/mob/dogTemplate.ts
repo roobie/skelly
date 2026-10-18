@@ -9,9 +9,12 @@
 import { registerTemplate, type Template } from '../core/template.ts';
 // Imports for the side effect of registering the 'dog' body plan (mob/dog.ts's registerBodyPlan call).
 import './dog.ts';
+import { dogMaterialHsl, dogMaterials } from './materialTemplates.ts';
 
 export const dogTemplate: Template = {
   name: 'dog',
+  materials: dogMaterials,
+  materialHsl: dogMaterialHsl,
   description: 'Dog-sized infected quadruped: a lurching, limping four-paw shamble with a hanging head.',
   bodyPlan: 'dog',
   voxelSize: 0.5 / 12,

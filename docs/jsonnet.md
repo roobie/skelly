@@ -18,6 +18,7 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 - Keep exporter-written JSON outside the Jsonnet source manifest so a refresh has one writer; the exporter owns its output rather than a second authored source.
 - Do not impose a subprocess capture limit on trusted formatter output: growing a content document must not fail because of the process API's default buffer. See `tools/jsonnet/compile.mjs`, `formatJson`.
 - Deadvox core-pack data is authored under `deadvox/src/content/base` and consumed through `deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `deadvox/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
+- Mobgen's material tables stay separate from body-plan construction so look tuning remains content-owned. See `mobgen/src/mob/materialTemplates.jsonnet` and `mobgen/src/mob/materials.ts`, `resolveMaterials`.
 - Build-specific settings must be explicit top-level arguments, not hidden environment inputs, so identical sources produce identical output.
 
 ## Curated map features

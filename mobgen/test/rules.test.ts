@@ -25,13 +25,18 @@ const PALETTE: Record<Material, readonly [number, number, number]> = {
 
 const GENEROUS: Budgets = { totalVoxels: { min: 1, max: 20 }, totalTriangles: { min: 1, max: 2000 }, groups: {} };
 
-const body = (bones: Body['bones']): Body => ({ bones, features: [], palette: PALETTE });
+const body = (bones: Body['bones']): Body => ({
+  bones,
+  features: [],
+  materials: Object.fromEntries(Object.entries(PALETTE).map(([name, color]) => [name, { color, emissive: 0 }])),
+});
 
 const voxels = (
   dims: readonly [number, number, number],
   owner: readonly number[],
   origin: readonly [number, number, number] = [0, 0, 0],
 ): Voxels => ({
+  materials: Object.keys(PALETTE),
   size: 0.1,
   origin,
   dims,

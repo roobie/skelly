@@ -207,7 +207,7 @@ const backgroundActorBlend = (zombie: Zombie, simulationTime: number | undefined
     ? fallback
     : clamp01((simulationTime - zombie.renderPrevious.time) * BACKGROUND_ZOMBIE_RATE);
 const buildVariantGeometry = (realized: Realized): BufferGeometry =>
-  mergeBoneMeshes(realized.meshes, realized.body.palette);
+  mergeBoneMeshes(realized.meshes, realized.body.materials, realized.voxels);
 
 /** A live zombie is keyed by its EntityId; a piece of debris (there can be more than one per zombie, over
  * its lifetime) gets its own synthetic string key — see zombieSevered. Corpses stay EntityId-keyed (one

@@ -14,6 +14,7 @@ const SOURCE_ROOTS = [
   'deadvox/test/fixtures/mods',
   'gungen/cartridges',
   'gungen/designs',
+  'mobgen/src/mob',
   'site',
 ];
 
