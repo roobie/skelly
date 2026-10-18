@@ -58,23 +58,8 @@ export function furnitureDetail(def: FurnitureDef): BufferGeometry {
     }
   };
 
-  const lidHeight = kind === 'crate' ? 2 * margin : 0;
-  box(
-    [0, (h - lidHeight) / 2, relief / 2],
-    [w - 2 * margin, h - 2 * margin - lidHeight, d - 2 * margin - relief],
-    dark,
-  );
+  box([0, h / 2, relief / 2], [w - 2 * margin, h - 2 * margin, d - 2 * margin - relief], dark);
   switch (kind) {
-    case 'crate':
-      box([0, h - margin * 2, 0], [w - 2 * margin, margin * 2, d - 2 * margin], panel);
-      for (let row = 0; row < 4; row++) {
-        face(0, margin + ((h - 4 * margin) * (row + 0.5)) / 4, w - 2 * margin, (h - 4 * margin) / 4 - margin);
-      }
-      for (const side of [-1, 1]) {
-        box([side * w * 0.33, h * 0.47, front + relief * 0.45], [w * 0.07, h * 0.85, relief * 0.2], panel);
-      }
-      handle(0, h * 0.75, w * 0.24);
-      break;
     case 'cabinet':
       for (const side of [-1, 1]) {
         face((side * w) / 4, h / 2, w / 2 - 2 * margin, h - 2 * margin);

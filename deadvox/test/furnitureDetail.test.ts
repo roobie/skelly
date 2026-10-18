@@ -10,7 +10,6 @@ const definitions = [
   { kind: 'cabinet', surface: 'wood', size: [3, 4, 1] },
   { kind: 'drawers', surface: 'plastic', size: [2, 2, 1] },
   { kind: 'fridge', surface: 'painted-metal', size: [2, 4, 2] },
-  { kind: 'crate', surface: 'wood', size: [1, 1, 1] },
 ].map(({ kind, surface, size }, index) => ({
   id: `detail_fixture_${index}`,
   name: 'Detail fixture',
