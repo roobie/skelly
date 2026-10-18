@@ -66,6 +66,7 @@ import {
   revolverOpenAmount,
   sampleActionPose,
 } from './firearmModel.ts';
+import { sightedFirearmModel } from './firearmSight.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
@@ -484,9 +485,9 @@ export class HeldItems {
     item: Item | undefined;
     itemDefinition: ReturnType<typeof defOf> | undefined;
   }) {
-    const modelDefinition = itemDefinition?.model
-      ? this.inventory.registry.models.get(itemDefinition.model)
-      : undefined;
+    const baseModel = itemDefinition?.model ? this.inventory.registry.models.get(itemDefinition.model) : undefined;
+    const modelDefinition =
+      item && itemDefinition?.firearm ? sightedFirearmModel(this.inventory.registry, item) : baseModel;
     const firearmReadiness = handling.readiness?.uid === item?.uid ? readyAmount : 0;
     const aimingDownSights = Boolean(
       item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
