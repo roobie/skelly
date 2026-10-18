@@ -354,7 +354,12 @@ wall has a lived-in face rather than an empty fence line. The wall and wire out-
 a sprinting jump, body width included, from every ring building's full height,
 because a rooftop within reach would turn the wall into a step; the check reads the
 player's sprint jump from `src/game/player.ts`, `sprintJumpRise`. Sounds and crowds beyond the wall are a
-separate decision. See `src/core/cityPlan.ts`, `cityPerimeter`, `clearanceIssues`,
+separate decision. The ground around the wall is flat at the city floor, because the
+gauntlet is a confined playtest area and relief beyond the wall would only be
+unreachable scenery; a distant ridge can return later as an authored feature. The
+scenario opts in, so other sites keep their natural ground; see `src/core/citySite.ts`,
+`surface` and `src/core/schema.ts`, `flatSurroundings`.
+See `src/core/cityPlan.ts`, `cityPerimeter`, `clearanceIssues`,
 `perimeterGaps` and `perimeterIssues`. City size, scarcity and
 pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
 remain outside #671's first version.

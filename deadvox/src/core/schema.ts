@@ -1768,6 +1768,8 @@ const ScenarioSchema = strictObject({
     blocksX: pipe(Count, minValue(1), maxValue(4)),
     blocksZ: pipe(Count, minValue(1), maxValue(4)),
     ...CityBlockGeometry,
+    /** Holds the ground at the city floor beyond the bounds instead of blending to the natural terrain, so a confined playtest site has no relief. */
+    flatSurroundings: optional(vBoolean()),
     perimeter: optional(
       strictObject({
         block: Id,

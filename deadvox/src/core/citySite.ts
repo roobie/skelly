@@ -82,6 +82,9 @@ export class CitySite implements Site {
         if (distance === 0) {
           return floor;
         }
+        if (grid.flatSurroundings) {
+          return floor;
+        }
         if (distance >= grid.blend) {
           return natural;
         }

@@ -140,6 +140,7 @@
         "blockZ": 96,
         "blocksX": 1,
         "blocksZ": 1,
+        "flatSurroundings": true,
         "gap": 1,
         "pad": 2,
         "perimeter": {

@@ -49,6 +49,7 @@ local ladder = lab.entry.ladder;
       blockX: std.max(service.size[0], service.size[2]) + 24,
       blockZ: std.max(service.size[0], service.size[2]) + 24,
       pad: 2, gap: 1, blend: 24,
+      flatSurroundings: true,
       rows: 4,
       perimeter: {
         block: 'concrete', height: 12, thickness: 2,
