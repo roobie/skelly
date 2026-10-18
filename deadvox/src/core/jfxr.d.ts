@@ -20,7 +20,7 @@ declare module 'jfxr' {
   }
 
   export class Synth {
-    constructor(json: string, setTimeout?: (callback: () => void) => void);
+    constructor(json: string, defer?: (callback: () => void) => void);
     run(doneCallback: (clip: Clip) => void): void;
   }
 }
