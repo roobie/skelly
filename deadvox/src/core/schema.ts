@@ -2154,6 +2154,29 @@ const SiteGenerationSchema = strictObject({
     reachMetres: PositiveMetres,
   }),
 });
+
+const BlockCount = pipe(number(), integer('must be a whole number'), minValue(1, 'must be at least 1'));
+const BlockOffset = pipe(number(), integer('must be a whole number'));
+
+/** Distances are whole blocks: `offset` runs along the lane from its near end, `lateral` across it from its centre line. */
+const HandlingRangeSchema = strictObject({
+  id: Id,
+  /** Clear ground between the site this range sits beside and the lane's near end. */
+  gap: Count,
+  /** How far the terrain blends into the level lane beyond its edge. */
+  blend: BlockCount,
+  length: BlockCount,
+  width: BlockCount,
+  firingLine: strictObject({ offset: Count, depth: BlockCount, inset: Count }),
+  target: strictObject({ halfWidth: Count, height: BlockCount }),
+  /** One entry per target, nearest first; staggering them laterally keeps each one clear of the nearer ones' line of fire. */
+  targets: pipe(
+    array(strictObject({ offset: Count, lateral: BlockOffset })),
+    minLength(1, 'needs at least one target'),
+  ),
+  table: strictObject({ offset: Count, lateral: BlockOffset }),
+});
+
 const SenseSchema = strictObject({
   id: Id,
   movement: strictObject({
@@ -2560,6 +2583,7 @@ const SECTION_DESCRIPTOR = {
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
+  handlingRange: { schema: optional(array(HandlingRangeSchema)), label: 'handling range', order: 29 },
   weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
@@ -2613,6 +2637,7 @@ export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;
 export type TreatmentDef = InferOutput<typeof TreatmentSchema>;
 export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'];
+export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;

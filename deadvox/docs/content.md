@@ -105,9 +105,14 @@ inheriting a code default. Readers take the values from the registry. See
 `src/core/schema.ts`, `InventoryTuningSchema` and `UiTuningSchema`, and `src/core/reach.ts`,
 `reachTuning`.
 
-The handling range of the test range stays in code: it is debug layout geometry whose
-arithmetic belongs to the range builder, not a tunable a mod would reasonably change. See
-`src/core/range.ts`.
+## Handling range
+
+The layout of the test range is content, so a mod can lay out its own range. The schema
+requires every field, with no code default. Each target carries its own lateral placement
+because fire runs down the lane: targets in line hide the farther ones, so validation
+rejects a layout where any target is hidden from the firing line, or sits outside the lane,
+rather than clamping it silently. See `src/core/schema.ts`, `HandlingRangeSchema`, and
+`src/core/rangeLayout.ts`, `handlingRangeIssues`.
 
 ## Weathering profiles
 

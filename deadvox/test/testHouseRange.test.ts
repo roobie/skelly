@@ -243,7 +243,7 @@ describe('the debug test-house range', () => {
     expect(range.rect.x0).toBeGreaterThanOrEqual(range.beside.x1);
     expect(range.table.pos[0]).toBeGreaterThan(range.beside.x1);
     expect(range.firingLine.x0).toBeGreaterThan(range.beside.x1);
-    expect(range.targetXs.every((x) => x > range.firingLine.x1)).toBe(true);
+    expect(range.targets.every(({ x }) => x > range.firingLine.x1)).toBe(true);
     expect(builtSite.surface.height(range.table.pos[0], range.table.pos[2], padTop + 5)).toBe(padTop);
     expect(spawnX).toBeLessThan(range.beside.x1);
     expect(spawnX).toBeLessThan(range.firingLine.x0);
@@ -251,7 +251,7 @@ describe('the debug test-house range', () => {
     const target = rangeFurnitureFor(builtSite).find(({ spec }) => spec.type === 'range_target');
     expect(target).toBeDefined();
     expect(registry.furniture.get(target!.spec.type)?.shotTarget).toBe(true);
-    expect(range.targetXs).toContain(target!.spec.pos[0]);
+    expect(range.targets.map(({ x }) => x)).toContain(target!.spec.pos[0]);
 
     const normal = makeConfig(13, 64);
     normal.site = 'testHouse';

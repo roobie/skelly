@@ -1,5 +1,5 @@
 local scale(label, minimum) = { label: label, default: 1, min: minimum, max: 1 };
-local toggle(label) = { label: label, default: false, options: [false, true] };
+local toggle(label, default=false) = { label: label, default: default, options: [false, true] };
 
 {
   graphics: [{
@@ -19,6 +19,6 @@ local toggle(label) = { label: label, default: false, options: [false, true] };
     smallSunMap: toggle('Smaller sun shadow map'),
     fastCamo: toggle('Fast camouflage pattern'),
     coarseWeathering: toggle('Coarse weathering grid'),
-    cachedSurfaceNoise: toggle('Cached surface noise'),
+    cachedSurfaceNoise: toggle('Cached surface noise', true),
   }],
 }

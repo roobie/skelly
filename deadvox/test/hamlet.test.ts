@@ -130,14 +130,20 @@ describe('the hamlet', () => {
     const nearestHamletEdge = Math.max(hamlet.road.x1, ...hamlet.lots.map((lot) => lot.rect.x1));
     expect(hamlet.range.rect.x0).toBeGreaterThan(nearestHamletEdge);
     expect(hamlet.range.rect).toEqual(other.range.rect);
-    expect(hamlet.range.targetXs).toEqual(other.range.targetXs);
+    expect(hamlet.range.targets).toEqual(other.range.targets);
 
     const columns = columnsOf(hamlet);
     const { world, furniture } = generate(hamlet, 13, columns);
     const line = hamlet.range.firingLine;
     const lineZ = Math.floor((line.z0 + line.z1) / 2);
     expect(world.getBlock(line.x0, hamlet.range.floor, lineZ)).toBe(id('asphalt'));
-    expect(world.getBlock(hamlet.range.targetXs[0]!, hamlet.range.floor + 2, lineZ)).not.toBe(0);
+    // Fire runs down the lane from the firing line, so each target's bullseye row must be open up to it.
+    for (const target of hamlet.range.targets) {
+      expect(world.getBlock(target.x, hamlet.range.floor + 2, target.z)).not.toBe(0);
+      for (let x = line.x1; x < target.x; x++) {
+        expect(world.getBlock(x, hamlet.range.floor + 2, target.z)).toBe(0);
+      }
+    }
     expect(furniture.filter((entry) => entry.includes(JSON.stringify(hamlet.range.table)))).toHaveLength(1);
     expect(
       hamlet.range.furnitureIn(toChunk(hamlet.range.table.pos[0]), toChunk(hamlet.range.table.pos[2]))[0]?.spec,

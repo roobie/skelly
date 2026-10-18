@@ -208,7 +208,7 @@ export class DebugTestHouseSite implements Site {
     }
     this.target = {
       type: targetType,
-      pos: [this.range.targetXs[0]!, this.range.floor + 1, centreZ - Math.floor(targetSize[2] / 2)],
+      pos: [this.range.targets[0]!.x, this.range.floor + 1, this.range.targets[0]!.z - Math.floor(targetSize[2] / 2)],
       size: [...targetSize],
       facing: 'w',
     };

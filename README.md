@@ -8,6 +8,8 @@ read_if:
 
 skelly is a hobby monorepo built around **deadvox**, a single-player voxel survival game that runs in the browser. Its firearms and creatures come from two generators in the same repository, and a shared engine sits under them. The point is to have fun.
 
+![skelly](assets/skelly.png)
+
 **Play:** <https://roobie.github.io/skelly/> opens a launcher for the game and both generators' viewers.
 
 ## Projects

@@ -8,7 +8,7 @@
         "min": 0.25
       },
       "cachedSurfaceNoise": {
-        "default": false,
+        "default": true,
         "label": "Cached surface noise",
         "options": [false, true]
       },

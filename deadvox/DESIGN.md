@@ -544,8 +544,9 @@ specific sites and their rewards.
 
 Keep the firearm-handling range in the debug test house, not ordinary world
 sites, so test stock cannot become a playable-world loot source. Derive rack
-contents from firearm and ammunition compatibility. See `HandlingRange` in
-`src/core/range.ts` and `testHouseRangeSupply` in `src/game/testHouseRange.ts`.
+contents from firearm and ammunition compatibility. The range layout is content, see
+`deadvox/docs/content.md`. See `HandlingRange` in `src/core/range.ts` and
+`testHouseRangeSupply` in `src/game/testHouseRange.ts`.
 
 ### Loot
 
@@ -1489,9 +1490,9 @@ and `src/game/config.ts`, `GameConfig`. Startup admission remains part of the
 simulation fingerprint because it can change a world without changing a simulation
 call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
 
-Whole-definition overrides keep composition in the authoring language rather than
-creating a second patch language. Browser Jsonnet and uploaded assets remain
-follow-up work in #633. The panel remains opt-in pending BR's entry-flow decision;
+A whole-definition override restates the entry, so it freezes the base as of its
+writing; how a mod changes one field instead is decided in
+`docs/decisions/0007-typed-field-patches.md`, "Decision". Browser Jsonnet and uploaded assets remain follow-up work in #633. The panel remains opt-in pending BR's entry-flow decision;
 see `src/ui/modsPanel.ts`, `chooseMods`.
 
 Remote intake shares local admission so a host cannot bypass the content contract.
