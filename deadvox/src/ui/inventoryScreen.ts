@@ -55,7 +55,7 @@ export const targetForPackedFloorDrop = (
 };
 
 /** Wear slots always shown, so there's somewhere to drop clothing and a slung long gun. */
-const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'legs', 'back', 'waist'];
+const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'hands', 'legs', 'feet', 'back', 'waist'];
 
 export interface ScreenHooks {
   /** What each wear slot is called; from the core ui content. */
