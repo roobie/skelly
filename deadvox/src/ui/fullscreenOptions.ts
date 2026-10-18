@@ -1,8 +1,6 @@
 import { html, render } from 'lit-html';
+import { BROWSER_CHORD_LOCK_CODES } from '../game/inputBindings.ts';
 import { factDetail } from './factDetail.ts';
-
-// Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
-const KEYBOARD_LOCK_CODES = ['KeyW', 'KeyT', 'KeyN', 'Tab'];
 
 interface KeyboardLockApi {
   lock?: (codes: string[]) => Promise<void>;
@@ -17,7 +15,7 @@ export const syncKeyboardLock = (
     return;
   }
   if (doc.fullscreenElement) {
-    keyboard.lock(KEYBOARD_LOCK_CODES).catch(() => undefined);
+    keyboard.lock(BROWSER_CHORD_LOCK_CODES).catch(() => undefined);
   } else {
     keyboard.unlock?.();
   }

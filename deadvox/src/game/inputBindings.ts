@@ -248,6 +248,8 @@ export const POINTER_ACTIONS = [
   { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready', label: 'Mouse 3' },
   { id: 'pointer.look', description: 'Look', label: 'Mouse' },
 ] as const;
+// Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
+export const BROWSER_CHORD_LOCK_CODES: string[] = ['KeyW', 'KeyT', 'KeyN', 'Tab'];
 export const NATIVE_INPUTS = [
   { code: 'Escape', description: 'Release pointer lock / cancel binding capture' },
   { code: 'F10', description: 'Browser menu bar' },
