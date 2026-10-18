@@ -4,6 +4,7 @@ read_if:
   - you're designing deterministic functions or the engine-to-mod boundary
   - you're assessing the adoption limits of CEL reuse evidence
   - "you're taking up the mod-content work in #313 or #393"
+  - you're letting a mod change a core tuning value or declaring the packs a mod requires
 tags: [deadvox, adr, content, mods, determinism]
 ---
 
@@ -35,11 +36,24 @@ mutate state outside the engine's validated boundary.
 Purity should be enforced by the language or a sandbox, so composed content can be hashed and
 replayed deterministically. Mind Over Matter is the golden standard the content system should
 support, not merely a capability benchmark; its scope is open. Keep module ordering and conflict
-policy simple and useful, with `dependencies: Mod[]` as the proposed dependency boundary; whether
-more is needed remains open. Migrate incrementally in a low number of large steps, with the steps
+policy simple and useful, with `dependencies: Mod[]` as the dependency boundary: a mod names the
+packs it requires and loading refuses a mismatch, because a mod written for one setting would
+otherwise fail confusingly under another (`deadvox/docs/pack-split.md`, "Layers"). Whether more is
+needed remains open. Migrate incrementally in a low number of large steps, with the steps
 and boundaries still open. Weather simulation stays in code while mods configure weather, including
 continual rain; rules may read weather through an event such as `weather_changed`, with the event
 contract open.
+
+A mod changes a core tuning value only through a modifier hook that core declares, never by
+replacing the value. A declared hook names what a mod may change, so core keeps authority over the
+mechanism the value tunes, and a diagnostic can name every mod that modified it; replacement would
+let one mod silently take the value over from core and from every other mod. The hook vocabulary,
+the order in which several mods' modifiers stack, and whether a setting pack may replace core
+values remain open.
+
+A save whose mod state no longer matches the mod is refused, as a pack mismatch is; see
+`deadvox/docs/decisions/0002-saves.md`, "Compatibility". The game and the modding framework own
+that policy, and a mod has no say in it.
 
 The runtime-function format and its event, effect, composition and persistence contracts remain
 open in #313. The content extraction tracked by #393 does not settle that format. See
@@ -73,8 +87,7 @@ vocabulary and save migration remain open; this evidence chooses none of them fo
 Restricted profiles do not establish the safety or cost of unrestricted runtimes. Representative
 engine contracts exercise a MoM-shaped rule layer, not a port of its world mechanics. Target
 fidelity, triggers, randomness, effect vocabulary, mod state, composition, effect combining, field
-patches, UI, core tuning and save mismatch policy remain open. No harness policy adopts any of
-those choices for the game.
+patches and UI remain open. No harness policy adopts any of those choices for the game.
 
 ## When
 
