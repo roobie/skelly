@@ -98,6 +98,7 @@ const buildAcid = (genome: Genome, template: AcidTemplate): AcidBody => {
   const N = n('neckFrac') * S;
   const W = n('shoulderFrac') * S * n('breadth');
   const headRot = mulMM(rotZ(n('headRoll')), rotX(-n('headPitch')));
+  const relativeSkullTail = mulMV(headRot, [0, H, 0]);
   const headHalf: Vec3 = [(H * n('headW')) / 2, (H * n('headH')) / 2, (H * n('headD')) / 2];
   const relativeHeadCenter = mulMV(headRot, [0, H / 2, -n('headFwd') * g.headOffset * H]);
   const headBox: Shape = {
@@ -125,7 +126,8 @@ const buildAcid = (genome: Genome, template: AcidTemplate): AcidBody => {
     g.bellyLength * Math.cos(rad(n('lean') + g.bellyHunch * n('hunch'))) +
     g.chestLength * Math.cos(rad(n('lean') + n('hunch')));
   // Refitting the trunk's share preserves posture without rescaling breadth or the completed body.
-  const T = (S - P[1] - N * Math.cos(rad(neckPitch)) - Math.max(topOf(headBox), topOf(relativeBrow))) / trunkRise;
+  const headTop = Math.max(topOf(headBox), topOf(relativeBrow), relativeSkullTail[1]);
+  const T = (S - P[1] - N * Math.cos(rad(neckPitch)) - headTop) / trunkRise;
   if (!(T > 0)) {
     throw new Error('acid proportions leave no standing trunk');
   }
@@ -269,7 +271,7 @@ const buildAcid = (genome: Genome, template: AcidTemplate): AcidBody => {
       add(belly.tail, mulMV(rotY(n('twist')), scale(dir(n('lean') + n('hunch')), g.chestLength * T))),
     ]);
     const neck = bone('neck', 'chest', [chest.tail, add(chest.tail, scale(dir(neckPitch), N))]);
-    const skull = bone('skull', 'neck', [neck.tail, add(neck.tail, mulMV(headRot, [0, H, 0]))], 'sever');
+    const skull = bone('skull', 'neck', [neck.tail, add(neck.tail, relativeSkullTail)], 'sever');
     const along = (b: Bone) => Math.hypot(...sub(b.tail, b.head)) * g.trunkAlong;
     const fleshWidth = (ratio: number) => ratio * W * n('girth');
     const pelvis = mass(hips, lerp3(hips.head, hips.tail, 0.5), [

@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
 import type { Body } from '../src/core/body.ts';
-import { build, generateValid } from '../src/core/generate.ts';
+import { build, generate, generateValid } from '../src/core/generate.ts';
 import { cross, dot, length } from '../src/core/math.ts';
 import { aabbOf, evalShape, topOf, union } from '../src/core/sdf.ts';
-import { type ParamSpec, registerTemplate } from '../src/core/template.ts';
+import { type Genome, type ParamSpec, registerTemplate } from '../src/core/template.ts';
 import { acidTemplate } from '../src/mob/acidTemplate.ts';
 import { shambler } from '../src/mob/templates.ts';
 
@@ -14,9 +14,14 @@ const rangeOf = (spec: ParamSpec | undefined) => {
   return spec;
 };
 
-// Binary linear columns form a pairwise covering array without an exhaustive anatomy product.
-const factors = ['height', 'breadth', 'legFrac', 'hunch', 'headRoll', 'headPitch', 'kneeBend'] as const;
-const rows = Array.from({ length: 8 }, (_, row) =>
+const centered = (key: 'headPitch' | 'headRoll') => {
+  const range = rangeOf(acidTemplate.params[key]);
+  return (range.min + range.max) / 2;
+};
+
+// Binary linear columns cover endpoint pairs; upright extensions exercise the interior skeletal maximum.
+const factors = ['height', 'breadth', 'legFrac', 'hunch', 'headRoll', 'headPitch', 'kneeBend', 'headH'] as const;
+const endpointRows = Array.from({ length: 16 }, (_, row) =>
   Object.fromEntries(
     factors.map((key, index) => {
       const range = rangeOf(acidTemplate.params[key]);
@@ -30,6 +35,16 @@ const rows = Array.from({ length: 8 }, (_, row) =>
     }),
   ),
 );
+const headHeightRange = rangeOf(acidTemplate.params.headH);
+const rows = [
+  ...endpointRows,
+  ...[headHeightRange.min, headHeightRange.max].map((headH, index) => ({
+    ...endpointRows[index === 0 ? 0 : endpointRows.length - 1]!,
+    headH,
+    headPitch: centered('headPitch'),
+    headRoll: centered('headRoll'),
+  })),
+];
 const standingTop = (body: Body) =>
   Math.max(
     ...body.features.filter((feature) => feature.op === 'add').map((feature) => topOf(feature.shape)),
@@ -43,6 +58,20 @@ const breadthOf = (body: Body) => {
 it('acid draws height and voxel size from the shambler content rather than a copied range', () => {
   expect(acidTemplate.params.height).toBe(shambler.params.height);
   expect(acidTemplate.voxelSize).toBe(shambler.voxelSize);
+});
+
+it('an upright head at minimum head height fits its skeletal tip inside the drawn standing height', () => {
+  const source = generate(acidTemplate, 1);
+  const genome: Genome = {
+    ...source,
+    params: {
+      ...source.params,
+      headPitch: centered('headPitch'),
+      headRoll: centered('headRoll'),
+      headH: rangeOf(acidTemplate.params.headH).min,
+    },
+  };
+  expect(standingTop(build(genome))).toBeCloseTo(genome.params.height!, 10);
 });
 
 it.each(rows.map((params, index) => ({ params, index })))(

@@ -28,7 +28,8 @@ These are settled, and every round below builds on them:
   carries the telegraph.
 - **Shambler height, brute-like breadth.** Drawing height like a shambler keeps an acid
   zombie in the shambler's height band while keeping the approved body's posture and
-  proportion variety. Sharing the brute's bulk but not its height keeps the two readable
+  proportion variety. Skeletal tips count as standing support because forced marrow can
+  stand above the flesh. Sharing the brute's bulk but not its height keeps the two readable
   apart. See `src/mob/acidTemplate.ts`, `acidTemplate`, and `src/mob/acid.ts`, `buildAcid`.
 - **One sac and no growths.** Being built from the ground up already sets it apart from
   shamblers, so it needs no further variation.
