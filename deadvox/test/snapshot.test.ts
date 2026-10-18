@@ -19,6 +19,7 @@ import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts'
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
+  advance,
   blockId,
   blockName,
   capture,
@@ -335,7 +336,7 @@ describe('snapshot state components', () => {
     const worn = ['test_boots', 'test_gloves'].map((type) => {
       const item = runtime.inventory.create(type);
       expect(runtime.inventory.add(item, { kind: 'worn' })).toBe(true);
-      item.condition = 0.5;
+      expect(runtime.inventory.changeCondition(item.uid, -0.5)).toBe(true);
       return item;
     });
 
@@ -352,6 +353,26 @@ describe('snapshot state components', () => {
       expect(restored.inventory.locate(back)).toMatchObject({ kind: 'worn', slot });
       expect(back.condition).toBe(item.condition);
     }
+  });
+
+  it('round-trips a touched contact and a touched tail to the same continuation', async () => {
+    const runtime = createRuntime();
+    runtime.sim.expose({ id: 'puddle', rate: 1, cause: 'fixture burn', region: 'leftLeg', kind: 'acid', touch: 'ground' });
+    runtime.sim.hit(1, 'fixture glob', 'rightArm', { kind: 'acid', touch: 'hand' });
+    runtime.session.frame(1 / 60);
+
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    const touches = (sim: typeof runtime.sim) =>
+      sim.exposures.snapshotState().exposures.flatMap((exposure) => exposure.sources.map((source) => source.touch));
+    expect(touches(restored.sim)).toEqual(['ground', 'hand']);
+    const healthAtSave = runtime.sim.body.health;
+    for (const continued of [runtime, restored]) {
+      advance(continued, 1);
+    }
+    expect(runtime.sim.body.health).toBeLessThan(healthAtSave);
+    expect(restored.sim.body.snapshotState()).toEqual(runtime.sim.body.snapshotState());
+    expect(restored.sim.exposures.snapshotState()).toEqual(runtime.sim.exposures.snapshotState());
   });
 
   it('round-trips sleep debt past 100, the alarm wake hour and a running alarm sleep with its wake time', async () => {
