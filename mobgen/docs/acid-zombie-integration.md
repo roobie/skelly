@@ -3,7 +3,7 @@ read_if:
   - you build any round of the acid zombie's integration (m9)
   - you change mobgen's material, budget or carve contracts while the acid zombie lands
   - you add a non-humanoid mob that Deadvox must hit, sever, pose or light
-  - you decide the far level of detail for per-bone meshes
+  - you build the cross-mob far level of detail for per-bone meshes
 ---
 
 # Acid zombie integration plan
@@ -54,9 +54,10 @@ an acid module:
   bones.
 - **Group budgets with fractions and bone patterns** (`src/core/rules.ts`). The acid body's
   identity floors (head, sac, drool) are shares of the whole, not fixed voxel counts.
-- **Carve correctness** in `src/core/voxelize.ts`: carve noise gates now apply, a carve scoped
-  with `onto` protects flesh it does not target, and a feature with an undeclared material
-  is rejected instead of falling back to skin.
+- **Carve correctness** in `src/core/voxelize.ts`: a carve's noise gate applies as a paint's
+  already does (`markCarved` ignores it), a carve scoped with `onto` protects flesh it does
+  not target, and a feature with an undeclared material is rejected instead of falling back
+  to skin. The acid body's ragged carves need the noise gate.
 
 ### Landing it without weakening other mobs' validation
 
@@ -64,7 +65,8 @@ The port changes contracts, not rules. No existing budget, limit or rule set is 
 make room. Each existing plan (humanoid, crawler, dog, amalgam) gets `budgets` and
 `limbBones` hooks that reproduce its old scaling exactly, including the coarse cell margin.
 The proof is that every existing mobgen test, validation run and Deadvox load passes with
-no budget or fixture edits. A budget edit in that round signals a lost behaviour and is a FIX.
+no budget or fixture edits. A budget edit in that round signals a lost behaviour and is a
+defect.
 
 The material change has the widest reach because every palette consumer moves: the
 humanoid, dog and amalgam builders, the mobgen viewer and CLI, Deadvox's amalgam flesh
@@ -77,11 +79,6 @@ compatibility" rules out the shim anyway.
 These are the only intended visible changes, and the round's PR must name which mobs each
 one touched:
 
-- **Carve noise now gates.** Existing carves that declare `noise` were cut solid until now:
-  the humanoid's shirt, trouser and hair tears, a dog carve and the amalgam's scaled member
-  carves. Tears become ragged as their authors intended, so shambler, runner, crawler, brute,
-  dog and amalgam voxels change. This is a bug fix, so it gets a test that fails before the
-  fix.
 - **Scoped carves protect untargeted flesh.** A carve with `onto` that used to bite through
   neighbouring bones' flesh stops doing so.
 - **Silhouette realization** builds the body at the genome's size and voxelizes the
@@ -90,6 +87,10 @@ one touched:
   existing plans and record why in `PROJECT.md` instead of loosening `SILHOUETTE_RULES`.
 - **No skin fallback.** A builder that relied on an undeclared material now throws. That
   surfaces a latent content bug rather than changing any output silently.
+
+The carve noise gate is not among them: no existing carve declares noise (the tears, hair
+and bruises that do are paints), so it changes no shipped mob. Its test is a fixture carve
+with noise that is cut solid before the fix.
 
 Saves store model and seed, not voxels, so changed voxels re-realize on load. Deadvox
 fingerprints that hash generated bodies move, and moving them is the expected
@@ -129,7 +130,8 @@ known by construction:
 - **Identity floors** are asserted as properties over a small covering array of genomes:
   the head, sac and drool budgets hold, and validation reports no issues.
 - **Measured cost ranges and the IoU spread** are distributions, so they go behind
-  `GUNGEN_SWEEPS`-style sweep gating in `test/sweeps.ts`, not the default run.
+  mobgen's sweep flag (`test/sweeps.ts`, `runSweeps`, which the `test:sweeps` script in
+  `mobgen/package.json` sets), not the default run.
 - **Material round-trip, carve inset, noise gating, scoped carves and undeclared-material
   rejection** come from the study's core tests and land with the core round, because they
   protect core contracts every mob uses.
@@ -181,11 +183,19 @@ humanoid lookup would find nothing.
 
 ### Far level of detail is its own later item
 
-The per-bone far meshes from the study exceed the 400-triangle far cap. The cap is a
-cross-mob draw-cost rule (`PROJECT.md`, "Design boundaries"), so the fix belongs to all
-mobs, not the acid zombie. It is a separate item the lead mints after the Deadvox round.
-Until then the acid zombie draws its near mesh at distance. That is acceptable only
-because labs hold few of them (`deadvox/docs/acid-zombie.md`, "Spawning").
+The per-bone far meshes from the study exceed the far triangle cap (`src/core/generate.ts`,
+`FAR_LOD_HALF_BLOCK_TRIANGLE_CAP`). The cap is a cross-mob draw-cost rule (`PROJECT.md`,
+"Design boundaries"), so the fix belongs to all mobs, not the acid zombie, and it is a
+separate item the lead mints after the Deadvox round.
+
+Far meshes stay per-bone for every mob, each bone getting a cheaper far mesh that fits the
+cap. That is the direction that keeps working as new mobs are added: the crowd renderer
+draws per bone and sizes itself from the bone count, so any skeleton uses the one render
+path and severing still shows at distance. A per-mob far budget in content is a possible
+later refinement within that direction, not a decision here.
+
+Until that item lands the acid zombie draws its near mesh at distance. That is acceptable
+only because labs hold few of them (`deadvox/docs/acid-zombie.md`, "Spawning").
 
 ## Rounds
 
@@ -243,4 +253,3 @@ Only these remain open, and nothing above decides them:
 2. **Effects timing.** When the drips and the death splash come, which decides whether
    round 5 runs now.
 3. **Severed parts.** What a severed acid part leaves behind.
-4. **Far level of detail.** How per-bone far meshes meet the triangle cap for every mob.
