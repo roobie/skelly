@@ -31,7 +31,7 @@ Long actions are saved data, not closures. Each retains its own stop/cancel/wake
 
 ## Appliances and stations
 
-Appliance behavior comes from components, not ids: containers own pockets, controls issue commands, workstations provide qualities, processes run without the player, and power joins the electricity graph. A process catches up when its chunk loads. Settle state at every rate change before applying the new rate; test catch-up against ordinary ticking, including a mid-run rate change. Appliance controls, processes and power are Slice 5 work.
+Appliance behavior comes from components, not ids: containers own pockets, controls issue commands, workstations provide qualities, processes run without the player, and power joins the electricity graph. A process catches up when its chunk loads. Settle state at every rate change before applying the new rate; inside the block around the player, test catch-up against ordinary ticking, including a mid-run rate change; beyond it, test that the coarse result is deterministic (`docs/decisions/0008-deterministic-world.md`, "Decision"). Appliance controls, processes and power are Slice 5 work.
 
 Cooking uses a lit station for recipes that require heat. Losing it stops the player craft; an appliance-owned process does not occupy hands or require compression.
 
