@@ -49,7 +49,7 @@ export class Unpacking {
     if (!payload) {
       return 'Package no longer has unpacking data';
     }
-    const shell = this.inventory.create(payload.item, payload.count, 1, box.origin);
+    const shell = this.inventory.create(payload.item, payload.count, 1);
     // Admission guarantees one stack. Reserve enough ordinary spill capacity for the entire
     // payload before consuming the package; filling pockets can only reduce that spill.
     const spill = dropSpots(this.feet())
@@ -76,7 +76,7 @@ export class Unpacking {
     const { count } = shell;
     shell.count = 1;
     for (let i = 0; i < count; i++) {
-      const next = i === 0 ? shell : this.inventory.create(shell.type, 1, 1, shell.origin);
+      const next = i === 0 ? shell : this.inventory.create(shell.type, 1, 1);
       const target = this.pocketFor(next) ?? spill!;
       if (!this.inventory.add(next, target)) {
         throw new Error('Reserved unpack spill capacity changed during synchronous commit');

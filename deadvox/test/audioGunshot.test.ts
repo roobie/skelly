@@ -345,13 +345,13 @@ describe('game audio playback', () => {
     const listenerAtStart = playerOrigin.map((value) => value * scale.blockSize) as Vec3;
     audio.updateListener(listenerAtStart, [0, 0, -1]);
     session.playPlayerSound('player_strain');
-    const ar = { uid: 1, type: 'rifle_assault', count: 1, condition: 1, origin: { kind: 'fixture' } as const };
+    const ar = { uid: 1, type: 'rifle_assault', count: 1, condition: 1 };
     const shot = firearmShotEmission(baseRegistry, ar, session.firearms.noiseFactorFor(ar));
     session.playPlayerSound(shot.event, session.sim.time, shot);
     const suppressedAr = {
       ...ar,
       slots: {
-        muzzle: { uid: 2, type: 'real_suppressor', count: 1, condition: 1, origin: { kind: 'fixture' } as const },
+        muzzle: { uid: 2, type: 'real_suppressor', count: 1, condition: 1 },
       },
     };
     const suppressedShot = firearmShotEmission(

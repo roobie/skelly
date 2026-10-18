@@ -18,7 +18,7 @@ import { baseRegistry } from './baseRegistry.ts';
 const base = baseRegistry();
 const { throwArcHeightMetres: arcHeightMetres } = reachTuning(base);
 
-const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1, origin: { kind: 'fixture' } });
+const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1 });
 const testRegistry = (weights: Record<string, number>): Registry =>
   ({
     items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight }])),

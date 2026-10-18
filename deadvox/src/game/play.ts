@@ -1320,7 +1320,7 @@ export const startPlay = (
   const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
 
   const spawnItem = (type: string): string => {
-    const item = inventory.createFixture(type);
+    const item = inventory.create(type);
     return inventory.add(item, { kind: 'pile', pos: feet() })
       ? `${inventory.name(item)} is at your feet`
       : `No room for the ${inventory.name(item).toLowerCase()} in the pile at your feet`;

@@ -5,7 +5,6 @@
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
-import { copyOrigin, type ItemOrigin, sameOrigin } from './itemOrigin.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -30,7 +29,6 @@ type CraftWork<Node> =
 
 /** Scalar and pocket fields are shared by live items and their saved tree. */
 export interface ItemFields<Node> {
-  readonly origin: ItemOrigin;
   count: number;
   /** Units in this stack already included in the death-screen loot tally. */
   lootedCount?: number;
@@ -93,7 +91,6 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
   freezeSnapshot({
     uid: item.uid,
     type: item.type,
-    origin: copyOrigin(item.origin),
     count: item.count,
     ...(item.lootedCount === undefined ? {} : { lootedCount: item.lootedCount }),
     condition: item.condition,
@@ -220,7 +217,6 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   return {
     uid: state.uid,
     type: state.type,
-    origin: copyOrigin(state.origin),
     count: state.count,
     ...(state.lootedCount === undefined ? {} : { lootedCount: state.lootedCount }),
     condition: state.condition,
@@ -292,7 +288,7 @@ const addDefaultAttachments = (
     }
     item.slots = {
       ...(item.slots ?? {}),
-      [attachment.mountedAt]: factory.create(registry, attachmentType.id, 1, { origin: item.origin }),
+      [attachment.mountedAt]: factory.create(registry, attachmentType.id, 1),
     };
   }
 };
@@ -307,7 +303,7 @@ const initializeFittedSlots = (factory: ItemFactory, registry: Registry, item: I
   if (def.light?.power) {
     item.slots = {
       ...(item.slots ?? {}),
-      battery: factory.create(registry, def.light.power.battery, 1, { origin: item.origin }),
+      battery: factory.create(registry, def.light.power.battery, 1),
     };
   }
   addDefaultAttachments(factory, registry, item, def.model);
@@ -326,14 +322,9 @@ export class ItemFactory {
     return this.nextUid;
   }
 
-  create(
-    registry: Registry,
-    type: string,
-    count = 1,
-    { condition = 1, origin = { kind: 'created' } }: { condition?: number; origin?: ItemOrigin } = {},
-  ): Item {
+  create(registry: Registry, type: string, count = 1, { condition = 1 }: { condition?: number } = {}): Item {
     const def = defOf(registry, type);
-    const item: Item = { uid: this.nextUid, type, count, condition, origin: copyOrigin(origin) };
+    const item: Item = { uid: this.nextUid, type, count, condition };
     this.nextUid += 1;
     if (def.container) {
       item.pockets = def.container.pockets.map(() => []);
@@ -368,7 +359,7 @@ export class ItemFactory {
       throw new Error(`can't split ${count} off a stack of ${item.count}`);
     }
     item.count -= count;
-    const part: Item = { uid: this.nextUid, type: item.type, count, condition: item.condition, origin: item.origin };
+    const part: Item = { uid: this.nextUid, type: item.type, count, condition: item.condition };
     const splitLootedCount = Math.min(item.lootedCount ?? 0, count);
     if (splitLootedCount > 0) {
       part.lootedCount = splitLootedCount;
@@ -502,7 +493,6 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item): number =>
   const same =
     onto !== item &&
     onto.type === item.type &&
-    sameOrigin(onto.origin, item.origin) &&
     onto.condition === item.condition &&
     onto.charges === item.charges &&
     onto.madeAtGameTimestamp === item.madeAtGameTimestamp &&
