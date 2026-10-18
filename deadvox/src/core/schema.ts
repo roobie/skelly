@@ -266,6 +266,24 @@ const UiTuningSchema = strictObject({
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
   doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
+  /** Why a piece of furniture can't be lifted or put down, and what the player says on dropping it worn out. */
+  furnitureMoveMessages: strictObject({
+    tooBig: Name,
+    fastened: Name,
+    handsFull: Name,
+    tired: Name,
+    standingOn: Name,
+    fallsOnPlayer: Name,
+    fallsOnOther: Name,
+    nowhereToLand: Name,
+    noRoom: Name,
+    playerInWay: Name,
+    otherInWay: Name,
+    coversHatch: Name,
+    blocksLadder: Name,
+    outOfReach: Name,
+    wornOut: Name,
+  }),
   /** What the item action list calls an action whose wording does not depend on the item or wound. */
   itemActionLabels: strictObject({ stripRound: Name }),
   /** What the inventory screen calls each wear slot. */

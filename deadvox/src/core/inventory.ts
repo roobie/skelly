@@ -13,6 +13,7 @@ import {
   skillSaturation,
 } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
@@ -491,6 +492,23 @@ export class Inventory {
 
   pileAt(pos: Vec3): Pile | undefined {
     return this.piles.get(pileKey(pos));
+  }
+
+  /** Moves piled items to other piles at the given spots, as when the furniture under them is moved. */
+  shiftPiles(moves: readonly { placed: Placed; to: Vec3; at: Spot }[]): void {
+    for (const { placed } of moves) {
+      const pile = [...this.piles.values()].find((candidate) => candidate.items.includes(placed));
+      if (!pile) {
+        throw new Error(`Item ${placed.item.uid} is not piled`);
+      }
+      this.remove({ kind: 'pile', pile, placed });
+    }
+    for (const { placed, to, at } of moves) {
+      this.put(placed.item, { kind: 'pile', pos: to }, at);
+    }
+    if (moves.length > 0) {
+      this.version += 1;
+    }
   }
 
   /** The grid of a pocket, from the owner's type. */
@@ -1091,6 +1109,9 @@ export class Inventory {
   }
 
   private handMoveRefusal(item: Item, from: Location, target: Target): string | undefined {
+    if (target.kind === 'hand' && this.entities.carrying()) {
+      return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
+    }
     return this.handRefusal(
       item,
       from.kind === 'hand' ? from.side : undefined,
