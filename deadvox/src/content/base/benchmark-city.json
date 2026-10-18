@@ -1,0 +1,73 @@
+{
+  "cityBenchmarks": [
+    {
+      "blend": 24,
+      "blockX": 104,
+      "blockZ": 64,
+      "gap": 2,
+      "id": "stress_city",
+      "pad": 2,
+      "pool": "benchmark_city",
+      "reachMetres": 200,
+      "rows": 2,
+      "settlementKind": "city",
+      "street": 12
+    }
+  ],
+  "mapPools": [
+    {
+      "choices": [
+        {
+          "ref": {
+            "id": "small_house",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "bungalow",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "corner_store",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "hardware_store",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "gas_station",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "shed",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "garage",
+            "kind": "template"
+          },
+          "weight": 1
+        }
+      ],
+      "id": "benchmark_city"
+    }
+  ]
+}

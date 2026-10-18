@@ -394,7 +394,7 @@ describe('content-owned city building types', () => {
     expect(limitIssues(1_000_000)).toEqual([]);
   });
 
-  it('reports a pool ref that names no building of its kind, or one that does not fit', () => {
+  it('reports a pool ref that names no building of its kind', () => {
     const scenario = fixtureScenario();
     const refAt = (kind: 'template' | 'assembly', id: string) => {
       const pool = fixturePool([{ ref: { kind, id }, weight: 1 }]);
@@ -404,9 +404,6 @@ describe('content-owned city building types', () => {
     expect(refAt('template', 'no_such_building')).toHaveLength(1);
     expect(refAt('assembly', 'fixture_house')).toHaveLength(1);
     expect(refAt('template', 'fixture_house')).toEqual([]);
-    expect(refAt('template', 'fixture_service')).toEqual([]);
-    scenario.city.blockX = 13;
-    expect(refAt('template', 'fixture_service')).toHaveLength(1);
   });
 
   it('lets one pool entry from a mod override a single building weight', () => {

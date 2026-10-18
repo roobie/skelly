@@ -61,7 +61,6 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
             },
             hamlet: { hedge: 'fixture_leaves', northSide: ['fixture_shell'], southSide: ['fixture_shell'] },
             placement: baseSite.placement,
-            stressCity: baseSite.stressCity,
           },
         ],
         templates: [

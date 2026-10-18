@@ -13,6 +13,10 @@
       "output": "deadvox/src/content/base/assets/manifest.json"
     },
     {
+      "source": "deadvox/src/content/base/benchmark-city.jsonnet",
+      "output": "deadvox/src/content/base/benchmark-city.json"
+    },
+    {
       "source": "deadvox/src/content/base/blocks.jsonnet",
       "output": "deadvox/src/content/base/blocks.json"
     },

@@ -43,6 +43,7 @@ local ladder = lab.entry.ladder;
       groupSize: 7, hordes: 1, roadsideOffset: 3, extraStragglers: 2,
     },
     city: {
+      settlementKind: 'city',
       blocksX: 1, blocksZ: 1,
       street: 12,
       blockX: std.max(service.size[0], service.size[2]) + 24,

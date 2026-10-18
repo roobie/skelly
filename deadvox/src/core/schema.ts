@@ -1330,9 +1330,14 @@ export const DecalSchema = strictObject({
 });
 export type DecalDef = InferOutput<typeof DecalSchema>;
 
+const BuildingEligibilitySchema = strictObject({
+  settlementKinds: pipe(array(Id), nonEmpty()),
+});
+
 const TemplateSchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
+  eligibility: optional(BuildingEligibilitySchema),
   /** The most storeys the stress-test city stacks this template to; absent means no limit. */
   maxStoreys: optional(pipe(Count, minValue(1), maxValue(8))),
   /** Blocks: [x, y, z]. */
@@ -1405,6 +1410,7 @@ const KitJoinSchema = strictObject({
 const MapAssemblySchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
+  eligibility: optional(BuildingEligibilitySchema),
   size: KitSize,
   slots: array(KitSlotSchema),
   joins: array(KitJoinSchema),
@@ -1644,6 +1650,13 @@ const CityBlockGeometry = {
     check((value) => value % 2 === 0, 'needs paired rows'),
   ),
 };
+const CityBenchmarkSchema = strictObject({
+  id: Id,
+  settlementKind: Id,
+  pool: Id,
+  ...CityBlockGeometry,
+  reachMetres: PositiveMetres,
+});
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -1702,6 +1715,7 @@ const ScenarioSchema = strictObject({
     extraStragglers: pipe(Count, maxValue(16)),
   }),
   city: strictObject({
+    settlementKind: Id,
     blocksX: pipe(Count, minValue(1), maxValue(4)),
     blocksZ: pipe(Count, minValue(1), maxValue(4)),
     ...CityBlockGeometry,
@@ -2147,12 +2161,6 @@ const SiteGenerationSchema = strictObject({
       'reach must be a whole number of grid steps',
     ),
   ),
-  // The street grid the stress-test city builds: it has no scenario, so its block geometry lives here.
-  stressCity: strictObject({
-    ...CityBlockGeometry,
-    // Metres from the world origin the city must cover in each direction; the reader converts to blocks.
-    reachMetres: PositiveMetres,
-  }),
 });
 
 const BlockCount = pipe(number(), integer('must be a whole number'), minValue(1, 'must be at least 1'));
@@ -2590,6 +2598,7 @@ const SECTION_DESCRIPTOR = {
   compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
   scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
+  cityBenchmarks: { schema: optional(array(CityBenchmarkSchema)), label: 'city benchmarks', order: 30 },
   graphics: { schema: optional(array(GraphicsTuningSchema)), label: 'graphics tuning', order: 22 },
   mapStyles: { schema: optional(array(MapStyleSchema)), label: 'map styles', order: 23 },
   mapPieces: { schema: optional(array(MapPieceSchema)), label: 'map pieces', order: 24 },
@@ -2617,6 +2626,7 @@ export type MapPieceDef = InferOutput<typeof MapPieceSchema>;
 export type MapAssemblyDef = InferOutput<typeof MapAssemblySchema>;
 export type MapSiteDef = InferOutput<typeof MapSiteSchema>;
 export type MapPoolDef = InferOutput<typeof MapPoolSchema>;
+export type CityBenchmarkDef = InferOutput<typeof CityBenchmarkSchema>;
 export type KitPort = InferOutput<typeof KitPortSchema>;
 export type KitAnchor = InferOutput<typeof KitAnchorSchema>;
 export type KitRef = InferOutput<typeof KitRefSchema>;

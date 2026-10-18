@@ -24,6 +24,7 @@ export const fixtureScenario = (): ScenarioDef => ({
     extraStragglers: 0,
   },
   city: {
+    settlementKind: 'fixture_city',
     blocksX: 1,
     blocksZ: 1,
     street: 4,
@@ -144,7 +145,6 @@ export const fixtureScenarioSources = (
             },
             hamlet: { hedge: 'fixture_solid', northSide: ['fixture_house'], southSide: ['fixture_house'] },
             placement: baseSite.placement,
-            stressCity: baseSite.stressCity,
           },
         ],
         furniture: [
@@ -189,6 +189,7 @@ export const fixtureScenarioSources = (
           fixtureStartTemplate(),
           {
             id: 'fixture_small_house',
+            eligibility: { settlementKinds: ['fixture_city'] },
             lootContext: fixtureLootContext(),
             size: [3, 3, 4],
             palette: { '=': 'fixture_solid' },
@@ -196,6 +197,7 @@ export const fixtureScenarioSources = (
           },
           {
             id: 'fixture_house',
+            eligibility: { settlementKinds: ['fixture_city'] },
             lootContext: fixtureLootContext(),
             size: [4, 3, 4],
             palette: { '=': 'fixture_solid', C: { furniture: 'fixture_crate' } },

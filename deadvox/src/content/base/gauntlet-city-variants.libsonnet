@@ -19,6 +19,7 @@ local buildings = kit.mapAssemblies + [cellar + {
 local roof = decor.roofs[0].assembly;
 local ground = function(building) std.filter(function(storey) storey.id == building.access.ground, building.access.storeys)[0].floor;
 local dressed = function(building) building + {
+  eligibility: { settlementKinds: ['city'] },
   size: [building.size[0], building.size[1] + 4, building.size[2]],
   slots: [
     if part.id == 'roof' then part + {

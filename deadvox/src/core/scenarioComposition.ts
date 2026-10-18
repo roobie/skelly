@@ -3,6 +3,7 @@ import type { Vec3 } from './coords.ts';
 import { type PlacementLootSource, placementLootIssues } from './placementLoot.ts';
 import { composeStart, type ScenarioStart } from './scenarioStart.ts';
 import type { ScenarioDef } from './schema.ts';
+import { admittedChoices, cityRowDepth } from './settlementPools.ts';
 import {
   type CompiledTemplate,
   compileTemplate,
@@ -145,14 +146,32 @@ export const scenarioCompositionIssues = (
   return issues;
 };
 
+const scenarioBuildingSources = (registry: Registry, scenario: ScenarioDef): string[] => {
+  const { city } = scenario;
+  if (!registry.mapPools.has(city.pool) || (city.ring && !registry.mapPools.has(city.ring.pool))) {
+    return [];
+  }
+  const choices = admittedChoices(registry, city.pool, city.settlementKind, {
+    along: city.blockX - 2 * city.pad,
+    depth: cityRowDepth(city),
+  });
+  if (city.ring) {
+    choices.push(
+      ...admittedChoices(registry, city.ring.pool, city.settlementKind, {
+        along: Math.min(city.blockX, city.blockZ) - 2 * city.pad,
+        depth: cityRowDepth(city),
+      }),
+    );
+  }
+  return choices.filter(({ weight, atMost }) => weight > 0 && atMost !== 0).map(({ ref }) => ref.id);
+};
+
 export const scenarioSources = (registry: Registry) => {
   const scenarios = [...registry.scenarios.values()];
   return {
     templates: scenarios.flatMap((scenario) => [
       scenario.serviceTemplate,
-      ...(registry.mapPools.get(scenario.city.pool)?.choices ?? [])
-        .filter(({ weight }) => weight > 0)
-        .map(({ ref }) => ref.id),
+      ...scenarioBuildingSources(registry, scenario),
       ...(scenario.composition
         ? [
             scenario.composition.start.template,
