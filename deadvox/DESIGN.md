@@ -378,7 +378,9 @@ movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`
 The start tower guarantees a melee weapon and revolver ammunition instead of
 rolling for them, because the player who spawns on the roof can meet a fight
 before reaching the city and a roll that came up empty would leave them
-unarmed. See `src/content/base/gauntlet-start-rooms.libsonnet`, `loot`.
+unarmed. It guarantees a backpack the same way, so the player can carry what
+the tower and the first streets offer before the descent instead of leaving it
+behind. See `src/content/base/gauntlet-start-rooms.libsonnet`, `loot`.
 
 Marker-only population omits the ordinary settlement's wanderers and horde, making
 empty marker sets silently remove street pressure. A scenario therefore scales the
