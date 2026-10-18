@@ -12,10 +12,22 @@ export interface Bone {
   readonly parent: string | null;
   readonly head: Vec3;
   readonly tail: Vec3;
+  readonly frame?: { readonly x: Vec3; readonly y: Vec3; readonly z: Vec3 };
+  readonly limits?: {
+    readonly flex: readonly [number, number];
+    readonly abduct: readonly [number, number];
+    readonly twist: readonly [number, number];
+  };
+  readonly disposition?: 'fixed' | 'sever' | 'burst';
+  /** Explicit material for forced marrow when a build omits this bone's flesh. */
+  readonly marrowMaterial?: Material;
 }
 
-export const MATERIALS = ['skin', 'bruise', 'shirt', 'pants', 'shoe', 'hair', 'eye', 'mouth', 'gore', 'bone'] as const;
-export type Material = (typeof MATERIALS)[number];
+export type Material = string;
+export interface MaterialDef {
+  readonly color: Vec3;
+  readonly emissive: number;
+}
 
 interface NoiseGate {
   /** noise3 is sampled at world position / scale (metres per noise cell). */
@@ -34,7 +46,7 @@ export interface Feature {
   /** Smooth-min blend radius (m) used to fold this feature into its bone's field. Add features only. Default 0.02. */
   readonly blend?: number;
   readonly noise?: NoiseGate;
-  /** Paint only: apply only where the current material is one of these. Unset = any material. */
+  /** Paint or carve: target these materials. Carves preserve non-target add interiors. */
   readonly onto?: readonly Material[];
 }
 
@@ -45,5 +57,5 @@ export interface Body {
   readonly features: readonly Feature[];
   /** Reserves repaired joint contacts for bodies assembled from overlapping modules. */
   readonly jointAdjacencyPolicy?: 'reserve-overlaps';
-  readonly palette: Readonly<Record<Material, Vec3>>;
+  readonly materials: Readonly<Record<Material, MaterialDef>>;
 }

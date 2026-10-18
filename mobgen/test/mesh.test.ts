@@ -3,6 +3,7 @@ import { meshBones } from '../src/core/mesh.ts';
 import type { Voxels } from '../src/core/voxelize.ts';
 
 const grid = (dims: readonly [number, number, number], owner: readonly number[], color: readonly number[]): Voxels => ({
+  materials: ['fixture'],
   size: 0.1,
   origin: [0, 0, 0],
   dims,

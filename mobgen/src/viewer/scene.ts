@@ -17,12 +17,12 @@ import {
   MeshStandardMaterial,
   SphereGeometry,
 } from 'three';
-import type { Material } from '../core/body.ts';
+import type { Body } from '../core/body.ts';
 import type { Realized } from '../core/generate.ts';
-import { applyPoint, type Transform, type Vec3 } from '../core/math.ts';
+import { applyPoint, type Transform } from '../core/math.ts';
 import type { BoneMesh } from '../core/mesh.ts';
 import { boneTransforms, type Pose } from '../core/pose.ts';
-import { materialOf, shadeOf } from '../core/voxelize.ts';
+import { materialOf, shadeOf, type Voxels } from '../core/voxelize.ts';
 
 /** Exported for stress.ts: same rest-world -> posed-world matrix every applyPose call here uses,
  * needed there too (per-actor bone/mesh matrices, built without going through buildActor's groups). */
@@ -39,11 +39,15 @@ const SHADE_FACTORS = [0.72, 0.88, 1.04, 1.2] as const;
 
 /** Exported for stress.ts: turns a BoneMesh's palette-index colour bytes into per-vertex RGB, same as
  * every flesh mesh here — reused there so a merged (skinned) geometry gets identical vertex colours. */
-export const vertexColors = (colorBytes: Uint8Array, palette: Readonly<Record<Material, Vec3>>): Float32Array => {
+export const vertexColors = (
+  colorBytes: Uint8Array,
+  materials: Body['materials'],
+  voxels: Pick<Voxels, 'materials'>,
+): Float32Array => {
   const out = new Float32Array(colorBytes.length * 3);
   for (let v = 0; v < colorBytes.length; v++) {
     const byte = colorBytes[v]!;
-    const base = palette[materialOf(byte)];
+    const base = materials[materialOf(voxels, byte)]!.color;
     const factor = SHADE_FACTORS[shadeOf(byte)] ?? 1;
     out[v * 3] = clamp01(base[0] * factor);
     out[v * 3 + 1] = clamp01(base[1] * factor);
@@ -54,11 +58,15 @@ export const vertexColors = (colorBytes: Uint8Array, palette: Readonly<Record<Ma
 
 /** Exported for stress.ts: one bone's BoneMesh as a BufferGeometry, in the same rest-world coordinates
  * boneTransforms/matrixOf pose from. */
-export const geometryOf = (mesh: BoneMesh, palette: Readonly<Record<Material, Vec3>>): BufferGeometry => {
+export const geometryOf = (
+  mesh: BoneMesh,
+  materials: Body['materials'],
+  voxels: Pick<Voxels, 'materials'>,
+): BufferGeometry => {
   const geo = new BufferGeometry();
   geo.setAttribute('position', new BufferAttribute(mesh.positions, 3));
   geo.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
-  geo.setAttribute('color', new BufferAttribute(vertexColors(mesh.colors, palette), 3));
+  geo.setAttribute('color', new BufferAttribute(vertexColors(mesh.colors, materials, voxels), 3));
   geo.setIndex(new BufferAttribute(mesh.indices, 1));
   geo.computeBoundingSphere();
   return geo;
@@ -98,7 +106,7 @@ export const buildActor = (realized: Realized, voxelSize: number): Actor => {
   const tintMeshes = new Map<number, Mesh>();
   for (const [boneIndex, boneMesh] of meshes) {
     const bone = body.bones[boneIndex]!;
-    const geometry = geometryOf(boneMesh, body.palette);
+    const geometry = geometryOf(boneMesh, body.materials, realized.voxels);
 
     const fleshMesh = new Mesh(
       geometry,

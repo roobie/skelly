@@ -343,7 +343,7 @@ async function resolveTrackableModule(
   if (PRESENTATION_ASSET_EXTENSIONS.has(extension)) {
     return;
   }
-  if (extension === '.json' && relativePath.startsWith('src/config/')) {
+  if (extension === '.json' && (relativePath.startsWith('src/config/') || relativePath.startsWith('mobgen/'))) {
     return { file, relativePath };
   }
   if (!SOURCE_EXTENSIONS.has(extension)) {
@@ -387,7 +387,7 @@ export async function collectSimulationSourceGraph(
     context.visited.add(module.file);
     const source = (await context.host.readFile(module.file)).replace(LINE_ENDING_PATTERN, '\n');
     context.sources.set(module.relativePath, source);
-    // Trusted startup configuration affects admission but has no module dependencies.
+    // Declarative configuration and generated-body content have no module dependencies.
     if (extname(module.file) === '.json') {
       JSON.parse(source);
       return;

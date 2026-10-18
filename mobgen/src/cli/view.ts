@@ -9,7 +9,6 @@
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import type { Body, Material } from '../core/body.ts';
-import { MATERIALS } from '../core/body.ts';
 import { generate, generateValid, type Realized, realize } from '../core/generate.ts';
 import type { Genome } from '../core/template.ts';
 import { cellIndex, materialOf, type Voxels } from '../core/voxelize.ts';
@@ -306,7 +305,9 @@ const printView = (spec: ViewSpec): void => {
     let depth = '';
     for (const cell of rowCells) {
       if (cell) {
-        material += MATERIAL_LETTER[materialOf(cell.colorByte)] + cellMark(cell.ownerIdx);
+        material +=
+          (MATERIAL_LETTER[materialOf(voxels, cell.colorByte)] ?? materialOf(voxels, cell.colorByte)[0]!) +
+          cellMark(cell.ownerIdx);
         depth += depthDigit(cell) + cellMark(cell.ownerIdx);
       } else {
         material += '. ';
@@ -325,7 +326,7 @@ if (!box) {
 }
 
 console.log(
-  `letters: ${MATERIALS.map((m) => `${MATERIAL_LETTER[m]} ${m}`).join(', ')}` +
+  `letters: ${voxels.materials.map((m) => `${MATERIAL_LETTER[m] ?? m[0]} ${m}`).join(', ')}` +
     (region === 'head' ? " ('~' after a letter/digit = neck, shown for context)" : ''),
 );
 console.log('');

@@ -13,19 +13,23 @@ interface BudgetRange {
   readonly max: number;
 }
 
+interface GroupBudget {
+  readonly bones: readonly string[];
+  readonly min: number;
+  readonly max: number;
+  readonly minFraction?: number;
+  readonly maxFraction?: number;
+}
+
 export interface RuleBudgets {
   readonly totalVoxels?: BudgetRange;
   readonly totalTriangles: BudgetRange;
-  readonly groups?: Readonly<
-    Record<string, { readonly bones: readonly string[]; readonly min: number; readonly max: number }>
-  >;
+  readonly groups?: Readonly<Record<string, GroupBudget>>;
 }
 
 export interface Budgets extends RuleBudgets {
   readonly totalVoxels: BudgetRange;
-  readonly groups: Readonly<
-    Record<string, { readonly bones: readonly string[]; readonly min: number; readonly max: number }>
-  >;
+  readonly groups: Readonly<Record<string, GroupBudget>>;
 }
 
 export type ValidationProfile = 'full' | 'silhouette';
@@ -332,11 +336,17 @@ const budget: Rule = {
     }
     issues.push(...triangleBudgetIssues(meshes, budgets));
     for (const [name, group] of Object.entries(budgets.groups ?? {})) {
-      const count = group.bones.reduce((sum, id) => sum + (perBone.get(id) ?? 0), 0);
-      if (count < group.min || count > group.max) {
+      const count = [...perBone]
+        .filter(([id]) =>
+          group.bones.some((pattern) => (pattern.endsWith('*') ? id.startsWith(pattern.slice(0, -1)) : id === pattern)),
+        )
+        .reduce((sum, [, amount]) => sum + amount, 0);
+      const min = Math.max(group.min, (group.minFraction ?? 0) * total);
+      const max = Math.min(group.max, (group.maxFraction ?? 1) * total);
+      if (count < min || count > max) {
         issues.push({
           rule: 'budget',
-          message: `Group "${name}" has ${count} voxels, outside [${group.min}, ${group.max}].`,
+          message: `Group "${name}" has ${count} voxels, outside [${min}, ${max}].`,
           bones: group.bones,
         });
       }

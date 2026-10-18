@@ -26,9 +26,10 @@ import {
 } from '../core/math.ts';
 import { boneTransforms, type Pose } from '../core/pose.ts';
 import { pick, type Rng, range } from '../core/random.ts';
-import type { Genome, Template, Wound } from '../core/template.ts';
+import { type Genome, type Template, templateByName, type Wound } from '../core/template.ts';
 import { posedVoxelSurfaceBoundsForBones } from '../core/voxelBounds.ts';
-import { hslToRgb } from './humanoid.ts';
+import { heightHeadBudgets } from './budgets.ts';
+import { resolveMaterials } from './materials.ts';
 import { HIT_FLINCH } from './reactions.ts';
 
 const SIDES = ['L', 'R'] as const;
@@ -296,22 +297,6 @@ const buildFlesh = (layout: DogLayout, p: DogParams): Feature[] => {
   return features;
 };
 
-const buildPalette = (p: DogParams): Record<Material, Vec3> => {
-  const skin = hslToRgb(p.skinHue, p.skinSat, p.skinLight);
-  return {
-    skin,
-    bruise: [0.3, 0.24, 0.29],
-    shirt: skin,
-    pants: skin,
-    shoe: [0.12, 0.1, 0.09],
-    hair: [0.1, 0.08, 0.07],
-    eye: [0.05, 0.04, 0.04],
-    mouth: [0.22, 0.05, 0.06],
-    gore: [0.32, 0.09, 0.06],
-    bone: [0.85, 0.82, 0.72],
-  };
-};
-
 const buildFace = (layout: DogLayout, p: DogParams): Feature[] => {
   const h = layout.height;
   const hs = p.headScale;
@@ -437,7 +422,7 @@ const buildDog = (genome: Genome): Body => {
   const layout = dogLayout(p);
   const bones = buildBones(layout);
   const features = [...buildFlesh(layout, p), ...buildFace(layout, p), ...buildWounds(bones, layout, genome.wounds)];
-  return { bones, features, palette: buildPalette(p) };
+  return { bones, features, materials: resolveMaterials(templateByName(genome.template), p) };
 };
 
 const sampleDog: BodyPlanDef['sample'] = (rng: Rng, template: Template) => {
@@ -459,6 +444,10 @@ registerBodyPlan('dog', {
   build: (genome) => buildDog(genome),
   paramOrder: DOG_PARAM_ORDER,
   woundBones: DOG_WOUNDABLE_BONES,
+  budgets: heightHeadBudgets,
+  limbBones: SIDES.flatMap((side) =>
+    ['foreUpper', 'foreLower', 'hindUpper', 'hindLower'].map((segment) => `${segment}.${side}`),
+  ),
 });
 
 // ---- Pose, gait and hit pose ----

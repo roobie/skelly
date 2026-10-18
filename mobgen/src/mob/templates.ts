@@ -5,6 +5,7 @@
 
 import { registerTemplate, type Template } from '../core/template.ts';
 import { FEET_BONES } from './humanoid.ts';
+import { humanoidMaterialHsl, humanoidMaterials } from './materialTemplates.ts';
 
 const SUPPORT_BONES = FEET_BONES;
 /** Shares of nominal mass for severable parts; each key covers the whole subtree it cuts off (forearm.L includes its hand). */
@@ -59,6 +60,8 @@ const shamblerParams: Template['params'] = {
 
 export const shambler: Template = {
   name: 'shambler',
+  materials: humanoidMaterials,
+  materialHsl: humanoidMaterialHsl,
   description: 'Average build, hunched, shuffling walk with an occasional forward reach.',
   bodyPlan: 'humanoid',
   voxelSize: 0.5 / 12,
@@ -76,6 +79,8 @@ export const shambler: Template = {
 
 const runner: Template = {
   name: 'runner',
+  materials: humanoidMaterials,
+  materialHsl: humanoidMaterialHsl,
   description: 'Lean, taller, upright, faster stride.',
   bodyPlan: 'humanoid',
   voxelSize: 0.5 / 12,
@@ -103,6 +108,8 @@ const runner: Template = {
 
 const crawler: Template = {
   name: 'crawler',
+  materials: humanoidMaterials,
+  materialHsl: humanoidMaterialHsl,
   description: 'Prone, low-profile corpse with reaching arms and trailing leg stumps.',
   bodyPlan: 'crawler',
   voxelSize: 0.5 / 12,
@@ -128,6 +135,8 @@ const crawler: Template = {
 
 const brute: Template = {
   name: 'brute',
+  materials: humanoidMaterials,
+  materialHsl: humanoidMaterialHsl,
   description: 'Tall, very broad, heavy, big hands. Coarser voxels (1/10 of a block).',
   bodyPlan: 'humanoid',
   voxelSize: 0.5 / 10,

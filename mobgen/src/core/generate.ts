@@ -53,6 +53,8 @@ export interface BodyPlanDef {
   readonly paramOrder: readonly string[];
   /** Bone ids a wound may sit on. */
   readonly woundBones: readonly string[];
+  readonly budgets: (genome: Genome, template: Template) => Budgets;
+  readonly limbBones: readonly string[];
 }
 
 const BODY_PLANS = new Map<BodyPlan, BodyPlanDef>();
@@ -109,52 +111,8 @@ export const build = (genome: Genome): Body => {
   return planOf(template.bodyPlan).build(genome, template);
 };
 
-const scaledRange = (bounds: { readonly min: number; readonly max: number }, factor: number, upperCellMargin = 0) => ({
-  min: Math.max(1, Math.floor(bounds.min * factor)),
-  max: Math.max(1, Math.ceil(bounds.max * factor) + upperCellMargin),
-});
-
-const parameterCenter = (spec: ParamSpec | undefined, name: string): number => {
-  if (spec === undefined) {
-    throw new Error(`template is missing param "${name}"`);
-  }
-  if (typeof spec === 'number') {
-    return spec;
-  }
-  if ('choices' in spec) {
-    return spec.choices.reduce((sum, value) => sum + value, 0) / spec.choices.length;
-  }
-  return (spec.min + spec.max) / 2;
-};
-
-/** Voxel budgets scale with inverse cell volume (and actor height); the head group also follows its
- * height × headScale dimensions. Triangle budgets scale with inverse cell surface area and height.
- * Floors/ceilings preserve the scaled intervals; coarse voxel-count maxima get one cell for boundary
- * quantization. */
-const budgetsForGenome = (template: Template, genome: Genome, allowCoarseCellMargin = true): Budgets => {
-  const ratio = template.voxelSize / genome.voxelSize;
-  const { height, headScale } = genome.params;
-  if (height === undefined || headScale === undefined) {
-    throw new Error(`genome "${genome.template}" is missing height or headScale`);
-  }
-  const heightRatio = height / parameterCenter(template.params.height, 'height');
-  const headScaleRatio = headScale / parameterCenter(template.params.headScale, 'headScale');
-  const volumeScale = ratio ** 3 * heightRatio ** 3;
-  const headVolumeScale = volumeScale * headScaleRatio ** 3;
-  const surfaceScale = ratio ** 2 * heightRatio ** 2;
-  const cellMargin = allowCoarseCellMargin && ratio < 1 ? 1 : 0;
-  const groups = Object.fromEntries(
-    Object.entries(template.budgets.groups).map(([name, group]) => [
-      name,
-      { ...group, ...scaledRange(group, headVolumeScale, cellMargin) },
-    ]),
-  );
-  return {
-    totalVoxels: scaledRange(template.budgets.totalVoxels, volumeScale, cellMargin),
-    totalTriangles: scaledRange(template.budgets.totalTriangles, surfaceScale),
-    groups,
-  };
-};
+const budgetsForGenome = (template: Template, genome: Genome): Budgets =>
+  planOf(template.bodyPlan).budgets(genome, template);
 
 export const FAR_LOD_HALF_BLOCK_VOXEL_SIZE = 0.5 / 2;
 /** Per-actor far-LOD draw budget. Worst measured: 336 (brute, seed 89, 2026-09-30).
@@ -205,17 +163,16 @@ export interface RealizeOptions {
 export const realize = (genome: Genome, options: RealizeOptions = {}): Realized => {
   const template = templateByName(genome.template);
   const profile = options.profile ?? 'full';
-  // Silhouette LODs re-voxelize the full-detail body: coarse-only build branches (e.g. omitted hand flesh)
-  // would change the outline before sampling and can exceed the one-cell silhouette allowance.
-  const body = build(profile === 'silhouette' ? { ...genome, voxelSize: template.voxelSize } : genome);
+  const body = build(genome);
   const fullVoxels =
     profile === 'silhouette'
-      ? (options.reference?.voxels ?? voxelize(body, template.voxelSize, genome.seed))
+      ? (options.reference?.voxels ??
+        voxelize(build({ ...genome, voxelSize: template.voxelSize }), template.voxelSize, genome.seed))
       : undefined;
   const voxels = voxelize(body, genome.voxelSize, genome.seed);
   const meshes = meshBones(voxels, body.bones.length);
   const supportBones = resolveSupportBones(template, body, voxels);
-  const scaledBudgets = budgetsForGenome(template, genome, profile !== 'silhouette');
+  const scaledBudgets = budgetsForGenome(template, genome);
   // Silhouette LOD is a draw-cost contract: omit voxel/group budgets entirely. The recommended
   // 1/2-block tier has BR's fixed 300-triangle cap; other sizes use the m1-scaled triangle ceiling.
   const budgets: RuleBudgets =
@@ -259,7 +216,6 @@ export interface ValidGeneration {
 
 /** Recommend skeleton-aware rules only while a limb is at least 1.5 cells thick. */
 const FULL_PROFILE_MIN_LIMB_CELLS = 1.5;
-const LIMB_SEGMENT = /^(upperArm|forearm|thigh|shin)\./;
 
 /** Actor-specific recommendation; callers still pass the chosen profile explicitly to realize(). */
 export const recommendedProfileFor = (genome: Genome, voxelSize = genome.voxelSize): ValidationProfile => {
@@ -269,7 +225,7 @@ export const recommendedProfileFor = (genome: Genome, voxelSize = genome.voxelSi
   const template = templateByName(genome.template);
   const body = build({ ...genome, voxelSize: template.voxelSize });
   const diameters = body.features
-    .filter((feature) => feature.op === 'add' && LIMB_SEGMENT.test(feature.bone))
+    .filter((feature) => feature.op === 'add' && planOf(template.bodyPlan).limbBones.includes(feature.bone))
     .map(({ shape }) => {
       switch (shape.kind) {
         case 'capsule':

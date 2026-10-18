@@ -2,6 +2,7 @@
 // generate.ts and into a body by a body-plan builder.
 // Domain-agnostic: the core never hard-codes the humanoid's bones or params.
 
+import type { MaterialDef } from './body.ts';
 import type { Budgets } from './rules.ts';
 
 /** A fixed value, a numeric range, or a set of choices to pick one from uniformly. */
@@ -10,7 +11,7 @@ export type ParamSpec =
   | { readonly min: number; readonly max: number }
   | { readonly choices: readonly number[] };
 
-export type BodyPlan = 'humanoid' | 'crawler' | 'dog' | 'amalgam';
+export type BodyPlan = string;
 type SupportBones = readonly string[] | 'ground-contacts';
 
 /** Consumer readiness. A `'comparison-only'` template is kept to be compared against others and must
@@ -26,6 +27,8 @@ export interface Template {
   readonly bodyMassKg: number;
   /** Optional mass fractions by part id; unspecified parts use voxel-volume share. */
   readonly massFractions?: Readonly<Record<string, number>>;
+  readonly materials: Readonly<Record<string, MaterialDef>>;
+  readonly materialHsl?: Readonly<Record<string, readonly [number | string, number | string, number | string]>>;
   readonly params: Readonly<Record<string, ParamSpec>>;
   readonly budgets: Budgets;
   /** Fixed support-bone ids, or the generated voxels' actual ground contacts. */

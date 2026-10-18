@@ -7,6 +7,7 @@ import { SEVERABLE_PARTS, severedBoneSet } from '../src/mob/dismember.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
 const grid = (dims: [number, number, number], size = 0.05, origin: [number, number, number] = [0, 0, 0]): Voxels => ({
+  materials: ['fixture'],
   size,
   origin,
   dims,

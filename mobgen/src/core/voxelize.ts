@@ -13,7 +13,6 @@
 //      with a per-voxel hash.
 
 import type { Body, Feature, Material } from './body.ts';
-import { MATERIALS } from './body.ts';
 import { length, sub, type Vec3 } from './math.ts';
 import { noise3 } from './random.ts';
 import { type Aabb, aabbOf, evalShape, expand, smin, union } from './sdf.ts';
@@ -34,12 +33,19 @@ export interface Voxels {
   readonly dims: readonly [number, number, number];
   /** Bone index + 1 (index into Body.bones); 0 = empty. */
   readonly owner: Uint8Array;
-  /** Material index (into MATERIALS) * 4 + shade (0-3); meaningful only where owner != 0. */
+  readonly materials: readonly Material[];
+  /** Material index * 4 + shade (0-3); meaningful only where owner != 0. */
   readonly color: Uint8Array;
 }
 
 const SHADES = 4;
-export const materialOf = (colorByte: number): Material => MATERIALS[Math.floor(colorByte / SHADES)]!;
+export const materialOf = (voxels: Pick<Voxels, 'materials'>, colorByte: number): Material => {
+  const material = voxels.materials[Math.floor(colorByte / SHADES)];
+  if (material === undefined) {
+    throw new Error(`invalid material byte ${colorByte}`);
+  }
+  return material;
+};
 export const shadeOf = (colorByte: number): number => colorByte % SHADES;
 
 export const cellIndex = (dims: Voxels['dims'], i: number, j: number, k: number): number =>
@@ -222,23 +228,64 @@ const computeField = (
   finalizeFill(grid, rawOwner);
 };
 
-const markCarved = (grid: Grid, carve: Feature): void => {
+interface CarveContext {
+  readonly body: Body;
+  readonly addByBone: FeaturesByRole['addByBone'];
+  readonly seed: number;
+}
+
+interface ScopedCarveContext extends CarveContext {
+  readonly protectedFields: readonly (readonly Feature[])[];
+}
+
+const carveTargetsCell = (grid: Grid, carve: Feature, ctx: ScopedCarveContext, idx: number): boolean => {
+  const p = worldPosition(grid, ...cellCoords(grid.dims, idx));
+  if (evalShape(carve.shape, p) > 0) {
+    return false;
+  }
+  if (
+    carve.noise &&
+    noise3(p[0] / carve.noise.scale, p[1] / carve.noise.scale, p[2] / carve.noise.scale, ctx.seed) >=
+      carve.noise.threshold
+  ) {
+    return false;
+  }
+  if (!(carve.onto && grid.owner[idx])) {
+    return true;
+  }
+  const bone = ctx.body.bones[grid.owner[idx]! - 1]!;
+  const adds = ctx.addByBone.get(bone.id) ?? [];
+  if (ctx.protectedFields.some((field) => boneFieldAt(field, p) <= fillTolerance(grid.size))) {
+    return false;
+  }
+  // Blended target margins belong to the target too, even outside each primitive.
+  return adds.some((feature) => carve.onto!.includes(feature.material));
+};
+
+const markCarved = (grid: Grid, carve: Feature, ctx: CarveContext): void => {
+  const scoped: ScopedCarveContext = {
+    ...ctx,
+    protectedFields: carve.onto
+      ? [...ctx.addByBone.values()].map((adds) => adds.filter((feature) => !carve.onto!.includes(feature.material)))
+      : [],
+  };
   const { dims, origin, size } = grid;
   const { iMin, iMax, jMin, jMax, kMin, kMax } = indexRange(aabbOf(carve.shape), size, dims, origin);
   for (let k = kMin; k <= kMax; k++) {
     for (let j = jMin; j <= jMax; j++) {
       for (let i = iMin; i <= iMax; i++) {
-        if (evalShape(carve.shape, worldPosition(grid, i, j, k)) <= 0) {
-          grid.carvedMask[cellIndex(dims, i, j, k)] = 1;
+        const idx = cellIndex(dims, i, j, k);
+        if (carveTargetsCell(grid, carve, scoped, idx)) {
+          grid.carvedMask[idx] = 1;
         }
       }
     }
   }
 };
 
-const applyCarves = (grid: Grid, carves: readonly Feature[]): void => {
+const applyCarves = (grid: Grid, carves: readonly Feature[], ctx: CarveContext): void => {
   for (const f of carves) {
-    markCarved(grid, f);
+    markCarved(grid, f, ctx);
   }
   for (let idx = 0; idx < grid.nCells; idx++) {
     if (grid.carvedMask[idx]) {
@@ -502,9 +549,9 @@ const repairJointAdjacencyInPlace = (grid: Grid, body: Body, boneIndexById: Read
   }
 };
 
-const nearestMaterial = (feats: readonly Feature[], p: Vec3): number => {
+const nearestMaterial = (feats: readonly Feature[], p: Vec3): Material => {
   let bestDist = Number.POSITIVE_INFINITY;
-  let bestMat: Material = 'skin';
+  let bestMat: Material | undefined;
   for (const f of feats) {
     const d = Math.abs(evalShape(f.shape, p));
     if (d < bestDist) {
@@ -512,13 +559,17 @@ const nearestMaterial = (feats: readonly Feature[], p: Vec3): number => {
       bestMat = f.material;
     }
   }
-  return MATERIALS.indexOf(bestMat);
+  if (bestMat === undefined) {
+    throw new Error('filled bone has no add material');
+  }
+  return bestMat;
 };
 
 interface MaterialContext {
   readonly addByBone: FeaturesByRole['addByBone'];
   readonly paints: readonly Feature[];
   readonly seed: number;
+  readonly materials: readonly Material[];
 }
 
 /** i, j, k from a flattened cell index — the inverse of cellIndex. */
@@ -529,6 +580,16 @@ const cellCoords = (dims: Voxels['dims'], idx: number): readonly [number, number
   return [i, j, k];
 };
 
+const boneMaterialAt = (bone: Body['bones'][number], adds: readonly Feature[], p: Vec3): Material => {
+  if (adds.length > 0) {
+    return nearestMaterial(adds, p);
+  }
+  if (bone.marrowMaterial === undefined) {
+    throw new Error(`filled bone "${bone.id}" has no add or marrow material`);
+  }
+  return bone.marrowMaterial;
+};
+
 /** A filled voxel's material: the owning bone's nearest add feature (or exposed bone, if marrow was
  * carved), then every paint feature that covers it, in Body.features order. Shade comes from low-
  * frequency noise mixed with a per-voxel hash, so neighbouring voxels tend to agree and faces merge. */
@@ -536,13 +597,14 @@ const paintMaterial = (grid: Grid, body: Body, ctx: MaterialContext, idx: number
   const [i, j, k] = cellCoords(grid.dims, idx);
   const p = worldPosition(grid, i, j, k);
   const bone = body.bones[grid.owner[idx]! - 1]!;
-  const boneMaterialIndex = MATERIALS.indexOf('bone');
-  let matIdx = grid.exposedBone[idx] ? boneMaterialIndex : nearestMaterial(ctx.addByBone.get(bone.id) ?? [], p);
+  const adds = ctx.addByBone.get(bone.id) ?? [];
+  const material = grid.exposedBone[idx] ? 'bone' : boneMaterialAt(bone, adds, p);
+  let matIdx = ctx.materials.indexOf(material);
   for (const paint of ctx.paints) {
     if (evalShape(paint.shape, p) > 0) {
       continue;
     }
-    if (paint.onto && !paint.onto.includes(MATERIALS[matIdx]!)) {
+    if (paint.onto && !paint.onto.includes(ctx.materials[matIdx]!)) {
       continue;
     }
     if (paint.noise) {
@@ -551,7 +613,7 @@ const paintMaterial = (grid: Grid, body: Body, ctx: MaterialContext, idx: number
         continue;
       }
     }
-    matIdx = MATERIALS.indexOf(paint.material);
+    matIdx = ctx.materials.indexOf(paint.material);
   }
   const coarse = noise3(p[0] / 0.12, p[1] / 0.12, p[2] / 0.12, ctx.seed);
   const fine = noise3(i * 3.1, j * 3.1, k * 3.1, ctx.seed ^ 0x9e_37_79_b9);
@@ -569,7 +631,58 @@ const assignMaterials = (grid: Grid, body: Body, ctx: MaterialContext): Uint8Arr
   return color;
 };
 
+const checkMaterials = (body: Body): readonly Material[] => {
+  const materials = Object.keys(body.materials);
+  if (materials.length === 0 || materials.length > 64 || !materials.includes('bone')) {
+    throw new Error('body must declare 1–64 materials including exposed bone');
+  }
+  for (const [name, definition] of Object.entries(body.materials)) {
+    if (
+      definition.color.length !== 3 ||
+      definition.color.some((value) => !Number.isFinite(value) || value < 0 || value > 1) ||
+      !Number.isFinite(definition.emissive) ||
+      definition.emissive < 0
+    ) {
+      throw new Error(`invalid material definition "${name}"`);
+    }
+  }
+  return materials;
+};
+
+const checkSkeleton = (body: Body, materials: readonly Material[]): ReadonlySet<string> => {
+  const boneIds = new Set<string>();
+  for (const bone of body.bones) {
+    if (boneIds.has(bone.id) || (bone.parent !== null && !boneIds.has(bone.parent))) {
+      throw new Error(`invalid bone hierarchy at "${bone.id}"`);
+    }
+    if (bone.marrowMaterial !== undefined && !materials.includes(bone.marrowMaterial)) {
+      throw new Error(`undeclared material "${bone.marrowMaterial}"`);
+    }
+    boneIds.add(bone.id);
+  }
+  if (body.bones.length > 255) {
+    throw new Error('body exceeds 255 bone owners');
+  }
+  return boneIds;
+};
+
+const checkBodyReferences = (body: Body, materials: readonly Material[]): void => {
+  const boneIds = checkSkeleton(body, materials);
+  for (const feature of body.features) {
+    if (!boneIds.has(feature.bone)) {
+      throw new Error(`unknown feature bone "${feature.bone}"`);
+    }
+    for (const material of [feature.material, ...(feature.onto ?? [])]) {
+      if (!materials.includes(material)) {
+        throw new Error(`undeclared material "${material}"`);
+      }
+    }
+  }
+};
+
 export const voxelize = (body: Body, size: number, seed: number): Voxels => {
+  const materials = checkMaterials(body);
+  checkBodyReferences(body, materials);
   const { addByBone, carves, paints } = classifyFeatures(body);
   const boneAabbs = boneAabbsOf(body, addByBone, size);
   const gridAabb = expand(union(boneAabbs.filter((a): a is Aabb => a !== undefined)), size);
@@ -577,14 +690,14 @@ export const voxelize = (body: Body, size: number, seed: number): Voxels => {
   const boneIndexById = new Map(body.bones.map((b, i) => [b.id, i]));
 
   computeField(grid, body, addByBone, boneAabbs);
-  applyCarves(grid, carves);
+  applyCarves(grid, carves, { body, addByBone, seed });
   applyMarrow(grid, body, boneIndexById);
   if (body.jointAdjacencyPolicy === 'reserve-overlaps') {
     repairOverlappingJointAdjacency(grid, body, boneIndexById);
   } else {
     repairJointAdjacencyInPlace(grid, body, boneIndexById);
   }
-  const color = assignMaterials(grid, body, { addByBone, paints, seed });
+  const color = assignMaterials(grid, body, { addByBone, paints, seed, materials });
 
-  return { size: grid.size, origin: grid.origin, dims: grid.dims, owner: grid.owner, color };
+  return { size: grid.size, origin: grid.origin, dims: grid.dims, owner: grid.owner, color, materials };
 };

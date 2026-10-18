@@ -32,6 +32,8 @@ const amalgamParams: Template['params'] = {
 
 export const amalgamTemplate: Template = {
   name: 'amalgam',
+  materials: shambler.materials,
+  ...(shambler.materialHsl ? { materialHsl: shambler.materialHsl } : {}),
   description: 'Procedurally fused shamblers in random orientations around a shared core.',
   bodyPlan: 'amalgam',
   voxelSize: shambler.voxelSize,

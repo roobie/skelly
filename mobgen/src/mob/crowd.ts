@@ -252,13 +252,7 @@ export const CROWD_FRAGMENT_DECLARATIONS = /* glsl */ `
 varying float vCrowdGore;
 `;
 
-// Patched in after <color_fragment> (where three applies the per-vertex colour, vColor, to diffuseColor —
-// checked against the installed three.js version's meshlambert_frag/color_fragment.glsl.js), so the gore
-// tint rides on top of whatever the voxel's own palette colour already contributed. Dark red, matching
-// humanoid.ts's own wound "gore" material colour exactly (buildPalette's fixed [0.32, 0.09, 0.06], not
-// genome-sampled) — a fresh cut reads as the same gore as an authored wound. Mostly (0.85) replaces the
-// surviving bone's own colour right at the cut edge rather than just tinting it, so the seam reads clearly
-// even against a light palette.
+// Apply after vertex colour so a fresh cut remains legible even against light flesh.
 export const CROWD_COLOR_FRAGMENT = /* glsl */ `
 diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.32, 0.09, 0.06 ), vCrowdGore * 0.85 );
 `;
