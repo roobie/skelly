@@ -39,7 +39,11 @@ const spitter: ZombieDef = {
     ],
   },
 };
-const shambler: ZombieDef = { ...base.zombies.get('shambler')!, id: 'fixture_shambler' };
+const shambler: ZombieDef = {
+  ...base.zombies.get('shambler')!,
+  id: 'fixture_shambler',
+  speed: { wanderMetresPerSimSecond: simRate(0), chaseMetresPerSimSecond: simRate(0) },
+};
 const resistant: ZombieDef = { ...shambler, id: 'fixture_resistant', acidResistance: 1 };
 const spreadSpitter: ZombieDef = {
   ...spitter,
@@ -56,7 +60,7 @@ const content = {
 const scale = makeScale(0.5);
 const ORIGIN: Vec3 = [12, 1, 0];
 
-const runtime = (restore?: Readonly<SaveSnapshot>, seed = 71, blocking = false) => {
+const runtime = (restore?: Readonly<SaveSnapshot>, seed = 71, blocking = false, woundFixture = false) => {
   let wall = false;
   let moving = false;
   let yaw = 0;
@@ -64,7 +68,26 @@ const runtime = (restore?: Readonly<SaveSnapshot>, seed = 71, blocking = false) 
   const ground: AcidGroundImpact[] = [];
   const solid = (x: number, y: number) => y === 0 || (wall && x === 6 && y > 0);
   const session = createSession({
-    registry: content,
+    registry: woundFixture
+      ? {
+          ...content,
+          body: new Map(
+            [...content.body].map(([id, body]) => [
+              id,
+              {
+                ...body,
+                bleeding: {
+                  ...body.bleeding,
+                  tiers: body.bleeding.tiers.map((tier) => ({
+                    ...tier,
+                    chancePerDamage: { ...tier.chancePerDamage, acid: 1 },
+                  })),
+                },
+              },
+            ]),
+          ),
+        }
+      : content,
     world: new World(),
     scale,
     seed,
@@ -92,6 +115,7 @@ const runtime = (restore?: Readonly<SaveSnapshot>, seed = 71, blocking = false) 
   });
   session.sim.paused = false;
   const hits = vi.spyOn(session.sim, 'hit');
+  const burns = vi.spyOn(session.sim.body, 'impact');
   const frames = (count: number) => {
     for (let frame = 0; frame < count; frame++) {
       session.frame(1 / 60);
@@ -118,6 +142,7 @@ const runtime = (restore?: Readonly<SaveSnapshot>, seed = 71, blocking = false) 
   return {
     session,
     hits,
+    burns,
     impacts,
     ground,
     frames,
@@ -243,8 +268,8 @@ describe('acid glob', () => {
   });
 });
 
-const missedSpit = () => {
-  const h = runtime();
+const missedSpit = (woundFixture = false) => {
+  const h = runtime(undefined, 71, false, woundFixture);
   h.release();
   h.sidestep();
   h.land();
@@ -255,6 +280,49 @@ const missedSpit = () => {
 };
 
 describe('acid puddle', () => {
+  it('wear, wound and severing outcomes depend on simulated exposure rather than frame size', () => {
+    const expose = (step: number) => {
+      const h = missedSpit(true);
+      h.walkTo(h.session.zombies.acidPuddles[0]!.pos);
+      const trousers = h.session.inventory.create('jeans');
+      expect(h.session.inventory.add(trousers, { kind: 'worn' })).toBe(true);
+      const before = trousers.condition;
+      const zombie = h.session.zombieStore.get(
+        h.session.zombies.add(shambler, [h.session.body.pos[0], h.session.body.pos[1], h.session.body.pos[2]]),
+      )!;
+      const beforeLeg = zombie.regions.leftLeg!;
+      const duration = spitter.acidSpit!.puddle.lifetimeSimSeconds / 4;
+      for (let index = 0; index < Math.round(duration / step); index++) {
+        h.session.frame(step);
+      }
+      const bleeding = ['leftLeg', 'rightLeg'].map(
+        (region) => h.session.sim.body.wounds[region as 'leftLeg' | 'rightLeg']?.bleeding,
+      );
+      expect(trousers.condition).toBeLessThan(before);
+      expect(trousers.condition).toBeGreaterThan(0);
+      expect(bleeding.every((tier) => tier !== undefined)).toBe(true);
+      expect(zombie.regions.leftLeg).toBeLessThan(beforeLeg);
+      expect(zombie.severed).toEqual([]);
+      return {
+        condition: trousers.condition,
+        bleeding,
+        regions: zombie.regions,
+        severed: zombie.severed,
+        exposures: h.session.sim.exposures.snapshotState().exposures,
+      };
+    };
+    const fine = expose(1 / 60);
+    const coarse = expose(1 / 30);
+    expect(coarse.condition).toBeCloseTo(fine.condition, 10);
+    expect(coarse.bleeding).toEqual(fine.bleeding);
+    expect(coarse.severed).toEqual(fine.severed);
+    for (const region of Object.keys(fine.regions)) {
+      expect(coarse.regions[region]).toBeCloseTo(fine.regions[region]!, 10);
+    }
+    expect(fine.exposures.length).toBeGreaterThan(0);
+    expect(coarse.exposures).toEqual(fine.exposures);
+  });
+
   it('a missed glob creates a puddle that expires after its content lifetime', () => {
     const h = missedSpit();
     const puddle = h.session.zombies.acidPuddles[0]!;
@@ -264,25 +332,26 @@ describe('acid puddle', () => {
     expect(h.session.zombies.acidPuddles).toHaveLength(0);
   });
 
-  it('burns both player legs in proportion to exposure time, but not a player outside the disk', () => {
+  it('burns both player legs in proportion to exposure time through continuous contacts', () => {
     const h = missedSpit();
-    expect(h.hits).not.toHaveBeenCalled();
     h.walkTo(h.session.zombies.acidPuddles[0]!.pos);
     const trousers = h.session.inventory.create('jeans');
     expect(h.session.inventory.add(trousers, { kind: 'worn' })).toBe(true);
     const { condition } = trousers;
-    h.hits.mockClear();
+    h.burns.mockClear();
     h.frames(6);
-    const sum = () => h.hits.mock.calls.reduce((total, [damage]) => total + damage, 0);
+    const sum = () => h.burns.mock.calls.reduce((total, [damage]) => total + damage, 0);
     const first = sum();
     expect(first).toBeGreaterThan(0);
-    expect(new Set(h.hits.mock.calls.map((call) => call[2]))).toEqual(new Set(['leftLeg', 'rightLeg']));
+    expect(new Set(h.burns.mock.calls.map((call) => call[1]))).toEqual(new Set(['leftLeg', 'rightLeg']));
+    expect(h.hits).not.toHaveBeenCalled();
     expect(first).toBeCloseTo((spitter.acidSpit!.puddle.damagePerSimSecond * 6) / 60);
-    const left = h.hits.mock.calls
-      .filter((call) => call[2] === 'leftLeg')
+    const left = h.burns.mock.calls
+      .filter((call) => call[1] === 'leftLeg')
       .reduce((total, [damage]) => total + damage, 0);
     expect(left).toBeCloseTo(first / 2);
     expect(trousers.condition).toBeLessThan(condition);
+    expect(h.session.sim.actions.startWait()).toBeDefined();
     h.frames(6);
     expect(sum()).toBeCloseTo(first * 2);
     expect(h.session.sim.body.pain.felt).toBeGreaterThan(0);
@@ -295,7 +364,8 @@ describe('acid puddle', () => {
     const immune = h.session.zombieStore.get(h.session.zombies.add(resistant, [...pos]))!;
     const before = { ...ordinary.regions };
     const immuneBefore = { ...immune.regions };
-    h.frames(6);
+    h.frames(Math.floor(spitter.acidSpit!.puddle.lifetimeSimSeconds * 60));
+    expect(ordinary.severed).toEqual([]);
     expect(ordinary.regions.leftLeg).toBeLessThan(before.leftLeg!);
     expect(ordinary.regions.rightLeg).toBeLessThan(before.rightLeg!);
     expect(immune.regions).toEqual(immuneBefore);
@@ -321,15 +391,22 @@ describe('acid puddle', () => {
     });
     const decoded = await decodeSave(bytes, { version, contentLookup: () => true });
     const restored = runtime(decoded.snapshot);
-    original.hits.mockClear();
+    original.burns.mockClear();
     expect(restored.session.zombies.acidPuddles).toEqual(original.session.zombies.acidPuddles);
     const frames = Math.ceil((spitter.acidSpit!.puddle.lifetimeSimSeconds + 1) * 60);
     original.frames(frames);
     restored.frames(frames);
-    expect(original.hits.mock.calls.length).toBeGreaterThan(0);
-    expect(restored.hits.mock.calls).toEqual(original.hits.mock.calls);
+    expect(original.burns.mock.calls.length).toBeGreaterThan(0);
+    expect(restored.burns.mock.calls).toEqual(original.burns.mock.calls);
     expect(restored.session.sim.body.snapshotState()).toEqual(original.session.sim.body.snapshotState());
     expect(original.session.zombies.acidPuddles).toHaveLength(0);
     expect(restored.session.zombies.acidPuddles).toHaveLength(0);
+    for (const h of [original, restored]) {
+      const tails = h.session.sim.exposures.snapshotState().exposures;
+      expect(tails.length).toBeGreaterThan(0);
+      expect(tails.every((exposure) => exposure.sources.every((source) => source.remaining !== undefined))).toBe(true);
+      h.frames(Math.ceil(h.session.sim.body.tuning.linger.acid!.simSeconds * 60));
+      expect(h.session.sim.exposures.active).toBe(false);
+    }
   });
 });

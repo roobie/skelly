@@ -18,6 +18,7 @@ import { AmalgamShape } from './amalgamShape.ts';
 import type { BodyRegion, DamageKind, MeleeDamageKind } from './body.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import type { ExposureContact } from './damageExposure.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
@@ -495,6 +496,7 @@ const validHordeSnapshotState = (
 
 export interface ZombieSystemState {
   nextEntityId: number;
+  nextPuddleId: number;
   zombies: { id: number; zombie: ZombieState }[];
   hordes: HordeState[];
   acidGlobs: AcidGlobState[];
@@ -577,6 +579,8 @@ export interface ZombieSystemOptions {
   /** A spit left the mouth. No damage is applied here; the owner of the in-flight glob takes it from this. */
   onAcidSpit?: (release: AcidSpitRelease) => void;
   onAcidPlayerHit?: (hit: ZombiePlayerHit) => void;
+  onPlayerExposure?: (contact: ExposureContact) => void;
+  onPlayerLeaveExposure?: (source: string) => void;
   onAcidImpact?: (position: Vec3, type: ZombieDef) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
@@ -1571,6 +1575,7 @@ export class ZombieSystem {
   private readonly options: ZombieSystemOptions;
   private globs: { state: AcidGlobState; type: ZombieDef }[] = [];
   private puddles: { state: AcidPuddleState; type: ZombieDef }[] = [];
+  private nextPuddleId = 0;
 
   get acidPuddles(): readonly Readonly<AcidPuddleState>[] {
     return this.puddles.map(({ state }) => state);
@@ -1731,6 +1736,7 @@ export class ZombieSystem {
   snapshotState(): Readonly<ZombieSystemState> {
     return freezeSnapshot({
       nextEntityId: this.store.nextId,
+      nextPuddleId: this.nextPuddleId,
       zombies: [...this.store.entries()].map(([id, zombie]) => snapshotZombie(id, zombie)),
       hordes: [...this.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
       acidGlobs: this.globs.map(({ state }) => ({ ...state, pos: [...state.pos], velocity: [...state.velocity] })),
@@ -1738,22 +1744,39 @@ export class ZombieSystem {
     });
   }
 
-  restoreState(state: ZombieSystemState, resolveType: (id: string) => ZombieDef | undefined): void {
-    if (this.store.size > 0) {
-      throw new Error('Zombie state restores only into an empty entity store');
+  private restorePuddles(state: ZombieSystemState, resolveType: (id: string) => ZombieDef | undefined) {
+    if (!Number.isSafeInteger(state.nextPuddleId) || state.nextPuddleId < 0) {
+      throw new Error('Invalid acid puddle sequence');
     }
-    const puddles = state.acidPuddles.map((puddle) => {
+    const puddleIds = new Set<number>();
+    return state.acidPuddles.map((puddle) => {
       const type = resolveType(puddle.type);
       if (
-        !(type?.acidSpit && validVec3State(puddle.pos) && Number.isFinite(puddle.remainingSimSeconds)) ||
+        !(
+          type?.acidSpit &&
+          validVec3State(puddle.pos) &&
+          Number.isFinite(puddle.remainingSimSeconds) &&
+          Number.isSafeInteger(puddle.id)
+        ) ||
+        puddle.id < 0 ||
+        puddle.id >= state.nextPuddleId ||
+        puddleIds.has(puddle.id) ||
         puddle.remainingSimSeconds <= 0 ||
         !Number.isFinite(puddle.damagePerSimSecond) ||
         puddle.damagePerSimSecond < 0
       ) {
         throw new Error('Invalid acid puddle state');
       }
+      puddleIds.add(puddle.id);
       return { state: { ...puddle, pos: copy(puddle.pos) }, type: type! };
     });
+  }
+
+  restoreState(state: ZombieSystemState, resolveType: (id: string) => ZombieDef | undefined): void {
+    if (this.store.size > 0) {
+      throw new Error('Zombie state restores only into an empty entity store');
+    }
+    const puddles = this.restorePuddles(state, resolveType);
     const globs = state.acidGlobs.map((glob) => {
       const type = resolveType(glob.type);
       const valid =
@@ -1890,6 +1913,7 @@ export class ZombieSystem {
     this.store.restore(entries, state.nextEntityId);
     this.globs = globs;
     this.puddles = puddles;
+    this.nextPuddleId = state.nextPuddleId;
     this.hordes.clear();
     for (const horde of state.hordes ?? []) {
       if (!validHordeSnapshotState(horde, this.hordes.has(horde.id), resolveType)) {
@@ -3184,19 +3208,27 @@ export class ZombieSystem {
     for (const { state: puddle, type } of this.puddles) {
       const radius = type.acidSpit!.puddle.radiusMetres / this.options.blockSize;
       const damage = puddle.damagePerSimSecond * Math.min(dt, puddle.remainingSimSeconds);
-      if (player.body && feetInAcidPuddle(player.body, puddle, radius) && damage > 0) {
-        for (const region of ['leftLeg', 'rightLeg'] as const) {
-          this.options.onAcidPlayerHit?.({
-            damage: damage / 2,
+      for (const region of ['leftLeg', 'rightLeg'] as const) {
+        const id = `acid-puddle:${puddle.id}:${region}`;
+        if (player.body && feetInAcidPuddle(player.body, puddle, radius) && damage > 0) {
+          this.options.onPlayerExposure?.({
+            id,
+            rate: puddle.damagePerSimSecond / 2,
+            cause: `a ${type.name.toLowerCase()}`,
+            region,
             kind: 'acid',
-            hitRegions: [{ region, weight: 1 }],
-            regionRoll: 0,
-            sourceName: type.name,
           });
+        } else {
+          this.options.onPlayerLeaveExposure?.(id);
         }
       }
       this.burnZombieFeet(puddle, radius, damage);
       puddle.remainingSimSeconds = Math.max(0, puddle.remainingSimSeconds - dt);
+      if (puddle.remainingSimSeconds === 0) {
+        for (const region of ['leftLeg', 'rightLeg'] as const) {
+          this.options.onPlayerLeaveExposure?.(`acid-puddle:${puddle.id}:${region}`);
+        }
+      }
     }
     this.puddles = this.puddles.filter(({ state }) => state.remainingSimSeconds > 0);
   }
@@ -3214,20 +3246,8 @@ export class ZombieSystem {
         if (zombie.regions[region]! <= 0) {
           continue;
         }
-        this.applyMeleeHit({
-          id,
-          zombie,
-          region,
-          cell: undefined,
-          origin: puddle.pos,
-          direction: [0, 1, 0],
-          distanceMetres: 0,
-          weapon: projectileWeapon(burn / legs.length, 0, 0),
-          damageType: 'blunt',
-          damageOverride: burn / legs.length,
-          isFist: false,
-          projectile: true,
-        });
+        const healthAfter = this.damageRegion(zombie, region, burn / legs.length);
+        this.resolveRegionDamage(id, zombie, region, healthAfter);
       }
     }
   }
@@ -3291,12 +3311,14 @@ export class ZombieSystem {
       this.puddles.push({
         type,
         state: {
+          id: this.nextPuddleId,
           type: type.id,
           pos: copy(position),
           remainingSimSeconds: spit.puddle.lifetimeSimSeconds,
           damagePerSimSecond: state.puddleDamagePerSimSecond,
         },
       });
+      this.nextPuddleId += 1;
       this.options.onAcidGroundImpact?.({
         position: copy(position),
         source: state.source,
@@ -3639,8 +3661,7 @@ export class ZombieSystem {
       this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos), zombie);
     }
     this.options.onSound?.(zombie.type.sounds.hurt, copy(zombie.body.pos), zombie);
-    const healthAfter = Math.max(0, healthBefore - damage);
-    zombie.regions[region] = healthAfter;
+    const healthAfter = this.damageRegion(zombie, region, damage);
     if (healthAfter < healthBefore) {
       zombie.hitFlinchTime = 0;
       this.cancelAcidSpit(zombie);
@@ -3713,6 +3734,21 @@ export class ZombieSystem {
       }
       this.rollDismember(id, zombie, killed, hit);
     }
+    const incapacitated = this.resolveRegionDamage(id, zombie, region, healthAfter);
+    if (!killed && zombie.type.model !== 'amalgam' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
+      this.options.onSevered?.(zombie, region as ZombieRegion);
+    }
+    return incapacitated;
+  }
+
+  private damageRegion(zombie: Zombie, region: ZombieHitRegion, damage: number): number {
+    const healthAfter = Math.max(0, zombie.regions[region]! - damage);
+    zombie.regions[region] = healthAfter;
+    return healthAfter;
+  }
+
+  private resolveRegionDamage(id: EntityId, zombie: Zombie, region: ZombieHitRegion, healthAfter: number): boolean {
+    const killed = healthAfter === 0 && lethalRegion(zombie.type, region);
     const incapacitated =
       zombie.type.model !== 'amalgam' && region === 'torso' && healthAfter === 0 && zombie.regions.head! > 0;
     if (incapacitated && !zombie.incapacitated) {
@@ -3727,8 +3763,6 @@ export class ZombieSystem {
     if (killed) {
       this.store.remove(id);
       this.options.onDeath?.(id, zombie);
-    } else if (zombie.type.model !== 'amalgam' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
-      this.options.onSevered?.(zombie, region as ZombieRegion);
     }
     return incapacitated;
   }

@@ -42,7 +42,7 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 ## Puddles
 
-A missed spit still denies space, making ground terrain to read. The burn is continuous, scaled by time spent in the puddle and split equally between both legs; injury and wear resolve every simulation step. The footprint is a flat disk at impact height, burns only feet on that supporting surface, does not spread, and has no special case for water. Acid immunity covers puddles too, so a spitter can stand in its own acid. See `src/core/zombies.ts`, `ZombieSystem.tickAcidPuddles`, and `src/core/acidPuddle.ts`, `feetInAcidPuddle`. Lifetime, size and burn rate belong to content; see `src/core/schema.ts`, `AcidSpitSchema`. Puddles are saved simulation state rather than decals; see `src/core/zombies.ts`, `ZombieSystemState`.
+A missed spit still denies space, making ground terrain to read. Contact is not a series of blows: stepping the same burn more often must not multiply wounds, clothing loss or dismemberment. Player contact uses the shared exposure owner so injury, wear and action refusal stay consistent with other burns; zombie contact bypasses blow presentation and severing. See `src/core/zombies.ts`, `ZombieSystem.tickAcidPuddles`, `ZombieSystem.burnZombieFeet` and `ZombieSystem.resolveRegionDamage`; `src/core/damageExposure.ts`, `DamageExposures`; and `src/core/acidPuddle.ts`, `feetInAcidPuddle`. Content owns the footprint and burn tuning; see `src/core/schema.ts`, `AcidSpitSchema`. The release strength and contact identity survive saves so loading cannot change the threat or restart its threshold draws; see `src/core/zombies.ts`, `ZombieSystemState`.
 
 ## Movement
 

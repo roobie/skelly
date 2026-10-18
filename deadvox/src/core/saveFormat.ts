@@ -117,6 +117,7 @@ interface WirePayload {
     regions: Record<string, Region>;
     zombieSystem: {
       nextEntityId: number;
+      nextPuddleId: number;
       hordes: HordeState[];
       acidGlobs: ZombieSystemState['acidGlobs'];
       acidPuddles: ZombieSystemState['acidPuddles'];
@@ -240,6 +241,7 @@ const acidGlob = obj({
   regionRoll: num({ min: 0, max: 0.999_999_999_999_999_9 }),
 });
 const acidPuddle = obj({
+  id: nonNegativeInt,
   type: str({ id: true }),
   pos: vec3,
   remainingSimSeconds: positive,
@@ -742,6 +744,7 @@ const wirePayloadSchema = obj({
     ),
     zombieSystem: obj({
       nextEntityId: positiveInt,
+      nextPuddleId: nonNegativeInt,
       hordes: arr(horde),
       acidGlobs: arr(acidGlob),
       acidPuddles: arr(acidPuddle),
@@ -1108,6 +1111,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       regions: Object.fromEntries(regions),
       zombieSystem: {
         nextEntityId: snapshot.world.zombies.nextEntityId,
+        nextPuddleId: snapshot.world.zombies.nextPuddleId,
         hordes: [...snapshot.world.zombies.hordes],
         acidGlobs: [...snapshot.world.zombies.acidGlobs],
         acidPuddles: [...snapshot.world.zombies.acidPuddles],
@@ -1601,6 +1605,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         }),
         zombies: obj({
           nextEntityId: positiveInt,
+          nextPuddleId: nonNegativeInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
           hordes: arr(horde),
           acidGlobs: arr(acidGlob),

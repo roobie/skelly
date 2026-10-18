@@ -169,13 +169,12 @@ export class DamageExposures {
       return;
     }
     const exposure = this.exposure(region, kind);
-    const source = exposure.sources.find((entry) => entry.id === id);
-    if (source) {
-      source.rate = rate;
-      source.cause = cause;
-      source.remaining = undefined;
+    const index = exposure.sources.findIndex((entry) => entry.id === id);
+    const source = { id, rate, cause };
+    if (index < 0) {
+      exposure.sources.push(source);
     } else {
-      exposure.sources.push({ id, rate, cause });
+      exposure.sources[index] = source;
     }
   }
 

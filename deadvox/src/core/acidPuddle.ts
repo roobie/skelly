@@ -2,6 +2,7 @@ import type { Vec3 } from './coords.ts';
 import { type Body, CONTACT_SKIN } from './physics.ts';
 
 export interface AcidPuddleState {
+  id: number;
   type: string;
   pos: Vec3;
   remainingSimSeconds: number;
