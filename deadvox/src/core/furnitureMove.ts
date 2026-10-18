@@ -297,7 +297,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): strin
 };
 
 /** The lowest corner a carried piece would stand at when put down at an aimed cell, before it settles. */
-export const placementBase = (entity: BlockEntity, aimed: Readonly<Vec3>): Vec3 => [
+const placementBase = (entity: BlockEntity, aimed: Readonly<Vec3>): Vec3 => [
   aimed[0] - Math.floor(entity.size[0] / 2),
   aimed[1],
   aimed[2] - Math.floor(entity.size[2] / 2),
