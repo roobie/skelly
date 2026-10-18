@@ -5,7 +5,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit, wearOnPlayerHit } from '../src/core/wear.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
-import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const { registry } = buildRegistry(
   readdirSync('src/content/base')
@@ -172,5 +172,51 @@ describe('item wear', () => {
 
     expect(sim.body.health).toBeLessThan(health);
     expect(jeans!.condition).toBeLessThan(1);
+  });
+
+  it('boots put on in the acid lift its refusal, while a wound still refuses', () => {
+    const { inventory } = wearing('jeans');
+    const sim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
+    let strikes = 0;
+    sim.actions.prying = {
+      validate: () => undefined,
+      strike: () => {
+        strikes += 1;
+      },
+      finish: () => undefined,
+    };
+    expect(sim.actions.beginPrying(1, 2, 10, 1)).toBeUndefined();
+    sim.expose(puddle);
+    expect(sim.actions.resume()).toBe(tuning.exposureRefusal);
+
+    expect(inventory.add(inventory.create('test_boots'), { kind: 'worn' })).toBe(true);
+    sim.expose(puddle);
+    expect(sim.exposures.active).toBe(true);
+    expect(sim.actions.resume()).toBeUndefined();
+    const { health } = sim.body;
+    sim.frame(simSeconds(1));
+    expect(strikes).toBeGreaterThan(0);
+    expect(sim.body.health).toBe(health);
+    sim.actions.stop();
+    expect(sim.actions.startWait()).toBeUndefined();
+    sim.actions.stop();
+
+    sim.body.impact(1, 'leftArm', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+    expect(sim.actions.startWait()).toBe(tuning.bleeding.refusal);
+  });
+
+  it('a hand-touched glob wears the gloves for its whole tail, not the sleeve', () => {
+    const {
+      inventory,
+      items: [jacket, gloves],
+    } = wearing('jacket', 'test_gloves');
+    const sim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
+
+    sim.hit(2, 'fixture glob', 'rightArm', { kind: 'acid', touch: 'hand' });
+    const afterHit = gloves!.condition;
+    sim.frame(tuning.linger.acid!.simSeconds);
+
+    expect(gloves!.condition).toBeLessThan(afterHit);
+    expect(jacket!.condition).toBe(1);
   });
 });

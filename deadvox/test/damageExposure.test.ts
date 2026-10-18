@@ -45,7 +45,7 @@ const runContact = (step: number) => {
   return {
     draws,
     beforeTail,
-    refusal: exposures.refusal,
+    refusal: exposures.refusal(),
     accumulated: contact.damage,
     health: body.health,
     bleeding: body.wounds.leftLeg?.bleeding,
@@ -86,7 +86,7 @@ describe('damage exposure', () => {
     expect(damage - first).toBeLessThan(first);
     exposure.advance(duration, apply);
     expect(damage).toBeCloseTo((rate * duration) / 2, 12);
-    expect(exposure.refusal).toBeUndefined();
+    expect(exposure.refusal()).toBeUndefined();
     exposure.advance(duration, apply);
     expect(damage).toBeCloseTo((rate * duration) / 2, 12);
   });
@@ -103,7 +103,7 @@ describe('damage exposure', () => {
     expect(immediate).toBe(damage);
     expect(tail).toBeCloseTo(damage / 2, 12);
     expect(exposure.damage).toBeCloseTo(immediate + tail, 12);
-    expect(exposures.refusal).toBeUndefined();
+    expect(exposures.refusal()).toBeUndefined();
   });
 
   it('re-entry before the tail ends keeps accumulated damage and its threshold', () => {
@@ -149,7 +149,7 @@ describe('damage exposure', () => {
     sim.leaveExposure('pool');
     expect(sim.actions.startWait()).toBeDefined();
     sim.frame(simSeconds(tuning.linger.acid!.simSeconds));
-    expect(sim.exposures.refusal).toBeUndefined();
+    expect(sim.actionRefusal).toBeUndefined();
     expect(sim.actions.startWait()).toBeUndefined();
   });
 

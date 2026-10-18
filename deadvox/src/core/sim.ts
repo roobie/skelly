@@ -270,7 +270,8 @@ export class Simulation {
       return;
     }
     this.takeDamage(cause, () => {
-      const exposure = effects.kind === undefined ? undefined : this.exposures.hit(amount, cause, region, effects.kind);
+      const exposure =
+        effects.kind === undefined ? undefined : this.exposures.hit(amount, cause, region, effects.kind, effects.touch);
       return this.impact(amount, region, effects, exposure);
     });
   }
@@ -308,12 +309,19 @@ export class Simulation {
           false,
         );
       },
-      (exposure, touch) => this.impervious(exposure.region, exposure.kind, touch),
+      this.exposureBlocked,
     );
   }
 
+  private readonly exposureBlocked = (exposure: DamageExposure, touch: Touch | undefined): boolean =>
+    this.impervious(exposure.region, exposure.kind, touch);
+
+  private get exposureRefusal(): string | undefined {
+    return this.exposures.refusal(this.exposureBlocked);
+  }
+
   get actionRefusal(): string | undefined {
-    return this.exposures.refusal ?? this.body.actionRefusal;
+    return this.exposureRefusal ?? this.body.actionRefusal;
   }
 
   private openedBleedingTier(
@@ -430,8 +438,9 @@ export class Simulation {
    * too fast; emitted interruptions still stop it.
    */
   compressLongAction(jobType: keyof CompressionCaps): { ok: true } | { ok: false; reason: string } {
-    if (this.exposures.refusal) {
-      return { ok: false, reason: this.exposures.refusal };
+    const refusal = this.exposureRefusal;
+    if (refusal) {
+      return { ok: false, reason: refusal };
     }
     return this.compression.start(
       this.body.compressionRefusal,
@@ -488,7 +497,7 @@ export class Simulation {
 
   private interruptExposure(): boolean {
     const action = this.actions.job;
-    const reason = this.exposures.refusal;
+    const reason = this.exposureRefusal;
     if (!action || action.stopped || reason === undefined) {
       return false;
     }

@@ -64,8 +64,12 @@ export class DamageExposures {
     return this.state.exposures.length > 0;
   }
 
-  get refusal(): string | undefined {
-    return this.active ? this.tuning.exposureRefusal : undefined;
+  /** Only a source that still harms refuses: worn protection lifts the refusal with the damage. */
+  refusal(blocked: (exposure: DamageExposure, touch: Touch | undefined) => boolean = () => false): string | undefined {
+    const harming = this.state.exposures.some((exposure) =>
+      exposure.sources.some((source) => !blocked(exposure, source.touch)),
+    );
+    return harming ? this.tuning.exposureRefusal : undefined;
   }
 
   get simTimestamp(): number {
@@ -172,14 +176,12 @@ export class DamageExposures {
       return;
     }
     const exposure = this.exposure(region, kind);
-    const source = exposure.sources.find((entry) => entry.id === id);
-    if (source) {
-      source.rate = rate;
-      source.cause = cause;
-      source.remaining = undefined;
-      source.touch = touch;
+    const refreshed: ExposureSource = touch === undefined ? { id, rate, cause } : { id, rate, cause, touch };
+    const index = exposure.sources.findIndex((entry) => entry.id === id);
+    if (index >= 0) {
+      exposure.sources[index] = refreshed;
     } else {
-      exposure.sources.push(touch === undefined ? { id, rate, cause } : { id, rate, cause, touch });
+      exposure.sources.push(refreshed);
     }
   }
 
@@ -195,7 +197,13 @@ export class DamageExposures {
     this.prune();
   }
 
-  hit(amount: number, cause: string, region: BodyRegion, kind: DamageKind): DamageExposure | undefined {
+  hit(
+    amount: number,
+    cause: string,
+    region: BodyRegion,
+    kind: DamageKind,
+    touch?: Touch,
+  ): DamageExposure | undefined {
     if (!Number.isFinite(amount) || amount < 0) {
       throw new Error('Invalid body damage');
     }
@@ -210,6 +218,7 @@ export class DamageExposures {
       cause,
       rate: amount / linger.simSeconds,
       remaining: linger.simSeconds,
+      ...(touch && { touch }),
     });
     return exposure;
   }
@@ -230,7 +239,7 @@ export class DamageExposures {
     for (const exposure of this.state.exposures) {
       for (const source of exposure.sources) {
         const amount = sourceDamage(source, seconds, this.tuning.linger[exposure.kind]?.simSeconds);
-        // A blocked source still runs down its tail, so the refusal ends when it would have.
+        // A blocked source still runs down its tail, so taking the protection off mid-tail harms only for the rest.
         if (amount > 0 && !blocked(exposure, source.touch)) {
           exposure.damage += amount;
           apply(amount, source.cause, exposure, source.touch);
