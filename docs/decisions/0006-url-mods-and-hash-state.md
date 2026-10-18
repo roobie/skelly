@@ -73,18 +73,13 @@ The seed in the start row is optional. A mod pins it when its demo must reproduc
 world; otherwise a new game draws one. A hash `seed` overrides it, so exploring other
 worlds under the same demo stays a hash edit rather than a new mod.
 
-The start row replaces whole, by id, like every other definition, so the existing merge in
-`deadvox/src/core/content.ts`, `buildRegistry`, needs no new rule. Field-by-field merging
-across packs would add a second merge rule to every reader of the registry. A demo mod
-that wants the normal kit plus one item imports the default row in Jsonnet and overrides one
-field, so it follows base edits without a second copy. A JSON mod loaded through the panel
-cannot import, so it states the whole row; that cruder form is enough while browser mods
-are JSON.
+The start row is an ordinary definition, so it merges like every other one. Changing a
+single field of it from another mod follows `docs/decisions/0007-typed-field-patches.md`,
+"Decision".
 
 When browser loading of Jsonnet mods is built (issue #801), it must let a browser mod
-import bundled pack sources, so a player's mod can override a single field of the start row,
-or of any definition, the way a demo mod does at build time. Whole-row replacement stays
-the merge rule; the import is what keeps a patch surgical.
+import bundled pack sources, so a browser mod can build on the same sources a demo mod
+does at build time.
 
 The kit is a list of entries. Each names an item and optionally a count and condition, and
 says where it goes: worn, in the dominant or off hand, in a pocket of another named entry,
@@ -264,10 +259,6 @@ The start section is a new content contract that every future spawn feature must
 through, and kit placement errors surface only at new-game time, not at validation.
 Shared links lose player options by design: a link that needs a graphics setting must
 name a mod.
-
-Until browser Jsonnet mods exist, a player's JSON mod that changes one start-row field
-restates the whole row and does not follow later base edits. Browser Jsonnet loading
-carries the import requirement in "Start state in mods".
 
 The bench loses its private URL format: a bench link names demo mods and a hash like any
 other link, and a bench world is authored as content rather than read from a parameter.
