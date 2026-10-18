@@ -40,17 +40,23 @@ describe('jfxr sound recipes', () => {
       { ...preset, harmonics: 1.5 },
       { ...preset, attack: 0, sustain: 0, decay: 0 },
       { ...preset, _version: 2 },
+      { ...preset, lowPassCutoff: 0 },
     ]) {
       expect(jfxrPresetIssues(bad), JSON.stringify(bad)).not.toEqual([]);
     }
   });
 
   it('renders the preset length at jfxr rate, audible and the same every time', () => {
-    const recipe = { recipe: 'tone', jfxr: preset };
+    // Noise is where jfxr's seeding matters, so the determinism check needs a noise waveform.
+    const recipe = { recipe: 'tone', jfxr: { ...preset, waveform: 'pinknoise' } };
     const first = renderSoundRecipe(recipe);
     expect(first.samples.length).toBe(Math.ceil(first.sampleRate * duration));
     expect(first.samples.some((sample) => Math.abs(sample) > 0.01)).toBe(true);
     expect(renderSoundRecipe(recipe).samples).toEqual(first.samples);
+  });
+
+  it('never hands playback non-finite samples from a silent preset', () => {
+    expect(() => renderSoundRecipe({ recipe: 'silent', jfxr: { ...preset, lowPassCutoff: 0 } })).toThrow(/non-finite/);
   });
 
   it('reports a bad preset as a content issue', () => {

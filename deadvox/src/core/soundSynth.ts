@@ -69,18 +69,45 @@ export const jfxrPresetIssues = (preset: Readonly<Record<string, unknown>>): str
   if (sound.duration() <= 0) {
     issues.push('attack, sustain and decay must add up to more than zero');
   }
+  if (issues.length === 0) {
+    // jfxr's normaliser divides by the loudest sample, so a preset that renders silence (a
+    // low-pass cutoff of 0, say) comes out as NaN; only a render shows which presets do.
+    const problem = renderProblem(preset);
+    if (problem) {
+      issues.push(problem);
+    }
+  }
   return issues;
+};
+
+const renderJfxr = (preset: Readonly<Record<string, unknown>>): Clip | undefined => {
+  let clip: Clip | undefined;
+  // jfxr renders in one go and only defers its done callback; running that callback at once keeps the render synchronous.
+  new Synth(JSON.stringify(preset), (callback) => callback()).run((done) => {
+    clip = done;
+  });
+  return clip;
+};
+
+const renderProblem = (preset: Readonly<Record<string, unknown>>): string | undefined => {
+  const clip = renderJfxr(preset);
+  if (!clip) {
+    return 'jfxr did not finish rendering';
+  }
+  return clip.toFloat32Array().every(Number.isFinite)
+    ? undefined
+    : 'renders non-finite samples, which happens when its filters leave only silence to normalise';
 };
 
 /** Mono samples for a recipe at jfxr's rate; jfxr seeds its noise, so a preset always renders the same. */
 export const renderSoundRecipe = (recipe: SoundRecipe): { samples: Float32Array<ArrayBuffer>; sampleRate: number } => {
-  let clip: Clip | undefined;
-  // jfxr renders in one go and only defers its done callback; running that callback at once keeps the render synchronous.
-  new Synth(JSON.stringify(recipe.jfxr), (callback) => callback()).run((done) => {
-    clip = done;
-  });
+  const clip = renderJfxr(recipe.jfxr);
   if (!clip) {
     throw new Error(`jfxr did not finish rendering recipe ${recipe.recipe}`);
   }
-  return { samples: clip.toFloat32Array(), sampleRate: clip.getSampleRate() };
+  const samples = clip.toFloat32Array();
+  if (!samples.every(Number.isFinite)) {
+    throw new Error(`jfxr rendered non-finite samples for recipe ${recipe.recipe}`);
+  }
+  return { samples, sampleRate: clip.getSampleRate() };
 };

@@ -478,9 +478,14 @@ export class GameAudio {
     }
     let buffer = this.buffers.get(file);
     if (!buffer) {
-      const { samples, sampleRate } = renderSoundRecipe(variant);
-      buffer = context.createBuffer(1, samples.length, sampleRate);
-      buffer.copyToChannel(samples, 0);
+      try {
+        const { samples, sampleRate } = renderSoundRecipe(variant);
+        buffer = context.createBuffer(1, samples.length, sampleRate);
+        buffer.copyToChannel(samples, 0);
+      } catch (error) {
+        this.report(`sound recipe "${file}" did not render: ${String(error)}`);
+        return Promise.resolve(null);
+      }
       this.buffers.set(file, buffer);
     }
     return Promise.resolve(buffer);
