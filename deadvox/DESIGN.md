@@ -931,9 +931,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   Hits resolve against posed body regions after a wind-up; misses and blocked
   swings still spend stamina and cooldown. Saves preserve an active swing so
   Continue cannot skip or repeat its pending contact. Changing held items cancels
-  contact without refunding cooldown. En-garde lets the player attempt a skill-
-  based block without changing movement pace; successful blocks and landed hits
-  train melee combat. Weapon classes have different tradeoffs: blunt weapons are
+  contact without refunding cooldown. En-garde blocks without changing movement
+  pace; blocks and landed hits train melee combat. Weapon classes have different tradeoffs: blunt weapons are
   slower and more consistent, edged weapons sever more readily, and piercing
   weapons are faster with greater damage variance. Class defaults and per-weapon
   overrides in `src/content/base/items-tools.jsonnet` remain provisional tuning
@@ -943,6 +942,27 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   Zero stamina refuses a swing, and saved recovery time survives Continue. See
   `PlayerCombat.resolveContact` in `src/core/playerCombat.ts` and
   `ZombieSystem.applyMeleeHit` in `src/core/zombies.ts`.
+
+  A block always takes part of a melee blow, so holding the guard is a choice
+  whose payoff the player feels on every hit; an all-or-nothing roll would read
+  as luck. A skill roll can still turn it into a full block, so a skilled
+  fighter has a clean parry to hope for. Skill raises the share absorbed and
+  lowers the stamina paid per point, because practice should make defence both
+  stronger and cheaper. Stamina is the price because swings and sprinting spend
+  it too, so a guard cannot be held for free and a long fight wears the player
+  down; a winded guard absorbs nothing, leaving an exhausted player open rather
+  than half-protected. What gets past keeps the blow's region and damage kind,
+  so wounds stay consistent with the strike. Acid spit is never blocked: a
+  weapon cannot parry a spray. Training scales with the damage absorbed, so
+  heavy blows teach more than scrapes and trivial hits cannot farm practice.
+  Until held items are tuned, skill alone decides, so empty hands block like a
+  weapon. A block is loud contact that the dead hear, so fighting draws more of
+  them; full and partial blocks sound different so the player can tell the
+  outcome by ear. The held weapon jolts with the damage absorbed as the visual
+  cue, while the hurt flash still follows only what got through. Content owns
+  every block number. See `src/core/meleeCombat.ts`, `meleeBlock`;
+  `src/game/session.ts`, `blockedDamage`; and `src/content/base/recipes.libsonnet`,
+  `melee_combat`.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammunition and magazines are items; a magazine holds its
   cartridges and fits a rifle's magazine slot (see "Magazines" and "Rifles" below). The
@@ -1018,7 +1038,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   Mean-reverting Brownian drift avoids unbounded sway; smoothing keeps fixed-tick noise from reading as frame-level twitch. The shared walking lune remains separate, firearms skill continues to scale sway, and content owns the noise tuning. Saving the running state lets Continue and replay segments preserve the exact path, avoiding a motion discontinuity. The vertical/horizontal lune ratio remains independently tunable without changing the drift. See `src/core/aim.ts`, `advanceOrnsteinUhlenbeckAxis` and `AimController.snapshotState`, `src/core/saveState.ts`, `snapshotSession`, `src/game/inputReplay.ts`, `encodeInputReplay`, `src/game/config.ts`, `configFromUrl`, and `src/content/base/recipes.json`, `firearms_combat`.
 
   Ready stance gates firearm fire; sprinting prohibits it. Duck-walk speed is
-  owned by firearms combat, and melee combat owns block success. A held, completed
+  owned by firearms combat, and melee combat owns blocking. A held, completed
   ready stance remains active through firearm rack/load handling; raising still
   takes skill-scaled simulation time. Racking, loading, magazine changes, and
   charging train firearms handling, while a magazine change and charge preserve
