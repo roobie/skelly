@@ -25,8 +25,9 @@ These are settled, and every round below builds on them:
   it.
 - **The wind-up brightens only the sac.** The eyes keep a fixed glow, so the sac alone
   carries the telegraph.
-- **Size:** taller and bulkier than a shambler, between 1.1 and 1.25 times its size, so it
-  stands out of a crowd at its range band.
+- **Shambler height, brute-like breadth,** at the shambler's voxel size. It shares the
+  brute's bulk but not its height, so the two read apart by height and not by bulk alone.
+  Any size variation widens or narrows the build and never changes the height.
 - **One sac and no growths.** Being built from the ground up already sets it apart from
   shamblers, so it needs no further variation.
 - **Its own heavier gait and look-at profile,** not the shambler's.
@@ -173,10 +174,10 @@ humanoid lookup would find nothing.
   the glow renders is an open choice (below). The wind-up brightening is per-actor state
   that touches only the sac's material, so it rides the crowd data texture beside the
   severed mask rather than being baked into the mesh. The eyes have no per-actor channel.
-- **Scale.** The study measured at its own voxel size. On-screen size comes from the
-  template's proportions, Deadvox's `bodyScale` and the shipped voxel size together, and
-  the result must land in the size range above. The template carries the proportions, so a
-  later tier changes size by data.
+- **Scale.** The study measured at its own voxel size; the acid body ships at the
+  shambler's. Its height and breadth come from the template's proportions, so a later tier
+  changes its build by data, and no uniform scale applies because one would change the
+  height.
 
 ### Far level of detail is its own later item
 
@@ -198,8 +199,10 @@ before it lands.
    which mobs' voxels changed and why; and Deadvox loads every shipped model.
 2. **Acid body plan and template** (hard coder). Add the plan, template and
    measurement module as `comparison-only`, with the probe fixtures, identity properties and
-   gated sweeps, plus a viewer entry. Done when: the viewer shows the approved body; the
-   default run asserts no seeded output; and `consumableTemplate` refuses it.
+   gated sweeps, plus a viewer entry. Its parameter ranges vary breadth, never height.
+   Done when: the viewer shows the approved body; a property over the covering array holds
+   the body's height to the shambler's while its breadth varies; the default run asserts no
+   seeded output; and `consumableTemplate` refuses it.
 3. **Acid poses, gait and gaze** (hard coder). Add the idle, walk, attack and wind-up,
    hit-reaction and death poses, the look-at profile, and the mouth anchor. Done when: the
    viewer plays each pose within joint limits with feet on the ground, and a gaze test turns
@@ -210,8 +213,8 @@ before it lands.
    placeholder shambler body, and flip readiness. Done when: Deadvox validates and loads it;
    a shot on the sac counts as a torso hit, severs follow the dispositions, and death removes
    the sac without changing any simulation outcome, in a browser smoke flow extended (not
-   added) per `AGENTS.md`, "Tests"; it stands in the ruled size range beside a shambler; and
-   saves round-trip.
+   added) per `AGENTS.md`, "Tests"; it stands at a shambler's height beside one; saves
+   round-trip; and PR #832 is closed.
 5. **Acid effects** (routine coder), timed by the open effects choice: falling drips and
    the death splash as presentation in `deadvox/src/render/acidEffects.ts`, `AcidEffects`.
    Done when: the effects play without changing any simulation outcome.
@@ -220,15 +223,16 @@ The far level of detail follows as its own item, cross-mob, with an owner the le
 
 ## PR #832
 
-The recommendation is to close it unmerged. Its body reused the humanoid builder, and the
-approved body is built from the ground up instead. Its Deadvox wiring targets the humanoid skeleton and the old palette, both
-of which round 1 replaces. Its branch is far behind main, and carrying it forward would
-cost more than rewriting it.
+It stays open and unmerged as a reference until round 4 lands, then closes. Its per-actor
+glow and drip work is the reference round 4 builds against, but none of its code merges:
+its body reused the humanoid builder, while the approved body is built from the ground up,
+and its Deadvox wiring targets the humanoid skeleton and the old palette, both of which
+round 1 replaces.
 
-Two ideas survive as design, not code. Mobgen marks what glows and Deadvox drives the
-brightness per actor through the crowd texture, which becomes the glow line in "What
-Deadvox needs". Drips falling from the jaw are Deadvox presentation, not voxels, which is
-round 5. Its acid body design doc is superseded by this plan.
+Two ideas carry over as design. Mobgen marks what glows and Deadvox drives the brightness
+per actor through the crowd texture, which is the glow line in "What Deadvox needs". Drips
+falling from the jaw are Deadvox presentation, not voxels, which is round 5. Its acid body
+design doc is superseded by this plan.
 
 ## Open choices
 
@@ -240,4 +244,3 @@ Only these remain open, and nothing above decides them:
    round 5 runs now.
 3. **Severed parts.** What a severed acid part leaves behind.
 4. **Far level of detail.** How per-bone far meshes meet the triangle cap for every mob.
-5. **PR #832.** Whether to close it unmerged as recommended.
