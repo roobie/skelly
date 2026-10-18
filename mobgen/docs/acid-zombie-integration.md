@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you build any round of the acid zombie's integration (m9)
+  - you build any round of the acid zombie's integration
   - you change mobgen's material, budget or carve contracts while the acid zombie lands
   - you add a non-humanoid mob that Deadvox must hit, sever, pose or light
   - you build the cross-mob far level of detail for per-bone meshes
