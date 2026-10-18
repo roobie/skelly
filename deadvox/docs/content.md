@@ -400,8 +400,6 @@ Debug descriptions are fixture-scoped so showcase stock cannot define production
 
 Visual furniture detail must not change occupied cells or expose hidden contents. Collision, rest, search, and line of sight keep their existing authorities, so a visual refinement cannot change gameplay.
 
-A corpse that is a loot container is non-solid, because a player would never step on it anyway and a body they must path around only gets in the way. Walkers, zombies included, cross its cells, and sight and aim pass through it as through any non-solid furniture, which is fine for a body lying one block high. It stays pickable and searchable, since picking ignores solidity. See `src/content/base/furniture-playtest.jsonnet`, `dead_officer_body`; `src/core/furniturePick.ts`, `firstPickCell`; and `test/furniture.test.ts`, "lets a body walk through a corpse loot container yet keeps it pickable".
-
 Wall mounting is an explicit content contract because text alone cannot distinguish a hung plaque from a freestanding board. Reject unsupported mount kinds and missing hosts rather than rendering an apparently attached object in empty space. Keep plaque dimensions and board legs in content shapes instead of renderer guesses. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/content.ts`, `checkPaletteThing`; and `src/content/base/furniture-playtest.jsonnet`, `plaque`.
 
 Container appearance belongs to its definition rather than an ID switch or a guess from dimensions: similarly sized furniture can serve different purposes. Keep procedural detail inside the cell envelope so handles do not promise reach outside the pickable fixture. Definition-owned appearance also keeps empty and unsearched containers visually indistinguishable. See `src/core/schema.ts`, `FurnitureSchema`; `src/render/furnitureDetail.ts`, `furnitureDetail`; and `src/render/furniture.ts`, `FurnitureMeshes`.
@@ -419,6 +417,10 @@ Choose the structural appearance in content through `src/core/schema.ts`, `Furni
 Use `deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
 
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
+
+## Furniture solidity
+
+A corpse that is a loot container is non-solid, because a body the player must path around only gets in the way. Walkers, zombies included, cross its cells, and sight and aim pass through it as through any non-solid furniture. It stays pickable and searchable because picking ignores solidity. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/furniturePick.ts`, `firstPickCell`; and `test/furniture.test.ts`, "lets a body walk through a non-solid container yet keeps it pickable".
 
 ## Authored decals
 

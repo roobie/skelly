@@ -387,12 +387,22 @@ describe('furniture', () => {
     expect(panelBounds.max.z).toBeLessThanOrEqual(bodyBounds.min.z);
   });
 
-  it('lets a body walk through a corpse loot container yet keeps it pickable', () => {
-    const definition = registry.furniture.get('dead_officer_body')!;
-    const entities = new BlockEntities(registry);
-    const corpse = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
+  it('lets a body walk through a non-solid container yet keeps it pickable', () => {
+    const fixture = {
+      id: 'fixture_body',
+      name: 'Fixture body',
+      size: [4, 1, 2],
+      color: '#554f43',
+      solid: false,
+      container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
+    };
+    const { registry: fixtureRegistry, issues } = buildRegistry([
+      { source: 'body-fixture.json', data: { furniture: [fixture] } },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(fixtureRegistry);
+    const corpse = entities.add({ type: fixture.id, pos: [4, 1, 8], size: [4, 1, 2], facing: 'n' })!;
 
-    expect(definition.container).toBeDefined();
     expect(entities.at(5, 1, 8)).toBe(corpse);
     expect(entities.isSolid(5, 1, 8)).toBe(false);
     expect(
