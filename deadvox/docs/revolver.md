@@ -35,4 +35,4 @@ The crane carries the cylinder and ejector even though the GLB nodes are flat. L
 
 The loading fist shares the cartridge's frame rather than following the forearm's bend: an elbow-driven palm rotation makes a gun-local cartridge offset cut through the hand's face. Content places the round at the fist's forward edge so it protrudes toward the chamber instead of showing only its base through the palm. See `src/render/hands.ts`, `HeldItems`, and `src/content/base/items-revolver.jsonnet`, `loadPose`.
 
-Sound events reuse licensed existing recordings as tunable presentation selections; they do not claim to be recordings of this particular revolver. See `src/content/base/sounds-revolver.jsonnet`, `sounds`.
+The shot and handling come from a real snub revolver: a .38 Special J-frame recorded near the gun, rather than this .357. A .38 may sound quieter, so gain and pitch stay in content and a tweak after listening is a content edit. A handling the takes don't hold falls back to a general click library. See `src/content/base/sounds-revolver.jsonnet`, `sounds`.

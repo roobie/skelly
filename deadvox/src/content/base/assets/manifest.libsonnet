@@ -41,6 +41,61 @@
       "changes": "Slices 2.34–2.69, 3.75–4.12 and 5.39–5.66 s, hollow plastic click candidates, no metal layer. Placeholder, not a recorded shotshell hull. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
     },
     {
+      "title": "The Free Firearm Sound Library — Tikka T3",
+      "url": "https://opengameart.org/content/the-free-firearm-sound-library",
+      "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
+      "licence": "CC0-1.0",
+      "download": "W_29P.wav, Prepared SFX, from the CC0 mirror https://github.com/buddingmonkey/FreeFirearmsSFXLibrary",
+      "files": ["assets/audio/gunshot-tikka-01.ogg", "assets/audio/gunshot-tikka-02.ogg"],
+      "changes": "W_29P near take (.30-06 bolt rifle), single-shot slices 0.52–1.60 s and 5.60–6.68 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade."
+    },
+    {
+      "title": "The Free Firearm Sound Library — AR-15",
+      "url": "https://opengameart.org/content/the-free-firearm-sound-library",
+      "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
+      "licence": "CC0-1.0",
+      "download": "D_32P.wav, Prepared SFX, from the CC0 mirror https://github.com/buddingmonkey/FreeFirearmsSFXLibrary",
+      "files": ["assets/audio/gunshot-ar15-01.ogg", "assets/audio/gunshot-ar15-02.ogg"],
+      "changes": "D_32P near take, single-shot slices 0.64–1.72 s and 5.59–6.67 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade."
+    },
+    {
+      "title": "The Free Firearm Sound Library — Smith & Wesson 642",
+      "url": "https://opengameart.org/content/the-free-firearm-sound-library",
+      "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
+      "licence": "CC0-1.0",
+      "download": "V_27P.wav (Prepared SFX) and V_0, V_1, V_3, V_5, V_7, V_18 (Master Tracks), from the CC0 mirror https://github.com/buddingmonkey/FreeFirearmsSFXLibrary",
+      "files": [
+        "assets/audio/gunshot-sw642-01.ogg",
+        "assets/audio/gunshot-sw642-02.ogg",
+        "assets/audio/revolver-crane-open-01.ogg",
+        "assets/audio/revolver-crane-close-01.ogg",
+        "assets/audio/revolver-eject-01.ogg",
+        "assets/audio/revolver-round-insert-01.ogg",
+        "assets/audio/revolver-round-insert-02.ogg",
+        "assets/audio/revolver-dry-click-01.ogg",
+        "assets/audio/revolver-hammer-cock-01.ogg"
+      ],
+      "changes": "V_27P near take (.38 Special), single-shot slices 0.75–1.83 s and 6.16–7.24 s. Handling cut from the raw takes by waveform and spectrum, not by ear: V_0 1.44–1.72 s crane open, V_1 1.16–1.45 s crane close, V_3 0.74–1.42 s eject, V_18 3.42–3.70 s and 5.18–5.46 s round insert, V_5 1.34–1.75 s dry click, V_7 0.19–0.45 s hammer cock. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade."
+    },
+    {
+      "title": "Equipment Clicks III",
+      "url": "https://opengameart.org/content/equipment-clicks-iii",
+      "author": "LFA",
+      "licence": "CC0-1.0",
+      "download": "equipment_clicks3.wav",
+      "files": ["assets/audio/rifle-bolt-cycle-01.ogg", "assets/audio/revolver-case-pick-01.ogg"],
+      "changes": "Slices 12.10–13.72 s (bolt-action cocking cycle) and 7.95–8.20 s (light click, the revolver case pick and the dry-fire stand-in). Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Gun Reload Sound Effects",
+      "url": "https://opengameart.org/content/gun-reload-sound-effects",
+      "author": "BMacZero",
+      "licence": "CC0-1.0",
+      "download": "clipload1.wav, clipload2.wav",
+      "files": ["assets/audio/magazine-clipload-01.ogg", "assets/audio/magazine-clipload-02.ogg"],
+      "changes": "Whole files, 0–0.255 s and 0–0.209 s. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
       "title": "Torch",
       "url": "https://opengameart.org/content/torch",
       "author": "jpsweber",

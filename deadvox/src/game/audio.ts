@@ -24,6 +24,7 @@ export const VOICE_CAPS: ReadonlyMap<SoundEventId, number> = new Map([
   ['gunshot_pbs1_reference', 32],
   ['gunshot_m4', 32],
   ['gunshot_m4_suppressed', 32],
+  ['gunshot_tikka', 32],
 ]);
 const VOICE_FADE_SECONDS = 0.01;
 
