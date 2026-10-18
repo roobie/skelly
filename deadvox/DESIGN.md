@@ -964,12 +964,10 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   empty hands block like a weapon. A block is loud contact that the dead hear, so fighting draws more of
   them; full and partial blocks sound different so the player can tell the
   outcome by ear. A block also needs a visible cue, not only feel and sound, so
-  the player can see the hit was deflected: the held weapon jolts and the arms
-  rise and settle, both scaled by the damage absorbed, while the hurt flash
-  still follows only what got through. Content owns every block number. See
+  the player can see the hit was deflected. Content owns every block number. See
   `src/core/meleeCombat.ts`, `meleeBlock` and `blockJolt`;
-  `src/game/session.ts`, `blockedDamage`; and `src/content/base/recipes.libsonnet`,
-  `melee_combat`.
+  `src/render/playView.ts`, `createPlayView`; `src/game/session.ts`,
+  `blockedDamage`; and `src/content/base/recipes.libsonnet`, `melee_combat`.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammunition and magazines are items; a magazine holds its
   cartridges and fits a rifle's magazine slot (see "Magazines" and "Rifles" below). The
