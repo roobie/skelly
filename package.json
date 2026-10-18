@@ -1,6 +1,7 @@
 {
   "name": "skelly",
   "private": true,
+  "license": "EUPL-1.2",
   "type": "module",
   "scripts": {
     "check": "biome check",

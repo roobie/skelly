@@ -1,6 +1,7 @@
 {
   "name": "@skelly/engine",
   "private": true,
+  "license": "EUPL-1.2",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit"
