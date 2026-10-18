@@ -1196,7 +1196,7 @@ export const createSession = (options: SessionOptions) => {
       use(ladderHold.refusal(offSide(character)), controls.useOff);
     }
   };
-  /** Where an explosive goes off, in blocks: its pile, its furniture, or the player carrying it. */
+  /** Where an explosive goes off, in blocks: its pile, its standing furniture, or the player carrying it or its piece. */
   const detonationPoint = (item: Item): Vec3 | undefined => {
     let location = inventory.locate(item);
     while (location?.kind === 'pocket' || location?.kind === 'slot' || location?.kind === 'work') {
@@ -1206,7 +1206,7 @@ export const createSession = (options: SessionOptions) => {
       const [x, y, z] = location.pile.pos;
       return [x + 0.5, y + 0.25, z + 0.5];
     }
-    if (location?.kind === 'furniture') {
+    if (location?.kind === 'furniture' && !location.entity.carried) {
       const [x, y, z] = location.entity.pos;
       return [x + 0.5, y + 0.5, z + 0.5];
     }
