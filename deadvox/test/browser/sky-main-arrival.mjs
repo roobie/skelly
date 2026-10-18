@@ -6,8 +6,11 @@ import { createServer } from 'vite';
 
 const BRANCH_REF_PREFIX = /^refs\/heads\//;
 
+// The reference run measures the base's startup, so each base startup file must link against the base
+// modules it imports; a branch that removes an export the base imports would otherwise break the reference.
 export const mainSourceOverlays = [
   'main.ts',
+  'game/melee.ts',
   'bench/run.ts',
   'game/bundledContent.ts',
   'game/config.ts',
