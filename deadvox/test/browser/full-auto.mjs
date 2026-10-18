@@ -14,7 +14,10 @@ import { browserStageUrl } from './stage-mode.mjs';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const anchors = new Map([
   ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
-  ['src/game/audio.ts', '    this.stealOldestVoice(event, sound.voiceCap, context);\n    const source = context.createBufferSource();'],
+  [
+    'src/game/audio.ts',
+    '    this.stealOldestVoice(event, sound.voiceCap, context);\n    const source = context.createBufferSource();',
+  ],
 ]);
 const requireAnchor = (code, file, marker) => {
   const matches = code.split(marker).length - 1;
