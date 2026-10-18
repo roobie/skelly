@@ -10,6 +10,10 @@
       "model": "optic_hunting_3_9x",
       "name": "3–9× hunting scope",
       "opticMagnification": 6,
+      "opticZoom": {
+        "rememberPerWeapon": true,
+        "step": 1
+      },
       "size": [2, 2],
       "weight": 400
     },
@@ -47,6 +51,10 @@
       "model": "optic_high_mag_5_25x",
       "name": "5–25× magnified optic",
       "opticMagnification": 10,
+      "opticZoom": {
+        "rememberPerWeapon": true,
+        "step": 1
+      },
       "size": [2, 2],
       "weight": 900
     },
@@ -72,6 +80,10 @@
       "model": "optic_lpvo_1_6x",
       "name": "1–6× variable-power optic",
       "opticMagnification": 3,
+      "opticZoom": {
+        "rememberPerWeapon": true,
+        "step": 1
+      },
       "size": [2, 2],
       "weight": 520
     },

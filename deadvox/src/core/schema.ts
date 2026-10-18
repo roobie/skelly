@@ -708,8 +708,9 @@ const ItemSchema = strictObject({
   battery: optional(BatterySchema),
   /** A working alarm clock: carried, it lets a sleep run to a chosen wake hour. */
   alarm: optional(literal(true)),
-  /** Fixed ADS power for a variable-power optic; constrained by its exported range. */
+  /** Initial ADS power for a variable-power optic; constrained by its exported range. */
   opticMagnification: optional(Positive),
+  opticZoom: optional(strictObject({ step: Positive, rememberPerWeapon: vBoolean() })),
   /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
   firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** Fits a long gun's sling mount, so the gun can be carried on the shoulder. */

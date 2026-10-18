@@ -24,7 +24,9 @@ const itemFor = (opticMagnification?: number): ItemDef => ({
   weight: 1,
   size: [1, 1],
   model: 'optic_fixture_model',
-  ...(opticMagnification === undefined ? {} : { opticMagnification }),
+  ...(opticMagnification === undefined
+    ? {}
+    : { opticMagnification, opticZoom: { step: 0.5, rememberPerWeapon: true } }),
 });
 
 const registryFor = (
@@ -68,6 +70,18 @@ describe('optic view settings', () => {
     expect(opticViewSettings(itemFor(), modelFor({ magnification: { min: 2, max: 8 }, reticleKind: 'dot' }))).toBe(
       undefined,
     );
+  });
+
+  it('requires zoom tuning for supported variable optics and rejects it on fixed models', () => {
+    const properties = { magnification: { min: 1, max: 6 } };
+    const item = { ...itemFor(4), opticZoom: undefined };
+    expect(opticViewSettings(item, modelFor(properties))).toBeUndefined();
+    const missing = buildRegistry([
+      { source: 'fixture.json', data: { items: [item], models: [modelFor(properties)] } },
+    ]);
+    expect(missing.issues).toEqual(expect.arrayContaining([expect.objectContaining({ path: 'items[0].opticZoom' })]));
+    const fixed = registryFor({ magnification: { min: 4, max: 4 } }, 4);
+    expect(fixed.issues).toEqual(expect.arrayContaining([expect.objectContaining({ path: 'items[0].opticZoom' })]));
   });
 
   it('validates authored power against the export range', () => {

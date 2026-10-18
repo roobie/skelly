@@ -48,8 +48,8 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
-import type { OpticLensFrame, OpticViewSettings } from '../core/opticView.ts';
-import { opticViewSettings, projectLensAperture } from '../core/opticView.ts';
+import type { OpticLensFrame, OpticViewSettings, OpticZoomFrame } from '../core/opticView.ts';
+import { mountedOptic, opticViewSettings, projectLensAperture } from '../core/opticView.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { HELD_DISPLAY_KIND } from '../core/schema.ts';
@@ -135,6 +135,7 @@ const HELD_ROOT_PATH = /^inventory\.hands\.(left|right)\./;
 
 export interface HeldHandlingFrame {
   readonly firearms: readonly HeldFirearmPose[];
+  readonly opticZoom?: OpticZoomFrame | undefined;
   readonly readiness?: HeldReadiness;
   readonly throwing?: { readonly chargeProgress: number };
   readonly aim?: AimFrame;
@@ -440,7 +441,7 @@ export class HeldItems {
     this.poseRotation.multiply(this.recoilRotation);
     this.placeHandAndHeldItem(side, arm, transform, firearmPose);
     if (item && itemDefinition?.firearm) {
-      const opticSettings = this.mountedOpticSettings(item);
+      const opticSettings = this.mountedOpticSettings(item, handling.opticZoom);
       const opticSight = Boolean(aimingDownSights && modelDefinition?.sight?.kind === 'optic' && opticSettings);
       const heldModel = this.shown.get(item.uid);
       if (heldModel) {
@@ -749,15 +750,12 @@ export class HeldItems {
     }
   }
 
-  private mountedOpticSettings(firearm: Item): OpticViewSettings | undefined {
-    for (const child of Object.values(firearm.slots ?? {})) {
-      const item = this.inventory.registry.items.get(child.type);
-      const model = item?.model === undefined ? undefined : this.inventory.registry.models.get(item.model);
-      if (model?.attachment?.kind === 'optic' && item) {
-        return opticViewSettings(item, model);
-      }
-    }
-    return undefined;
+  private mountedOpticSettings(firearm: Item, zoom?: OpticZoomFrame): OpticViewSettings | undefined {
+    const optic = mountedOptic(this.inventory.registry, firearm);
+    const settings = optic && opticViewSettings(optic.item, optic.model);
+    return settings && zoom?.uid === firearm.uid && zoom.opticUid === optic?.uid
+      ? { ...settings, magnification: zoom.magnification }
+      : settings;
   }
 
   get opticLensFrame(): OpticLensFrame | undefined {
