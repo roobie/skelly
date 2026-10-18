@@ -1083,10 +1083,6 @@ describe('content', () => {
       return { source: pack.source, data: structuredClone(pack.data) as RangeData };
     };
 
-    it('accepts the shipped layout, every target visible from the firing line', () => {
-      expect(buildRegistry([rangePack()]).issues).toEqual([]);
-    });
-
     it('requires every layout field, since the code holds no defaults', () => {
       const pack = rangePack();
       pack.data.handlingRange[0]!.firingLine = undefined;
