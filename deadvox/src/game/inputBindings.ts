@@ -1026,6 +1026,17 @@ export class KeyboardInput {
     }
     return this.traceDown(event, true, 'accepted');
   }
+  private playingBrowserChord(event: KeyboardEvent): boolean {
+    return (
+      event.cancelable &&
+      this.context().context === 'play' &&
+      Boolean(document.pointerLockElement) &&
+      !modifierCodes[event.code] &&
+      (event.ctrlKey || event.metaKey || event.altKey) &&
+      !editable(event.target) &&
+      !this.capture
+    );
+  }
   install(): () => void {
     if (this.removeListeners) {
       return this.removeListeners;
@@ -1041,15 +1052,7 @@ export class KeyboardInput {
         return;
       }
       // The game owns the keyboard while playing. A modifier's own press stays a possible game key.
-      if (
-        event.cancelable &&
-        this.context().context === 'play' &&
-        document.pointerLockElement &&
-        !modifierCodes[event.code] &&
-        (event.ctrlKey || event.metaKey || event.altKey) &&
-        !editable(event.target) &&
-        !this.capture
-      ) {
+      if (this.playingBrowserChord(event)) {
         event.preventDefault();
       }
       if (debugControl(event.target) && nativeActivation(event) && !this.capture && !this.held('debug.gate')) {
