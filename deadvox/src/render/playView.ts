@@ -11,6 +11,7 @@ import type { EntityStore } from '../core/entities.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { lookDefaultsOf } from '../core/lookDefaults.ts';
+import type { BlockJolt } from '../core/meleeCombat.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
@@ -232,6 +233,7 @@ export const createPlayView = (
   let thirdPerson = false;
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
+  let meleeRecoilDuration = 0;
   const updateThirdPersonCamera = ({
     eye,
     stepOffset,
@@ -306,13 +308,13 @@ export const createPlayView = (
     damage: (amount: number) => damageFeedback.hit(amount),
     recoil: (impulse: number) => {
       meleeRecoilStrength = Math.max(0, Math.min(1, impulse / 12));
-      meleeRecoilTime = 0.08;
+      meleeRecoilTime = meleeRecoilDuration = 0.08;
     },
     // A block shares the hit recoil so a parried blow jolts the held weapon the same way; the hurt flash
     // separately scales with whatever damage got through.
-    block: (jolt: number) => {
-      meleeRecoilStrength = Math.max(meleeRecoilStrength, Math.max(0, Math.min(1, jolt)));
-      meleeRecoilTime = 0.08;
+    block: ({ strength, realSeconds }: BlockJolt) => {
+      meleeRecoilStrength = Math.max(meleeRecoilStrength, Math.max(0, Math.min(1, strength)));
+      meleeRecoilTime = meleeRecoilDuration = realSeconds;
     },
     syncWorld: ({
       calendar,
@@ -397,7 +399,10 @@ export const createPlayView = (
       handling: HeldHandlingFrame = { firearms: [] },
     ) => {
       meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
-      const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
+      const recoil =
+        meleeRecoilDuration > 0
+          ? meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / meleeRecoilDuration))
+          : 0;
       held.update(camera, pose, recoil, handling);
       flashlight.update({ registry, lit: light, held, camera, inventory });
       lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: cameraDaylightScale });

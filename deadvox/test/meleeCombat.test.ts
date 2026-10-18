@@ -13,6 +13,7 @@ const tuning: MeleeCombatTuning = {
   staminaCostFloor: 0.3,
   staminaCostHalfLifeLevels: 3,
   joltPerAbsorbedPoint: 0.1,
+  joltRealSeconds: 0.08,
 };
 const WINDED_BELOW = 10;
 const FRESH = 100;
@@ -61,7 +62,7 @@ describe('melee combat blocking', () => {
   });
 
   it('jolts harder for a bigger absorbed blow, never past full strength', () => {
-    expect(blockJolt(4, tuning)).toBeGreaterThan(blockJolt(2, tuning));
-    expect(blockJolt(1e6, tuning)).toBe(1);
+    expect(blockJolt(4, tuning).strength).toBeGreaterThan(blockJolt(2, tuning).strength);
+    expect(blockJolt(1e6, tuning).strength).toBe(1);
   });
 });

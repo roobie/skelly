@@ -11,6 +11,7 @@ export interface MeleeCombatTuning {
   readonly staminaCostFloor: number;
   readonly staminaCostHalfLifeLevels: number;
   readonly joltPerAbsorbedPoint: number;
+  readonly joltRealSeconds: number;
 }
 
 export interface MeleeCombatEffects {
@@ -85,6 +86,14 @@ export const meleeBlock = (
   return { absorbed, staminaCost: absorbed * effects.staminaPerAbsorbedPoint, full: full && absorbed >= damage };
 };
 
-/** Presentation strength of the block jolt, from 0 to 1. */
-export const blockJolt = (absorbed: number, tuning: MeleeCombatTuning): number =>
-  Math.min(1, Math.max(0, absorbed * tuning.joltPerAbsorbedPoint));
+export interface BlockJolt {
+  /** From 0 to 1. */
+  readonly strength: number;
+  readonly realSeconds: number;
+}
+
+/** The held weapon's jolt on a block; zero strength or duration shows none. */
+export const blockJolt = (absorbed: number, tuning: MeleeCombatTuning): BlockJolt => ({
+  strength: Math.min(1, Math.max(0, absorbed * tuning.joltPerAbsorbedPoint)),
+  realSeconds: tuning.joltRealSeconds,
+});

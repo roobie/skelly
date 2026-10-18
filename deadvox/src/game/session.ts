@@ -41,7 +41,7 @@ import { defOf, type Item } from '../core/items.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, rollLoot } from '../core/loot.ts';
-import { blockJolt, meleeBlock } from '../core/meleeCombat.ts';
+import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
@@ -332,8 +332,8 @@ export interface SessionOptions {
   onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
-  /** Presentation-only: a melee block absorbed damage; `jolt` runs from 0 to 1. */
-  onBlock?: (jolt: number, full: boolean) => void;
+  /** Presentation-only: a melee block absorbed damage. */
+  onBlock?: (jolt: BlockJolt, full: boolean) => void;
   onAcidImpact?: (position: Vec3, type: Zombie['type']) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */

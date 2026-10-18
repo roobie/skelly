@@ -89,7 +89,7 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
     refusal: () => undefined,
     onRead: () => undefined,
     onBlock: (jolt, full) => {
-      blocks.push({ jolt, full });
+      blocks.push({ jolt: jolt.strength, full });
     },
   });
   session.sim.paused = false;
@@ -140,6 +140,8 @@ describe('melee blocking in a session', () => {
   });
 
   it('repeats the same block outcome for the same seed', () => {
-    expect(strike({ seed: 91 })).toEqual(strike({ seed: 91 }));
+    const first = strike({ seed: 91 });
+    expect(first.blocks).toHaveLength(1);
+    expect(strike({ seed: 91 })).toEqual(first);
   });
 });

@@ -167,31 +167,6 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
-      "id": "player_block_full",
-      "variants": [
-        "assets/audio/melee-hit-01.ogg",
-        "assets/audio/melee-hit-02.ogg",
-        "assets/audio/melee-hit-03.ogg",
-        "assets/audio/melee-hit-04.ogg"
-      ],
-      "gain": 0.9,
-      "pitchJitter": [1.3, 1.4],
-      "gainJitter": [0.92, 1.08],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 8 }
-    },
-    {
-      "id": "player_block_partial",
-      "variants": ["assets/audio/melee_hit_fist-01.ogg"],
-      "gain": 0.8,
-      "pitchJitter": [0.7, 0.8],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 6 }
-    },
-    {
       "id": "footstep_grass",
       "variants": [
         "assets/audio/footstep-grass-sand-01.ogg",

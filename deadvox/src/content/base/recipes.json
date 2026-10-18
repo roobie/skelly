@@ -447,6 +447,7 @@
           "blockChanceMinimum": 0.050000000000000003,
           "blockChanceRange": 0.45000000000000001,
           "joltPerAbsorbedPoint": 0.080000000000000002,
+          "joltRealSeconds": 0.080000000000000002,
           "mitigationHalfLifeLevels": 3,
           "mitigationMinimum": 0.29999999999999999,
           "mitigationRange": 0.55000000000000004,

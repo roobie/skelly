@@ -76,7 +76,8 @@
           "staminaPerAbsorbedPoint": 2,
           "staminaCostFloor": 0.35,
           "staminaCostHalfLifeLevels": 3,
-          "joltPerAbsorbedPoint": 0.08
+          "joltPerAbsorbedPoint": 0.08,
+          "joltRealSeconds": 0.08
         }
       }
     }
