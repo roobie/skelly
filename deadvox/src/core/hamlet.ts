@@ -486,7 +486,7 @@ export class Hamlet implements Site {
     }
     let weights = 0;
     let pull = 0;
-    const add = (rect: Rect, target: number, blend = HAMLET.blend) => {
+    const add = (rect: Rect, target: number, blend: number = HAMLET.blend) => {
       const d = rectDistance(rect, x, z);
       if (d < blend) {
         const w = smoothstep(1 - d / blend);
