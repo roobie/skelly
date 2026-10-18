@@ -168,7 +168,7 @@ local items = [
       radius=12,
       seenFrom=30,
       intensity=2.5,
-      beam={ angleDegrees: 24, penumbra: 0.35, decay: 1, spill: { enabled: false, radiusRatio: 1.5, intensity: 0.18 } },
+      beam={ angleDegrees: 48, penumbra: 0.5, decay: 1, spill: { enabled: false, radiusRatio: 1.5, intensity: 0.18 } },
       chargePerGameHour=0.2,
     ) + { wornSwitch: true },
   },
