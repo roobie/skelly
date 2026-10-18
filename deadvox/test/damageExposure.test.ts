@@ -118,6 +118,8 @@ describe('damage exposure', () => {
     expect(after.exposures[0]!.damage).toBeGreaterThan(0);
     expect(after.exposures[0]!.damage).toBe(before.exposures[0]!.damage);
     expect(after.exposures[0]!.roll).toBe(before.exposures[0]!.roll);
+    // The refreshed record carries no key the new contact lacks, not even an undefined one.
+    expect(after.exposures[0]!.sources).toStrictEqual([{ id: 'pool', rate: 2, cause: 'fixture burn' }]);
   });
 
   it('a glob hit starts a continuous tail and ending that kind stops further damage', () => {
