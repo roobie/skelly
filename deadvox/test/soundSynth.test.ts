@@ -13,6 +13,7 @@ const preset = {
   sustain: 0.1,
   decay: 0.1,
 };
+const nonFinite = /non-finite/;
 const duration = preset.attack + preset.sustain + preset.decay;
 
 const soundRow = (jfxr: Record<string, unknown>) => ({
@@ -56,7 +57,7 @@ describe('jfxr sound recipes', () => {
   });
 
   it('never hands playback non-finite samples from a silent preset', () => {
-    expect(() => renderSoundRecipe({ recipe: 'silent', jfxr: { ...preset, lowPassCutoff: 0 } })).toThrow(/non-finite/);
+    expect(() => renderSoundRecipe({ recipe: 'silent', jfxr: { ...preset, lowPassCutoff: 0 } })).toThrow(nonFinite);
   });
 
   it('reports a bad preset as a content issue', () => {
