@@ -420,7 +420,7 @@ Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, 
 
 ## Furniture solidity
 
-A corpse that is a loot container is non-solid, because a body the player must path around only gets in the way. Walkers, zombies included, cross its cells, and sight and aim pass through it as through any non-solid furniture. It stays pickable and searchable because picking ignores solidity. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/furniturePick.ts`, `firstPickCell`; and `test/furniture.test.ts`, "lets a body walk through a non-solid container yet keeps it pickable".
+A corpse that is a loot container is non-solid, because a body the player must path around only gets in the way. Walkers, zombies included, cross its cells, and sight and aim pass through it as through any non-solid furniture. It stays pickable and searchable because picking ignores solidity. Its `shape` stays low, because a full one-block box would hide dropped items, thrown items, spent cases and acid puddles settling on the floor inside it. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/furniturePick.ts`, `firstPickCell`; and `test/furniture.test.ts`, "lets a body walk through a non-solid container yet keeps it pickable".
 
 ## Authored decals
 
