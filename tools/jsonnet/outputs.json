@@ -5,6 +5,10 @@
       "output": "deadvox/src/config/browser-mods.json"
     },
     {
+      "source": "deadvox/src/config/bundled-mods.jsonnet",
+      "output": "deadvox/src/config/bundled-mods.json"
+    },
+    {
       "source": "deadvox/src/config/perf-baseline.jsonnet",
       "output": "deadvox/src/config/perf-baseline.json"
     },

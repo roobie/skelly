@@ -54,7 +54,6 @@ const authoredLayoutIds = () =>
 
 const intentionallyUnofferedDeadvoxParams = {
   decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',
-  mods: 'An opt-in browser-mod preview pending save identity in #633, not a launcher option.',
   skyRoute:
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
@@ -300,6 +299,27 @@ describe('site launchers track the games’ URL parameters', () => {
       const url = makeDeadvox({ ...gauntlet, bench });
       assert.equal(url.searchParams.has('site'), false, `bench ${bench} does not carry a gauntlet site`);
     }
+  });
+
+  it('links exactly the ticked bundled mods and omits mods when none is ticked', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const model = launcherModelForTest();
+    const onInput = onInputForTest(model);
+    const ids = JSON.parse(read('deadvox/src/config/bundled-mods.json')).mods.map((mod) => mod.id);
+    const toggle = (id, checked) =>
+      onInput({ currentTarget: { id: 'deadvox-form' }, target: { dataset: { modId: id }, type: 'checkbox', checked } });
+
+    assert.equal(makeDeadvox(model.deadvox).searchParams.has('mods'), false, 'no ticked mod, no mods parameter');
+    for (const id of ids) {
+      toggle(id, true);
+    }
+    assert.equal(makeDeadvox(model.deadvox).searchParams.get('mods'), ids.join(','), 'every ticked id is linked');
+    toggle(ids[0], false);
+    assert.equal(
+      makeDeadvox(model.deadvox).searchParams.get('mods') ?? '',
+      ids.slice(1).join(','),
+      'unticking removes only that id',
+    );
   });
 
   it('composes a practice tutorial URL the game accepts from the launcher', () => {
