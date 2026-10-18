@@ -308,13 +308,15 @@ export const createPlayView = (
     damage: (amount: number) => damageFeedback.hit(amount),
     recoil: (impulse: number) => {
       meleeRecoilStrength = Math.max(0, Math.min(1, impulse / 12));
-      meleeRecoilTime = meleeRecoilDuration = 0.08;
+      meleeRecoilDuration = 0.08;
+      meleeRecoilTime = meleeRecoilDuration;
     },
     // A block shares the hit recoil so a parried blow jolts the held weapon the same way; the hurt flash
     // separately scales with whatever damage got through.
     block: ({ strength, realSeconds }: BlockJolt) => {
       meleeRecoilStrength = Math.max(meleeRecoilStrength, Math.max(0, Math.min(1, strength)));
-      meleeRecoilTime = meleeRecoilDuration = realSeconds;
+      meleeRecoilDuration = realSeconds;
+      meleeRecoilTime = realSeconds;
     },
     syncWorld: ({
       calendar,
