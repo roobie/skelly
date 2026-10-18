@@ -219,18 +219,17 @@ before it lands.
    hit-reaction and death poses, the look-at profile, and the mouth anchor. Done when: the
    viewer plays each pose within joint limits with feet on the ground, and a gaze test turns
    the skull.
-4. **Deadvox consumption** (hard coder). Add plan-owned region bones with the sac under
-   torso, disposition-driven severing, the cosmetic death burst, the chosen glow path with
-   the sac-only wind-up brightening, the `acid` model id and the content switch off the
-   placeholder shambler body, and flip readiness. Done when: Deadvox validates and loads it;
+4. **Deadvox consumption and effects** (hard coder). Add plan-owned region bones with the
+   sac under torso, disposition-driven severing, the cosmetic death burst, the chosen glow
+   path with the sac-only wind-up brightening, the falling drips and the death splash as
+   presentation in `deadvox/src/render/acidEffects.ts`, `AcidEffects`, the `acid` model id
+   and the content switch off the placeholder shambler body, and flip readiness. The effects
+   ship in this round so the mob ships with them. Done when: Deadvox validates and loads it;
    a shot on the sac counts as a torso hit, severs follow the dispositions and drop the
-   shambler's severed-part items, and death removes
-   the sac without changing any simulation outcome, in a browser smoke flow extended (not
-   added) per `AGENTS.md`, "Tests"; it stands at a shambler's height beside one; saves
-   round-trip; and PR #832 is closed.
-5. **Acid effects** (routine coder), timed by the open effects choice: falling drips and
-   the death splash as presentation in `deadvox/src/render/acidEffects.ts`, `AcidEffects`.
-   Done when: the effects play without changing any simulation outcome.
+   shambler's severed-part items, and death removes the sac and plays the splash without
+   changing any simulation outcome, in a browser smoke flow extended (not added) per
+   `AGENTS.md`, "Tests"; the drips play without changing any simulation outcome; it stands
+   at a shambler's height beside one; saves round-trip; and PR #832 is closed.
 
 The far level of detail follows as its own item, cross-mob, with an owner the lead routes.
 
@@ -244,14 +243,12 @@ round 1 replaces.
 
 Two ideas carry over as design. Mobgen marks what glows and Deadvox drives the brightness
 per actor through the crowd texture, which is the glow line in "What Deadvox needs". Drips
-falling from the jaw are Deadvox presentation, not voxels, which is round 5. Its acid body
+falling from the jaw are Deadvox presentation, not voxels, which is round 4. Its acid body
 design doc is superseded by this plan.
 
 ## Open choices
 
-Only these remain open, and nothing above decides them:
+Only this remains open, and nothing above decides it:
 
-1. **Glow render path.** How the acid's glow is drawn. Round 4 builds whichever path is
-   chosen.
-2. **Effects timing.** When the drips and the death splash come, which decides whether
-   round 5 runs now.
+- **Glow render path.** How the acid's glow is drawn. Round 4 builds whichever path is
+  chosen.
