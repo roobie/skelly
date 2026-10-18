@@ -1,5 +1,5 @@
-// Inventory proximity, not gaze/LOS, bed quality or debug case collection.
-// Units are explicit: positions are blocks; the admission limit is metres.
+// Inventory proximity with a physical line to furniture, not gaze, bed quality or
+// debug case collection. Units are explicit: positions are blocks; the admission limit is metres.
 
 import type { BlockEntity } from './blockEntities.ts';
 import { dominantSide } from './character.ts';
@@ -11,6 +11,7 @@ import type { Inventory, Location, Pile } from './inventory.ts';
 import type { Item } from './items.ts';
 import { itemRoots, walkItemTree } from './itemTree.ts';
 import type { Body } from './physics.ts';
+import { raycast, type SolidAt } from './raycast.ts';
 import type { InventoryTuningDef } from './schema.ts';
 
 /** The reach distances, in metres; required core content guarantees the row. */
@@ -23,6 +24,15 @@ export interface ReachPlayer {
   readonly blockSize: number;
   /** The session's clock; it turns handling seconds into the game seconds a craft plan states. */
   readonly clock: ClockSettings;
+  /** Solid cells that stop an arm; absent is open ground. */
+  readonly obstacles?: ReachObstacles;
+}
+
+export interface ReachObstacles {
+  /** Cells holding furniture defer to it: only a closed door blocks, so a table never hides the shelf behind it. */
+  readonly isSolid: SolidAt;
+  /** Changes on every block edit, so a cached snapshot follows broken and built walls. */
+  readonly version: number;
 }
 
 export interface ReachEntry {
@@ -74,8 +84,40 @@ export const bodyDistance = (player: ReachPlayer, body: Pick<Body, 'pos' | 'half
 const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
   pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres;
 
+// Aim just inside the box so a line grazing its edge cannot end in the wall beside it.
+const INSIDE_BOX_BLOCKS = 1e-3;
+
+const clearLine = (player: ReachPlayer, entity: BlockEntity, obstacles: ReachObstacles): boolean => {
+  const { entities, registry } = player.inventory;
+  const chest: Vec3 = [
+    player.position[0],
+    player.position[1] + reachTuning(registry).chestHeightMetres / player.blockSize,
+    player.position[2],
+  ];
+  const target = chest.map((value, axis) => {
+    const low = entity.pos[axis]! + INSIDE_BOX_BLOCKS;
+    const high = entity.pos[axis]! + entity.size[axis]! - INSIDE_BOX_BLOCKS;
+    return Math.min(Math.max(value, low), high);
+  }) as Vec3;
+  const offset = target.map((value, axis) => value - chest[axis]!) as Vec3;
+  const length = Math.hypot(...offset);
+  if (length === 0) {
+    return true;
+  }
+  const direction = offset.map((value) => value / length) as Vec3;
+  const blocked = (x: number, y: number, z: number): boolean => {
+    const occupant = entities.at(x, y, z);
+    if (!occupant) {
+      return obstacles.isSolid(x, y, z);
+    }
+    return occupant.uid !== entity.uid && Boolean(entities.defOf(occupant).door) && entities.blocks(occupant);
+  };
+  return raycast(chest, direction, length, blocked) === undefined;
+};
+
 const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
-  furnitureDistance(player, entity) <= reachTuning(player.inventory.registry).reachMetres;
+  furnitureDistance(player, entity) <= reachTuning(player.inventory.registry).reachMetres &&
+  (player.obstacles === undefined || clearLine(player, entity, player.obstacles));
 
 /** Generic spatial collection: not inventory admission. */
 const pilesInRadius = (inventory: Inventory, position: Vec3, radiusBlocks: number): Pile[] => {
@@ -96,6 +138,7 @@ export const bindReach = (player: ReachPlayer): (() => ReachSnapshot) => {
 interface Cached {
   inventoryVersion: number;
   entityVersion: number;
+  obstacleVersion: number | undefined;
   blockSize: number;
   snapshot: ReachSnapshot;
 }
@@ -113,6 +156,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     previous &&
     previous.inventoryVersion === inventory.version &&
     previous.entityVersion === inventory.entities.version &&
+    previous.obstacleVersion === player.obstacles?.version &&
     previous.blockSize === blockSize &&
     previous.snapshot.origin.every((value, axis) => value === position[axis])
   ) {
@@ -161,6 +205,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
   snapshots.set(player, {
     inventoryVersion: inventory.version,
     entityVersion: inventory.entities.version,
+    obstacleVersion: player.obstacles?.version,
     blockSize,
     snapshot,
   });

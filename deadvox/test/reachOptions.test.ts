@@ -118,6 +118,24 @@ it('nearest furniture cell is reachable without revealing unsearched nested cont
   expect(t.view().workstations).toEqual([]);
 });
 
+it('a solid wall between chest and container puts it out of reach until the wall is gone', () => {
+  const inventory = new Inventory(registry);
+  let wall = true;
+  const obstacles = {
+    isSolid: (x: number) => wall && x === 1,
+    version: 0,
+  };
+  const view = bindReach({ inventory, position: [0.5, 0, 0.5], blockSize: 1, clock: BASE_CLOCK, obstacles });
+  const def = [...registry.furniture.values()].find((definition) => definition.container)!;
+  const entity = inventory.entities.add({ type: def.id, pos: [2, 0, 0], size: [1, 1, 1], facing: 'n' })!;
+  expect(view().furniture).not.toContain(entity);
+  expect(inventory.canReachEntity(entity)).toBe(false);
+  wall = false;
+  obstacles.version += 1;
+  expect(view().furniture).toContain(entity);
+  expect(inventory.canReachEntity(entity)).toBe(true);
+});
+
 it('lists workstation components only when their furniture box is within two metres', () => {
   const fixtureFurniture = new Map(registry.furniture);
   fixtureFurniture.set('fixture_reach_station', {
