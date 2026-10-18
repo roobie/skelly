@@ -248,6 +248,8 @@ export const POINTER_ACTIONS = [
   { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready', label: 'Mouse 3' },
   { id: 'pointer.look', description: 'Look', label: 'Mouse' },
 ] as const;
+// Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
+export const BROWSER_CHORD_LOCK_CODES: string[] = ['KeyW', 'KeyT', 'KeyN', 'Tab'];
 export const NATIVE_INPUTS = [
   { code: 'Escape', description: 'Release pointer lock / cancel binding capture' },
   { code: 'F10', description: 'Browser menu bar' },
@@ -256,7 +258,7 @@ export const NATIVE_INPUTS = [
   { code: 'F12', description: 'Browser developer tools' },
 ] as const;
 export const NATIVE_EDITING =
-  'Text entry, composition, selection, clipboard, focus traversal and ordinary form activation use native browser controls. Ctrl/Cmd/Meta and Alt browser shortcuts are fixed, not game bindings.';
+  'Text entry, composition, selection, clipboard, focus traversal and ordinary form activation use native browser controls. Ctrl/Cmd/Meta and Alt shortcuts are fixed, not game bindings; during play the game cancels them where the browser allows.';
 export const REFUSED_MODIFIERS: readonly Modifier[] = ['ctrl', 'meta', 'alt'];
 const modifierName: Readonly<Record<Modifier, string>> = { ctrl: 'Ctrl', meta: 'Cmd/Meta', alt: 'Alt', shift: 'Shift' };
 const modifierRefusal = (modifier: Modifier): string =>
@@ -1026,6 +1028,17 @@ export class KeyboardInput {
     }
     return this.traceDown(event, true, 'accepted');
   }
+  private playingBrowserChord(event: KeyboardEvent): boolean {
+    return (
+      event.cancelable &&
+      this.context().context === 'play' &&
+      Boolean(document.pointerLockElement) &&
+      !modifierCodes[event.code] &&
+      (event.ctrlKey || event.metaKey || event.altKey) &&
+      !editable(event.target) &&
+      !this.capture
+    );
+  }
   install(): () => void {
     if (this.removeListeners) {
       return this.removeListeners;
@@ -1034,11 +1047,15 @@ export class KeyboardInput {
       target instanceof HTMLElement &&
       Boolean(target.closest('button,a,[role="button"],input[type="checkbox"]')?.closest('[data-debug-controls]'));
     const keyDown = (event: KeyboardEvent) => {
-      // Chrome owns DevTools shortcuts, but cancel their page default where the browser exposes a cancelable event.
+      // DevTools shortcuts are cancelled outside play too, where the browser exposes a cancelable event.
       if (event.cancelable && chromeDevtoolsShortcut(event) && !editable(event.target) && !this.capture) {
         this.traceDown(event, false, 'browser-shortcut');
         event.preventDefault();
         return;
+      }
+      // The game owns the keyboard while playing. A modifier's own press stays a possible game key.
+      if (this.playingBrowserChord(event)) {
+        event.preventDefault();
       }
       if (debugControl(event.target) && nativeActivation(event) && !this.capture && !this.held('debug.gate')) {
         this.traceDown(event, false, 'native-control');

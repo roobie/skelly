@@ -1,23 +1,13 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { possibleHamletZombies } from '../src/core/hamlet.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import type { SpawnMarker } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { fixtureEconomy, fixtureLootContext } from './economyFixtures.ts';
 
-const BASE = 'src/content/base';
-const sources = readdirSync(BASE)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((source) => ({
-    source,
-    data: JSON.parse(readFileSync(join(BASE, source), 'utf8')) as unknown,
-  }));
-const baseline = buildRegistry(sources).registry;
+const baseline = baseRegistry();
 const mutableSections = ['items', 'furniture', 'loot', 'zombies', 'templates', 'recipes', 'layouts'] as const;
 const fresh = () => ({
   ...baseline,

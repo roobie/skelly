@@ -43,13 +43,16 @@
     "valibot": "^1.5.0"
   },
   "devDependencies": {
+    "@marcbachmann/cel-js": "8.0.0",
     "@types/node": "^26.6.2",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "es-module-lexer": "^3.0.2",
     "fake-indexeddb": "6.2.4",
     "happy-dom": "20.14.5",
+    "luau-web": "1.4.0",
     "playwright": "^1.63.0",
+    "starlark-wasm": "0.0.4",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"

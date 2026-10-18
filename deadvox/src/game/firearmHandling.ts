@@ -1476,7 +1476,7 @@ export class FirearmMechanics {
    * avoids allocating an item UID until a destination is known (`DESIGN.md`, "Spent cases per block").
    */
   private ejectionDrop(type: string, landing: Vec3): ReturnType<typeof dropTarget> {
-    const item = { uid: 0, type, count: 1, condition: 1, origin: { kind: 'created' } as const };
+    const item = { uid: 0, type, count: 1, condition: 1 };
     let first: ReturnType<typeof dropTarget> | undefined;
     for (const pos of dropSpots(landing)) {
       if (this.isSolid(...pos) || !this.isSolid(pos[0], pos[1] - 1, pos[2])) {

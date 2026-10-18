@@ -117,12 +117,14 @@ performance changes. See
 [CHALLENGES.md](CHALLENGES.md) for active performance constraints.
 
 Render scale adapts by default, so slower machines trade sharpness for frame
-rate and faster ones keep the full image. Content must at least be able to
+rate and faster ones keep the full image. The trade must not depend on enabling
+post effects or reduce the readability of separate UI layers. Content must at least be able to
 switch adaptation off and tune it, so a mod can choose a fixed scale or a
-different trade (`PILLARS.md`, "Content forward compatibility"). The adaptive
-default awaits the adaptive render-scale work under #680; until it lands,
-content sets a fixed default. See `src/content/base/graphics.jsonnet` and
-`src/render/mood.ts`, `Mood.setRenderScale`. Look changes made for performance
+different trade (`PILLARS.md`, "Content forward compatibility"). Explicit player
+choices retain ownership rather than being overwritten by adaptation. See
+`src/content/base/graphics.jsonnet`, `src/render/adaptiveScale.ts`, `AdaptiveScale`,
+`src/render/mood.ts`, `Mood.setRenderScale`, and `src/render/screenScale.ts`, `ScreenScale`.
+Look changes made for performance
 follow `deadvox/GRAPHICS.md`, "Look decisions".
 
 Half-metre blocks keep doorways, furniture and interiors at human scale, and
@@ -554,13 +556,14 @@ same admission without becoming optional. Source-point identity owns the random
 stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
-Keep an item's birth origin when it moves, splits, acquires fitted parts or is saved.
-Unlike origins do not merge, so later counts can attribute supply without confusing
-its source with its current map, cargo or player owner. Explicit debug stock is
-fixture supply, never ordinary economy stock; crafted results have a separate origin.
-Current ownership stays in the inventory tree, not in the birth record. See
-`src/core/itemOrigin.ts`, `ItemOrigin`; `src/core/items.ts`, `stackRoom`; and
-`src/core/inventory.ts`, `Inventory.items`.
+Items carry no record of where they were born. A central economy counts items by type
+and by where they are when it counts (map, cargo, player, hoard), so a birthplace adds
+nothing to the count, and keeping one only stopped equal items from stacking. State
+the economy needs about a spawn location (whether its item was taken, refill, required
+stock, how long an untouched item lasts) belongs to the loot point, not to the item.
+Debug stock is kept out of the world economy by the scene that supplies it, not by a
+mark on the item. See `src/core/items.ts`, `stackRoom`, and `src/core/loot.ts`,
+`LootSpawnPoint`.
 
 ## Items and inventory
 
@@ -980,7 +983,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 - **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, "Reload, rack, remove" and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`; `src/core/pellets.ts`, `projectileShot`; `src/core/zombies.ts`, `ZombieSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
 - **Modular weapons:** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount, which gungen does not export, is the one mount deadvox owns (see [Shoulder and sling](#shoulder-and-sling)). These boundaries keep rendering, saves and compatibility consistent. Firearm details must remain responsive as the inventory fills while the world continues; see `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.candidates`; `src/ui/inventoryScreen.ts`, `viewModel`; `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
 
-  Optics keep their authored reticle and use one content-authored magnification setting, preserving a recognizable sight picture without adding a cycling input. Magnification stays within gungen's supported range. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/core/opticView.ts`, `opticViewSettings` and `projectLensAperture`; `src/render/opticLens.ts`, `OpticLensRenderer`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
+  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/render/firearmSight.ts`, `sightedFirearmModel`. Optics keep their authored reticle and use one content-authored magnification setting, preserving a recognizable sight picture without adding a cycling input. Magnification stays within gungen's supported range. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/core/opticView.ts`, `opticViewSettings` and `projectLensAperture`; `src/render/opticLens.ts`, `OpticLensRenderer`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
 
   Gungen's geometry and material export is the single source for attachment mass; `weightOf` uses `massKg` for attachment items, so their required content `weight` is not authoritative. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear; foregrips affect aim and stance; a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
@@ -1590,6 +1593,7 @@ so scale does not force a later redesign:
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
+- **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
 - **Day and night** follow one sun model derived from the base pack's latitude,
   fixed date and nautical twilight. The sky and fog follow the resulting phases;
   light and night looks blend through dusk and dawn, and a flashlight matters

@@ -4,6 +4,7 @@ import {
   check,
   finite,
   type InferOutput,
+  integer,
   maxValue,
   minValue,
   nonEmpty,
@@ -12,6 +13,23 @@ import {
   strictObject,
   string,
 } from 'valibot';
+
+const Positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
+const AdaptiveScaleSchema = pipe(
+  strictObject({
+    enabled: boolean(),
+    targetRealMs: Positive,
+    min: pipe(Positive, maxValue(1)),
+    max: pipe(Positive, maxValue(1)),
+    step: pipe(Positive, maxValue(1)),
+    hysteresisRealMs: pipe(number(), finite(), minValue(0)),
+    sampleWindow: pipe(number(), integer(), minValue(1)),
+  }),
+  check(
+    (value) => value.min <= value.max && value.hysteresisRealMs < value.targetRealMs,
+    'invalid adaptive range or hysteresis',
+  ),
+);
 
 const ScaleOptionSchema = pipe(
   strictObject({
@@ -39,7 +57,18 @@ const ToggleOptionSchema = pipe(
 );
 
 export const GRAPHICS_KNOBS = {
-  renderScale: { kind: 'scale', url: 'renderscale', schema: ScaleOptionSchema },
+  renderScale: {
+    kind: 'scale',
+    url: 'renderscale',
+    schema: pipe(
+      strictObject({ ...ScaleOptionSchema.entries, adaptive: AdaptiveScaleSchema }),
+      check(
+        ({ min, max, default: value, adaptive }) =>
+          min <= max && value >= min && value <= max && adaptive.min >= min && adaptive.max <= max,
+        'scale bounds must contain default and adaptive bounds',
+      ),
+    ),
+  },
   bloomScale: { kind: 'scale', url: 'bloomscale', schema: ScaleOptionSchema },
   smallSunMap: { kind: 'toggle', url: 'sunsmall', schema: ToggleOptionSchema },
   fastCamo: { kind: 'toggle', url: 'camofast', schema: ToggleOptionSchema },

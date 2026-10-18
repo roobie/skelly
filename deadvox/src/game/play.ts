@@ -36,6 +36,7 @@ import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
+import { sightedFirearmModel } from '../render/firearmSight.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
@@ -1319,7 +1320,7 @@ export const startPlay = (
   const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
 
   const spawnItem = (type: string): string => {
-    const item = inventory.createFixture(type);
+    const item = inventory.create(type);
     return inventory.add(item, { kind: 'pile', pos: feet() })
       ? `${inventory.name(item)} is at your feet`
       : `No room for the ${inventory.name(item).toLowerCase()} in the pile at your feet`;
@@ -3210,7 +3211,7 @@ export const startPlay = (
     }
     const { item } = selected;
     const firearmPose = readiness?.uid === item.uid ? readiness : undefined;
-    const { model } = firearmHandlingFor(item, registry);
+    const model = sightedFirearmModel(registry, item) ?? firearmHandlingFor(item, registry).model;
     const side = inventory.hands.right?.uid === item.uid ? ('right' as const) : ('left' as const);
     const progress = firearmPose?.progress ?? 0;
     const viewpoint = { eye: eye(), yaw: input.yaw, pitch: input.pitch };

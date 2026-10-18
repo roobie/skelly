@@ -2,6 +2,7 @@
 read_if:
   - you're changing how Deadvox content and tunables are authored
   - you're designing deterministic functions or the engine-to-mod boundary
+  - you're assessing the adoption limits of CEL reuse evidence
   - "you're taking up the mod-content work in #313 or #393"
 tags: [deadvox, adr, content, mods, determinism]
 ---
@@ -22,8 +23,12 @@ system-owned. Existing TypeScript tuning moves only through scoped follow-up wor
 `deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `deadvox/src/core/content.ts`,
 `buildRegistry`; see `docs/jsonnet.md` for the authoring rule.
 
-Runtime mod functions and their expression format remain undecided. A mod-facing rule may
-describe a consequence, but cannot mutate state outside the engine's validated boundary.
+The deeper runtime-function spike proceeds on restricted CEL. A maintained expression runtime
+supplies parsing, typing and evaluation without making a new language an engine maintenance
+obligation. Pure expressions fit snapshot inputs and validated effect descriptions; the deeper
+spike tests whether this remains useful for composed functions and mod-owned state. Adoption and
+the production profile remain open. A mod-facing rule may describe a consequence, but cannot
+mutate state outside the engine's validated boundary.
 
 ## Runtime design
 
@@ -37,9 +42,39 @@ continual rain; rules may read weather through an event such as `weather_changed
 contract open.
 
 The runtime-function format and its event, effect, composition and persistence contracts remain
-open in #313. The content extraction tracked by #393 does not settle that format. A design
-spike compares a small expression evaluator with CEL and tests one content area and one runtime
-function before any format becomes stable.
+open in #313. The content extraction tracked by #393 does not settle that format. See
+`deadvox/src/spikes/expressions/celMods.ts`, `ModHarness`, and
+`deadvox/test/celModsSpike.test.ts` for isolated CEL composition evidence; see
+`deadvox/src/spikes/expressions/README.md`, "CEL mod boundary", for why the engine must still own
+scheduling, state and effects. The scalar comparison remains in
+`deadvox/src/spikes/expressions/contract.ts`, `Candidate`. These are separate profiles, not a
+widening of the scalar contract. See `deadvox/tools/bench-expressions.mjs`, `measureModRules`, for
+Node probes, and `deadvox/src/spikes/expressions/README.md`, "Published runtime boundary", for the
+Wasm comparison's limits.
+
+The isolated mod profile preserves author operator syntax by rewriting parsed arithmetic to checked
+numeric calls before serializing and compiling it. Intermediate failures must not disappear inside
+predicates, so final-result validation is insufficient. Public typed parser and serializer APIs
+avoid modifying third-party files at install time or depending on undocumented runtime handler
+tables. Serialization must preserve tree structure and literal types; an expression that cannot
+round-trip is rejected rather than silently changed. See
+`deadvox/src/spikes/expressions/celRewrite.ts`, `serializeRewrite`, and
+`deadvox/test/celRewriteSpike.test.ts` for that boundary and its limitations. This does not adopt a
+production arithmetic profile or a general integer-to-double conversion policy.
+
+Reuse evidence includes dependency-scoped function libraries, typed collections, native expression-local
+binding and an engine-provided helper surface; see `deadvox/test/celReuseSpike.test.ts` and
+`deadvox/src/spikes/expressions/README.md`, "Exercised, not chosen". Lexical replacement scopes keep
+library consumers independent, while native binding avoids owning a binding language. Collection
+boundary validation and identity covering engine-library semantics are necessary to keep bounded work
+and strict replay rejection meaningful. Library version solving, global patching, a production helper
+vocabulary and save migration remain open; this evidence chooses none of them for the game.
+
+Restricted profiles do not establish the safety or cost of unrestricted runtimes. Representative
+engine contracts exercise a MoM-shaped rule layer, not a port of its world mechanics. Target
+fidelity, triggers, randomness, effect vocabulary, mod state, composition, effect combining, field
+patches, UI, core tuning and save mismatch policy remain open. No harness policy adopts any of
+those choices for the game.
 
 ## When
 

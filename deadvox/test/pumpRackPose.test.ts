@@ -1,8 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Group, PerspectiveCamera, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldAnchorOffset } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -11,17 +8,9 @@ import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { rackCant } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const base = 'src/content/base';
-const { registry, issues } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
-);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 
 it('rack pose turns an away-facing port only during handling without changing game state', () => {
   const model = structuredClone(registry.models.get('shotgun_pump')!);

@@ -2,8 +2,6 @@
 // here), so these check the maths and the state machine, not what anything looks like. See the module's
 // own report for what to look at in a real browser.
 
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { Bone } from '@mobgen/core/body.ts';
 import { generateValid, realize } from '@mobgen/core/generate.ts';
 import { applyPoint, IDENTITY_M, mulMV, quatToMat3, transpose } from '@mobgen/core/math.ts';
@@ -24,7 +22,6 @@ import { Color, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCa
 import { describe, expect, it } from 'vitest';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { amalgamFigureForType } from '../src/core/amalgamFigure.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
@@ -45,6 +42,7 @@ import {
   perceptionLabelFor,
 } from '../src/render/mobActors.ts';
 
+import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -237,13 +235,7 @@ const partContainment = ({
   return { count: checked, maxOverflow };
 };
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const SHAMBLER_FIGURE_SEEDS = figureSeedPool(registry.zombies);
 const SHAMBLER = registry.zombies.get('shambler')!;
 const RUNNER = registry.zombies.get('runner')!;

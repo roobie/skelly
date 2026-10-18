@@ -1,16 +1,10 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue, type MoveStart } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { handlingMoveCompleteCue, handlingMoveStartCue } from '../src/game/audioPresentation.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const base = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(`${base}/${file}`, 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 
 const dressedInventory = () => {
   const inventory = new Inventory(registry);

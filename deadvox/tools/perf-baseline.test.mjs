@@ -1,8 +1,50 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { test } from 'node:test';
+import { install } from './perf-baseline-browser.mjs';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
+
+test('non-post scene draws count submitted zombies without a composer', () => {
+  const previous = globalThis.perfBaseline;
+  const group = { userData: {} };
+  const zombie = { parent: group, userData: {} };
+  const scene = {};
+  const gl = {
+    getExtension: () => ({}),
+    getParameter: () => 'fixture GPU',
+    isContextLost: () => false,
+    blitFramebuffer: () => undefined,
+    clear: () => undefined,
+    createQuery: () => ({}),
+    beginQuery: () => undefined,
+    endQuery: () => undefined,
+  };
+  const renderer = {
+    getContext: () => gl,
+    domElement: new EventTarget(),
+    renderBufferDirect: () => undefined,
+    render: () => renderer.renderBufferDirect(null, null, null, null, zombie),
+  };
+  const engine = {
+    renderer,
+    scene,
+    meshes: { group: { userData: {} } },
+    shadows: { drawMaps: () => undefined },
+    mood: { renderScale: 1 },
+  };
+  try {
+    install(engine);
+    const perf = globalThis.perfBaseline;
+    perf.attach({ engine, view: { zombieMeshes: { group }, playerMeshes: { group: { userData: {} } } } });
+    perf.enabled = true;
+    perf.frame(() => renderer.render(scene), 0);
+    assert.ok(perf.records[0].zombieDraws > 0);
+    assert.ok(perf.records[0].actorDraws > 0);
+  } finally {
+    globalThis.perfBaseline = previous;
+  }
+});
 
 test('shader console errors invalidate collection without treating warnings as failures', () => {
   const page = new EventEmitter();

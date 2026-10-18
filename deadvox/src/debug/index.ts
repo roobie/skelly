@@ -12,6 +12,7 @@ import {
   type FirearmsSkillZeroEffect,
   type FirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
+import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import type { ShadowState } from '../core/mood.ts';
 import { raycast } from '../core/raycast.ts';
 import type { WeatheringDef } from '../core/schema.ts';
@@ -1087,7 +1088,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       new URLSearchParams(location.search).get('loadout') === COMPASS_DEBUG_LOADOUT &&
       !hooks.inventory.hands[dominantSide(hooks.inventory.character)]
     ) {
-      hooks.inventory.add(hooks.inventory.createFixture('compass'), {
+      hooks.inventory.add(hooks.inventory.create('compass'), {
         kind: 'hand',
         side: dominantSide(hooks.inventory.character),
       });
@@ -1140,7 +1141,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   /** Groups the operator collapsed; remembered per browser. */
   const closedGroups = readClosedGroups();
   const { shadows } = hooks.engine;
+  const lookDefaults = lookDefaultsOf(hooks.engine.registry);
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, {
+    defaults: lookDefaults,
     weather: hooks.weather,
     ...(shadows ? { shadows } : {}),
     flashlight: hooks.flashlight,
@@ -1161,7 +1164,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       : {}),
   });
   const { defaultFogginess } = requireDayCycle(hooks.engine.registry).weather;
-  const initialLook = parseLookParams(new URLSearchParams(location.search), defaultFogginess);
+  const initialLook = parseLookParams(new URLSearchParams(location.search), {
+    look: lookDefaults,
+    defaultFogginess,
+  });
   look.restore(initialLook);
   // `?cam=` puts the player at a saved view instead of the spawn or a save's position (the body moves; saves
   // only ever record the body, never this URL). Mid-air the player falls, unless `freeze=1` or noclip holds
@@ -1196,6 +1202,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
     const next = lookUrl(location.href, lookState(), {
+      look: lookDefaults,
       defaultFogginess,
       weathering: look.weatheringState,
       profiles: hooks.engine.registry.weathering,
@@ -1694,7 +1701,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       pitchRad: hooks.input.pitch,
       buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
-      url: camUrl(lookUrl(location.href, lookState(), { defaultFogginess }), {
+      url: camUrl(lookUrl(location.href, lookState(), { look: lookDefaults, defaultFogginess }), {
         position: hooks.body.pos.map((v) => v * metres) as Vec3,
         yaw: hooks.input.yaw,
         pitch: hooks.input.pitch,

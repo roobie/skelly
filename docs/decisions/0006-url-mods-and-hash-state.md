@@ -64,9 +64,10 @@ keeps a private URL format that a later change has to work around.
 Add a start-state section to the mod schema, alongside the sections in
 `deadvox/src/core/schema.ts`, `SECTION_DESCRIPTOR`. Its row describes a new game: the site
 layout and its storeys and density, the start time of day, the world seed, the kit, wounds
-and skill levels. The core mod carries the default row, so `startingLoadout` and the
-layout's start time move from code into `deadvox/src/content/base`. Tunables belong in
-content; see `PILLARS.md`, "Content forward compatibility".
+and skill levels. The default row's pack placement follows the starting-knowledge and
+start-row question in `deadvox/docs/pack-split.md`, "Open questions", so its references do
+not force skill or setting entries into core. `startingLoadout` and the layout's start time
+move from code into content; see `PILLARS.md`, "Content forward compatibility".
 
 The seed in the start row is optional. A mod pins it when its demo must reproduce one
 world; otherwise a new game draws one. A hash `seed` overrides it, so exploring other
@@ -75,13 +76,13 @@ worlds under the same demo stays a hash edit rather than a new mod.
 The start row replaces whole, by id, like every other definition, so the existing merge in
 `deadvox/src/core/content.ts`, `buildRegistry`, needs no new rule. Field-by-field merging
 across packs would add a second merge rule to every reader of the registry. A demo mod
-that wants the normal kit plus one item imports the core row in Jsonnet and overrides one
+that wants the normal kit plus one item imports the default row in Jsonnet and overrides one
 field, so it follows base edits without a second copy. A JSON mod loaded through the panel
 cannot import, so it states the whole row; that cruder form is enough while browser mods
 are JSON.
 
 When browser loading of Jsonnet mods is built (issue #801), it must let a browser mod
-import the core sources, so a player's mod can override a single field of the start row,
+import bundled pack sources, so a player's mod can override a single field of the start row,
 or of any definition, the way a demo mod does at build time. Whole-row replacement stays
 the merge rule; the import is what keeps a patch surgical.
 
@@ -224,7 +225,7 @@ it. Tests follow `AGENTS.md`, "Tests": the flashlight proof extends an existing 
 rather than adding a browser stage.
 
 1. **Start state and URL mod loading.** The start section, its validation and new-game
-   placement; the default row in the core mod replacing `startingLoadout`; the demo source
+   placement; the default row replacing `startingLoadout`; the demo source
    root; `?mods=` admitting demo mods; `?modpanel`. Every script that opens the panel
    with `?mods=1`, including `deadvox/test/browser/firefox-ui.mjs`, moves to `?modpanel`.
    No other parameter moves. Proof: a flashlight demo mod that starts at night with a

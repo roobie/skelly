@@ -1,8 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
 import { footstepEventForBlock, type PlayerGait, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
@@ -23,18 +20,10 @@ import { startPlayerMelee } from '../src/game/melee.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown,
-    })),
-);
+const registry = baseRegistry();
 const contentNoiseEvents = new Set(
   [...registry.sounds].filter(([, sound]) => sound.noise.enabled).map(([event]) => event),
 );
@@ -796,7 +785,6 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
   const firearm = (type: string, slots: Item['slots'] = {}): Item => ({
     uid: 1,
     type,
-    origin: { kind: 'fixture' },
     count: 1,
     condition: 1,
     slots,

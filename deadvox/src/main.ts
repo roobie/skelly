@@ -2,6 +2,7 @@
 // results; otherwise the game starts (`?radius=` in metres, `?seed=`).
 
 import { loadRecord } from './bench/plan.ts';
+import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
 import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
@@ -24,6 +25,7 @@ import { tutorialRequested, tutorialUrl } from './game/tutorial.ts';
 import { WorldLoading } from './game/worldLoading.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
+import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
 import { chooseMods } from './ui/modsPanel.ts';
 import { contentLookup, SaveController } from './ui/saveController.ts';
@@ -145,6 +147,7 @@ if (bench === 'report') {
   if (config.debug) {
     inputBindings.setDebugRun();
   }
+  mountFullscreenOptions(document.getElementById('fullscreen-options')!);
   mountInputOptions(document.getElementById('input-options')!, config.debug);
   mountControlsCard(
     document.getElementById('controls')!,
@@ -284,6 +287,7 @@ if (bench === 'report') {
   if (run) {
     const config = makeConfig(run.seed, DEFAULT_RADIUS_M, content);
     config.start = parseTimeOfDay(run.time)!;
+    applyBenchWeathering(config);
     startShamblerBench(createEngine(config, view, undefined, { graphicsSource: 'mod' }), run);
   } else {
     document.getElementById('hud')!.textContent =
@@ -296,5 +300,6 @@ if (bench === 'report') {
   const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, content, blockSize);
   // The test house is defined in metres, so it compares across block sizes; `&site=city` benchmarks the city.
   Object.assign(config, siteFromUrl(params, 'testHouse', content.registry));
+  applyBenchWeathering(config);
   startBench(createEngine(config, view, stats, { graphicsSource: 'mod' }), run, stats);
 }

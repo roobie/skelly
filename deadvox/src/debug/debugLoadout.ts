@@ -13,7 +13,7 @@ const wornBackpack = (inventory: Inventory): Item | undefined => {
   if (inventory.worn.back) {
     return inventory.worn.back;
   }
-  const backpack = inventory.createFixture('hiking_backpack');
+  const backpack = inventory.create('hiking_backpack');
   return inventory.add(backpack, { kind: 'worn' }) ? backpack : undefined;
 };
 
@@ -60,7 +60,7 @@ const equipRevolver = (inventory: Inventory, backpack: Item, open: boolean): voi
   if (!(definition && model?.revolver && ammo)) {
     throw new Error('No revolver preview content');
   }
-  const gun = inventory.createFixture(definition.id);
+  const gun = inventory.create(definition.id);
   const cylinder = gun.firearm!.cylinder!;
   cylinder.open = open;
   const loaded = open ? Math.ceil(cylinder.chambers.length / 2) : cylinder.chambers.length;
@@ -73,7 +73,7 @@ const equipRevolver = (inventory: Inventory, backpack: Item, open: boolean): voi
   if (
     !(
       inventory.add(gun, { kind: 'hand', side: dominantSide(inventory.character) }) &&
-      inventory.add(inventory.createFixture(ammo.id, ammo.stack ?? 1), { kind: 'pocket', owner: backpack, pocket: 0 })
+      inventory.add(inventory.create(ammo.id, ammo.stack ?? 1), { kind: 'pocket', owner: backpack, pocket: 0 })
     )
   ) {
     throw new Error('Could not equip revolver preview loadout');
@@ -85,12 +85,12 @@ const equipGrenades = (inventory: Inventory, backpack: Item): void => {
   const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
   if (
     !(
-      inventory.add(inventory.createFixture('frag_grenade'), {
+      inventory.add(inventory.create('frag_grenade'), {
         kind: 'hand',
         side: dominantSide(inventory.character),
       }) &&
-      inventory.add(inventory.createFixture('frag_grenade'), pocket) &&
-      inventory.add(inventory.createFixture('frag_grenade'), pocket)
+      inventory.add(inventory.create('frag_grenade'), pocket) &&
+      inventory.add(inventory.create('frag_grenade'), pocket)
     )
   ) {
     throw new Error('Could not equip grenade preview loadout');
@@ -104,12 +104,12 @@ const equipEmptyMagazine = (inventory: Inventory, backpack: Item): void => {
   const stack = inventory.registry.items.get(round)?.stack ?? 1;
   if (
     !(
-      inventory.add(inventory.createFixture('magazine_stanag_30'), {
+      inventory.add(inventory.create('magazine_stanag_30'), {
         kind: 'hand',
         side: dominantSide(inventory.character),
       }) &&
-      inventory.add(inventory.createFixture(round, stack), pocket) &&
-      inventory.add(inventory.createFixture(round, stack), pocket)
+      inventory.add(inventory.create(round, stack), pocket) &&
+      inventory.add(inventory.create(round, stack), pocket)
     )
   ) {
     throw new Error('Could not equip magazine preview loadout');
@@ -118,17 +118,17 @@ const equipEmptyMagazine = (inventory: Inventory, backpack: Item): void => {
 
 /** The empty pump in hand; a sealed shell box and a stack of loose shells of the kind it holds packed, to load now. */
 const equipPump = (inventory: Inventory, backpack: Item): void => {
-  const box = inventory.createFixture('shotshell_box');
+  const box = inventory.create('shotshell_box');
   const shell = defOf(inventory.registry, box.type).unpack!.item;
   const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
   if (
     !(
-      inventory.add(inventory.createFixture('pump_shotgun'), {
+      inventory.add(inventory.create('pump_shotgun'), {
         kind: 'hand',
         side: dominantSide(inventory.character),
       }) &&
       inventory.add(box, pocket) &&
-      inventory.add(inventory.createFixture(shell, 20), pocket)
+      inventory.add(inventory.create(shell, 20), pocket)
     )
   ) {
     throw new Error('Could not equip pump preview loadout');
@@ -147,14 +147,14 @@ const equipRifles = (inventory: Inventory, backpack: Item, choice: 'ar' | 'ak'):
   } as const;
   const { magazine, cartridge, box } = ammunition[choice];
   const full = (): Item => {
-    const loaded = inventory.createFixture(magazine);
+    const loaded = inventory.create(magazine);
     loaded.cartridges = Array.from({ length: magazineSpec(inventory.registry, magazine)!.capacity }, () => cartridge);
     return loaded;
   };
-  const rifle = inventory.createFixture(rifles[choice]);
+  const rifle = inventory.create(rifles[choice]);
   inventory.fitSlot(rifle, 'magazine', full());
   const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
-  const packed = [inventory.createFixture(rifles[choice === 'ar' ? 'ak' : 'ar']), full(), inventory.createFixture(box)];
+  const packed = [inventory.create(rifles[choice === 'ar' ? 'ak' : 'ar']), full(), inventory.create(box)];
   if (
     !(
       inventory.add(rifle, { kind: 'hand', side: dominantSide(inventory.character) }) &&

@@ -1,0 +1,510 @@
+{
+  "layouts": [
+    {
+      "bounds": {
+        "x0": 32,
+        "x1": 96,
+        "z0": 32,
+        "z1": 96
+      },
+      "buildings": [
+        {
+          "position": [52, 21, 52],
+          "rotation": 180,
+          "template": "rural_police_station"
+        },
+        {
+          "position": [48, 21, 50],
+          "rotation": 0,
+          "template": "rural_police_front_fence"
+        },
+        {
+          "position": [48, 21, 71],
+          "rotation": 0,
+          "template": "rural_police_back_fence"
+        },
+        {
+          "position": [48, 21, 50.5],
+          "rotation": 90,
+          "template": "rural_police_side_fence"
+        },
+        {
+          "position": [74.5, 21, 50.5],
+          "rotation": 90,
+          "template": "rural_police_side_fence"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "rural_police_spike",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Hunting"]
+      },
+      "player": {
+        "bearing": 180,
+        "position": [65.5, 21.5, 49]
+      },
+      "shamblers": [],
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[34, 47], [94, 47]],
+          "surface": "dirt",
+          "width": 4
+        }
+      ],
+      "woodlands": []
+    }
+  ],
+  "templates": [
+    {
+      "access": {
+        "entrance": [10, 1, 28],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "rural_police_station",
+      "layers": [
+        [
+          "##################################gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#####",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "######################################"
+        ],
+        [
+          "##############################HH##....",
+          "#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#....",
+          "#.......#uu....#......FF.#JJJ.vvv#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#..TTTT...#.......E....",
+          "#.......#......#..TTTT...#.......E....",
+          "#.......#......#.........#......i#....",
+          "#.......#......#.........#......i#....",
+          "######DD##DD#######DD######DD#########",
+          "#........#...............#...#.....tt#",
+          "#..WWW...#...............#...#.....tt#",
+          "#..WWW...O..WWW..WWW.....O...Q...BBBB#",
+          "#........O..WWW..WWW.....O...Q...BBBB#",
+          "#..c.....#...............#...#.......#",
+          "#........#...c....c......#...#########",
+          "#........#...............#...#.....SS#",
+          "#........#...............#...#.......#",
+          "#######DD#...............#...#.......#",
+          "#........#..##############...#..VVVV.#",
+          "#........#..#............#...#..VVVV.#",
+          "#..TTTT..O..#.........LL.#...#..VVVV.#",
+          "#..TTTT..O..#............#...#..VVVV.#",
+          "#.....c..#..#............#...O..VVVV.#",
+          "#........#..#............#...O..VVVV.#",
+          "##########..#............##DD#..VVVV.#",
+          "#...........O..WWW.......#...#..VVVV.#",
+          "#.ssss......O..WWW.......#...#..VVVV.#",
+          "#.ssss......#...c........#...#.......#",
+          "#...........#............#AA.#.......#",
+          "##########DD##################GGGGGG##"
+        ],
+        [
+          "##############################HH##....",
+          "#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#....",
+          "#.......#uu....#......FF.#JJJ.vvv#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#..TTTT...#.......E....",
+          "#.......#......#..TTTT...#.......E....",
+          "#.......#......#.........#......i#....",
+          "#.......#......#.........#......i#....",
+          "######DD##DD#######DD######DD#########",
+          "#........#...............#...#.....tt#",
+          "#..WWW...#...............#...#.....tt#",
+          "#..WWW...O..WWW..WWW.....O...Q.......#",
+          "#........O..WWW..WWW.....O...Q.......#",
+          "#..c.....#...............#...#.......#",
+          "#........#...c....c......#...#########",
+          "#........#...............#...#.....SS#",
+          "#........#...............#...#.......#",
+          "#######DD#...............#...#.......#",
+          "#........#..##############...#..VVVV.#",
+          "#........#..#............#...#..VVVV.#",
+          "#..TTTT..O..#.........LL.#...#..VVVV.#",
+          "#..TTTT..O..#............#...#..VVVV.#",
+          "#.....c..#..#............#...O..VVVV.#",
+          "#........#..#............#...O..VVVV.#",
+          "##########..#............##DD#..VVVV.#",
+          "#...........O..WWW.......#...#..VVVV.#",
+          "#.ssss......O..WWW.......#...#..VVVV.#",
+          "#.ssss......#...c........#...#.......#",
+          "#...........#............#AA.#.......#",
+          "##########DD##################GGGGGG##"
+        ],
+        [
+          "###===####===####===#===####===###....",
+          "#ff.ff..#......#......FF.#JJJ....#....",
+          "#.......#......#......FF.#JJJ....#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......E....",
+          "#.......#......#.........#.......E....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "######DD##DD#######DD######DD#########",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........O...rr..........O...Q.......#",
+          "#........O...............O...Q.......#",
+          "#........#...............#...#.......#",
+          "#........#...............#...#########",
+          "#........#...............#...#.....SS#",
+          "#........#...............#...#.......#",
+          "#######DD#...............#...#.......#",
+          "#........#..##############...#..VVVV.#",
+          "#........#..#............#...#..VVVV.#",
+          "#........O..#.........LL.#...#..VVVV.#",
+          "#........O..#............#...#..VVVV.#",
+          "#........#..#............#...O..VVVV.#",
+          "#........#..#............#...O..VVVV.#",
+          "##########..#............##DD#..VVVV.#",
+          "#...........O..rr........#...#..VVVV.#",
+          "#...........O............#...#..VVVV.#",
+          "#...........#............#...#.......#",
+          "#...........#............#AA.#.......#",
+          "##===#####DD##===###===###==##GGGGGG=#"
+        ],
+        [
+          "###...####...####...#...####...###....",
+          "#ff.ff..#......#......FF.#JJJ....#....",
+          "#.......#......#......FF.#JJJ....#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......E....",
+          "#.......#......#.........#.......E....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "######DD##DD#######DD######DD#########",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........O...............O...Q.......#",
+          "#........O...............O...Q.......#",
+          "#........#...............#...#.......#",
+          "#........#..............n#...#########",
+          "#........#...............#...#.....SS#",
+          "#........#...............#...#.......#",
+          "#######DD#...............#...#.......#",
+          "#........#..##############...#..VVVV.#",
+          "#........#..#............#...#..VVVV.#",
+          "#........O..#.........LL.#...#..VVVV.#",
+          "#........O..#............#...#..VVVV.#",
+          "#........#..#............#...O..VVVV.#",
+          "#........#..#............#...O..VVVV.#",
+          "##########..#............##DD#..VVVV.#",
+          "#...........O............#...#..VVVV.#",
+          "#...........O............#...#..VVVV.#",
+          "#...........#............#...#.......#",
+          "#...........#............#AA.#.......#",
+          "##...#####DD##...###...###..##GGGGGG.#"
+        ],
+        [
+          "##################################....",
+          "#.......#......#.........#JJJ....#....",
+          "#.......#......#.........#JJJ....#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "######################################",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........#...............#...#########",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "##########...............#...#.......#",
+          "#........#..##############...#.......#",
+          "#........#..#............#...#.......#",
+          "#........#..#............#...#.......#",
+          "#........#..#............#...#.......#",
+          "#........#..#............#...#.......#",
+          "#........#..#............#...#.......#",
+          "##########..#............#####.......#",
+          "#...........#............#...#.......#",
+          "#...........#............#...#.......#",
+          "#...........#............#...#.......#",
+          "#...........#............#...#.......#",
+          "##############################GGGGGG##"
+        ],
+        [
+          "##################################....",
+          "#.......#......#.........#JJJ....#....",
+          "#.......#......#.........#JJJ....#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "#.......#......#.........#.......#....",
+          "######################################",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "#........#...............#...#########",
+          "#........#...............#...#.......#",
+          "#........#...............#...#.......#",
+          "##########...............#...#.......#",
+          "#........#..##############...#.......#",
+          "#........#..#............#...#.......#",
+          "#........#..#............#...#.......#",
+          "#........#..#............#...#.......#",
+          "#........#..#............#...#.......#",
+          "#........#..#............#...#.......#",
+          "##########..#............#####.......#",
+          "#...........#............#...#.......#",
+          "#...........#............#...#.......#",
+          "#...........#............#...#.......#",
+          "#...........#............#...#.......#",
+          "######################################"
+        ],
+        [
+          "##################################gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#####",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "######################################"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Hunting"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": "air",
+        "=": "window_frame",
+        "A": {
+          "furniture": "shelf",
+          "loot": "gauntlet_police_ammunition"
+        },
+        "B": {
+          "facing": "e",
+          "furniture": "bed"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "E": {
+          "facing": "e",
+          "furniture": "station_emergency_door"
+        },
+        "F": {
+          "facing": "s",
+          "furniture": "fridge",
+          "lootUsage": ["Residential"]
+        },
+        "G": {
+          "furniture": "workshop_roller_door"
+        },
+        "H": {
+          "furniture": "station_coal_hatch"
+        },
+        "J": {
+          "facing": "s",
+          "furniture": "station_solid_fuel_boiler"
+        },
+        "K": {
+          "facing": "s",
+          "furniture": "station_cooker"
+        },
+        "L": {
+          "facing": "s",
+          "furniture": "police_evidence_locker"
+        },
+        "O": {
+          "facing": "e",
+          "furniture": "wood_door"
+        },
+        "Q": {
+          "facing": "e",
+          "furniture": "gauntlet_cell_door"
+        },
+        "S": {
+          "furniture": "shelf",
+          "loot": "gauntlet_police_gear"
+        },
+        "T": {
+          "furniture": "range_table"
+        },
+        "V": {
+          "furniture": "gauntlet_car_wreck_0_0_intact"
+        },
+        "W": {
+          "furniture": "desk",
+          "loot": "desk"
+        },
+        "b": {
+          "facing": "s",
+          "furniture": "station_washbasin"
+        },
+        "c": {
+          "furniture": "chair"
+        },
+        "f": {
+          "facing": "s",
+          "furniture": "police_file_cabinet"
+        },
+        "g": {
+          "ground": true
+        },
+        "h": {
+          "facing": "s",
+          "furniture": "station_kitchen_sink"
+        },
+        "i": {
+          "facing": "w",
+          "furniture": "station_cleaning_sink"
+        },
+        "k": "concrete",
+        "n": {
+          "facing": "w",
+          "furniture": "police_duty_notice"
+        },
+        "r": {
+          "facing": "s",
+          "furniture": "police_desk_radio"
+        },
+        "s": {
+          "furniture": "sofa"
+        },
+        "t": {
+          "facing": "s",
+          "furniture": "station_cell_toilet"
+        },
+        "u": {
+          "facing": "s",
+          "furniture": "station_toilet"
+        },
+        "v": {
+          "facing": "s",
+          "furniture": "station_coal_bin"
+        }
+      },
+      "size": [38, 8, 30]
+    },
+    {
+      "id": "rural_police_front_fence",
+      "layers": [
+        ["......................................................"],
+        ["ffffffff..........ffffffffffffff......ffffffffffffffff"],
+        ["ffffffff..........ffffffffffffff......ffffffffffffffff"],
+        ["ffffffff..........ffffffffffffff......ffffffffffffffff"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": {
+          "ground": true
+        },
+        "f": "chain_link"
+      },
+      "size": [54, 4, 1]
+    },
+    {
+      "id": "rural_police_back_fence",
+      "layers": [
+        ["......................................................"],
+        ["ffffffffffffffffffffffffffffffffffffffffffffffffffffff"],
+        ["ffffffffffffffffffffffffffffffffffffffffffffffffffffff"],
+        ["ffffffffffffffffffffffffffffffffffffffffffffffffffffff"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": {
+          "ground": true
+        },
+        "f": "chain_link"
+      },
+      "size": [54, 4, 1]
+    },
+    {
+      "id": "rural_police_side_fence",
+      "layers": [
+        ["........................................."],
+        ["fffffffffffffffffffffffffffffffffffffffff"],
+        ["fffffffffffffffffffffffffffffffffffffffff"],
+        ["fffffffffffffffffffffffffffffffffffffffff"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": {
+          "ground": true
+        },
+        "f": "chain_link"
+      },
+      "size": [41, 4, 1]
+    }
+  ]
+}

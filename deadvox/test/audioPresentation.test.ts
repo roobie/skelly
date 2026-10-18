@@ -9,6 +9,7 @@ import {
   HEARTBEAT_TUNING,
   heartbeatForStamina,
 } from '../src/game/audioPresentation.ts';
+import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 
 describe('heartbeat audio presentation', () => {
   it('uses the tuning anchors at the start stamina and exhaustion', () => {
@@ -68,22 +69,13 @@ describe('refusal audio presentation', () => {
 const firearm = (type: string, slots: Item['slots'] = {}): Item => ({
   uid: 1,
   type,
-  origin: { kind: 'fixture' },
   count: 1,
   condition: 1,
   slots,
 });
 
 const FIXTURES = 'src/content/base';
-const baseRegistry = buildRegistry(
-  readdirSync(FIXTURES)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(join(FIXTURES, file), 'utf8')) as unknown,
-    })),
-).registry;
+const baseRegistry = loadBaseRegistry();
 
 describe('firearm audio presentation', () => {
   it('selects the M4 sound only for the AR and keeps AK and actor selection consistent', () => {
