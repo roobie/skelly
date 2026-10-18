@@ -1,4 +1,5 @@
 import bundledModList from '../config/bundled-mods.json' with { type: 'json' };
+import { bundledModCatalogue } from '../core/bundledModCatalogue.ts';
 import type { ContentIssue } from '../core/content.ts';
 import { type BrowserMod, evaluateMods } from './browserMods.ts';
 import { baseSources, type StartupContent } from './bundledContent.ts';
@@ -60,8 +61,8 @@ const DERIVATIONS: Readonly<Record<string, Derive>> = {
 };
 
 // The list is content so the site launcher reads the same file; an entry with no derivation is an error.
-const BUNDLED_MODS: readonly BundledMod[] = bundledModList.mods.map(({ id }) => {
-  const derive = DERIVATIONS[id];
+const BUNDLED_MODS: readonly BundledMod[] = bundledModCatalogue(bundledModList).map(({ id }) => {
+  const derive = Object.hasOwn(DERIVATIONS, id) ? DERIVATIONS[id] : undefined;
   if (!derive) {
     throw new Error(`Bundled mod "${id}" has no derivation`);
   }

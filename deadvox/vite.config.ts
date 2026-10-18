@@ -9,6 +9,7 @@ import { defineConfig } from 'vitest/config';
 import { pagesAnalyticsPlugin } from '../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
+import { bundledModCatalogue } from './src/core/bundledModCatalogue.ts';
 import { canonicalJson } from './src/core/canonicalJson.ts';
 import {
   fingerprintAfterHotChange,
@@ -172,6 +173,7 @@ function simulationFingerprintPlugin() {
 // The site launcher is a static page outside this bundle, so it reads the bundled mod list as a file beside the game.
 function bundledModListPlugin() {
   const source = readFileSync(resolve(packageRoot, 'src/config/bundled-mods.json'), 'utf8');
+  bundledModCatalogue(JSON.parse(source));
   return {
     name: 'deadvox:bundled-mod-list',
     generateBundle(this: { emitFile: (file: { type: 'asset'; fileName: string; source: string }) => string }) {

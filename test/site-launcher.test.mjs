@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { bundledModCatalogueIssues } from '../deadvox/src/core/bundledModCatalogue.ts';
 import { tutorialRequested } from '../deadvox/src/game/tutorial.ts';
 import { gitEnvironment, playtestRound, publishPlaytest } from '../deadvox/tools/publish-playtest.mjs';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
@@ -320,6 +321,31 @@ describe('site launchers track the games’ URL parameters', () => {
       ids.slice(1).join(','),
       'unticking removes only that id',
     );
+  });
+
+  it('admits a bundled mod catalogue only when the game schema does, and hides the control otherwise', async () => {
+    const loadBundledMods = new Function(`${extractDeclaration('loadBundledMods')}\nreturn loadBundledMods;`)();
+    const row = (id) => ({ id, label: `Label ${id}`, detail: `Detail ${id}` });
+    const catalogues = {
+      valid: { mods: [row('a'), row('b')] },
+      empty: { mods: [] },
+      duplicateIds: { mods: [row('a'), row('a')] },
+      objectLabel: { mods: [{ ...row('a'), label: {} }] },
+      numericDetail: { mods: [{ ...row('a'), detail: 7 }] },
+      missingPresentation: { mods: [{ id: 'a' }] },
+      notAList: { mods: row('a') },
+    };
+    await Promise.all(
+      Object.entries(catalogues).map(async ([name, catalogue]) => {
+        const gameAdmits = bundledModCatalogueIssues(catalogue).length === 0;
+        const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
+        assert.deepEqual(shown, gameAdmits ? catalogue.mods : [], `${name}: launcher agrees with the game schema`);
+      }),
+    );
+    assert.equal(bundledModCatalogueIssues(catalogues.valid).length, 0, 'the valid fixture passes the schema');
+    assert.notEqual(bundledModCatalogueIssues(catalogues.duplicateIds).length, 0, 'duplicate ids fail the schema');
+    const failed = await loadBundledMods(async () => ({ ok: false, json: async () => catalogues.valid }), 'x');
+    assert.deepEqual(failed, [], 'a failed fetch hides the control');
   });
 
   it('composes a practice tutorial URL the game accepts from the launcher', () => {

@@ -72,13 +72,11 @@ it is selected, never written out as a second set of numbers, so it follows base
 That derivation is the seam player mods lack: they replace whole rows and cannot scale a
 base value. See `src/game/bundledMods.ts`, `selectBundledMods`.
 
-The list of bundled mods (id, label, detail) is content, not code: the game and the site
-launcher must offer the same mods, and the launcher is a static page that cannot import
-game modules. One config file is the single source; the build publishes it beside the game
-so the launcher fetches it, and a mod listed without a derivation fails at startup. A missing
-file only hides the launcher's control, because the launcher is a developer entry point
-and must keep working without it. See `src/game/bundledMods.ts`, `BUNDLED_MODS`, and
-`site/launcher.js`, `loadBundledMods`.
+The game and the site launcher must offer the same mods, and the launcher is a static page
+that cannot import game modules, so the list is one schema-checked content file rather than
+two copies. The launcher is a developer entry point, so a missing or invalid list only hides
+its control instead of breaking it. See `src/core/bundledModCatalogue.ts`,
+`bundledModCatalogue`, and `site/launcher.js`, `loadBundledMods`.
 
 Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Damage, movement
 speed (wander and chase), detection and health each have one factor, `BEGINNER_FACTORS`.

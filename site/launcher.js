@@ -629,13 +629,18 @@ const onCopy = async (e) => {
   }
 };
 // The list is deadvox content published beside the game; without it the control is simply absent.
+// It is a static page that cannot import the game's schema check, so it admits the list whole or not at all.
 const loadBundledMods = async (fetcher, url) => {
   try {
     const response = await fetcher(url);
     const { mods } = await response.json();
-    return response.ok && Array.isArray(mods) && mods.every((mod) => typeof mod.id === 'string' && mod.id !== '')
-      ? mods
-      : [];
+    const text = (value) => typeof value === 'string' && value.trim() !== '';
+    const sound =
+      response.ok &&
+      Array.isArray(mods) &&
+      mods.every((mod) => mod && text(mod.id) && text(mod.label) && text(mod.detail)) &&
+      new Set(mods.map((mod) => mod.id)).size === mods.length;
+    return sound ? mods : [];
   } catch {
     return [];
   }
