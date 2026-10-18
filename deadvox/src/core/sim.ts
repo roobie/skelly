@@ -271,7 +271,9 @@ export class Simulation {
     }
     this.takeDamage(cause, () => {
       const exposure =
-        effects.kind === undefined ? undefined : this.exposures.hit(amount, cause, region, effects.kind, effects.touch);
+        effects.kind === undefined
+          ? undefined
+          : this.exposures.hit(amount, cause, region, { kind: effects.kind, touch: effects.touch });
       return this.impact(amount, region, effects, exposure);
     });
   }

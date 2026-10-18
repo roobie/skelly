@@ -357,7 +357,14 @@ describe('snapshot state components', () => {
 
   it('round-trips a touched contact and a touched tail to the same continuation', async () => {
     const runtime = createRuntime();
-    runtime.sim.expose({ id: 'puddle', rate: 1, cause: 'fixture burn', region: 'leftLeg', kind: 'acid', touch: 'ground' });
+    runtime.sim.expose({
+      id: 'puddle',
+      rate: 1,
+      cause: 'fixture burn',
+      region: 'leftLeg',
+      kind: 'acid',
+      touch: 'ground',
+    });
     runtime.sim.hit(1, 'fixture glob', 'rightArm', { kind: 'acid', touch: 'hand' });
     runtime.session.frame(1 / 60);
 

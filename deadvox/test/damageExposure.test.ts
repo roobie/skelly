@@ -94,7 +94,7 @@ describe('damage exposure', () => {
   it('a hit tail adds half its immediate damage without an independent rate value', () => {
     const exposures = new DamageExposures(tuning, () => 0.5);
     const damage = 4;
-    const exposure = exposures.hit(damage, 'fixture glob', 'torso', 'acid')!;
+    const exposure = exposures.hit(damage, 'fixture glob', 'torso', { kind: 'acid' })!;
     const immediate = exposure.damage;
     let tail = 0;
     exposures.advance(tuning.linger.acid!.simSeconds, (amount) => {

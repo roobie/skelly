@@ -201,8 +201,7 @@ export class DamageExposures {
     amount: number,
     cause: string,
     region: BodyRegion,
-    kind: DamageKind,
-    touch?: Touch,
+    { kind, touch }: { readonly kind: DamageKind; readonly touch?: Touch | undefined },
   ): DamageExposure | undefined {
     if (!Number.isFinite(amount) || amount < 0) {
       throw new Error('Invalid body damage');
