@@ -15,6 +15,8 @@ import { type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
+import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { buildFixtureRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
   blockId,
@@ -30,13 +32,16 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
-const registryWithSleepScenario = (sleepCap: number) => {
-  const files = readdirSync('src/content/base')
+const baseContentFiles = () =>
+  readdirSync('src/content/base')
     .filter((name) => name.endsWith('.json'))
     .map((source) => ({
       source,
       data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
     }));
+
+const registryWithSleepScenario = (sleepCap: number) => {
+  const files = baseContentFiles();
   const compression = files
     .flatMap(({ data }) => data.compression ?? [])
     .find((row) => row.id === CORE_CONTENT_IDS.player);
@@ -308,6 +313,45 @@ describe('snapshot state components', () => {
     expect(restored.inventory.locate(restoredHeadlamp)).toMatchObject({ kind: 'worn', slot: 'head' });
     expect(restoredHeadlamp.on).toBe(true);
     expect(restored.survival.lit?.uid).toBe(headlamp.uid);
+  });
+
+  it('round-trips worn feet and hands items in their slots', async () => {
+    const wearable = (id: string, slot: 'feet' | 'hands') => ({
+      id,
+      name: id,
+      category: 'clothing',
+      weight: 100,
+      size: [1, 1],
+      wearable: { slot, encumbrance: 0, wearPerDamage: 0.1 },
+    });
+    const { registry: limbRegistry } = buildFixtureRegistry([
+      ...baseContentFiles(),
+      {
+        source: 'test-limbs.json',
+        data: { items: [wearable('test_boots', 'feet'), wearable('test_gloves', 'hands')] },
+      },
+    ]);
+    const runtime = createRuntime(undefined, false, undefined, { registry: limbRegistry });
+    const worn = ['test_boots', 'test_gloves'].map((type) => {
+      const item = runtime.inventory.create(type);
+      expect(runtime.inventory.add(item, { kind: 'worn' })).toBe(true);
+      item.condition = 0.5;
+      return item;
+    });
+
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
+      version: formatVersion,
+      contentLookup: (kind, id) => lookupSaveContent(limbRegistry, kind, id),
+    });
+    const restored = createRuntime(decoded.snapshot, false, undefined, { registry: limbRegistry });
+    for (const [item, slot] of [
+      [worn[0]!, 'feet'],
+      [worn[1]!, 'hands'],
+    ] as const) {
+      const back = restored.inventory.itemByUid(item.uid)!;
+      expect(restored.inventory.locate(back)).toMatchObject({ kind: 'worn', slot });
+      expect(back.condition).toBe(item.condition);
+    }
   });
 
   it('round-trips sleep debt past 100, the alarm wake hour and a running alarm sleep with its wake time', async () => {

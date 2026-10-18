@@ -2,8 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Inventory } from '../src/core/inventory.ts';
-import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../src/core/wear.ts';
+import { simSeconds } from '../src/core/time.ts';
+import { playerWearHooks, wearMeleeWeaponOnHit, wearOnPlayerHit } from '../src/core/wear.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const { registry } = buildRegistry(
   readdirSync('src/content/base')
@@ -35,10 +37,49 @@ const hitRegistry = buildRegistry([
           size: [1, 1],
           wearable: { slot: 'head', encumbrance: 0, wearPerDamage: 0.1 },
         },
+        {
+          id: 'test_boots',
+          name: 'Test boots',
+          category: 'clothing',
+          weight: 100,
+          size: [1, 1],
+          wearable: { slot: 'feet', encumbrance: 0, wearPerDamage: 0.1, imperviousTo: ['acid'] },
+        },
+        {
+          id: 'test_gloves',
+          name: 'Test gloves',
+          category: 'clothing',
+          weight: 100,
+          size: [1, 1],
+          wearable: { slot: 'hands', encumbrance: 0, wearPerDamage: 0.1 },
+        },
       ],
     },
   },
 ]).registry;
+
+const tuning = BODY_TUNING_FIXTURE;
+
+const wearing = (...types: string[]) => {
+  const inventory = new Inventory(hitRegistry);
+  const items = types.map((type) => {
+    const item = inventory.create(type);
+    if (!inventory.add(item, { kind: 'worn' })) {
+      throw new Error(`fixture could not wear ${type}`);
+    }
+    return item;
+  });
+  return { inventory, items };
+};
+
+const puddle = {
+  id: 'puddle',
+  rate: 1,
+  cause: 'fixture burn',
+  region: 'leftLeg',
+  kind: 'acid',
+  touch: 'ground',
+} as const;
 
 describe('item wear', () => {
   it('subtracts a melee weapon’s content rate and clamps its condition at ruin', () => {
@@ -58,31 +99,78 @@ describe('item wear', () => {
 
   it.each([
     { region: 'head', item: 'test_cap', other: 'jacket' },
-    { region: 'leftArm', item: 'jacket', other: 'jeans' },
-    { region: 'rightLeg', item: 'jeans', other: 'jacket' },
-  ] as const)('wears the $item covering a $region hit', ({ region, item, other }) => {
-    const inventory = new Inventory(hitRegistry);
-    const worn = inventory.create(item);
-    const otherWorn = inventory.create(other);
-    expect(inventory.add(worn, { kind: 'worn' })).toBe(true);
-    expect(inventory.add(otherWorn, { kind: 'worn' })).toBe(true);
+    { region: 'leftArm', item: 'jacket', other: 'test_gloves' },
+    { region: 'rightLeg', item: 'jeans', other: 'test_boots' },
+  ] as const)('a blow wears the outermost $item covering a $region hit', ({ region, item, other }) => {
+    const {
+      inventory,
+      items: [worn, otherWorn],
+    } = wearing(item, other);
     const rate = hitRegistry.items.get(item)!.wearable!.wearPerDamage!;
 
-    wearOnPlayerHit(inventory, region, 1, 1);
+    wearOnPlayerHit(inventory, tuning, { region, damage: 1, kind: 'blunt' });
 
-    expect(worn.condition).toBe(1 - rate);
-    expect(otherWorn.condition).toBe(1);
+    expect(worn!.condition).toBeCloseTo(1 - rate * tuning.outerWearMultiplier.blunt);
+    expect(otherWorn!.condition).toBe(1);
+  });
+
+  it('hand contact meets the gloves before the sleeve that covers the arm', () => {
+    const {
+      inventory,
+      items: [jacket, gloves],
+    } = wearing('jacket', 'test_gloves');
+
+    wearOnPlayerHit(inventory, tuning, { region: 'rightArm', damage: 1, kind: 'blunt', touch: 'hand' });
+
+    expect(gloves!.condition).toBeLessThan(1);
+    expect(jacket!.condition).toBe(1);
   });
 
   it('scales wear by received damage and the damage kind’s multiplier', () => {
-    const inventory = new Inventory(hitRegistry);
-    const outer = inventory.create('jacket');
-    expect(inventory.add(outer, { kind: 'worn' })).toBe(true);
+    const {
+      inventory,
+      items: [outer],
+    } = wearing('jacket');
     const rate = hitRegistry.items.get('jacket')!.wearable!.wearPerDamage!;
-    const multiplier = 2;
 
-    wearOnPlayerHit(inventory, 'torso', 3, multiplier);
+    wearOnPlayerHit(inventory, tuning, { region: 'torso', damage: 3, kind: 'acid' });
 
-    expect(outer.condition).toBeCloseTo(1 - rate * 3 * multiplier);
+    expect(outer!.condition).toBeCloseTo(1 - rate * 3 * tuning.outerWearMultiplier.acid);
+  });
+
+  it('ground contact with impervious boots leaves health, wounds and the boots unchanged', () => {
+    const {
+      inventory,
+      items: [, boots],
+    } = wearing('jeans', 'test_boots');
+    const sim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
+    const { health } = sim.body;
+    const wounds = structuredClone(sim.body.wounds);
+
+    sim.expose(puddle);
+    sim.frame(simSeconds(1));
+    sim.leaveExposure(puddle.id);
+    sim.frame(tuning.linger.acid!.simSeconds);
+
+    expect(sim.body.health).toBe(health);
+    expect(sim.body.wounds).toEqual(wounds);
+    expect(boots!.condition).toBe(1);
+    expect(sim.exposures.snapshotState().exposures).toHaveLength(0);
+    expect(sim.actionRefusal).toBeUndefined();
+  });
+
+  it('ground contact without boots lands on the leg and wears the trousers', () => {
+    const {
+      inventory,
+      items: [jeans],
+    } = wearing('jeans');
+    const sim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
+    const { health } = sim.body;
+
+    sim.expose(puddle);
+    sim.frame(simSeconds(1));
+
+    expect(sim.body.health).toBeLessThan(health);
+    expect(jeans!.condition).toBeLessThan(1);
   });
 });
