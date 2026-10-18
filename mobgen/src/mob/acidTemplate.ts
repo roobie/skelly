@@ -1,10 +1,17 @@
-import type { Template } from '../core/template.ts';
+import { registerTemplate, type Template, templateByName } from '../core/template.ts';
+import './acid.ts';
+import './templates.ts';
 import data from './acidTemplate.json' with { type: 'json' };
 
-type AcidContent = Pick<
-  Template,
-  'name' | 'description' | 'bodyPlan' | 'status' | 'bodyMassKg' | 'materials' | 'params'
-> &
-  Pick<typeof data, 'skinB' | 'organic'>;
-
-export const acidContent = data as unknown as AcidContent;
+export type AcidTemplate = Template & Omit<typeof data, keyof Template>;
+const content = data as unknown as Omit<AcidTemplate, 'voxelSize' | 'params'> & Pick<Template, 'params'>;
+const reference = templateByName(content.sizeReference);
+if (reference.params.height === undefined) {
+  throw new Error(`acid size reference "${reference.name}" has no height parameter`);
+}
+export const acidTemplate: AcidTemplate = {
+  ...content,
+  voxelSize: reference.voxelSize,
+  params: { ...content.params, height: reference.params.height },
+};
+registerTemplate(acidTemplate);

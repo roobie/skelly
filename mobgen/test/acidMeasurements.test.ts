@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { Body, Bone, Feature } from '../src/core/body.ts';
-import { add, type Mat3, mulMV, normalize, rotX } from '../src/core/math.ts';
+import { add, type Mat3, mulMV, normalize, rotX, type Vec3 } from '../src/core/math.ts';
 import { rasterizeFeatures, worldPosition } from '../src/core/voxelize.ts';
 import { frameOf } from '../src/mob/acid.ts';
 import {
@@ -16,7 +16,7 @@ import {
   taperAcceptance,
   widestSection,
 } from '../src/mob/acidMeasurements.ts';
-import { acidContent } from '../src/mob/acidTemplate.ts';
+import { acidTemplate } from '../src/mob/acidTemplate.ts';
 
 const materials: Body['materials'] = {
   skin: { color: [0.5, 0.5, 0.5], emissive: 0 },
@@ -25,7 +25,7 @@ const materials: Body['materials'] = {
 const voxelSize = 0.03;
 const cellSize = voxelSize / 4;
 
-const sectionFixture = (rot: Mat3, oval: boolean) => {
+const sectionFixture = (rot: Mat3, oval: boolean, radii: Vec3 = [0.15, 0.3, 0.09]) => {
   const head = [0, 0.5, 0] as const;
   const tail = add(head, mulMV(rot, [0, 0.6, 0]));
   const bone: Bone = { id: 'fixture', parent: null, head, tail, frame: frameOf(head, tail) };
@@ -37,9 +37,7 @@ const sectionFixture = (rot: Mat3, oval: boolean) => {
         bone: bone.id,
         op: 'add',
         material: 'skin',
-        shape: oval
-          ? { kind: 'ellipsoid', center, radii: [0.15, 0.3, 0.09], rot }
-          : { kind: 'box', center, half: [0.15, 0.3, 0.09], round: 0, rot },
+        shape: oval ? { kind: 'ellipsoid', center, radii, rot } : { kind: 'box', center, half: radii, round: 0, rot },
       },
     ],
     materials,
@@ -56,8 +54,12 @@ it('local rerasterization preserves full box fill instead of mistaking rotation 
   expect(oval.fill).toBeLessThan(pitched.fill);
   expect(oval.aspect).toBeGreaterThan(1);
   expect(oval.width / oval.depth).toBeCloseTo(oval.aspect);
-  expect(sectionAcceptance(pitched, acidContent.organic).passes).toBe(false);
-  expect(sectionAcceptance(oval, acidContent.organic).passes).toBe(true);
+  expect(sectionAcceptance(pitched, acidTemplate.organic).passes).toBe(false);
+  expect(sectionAcceptance(oval, acidTemplate.organic).passes).toBe(true);
+  const round = closestSection(sectionFixture(rotX(40), true, [0.09, 0.3, 0.09]), 0.3);
+  expect(round.fill).toBeLessThanOrEqual(acidTemplate.organic.maximumSectionFill);
+  expect(round.aspect).toBeCloseTo(1);
+  expect(sectionAcceptance(round, acidTemplate.organic).passes).toBe(false);
 });
 
 it('the widest section finds an ellipsoid muscle belly rather than either tapered end', () => {
@@ -67,7 +69,7 @@ it('the widest section finds an ellipsoid muscle belly rather than either tapere
   expect(peak.width).toBeGreaterThan(sections.at(-1)!.width);
   expect(peak.y).toBeGreaterThan(sections[0]!.y);
   expect(peak.y).toBeLessThan(sections.at(-1)!.y);
-  const limits = acidContent.organic;
+  const limits = acidTemplate.organic;
   const taperLimits = { minimumTaperVoxels: limits.minimumTaperVoxels, peakRange: limits.armPeak };
   expect(taperAcceptance(sections, 0.6, voxelSize, taperLimits).passes).toBe(true);
   expect(taperAcceptance(sectionFixture(rotX(40), false), 0.6, voxelSize, taperLimits).passes).toBe(false);
@@ -218,7 +220,7 @@ it('the shared joint frame measures a three-voxel box-width step across the join
   const measured = jointSections(body, parent, child, { voxelSize, cellSize });
   expect(measured.widthDifference).toBeCloseTo(3 * voxelSize);
   expect(measured.depthDifference).toBeCloseTo(0);
-  expect(jointAcceptance(measured, voxelSize, acidContent.organic.maximumJointDifferenceVoxels)).toBe(false);
+  expect(jointAcceptance(measured, voxelSize, acidTemplate.organic.maximumJointDifferenceVoxels)).toBe(false);
 });
 
 it('sideways bone frames retain their signed up axis and a forward flex axis on both sides', () => {

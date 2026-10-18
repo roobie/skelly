@@ -1,4 +1,5 @@
 import type { Body, Bone, Feature } from '../core/body.ts';
+import type { Realized } from '../core/generate.ts';
 import {
   add,
   cross,
@@ -15,19 +16,17 @@ import {
   type Vec3,
 } from '../core/math.ts';
 import type { Shape } from '../core/sdf.ts';
-import { rasterizeFeatures, type Voxels } from '../core/voxelize.ts';
+import type { Genome } from '../core/template.ts';
+import { rasterizeFeatures, type Voxels, worldPosition } from '../core/voxelize.ts';
 import type { AcidFeature } from './acid.ts';
+import type { AcidTemplate } from './acidTemplate.ts';
 
 const EPSILON = 1e-9;
 const matrix = (bone: Bone): Mat3 => {
   const { x, y, z } = bone.frame!;
   return [x[0], y[0], z[0], x[1], y[1], z[1], x[2], y[2], z[2]];
 };
-const skin = (f: Feature) =>
-  f.op === 'add' &&
-  f.material === 'skin' &&
-  (f as AcidFeature).anatomy !== 'pustule' &&
-  (f as AcidFeature).anatomy !== 'digit';
+const skin = (f: Feature) => f.op === 'add' && f.material === 'skin' && (f as AcidFeature).anatomy !== 'digit';
 const transformShape = (shape: Shape, inverse: Mat3, origin: Vec3): Shape => {
   const point = (p: Vec3) => mulMV(inverse, sub(p, origin));
   if (shape.kind === 'capsule') {
@@ -107,6 +106,14 @@ export const widestSection = (sections: readonly Section[]): Section => {
   return sections.reduce((best, section) =>
     section.width > best.width || (section.width === best.width && section.area > best.area) ? section : best,
   );
+};
+
+const measuredBone = (body: Body, id: string): Bone => {
+  const bone = body.bones.find((candidate) => candidate.id === id);
+  if (!bone) {
+    throw new Error(`missing measured bone ${id}`);
+  }
+  return bone;
 };
 
 export const sectionAcceptance = (
@@ -291,4 +298,150 @@ export const jointSections = (
     widthDifference: Math.abs(before.width - after.width),
     depthDifference: Math.abs(before.depth - after.depth),
   };
+};
+
+const backProfile = (body: Body, genome: Genome, template: AcidTemplate) => {
+  const limits = template.organic;
+  const { voxelSize } = genome;
+  const cellSize = voxelSize / limits.measureDivisor;
+  const trunkIds = body.bones
+    .filter((bone) => ['hips', 'belly', 'chest', 'neck'].includes(bone.id) || bone.id.startsWith('shoulder.'))
+    .map((bone) => bone.id);
+  const features = body.features.filter((feature) => trunkIds.includes(feature.bone) && skin(feature));
+  const used = new Set(features.map((feature) => feature.bone));
+  const measuringBody: Body = {
+    ...body,
+    bones: body.bones
+      .filter((bone) => used.has(bone.id))
+      .map((bone) => ({
+        ...bone,
+        parent: used.has(bone.parent ?? '') ? bone.parent : null,
+      })),
+    features,
+  };
+  const voxels = rasterizeFeatures(measuringBody, cellSize, genome.seed);
+  const [nx, ny] = voxels.dims;
+  const cells = new Map<string, SideCell>();
+  voxels.owner.forEach((owner, index) => {
+    if (!owner) {
+      return;
+    }
+    const [, y, z] = worldPosition(voxels, index % nx, Math.floor(index / nx) % ny, Math.floor(index / (nx * ny)));
+    cells.set(`${y},${z}`, { y, z });
+  });
+  const neck = measuredBone(body, 'neck');
+  return backAcceptance(
+    backStations(
+      [...cells.values()],
+      { cellSize, stationSize: voxelSize },
+      { origin: measuredBone(body, 'hips').tail, direction: measuredBone(body, 'belly').frame!.z },
+      { origin: scale(add(neck.head, neck.tail), 0.5), direction: neck.frame!.z },
+    ),
+    limits.minimumBackBulge * genome.params.height!,
+    limits.profileToleranceVoxels * voxelSize,
+  );
+};
+
+export const organicRead = (body: Body, genome: Genome, template: AcidTemplate) => {
+  const limits = template.organic;
+  const { voxelSize } = genome;
+  const cellSize = voxelSize / limits.measureDivisor;
+  const boneLength = (bone: Bone) => length(sub(bone.tail, bone.head));
+  const scan = (id: string) => {
+    const bone = measuredBone(body, id);
+    const len = boneLength(bone);
+    const sections = sectionsOf(fleshInFrame(body, [id], { frame: bone, origin: bone.head }, cellSize)).filter(
+      (section) => section.y >= 0 && section.y <= len,
+    );
+    return { sections, len, peak: widestSection(sections) };
+  };
+  const chest = scan('chest');
+  const belly = measuredBone(body, 'belly');
+  const bellyOrigin = add(belly.head, scale(belly.frame!.y, boneLength(belly) / 2 - cellSize / 2));
+  const bellyMid = closestSection(
+    sectionsOf(fleshInFrame(body, ['belly'], { frame: belly, origin: bellyOrigin }, cellSize)),
+    cellSize / 2,
+  );
+  const trunk = {
+    chest: sectionAcceptance(chest.peak, limits),
+    belly: sectionAcceptance(bellyMid, limits),
+  };
+  const joints = [
+    ['hips', 'belly'],
+    ['belly', 'chest'],
+    ['arm.L', 'fore.L'],
+    ['arm.R', 'fore.R'],
+  ].map(([parentId, childId]) => {
+    const parent = measuredBone(body, parentId!);
+    const child = measuredBone(body, childId!);
+    const measured = jointSections(body, parent, child, { voxelSize, cellSize });
+    return {
+      parent: parent.id,
+      child: child.id,
+      ...measured,
+      passes: jointAcceptance(measured, voxelSize, limits.maximumJointDifferenceVoxels),
+    };
+  });
+  const arms = ['L', 'R'].map((side) => {
+    const taper = (id: string, peakRange: readonly number[]) => {
+      const { sections, len } = scan(id);
+      return {
+        bone: id,
+        ...taperAcceptance(sections, len, voxelSize, { minimumTaperVoxels: limits.minimumTaperVoxels, peakRange }),
+      };
+    };
+    const hand = measuredBone(body, `hand.${side}`);
+    const fore = measuredBone(body, `fore.${side}`);
+    const palm = scan(hand.id).peak;
+    const wrist = jointSections(body, fore, hand, { voxelSize, cellSize }).before;
+    const palmExtra = palm.width - wrist.width;
+    return {
+      side,
+      arm: taper(`arm.${side}`, limits.armPeak),
+      fore: taper(`fore.${side}`, limits.forePeak),
+      palmWidth: palm.width,
+      wristWidth: wrist.width,
+      palmExtra,
+      palmPasses: palmExtra >= limits.minimumPalmExtraVoxels * voxelSize - EPSILON,
+    };
+  });
+  const back = backProfile(body, genome, template);
+  return {
+    voxelSize,
+    cellSize,
+    trunk,
+    back,
+    joints,
+    arms,
+    passes:
+      trunk.chest.passes &&
+      trunk.belly.passes &&
+      back.passes &&
+      joints.every((joint) => joint.passes) &&
+      arms.every((arm) => arm.arm.passes && arm.fore.passes && arm.palmPasses),
+  };
+};
+
+export const silhouetteMasks = (model: Realized) => {
+  const support = model.body.bones.filter((bone) => model.supportBones.has(bone.id));
+  if (support.length === 0) {
+    throw new Error('silhouette measurement needs ground supports');
+  }
+  const centerX = support.reduce((sum, bone) => sum + bone.head[0] + bone.tail[0], 0) / (2 * support.length);
+  const centerZ = support.reduce((sum, bone) => sum + bone.head[2] + bone.tail[2], 0) / (2 * support.length);
+  const { voxels } = model;
+  const [nx, ny] = voxels.dims;
+  const front = new Set<string>();
+  const side = new Set<string>();
+  voxels.owner.forEach((owner, index) => {
+    if (!owner) {
+      return;
+    }
+    const x = (index % nx) + voxels.origin[0] - Math.round(centerX / voxels.size);
+    const y = (Math.floor(index / nx) % ny) + voxels.origin[1];
+    const z = Math.floor(index / (nx * ny)) + voxels.origin[2] - Math.round(centerZ / voxels.size);
+    front.add(`${x},${y}`);
+    side.add(`${z},${y}`);
+  });
+  return { front, side };
 };
