@@ -2,7 +2,7 @@
 // hands and standing it down elsewhere. Each move is worked out on a shadow of the
 // cells before anything changes, so a refusal leaves the world as it was.
 
-import { type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
+import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, PILE_GRID, type Pile, type Spot } from './inventory.ts';
@@ -60,10 +60,12 @@ class Shadow {
   private readonly cells = new Map<string, BlockEntity>();
   private readonly terrainSolid: SolidAt;
 
-  constructor(terrainSolid: SolidAt, entities: Iterable<BlockEntity>) {
+  constructor(terrainSolid: SolidAt, entities: BlockEntities) {
     this.terrainSolid = terrainSolid;
-    for (const entity of entities) {
-      this.fill(entity, entity.pos, true);
+    for (const entity of entities.all) {
+      if (entities.fills(entity)) {
+        this.fill(entity, entity.pos, true);
+      }
     }
   }
 
@@ -275,7 +277,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): strin
   if (boxIntersectsBody(topLayer(entity.pos, entity.size)[0]!, [entity.size[0], 1, entity.size[2]], player)) {
     return messages.standingOn;
   }
-  const shadow = new Shadow(mover.terrainSolid, inventory.entities.all);
+  const shadow = new Shadow(mover.terrainSolid, inventory.entities);
   const falls = settle(mover, shadow, entity);
   if (typeof falls === 'string') {
     return falls;
@@ -315,7 +317,7 @@ export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: 
   if (!inventory.canReach(aimed as Vec3)) {
     return { refusal: messages.outOfReach };
   }
-  const shadow = new Shadow(mover.terrainSolid, inventory.entities.all);
+  const shadow = new Shadow(mover.terrainSolid, inventory.entities);
   const base = placementBase(entity, aimed);
   const y = shadow.free(base, entity.size) ? shadow.landing(base, entity.size) : undefined;
   if (y === undefined) {
@@ -366,7 +368,7 @@ export const placeFurniture = (mover: FurnitureMover, aimed: Readonly<Vec3>): st
     return result.refusal;
   }
   const entity = inventory.entities.carrying()!;
-  const shadow = new Shadow(mover.terrainSolid, inventory.entities.all);
+  const shadow = new Shadow(mover.terrainSolid, inventory.entities);
   shadow.fill(entity, result.pos, true);
   const moves = resettlePiles(mover, shadow, pilesOver(inventory, [{ pos: result.pos, size: [...entity.size] }]));
   if (!moves) {

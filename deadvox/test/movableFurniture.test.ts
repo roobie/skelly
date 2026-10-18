@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { type FurnitureMover, liftFurniture } from '../src/core/furnitureMove.ts';
+import { type FurnitureMover, liftFurniture, placeFurniture } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { LadderHold } from '../src/core/ladders.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
@@ -106,6 +106,55 @@ describe('movable furniture', () => {
     expect(inventory.move(tool, { kind: 'pile', pos: moved }).ok).toBe(true);
     expect(liftFurniture(mover(inventory), piece)).toBeUndefined();
     expect(inventory.plan(tool, { kind: 'hand', side: 'right' })).toEqual({ ok: false, reason: messages.handsFull });
+  });
+
+  describe('in an open doorway', () => {
+    const doorDef = [...registry.furniture.values()].find((def) => def.door && !def.door.hatch && !def.shape)!;
+    const doorway = { type: doorDef.id, pos: moved, size: doorDef.size, facing: 'n' as const };
+
+    it('stands a piece there, which keeps the door from closing until it is lifted out', () => {
+      const inventory = new Inventory(registry);
+      const furniture = mover(inventory);
+      const piece = inventory.furnish(spec)!;
+      const door = inventory.entities.add(doorway)!;
+      expect(inventory.entities.setOpen(door, true)).toBeUndefined();
+      const aimed: Vec3 = [
+        moved[0] + Math.floor(crate.size[0] / 2),
+        moved[1],
+        moved[2] + Math.floor(crate.size[2] / 2),
+      ];
+
+      expect(liftFurniture(furniture, piece)).toBeUndefined();
+      expect(placeFurniture(furniture, aimed)).toBeUndefined();
+      expect(inventory.entities.at(...moved)).toBe(piece);
+      expect(inventory.entities.isSolid(...moved)).toBe(true);
+      expect(inventory.entities.doorAt(...moved)).toBe(door);
+      expect(inventory.entities.closeDoor(door, furniture.player, [])).toBe('other');
+      expect(door.open).toBe(true);
+
+      expect(liftFurniture(furniture, piece)).toBeUndefined();
+      expect(inventory.entities.isSolid(...moved)).toBe(false);
+      expect(inventory.entities.closeDoor(door, furniture.player, [])).toBeUndefined();
+      expect(inventory.entities.isSolid(...moved)).toBe(true);
+    });
+
+    it('keeps the piece in the doorway and the door behind it through save and load', async () => {
+      const runtime = createRuntime();
+      const piece = runtime.inventory.furnish(spec)!;
+      const door = runtime.entities.add(doorway)!;
+      expect(runtime.entities.setOpen(door, true)).toBeUndefined();
+      runtime.entities.lift(piece);
+      runtime.entities.place(piece, moved);
+
+      const loaded = await roundTrip(runtime);
+      const restored = loaded.entities.byUid(piece.uid)!;
+      const restoredDoor = loaded.entities.byUid(door.uid)!;
+      expect(restoredDoor.open).toBe(true);
+      expect(loaded.entities.at(...moved)).toBe(restored);
+      expect(loaded.entities.doorAt(...moved)).toBe(restoredDoor);
+      loaded.entities.lift(restored);
+      expect(loaded.entities.at(...moved)).toBe(restoredDoor);
+    });
   });
 
   describe('with a ladder', () => {

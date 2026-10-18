@@ -156,6 +156,8 @@ export class BlockEntities {
   readonly registry: Registry;
   private readonly byOrigin = new Map<string, BlockEntity>();
   private readonly cells = new Map<string, BlockEntity>();
+  /** Doorway cells, kept apart so a piece can stand in an open door's cells while the door stays there. */
+  private readonly doorways = new Map<string, BlockEntity>();
   private nextUid = 1;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -211,11 +213,15 @@ export class BlockEntities {
     const restored = BlockEntities.restoreState(this.registry, state);
     this.byOrigin.clear();
     this.cells.clear();
+    this.doorways.clear();
     for (const [origin, entity] of restored.byOrigin) {
       this.byOrigin.set(origin, entity);
     }
     for (const [cell, entity] of restored.cells) {
       this.cells.set(cell, entity);
+    }
+    for (const [cell, entity] of restored.doorways) {
+      this.doorways.set(cell, entity);
     }
     this.nextUid = restored.nextUid;
     this.version = restored.version;
@@ -318,14 +324,29 @@ export class BlockEntities {
 
   private occupy(entity: BlockEntity, filled: boolean): void {
     const [x0, y0, z0] = entity.pos;
+    const cells = this.inDoorway(entity) ? this.doorways : this.cells;
     for (const [x, y, z] of cellsOf(entity.size)) {
       const cell = key(x0 + x, y0 + y, z0 + z);
       if (filled) {
-        this.cells.set(cell, entity);
-      } else if (this.cells.get(cell) === entity) {
-        this.cells.delete(cell);
+        cells.set(cell, entity);
+      } else if (cells.get(cell) === entity) {
+        cells.delete(cell);
       }
     }
+  }
+
+  /**
+   * An upright door that swings out of its cells: open, they are a passage, which a piece may barricade. A shaped
+   * door's panel stays in its cells, and an open hatch is a drop, so both keep their cells to themselves.
+   */
+  private inDoorway(entity: BlockEntity): boolean {
+    const def = this.defOf(entity);
+    return def.door !== undefined && !def.door.hatch && !def.shape;
+  }
+
+  /** Whether a standing piece keeps other pieces out of its cells: everything does but a door open in its doorway. */
+  fills(entity: BlockEntity): boolean {
+    return !(entity.open && this.inDoorway(entity));
   }
 
   /** Takes a standing piece out of its cells into the player's hands. */
@@ -340,7 +361,11 @@ export class BlockEntities {
 
   /** Whether any other piece covers a cell of a box at a corner. */
   covered(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
-    return [...cellsOf(size)].some(([x, y, z]) => this.cells.has(key(pos[0] + x, pos[1] + y, pos[2] + z)));
+    return [...cellsOf(size)].some(([x, y, z]) => {
+      const cell = key(pos[0] + x, pos[1] + y, pos[2] + z);
+      const door = this.doorways.get(cell);
+      return this.cells.has(cell) || (door !== undefined && this.fills(door));
+    });
   }
 
   /** Stands the carried piece with its lowest corner at a cell; callers check the world there first. */
@@ -362,9 +387,17 @@ export class BlockEntities {
     this.version += 1;
   }
 
-  /** The entity covering a cell. */
+  /** The entity covering a cell: a piece barricading a doorway, rather than its door. */
   at(x: number, y: number, z: number): BlockEntity | undefined {
-    return this.cells.get(key(x, y, z));
+    const cell = key(x, y, z);
+    return this.cells.get(cell) ?? this.doorways.get(cell);
+  }
+
+  /** The door in a cell, even behind a piece barricading its doorway. */
+  doorAt(x: number, y: number, z: number): BlockEntity | undefined {
+    const cell = key(x, y, z);
+    const entity = this.doorways.get(cell) ?? this.cells.get(cell);
+    return entity && this.defOf(entity).door ? entity : undefined;
   }
 
   /** Whether an entity's cell stops movement: closed doors and solid furniture do. */
@@ -383,7 +416,7 @@ export class BlockEntities {
     return !entity.carried && boxIntersectsBody(entity.pos, entity.size, body);
   }
 
-  /** Close an open door only when neither the player nor any other body occupies its cells. */
+  /** Close an open door only when neither the player nor any other body or piece occupies its cells. */
   closeDoor(entity: BlockEntity, player: Body, otherBodies: Iterable<Body>): 'player' | 'other' | undefined {
     if (!(this.defOf(entity).door && entity.open)) {
       return undefined;
@@ -395,6 +428,9 @@ export class BlockEntities {
       if (this.bodyIntersects(entity, body)) {
         return 'other';
       }
+    }
+    if (this.inDoorway(entity) && this.covered(entity.pos, entity.size)) {
+      return 'other';
     }
     this.setOpen(entity, false);
     return undefined;
