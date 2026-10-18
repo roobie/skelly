@@ -38,26 +38,27 @@ burns. Immunity is a property of the type's content, not of the body.
 
 ## Core delta
 
-The study changed mobgen's core in five ways. Each one exists because the acid body could
-not be expressed without it, and each one is general, so it belongs in core rather than in
-an acid module:
+These contracts belong in core because they express body facts independently of any acid
+module. Their owners are `src/core/body.ts`, `Bone` and `MaterialDef`;
+`src/core/template.ts`, `Template`; `src/core/generate.ts`, `BodyPlanDef`;
+`src/core/rules.ts`, `GroupBudget`; and `src/core/voxelize.ts`, `voxelize`:
 
 - **Bone frames, joint limits and a disposition** (`fixed`, `sever`, `burst`) on `Bone`
   (`src/core/body.ts`). A sac that never falls off but bursts on death, and a crusted back that
   never severs, are body facts, not Deadvox special cases.
-- **Materials as content.** The closed material list and the shared palette become a
-  per-template material table with colour and glow. The acid glow and the sac
-  colour are look tuning, which `PILLARS.md`, "Content forward compatibility" puts in content.
+- **Materials as content.** Per-template colour and glow are look tuning, which
+  `PILLARS.md`, "Content forward compatibility" puts in content. See
+  `src/mob/materialTemplates.jsonnet` and `src/mob/materials.ts`, `resolveMaterials`.
 - **Per-plan budgets and limb bones** on `BodyPlanDef` (`src/core/generate.ts`). The old
   shared scaling assumed humanoid height and head proportions, and a regex picked limb
   segments by humanoid bone names. Neither holds for a hunched body with differently named
   bones.
 - **Group budgets with fractions and bone patterns** (`src/core/rules.ts`). The acid body's
   identity floors (head, sac, drool) are shares of the whole, not fixed voxel counts.
-- **Carve correctness** in `src/core/voxelize.ts`: a carve's noise gate applies as a paint's
-  already does (`markCarved` ignores it), a carve scoped with `onto` protects flesh it does
-  not target, and a feature with an undeclared material is rejected instead of falling back
-  to skin. The acid body's ragged carves need the noise gate.
+- **Carve correctness.** Ragged cuts need noise gating, and scoped cuts must preserve
+  untargeted blended flesh rather than damaging neighbouring anatomy. Missing material
+  declarations must fail rather than silently changing the look. See
+  `src/core/voxelize.ts`, `markCarved` and `voxelize`.
 
 ### Landing it without weakening other mobs' validation
 
@@ -68,11 +69,13 @@ The proof is that every existing mobgen test, validation run and Deadvox load pa
 no budget or fixture edits. A budget edit in that round signals a lost behaviour and is a
 defect.
 
-The material change has the widest reach because every palette consumer moves: the
-humanoid, dog and amalgam builders, the mobgen viewer and CLI, Deadvox's amalgam flesh
-renderer and session body. Moving them all in the same round is cheaper than a shim that
-keeps the old palette, and `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards
-compatibility" rules out the shim anyway.
+Materials cross the builder, viewer, CLI and Deadvox boundary. Consumers decode through
+the voxel grid's local table rather than a shared palette, because a compatibility shim
+would keep two competing material contracts. See `src/core/voxelize.ts`, `materialOf`;
+`src/viewer/scene.ts`, `vertexColors`; `src/cli/view.ts`, `printView`; and
+`deadvox/src/render/amalgamFlesh.ts`, `mergeBoneMeshes`. Declarative material dependencies
+also enter the generated-body fingerprint; see `deadvox/tools/simulationFingerprint.ts`,
+`collectSimulationSourceGraph`.
 
 ### Other mobs' outputs that can change
 
@@ -226,11 +229,11 @@ only because labs hold few of them (`deadvox/docs/acid-zombie.md`, "Spawning").
 Each round is one PR. They run in order because each one depends on the contract the one
 before it lands.
 
-1. **Core delta and migration** (hard coder). Port the five core changes. Give every
-   existing plan its budget and limb hooks, every template its material table, and move every
-   palette consumer in mobgen and Deadvox. Done when: all existing mobgen and Deadvox tests
-   pass with no budget or fixture loosening; the study's core tests are in; the PR lists
-   which mobs' voxels changed and why; and Deadvox loads every shipped model.
+1. **Core contracts and migration.** Existing plans retain their validation budgets through
+   plan-owned hooks; see `src/mob/budgets.ts`, `heightHeadBudgets`. Core fixture coverage is in
+   `test/materials.test.ts` and `test/budgetHooks.test.ts`. Keep existing validation and
+   Deadvox model-load checks passing without budget or fixture loosening when extending these
+   contracts. The feature-only measurement rasterizer belongs to the body round below.
 2. **Acid body plan and template** (hard coder). Add the plan, template and
    measurement module as `comparison-only`, with the probe fixtures, identity properties and
    gated sweeps, plus a viewer entry. Its parameter ranges vary breadth, never height.

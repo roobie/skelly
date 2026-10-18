@@ -7,6 +7,7 @@ read_if:
   - "you're changing the Mobgen/Deadvox boundary or the amalgam movement-cost trade-off in #574"
   - "you're marking a template ready or comparison-only"
   - "you change the crowd gore-mask encoding"
+  - "you change template materials or coarse skeletal material assignment"
 ---
 
 # mobgen — procedural voxel actors
@@ -22,6 +23,10 @@ Mobgen keeps body construction independent of feasibility rules and rendering so
 - Full validation remains the default for gameplay detail. Silhouette validation is an explicit far-LOD choice: coarse ownership and voxel counts are poor proxies for draw cost, while a stable outline and triangle budget preserve what matters at distance. See `src/core/generate.ts`, `realizeLod`, `recommendedProfileFor`, and `src/core/rules.ts`, `SILHOUETTE_RULES`.
 - Actor mass is a template choice, not a consequence of voxel density; stylized creatures need not share realistic density. See `src/core/templateMass.ts`, `templatePartMassProperties`.
 - Keep the look stylized and voxel-coloured rather than anatomically or medically exact, and model only what serves the game rather than building a general character creator. The intended read is sickly and fleshy, not swamp-like; extra colour variation must justify the mesh fragmentation it can cause. See `src/mob/humanoid.ts`, `src/core/voxelize.ts`, `voxelize`, `src/core/mesh.ts`, `meshBones`, and `src/mob/templates.ts`.
+
+Template material tables and their parameter-driven colour choices are authored in Jsonnet so changing a look does not require changing a builder. Material bytes are local to a voxel grid, not a global palette; consumers must use that grid's material names. See `src/mob/materialTemplates.jsonnet`, `src/mob/materials.ts`, `resolveMaterials`, and `src/core/voxelize.ts`, `materialOf`.
+
+Humanoid coarse builds intentionally omit forearm and hand flesh while retaining forced marrow for connectivity. Those bones explicitly declare a marrow material so this omission preserves their appearance without a core skin fallback. See `src/mob/humanoid.ts`, `buildBones`, and `src/core/body.ts`, `Bone`.
 
 ## Body-plan constraints
 
