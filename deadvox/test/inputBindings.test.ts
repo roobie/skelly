@@ -603,6 +603,38 @@ describe('keyboard registry', () => {
       remove();
     }
   });
+  it('cancels browser chords only while playing with pointer lock and outside text fields', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    let context: InputContext = 'play';
+    keyboard.context = () => ({ context, debug: false });
+    const remove = keyboard.install();
+    let locked: Element | null = document.body;
+    Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+    const prevented = (target: EventTarget, code: string, modifiers: KeyboardEventInit) => {
+      const key = new KeyboardEvent('keydown', { code, bubbles: true, cancelable: true, ...modifiers });
+      target.dispatchEvent(key);
+      return key.defaultPrevented;
+    };
+
+    try {
+      expect(prevented(globalThis, 'KeyU', { ctrlKey: true })).toBe(true);
+      expect(prevented(globalThis, 'KeyS', { metaKey: true })).toBe(true);
+      expect(prevented(globalThis, 'ArrowLeft', { altKey: true })).toBe(true);
+      expect(prevented(globalThis, 'ControlLeft', { ctrlKey: true })).toBe(false);
+
+      const input = document.createElement('input');
+      document.body.append(input);
+      expect(prevented(input, 'KeyU', { ctrlKey: true })).toBe(false);
+      context = 'menu';
+      expect(prevented(globalThis, 'KeyU', { ctrlKey: true })).toBe(false);
+      context = 'play';
+      locked = null;
+      expect(prevented(globalThis, 'KeyU', { ctrlKey: true })).toBe(false);
+    } finally {
+      remove();
+      Reflect.deleteProperty(document, 'pointerLockElement');
+    }
+  });
   it('routes a gate chord exclusively, suppresses repeats, and requires release after an owner transition', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
     let context: InputContext = 'play';
