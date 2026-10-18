@@ -823,7 +823,9 @@ wear or wounds already taken. Long actions cannot run during contact or its tail
 a persistent refusal owns that constraint instead of an interrupt every step.
 Blows still interrupt when they land. An idle exposure system must not fragment
 unrelated action timing or replay; it only imposes tick boundaries while a burn
-is live. See `src/core/scheduler.ts`, `SystemSpec.enabled`;
+is live. A save taken within a tick must continue like live play; pending
+activation must not replay dormant time. See `src/core/scheduler.ts`,
+`SystemSpec.enabled` and `Scheduler.snapshotState`;
 `src/core/sim.ts`, `Simulation.expose`,
 `Simulation.leaveExposure`, `Simulation.endExposure` and `Simulation.actionRefusal`;
 `src/core/longAction.ts`, `LongActions.interruptExposure`.

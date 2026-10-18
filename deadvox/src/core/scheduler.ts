@@ -49,6 +49,10 @@ export class Scheduler {
 
   /** Isolated immutable continuation state; callbacks and system definitions stay in the fresh runtime. */
   snapshotState(): Readonly<SchedulerState> {
+    // A tick may capture immediately after activation, before the next selection scan.
+    for (const entry of this.entries) {
+      this.syncSuspension(entry);
+    }
     return Object.freeze({
       time: this.time,
       systems: Object.freeze(this.entries.map(({ spec, done, ticks }) => Object.freeze({ id: spec.id, done, ticks }))),

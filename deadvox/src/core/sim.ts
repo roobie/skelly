@@ -196,6 +196,7 @@ export class Simulation {
     }
     Object.assign(this.needs, state.needs);
     this.body.restoreState(state.body);
+    // Exposures must precede scheduler restore: enabled predicates determine its saved phase.
     this.exposures.restoreState(state.exposures);
     if (this.exposures.simTimestamp > state.time) {
       throw new Error('Exposure cursor exceeds simulation time');

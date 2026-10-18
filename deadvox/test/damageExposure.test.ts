@@ -208,6 +208,44 @@ describe('damage exposure', () => {
     }
   });
 
+  it('a snapshot inside the activation tick preserves the first exposure tick and continuation', () => {
+    const live = new Simulation({ seed: 2, bodyTuning: tuning });
+    let saved: ReturnType<Simulation['snapshotState']> | undefined;
+    const registerContact = (sim: Simulation, capture: () => void) => {
+      sim.scheduler.register({
+        id: 'fixture-contact',
+        rate: 8,
+        tick: () => {
+          sim.expose({ id: 'pool', rate: 1, cause: 'fixture burn', region: 'leftLeg', kind: 'acid' });
+          capture();
+        },
+      });
+    };
+    registerContact(live, () => {
+      saved ??= live.snapshotState();
+    });
+    live.frame(simSeconds(0.125));
+    if (saved === undefined) {
+      throw new Error('Contact did not capture its activation');
+    }
+    expect(saved.exposures.exposures).toHaveLength(1);
+    const restored = new Simulation({ seed: 2, bodyTuning: tuning });
+    registerContact(restored, () => undefined);
+    restored.restoreState(saved);
+    restored.paused = false;
+    for (const sim of [live, restored]) {
+      sim.frame(simSeconds(0.01));
+    }
+    expect(live.scheduler.tickCounts().get('damage-exposure')).toBe(0);
+    expect(restored.body.health).toBe(live.body.health);
+    expect(restored.snapshotState()).toEqual(live.snapshotState());
+    for (const sim of [live, restored]) {
+      sim.frame(simSeconds(0.1));
+    }
+    expect(live.body.health).toBeLessThan(saved.body.health);
+    expect(restored.snapshotState()).toEqual(live.snapshotState());
+  });
+
   it('restores active contact, its threshold and taper to the same continuation', () => {
     const sim = new Simulation({ seed: 2, bodyTuning: tuning });
     sim.hit(2, 'fixture glob', 'leftArm', { kind: 'acid' });
