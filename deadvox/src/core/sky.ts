@@ -1,7 +1,7 @@
 // Sun position, sky colour, light and fog by time of day. Pure numbers; the renderer
 // applies them (render/sky.ts). The palette is muted (`DESIGN.md`, "Rendering"), and
-// nights are dark. The looks themselves are content: the day cycle's `looks`
-// (`docs/content.md`, "Day cycle"); this file only blends them.
+// nights are dark. The looks and where they sit in each phase are content: the day
+// cycle's `looks` and `keys` (`docs/content.md`, "Day cycle"); this file only blends them.
 
 import type { Vec3 } from './coords.ts';
 import { type DayCycle, type DayPhase, type DayPhaseState, dayPhaseAt } from './dayPhase.ts';
@@ -43,29 +43,6 @@ export interface Sky {
 }
 
 type Look = Omit<Sky, 'light' | 'dayPhase'>;
-type Looks = DayCycleDef['looks'];
-
-// Look keys belong to solar phases. Their positions move with latitude and date;
-// the dawn key is at sunrise and the dusk key is at sunset. Where in its phase a
-// key sits shapes the blend, so it is part of the mechanism, not a look.
-interface LookKey {
-  phase: DayPhase;
-  at: number;
-  look: keyof Looks;
-}
-const KEYS: readonly LookKey[] = [
-  { phase: 'night', at: 0, look: 'night' },
-  { phase: 'night', at: 0.3, look: 'deepNight' },
-  { phase: 'night', at: 0.7, look: 'deepNight' },
-  { phase: 'night', at: 0.9, look: 'night' },
-  { phase: 'dawn', at: 0, look: 'night' },
-  { phase: 'dawn', at: 1, look: 'dawn' },
-  { phase: 'day', at: 0.12, look: 'day' },
-  { phase: 'day', at: 0.85, look: 'day' },
-  { phase: 'day', at: 0.95, look: 'dusk' },
-  { phase: 'dusk', at: 0, look: 'dusk' },
-  { phase: 'dusk', at: 0.72, look: 'night' },
-];
 
 const DAY_SECONDS = 24 * 60 * 60;
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
@@ -102,12 +79,15 @@ const interpolate = (a: Look, b: Look, t: number): Look => ({
   tone: mix(a.tone, b.tone, t),
 });
 
-const lookAt = (state: DayPhaseState, time: number, looks: Looks): Look => {
-  const keys = KEYS.map((key) => {
-    const [start, end] = phaseRange(state, key.phase);
-    const duration = wrap(end - start);
-    return { phasePosition: wrap(start + duration * key.at), look: looks[key.look] };
-  }).sort((a, b) => a.phasePosition - b.phasePosition);
+const lookAt = (state: DayPhaseState, time: number, cycle: DayCycleDef): Look => {
+  const { looks } = cycle;
+  const keys = cycle.keys
+    .map((key) => {
+      const [start, end] = phaseRange(state, key.phase);
+      const duration = wrap(end - start);
+      return { phasePosition: wrap(start + duration * key.at), look: looks[key.look] };
+    })
+    .sort((a, b) => a.phasePosition - b.phasePosition);
   const now = wrap(time);
   for (let i = 0; i < keys.length; i++) {
     const a = keys[i]!;
@@ -135,7 +115,7 @@ export const skyAt = (hour: number, cycle: DayCycleDef): Sky => {
   const [x, , z] = state.sunDirection;
   const y = Math.max(state.sunDirection[1], MIN_LIGHT_Y);
   const len = Math.hypot(x, y, z);
-  return { ...lookAt(state, time, cycle.looks), dayPhase: state.phase, light: [x / len, y / len, z / len] };
+  return { ...lookAt(state, time, cycle), dayPhase: state.phase, light: [x / len, y / len, z / len] };
 };
 
 /**

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
+import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
@@ -13,7 +14,13 @@ import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
-import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
+import {
+  BLOCK_PATTERNS,
+  CONTENT_SECTION_KEYS,
+  type ContentFile,
+  DayCycleSchema,
+  type TemplateDef,
+} from '../src/core/schema.ts';
 import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
 import { sitePalette } from '../src/core/sitePalette.ts';
 import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
@@ -275,6 +282,17 @@ describe('content', () => {
       { source: 'mod/dayCycle.json', data: { dayCycle: { ...authored, noonGameTimeOfDay: modNoon } } },
     ]);
     expect(resolveSpawnTime(registry.dayCycle!, 'noon')).toBe(parseTimeOfDay(modNoon));
+  });
+
+  it('rejects sky keys that are out of cycle order or share an instant, naming the field', () => {
+    const { keys } = rawBaseDayCycle.dayCycle;
+    const swapped = [keys[0]!, keys[2]!, keys[1]!, ...keys.slice(3)];
+    // The night's end and the dawn's start are one instant, which the blend cannot tell apart.
+    const sharedInstant = keys.map((key, index) => (index === 3 ? { ...key, at: 1 } : key));
+    const issuesFor = (candidate: typeof keys): string[] =>
+      safeParse(DayCycleSchema, { ...rawBaseDayCycle.dayCycle, keys: candidate }).issues?.map((i) => i.message) ?? [];
+    expect(issuesFor(swapped)).toContainEqual(expect.stringContaining('keys[2].at'));
+    expect(issuesFor(sharedInstant)).toContainEqual(expect.stringContaining('keys[4].at'));
   });
 
   it('keeps input instructions out of item descriptions', () => {
