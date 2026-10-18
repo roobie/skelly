@@ -293,6 +293,23 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
+  it('does not revive an expired hit recoil when a disabled block follows', () => {
+    const { view } = fixture();
+    const update = vi.spyOn(view.held, 'update').mockImplementation(() => undefined);
+    const recoilNow = (dt: number) => {
+      view.updateHeld(dt, restingHands, undefined);
+      return update.mock.lastCall![2];
+    };
+    view.recoil(12);
+    expect(recoilNow(0)).toBeGreaterThan(0);
+    expect(recoilNow(10)).toBe(0);
+    view.block({ strength: 0, realSeconds: 0.5 });
+    expect(recoilNow(0)).toBe(0);
+    view.block({ strength: 0.1, realSeconds: 0.5 });
+    expect(recoilNow(0)).toBeLessThanOrEqual(0.1);
+    view.dispose();
+  });
+
   it('gives a dark receiver useful beam strength even with a sunlit camera', () => {
     const f = litWorld('doorway');
     try {

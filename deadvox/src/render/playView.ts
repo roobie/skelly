@@ -312,9 +312,14 @@ export const createPlayView = (
       meleeRecoilTime = meleeRecoilDuration;
     },
     // A block shares the hit recoil so a parried blow jolts the held weapon the same way; the hurt flash
-    // separately scales with whatever damage got through.
+    // separately scales with whatever damage got through. A zero-strength or zero-duration cue leaves the envelope alone, and a
+    // finished envelope's strength is not carried into the next one.
     block: ({ strength, realSeconds }: BlockJolt) => {
-      meleeRecoilStrength = Math.max(meleeRecoilStrength, Math.max(0, Math.min(1, strength)));
+      const cue = Math.max(0, Math.min(1, strength));
+      if (cue === 0 || !(realSeconds > 0)) {
+        return;
+      }
+      meleeRecoilStrength = meleeRecoilTime > 0 ? Math.max(meleeRecoilStrength, cue) : cue;
       meleeRecoilDuration = realSeconds;
       meleeRecoilTime = realSeconds;
     },
