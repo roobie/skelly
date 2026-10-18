@@ -117,8 +117,10 @@ interface WirePayload {
     regions: Record<string, Region>;
     zombieSystem: {
       nextEntityId: number;
+      nextPuddleId: number;
       hordes: HordeState[];
       acidGlobs: ZombieSystemState['acidGlobs'];
+      acidPuddles: ZombieSystemState['acidPuddles'];
     };
     blockEntitiesNextUid: number;
     spawned: string[];
@@ -151,7 +153,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 51;
+export const SAVE_SCHEMA_VERSION = 52;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -235,7 +237,15 @@ const acidGlob = obj({
   pos: vec3,
   velocity: vec3,
   damage: nonNegative,
+  puddleDamagePerSimSecond: nonNegative,
   regionRoll: num({ min: 0, max: 0.999_999_999_999_999_9 }),
+});
+const acidPuddle = obj({
+  id: nonNegativeInt,
+  type: str({ id: true }),
+  pos: vec3,
+  remainingSimSeconds: positive,
+  damagePerSimSecond: nonNegative,
 });
 const bodyRegionValues = BODY_REGIONS;
 const body = obj({
@@ -734,8 +744,10 @@ const wirePayloadSchema = obj({
     ),
     zombieSystem: obj({
       nextEntityId: positiveInt,
+      nextPuddleId: nonNegativeInt,
       hordes: arr(horde),
       acidGlobs: arr(acidGlob),
+      acidPuddles: arr(acidPuddle),
     }),
     blockEntitiesNextUid: positiveInt,
     spawned: arr(str({ nonEmpty: true })),
@@ -1099,8 +1111,10 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       regions: Object.fromEntries(regions),
       zombieSystem: {
         nextEntityId: snapshot.world.zombies.nextEntityId,
+        nextPuddleId: snapshot.world.zombies.nextPuddleId,
         hordes: [...snapshot.world.zombies.hordes],
         acidGlobs: [...snapshot.world.zombies.acidGlobs],
+        acidPuddles: [...snapshot.world.zombies.acidPuddles],
       },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
       spawned: [...snapshot.world.spawned],
@@ -1545,6 +1559,9 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   if (grabbed) {
     check('climbable', grabbed.type, 'character.player.ladder.grabbedUid');
   }
+  snapshot.world.zombies.acidPuddles.forEach((puddle, index) => {
+    check('zombie', puddle.type, `world.zombies.acidPuddles[${index}].type`);
+  });
   for (const [index, glob] of snapshot.world.zombies.acidGlobs.entries()) {
     check('zombie', glob.type, `world.zombies.acidGlobs[${index}].type`);
   }
@@ -1588,9 +1605,11 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         }),
         zombies: obj({
           nextEntityId: positiveInt,
+          nextPuddleId: nonNegativeInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
           hordes: arr(horde),
           acidGlobs: arr(acidGlob),
+          acidPuddles: arr(acidPuddle),
         }),
         spawned: arr(str({ nonEmpty: true })),
       }),

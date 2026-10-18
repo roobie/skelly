@@ -58,10 +58,11 @@ describe('debug group state', () => {
 });
 
 describe('debug group headers', () => {
-  it('shows a group its keys, or its hint when it has none', () => {
-    const def = (id: GroupId) => DEBUG_GROUPS.find((candidate) => candidate.id === id)!;
-    expect(keysAtAGlance(def('look'), [{ key: 'J' }, { key: '-' }, { key: '=' }])).toBe('J · - · =');
-    expect(keysAtAGlance(def('share'), [])).toBe('address bar · JSON');
+  it('omits menu-only actions from the keys and falls back to the group hint', () => {
+    const def = { id: 'look' as const, title: 'Fixture', hint: 'Fixture hint' };
+    expect(keysAtAGlance(def, [{ key: 'J' }, { key: '' }, { key: 'K' }])).toBe('J · K');
+    expect(keysAtAGlance(def, [{ key: '' }])).toBe(def.hint);
+    expect(keysAtAGlance(def, [])).toBe(def.hint);
   });
 
   it('has unique group ids and takes the name out of a parameter hint', () => {

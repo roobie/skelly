@@ -15,15 +15,24 @@ import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
+const fixtureZombieTypes = [
+  { id: 'fixture_roamer', name: 'Fixture roamer', authoredOnly: false },
+  { id: 'shamblers', name: 'Fixture authored', authoredOnly: true },
+];
+
 interface FakeRenderer {
   toneMapping: ToneMapping;
   toneMappingExposure: number;
 }
 describe('debug action dispatch', () => {
-  it('places each exposed debug action in one group and binds it semantically', () => {
+  it('groups each action once and leaves content spawn entries menu-only when unbound', () => {
     const { actions } = makeActions();
     expect(actions.length).toBeGreaterThan(0);
     for (const action of actions) {
+      if (fixtureZombieTypes.some((type) => action.id === `debug.spawn-zombie.${type.id}`)) {
+        expect(action.key).toBe('');
+        continue;
+      }
       const binding = inputBindings.binding(action.id);
       expect(binding?.debug).toBe(true);
       expect(binding?.gate).toBeDefined();
@@ -91,7 +100,7 @@ describe('debug action dispatch', () => {
     }
   });
   it('forwards time-skip and spawn requests once and refuses unknown commands', () => {
-    const { actions, skips, spawnCounts, spawnRequests } = makeActions(25);
+    const { actions, skips, spawnCounts } = makeActions(25);
     for (const action of ['debug.skip-hour', 'debug.skip-long']) {
       expect(dispatchDebugAction(actions, action)).toBe(true);
       const count = skips.length;
@@ -102,15 +111,17 @@ describe('debug action dispatch', () => {
     dispatchDebugAction(actions, 'debug.spawn-shamblers');
     dispatchDebugAction(actions, 'debug.spawn-shamblers', true);
     expect(spawnCounts).toEqual([25]);
-    dispatchDebugAction(actions, 'debug.spawn-runner');
-    dispatchDebugAction(actions, 'debug.spawn-crawler');
-    dispatchDebugAction(actions, 'debug.spawn-amalgam');
-    expect(spawnRequests).toEqual([
-      { typeId: 'runner', count: 1 },
-      { typeId: 'crawler', count: 1 },
-      { typeId: 'amalgam', count: 1 },
-    ]);
     expect(dispatchDebugAction(actions, 'fixture.unknown')).toBe(false);
+  });
+  it('offers and dispatches every supplied zombie type, including authored-only types', () => {
+    const { actions, spawnRequests } = makeActions();
+    for (const type of fixtureZombieTypes) {
+      const id = `debug.spawn-zombie.${type.id}`;
+      expect(actions.filter((action) => action.id === id)).toHaveLength(1);
+      expect(dispatchDebugAction(actions, id)).toBe(true);
+      expect(dispatchDebugAction(actions, id, true)).toBe(true);
+    }
+    expect(spawnRequests).toEqual(fixtureZombieTypes.map((type) => ({ typeId: type.id, count: 1 })));
   });
   it('catalogues the same URL parameters that the look owner accepts', () => {
     const { actions } = makeActions();
@@ -242,6 +253,7 @@ const makeActions = (
   const replayCalls: string[] = [];
   const actions = createDebugActions({
     hooks,
+    zombieTypes: fixtureZombieTypes,
     look,
     build,
     spawnMenu,

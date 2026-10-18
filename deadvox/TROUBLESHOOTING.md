@@ -6,6 +6,7 @@ read_if:
   - you're authoring a browser stage or exporting a site in Tiled
   - you investigate a save-lock timeout or browser CI launch failure
   - you add or use transient world-space debug geometry
+  - you expose content-defined actors through debug spawning
 ---
 
 # Deadvox troubleshooting
@@ -36,6 +37,10 @@ Look and camera parameters are copied from the URL, making a reported pose repro
 Compare beam spill at the same nighttime camera pose with `?torchspill=0` for the plain cone and `?torchspill=1` for the blended profile. Reload between comparisons because the shared shader is installed before materials compile. See `src/render/playView.ts`, `createPlayView`.
 
 Software-rendered browser contracts should exercise logic without paying renderer startup cost. Use render-free mode for DOM/input/simulation assertions and pixel mode only for visual witnesses. A stage that checks a frame-applied effect must wait for that effect before asserting. See `test/browser/stage-mode.mjs`, `modes`, and `tools/ui-browser-contract.mjs`.
+
+## Debug spawning
+
+The zombie spawn catalogue follows loaded content, including authored-only types, so modded and site-specific actors can be inspected without making them ambient spawns. Keyboard shortcuts are optional; an unbound type remains available in the panel. See `src/debug/index.ts`, `createDebugActions`, and `src/debug/shamblerSpawning.ts`, `spawnZombieType`.
 
 ## Browser stages
 

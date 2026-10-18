@@ -8,9 +8,10 @@ it('main rendering overlays retain branch core API owners', () => {
   assert.ok(mainSourceOverlays.every((path) => !path.startsWith('core/')));
 });
 
-it('main overlays keep the play frame producer and consumer on the same revision', () => {
+it('main overlays keep the play frame producer, consumer and acid effect contract on the same revision', () => {
   assert.ok(mainSourceOverlays.includes('game/play.ts'));
   assert.ok(mainSourceOverlays.includes('render/playView.ts'));
+  assert.ok(mainSourceOverlays.includes('render/acidEffects.ts'));
 });
 
 it('main overlays accept the directory URL trailing separator and worker module query', () => {

@@ -3615,6 +3615,7 @@ export const startPlay = (
       playerChest: [body.pos[0] * s, body.pos[1] * s + PLAYER_CHEST_METRES, body.pos[2] * s],
       lastZombieStep: session.lastZombieStep,
       acidGlobs: zombieSystem.acidGlobs,
+      acidPuddles: zombieSystem.acidPuddles,
       lastBackgroundStep: session.lastBackgroundStep,
       dt,
       entities,
