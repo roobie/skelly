@@ -14,7 +14,9 @@ import {
   SOUND_TRIGGER_GUIDE,
 } from '../src/ui/soundGuide.ts';
 
-const sounds = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as SoundDef[];
+const sounds = ['sounds.json', 'sounds-block.json'].flatMap(
+  (file) => JSON.parse(readFileSync(`src/content/base/${file}`, 'utf8')).sounds as SoundDef[],
+);
 const manifest = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as Manifest;
 const heartbeatFixtureManifest = {
   sources: [

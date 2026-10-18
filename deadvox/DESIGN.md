@@ -955,8 +955,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   so wounds stay consistent with the strike. Acid spit is never blocked: a
   weapon cannot parry a spray. Training scales with the damage absorbed, so
   heavy blows teach more than scrapes and trivial hits cannot farm practice.
-  Until held items are tuned, skill alone decides, so empty hands block like a
-  weapon. A block is loud contact that the dead hear, so fighting draws more of
+  Skill alone decides how well a guard blocks; the held item plays no part, so
+  empty hands block like a weapon. A block is loud contact that the dead hear, so fighting draws more of
   them; full and partial blocks sound different so the player can tell the
   outcome by ear. The held weapon jolts with the damage absorbed as the visual
   cue, while the hurt flash still follows only what got through. Content owns

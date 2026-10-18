@@ -1,13 +1,16 @@
 import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
 import { footstepEventForBlock, type PlayerGait, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
 import type { Item } from '../src/core/items.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { ZombieDef } from '../src/core/schema.ts';
 import type { SimEvent, Timed } from '../src/core/sim.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
+import { simRate } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import { hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
@@ -29,6 +32,57 @@ const contentNoiseEvents = new Set(
 );
 const shamblerFootstepEvents = new Set(registry.blocks.map((block) => shamblerFootstepEventForBlock(block)));
 
+const blockBlow: ZombieDef['attack']['moves'][number] = {
+  id: 'fixture-blow',
+  weight: 1,
+  damage: 10,
+  damageKind: 'blunt',
+  hitRegions: [{ region: 'leftArm', weight: 1 }],
+};
+const shamblerDef = registry.zombies.get('shambler')!;
+const blockAttacker: ZombieDef = { ...shamblerDef, attack: { ...shamblerDef.attack, moves: [blockBlow] } };
+const meleeSkill = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)!;
+const playerBody = registry.body.get('player')!;
+/**
+ * Every roll is a full-block roll and each blocked point costs a fixed share of the starting stamina,
+ * so the first blow is stopped whole and the second can only be partly paid for.
+ */
+const blockContent = {
+  ...registry,
+  skills: new Map([
+    ...registry.skills,
+    [
+      CORE_CONTENT_IDS.meleeCombat,
+      {
+        ...meleeSkill,
+        combat: {
+          ...meleeSkill.combat,
+          melee: {
+            ...meleeSkill.combat!.melee!,
+            blockChanceMinimum: 1,
+            blockChanceRange: 0,
+            staminaCostFloor: 1,
+            staminaPerAbsorbedPoint: (0.6 * playerBody.needs.spawn.stamina) / blockBlow.damage,
+          },
+        },
+      },
+    ],
+  ]),
+  body: new Map([
+    ...registry.body,
+    [
+      'player',
+      {
+        ...playerBody,
+        needs: {
+          ...playerBody.needs,
+          stamina: { ...playerBody.needs.stamina, recoverPerSimSecond: simRate(0.001) },
+        },
+      },
+    ],
+  ]),
+};
+
 interface PlayedSound {
   sound: Readonly<SoundEmission>;
   expectedPosition?: Vec3;
@@ -40,6 +94,7 @@ interface ScenarioState {
   doorPosition?: Vec3;
   blastPosition?: Vec3;
   meleeStarted?: boolean;
+  blocking?: boolean;
 }
 interface Observation {
   label: string;
@@ -60,7 +115,7 @@ interface NoiseScenario {
   drainEvents: () => void;
 }
 
-it('pairs every discrete hearing stimulus with one positioned sound across movement, doors, fights and pain', () => {
+it('pairs every discrete hearing stimulus with one positioned sound across movement, doors, fights, blocks and pain', () => {
   expect(contentNoiseEvents.size).toBeGreaterThan(0);
   const observe = (scenario: NoiseScenario, label: string, passed: boolean) => {
     scenario.observations.push({ label, passed });
@@ -89,7 +144,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     return session.chest();
   };
 
-  const makeScenario = (): NoiseScenario => {
+  const makeScenario = (content = registry): NoiseScenario => {
     const scale = makeScale(0.5);
     const world = new World();
     const state: ScenarioState = { intent: { ...IDLE } };
@@ -98,7 +153,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const rustlePositions = new Map<string, Vec3[]>();
     let session: ReturnType<typeof createSession>;
     session = createSession({
-      registry,
+      registry: content,
       world,
       isSolid: (_x, y) => y === 0,
       isOpaque: (_x, y) => y === 0,
@@ -109,6 +164,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       ready: () => true,
       controls: {
         active: () => true,
+        blocking: () => state.blocking === true,
         intent: () => state.intent,
         yaw: () => 0,
         pitch: () => 0,
@@ -471,6 +527,29 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     );
   };
 
+  const exerciseBlocks = (scenario: NoiseScenario) => {
+    const { session, state, played, advance } = scenario;
+    const player = session.body.pos;
+    const id = session.zombies.add(blockAttacker, [player[0], player[1], player[2] - 1], [0, 0, 1]);
+    state.actor = session.zombieStore.get(id)!;
+    state.blocking = true;
+    const blockEvents = ['player_block_full', 'player_block_partial'];
+    const blocked = () => blockEvents.every((event) => played.some(({ sound }) => sound.event === event));
+    const twoBlowsFrames =
+      Math.ceil((blockAttacker.attack.windupSimSeconds + blockAttacker.attack.cooldownSimSeconds) * 2 * 60) + 120;
+    for (let frame = 0; frame < twoBlowsFrames && !blocked(); frame++) {
+      advance(1);
+    }
+    state.blocking = false;
+    for (const event of blockEvents) {
+      observe(
+        scenario,
+        `block sound ${event}`,
+        played.some(({ sound }) => sound.event === event),
+      );
+    }
+  };
+
   const exercisePlayerPain = (scenario: NoiseScenario) => {
     const { session, state, advance } = scenario;
     session.sim.hurt(2, 'scenario');
@@ -543,15 +622,22 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   exerciseGrenade(fixture);
   exerciseFight(fixture);
   exercisePlayerPain(fixture);
-  const result = pairingChecks(fixture);
-  for (const observation of fixture.observations) {
-    expect(observation.passed, observation.label).toBe(true);
-  }
-  expect(new Set(result.noises.map(({ event }) => event))).toEqual(contentNoiseEvents);
-  expect(fixture.played.map(({ sound }) => sound)).toEqual(result.sounds.map(({ kind: _kind, ...sound }) => sound));
-  for (const observation of result.checks) {
-    expect(observation.passed, observation.label).toBe(true);
-  }
+  // Blocks get a session of their own: the fight's shambler stays in the first one, and the block needs
+  // tuned stamina that would change the other scenes.
+  const blockFixture = makeScenario(blockContent);
+  exerciseBlocks(blockFixture);
+  const results = [fixture, blockFixture].map((scenario) => {
+    const result = pairingChecks(scenario);
+    for (const observation of scenario.observations) {
+      expect(observation.passed, observation.label).toBe(true);
+    }
+    expect(scenario.played.map(({ sound }) => sound)).toEqual(result.sounds.map(({ kind: _kind, ...sound }) => sound));
+    for (const observation of result.checks) {
+      expect(observation.passed, observation.label).toBe(true);
+    }
+    return result;
+  });
+  expect(new Set(results.flatMap(({ noises }) => noises.map(({ event }) => event)))).toEqual(contentNoiseEvents);
 });
 
 it('lets a roller-door noise wake a nearby shambler through hearing', () => {
