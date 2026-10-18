@@ -2,6 +2,7 @@
 read_if:
   - you're changing how Deadvox content and tunables are authored
   - you're designing deterministic functions or the engine-to-mod boundary
+  - you're assessing the adoption limits of CEL reuse evidence
   - "you're taking up the mod-content work in #313 or #393"
 tags: [deadvox, adr, content, mods, determinism]
 ---
@@ -60,6 +61,14 @@ round-trip is rejected rather than silently changed. See
 `deadvox/src/spikes/expressions/celRewrite.ts`, `serializeRewrite`, and
 `deadvox/test/celRewriteSpike.test.ts` for that boundary and its limitations. This does not adopt a
 production arithmetic profile or a general integer-to-double conversion policy.
+
+Reuse evidence includes dependency-scoped function libraries, typed collections, native expression-local
+binding and an engine-provided helper surface; see `deadvox/test/celReuseSpike.test.ts` and
+`deadvox/src/spikes/expressions/README.md`, "Exercised, not chosen". Lexical replacement scopes keep
+library consumers independent, while native binding avoids owning a binding language. Collection
+boundary validation and identity covering engine-library semantics are necessary to keep bounded work
+and strict replay rejection meaningful. Library version solving, global patching, a production helper
+vocabulary and save migration remain open; this evidence chooses none of them for the game.
 
 Restricted profiles do not establish the safety or cost of unrestricted runtimes. Representative
 engine contracts exercise a MoM-shaped rule layer, not a port of its world mechanics. Target

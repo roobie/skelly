@@ -78,6 +78,11 @@ async function measureBundles() {
 
 function measureModRules() {
   const mods = JSON.parse(readFileSync(new URL('../test/fixtures/mods/cel-mod-spike.json', import.meta.url), 'utf8'));
+  if (process.argv.includes('--reuse')) {
+    mods.push(
+      ...JSON.parse(readFileSync(new URL('../test/fixtures/mods/cel-reuse-spike.json', import.meta.url), 'utf8')),
+    );
+  }
   const harness = new ModHarness(mods);
   const states = new Set(harness.declarations.keys());
   const input = {
@@ -94,13 +99,13 @@ function measureModRules() {
       compileModExpression(rule.def.when, {
         schema: modVariables,
         result: 'bool',
-        functions: harness.functions,
+        functions: harness.functionScope(rule.mod),
         states,
       }),
       compileModExpression(rule.def.effects, {
         schema: modVariables,
         result: 'list<Effect>',
-        functions: harness.functions,
+        functions: harness.functionScope(rule.mod),
         states,
       }),
     ];

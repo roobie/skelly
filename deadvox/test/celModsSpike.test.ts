@@ -1,5 +1,5 @@
 import { Environment } from '@marcbachmann/cel-js';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   type Effect,
   type ModDef,
@@ -97,19 +97,14 @@ describe('restricted CEL mod harness (not shipped)', () => {
     expect(empty.effects).toEqual([]);
   });
 
-  it('orders dependencies and same-event rules independently of input order and applies a dependent replacement', () => {
+  it('orders dependencies and same-event rules independently of input order', () => {
     const normal = harness();
     const reversed = harness(
       mods()
         .reverse()
         .map((mod) => ({ ...mod, rules: mod.rules.reverse() })),
     );
-    const selected = normal.functions.get('mom_cost')!;
-    expect(selected.owner).toBe('resonance');
-    const replacementBody = vi.spyOn(selected.program, 'run');
     const a = normal.tick('cast', input, budget);
-    expect(replacementBody).toHaveBeenCalled();
-    replacementBody.mockRestore();
     expect(a.issues).toEqual([]);
     expect(reversed.tick('cast', input, budget)).toEqual(a);
     expect(a.fired.indexOf('mom:power')).toBeLessThan(a.fired.indexOf('resonance:echo'));
@@ -167,6 +162,7 @@ describe('restricted CEL mod harness (not shipped)', () => {
     ['undeclared input', '[damage(missing)]', 'true'],
     ['host traversal', '[damage(target.constructor)]', 'true'],
     ['nested comprehension', '[damage(1.0)]', 'flags.all(x, flags.exists(y, y == x))'],
+    ['nested traversal through indexing', '[damage(1.0)]', 'flags.all(x, [flags.exists(y, y == x)][0])'],
     ['dynamic map reference', '[damage(state[flags[0]])]', 'true'],
   ])('reports %s at the mod/rule load boundary', (_label, expression, when) => {
     try {
