@@ -7,7 +7,7 @@ read_if:
 # Git workflow
 
 Skelly uses plain git with one topic branch per feature, merged into `main` through a
-reviewed PR. The steps from dispatch to merge, and who may merge, are in `PROCESS.md`.
+reviewed PR. The steps from spec to merge, and who may merge, are in `PROCESS.md`.
 
 Skelly is a public repository, so anyone who clones it, and CI, must be able to follow its
 workflow with stock git and GitHub alone. The workflow is therefore written out here in
