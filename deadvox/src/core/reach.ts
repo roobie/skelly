@@ -28,7 +28,7 @@ export interface ReachPlayer {
   readonly obstacles?: ReachObstacles;
 }
 
-export interface ReachObstacles {
+interface ReachObstacles {
   /** Cells holding furniture defer to it: only a closed door blocks, so a table never hides the shelf behind it. */
   readonly isSolid: SolidAt;
   /** Changes on every block edit, so a cached snapshot follows broken and built walls. */
