@@ -16,6 +16,7 @@ local palette = {
   R: { furniture: 'crate', loot: 'gauntlet_ammunition' },
   K: { furniture: 'crate', loot: 'gauntlet_start_melee' },
   Q: { furniture: 'crate', loot: 'gauntlet_start_revolver_ammunition' },
+  P: { furniture: 'wardrobe', facing: 's', loot: 'gauntlet_start_backpack' },
   X: { furniture: 'crate_overturned' },
   L: { furniture: 'shelf_fallen' },
   W: { furniture: 'wardrobe_fallen' },
@@ -96,6 +97,7 @@ local pieces = [
   piece('ammunition', [['rr'], ['rr'], ['rr'], ['rr']]),
   piece('range_table', [['eeee', 'eeee'], ['eeee', 'eeee']]),
   piece('wardrobe', [['ww'], ['ww'], ['ww'], ['ww']]),
+  piece('pack_wardrobe', [['PP'], ['PP'], ['PP'], ['PP']]),
   piece('cupboard', [['kk'], ['kk']]),
   piece('fridge', [['ff', 'ff'], ['ff', 'ff'], ['ff', 'ff'], ['ff', 'ff']]),
   piece('workbench', [['ttt', 'ttt'], ['ttt', 'ttt']]),
@@ -154,7 +156,7 @@ local airPlans = {
     '+..............#........#....bb+',
     '#..............#........D....bb+',
     '#..............#........D...Z..#',
-    '#......hhhh....#.mm..mm.#....mm#',
+    '#PP....hhhh....#.mm..mm.#....mm#',
     '###++######++######++#####++####',
   ],
   '17': [
@@ -268,6 +270,7 @@ local hall(y) = [
 ];
 {
   loot: [
+    { id: 'gauntlet_start_backpack', rolls: [1, 1], entries: [{ item: 'school_backpack', weight: 1, condition: [0.6, 1] }] },
     { id: 'gauntlet_start_melee', rolls: [1, 1], entries: [{ item: 'crowbar', weight: 1, condition: [0.6, 1] }] },
     { id: 'gauntlet_start_revolver_ammunition', rolls: [1, 1], entries: [{ item: 'cartridge_357_h_magnum', weight: 1, count: [6, 12] }] },
   ],
@@ -328,7 +331,7 @@ local hall(y) = [
     ['chair',24,5], ['chair',25,5], ['chair',26,5], ['chair',27,5], ['chair_side',28,5], ['chair_back',29,5],
     ['sofa',31,3], ['burst_crate',34,8], ['bed',23,14], ['bed',27,14], ['medical',23,24,2], ['medical',27,24,2],
     ['shambler',26,20], ['bed',35,13], ['bed',35,19], ['medical',35,24,2], ['shambler',32,17], ['shambler',34,23],
-    ['desk',7,12], ['chair',10,13], ['shelf',13,24,2], ['shelf',15,24,2], ['fallen_shelf',16,15],
+    ['desk',7,12], ['chair',10,13], ['pack_wardrobe',7,24,2], ['shelf',13,24,2], ['shelf',15,24,2], ['fallen_shelf',16,15],
   ]) + furnish(17, [
     ['crate',19,3], ['revolver_crate',35,6], ['sidearm',22,3], ['ammunition',28,3], ['ammunition',34,3], ['range_table',27,7],
     ['ammo_crate',34,10], ['officer',23,10], ['shambler',31,5],
