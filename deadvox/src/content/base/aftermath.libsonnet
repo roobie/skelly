@@ -12,7 +12,7 @@ local tipped(id, from, name, axes, reverse, drop) = {
        shape: [
          {
            position: [
-             if i == reverse then std.round((source(from).size[axes[i]] - box.position[axes[i]] - box.size[axes[i]]) * 1e6) / 1e6
+             if i == reverse then std.round((source(from).size[axes[i]] - box.position[axes[i]] - box.size[axes[i]]) * 1e6) / 1e6 + 0
              else box.position[axes[i]]
              for i in std.range(0, 2)
            ],
