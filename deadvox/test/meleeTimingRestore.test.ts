@@ -5,45 +5,13 @@ import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
-const contentLookup = (kind: SaveContentKind, id: string): boolean => {
-  if (kind === 'block') {
-    return registry.blockIds.has(id);
-  }
-  if (kind === 'item') {
-    return registry.items.has(id);
-  }
-  if (kind === 'furniture') {
-    return registry.furniture.has(id);
-  }
-  if (kind === 'zombie') {
-    return registry.zombies.has(id);
-  }
-  if (kind === 'sound') {
-    return registry.sounds.has(id);
-  }
-  if (kind === 'skill') {
-    return registry.skills.has(id);
-  }
-  if (kind === 'recipe') {
-    return registry.recipes.has(id);
-  }
-  return [
-    'needs',
-    'body',
-    'long-action',
-    'player',
-    'zombies',
-    'zombie-background',
-    'handling',
-    'lights',
-    'firearms',
-  ].includes(id);
-};
+const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,

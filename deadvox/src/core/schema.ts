@@ -293,7 +293,7 @@ const WearableSchema = strictObject({
   /** 0–100: how much it slows and hampers you. */
   encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
   warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
-  wearPerHit: optional(Fraction),
+  wearPerDamage: optional(NonNegative),
 });
 
 const FoodSchema = pipe(
@@ -2327,8 +2327,8 @@ const BleedingTierSchema = strictObject({
   minDamage: NonNegative,
   /** Per-region chance multipliers; omitted regions use 1, and 0 excludes that region. */
   regionFactor: optional(record(picklist(BODY_REGIONS), NonNegative)),
-  /** The chance a qualifying hit of each kind opens this tier. */
-  chance: perDamageKind(Fraction),
+  /** This tier's share of the wound roll per point of accumulated damage. */
+  chancePerDamage: perDamageKind(NonNegative),
   /** Drips per second relative to the base rate, and droplet size relative to the base size. */
   drip: strictObject({ rate: Positive, size: Positive }),
   /** Background pain while a wound bleeds at this tier. */
@@ -2443,6 +2443,13 @@ const BodyTuningSchema = strictObject({
   shockPerDamage: perDamageKind(NonNegative),
   /** How much harder a hit of each damage kind wears the outermost worn item on the struck region; 1 is the item's own rate. */
   outerWearMultiplier: perDamageKind(NonNegative),
+  exposureRefusal: Name,
+  linger: record(
+    picklist(DAMAGE_KINDS),
+    strictObject({
+      simSeconds: PositiveSimSeconds,
+    }),
+  ),
   landing: strictObject({
     safeSpeedMetresPerSimSecond: SimRate,
     damagePerSquaredSpeed: Positive,
@@ -2488,10 +2495,6 @@ const BodyTuningSchema = strictObject({
             (tier, index) => index === 0 || tier.bloodLossPerSimSecond > tiers[index - 1]!.bloodLossPerSimSecond,
           ),
         'each bleeding tier must lose blood faster than the one before it',
-      ),
-      check(
-        (tiers) => DAMAGE_KINDS.every((kind) => tiers.reduce((sum, tier) => sum + tier.chance[kind], 0) <= 1),
-        "each damage kind's tier chances must add up to 1 or less",
       ),
     ),
   }),

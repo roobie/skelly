@@ -20,6 +20,7 @@ import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
+import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withPlayerBodyTuning } from './simulationFixture.ts';
@@ -513,42 +514,6 @@ export const formatVersion: SaveVersionComponents = {
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 export const formatWorldOptions = { blockSize: 0.5, site: 'forest' as const, storeys: 1, density: 0.75 };
-export const contentLookup = (kind: SaveContentKind, id: string): boolean => {
-  if (kind === 'block') {
-    return registry.blockIds.has(id);
-  }
-  if (kind === 'item') {
-    return registry.items.has(id);
-  }
-  if (kind === 'furniture') {
-    return registry.furniture.has(id);
-  }
-  if (kind === 'climbable') {
-    return Boolean(registry.furniture.get(id)?.climbable);
-  }
-  if (kind === 'zombie') {
-    return registry.zombies.has(id);
-  }
-  if (kind === 'sound') {
-    return registry.sounds.has(id);
-  }
-  if (kind === 'skill') {
-    return registry.skills.has(id);
-  }
-  if (kind === 'recipe') {
-    return registry.recipes.has(id);
-  }
-  return [
-    'needs',
-    'body',
-    'long-action',
-    'player',
-    'zombies',
-    'zombie-background',
-    'handling',
-    'lights',
-    'firearms',
-  ].includes(id);
-};
+export const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
 export const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });

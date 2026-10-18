@@ -1,10 +1,16 @@
 // The simulation core: clock, scheduler, events, compression and pause, with the
 // systems registered on it. Pure, so scenario tests run it headless.
 
-import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
+import { Body, type BodyImpact, type BodyRegion, type BodyState, type DamageKind } from './body.ts';
 import { type ClockSettings, calendarAt, simToGameHours } from './clock.ts';
 import { Compression, type CompressionLimits, type CompressionOwner, longActionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
+import {
+  type DamageExposure,
+  type DamageExposureState,
+  DamageExposures,
+  type ExposureContact,
+} from './damageExposure.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
 import { awakeRates, causeOf, type Needs, needsAllowRecovery, type RecoveryState, stepNeeds } from './needs.ts';
@@ -37,6 +43,7 @@ export interface SimulationState {
   scheduler: SchedulerState;
   needs: Needs;
   body: BodyState;
+  exposures: DamageExposureState;
   compression: { c: number; active: boolean; owner: CompressionOwner; interruption?: string };
   pendingInterrupt?: string;
   dead?: { cause: string; time: number };
@@ -50,6 +57,7 @@ export interface SimOptions {
   /** The content cap of each compressing long action. */
   compressionCaps: CompressionCaps;
   clock: ClockSettings;
+  onImpact?: (amount: number, region: BodyRegion, kind: DamageKind) => void;
 }
 
 /** Needs tick at 1 Hz; under compression their step grows to 30 s, 4 game minutes at 1:8. */
@@ -65,6 +73,8 @@ export class Simulation {
   readonly actions: LongActions;
   readonly needs: Needs;
   readonly body: Body;
+  readonly exposures: DamageExposures;
+  private readonly onImpact: SimOptions['onImpact'];
   /** Esc pauses everything; the inventory screen doesn't. */
   paused = false;
   /** Set when health reaches 0; from then on nothing advances. */
@@ -79,6 +89,15 @@ export class Simulation {
     this.seed = options.seed;
     this.clock = options.clock;
     this.body = new Body(options.bodyTuning, undefined, undefined, options.analgesics);
+    this.onImpact = options.onImpact;
+    this.exposures = new DamageExposures(options.bodyTuning, (id) => this.rng(`exposure:${id}`).next());
+    this.scheduler.register({
+      id: 'damage-exposure',
+      enabled: () => this.exposures.active,
+      rate: 60,
+      maxStep: NEEDS_MAX_STEP,
+      tick: (_dt, time) => this.advanceExposuresTo(time),
+    });
     this.needs = this.body.spawnNeeds;
     this.compressionCaps = options.compressionCaps;
     // A start without its own limits (debug compression, a restored skip) passes time like a wait.
@@ -141,6 +160,7 @@ export class Simulation {
       scheduler: this.scheduler.snapshotState() as SchedulerState,
       needs: { ...this.needs },
       body: this.body.snapshotState() as BodyState,
+      exposures: this.exposures.snapshotState() as DamageExposureState,
       compression: {
         c: this.compression.c,
         active: this.compression.active,
@@ -176,6 +196,11 @@ export class Simulation {
     }
     Object.assign(this.needs, state.needs);
     this.body.restoreState(state.body);
+    // Exposures must precede scheduler restore: enabled predicates determine its saved phase.
+    this.exposures.restoreState(state.exposures);
+    if (this.exposures.simTimestamp > state.time) {
+      throw new Error('Exposure cursor exceeds simulation time');
+    }
     this.compression.c = state.compression.c;
     this.compression.active = state.compression.active;
     this.compression.interruption = state.compression.interruption;
@@ -211,6 +236,7 @@ export class Simulation {
       throw new Error(`Invalid debug calendar time ${calendarSeconds}`);
     }
     this.scheduler.seek(time);
+    this.exposures.seek(time);
     this.pendingInterrupt = undefined;
     this.compression.stop();
     this.compression.snap();
@@ -235,25 +261,81 @@ export class Simulation {
 
   /** A hit of a damage kind may open a bleeding wound (`Body.bleedingTierForHit`). */
   hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: HitEffects = {}): void {
-    this.takeDamage(cause, () => this.impact(amount, region, effects));
+    this.advanceExposuresTo(this.time);
+    this.takeDamage(cause, () => {
+      const exposure = effects.kind === undefined ? undefined : this.exposures.hit(amount, cause, region, effects.kind);
+      return this.impact(amount, region, effects, exposure);
+    });
   }
 
-  private impact(amount: number, region: BodyRegion, effects: HitEffects): number {
+  expose(contact: ExposureContact): void {
+    if (this.dead || this.godMode) {
+      return;
+    }
+    this.advanceExposuresTo(this.time);
+    this.exposures.contact(contact);
+    this.checkInterruptions();
+  }
+
+  leaveExposure(source: string): void {
+    this.advanceExposuresTo(this.time);
+    this.exposures.leave(source);
+  }
+
+  endExposure(kind: DamageKind): void {
+    this.advanceExposuresTo(this.time);
+    this.exposures.end(kind);
+  }
+
+  private advanceExposuresTo(time: number): void {
+    this.exposures.advance(Math.max(0, time - this.exposures.simTimestamp), (amount, cause, exposure) => {
+      this.takeDamage(cause, () => this.impact(amount, exposure.region, { kind: exposure.kind }, exposure), false);
+    });
+  }
+
+  get actionRefusal(): string | undefined {
+    return this.exposures.refusal ?? this.body.actionRefusal;
+  }
+
+  private openedBleedingTier(
+    amount: number,
+    region: BodyRegion,
+    kind: DamageKind,
+    exposure?: DamageExposure,
+  ): number | undefined {
+    let bleeding = this.body.bleedingTierForHit(
+      exposure?.damage ?? amount,
+      region,
+      kind,
+      exposure?.roll ?? this.rng(`body-bleeding:${region}:${this.time}:${amount}`).next(),
+    );
+    if (exposure && bleeding !== undefined) {
+      if (exposure.openedTier !== undefined && bleeding <= exposure.openedTier) {
+        bleeding = undefined;
+      } else {
+        exposure.openedTier = bleeding;
+      }
+    }
+    return bleeding;
+  }
+
+  private impact(amount: number, region: BodyRegion, effects: HitEffects, exposure?: DamageExposure): number {
     const bleeding =
-      effects.kind === undefined
-        ? undefined
-        : this.body.bleedingTierForHit(
-            amount,
-            region,
-            effects.kind,
-            this.rng(`body-bleeding:${region}:${this.time}:${amount}`).next(),
-          );
+      effects.kind === undefined ? undefined : this.openedBleedingTier(amount, region, effects.kind, exposure);
     const woundAlreadyExists = this.body.wounds[region] !== null;
     const infectionAtRisk =
       effects.infectionAtRisk ??
+      exposure?.infectionAtRisk ??
       (bleeding !== undefined &&
         (woundAlreadyExists ||
-          this.rng(`body-infection:${region}:${this.time}:${amount}`).next() < this.body.tuning.infectionChance));
+          (exposure?.infectionRoll ?? this.rng(`body-infection:${region}:${this.time}:${amount}`).next()) <
+            this.body.tuning.infectionChance));
+    if (exposure && bleeding !== undefined) {
+      exposure.infectionAtRisk = infectionAtRisk;
+    }
+    if (effects.kind !== undefined) {
+      this.onImpact?.(amount, region, effects.kind);
+    }
     return this.body.impact(amount, region, {
       ...effects,
       infectionAtRisk,
@@ -279,7 +361,7 @@ export class Simulation {
     );
   }
 
-  private takeDamage(cause: string, apply: () => number): void {
+  private takeDamage(cause: string, apply: () => number, interrupt = true): void {
     if (this.dead || this.godMode) {
       return;
     }
@@ -289,7 +371,7 @@ export class Simulation {
     }
     if (this.body.health <= 0) {
       this.die(cause);
-    } else {
+    } else if (interrupt) {
       this.emit({ kind: 'interrupt', reason: "You're hurt" });
     }
   }
@@ -321,6 +403,9 @@ export class Simulation {
    * too fast; emitted interruptions still stop it.
    */
   compressLongAction(jobType: keyof CompressionCaps): { ok: true } | { ok: false; reason: string } {
+    if (this.exposures.refusal) {
+      return { ok: false, reason: this.exposures.refusal };
+    }
     return this.compression.start(
       this.body.compressionRefusal,
       'long-action',
@@ -374,6 +459,21 @@ export class Simulation {
     return advanced;
   }
 
+  private interruptExposure(): boolean {
+    const action = this.actions.job;
+    const reason = this.exposures.refusal;
+    if (!action || action.stopped || reason === undefined) {
+      return false;
+    }
+    this.actions.interruptExposure(reason);
+    if (this.compression.active) {
+      this.compression.interrupt(reason);
+    } else {
+      this.compression.snap();
+    }
+    return true;
+  }
+
   /** Drops compression to 1× on an emitted interrupt. Returns true so the scheduler stops before the next step. */
   private checkInterruptions(): boolean {
     const events = this.interrupts.read();
@@ -381,6 +481,9 @@ export class Simulation {
     const emitted = events.find((e): e is Timed<Extract<SimEvent, { kind: 'interrupt' }>> => e.kind === 'interrupt');
     const { compression } = this;
     const action = this.actions.job;
+    if (this.interruptExposure()) {
+      return true;
+    }
     if (!(compression.active || compression.c > 1)) {
       if (action && emitted && this.actions.runsUncompressed(action.jobType)) {
         this.actions.interruptUncompressed(emitted.reason);

@@ -26,6 +26,7 @@ import { factDetail } from './factDetail.ts';
 import { computeMenuState } from './menuState.ts';
 
 const SCHEDULER_IDS = new Set([
+  'damage-exposure',
   'needs',
   'body',
   'long-action',

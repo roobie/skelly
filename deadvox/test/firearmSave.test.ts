@@ -23,6 +23,7 @@ import {
 import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
@@ -33,38 +34,7 @@ const version: SaveVersionComponents = {
   generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
-const contentLookup = (kind: SaveContentKind, id: string): boolean => {
-  switch (kind) {
-    case 'block':
-      return registry.blockIds.has(id);
-    case 'item':
-      return registry.items.has(id);
-    case 'furniture':
-      return registry.furniture.has(id);
-    case 'zombie':
-      return registry.zombies.has(id);
-    case 'sound':
-      return registry.sounds.has(id);
-    case 'scheduler':
-      return [
-        'needs',
-        'body',
-        'long-action',
-        'player',
-        'zombies',
-        'zombie-background',
-        'handling',
-        'lights',
-        'firearms',
-      ].includes(id);
-    case 'skill':
-      return registry.skills.has(id);
-    case 'recipe':
-      return registry.recipes.has(id);
-    default:
-      throw new Error(`Unknown content kind ${kind}`);
-  }
-};
+const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
 const session = (
   effects: FirearmShotEffect[],
   restore?: Readonly<SaveSnapshot>,

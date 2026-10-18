@@ -62,7 +62,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
-import { wearMeleeWeaponOnHit } from '../core/wear.ts';
+import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
 import { SEVERED_ITEM } from '../core/zombieRegionNames.ts';
@@ -675,6 +675,8 @@ export const createSession = (options: SessionOptions) => {
   const sim = new Simulation({
     seed,
     bodyTuning,
+    onImpact: (amount, region, kind) =>
+      wearOnPlayerHit(inventory, region, amount, bodyTuning.outerWearMultiplier[kind]),
     analgesics: (item) => registry.items.get(item)?.analgesic,
     compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),
     clock: { ratio: dayCycle.clockRatio, start: options.start },
@@ -1058,7 +1060,7 @@ export const createSession = (options: SessionOptions) => {
         return;
       }
       const source = zombieStore.get(attacker);
-      applyZombiePlayerHit(sim, inventory, bodyTuning, {
+      applyZombiePlayerHit(sim, {
         damage: source ? modified('attack.damage', amount, source) : amount,
         sourceName: source?.type.name ?? 'zombie',
         regionRoll: sim.rng(`player-hit-region:${attacker}:${sim.time}`).next(),
@@ -1066,7 +1068,7 @@ export const createSession = (options: SessionOptions) => {
         kind,
       });
     },
-    onAcidPlayerHit: (hit) => applyZombiePlayerHit(sim, inventory, bodyTuning, hit),
+    onAcidPlayerHit: (hit) => applyZombiePlayerHit(sim, hit),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
     onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
     onSound: (event, position, zombie) => {

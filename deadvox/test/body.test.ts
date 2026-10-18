@@ -348,7 +348,7 @@ describe('player body', () => {
     const critical = tiers[CRITICAL]!;
     const limb = 'leftLeg';
     const torso = 'torso';
-    const allPierce = tiers.reduce((sum, tier) => sum + tier.chance.pierce, 0);
+    const allPierce = tiers.reduce((sum, tier) => sum + tier.chancePerDamage.pierce * critical.minDamage, 0);
 
     expect(body.bleedingTierForHit(critical.minDamage, limb, 'pierce', 0)).toBe(CRITICAL);
     expect(body.bleedingTierForHit(critical.minDamage, torso, 'pierce', 0)).toBe(CRITICAL);
@@ -369,7 +369,7 @@ describe('player body', () => {
     });
     const withFactor = (region: BodyRegion, factor: number) => new Body(tuningWithFactor(region, factor));
     const critical = tiers[CRITICAL]!;
-    const boundaryRoll = critical.chance.pierce * 0.75;
+    const boundaryRoll = critical.chancePerDamage.pierce * critical.minDamage * 0.75;
     const zeroTorso = withFactor('torso', 0);
     const halfTorso = withFactor('torso', 0.5);
     const fullTorso = withFactor('torso', 1);

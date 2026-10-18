@@ -265,7 +265,7 @@ export class LongActions {
     sim.scheduler.register({ id: 'long-action', rate: 1, maxStep: 30, tick: (_dt, time) => this.advance(time) });
   }
   private bodyActionRefusal(): string | undefined {
-    return this.sim.body.actionRefusal;
+    return this.sim.actionRefusal;
   }
   /**
    * Prying runs at 1×, and so do treatment, crafting and reading while the body refuses compression: a
@@ -642,6 +642,12 @@ export class LongActions {
       this.current.stopped = true;
     }
     this.sim.compression.stop();
+  }
+  interruptExposure(reason: string): void {
+    const job = this.current;
+    if (job && !job.stopped) {
+      this.stopOrInterrupt(job, reason);
+    }
   }
   interruptUncompressed(reason: string): void {
     const job = this.current;

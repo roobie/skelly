@@ -11,6 +11,7 @@ import { savedItemTree } from '../src/core/itemTree.ts';
 import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { chunksFor } from '../src/core/scale.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
@@ -233,6 +234,25 @@ it("a hit's acute pain and a painkiller dose under way survive the save codec", 
   expect(
     createRuntime(decoded.snapshot, false, undefined, { registry: content }).sim.body.snapshotState().pain,
   ).toEqual(saved);
+});
+
+it('an active burn keeps its threshold, accumulated damage and tail through the save codec', async () => {
+  const content = withFixtureBody(registry);
+  const source = createRuntime(undefined, false, undefined, { registry: content });
+  source.sim.hit(1, 'fixture glob', 'leftArm', { kind: 'acid' });
+  source.sim.frame(simSeconds(0.25));
+  const exposure = source.sim.exposures.snapshotState();
+  expect(exposure.exposures).toHaveLength(1);
+  expect(exposure.exposures[0]!.damage).toBeGreaterThan(1);
+  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  const restored = createRuntime(decoded.snapshot, false, undefined, { registry: content });
+  expect(restored.sim.exposures.snapshotState()).toEqual(exposure);
+  restored.sim.paused = false;
+  for (const runtime of [source, restored]) {
+    runtime.sim.frame(simSeconds(0.25));
+  }
+  expect(restored.sim.exposures.snapshotState()).toEqual(source.sim.exposures.snapshotState());
+  expect(restored.sim.body.snapshotState()).toEqual(source.sim.body.snapshotState());
 });
 
 it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, the shoulder included', async () => {
