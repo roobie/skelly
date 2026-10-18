@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import type { Registry } from '../src/core/content.ts';
@@ -18,7 +18,7 @@ import type { Item } from '../src/core/items.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
 import { pileScatterPlacements } from '../src/core/scatterPile.ts';
-import { SOUND_EVENT_IDS, type SoundEventId } from '../src/core/soundEvents.ts';
+import type { SoundId } from '../src/core/soundEvents.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
@@ -36,7 +36,7 @@ import { prepareModel } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
-import { chargedRifle } from './rifleFixture.ts';
+import { chargedRifle, settle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -96,24 +96,36 @@ const { registry: skillZeroRegistry } = buildRegistry([
     },
   },
 ]);
-/** Base content with every firearm's dry fire set to `dryFireSound`, or removed, so no assertion leans on a content pick. */
-const firearmsWithDryFire = (dryFireSound: SoundEventId | undefined): Registry =>
-  buildRegistry(
-    base.map(({ source, data }) => {
-      const content = data as { items?: { firearm?: { dryFireSound?: SoundEventId } }[] };
-      if (!content.items) {
+/** A sound only this file defines, so a weapon selecting it proves content sound ids need no code list. */
+const FIXTURE_DRY_FIRE = 'fixture_dry_click';
+const fixtureDryFireSound = () => {
+  const sounds = base.flatMap(({ data }) => (data as { sounds?: { id: string }[] }).sounds ?? []);
+  return { ...sounds[0]!, id: FIXTURE_DRY_FIRE };
+};
+/** Base content with every firearm's dry fire set to the fixture sound, or removed, so no assertion leans on a content pick. */
+const firearmsWithDryFire = (dryFire: boolean): Registry => {
+  const { registry: content, issues } = buildRegistry([
+    ...base.map(({ source, data }) => {
+      const file = data as { items?: { firearm?: { dryFireSound?: SoundId } }[] };
+      if (!file.items) {
         return { source, data };
       }
-      const items = content.items.map((item) => {
+      const items = file.items.map((item) => {
         if (!item.firearm) {
           return item;
         }
         const { dryFireSound: _authored, ...firearm } = item.firearm;
-        return { ...item, firearm: dryFireSound === undefined ? firearm : { ...firearm, dryFireSound } };
+        return { ...item, firearm: dryFire ? { ...firearm, dryFireSound: FIXTURE_DRY_FIRE } : firearm };
       });
-      return { source, data: { ...content, items } };
+      return { source, data: { ...file, items } };
     }),
-  ).registry;
+    { source: 'fixture-dry-fire.json', data: { sounds: [fixtureDryFireSound()] } },
+  ]);
+  if (issues.length > 0) {
+    throw new Error(`Invalid dry-fire fixture: ${JSON.stringify(issues)}`);
+  }
+  return content;
+};
 const caseType = spentCaseItemId('5.56x45');
 const worldVector = (vector: readonly number[], yaw: number, pitch: number): [number, number, number] => {
   const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
@@ -773,20 +785,74 @@ describe('rifle firearm handling', () => {
     expect(inventory.snapshotState()).toEqual(before);
   });
 
-  it("clicks the gun's own dry fire when the trigger falls on a run-dry chamber, and stays silent without one", () => {
-    const [dryFireSound] = SOUND_EVENT_IDS;
-    const pullAfterLastRound = (content: Registry): SoundEventId[] => {
-      const sounds: SoundEventId[] = [];
-      const { mechanics, rifle } = armed({ onSound: (event) => sounds.push(event) }, { content, rounds: 1 });
-      expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
-      mechanics.advanceTo(3);
-      expect(rifle.firearm?.chamber).not.toBe('round');
-      sounds.length = 0;
-      expect(mechanics.fire(shotInput(rifle, 3))).toBe(false);
-      return sounds;
-    };
-    expect(pullAfterLastRound(firearmsWithDryFire(dryFireSound))).toEqual([dryFireSound]);
-    expect(pullAfterLastRound(firearmsWithDryFire(undefined))).toEqual([]);
+  /** The content's bolt rifle in hand with one round worked through its internal magazine into the chamber. */
+  const armedBolt = (options: Partial<MechanicsOptions>, content: Registry) => {
+    const definition = [...content.items.values()].find((item) => item.firearm?.bolt)!;
+    const { calibre } = content.models.get(definition.model!)!;
+    const ammo = [...content.items.values()].find((item) => item.ammo?.calibre === calibre)!;
+    const inventory = new Inventory(content);
+    const queue = new HandlingQueue(inventory);
+    const mechanics = new FirearmMechanics(inventory, queue, {
+      blockSize: 0.5,
+      isSolid: (_x, y, _z) => y < pose.feet[1],
+      pose: fixturePose,
+      onEjection: () => undefined,
+      ...options,
+    });
+    const rifle = inventory.create(definition.id);
+    const bag = inventory.create('hiking_backpack');
+    const round = inventory.create(ammo.id, 1);
+    if (
+      !(
+        inventory.add(rifle, { kind: 'hand', side: 'right' }) &&
+        inventory.add(bag, { kind: 'worn' }) &&
+        inventory.add(round, { kind: 'pocket', owner: bag, pocket: 0 })
+      )
+    ) {
+      throw new Error('Bolt rifle fixture does not fit');
+    }
+    for (const step of [() => mechanics.load(round, 0), () => mechanics.cock(rifle.uid, 0)]) {
+      const refusal = step();
+      if (refusal) {
+        throw new Error(refusal);
+      }
+      settle(queue);
+    }
+    return { mechanics, rifle };
+  };
+
+  describe('dry fire', () => {
+    // Each build parses all base content, so the two variants are built once outside the cases' time limit.
+    let withDryFire: Registry;
+    let withoutDryFire: Registry;
+    beforeAll(() => {
+      withDryFire = firearmsWithDryFire(true);
+      withoutDryFire = firearmsWithDryFire(false);
+    });
+
+    it.each([
+      [
+        'magazine-fed rifle',
+        (options: Partial<MechanicsOptions>, content: Registry) => armed(options, { content, rounds: 1 }),
+      ],
+      ['bolt-action rifle', armedBolt],
+    ])(
+      'a %s clicks its own dry fire when the trigger falls on a run-dry chamber, and stays silent without one',
+      (_, arm) => {
+        const pullAfterLastRound = (content: Registry): SoundId[] => {
+          const sounds: SoundId[] = [];
+          const { mechanics, rifle } = arm({ onSound: (event) => sounds.push(event) }, content);
+          expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
+          mechanics.advanceTo(3);
+          expect(rifle.firearm?.chamber).not.toBe('round');
+          sounds.length = 0;
+          expect(mechanics.fire(shotInput(rifle, 3))).toBe(false);
+          return sounds;
+        };
+        expect(pullAfterLastRound(withDryFire)).toEqual([FIXTURE_DRY_FIRE]);
+        expect(pullAfterLastRound(withoutDryFire)).toEqual([]);
+      },
+    );
   });
 
   it('uses exported charge duration in the handling queue and prevents firing during the hand action', () => {
