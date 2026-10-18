@@ -52,6 +52,7 @@
         "tools/ui-browser-contract.mjs",
         "tools/perf-baseline.mjs",
         "tools/acid-glow-spike-config.mjs",
+        "tools/crowd-light-spike-config.mjs",
         "tools/perf-baseline-browser.mjs"
       ],
       "project": [

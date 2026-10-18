@@ -109,6 +109,7 @@
         "deadvox/tools/publish-playtest.mjs",
         "deadvox/tools/perf-baseline.mjs",
         "deadvox/tools/acid-glow-spike-config.mjs",
+        "deadvox/tools/crowd-light-spike-config.mjs",
         "deadvox/tools/perf-baseline.test.mjs"
       ],
       "linter": { "rules": { "correctness": { "noNodejsModules": "off" } } }

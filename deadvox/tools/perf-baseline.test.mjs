@@ -2,9 +2,43 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { test } from 'node:test';
 import { installFixture } from './acid-glow-spike-browser.mjs';
+import { createLightGrid, packLightGrid } from './crowd-light-grid.mjs';
 import { install } from './perf-baseline-browser.mjs';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
+
+function candidateIds(grid, x, z) {
+  const cellX = Math.floor((x - grid.minX) / grid.cellSize);
+  const cellZ = Math.floor((z - grid.minZ) / grid.cellSize);
+  const header = (cellZ * grid.width + cellX) * 4;
+  return Array.from(grid.data.slice(grid.data[header], grid.data[header] + grid.data[header + 1]));
+}
+
+test('a crowd light reaches receivers across a tile boundary', () => {
+  const grid = createLightGrid(1, { minX: 0, maxX: 8, minZ: 0, maxZ: 8 }, 2);
+  packLightGrid(grid, Float32Array.from([3.5, 1, 2, 1]), 1);
+  assert.deepEqual(candidateIds(grid, 3.5, 2), [0]);
+  assert.deepEqual(candidateIds(grid, 4.5, 2), [0]);
+});
+
+test('overlapping crowd lights are not truncated to a fixed light budget', () => {
+  const sources = Array.from({ length: 17 }, (_, i) => [3 + i / 100, 1, 2, 1]);
+  const grid = createLightGrid(sources.length, { minX: 0, maxX: 8, minZ: 0, maxZ: 8 }, 2);
+  packLightGrid(grid, Float32Array.from(sources.flat()), sources.length);
+  assert.deepEqual(
+    candidateIds(grid, 3, 2),
+    sources.map((_, i) => i),
+  );
+});
+
+test('an emptied crowd light grid cannot retain a previous emitter', () => {
+  const grid = createLightGrid(1, { minX: 0, maxX: 8, minZ: 0, maxZ: 8 }, 2);
+  const lights = Float32Array.from([3, 1, 2, 1]);
+  packLightGrid(grid, lights, 1);
+  assert.equal(candidateIds(grid, 3, 2).length, 1);
+  packLightGrid(grid, lights, 0);
+  assert.deepEqual(candidateIds(grid, 3, 2), []);
+});
 
 test('spike translations restore before a cached pose is reused', () => {
   const original = Float32Array.from([1, 0, 0, 2, 0, 1, 0, 3, 0, 0, 1, 4, 0, 0, 0, 0]);

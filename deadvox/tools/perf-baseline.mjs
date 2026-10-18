@@ -102,10 +102,11 @@ await build({
         }
         if (options.acidGlow === '1' && id.endsWith('/src/game/play.ts')) {
           const spike = fileURLToPath(new URL('./acid-glow-spike-browser.mjs', import.meta.url));
-          return `import { installAcidGlow } from ${JSON.stringify(spike)};\n${once(
+          const crowdLight = fileURLToPath(new URL('./crowd-light-spike-browser.mjs', import.meta.url));
+          return `import { installAcidGlow } from ${JSON.stringify(spike)};\nimport { installCrowdLightSpike } from ${JSON.stringify(crowdLight)};\n${once(
             code,
             '  startRealFrames(frame);',
-            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, zombieStore });\n  installAcidGlow(globalThis.perfBaseline);\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
+            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, zombieStore });\n  installAcidGlow(globalThis.perfBaseline);\n  installCrowdLightSpike(globalThis.perfBaseline);\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
           )}`;
         }
         if (id.endsWith('/src/game/play.ts')) {
@@ -282,6 +283,7 @@ try {
         return {
           records: perf.records,
           acidGlow: perf.acidGlow,
+          crowdLight: perf.crowdLight,
           visibility: document.visibilityState,
           position: perf.engine.camera.position.toArray(),
           zombieCount: perf.zombieStore.size,
@@ -314,6 +316,9 @@ try {
           )
         ) {
           throw new Error('Acid fixture did not draw the requested actor/glow counts');
+        }
+        if (observation.crowdLight?.enabled && records.some((record) => record.crowdEmitters !== spike.selected)) {
+          throw new Error('Crowd light list lost an emitter');
         }
       }
       if (route.spawnCount && summary.zombieDrawFrames !== summary.frames) {
