@@ -48,8 +48,9 @@ return routes, establishes reachability rather than graph connectivity alone.
 
 Resolve choices from sorted candidates with random streams keyed by world seed, site
 identity and slot path before requesting any chunks. Determinism means equal inputs,
-not unchanged worlds after content edits. Whole-definition replacement uses ordered packs
-and requires consumer revalidation; patch languages and live updates remain deferred.
+not unchanged worlds after content edits. Overrides by later packs require consumer
+revalidation; field patches follow `docs/decisions/0007-typed-field-patches.md`,
+"Decision", and live updates remain deferred.
 
 Extend the existing template compiler and city plan rather than creating another stamping
 engine. Compiled ownership and provenance travel with the geometry so diagnostics can
