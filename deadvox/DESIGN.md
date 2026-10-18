@@ -819,8 +819,9 @@ exposure's damage and draw. A lingering hit starts its tail at hit damage divide
 by linger duration, so the tail adds half the immediate hit. Stronger globs are
 intentional: this relation avoids another independently balanced attack value.
 Ending an exposure early removes the burn, not damage,
-wear or wounds already taken. Long actions cannot run during contact or its tail;
-a persistent refusal owns that constraint instead of an interrupt every step.
+wear or wounds already taken. Long actions cannot run during a contact or tail
+that can harm; a persistent refusal owns that constraint instead of an interrupt
+every step.
 Blows still interrupt when they land. An idle exposure system must not fragment
 unrelated action timing or replay; it only imposes tick boundaries while a burn
 is live. A save taken within a tick must continue like live play; pending
@@ -836,9 +837,14 @@ path. A blow meets the first worn slot in that list, so footwear and gloves sit
 last on their limbs and take blows only on a bare limb. A contact with a named
 touch, ground or hand, meets that touch's slot first, because a puddle reaches
 the boots before the trousers and a grip reaches the gloves before the sleeve.
+A worn item covers each of its regions whole, not a share of it, for simplicity:
+a blow meets at most one item, and coverage stays a list of slots per region.
 Worn items take damage-proportional wear but do not mitigate flesh damage or
 bleeding chance, except that an item impervious to a damage kind stops that kind
-outright: no damage, wear, wound, linger or action refusal. Imperviousness is per
+outright: no damage, wear, wound, linger or action refusal. Put on during a
+contact, it stops harm and lifts the refusal while worn, so boots let the player
+stand in acid; the tail still runs, and taking the item off before it ends harms
+for the rest. Imperviousness is per
 kind on the wearable, so rubber boots can stop acid without a boots rule in code.
 Keeping wear and imperviousness at the shared impact boundary prevents falls,
 projectiles and lingering damage from bypassing them. See `src/core/wear.ts`,
