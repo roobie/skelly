@@ -14,6 +14,8 @@ local palette = {
   M: { furniture: 'crate', loot: 'medical_filler' },
   B: { furniture: 'crate', loot: 'building_parts' },
   R: { furniture: 'crate', loot: 'gauntlet_ammunition' },
+  K: { furniture: 'crate', loot: 'gauntlet_start_melee' },
+  Q: { furniture: 'crate', loot: 'gauntlet_start_revolver_ammunition' },
   X: { furniture: 'crate_overturned' },
   L: { furniture: 'shelf_fallen' },
   W: { furniture: 'wardrobe_fallen' },
@@ -77,6 +79,8 @@ local pieces = [
   piece('roof_snack_crate', [['CC', 'CC'], ['CC', 'CC']]),
   piece('parts_crate', [['BB', 'BB'], ['BB', 'BB']]),
   piece('ammo_crate', [['RR', 'RR'], ['RR', 'RR']]),
+  piece('tool_crate', [['KK', 'KK'], ['KK', 'KK']]),
+  piece('revolver_crate', [['QQ', 'QQ'], ['QQ', 'QQ']]),
   piece('burst_crate', [['XX', 'XX'], ['XX', 'XX']]),
   piece('fallen_shelf', [['LL', 'LL', 'LL', 'LL']]),
   piece('fallen_wardrobe', [['WW', 'WW', 'WW', 'WW']]),
@@ -158,8 +162,8 @@ local airPlans = {
     '#qqqqqqqqqqqqqq#gg....gg....rr.#',
     '#qqqqqqqqqqqqqq#...............+',
     '#qqqqqqqqqqqqqq#.........Z.....+',
-    '#qqqqqqqqqqqqqq#...............#',
-    '#qqqqqqqqqqqqqqD.....eeee......#',
+    '#qqqqqqqqqqqqqq#.............QQ#',
+    '#qqqqqqqqqqqqqqD.....eeee....QQ#',
     '#qqqqqqqqqqqqqqD.....eeee......#',
     '#qqqqqqqqqqqqqq#...............#',
     '#qqqqqqqqqqqqqq#.oooo.......xx.#',
@@ -217,8 +221,8 @@ local airPlans = {
     '#qqqqqqqqqqqqqq#..........pppp.#',
     '############DD##hh.............#',
     '#..............#...............#',
-    '#.ttt..........#####DD#####DD###',
-    '#.ttt..........#...............#',
+    '#.ttt.KK.......#####DD#####DD###',
+    '#.ttt.KK.......#...............#',
     '+..............#.oooo........bb#',
     '+..............#.oooo........bb+',
     '#..............D......___....bb+',
@@ -263,7 +267,11 @@ local hall(y) = [
   slot('hall_east_s_' + y, 'wall_2', 21, y, 9, 1),
 ];
 {
-  mapPieces: pieces + [airPiece(floor) for floor in std.objectFields(airPlans)],
+  loot: [
+    { id: 'gauntlet_start_melee', rolls: [1, 1], entries: [{ item: 'crowbar', weight: 1, condition: [0.6, 1] }] },
+    { id: 'gauntlet_start_revolver_ammunition', rolls: [1, 1], entries: [{ item: 'cartridge_357_h_magnum', weight: 1, count: [6, 12] }] },
+  ],
+  mapPieces: pieces +[airPiece(floor) for floor in std.objectFields(airPlans)],
   slots: [{
     id: 'wing_air_' + floor, at: [6, std.parseInt(floor), 2], size: [32, 7, 24], turn: 0,
     choices: [{ ref: { kind: 'piece', id: 'gauntlet_start_wing_air_' + floor }, weight: 1 }],
@@ -322,7 +330,7 @@ local hall(y) = [
     ['shambler',26,20], ['bed',35,13], ['bed',35,19], ['medical',35,24,2], ['shambler',32,17], ['shambler',34,23],
     ['desk',7,12], ['chair',10,13], ['shelf',13,24,2], ['shelf',15,24,2], ['fallen_shelf',16,15],
   ]) + furnish(17, [
-    ['crate',19,3], ['sidearm',22,3], ['ammunition',28,3], ['ammunition',34,3], ['range_table',27,7],
+    ['crate',19,3], ['revolver_crate',35,6], ['sidearm',22,3], ['ammunition',28,3], ['ammunition',34,3], ['range_table',27,7],
     ['ammo_crate',34,10], ['officer',23,10], ['shambler',31,5],
     ['bed',24,16], ['bed',33,20], ['bed',27,16], ['wardrobe',29,24,2], ['wardrobe',35,24,2], ['shambler',35,15],
     ['desk',8,14], ['desk',13,14], ['desk',8,19], ['desk',13,19],
@@ -336,7 +344,7 @@ local hall(y) = [
   ]) + furnish(33, [
     ['desk',23,4], ['desk',28,4], ['workbench',33,4], ['chair',24,6], ['chair',29,6], ['scrap',32,8], ['shelf',22,11],
     ['sofa',23,23,2], ['sofa',30,23,2], ['bed',35,15], ['soldier',23,15], ['burst_crate',32,19],
-    ['workbench',8,13], ['scrap',8,19], ['parts_crate',17,22], ['shelf',13,24,2], ['shambler',15,18],
+    ['workbench',8,13], ['tool_crate',12,13], ['scrap',8,19], ['parts_crate',17,22], ['shelf',13,24,2], ['shambler',15,18],
   ]) + furnish(41, [
     ['roof_snack_crate',19,12], ['medical_crate',24,12], ['roof_snack_crate',19,16], ['burst_crate',24,16],
   ]),
