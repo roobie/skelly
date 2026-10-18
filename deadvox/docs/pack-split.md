@@ -13,7 +13,7 @@ tags: [deadvox, content, mods, packs, design]
 
 The base content holds two kinds of content in one pack. Some of it is general to any game the engine can run, such as health, bleeding and needs. The rest belongs to this game's setting and mood: its firearms, its grenades and its zombies. A medieval game built on the same engine would need the first kind and none of the second. Splitting them makes that game a new setting pack rather than a fork, and it keeps setting assumptions from leaking into the core while the content is still small enough to move. Architecture and modding come before more content, because each new entry written against one flat pack adds to what must later move.
 
-This doc is a design plan for #637. Round 5 trims it to the reasons and code cues. Where the plan depends on a question that is not yet ruled, it says so and gives only what every answer shares; "Open questions" lists them.
+This doc is a design plan for #637. Where the plan depends on a question that is not yet ruled, it says so and gives only what every answer shares; "Open questions" lists them.
 
 ## Layers
 
@@ -34,6 +34,8 @@ This is the dependency boundary that `../../docs/decisions/0004-content-language
 Classify an entry, not a file. A file that mixes kinds is split along its entries.
 
 **Skill entries are never core content.** Skill support stays in the engine and must work with zero skills. Keeping the actual skills outside core forces a clean, provider-neutral contract instead of reliance on built-in ids. That boundary matters especially when mods can drive behaviour through the expression language. Whether a setting pack or a shared optional pack supplies skills remains open.
+
+**An entry that names a skill is not core either.** It moves up to the pack that supplies its skill, even when it would otherwise pass the genre test, as the wooden plank's disassembly and the torch recipe would. Keeping it in core would need a skill-free variant or an abstract role standing in for the skill: a second contract kept only so that one entry can sit lower. Moving it keeps the downward-only rule free of exceptions.
 
 For other entries:
 
@@ -69,6 +71,16 @@ The framework replaces each of these with a capability that content selects. A b
 
 **Loot, camp and layouts.** These follow their references. A loot table that only names setting items is setting. The military camp's templates, items, loot and furniture are setting. Generic cabins and houses whose fixtures and loot are setting are setting too. The gauntlet's city, lab, start and look content, the playtest layouts, furniture and items, the scenarios and their map pools, and the tutorial are scenario content.
 
+## Skill providers
+
+**One skill provider per mechanism role.** A mechanism that reads a skill, such as aiming or item handling, reads it through a role, and at most one skill in a stack drives each role. That replaces the fixed skill ids that combat and handling code reads without asking every item or activity to name a skill, and without a rule for combining several skills into one value.
+
+**Competing providers fail closed.** A pack may take over a role only by declaring the override and depending, directly or transitively, on the pack that owns the role. Any other second provider fails the load with a conflict message naming the role, both packs and the fix. Load order alone never decides, because the order in which a player happens to enable mods says nothing about which one meant to win. The dependency makes an override deliberate: the overriding pack names what it takes over and always loads after the owner. The overridden skill stays defined but stops driving the role. The same rule governs two mods setting one field; see `docs/decisions/0007-typed-field-patches.md`, "Decision". Admitting an override needs pack dependencies in the loader, the boundary proposed in `../../docs/decisions/0004-content-language.md`, "Runtime design".
+
+**A stack with no skills proves validation only.** The core-alone check validates the core pack and does not boot or play it. Its purpose is to keep setting assumptions out of core, and validation catches those; playing core alone would first need ordinary policy separated from the skills, which no playable stack needs.
+
+**Zero skills leave an empty skill list beside Body.** The Skills tab also holds the body and injury panel, so hiding the tab would hide health information. An empty list states plainly that the stack supplies no skills. See `src/ui/inventoryScreen.ts`, `InventoryScreen`.
+
 ## Capabilities, not ids
 
 `PILLARS.md`, "Content forward compatibility" already rules that content identity is not a code selector. #393 inventories the tunables that still live in TypeScript; this plan does not repeat that inventory. The pack split needs the other half of that rule: content ids and setting names that TypeScript names directly. They come in four shapes:
@@ -86,13 +98,13 @@ Two parallel #393 slices touch content and must not collide with this work. d377
 
 The first build round adds a CI check that a registry built from the core pack alone validates with zero issues. It comes first because it turns the classification rule into a failing check that every later round shrinks, and once it passes it keeps setting assumptions from creeping back into the core.
 
-"Validates" means the core stack gives zero issues from `src/core/content.ts`, `buildRegistry` and `requiredContentIssues`. A registry that loads is not enough, because `buildRegistry` drops a file whose references break from the registry and reports it only as an issue, and that dropped file would be exactly the core-to-setting reference the check exists to catch. Static reachability (`docs/content.md`, "Static reachability") applies to the playable stacks. Validation is what every answer to the core-alone scope question shares; any boot or play proof for the core alone waits on that ruling. Manifest, model and sound file checks run per pack.
+"Validates" means the core stack gives zero issues from `src/core/content.ts`, `buildRegistry` and `requiredContentIssues`. A registry that loads is not enough, because `buildRegistry` drops a file whose references break from the registry and reports it only as an issue, and that dropped file would be exactly the core-to-setting reference the check exists to catch. Static reachability (`docs/content.md`, "Static reachability") applies to the playable stacks. The core alone is never booted or played; see "Skill providers". Manifest, model and sound file checks run per pack.
 
 What must move before the check can pass:
 
 1. **Pack folders and ordered loading.** The single base folder becomes one folder per pack. `src/game/bundledContent.ts`, `buildBundledContent` and `src/cli/validate.ts`, `validate` load packs in their declared order, and the base content hash in `vite.config.ts` becomes one hash per pack. Folder names wait on the pack-id ruling.
-2. **Requirements split by pack.** `REQUIRED_CORE_CONTENT` requires no skill entry. Where skill requirements live follows the rulings on activity selection and baseline policy. Setting sound rows become setting requirements until the sound-selection round replaces the code list.
-3. **Core entries cleared of higher-layer references.** The check finds them. Skill-dependent entries need the ruling on their placement or reference contract; moving their skills into core is not an option. Other references follow the classification rule.
+2. **Requirements split by pack.** `REQUIRED_CORE_CONTENT` requires no skill entry. Where skill requirements live follows the policy-owner question. Setting sound rows become setting requirements until the sound-selection round replaces the code list.
+3. **Core entries cleared of higher-layer references.** The check finds them. Entries that name a skill move up with their skill, and other references follow the classification rule.
 
 The round passes when the core-alone check, the full-stack validate with reachability, the deadvox unit suite and a save round trip all pass.
 
@@ -100,10 +112,10 @@ The round passes when the core-alone check, the full-stack validate with reachab
 
 Each round leaves the game playable and keeps the core-alone check green.
 
-1. **Core-alone check and pack folders**, as above, with no core skill entries. Removing engine assumptions about built-in skills lands in the round the skill-less proof ruling names; the core-alone validate check needs only the requirement split. The behaviour of skill-dependent actions remains open. Check: core-alone validate, full-stack validate, the unit suite and a save round trip.
+1. **Core-alone check and pack folders**, as above, with no core skill entries. Because a skill-less stack only validates, this round needs the requirement split and the entry moves, not role selection in engine code. Check: core-alone validate, full-stack validate, the unit suite and a save round trip.
 2. **Sounds by selection.** Mechanisms take their sound from the triggering entry, and the code list of every event shrinks to the roles that core mechanisms play themselves. Setting sounds move to the setting pack. Check: the core-alone check without setting sound rows, and an admission test showing that an entry selecting a missing sound is rejected at that entry.
 3. **Creature framework.** Body plan, footstep family and spawn role become capabilities. The model-name branches and the hamlet type ids leave code. Acid's values move to the setting. Damage kinds become pack-declared and resistance is keyed by declared kind. Zombie types move to the setting pack. Check: the core-alone check with no creature type, and an admission test showing that a creature with a new id and an existing body plan loads without a code edit.
-4. **Ranged split.** Ranged tunables stay in core. Firearms, ammunition, attachments and explosives move to the setting pack, and debug loadouts come from content. The firearms skill stays outside core; provider selection and baseline policy follow the skill-contract rulings. Check: the core-alone check with no firearm, and a full-stack firing and grenade flow in an existing browser stage.
+4. **Ranged split.** Ranged tunables stay in core. Firearms, ammunition, attachments and explosives move to the setting pack, and debug loadouts come from content. The firearms skill stays outside core, and combat reads it through its role (see "Skill providers"); baseline policy follows the policy-owner question. Check: the core-alone check with no firearm, and a full-stack firing and grenade flow in an existing browser stage.
 5. **Scenario content.** The gauntlet, the playtest fixtures and the tutorial are packed as the scenario-packing ruling says. Check: each playable stack validates with reachability, and, if scenario content leaves the setting pack, the core plus the setting validate without it.
 
 **Save identity.** `src/core/saveFormat.ts`, `currentSaveVersionIdentity` already records an ordered list of packs, each with an id, a version and a canonical hash, and `contentPackDifferences` refuses a world under different packs (`docs/decisions/0002-saves.md`, "Compatibility"). The list takes its shape in round 1: one entry per bundled pack in load order, each hashed on its own, followed by bundled and browser mods as they are recorded already. Hashing per pack is what lets a refusal name which pack changed. Which scenario entries a run records follows the scenario-packing ruling. Round 3 rekeys the generator versions by body plan instead of creature model name. No migration is owed for saves before v1.0 beta (`AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
@@ -114,14 +126,10 @@ Each question is open on #637. When it is ruled, the rule and its reason replace
 
 - **Creature section name**, given that it will hold types that are not zombies. Blocks round 3's schema rename.
 - **Pack ids, folder names and the setting's name.** Blocks round 1's folders and save identity.
-- **Where do otherwise-core entries with skill references belong?** Blocks round 1's classification of those entries.
-- **Who owns handling, ranged and melee policy when no skill is supplied?** Blocks runtime decoupling, in round 1 only if the skill-less proof ruling puts it there, and round 4's ranged-policy split.
-- **How does an activity select a skill?** Blocks the provider contract, in round 1 only if the skill-less proof ruling puts it there, and round 4's combat integration.
+- **Who owns handling, ranged and melee policy when no skill is supplied?** Blocks the skill requirements' placement in round 1 and round 4's ranged-policy split.
 - **How are skills shared between settings: independent definitions, a shared optional pack, or roles without common skill ids?** Blocks round 1's skill-pack placement and dependencies, and round 4's firearms-skill placement.
-- **Where do starting recipe knowledge and the default start row belong?** Blocks default-row placement and the character-start contract, in round 1 only if the skill-less proof ruling puts that work there, and round 5's scenario integration.
-- **What should the UI show with zero skills?** Blocks zero-skill UI proof, in round 1 only if the skill-less proof ruling puts it there.
-- **How do competing skill providers interact?** Blocks provider admission, in round 1 only if the skill-less proof ruling puts it there.
+- **Where do starting recipe knowledge and the default start row belong?** Blocks default-row placement, the character-start contract and round 5's scenario integration.
+- **Does an overridden skill stay visible, and does it keep its saved experience?** Blocks provider override admission.
 - **The name of `acidSpit`** once it is a core component. Blocks round 3's schema change.
 - **How scenario content is packed.** Blocks round 5 and the scenario entries of the save identity.
-- **When mods declare the packs they depend on.** Blocks round 1 only if the ruling puts it there.
-- **What must a core-only or otherwise skill-less stack prove beyond validation?** Blocks boot or play proof in round 1; the core-alone validate check does not wait on it.
+- **When mods declare the packs they depend on.** Blocks provider override admission, and round 1 only if the ruling puts it there.

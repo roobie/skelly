@@ -42,17 +42,16 @@ mod. The reference mod needs three: add to a list, set a scalar and replace a li
 fields accept which operations belongs in the schema beside each field, not in this
 record.
 
-**Schema marking.** Marking bounds what a mod can break: a field that other content relies
-on staying whole, or that save identity or simulation ownership depends on, stays
-unpatchable until someone decides otherwise. It also bounds what validation must explain,
+**Schema marking.** Marking bounds what a mod can break and what validation must explain,
 because only marked fields can have more than one author.
 
 **Conflicts.** List additions commute: two mods adding to one list both keep their
 additions, in pack order, and never conflict. A scalar set, or a list replaced, by two
 mods fails closed with a conflict message naming the field, both mods and the fix, unless
 the later mod declares that it overrides the earlier one and depends on it, directly or
-transitively. Load order alone never decides. This matches the role-override model for
-skill providers, so one rule covers every place where two mods claim one thing.
+transitively. Load order alone never decides. This is the rule for competing skill
+providers in `deadvox/docs/pack-split.md`, "Skill providers", so one rule covers every
+place where two mods claim one thing.
 
 ## Rejected
 
