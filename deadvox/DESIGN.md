@@ -677,6 +677,12 @@ by shape as well as color, and rotation is available. The layout must work on
 small zoomed screens without letting an oversized container dominate nearby
 storage.
 
+Everything lootable, from furniture to ground piles and downed bodies, is within
+reach only along a clear line from the chest. A solid block or a closed door in
+the way stops the arm; other furniture does not. Reach is a physical arm, so a
+wall that stops the player's body also stops looting, while a table in front of a
+shelf does not. See `src/core/reach.ts`, `clearLine`.
+
 Show a name, stack count, condition, and pocket handling time at a glance;
 inspection exposes exact weight, condition, qualities, and times. Grid labels
 avoid ellipses and early word breaks because they spend cell space that could
