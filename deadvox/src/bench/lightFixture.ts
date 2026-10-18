@@ -1,5 +1,5 @@
 import type { PerspectiveCamera } from 'three';
-import { CLOCK_RATIO } from '../core/clock.ts';
+import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory } from '../core/inventory.ts';
@@ -20,7 +20,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
   const { blockSize } = config.scale;
   const inventory = new Inventory(registry);
   const add = (type: string, target: Parameters<Inventory['add']>[1]) => {
-    const item = inventory.createFixture(type);
+    const item = inventory.create(type);
     if (!inventory.add(item, target)) {
       throw new Error(`Could not place benchmark light: ${type}`);
     }
@@ -32,7 +32,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
 
   add('torch', { kind: 'hand', side: 'right' });
   add('candle', { kind: 'hand', side: 'left' });
-  const hoodie = inventory.createFixture('hoodie');
+  const hoodie = inventory.create('hoodie');
   if (!inventory.add(hoodie, { kind: 'worn' })) {
     throw new Error('Could not wear benchmark light container');
   }
@@ -47,7 +47,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
       const blockZ = Math.round((z + Math.sin(angle) * radius) / blockSize);
       const ground = engine.groundAt((blockX + 0.5) * blockSize, (blockZ + 0.5) * blockSize);
       const pos: [number, number, number] = [blockX, Math.floor(ground / blockSize), blockZ];
-      const item = inventory.createFixture('glowstick');
+      const item = inventory.create('glowstick');
       if (!inventory.add(item, { kind: 'pile', pos })) {
         throw new Error(`Could not place dropped benchmark glowstick on ring ${ring}`);
       }
@@ -63,11 +63,11 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
     seed: config.seed,
     bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
     compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
-    clock: { ratio: CLOCK_RATIO, start: calendar },
+    clock: { ratio: requireDayCycle(registry).clockRatio, start: calendar },
   });
   const queue = new HandlingQueue(inventory);
   const survival = new Survival(simulation, inventory, queue, {
-    reach: bindReach({ inventory, position: spawn.pos, blockSize }),
+    reach: bindReach({ inventory, position: spawn.pos, blockSize, clock: simulation.clock }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
     read: () => {

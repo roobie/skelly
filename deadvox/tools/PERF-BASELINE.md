@@ -47,6 +47,13 @@ streaming or idle evidence. Preserve raw profiles so a ranking can be investigat
 of treating incomplete sampling as proof that a subsystem is free.
 
 See `deadvox/tools/perf-baseline-stats.mjs`, `summarize`, for the JSON summary contract.
+Scene attribution must be independent of post effects so plain rendering cannot be mistaken
+for an undrawn workload. The measurement adapter reuses the enclosing GPU probe for resolution
+adaptation because elapsed queries cannot nest. Record the effective scene scale with each frame so delayed
+results from an older size cannot steer the resized target. Warm-up must allow resolution to
+settle before comparing sustained-load costs; see `deadvox/tools/perf-baseline-browser.mjs`,
+`install`, and `deadvox/src/config/perf-baseline.jsonnet`.
+
 Raw warm frames accompany each summary, enabling different aggregation without repeating
 the expensive hardware run. Compare repeat spreads as well as pooled results; no automatic
 pass/fail claim substitutes for the operator's fidelity approval.
@@ -56,7 +63,12 @@ pass/fail claim substitutes for the operator's fidelity approval.
 Prefer excluding impossible work to retaining mutable simulation projections. Inventory ownership,
 light power and terrain edits must be visible immediately, without a second invalidation protocol.
 See `deadvox/src/core/lights.ts`, `inventoryLightSources`, and `deadvox/src/core/physics.ts`,
-`moveTerrainAxis`. Equivalence fixtures compare pruned exposure to the full item tree and terrain-only
-movement to the generic obstacle path; see `deadvox/test/lightPool.test.ts` and
-`deadvox/test/physics.test.ts`. Performance evidence belongs outside the repository, not in timing
-assertions that depend on the execution host.
+`moveTerrainAxis`. Revolver cancellation needs only the continuations already owned by handling,
+not every idle item in the world; see `deadvox/src/game/revolverHandling.ts`, `cancelUnheld`.
+Eligibility still reads live ownership, so moving a gun between steps cannot leave its handling running.
+Equivalence fixtures compare pruned exposure and cancellation to full item-tree scans, and terrain-only
+movement to the generic obstacle path; see `deadvox/test/lightPool.test.ts`,
+`deadvox/test/revolver.test.ts` and `deadvox/test/physics.test.ts`.
+Performance evidence belongs outside the repository, not in timing assertions that depend on the
+execution host. Frame callback counts are not simulation rates: distinguish selected actor counts
+from scheduler ticks and elapsed-time catch-up before proposing cadence changes.

@@ -1,14 +1,12 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import process from 'node:process';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';
-import { SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
+import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
@@ -34,7 +32,6 @@ import {
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import {
   ACTIVE_ZOMBIE_RADIUS_METRES,
-  FISTS_MELEE,
   type HitImpulse,
   hearPlayer,
   hearVocalNoise,
@@ -49,17 +46,15 @@ import {
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
+import { baseRegistry } from './baseRegistry.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
-const BASE = 'src/content/base';
 const SHAMBLER_CPU_BUDGET_MS = 1;
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
-const DAY_CYCLE = dayCycleFor(registry.dayCycle);
+const registry = baseRegistry();
+const DAY_CYCLE = requireDayCycle(registry);
+const DUSK = resolveSpawnTime(registry.dayCycle!, 'dusk');
 const dayStateAtHour = (hour: number) => dayPhaseAt(DAY_CYCLE, hour * 3600);
 const SHAMBLER = registry.zombies.get('shambler')!;
 const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack.moves.map(({ damage }) => damage);
@@ -391,7 +386,10 @@ describe('zombie attack moves', () => {
 });
 
 describe('melee hit sounds', () => {
-  const emittedFor = (weapon: import('../src/core/zombies.ts').MeleeWeapon): { hit: boolean; events: string[] } => {
+  const emittedFor = (
+    weapon: import('../src/core/zombies.ts').MeleeWeapon,
+    isFist = false,
+  ): { hit: boolean; events: string[] } => {
     const emitted: string[] = [];
     const system = new ZombieSystem({
       ...senses(() => player([100, 2, 0])),
@@ -401,7 +399,7 @@ describe('melee hit sounds', () => {
     const zombie = system.store.get(id)!;
     zombie.modeTimer = 1000;
     const ray = regionRay(zombie, 'torso');
-    const hit = system.swing(ray.origin, ray.direction, weapon);
+    const hit = system.swing(ray.origin, ray.direction, weapon, isFist);
     return {
       hit: hit === id,
       events: emitted.filter((event) => event === 'melee_hit' || event === 'melee_hit_fist'),
@@ -409,7 +407,7 @@ describe('melee hit sounds', () => {
   };
 
   it('emits exactly one fist impact and no weapon impact for a fist hit', () => {
-    const result = emittedFor(FISTS_MELEE);
+    const result = emittedFor(FISTS_MELEE, true);
     expect(result.hit).toBe(true);
     expect(result.events).toEqual(['melee_hit_fist']);
   });
@@ -655,10 +653,10 @@ describe('shambler perception', () => {
 
     const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
     const daylightSky = (position: Vec3, hour: number) =>
-      sunExposedAt({ position, gameHours: hour, skyTop: 20, isOpaque: wallShadow });
+      sunExposedAt({ position, gameHours: hour, cycle: DAY_CYCLE, skyTop: 20, isOpaque: wallShadow });
     const sunlitSample: Vec3 = [0.5, 1.15, 0.5];
     expect(
-      raycast([sunlitSample[0], sunlitSample[1] + 1e-4, sunlitSample[2]], sunDirection(12), 20, wallShadow),
+      raycast([sunlitSample[0], sunlitSample[1] + 1e-4, sunlitSample[2]], sunDirection(12, DAY_CYCLE), 20, wallShadow),
     ).toBeDefined();
     expect(daylightSky(sunlitSample, 12)).toBe(true);
 
@@ -2037,6 +2035,7 @@ describe('shambler scenarios', () => {
         seed: 9,
         bodyTuning: registry.body.get('player')!,
         compressionCaps: registry.compression.get('player')!.caps,
+        clock: BASE_CLOCK,
       });
       sim.godMode = godMode;
       let hits = 0;
@@ -2122,7 +2121,7 @@ describe('shambler scenarios', () => {
     const spawn: ZombieSpawn = {
       type: 'shambler',
       pos: [0, 1, 0],
-      window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) },
+      window: { fromGameTimeOfDay: gameTimeOfDay(DUSK) },
     };
     const site = spawnSite(spawn);
     const spawner = new ZombieSpawner();
@@ -2131,17 +2130,17 @@ describe('shambler scenarios', () => {
 
     load();
     expect(system.store.size).toBe(0);
-    spawner.advance({ calendar: SPAWN_TIMES.dusk - 1, registry, zombies: system });
+    spawner.advance({ calendar: DUSK - 1, registry, zombies: system });
     expect(system.store.size).toBe(0);
-    spawner.advance({ calendar: SPAWN_TIMES.dusk, registry, zombies: system });
+    spawner.advance({ calendar: DUSK, registry, zombies: system });
     expect(system.store.size).toBe(1);
     expect(spawner.snapshotState()).toContain('shambler:0,1,0');
   });
 
   it('spawns same-tick pending markers in stable order regardless of column load order', () => {
     const markers: ZombieSpawn[] = [
-      { type: 'shambler', pos: [0, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) } },
-      { type: 'shambler', pos: [32, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) } },
+      { type: 'shambler', pos: [0, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(DUSK) } },
+      { type: 'shambler', pos: [32, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(DUSK) } },
     ];
     const spawnOrder = (order: readonly ZombieSpawn[]) => {
       const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
@@ -2155,7 +2154,7 @@ describe('shambler scenarios', () => {
           zombies: system,
         });
       });
-      spawner.advance({ calendar: SPAWN_TIMES.dusk, registry, zombies: system });
+      spawner.advance({ calendar: DUSK, registry, zombies: system });
       return [...system.store.entries()].map(([id, zombie]) => ({ id, home: zombie.home }));
     };
 
@@ -2171,7 +2170,7 @@ describe('shambler scenarios', () => {
     const spawn: ZombieSpawn = {
       type: 'shambler',
       pos: [0, 1, 0],
-      window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
+      window: { fromGameTimeOfDay: gameTimeOfDay(DUSK), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
     };
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     const spawner = new ZombieSpawner();
@@ -2183,7 +2182,7 @@ describe('shambler scenarios', () => {
       zombies: system,
     });
     expect(system.store.size).toBe(0);
-    spawner.advance({ calendar: SPAWN_TIMES.dusk + 1, registry, zombies: system });
+    spawner.advance({ calendar: DUSK + 1, registry, zombies: system });
     expect(system.store.size).toBe(1);
   });
 
@@ -2191,7 +2190,7 @@ describe('shambler scenarios', () => {
     const spawn: ZombieSpawn = {
       type: 'shambler',
       pos: [0, 1, 0],
-      window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
+      window: { fromGameTimeOfDay: gameTimeOfDay(DUSK), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
     };
     const site = spawnSite(spawn);
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
@@ -2199,16 +2198,16 @@ describe('shambler scenarios', () => {
     const load = () => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system });
     load();
     spawner.unloadColumn(0, 0);
-    spawner.advance({ calendar: SPAWN_TIMES.dusk + SECONDS_PER_DAY, registry, zombies: system });
+    spawner.advance({ calendar: DUSK + SECONDS_PER_DAY, registry, zombies: system });
     expect(system.store.size).toBe(0);
 
     load();
-    spawner.advance({ calendar: SPAWN_TIMES.dusk + SECONDS_PER_DAY, registry, zombies: system });
+    spawner.advance({ calendar: DUSK + SECONDS_PER_DAY, registry, zombies: system });
     expect(system.store.size).toBe(1);
     const [id] = system.store.entries().next().value!;
     system.store.remove(id);
     load();
-    spawner.advance({ calendar: SPAWN_TIMES.dusk + 2 * SECONDS_PER_DAY, registry, zombies: system });
+    spawner.advance({ calendar: DUSK + 2 * SECONDS_PER_DAY, registry, zombies: system });
     expect(system.store.size).toBe(0);
     expect(spawner.snapshotState()).toContain('shambler:0,1,0');
 

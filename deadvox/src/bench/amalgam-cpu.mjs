@@ -5,9 +5,9 @@ import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigureForType } from '../core/amalgamFigure.ts';
-import { buildRegistry } from '../core/content.ts';
+import { buildRegistry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
+import { dayPhaseAt } from '../core/dayPhase.ts';
 import { makeScale } from '../core/scale.ts';
 import { testedBricks } from '../core/solidBricks.ts';
 import { amalgamTypeOf } from '../core/zombieFigure.ts';
@@ -108,7 +108,7 @@ for (const { name, corridor } of scenarios) {
       isSolid: solid,
       solidBricks: terrain,
       isOpaque: () => false,
-      dayPhase: () => dayPhaseAt(DEFAULT_DAY_CYCLE, 12 * 3600),
+      dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
       blockSize: scale.blockSize,
       physics: physicsFor(scale),
       jumpSpeed: PLAYER.jump,

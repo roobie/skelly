@@ -1,12 +1,9 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { type AimStep, assertAimState } from '../src/core/aim.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import type { Item } from '../src/core/items.ts';
-import { ITEM_FLIGHT_SECONDS } from '../src/core/itemThrow.ts';
 import { pelletShot } from '../src/core/pellets.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import {
   decodeSave,
   encodeSave,
@@ -26,52 +23,18 @@ import {
 import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
-const base = 'src/content/base';
-const baseFiles = readdirSync(base)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
-const { registry } = buildRegistry(baseFiles);
+const registry = baseRegistry();
 const version: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
   generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
-const contentLookup = (kind: SaveContentKind, id: string): boolean => {
-  switch (kind) {
-    case 'block':
-      return registry.blockIds.has(id);
-    case 'item':
-      return registry.items.has(id);
-    case 'furniture':
-      return registry.furniture.has(id);
-    case 'zombie':
-      return registry.zombies.has(id);
-    case 'sound':
-      return registry.sounds.has(id);
-    case 'scheduler':
-      return [
-        'needs',
-        'body',
-        'long-action',
-        'player',
-        'zombies',
-        'zombie-background',
-        'handling',
-        'lights',
-        'firearms',
-      ].includes(id);
-    case 'skill':
-      return registry.skills.has(id);
-    case 'recipe':
-      return registry.recipes.has(id);
-    default:
-      throw new Error(`Unknown content kind ${kind}`);
-  }
-};
+const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
 const session = (
   effects: FirearmShotEffect[],
   restore?: Readonly<SaveSnapshot>,
@@ -731,7 +694,8 @@ it('hides a committed pile item during its arc and lands at its current model po
   const throws = new ItemThrows(registry, models, 0.5);
   const piles = new PileMeshes(0.5, models);
   const startedAtSimSeconds = runtime.sim.time;
-  const landingAt = startedAtSimSeconds + ITEM_FLIGHT_SECONDS;
+  const flightSimSeconds = reachTuning(registry).throwFlightSimSeconds;
+  const landingAt = startedAtSimSeconds + flightSimSeconds;
   throws.spawn(
     { item: rifle, itemUid: placed.item.uid, origin: [0, 1, 0], startedAtSimSeconds, landingAt },
     runtime.inventory,
@@ -739,7 +703,7 @@ it('hides a committed pile item during its arc and lands at its current model po
 
   ready = true;
   models.version += 1;
-  throws.update(startedAtSimSeconds + ITEM_FLIGHT_SECONDS / 2, runtime.inventory);
+  throws.update(startedAtSimSeconds + flightSimSeconds / 2, runtime.inventory);
   piles.sync(runtime.inventory, throws.hiddenItemUids);
   expect(throws.hiddenItemUids.has(placed.item.uid)).toBe(true);
   expect(piles.group.children.some((object) => object instanceof Group)).toBe(false);

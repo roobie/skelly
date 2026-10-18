@@ -72,6 +72,44 @@ describe('Scheduler', () => {
     expect(scheduler.time).toBeGreaterThanOrEqual(inTick);
   });
 
+  it('a dormant system does not slice advances or catch up time before activation', () => {
+    const scheduler = new Scheduler();
+    let enabled = false;
+    let armed = false;
+    let boundaries = 0;
+    const ticks: number[] = [];
+    scheduler.register({ id: 'contact', rate: 4, enabled: () => enabled, tick: (_dt, time) => ticks.push(time) });
+    scheduler.register({
+      id: 'activation',
+      rate: 1,
+      enabled: () => armed,
+      tick: () => {
+        enabled = true;
+      },
+    });
+    scheduler.advance(5, 1, () => {
+      boundaries += 1;
+      return false;
+    });
+    expect(boundaries).toBe(0);
+    expect(ticks).toEqual([]);
+    armed = true;
+    scheduler.advance(1.25);
+    expect(ticks).toEqual([6.25]);
+  });
+
+  it('restoring an enabled system retains its partial-step phase', () => {
+    const source = new Scheduler();
+    source.register({ id: 'contact', rate: 4, enabled: () => true, tick: () => undefined });
+    source.advance(0.375);
+    const restored = new Scheduler();
+    const ticks: number[] = [];
+    restored.register({ id: 'contact', rate: 4, enabled: () => true, tick: (_dt, time) => ticks.push(time) });
+    restored.restoreState(source.snapshotState());
+    restored.advance(0.125);
+    expect(ticks).toEqual([0.5]);
+  });
+
   it('rejects a system registered twice', () => {
     const scheduler = new Scheduler();
     scheduler.register({ id: 'needs', rate: 1, tick: () => undefined });

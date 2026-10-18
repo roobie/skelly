@@ -2,6 +2,7 @@
 // results; otherwise the game starts (`?radius=` in metres, `?seed=`).
 
 import { loadRecord } from './bench/plan.ts';
+import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
 import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
@@ -13,6 +14,7 @@ import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import { applyWeatheringConfig, configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
+import { requestInputLock } from './game/input.ts';
 import { inputBindings, keyboardInput, labelForAction } from './game/inputBindings.ts';
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from './game/inputReplay.ts';
 import { startPlay } from './game/play.ts';
@@ -20,12 +22,15 @@ import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
 import { tutorialRequested, tutorialUrl } from './game/tutorial.ts';
+import { WorldLoading } from './game/worldLoading.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
+import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
 import { chooseMods } from './ui/modsPanel.ts';
 import { contentLookup, SaveController } from './ui/saveController.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
+import { mountWorldLoading } from './ui/worldLoading.ts';
 
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
@@ -142,6 +147,7 @@ if (bench === 'report') {
   if (config.debug) {
     inputBindings.setDebugRun();
   }
+  mountFullscreenOptions(document.getElementById('fullscreen-options')!);
   mountInputOptions(document.getElementById('input-options')!, config.debug);
   mountControlsCard(
     document.getElementById('controls')!,
@@ -240,12 +246,30 @@ if (bench === 'report') {
       startPlay(engine, debugModule, { saveController, restore: restored, ...(skyRoute ? { skyRoute } : {}) });
       hideStartupScreen();
     } else {
-      saveController.setNewWorldLauncher((creation) => {
-        const entry = startPlay(engine, debugModule, {
-          saveController,
-          ...creation,
-          ...(skyRoute ? { skyRoute } : {}),
-        });
+      saveController.setNewWorldLauncher(async (creation) => {
+        // Capture transient activation before setup, then return the gesture handler before doing expensive work.
+        const target = engine.renderer?.domElement ?? view;
+        const locked = requestInputLock(target);
+        const owner = new WorldLoading(engine);
+        const draw = mountWorldLoading(owner);
+        await locked;
+        await new Promise<void>((done) => setTimeout(done, 0));
+        let entry: ReturnType<typeof startPlay>;
+        try {
+          entry = startPlay(engine, debugModule, {
+            saveController,
+            loading: { owner, draw },
+            ...creation,
+            ...(skyRoute ? { skyRoute } : {}),
+          });
+        } catch (error) {
+          owner.fail(error);
+          draw();
+          if (document.pointerLockElement === target) {
+            document.exitPointerLock();
+          }
+          throw error;
+        }
         return {
           enter: () => {
             overlay.classList.remove('startup-ready');
@@ -263,6 +287,7 @@ if (bench === 'report') {
   if (run) {
     const config = makeConfig(run.seed, DEFAULT_RADIUS_M, content);
     config.start = parseTimeOfDay(run.time)!;
+    applyBenchWeathering(config);
     startShamblerBench(createEngine(config, view, undefined, { graphicsSource: 'mod' }), run);
   } else {
     document.getElementById('hud')!.textContent =
@@ -275,5 +300,6 @@ if (bench === 'report') {
   const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, content, blockSize);
   // The test house is defined in metres, so it compares across block sizes; `&site=city` benchmarks the city.
   Object.assign(config, siteFromUrl(params, 'testHouse', content.registry));
+  applyBenchWeathering(config);
   startBench(createEngine(config, view, stats, { graphicsSource: 'mod' }), run, stats);
 }

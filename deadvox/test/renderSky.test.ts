@@ -14,6 +14,7 @@ import { skyAt } from '../src/core/sky.ts';
 import { heightFogUniforms } from '../src/render/heightFog.ts';
 import { Mood } from '../src/render/mood.ts';
 import { applySky } from '../src/render/sky.ts';
+import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 
 it('fog, background and mist follow local sky visibility from darkness to open sky', () => {
   const scene = new Scene();
@@ -24,9 +25,14 @@ it('fog, background and mist follow local sky visibility from darkness to open s
     camera: new PerspectiveCamera(),
     radiusM: 100,
   };
-  const mood = new Mood({} as WebGLRenderer, scene, targets.camera, graphicsFile.graphics[0]!);
+  const mood = new Mood(
+    { domElement: new EventTarget() } as unknown as WebGLRenderer,
+    scene,
+    targets.camera,
+    graphicsFile.graphics[0]!,
+  );
   const sky = {
-    ...skyAt(12),
+    ...skyAt(12, BASE_DAY_CYCLE),
     sky: [0.6, 0.7, 0.8] as const,
     heightFogColor: [0.4, 0.5, 0.6] as const,
   };

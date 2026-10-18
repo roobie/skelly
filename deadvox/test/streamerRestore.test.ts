@@ -10,6 +10,7 @@ import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { Skylight } from '../src/render/skylight.ts';
+import { baseTerrainShape } from './baseRegistry.ts';
 
 class QuietWorker {
   onmessage: ((event: MessageEvent) => void) | null = null;
@@ -67,6 +68,7 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
     meshes: meshes as never,
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4 },
+    shape: baseTerrainShape(),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
@@ -118,6 +120,7 @@ it('reports generated-column transitions that match the generated-column snapsho
     meshes: meshes as never,
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4 },
+    shape: baseTerrainShape(),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
@@ -153,6 +156,7 @@ it('lets replay drive terrain generation and unloading without live streaming si
     meshes: meshes as never,
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4 },
+    shape: baseTerrainShape(),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
@@ -187,7 +191,7 @@ describe('lazy restored world diffs', () => {
     vi.stubGlobal('Worker', QuietWorker);
     const scale = makeScale(0.5);
     const terrain = { grass: 1, dirt: 2, rock: 3, sand: 4 };
-    const generated = generateColumn({ seed: 17, blocks: terrain, scale }, 0, 0, [])[0]!;
+    const generated = generateColumn({ seed: 17, blocks: terrain, shape: baseTerrainShape(), scale }, 0, 0, [])[0]!;
     const actualBase = generated.at(0);
     const wrongBase = actualBase === 0xff_ff ? 0xff_fe : 0xff_ff;
     const world = new World();
@@ -203,6 +207,7 @@ describe('lazy restored world diffs', () => {
       meshes: meshes as never,
       seed: 17,
       terrain,
+      shape: baseTerrainShape(),
       colors: new Uint8Array(256 * 4),
       patterns: new Uint8Array(256),
       weatherable: new Uint8Array(256),

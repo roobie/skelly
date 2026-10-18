@@ -1,12 +1,10 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Chunk } from '../src/core/chunk.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { type MetreBox, rasterize, stampChunk } from '../src/core/structure.ts';
 import { cellsOf, pieceSize } from '../src/core/templates.ts';
 import { testHouse, testHouseFurniture } from '../src/game/testHouse.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 const blocks = {
   brick: 1,
@@ -25,11 +23,7 @@ const blocks = {
   dressedStone: 14,
   hazard: 15,
 };
-const content = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
-const { registry } = buildRegistry(content);
+const registry = baseRegistry();
 const sizeOf = (type: string) => registry.furniture.get(type)!.size;
 
 const build = (blockSize: number) => {

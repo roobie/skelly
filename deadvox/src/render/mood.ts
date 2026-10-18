@@ -1,6 +1,6 @@
 // The mood pass: bloom, colour grade, vignette and film grain on top of the scene, plus the
-// height-fog mist. All of it is optional and cheap; with `post` off the frame is drawn
-// straight to the screen with `renderer.render`, exactly as before the pass existed.
+// height-fog mist. With `post` off, direct display shading is preserved and a smaller scene
+// viewport can be copied and presented full-size without enabling any mood effects.
 //
 // Pipeline (post on), all in an MSAA half-float linear target until the last step:
 //   RenderPass (scene) -> hands -> bloom -> output (tone mapping + sRGB + grade/film) -> screen
@@ -50,12 +50,15 @@ import {
 } from '../core/mood.ts';
 import type { OpticLensFrame, ReticleKind } from '../core/opticView.ts';
 import type { Sky } from '../core/sky.ts';
+import { AdaptiveScale } from './adaptiveScale.ts';
 import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
 import { DrawPass } from './drawPass.ts';
+import { GpuFrameTime } from './gpuFrameTime.ts';
 import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
 import { createMoodOutputPass } from './moodOutput.ts';
 import { OpticLensRenderer, opticLensPass } from './opticLens.ts';
+import { ScreenScale } from './screenScale.ts';
 
 const RETICLE_UNIFORM: Record<ReticleKind, number> = { dot: 0, crosshair: 1, chevron: 2 };
 
@@ -82,6 +85,10 @@ export class Mood {
   private width = 1;
   private height = 1;
   private renderScaleValue: number;
+  private readonly adaptiveScale: AdaptiveScale;
+  private gpuProbe: GpuFrameTime | undefined;
+  externalGpuTiming = false;
+  private contextLost = false;
   private bloomScaleValue: number;
   private readonly graphicsTuning: GraphicsOptions;
   private frame = 0;
@@ -91,19 +98,28 @@ export class Mood {
   private crackOn = false;
   private readonly crackColor = new Color();
   private composer: EffectComposer | undefined;
+  private screenScale: ScreenScale | undefined;
   private readonly drawPass = new DrawPass();
-  private readonly opticLens = new OpticLensRenderer();
+  private opticLens = new OpticLensRenderer();
   private opticPass: ShaderPass | undefined;
   private bloomPass: UnrealBloomPass | undefined;
   private outputPass: OutputPass | undefined;
 
   constructor(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, graphicsTuning: GraphicsOptions) {
     this.graphicsTuning = graphicsTuning;
-    this.renderScaleValue = graphicsTuning.renderScale.default;
+    this.adaptiveScale = new AdaptiveScale(graphicsTuning.renderScale);
+    this.renderScaleValue = this.adaptiveScale.scale;
     this.bloomScaleValue = graphicsTuning.bloomScale.default;
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
+    renderer.domElement.addEventListener('webglcontextlost', () => {
+      this.contextLost = true;
+      this.releaseComposer();
+    });
+    renderer.domElement.addEventListener('webglcontextrestored', () => {
+      this.contextLost = false;
+    });
     installAutoToneMapping();
   }
 
@@ -196,10 +212,21 @@ export class Mood {
     return this.renderScaleValue;
   }
 
-  setRenderScale(value: number): void {
+  setRenderScale(value: number, explicit = true): void {
     assertGraphicsValue(this.graphicsTuning, 'renderScale', value);
-    this.renderScaleValue = value;
-    this.composer?.setPixelRatio(this.renderer.getPixelRatio() * this.renderScaleValue);
+    this.adaptiveScale.setChoice(value, explicit);
+    this.applyRenderScale(this.adaptiveScale.scale);
+  }
+
+  recordGpuTime(ms: number, measuredScale: number): void {
+    this.applyRenderScale(this.adaptiveScale.sample(ms, measuredScale));
+  }
+
+  private applyRenderScale(value: number): void {
+    if (value !== this.renderScaleValue) {
+      this.renderScaleValue = value;
+      this.composer?.setPixelRatio(this.renderer.getPixelRatio() * value);
+    }
   }
 
   get bloomScale(): number {
@@ -224,6 +251,9 @@ export class Mood {
    * when post is on, onto the screen when it's off.
    */
   render(drawHands: () => void, opticFrame?: OpticLensFrame): void {
+    if (this.contextLost) {
+      return;
+    }
     // Crack check: only the clear colour changes (the fog on geometry keeps the sky colour), so
     // magenta shows exactly where no geometry covered the sample. Post-on scales it like the sky.
     const { background } = this.scene;
@@ -234,9 +264,23 @@ export class Mood {
       }
       this.scene.background = this.crackColor;
     }
+    let endQuery: (() => void) | undefined;
+    if (
+      this.adaptiveScale.active &&
+      !this.externalGpuTiming &&
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'visible'
+    ) {
+      this.gpuProbe ??= new GpuFrameTime(this.renderer.getContext() as WebGL2RenderingContext);
+      endQuery = this.gpuProbe.begin(
+        () => this.renderScale,
+        (ms, scale) => this.recordGpuTime(ms, scale),
+      );
+    }
     try {
       this.draw(drawHands, opticFrame);
     } finally {
+      endQuery?.();
       this.scene.background = background;
     }
   }
@@ -255,9 +299,17 @@ export class Mood {
       const { renderer } = this;
       const chosen = renderer.toneMapping;
       renderer.toneMapping = screenToneMapping(chosen);
-      try {
+      const draw = () => {
         renderer.render(this.scene, this.camera);
         drawHands();
+      };
+      try {
+        if (this.renderScaleValue < 1) {
+          this.screenScale ??= new ScreenScale();
+          this.screenScale.render(renderer, this.renderScaleValue, draw);
+        } else {
+          draw();
+        }
       } finally {
         renderer.toneMapping = chosen;
       }
@@ -395,6 +447,17 @@ export class Mood {
     u.uHighlightTint!.value = [...params.highlightTint];
     u.uVignette!.value = film ? VIGNETTE : 0;
     u.uGrain!.value = film ? GRAIN : 0;
+  }
+
+  private releaseComposer(): void {
+    // Context loss already frees GPU storage; disposing stale handles only produces invalid deletes.
+    this.gpuProbe = undefined;
+    this.screenScale = undefined;
+    this.opticLens = new OpticLensRenderer();
+    this.composer = undefined;
+    this.bloomPass = undefined;
+    this.outputPass = undefined;
+    this.opticPass = undefined;
   }
 
   /** Built on first use, so a run that never turns post on (the benchmark) allocates no targets. */

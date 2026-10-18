@@ -5,25 +5,18 @@ import { CHUNK, type Vec3 } from './coords.ts';
 import { Rng, valueNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import { type Rect, rectDistance } from './site.ts';
-import { sitePalette } from './sitePalette.ts';
+import { siteGenerationOf, sitePalette } from './sitePalette.ts';
 import { type BlockBox, type MetreBox, rasterize, stampChunk } from './structure.ts';
+import type { TreeShape } from './treeShapes.ts';
 
-export type TreeShape = 'broadleaf' | 'conifer' | 'young';
-export const TREE_MIX: readonly TreeShape[] = ['broadleaf', 'broadleaf', 'conifer', 'young'];
-export const TREE_CELL_METRES = 8;
-export const DEFAULT_TREE_DENSITY = 0.5;
-export const FOREST_HALF_EXTENT_METRES = 384;
-
-/** Frozen d24-2 field: smooth seeded value noise with broad 0.75 plateaus. Coordinates are metres. */
-export const FOREST_DENSITY_FIELD = {
-  wavelengthMetres: 128,
-  seedSalt: 137,
-  floor: 0.2,
-  gain: 1,
-  ceiling: 0.75,
-} as const;
-export const forestDensityAt = (seed: number, x: number, z: number): number => {
-  const field = FOREST_DENSITY_FIELD;
+/** Smooth seeded value noise with broad plateaus; the field's tuning is site-generation content. Coordinates are metres. */
+export const forestDensityAt = (
+  registry: Pick<Registry, 'siteGeneration'>,
+  seed: number,
+  x: number,
+  z: number,
+): number => {
+  const field = siteGenerationOf(registry).vegetation.forestDensityField;
   return Math.min(
     field.ceiling,
     field.floor +
@@ -125,20 +118,21 @@ export const vegetationPlacements = ({
   shapeMix?: (x: number, z: number) => readonly TreeShape[];
 }): TreePlacement[] => {
   const shapes = treeShapes(registry, scale);
-  const step = TREE_CELL_METRES / scale.blockSize;
+  const { treeCellMetres, treeMix } = siteGenerationOf(registry).vegetation;
+  const step = treeCellMetres / scale.blockSize;
   const jitter = Math.round(1.5 / scale.blockSize);
   const trees: TreePlacement[] = [];
   for (let cz = Math.floor(area.z0 / step); cz < Math.ceil(area.z1 / step); cz++) {
     for (let cx = Math.floor(area.x0 / step); cx < Math.ceil(area.x1 / step); cx++) {
       const rng = Rng.stream(seed, `vegetation:${cx},${cz}`);
       const occupancy =
-        typeof density === 'number' ? density : density((cx + 0.5) * TREE_CELL_METRES, (cz + 0.5) * TREE_CELL_METRES);
+        typeof density === 'number' ? density : density((cx + 0.5) * treeCellMetres, (cz + 0.5) * treeCellMetres);
       if (!rng.chance(occupancy)) {
         continue;
       }
       const x = Math.floor((cx + 0.5) * step) + rng.int(-jitter, jitter);
       const z = Math.floor((cz + 0.5) * step) + rng.int(-jitter, jitter);
-      const mix = shapeMix?.((cx + 0.5) * TREE_CELL_METRES, (cz + 0.5) * TREE_CELL_METRES) ?? TREE_MIX;
+      const mix = shapeMix?.((cx + 0.5) * treeCellMetres, (cz + 0.5) * treeCellMetres) ?? treeMix;
       const shape = mix[rng.int(0, mix.length - 1)]!;
       const tree = placeTree(shape, [x, ground(x, z) + 1, z], shapes[shape]);
       if (

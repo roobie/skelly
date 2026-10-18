@@ -7,7 +7,7 @@ import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
-import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
+import { parseTimeOfDay } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { isLongGun } from '../src/core/firearmFitting.ts';
@@ -1827,8 +1827,7 @@ describe('authored fixed loot', () => {
     const parsedTreelineThreats = parsedThreats.filter(({ position }) =>
       treelineThreats.some((spawn) => position.every((coordinate, axis) => coordinate === spawn.position[axis])),
     );
-    const hasDuskWindow = (spawn: SiteLayoutDef['shamblers'][number]) =>
-      spawn.window?.fromGameTimeOfDay === SPAWN_TIMES.dusk;
+    const hasDuskWindow = (spawn: SiteLayoutDef['shamblers'][number]) => spawn.window?.fromGameTimeOfDay === 'dusk';
     expect(parsedRoadsideThreats.filter(hasDuskWindow)).toHaveLength(1);
     expect(parsedTreelineThreats.filter(hasDuskWindow)).toHaveLength(1);
     expect(parsedLayout.startTimeGameTimeOfDay).toBe(

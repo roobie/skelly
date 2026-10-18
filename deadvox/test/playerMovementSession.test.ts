@@ -1,11 +1,10 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
-import { bodyDistance, INVENTORY_REACH } from '../src/core/reach.ts';
+import { bodyDistance, reachTuning } from '../src/core/reach.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
@@ -13,21 +12,15 @@ import { compileTemplate, footprint, type Placement, placedBlockAt } from '../sr
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { FISTS_MELEE, type Zombie } from '../src/core/zombies.ts';
+import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { type MoveIntent, PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
-const { registry, issues } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 
 const FLAT: SolidAt = (_x, y) => y === 0;
 
@@ -157,7 +150,7 @@ describe('attacker modifiers', () => {
                 id: `fixture-tier-${index}`,
                 minDamage,
                 regionFactor: {},
-                chance: { blunt: 1, cut: 1, pierce: 1, acid: 0 },
+                chancePerDamage: { blunt: 1, cut: 1, pierce: 1, acid: 0 },
               })),
             },
           },
@@ -594,8 +587,9 @@ describe('clearing a downed shambler', () => {
           inventory: session.inventory,
           position: session.body.pos,
           blockSize: makeScale(0.5).blockSize,
+          clock: session.sim.clock,
         };
-        expect(bodyDistance(player, zombie.body)).toBeGreaterThan(INVENTORY_REACH);
+        expect(bodyDistance(player, zombie.body)).toBeGreaterThan(reachTuning(session.inventory.registry).reachMetres);
       },
     ],
   ])('leaves the body lying there when finishing it off is %s', (_, interrupt, premise) => {

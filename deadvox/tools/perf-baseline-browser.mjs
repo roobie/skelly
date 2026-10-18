@@ -58,6 +58,22 @@ export function install(engine) {
       segment.query = undefined;
       return false;
     });
+    reportGpuTimes();
+  }
+  function reportGpuTimes() {
+    for (const record of perf.records) {
+      if (
+        !record.gpuReported &&
+        record.segments.length > 0 &&
+        record.segments.every((segment) => segment.ms !== null)
+      ) {
+        record.gpuReported = true;
+        perf.engine.mood.recordGpuTime(
+          record.segments.reduce((sum, segment) => sum + segment.ms, 0),
+          record.renderScale,
+        );
+      }
+    }
   }
   function close() {
     if (!perf.query) {
@@ -98,7 +114,16 @@ export function install(engine) {
       return fn(now);
     }
     perf.before?.();
-    const record = { now, cpuMs: 0, phase: perf.phase, segments: [], actorDraws: 0, zombieDraws: 0, disjoint: false };
+    const record = {
+      now,
+      cpuMs: 0,
+      phase: perf.phase,
+      segments: [],
+      actorDraws: 0,
+      zombieDraws: 0,
+      disjoint: false,
+      renderScale: perf.engine.mood.renderScale,
+    };
     perf.current = record;
     perf.label = null;
     const start = performance.now();
@@ -120,6 +145,21 @@ export function install(engine) {
   };
   engine.meshes.group.userData.perfCategory = 'chunks';
   const direct = renderer.renderBufferDirect.bind(renderer);
+  const render = renderer.render.bind(renderer);
+  renderer.render = (root, ...args) => {
+    if (!perf.current || root !== engine.scene || perf.base !== 'other') {
+      return render(root, ...args);
+    }
+    const previous = perf.base;
+    perf.base = 'scene';
+    scope('scene');
+    try {
+      return render(root, ...args);
+    } finally {
+      perf.base = previous;
+      scope(previous);
+    }
+  };
   function categoryOf(object) {
     for (let parent = object; parent; parent = parent.parent) {
       if (parent.userData.perfCategory) {
@@ -180,13 +220,13 @@ export function install(engine) {
       } else if (pass === composer.passes.at(-1)) {
         label = 'output';
       }
-      const render = pass.render.bind(pass);
+      const renderPass = pass.render.bind(pass);
       pass.render = (...args) => {
         const previous = perf.base;
         perf.base = label;
         scope(label);
         try {
-          return render(...args);
+          return renderPass(...args);
         } finally {
           perf.base = previous;
           scope(previous);
@@ -196,6 +236,8 @@ export function install(engine) {
   };
   perf.attach = (runtime) => {
     Object.assign(perf, runtime);
+    // Reuse the enclosing whole/segmented probe: elapsed GPU queries cannot nest.
+    runtime.engine.mood.externalGpuTiming = true;
     runtime.view.zombieMeshes.group.userData.perfZombies = true;
     for (const key of ['zombieMeshes', 'playerMeshes']) {
       runtime.view[key].group.userData.perfCategory = 'actors';

@@ -8,7 +8,7 @@
         "min": 0.25
       },
       "cachedSurfaceNoise": {
-        "default": false,
+        "default": true,
         "label": "Cached surface noise",
         "options": [false, true]
       },
@@ -24,6 +24,15 @@
       },
       "id": "core",
       "renderScale": {
+        "adaptive": {
+          "enabled": true,
+          "hysteresisRealMs": 2,
+          "max": 1,
+          "min": 0.5,
+          "sampleWindow": 20,
+          "step": 0.050000000000000003,
+          "targetRealMs": 15
+        },
         "default": 1,
         "label": "Scene render scale",
         "max": 1,

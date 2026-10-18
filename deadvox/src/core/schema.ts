@@ -20,6 +20,7 @@ import {
   optional,
   picklist,
   pipe,
+  rawCheck,
   record,
   regex,
   strictObject,
@@ -34,12 +35,13 @@ import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { hasSegment } from './authoredTerrain.mjs';
 import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind, MELEE_DAMAGE_KINDS } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
-import { parseSpawnTime } from './clock.ts';
+import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
+import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
@@ -54,6 +56,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
+import { TREE_SHAPES } from './treeShapes.ts';
 import { WEATHERING_RANGES } from './weather.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
@@ -220,6 +223,18 @@ const InventoryTuningSchema = strictObject({
   id: Id,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
+  /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
+  reachMetres: Positive,
+  /** Metres above the feet at which reach is measured. */
+  chestHeightMetres: Positive,
+  /** Metres within which a looked-at furniture piece can be used. */
+  useReachMetres: Positive,
+  /** Searching a container takes `minSimSeconds` for an empty one, rising linearly to `maxSimSeconds` at `cellsForMax` pocket cells. */
+  search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
+  /** Sim seconds a thrown item takes from the hand to where it lands. */
+  throwFlightSimSeconds: Positive,
+  /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
+  throwArcHeightMetres: NonNegative,
 });
 
 const UiTuningSchema = strictObject({
@@ -230,6 +245,23 @@ const UiTuningSchema = strictObject({
   hudScale: Positive,
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: picklist(SOUND_EVENT_IDS),
+  /** What the rest card calls each kind of rest. */
+  restLabels: strictObject({ rest: Name, sleep: Name }),
+  /** Why a door will not close: the player, or something else, is standing in its way. */
+  doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
+  /** What the item action list calls an action whose wording does not depend on the item or wound. */
+  itemActionLabels: strictObject({ stripRound: Name }),
+  /** What the inventory screen calls each wear slot. */
+  wearSlotLabels: strictObject({
+    head: Name,
+    torso: Name,
+    legs: Name,
+    back: Name,
+    waist: Name,
+    hands: Name,
+    feet: Name,
+    shoulder: Name,
+  }),
 });
 
 const SaveTuningSchema = strictObject({
@@ -261,7 +293,7 @@ const WearableSchema = strictObject({
   /** 0–100: how much it slows and hampers you. */
   encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
   warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
-  wearPerHit: optional(Fraction),
+  wearPerDamage: optional(NonNegative),
 });
 
 const FoodSchema = pipe(
@@ -321,15 +353,36 @@ const WeaponSchema = strictObject({
   }),
 });
 
-const MeleeClassSchema = strictObject({
-  id: picklist(MELEE_DAMAGE_KINDS),
-  /** Fractional spread applied symmetrically around base weapon damage. */
-  damageVariance: Fraction,
-  headDamageMultiplier: Positive,
-  limbDamageMultiplier: Positive,
-  /** Multiplies swing speed; cooldown is divided by this value. */
-  speedMultiplier: Positive,
+/** The bare-handed attack, which no item supplies. */
+const UnarmedAttackSchema = strictObject({
+  damage: Positive,
+  /** Metres beyond the player's hand; the arm's reach is added when swinging. */
+  reach: Positive,
+  /** Sim seconds between swings. */
+  cooldownSimSeconds: PositiveSimSeconds,
+  stamina: NonNegative,
+  contactFraction: Fraction,
+  windupCapSimSeconds: PositiveSimSeconds,
+  impulse: NonNegative,
 });
+
+const MeleeClassSchema = pipe(
+  strictObject({
+    id: picklist([...MELEE_DAMAGE_KINDS, 'fists']),
+    /** Fractional spread applied symmetrically around base weapon damage. */
+    damageVariance: Fraction,
+    headDamageMultiplier: Positive,
+    limbDamageMultiplier: Positive,
+    /** Multiplies swing speed; cooldown is divided by this value. */
+    speedMultiplier: Positive,
+    /** Present exactly on the `fists` class, whose attack has no weapon item to carry it. */
+    unarmed: optional(UnarmedAttackSchema),
+  }),
+  check(
+    (meleeClass) => (meleeClass.id === CORE_CONTENT_IDS.fistsMeleeClass) === (meleeClass.unarmed !== undefined),
+    'only the fists melee class carries an unarmed attack, and it must',
+  ),
+);
 
 const RoundFeedPoseSchema = pipe(
   strictObject({
@@ -487,7 +540,7 @@ const ExplosiveSchema = strictObject({
 const FirearmAttachmentEffectsSchema = strictObject({
   /** Fraction of the firearm's committed recoil kick removed at full condition. */
   recoilReduction: optional(Fraction),
-  /** Condition lost per committed shot. */
+  /** Condition lost per committed shot; absent means the attachment does not wear. */
   wearPerShot: optional(Fraction),
   /** Multipliers applied to the existing aim and stance response. */
   swayScale: optional(Positive),
@@ -1183,11 +1236,8 @@ const LootTableSchema = strictObject({
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
 const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
-const SpawnTime = pipe(
-  string(),
-  check((value) => parseSpawnTime(value) !== undefined, 'expected a named game time or HH:MM'),
-  transform((value) => gameTimeOfDay(parseSpawnTime(value)!)),
-);
+// Names stay names through parsing: the day cycle that gives them meaning is content too (`resolveSpawnTime`).
+const SpawnTime = union([picklist(SPAWN_TIME_NAMES), GameTimeOfDay], 'expected a named game time or HH:MM');
 const SpawnWindowSchema = pipe(
   strictObject({ fromGameTimeOfDay: SpawnTime, toGameTimeOfDay: optional(SpawnTime) }),
   check(
@@ -1281,9 +1331,14 @@ export const DecalSchema = strictObject({
 });
 export type DecalDef = InferOutput<typeof DecalSchema>;
 
+const BuildingEligibilitySchema = strictObject({
+  settlementKinds: pipe(array(Id), nonEmpty()),
+});
+
 const TemplateSchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
+  eligibility: optional(BuildingEligibilitySchema),
   /** The most storeys the stress-test city stacks this template to; absent means no limit. */
   maxStoreys: optional(pipe(Count, minValue(1), maxValue(8))),
   /** Blocks: [x, y, z]. */
@@ -1356,6 +1411,7 @@ const KitJoinSchema = strictObject({
 const MapAssemblySchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
+  eligibility: optional(BuildingEligibilitySchema),
   size: KitSize,
   slots: array(KitSlotSchema),
   joins: array(KitJoinSchema),
@@ -1391,10 +1447,90 @@ const CalendarDateSchema = pipe(
   }),
   check(({ month, day }) => day <= [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]!, 'invalid date'),
 );
-const DayCycleSchema = strictObject({
+const SkyColour = pipe(
+  string(),
+  regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb colour'),
+  transform((text): readonly [number, number, number] => {
+    const rgb = Number.parseInt(text.slice(1), 16);
+    return [((rgb >> 16) & 255) / 255, ((rgb >> 8) & 255) / 255, (rgb & 255) / 255];
+  }),
+);
+const UnitFraction = pipe(number(), finite(), minValue(0), maxValue(1));
+/** One sky look: the keyframe values the time of day blends between (core/sky.ts owns the blend). */
+const SkyLookSchema = strictObject({
+  sky: SkyColour,
+  lightColor: SkyColour,
+  lightIntensity: NonNegative,
+  ambientSky: SkyColour,
+  ambientGround: SkyColour,
+  ambientIntensity: NonNegative,
+  fogNear: UnitFraction,
+  fogFar: UnitFraction,
+  heightFog: NonNegative,
+  heightFogColor: SkyColour,
+  bloom: NonNegative,
+  tone: UnitFraction,
+});
+/** The weather's fog on top of the looks; fractions only shrink the distance fog, so both stay below 1. */
+const WeatherTuningSchema = strictObject({
+  /** The fogginess a session starts at; the looks' height fog is exactly their own density here. */
+  defaultFogginess: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
+  nearTighten: pipe(UnitFraction, maxValue(0.99)),
+  farTighten: pipe(UnitFraction, maxValue(0.99)),
+});
+const SKY_PHASES = ['night', 'dawn', 'day', 'dusk'] as const;
+/** Where a look sits in a solar phase: 0 is the phase's start, 1 its end. */
+const SkyKeySchema = strictObject({
+  phase: picklist(SKY_PHASES),
+  at: UnitFraction,
+  look: picklist(['night', 'deepNight', 'dawn', 'day', 'dusk']),
+});
+/**
+ * The blend sorts keys by time and wraps the last to the first, so two keys at one instant would
+ * make the blend span a whole day. Keys therefore run in cycle order, strictly later each time,
+ * and the last stays short of the first a cycle later.
+ */
+const SkyKeysSchema = pipe(
+  array(SkyKeySchema),
+  minLength(2),
+  rawCheck(({ dataset, addIssue }) => {
+    if (!dataset.typed) {
+      return;
+    }
+    const positions = dataset.value.map((key) => SKY_PHASES.indexOf(key.phase) + key.at);
+    positions.forEach((position, index) => {
+      if (index > 0 && position <= positions[index - 1]!) {
+        addIssue({ message: `keys[${index}].at must come strictly after the key before it in cycle order` });
+      }
+    });
+    const last = positions.length - 1;
+    if (positions[last]! >= positions[0]! + SKY_PHASES.length) {
+      addIssue({ message: `keys[${last}].at must come strictly before the first key a cycle later` });
+    }
+  }),
+);
+export const DayCycleSchema = strictObject({
+  /** Calendar seconds per simulation second: how long a game day lasts in play. A new session takes it; a save keeps its own. */
+  clockRatio: Positive,
   latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
   date: CalendarDateSchema,
   twilight: literal('nautical'),
+  /** The keyframe looks by solar phase: night and deepNight around midnight, dawn and dusk at the sun's edge. */
+  looks: strictObject({
+    night: SkyLookSchema,
+    deepNight: SkyLookSchema,
+    dawn: SkyLookSchema,
+    day: SkyLookSchema,
+    dusk: SkyLookSchema,
+  }),
+  /** Which look sits where in its phase, in cycle order; timing tuning, with the order the blend needs enforced here. */
+  keys: SkyKeysSchema,
+  weather: WeatherTuningSchema,
+  /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
+  defaultStartGameTimeOfDay: GameTimeOfDay,
+  /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */
+  midnightGameTimeOfDay: GameTimeOfDay,
+  noonGameTimeOfDay: GameTimeOfDay,
 });
 const HalfMetres = pipe(
   Metres,
@@ -1533,6 +1669,28 @@ const StartDescentSchema = variant('kind', [
   }),
 ]);
 
+/** Block geometry of a street grid, in blocks; shared so a scenario city and the stress city keep the same limits. */
+const CityBlockGeometry = {
+  street: pipe(Count, minValue(4), maxValue(64)),
+  blockX: pipe(Count, minValue(8), maxValue(256)),
+  blockZ: pipe(Count, minValue(8), maxValue(256)),
+  pad: pipe(Count, minValue(2), maxValue(32)),
+  gap: pipe(Count, minValue(1), maxValue(32)),
+  blend: pipe(Count, maxValue(64)),
+  rows: pipe(
+    Count,
+    minValue(2),
+    maxValue(8),
+    check((value) => value % 2 === 0, 'needs paired rows'),
+  ),
+};
+const CityBenchmarkSchema = strictObject({
+  id: Id,
+  settlementKind: Id,
+  pool: Id,
+  ...CityBlockGeometry,
+  reachMetres: PositiveMetres,
+});
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -1591,22 +1749,10 @@ const ScenarioSchema = strictObject({
     extraStragglers: pipe(Count, maxValue(16)),
   }),
   city: strictObject({
+    settlementKind: Id,
     blocksX: pipe(Count, minValue(1), maxValue(4)),
     blocksZ: pipe(Count, minValue(1), maxValue(4)),
-    street: pipe(Count, minValue(4), maxValue(64)),
-    blockX: pipe(Count, minValue(8), maxValue(256)),
-    blockZ: pipe(Count, minValue(8), maxValue(256)),
-    pad: pipe(Count, minValue(2), maxValue(32)),
-    gap: pipe(Count, minValue(1), maxValue(32)),
-    blend: pipe(Count, maxValue(64)),
-    rows: optional(
-      pipe(
-        Count,
-        minValue(2),
-        maxValue(8),
-        check((value) => value % 2 === 0, 'needs paired rows'),
-      ),
-    ),
+    ...CityBlockGeometry,
     perimeter: optional(
       strictObject({
         block: Id,
@@ -1993,11 +2139,35 @@ const SiteGenerationSchema = strictObject({
     roadShoulderMetres: NonNegative,
     spawnMarginMetres: NonNegative,
   }),
+  // The natural ground every site stands on; metres, so a block size never changes the landscape.
+  terrain: pipe(
+    strictObject({
+      minHeightMetres: NonNegative,
+      maxHeightMetres: NonNegative,
+      beachBelowMetres: NonNegative,
+      dirtDepthMetres: NonNegative,
+      featureSizeMetres: PositiveMetres,
+      octaves: pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more')),
+    }),
+    check(({ minHeightMetres, maxHeightMetres }) => minHeightMetres < maxHeightMetres, 'min height must be below max'),
+  ),
   vegetation: strictObject({
     woodlandEdgeWavelengthMetres: PositiveMetres,
     woodlandEdgeVariation: pipe(Fraction, maxValue(0.5, 'must not exceed 0.5')),
     openDensity: Fraction,
     obstacleMarginMetres: NonNegative,
+    // One entry per draw, so repeating a shape weights it.
+    treeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
+    treeCellMetres: PositiveMetres,
+    hamletDensity: Fraction,
+    forestHalfExtentMetres: PositiveMetres,
+    forestDensityField: strictObject({
+      wavelengthMetres: PositiveMetres,
+      seedSalt: Count,
+      floor: Fraction,
+      gain: NonNegative,
+      ceiling: Fraction,
+    }),
   }),
   // One palette shared by every site kind: terrain, paving, trees and litter are block ids.
   palette: strictObject({
@@ -2011,7 +2181,44 @@ const SiteGenerationSchema = strictObject({
     northSide: pipe(array(Id), minLength(1)),
     southSide: pipe(array(Id), minLength(1)),
   }),
+  // Where the hamlet may stand: a square grid of candidate sites around the world origin, scored on flatness.
+  placement: pipe(
+    strictObject({
+      gridStepMetres: PositiveMetres,
+      reachMetres: NonNegative,
+      sampleMetres: PositiveMetres,
+      lowestMetres: NonNegative,
+    }),
+    // The search walks whole grid steps out to the reach, so a fractional count would silently shrink it.
+    check(
+      ({ gridStepMetres, reachMetres }) => Number.isInteger(reachMetres / gridStepMetres),
+      'reach must be a whole number of grid steps',
+    ),
+  ),
 });
+
+const BlockCount = pipe(number(), integer('must be a whole number'), minValue(1, 'must be at least 1'));
+const BlockOffset = pipe(number(), integer('must be a whole number'));
+
+/** Distances are whole blocks: `offset` runs along the lane from its near end, `lateral` across it from its centre line. */
+const HandlingRangeSchema = strictObject({
+  id: Id,
+  /** Clear ground between the site this range sits beside and the lane's near end. */
+  gap: Count,
+  /** How far the terrain blends into the level lane beyond its edge. */
+  blend: BlockCount,
+  length: BlockCount,
+  width: BlockCount,
+  firingLine: strictObject({ offset: Count, depth: BlockCount, inset: Count }),
+  target: strictObject({ halfWidth: Count, height: BlockCount }),
+  /** One entry per target, nearest first; staggering them laterally keeps each one clear of the nearer ones' line of fire. */
+  targets: pipe(
+    array(strictObject({ offset: Count, lateral: BlockOffset })),
+    minLength(1, 'needs at least one target'),
+  ),
+  table: strictObject({ offset: Count, lateral: BlockOffset }),
+});
+
 const SenseSchema = strictObject({
   id: Id,
   movement: strictObject({
@@ -2034,6 +2241,15 @@ const SenseSchema = strictObject({
     clearGain: Fraction,
     clearCutoffHz: Positive,
   }),
+  /** Footfall spacing per moving gait and the fall that lands hard; cadence and landing noise follow from these. */
+  footsteps: strictObject({
+    walkingStepMetres: Positive,
+    joggingStepMetres: Positive,
+    sprintingStepMetres: Positive,
+    hardLandingMetres: Positive,
+  }),
+  /** How long a player vocal noise stays audible to shamblers after it is emitted. */
+  vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
   light: strictObject({
     playerDaySightScale: Fraction,
     /** Reduce how far shamblers investigate non-player light sources. */
@@ -2111,8 +2327,8 @@ const BleedingTierSchema = strictObject({
   minDamage: NonNegative,
   /** Per-region chance multipliers; omitted regions use 1, and 0 excludes that region. */
   regionFactor: optional(record(picklist(BODY_REGIONS), NonNegative)),
-  /** The chance a qualifying hit of each kind opens this tier. */
-  chance: perDamageKind(Fraction),
+  /** This tier's share of the wound roll per point of accumulated damage. */
+  chancePerDamage: perDamageKind(NonNegative),
   /** Drips per second relative to the base rate, and droplet size relative to the base size. */
   drip: strictObject({ rate: Positive, size: Positive }),
   /** Background pain while a wound bleeds at this tier. */
@@ -2169,6 +2385,47 @@ const PainTuningSchema = strictObject({
   ),
 });
 
+const NeedPercent = pipe(number(), minValue(0, 'must be 0 to 100'), maxValue(100, 'must be 0 to 100'));
+
+const CriticalNeedSchema = pipe(
+  strictObject({
+    need: picklist(['calories', 'hydration', 'fatigue']),
+    /** Critical while the need is under this. */
+    below: optional(NeedPercent),
+    /** Critical while the need is over this; fatigue has no upper cap. */
+    above: optional(NonNegative),
+    /** What the player is told when the need becomes critical. */
+    message: Name,
+  }),
+  check((rule) => (rule.below === undefined) !== (rule.above === undefined), 'needs exactly one of below and above'),
+);
+
+/** Survival needs and stamina. Vitals run 0 to 100; fatigue is sleep debt (`deadvox/src/core/needs.ts`). */
+const NeedsTuningSchema = strictObject({
+  /** The needs and stamina a new character starts with. */
+  spawn: strictObject({ calories: NeedPercent, hydration: NeedPercent, fatigue: NonNegative, stamina: NeedPercent }),
+  /** Calories and hydration lost per Game hour. */
+  drainPerGameHour: strictObject({ calories: GamePerHour, hydration: GamePerHour }),
+  /** Health lost per Game hour while calories or hydration sit at 0; both add up. */
+  healthLossPerGameHour: strictObject({ starving: GamePerHour, dehydrated: GamePerHour }),
+  stamina: strictObject({
+    /** Spent per Sim second of sprinting. */
+    sprintPerSimSecond: SimRate,
+    /** Recovered per Sim second when not sprinting. */
+    recoverPerSimSecond: SimRate,
+    /** Recovery is scaled by this while any critical need holds. */
+    wornRecoveryFactor: Fraction,
+    /** Below this stamina you're winded and can't start sprinting. */
+    windedBelow: NeedPercent,
+  }),
+  /** 100% calories is this many kilocalories, and 100% hydration this many millilitres. */
+  full: strictObject({ kcal: Positive, ml: Positive }),
+  /** Crossing one of these interrupts a long action and says its message. */
+  critical: array(CriticalNeedSchema),
+  /** Health falling under this from above interrupts a long action and says its message. */
+  badlyHurt: strictObject({ below: Positive, message: Name }),
+});
+
 const BodyTuningSchema = strictObject({
   id: Id,
   /** Game hours after a bleeding wound before an at-risk infection becomes early. */
@@ -2186,6 +2443,13 @@ const BodyTuningSchema = strictObject({
   shockPerDamage: perDamageKind(NonNegative),
   /** How much harder a hit of each damage kind wears the outermost worn item on the struck region; 1 is the item's own rate. */
   outerWearMultiplier: perDamageKind(NonNegative),
+  exposureRefusal: Name,
+  linger: record(
+    picklist(DAMAGE_KINDS),
+    strictObject({
+      simSeconds: PositiveSimSeconds,
+    }),
+  ),
   landing: strictObject({
     safeSpeedMetresPerSimSecond: SimRate,
     damagePerSquaredSpeed: Positive,
@@ -2232,10 +2496,6 @@ const BodyTuningSchema = strictObject({
           ),
         'each bleeding tier must lose blood faster than the one before it',
       ),
-      check(
-        (tiers) => DAMAGE_KINDS.every((kind) => tiers.reduce((sum, tier) => sum + tier.chance[kind], 0) <= 1),
-        "each damage kind's tier chances must add up to 1 or less",
-      ),
     ),
   }),
   pain: PainTuningSchema,
@@ -2245,6 +2505,7 @@ const BodyTuningSchema = strictObject({
   shockRecoveryPerSimSecond: SimRate,
   /** Health lost per Sim second while infection is advanced. */
   advancedInfectionHealthLossPerSimSecond: SimRate,
+  needs: NeedsTuningSchema,
   /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
   fatigueRisePerGameHour: GamePerHour,
   /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
@@ -2299,6 +2560,25 @@ const RecipeSchema = strictObject({
 
 const GraphicsTuningSchema = strictObject({ id: Id, ...GraphicsOptionsSchema.entries });
 
+/** The game's default look (core/mood.ts `LookDefaults`); URL parameters and the debug panel override it. */
+const LookDefaultsSchema = strictObject({
+  id: Id,
+  tone: picklist(TONE_KEYS),
+  exposure: pipe(
+    number(),
+    minValue(MIN_EXPOSURE, `must be ${MIN_EXPOSURE} to ${MAX_EXPOSURE}`),
+    maxValue(MAX_EXPOSURE, `must be ${MIN_EXPOSURE} to ${MAX_EXPOSURE}`),
+  ),
+  srgb: vBoolean(),
+  patterns: vBoolean(),
+  vao: vBoolean(),
+  /** The mood pass's master switch: off, bloom, film and grade render nothing. */
+  post: vBoolean(),
+  bloom: vBoolean(),
+  film: vBoolean(),
+  grade: Fraction,
+});
+
 // ---- files ----
 
 /** Native schemas and section metadata live here, not in parallel loader/validator lists. */
@@ -2348,18 +2628,21 @@ const SECTION_DESCRIPTOR = {
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
+  handlingRange: { schema: optional(array(HandlingRangeSchema)), label: 'handling range', order: 29 },
   weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
   compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
   scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
+  cityBenchmarks: { schema: optional(array(CityBenchmarkSchema)), label: 'city benchmarks', order: 30 },
   graphics: { schema: optional(array(GraphicsTuningSchema)), label: 'graphics tuning', order: 22 },
   mapStyles: { schema: optional(array(MapStyleSchema)), label: 'map styles', order: 23 },
   mapPieces: { schema: optional(array(MapPieceSchema)), label: 'map pieces', order: 24 },
   mapAssemblies: { schema: optional(array(MapAssemblySchema)), label: 'map assemblies', order: 25 },
   mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
   mapPools: { schema: optional(array(MapPoolSchema)), label: 'map pools', order: 27 },
+  look: { schema: optional(array(LookDefaultsSchema)), label: 'default look', order: 28 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -2380,6 +2663,7 @@ export type MapPieceDef = InferOutput<typeof MapPieceSchema>;
 export type MapAssemblyDef = InferOutput<typeof MapAssemblySchema>;
 export type MapSiteDef = InferOutput<typeof MapSiteSchema>;
 export type MapPoolDef = InferOutput<typeof MapPoolSchema>;
+export type CityBenchmarkDef = InferOutput<typeof CityBenchmarkSchema>;
 export type KitPort = InferOutput<typeof KitPortSchema>;
 export type KitAnchor = InferOutput<typeof KitAnchorSchema>;
 export type KitRef = InferOutput<typeof KitRefSchema>;
@@ -2397,8 +2681,10 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;
 export type TreatmentDef = InferOutput<typeof TreatmentSchema>;
 export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'];
+export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;

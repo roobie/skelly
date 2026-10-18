@@ -1,6 +1,5 @@
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
-import { defaultClock } from '../src/core/clock.ts';
 import { worldSolid } from '../src/core/collision.ts';
 import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -16,11 +15,14 @@ import {
 import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { BodyTuningDef } from '../src/core/schema.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
+import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withPlayerBodyTuning } from './simulationFixture.ts';
 
 const registry = baseRegistry();
@@ -58,6 +60,7 @@ for (let cz = toChunk(fixtureHamlet.bounds.z0); cz <= toChunk(fixtureHamlet.boun
 }
 const fixtureTerrain: Terrain = {
   seed,
+  shape: terrainShapeOf(registry),
   blocks: { grass: blockId('grass'), dirt: blockId('dirt'), rock: blockId('stone'), sand: blockId('sand') },
   scale,
   surface: fixtureHamlet.surface,
@@ -200,7 +203,7 @@ export function createRuntime(
     entities: sharedEntities,
     scale,
     seed,
-    start: options.start ?? defaultClock.start,
+    start: options.start ?? BASE_CLOCK.start,
     spawn,
     wobbleFlatOverride: options.wobbleFlatOverride,
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
@@ -511,42 +514,6 @@ export const formatVersion: SaveVersionComponents = {
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 export const formatWorldOptions = { blockSize: 0.5, site: 'forest' as const, storeys: 1, density: 0.75 };
-export const contentLookup = (kind: SaveContentKind, id: string): boolean => {
-  if (kind === 'block') {
-    return registry.blockIds.has(id);
-  }
-  if (kind === 'item') {
-    return registry.items.has(id);
-  }
-  if (kind === 'furniture') {
-    return registry.furniture.has(id);
-  }
-  if (kind === 'climbable') {
-    return Boolean(registry.furniture.get(id)?.climbable);
-  }
-  if (kind === 'zombie') {
-    return registry.zombies.has(id);
-  }
-  if (kind === 'sound') {
-    return registry.sounds.has(id);
-  }
-  if (kind === 'skill') {
-    return registry.skills.has(id);
-  }
-  if (kind === 'recipe') {
-    return registry.recipes.has(id);
-  }
-  return [
-    'needs',
-    'body',
-    'long-action',
-    'player',
-    'zombies',
-    'zombie-background',
-    'handling',
-    'lights',
-    'firearms',
-  ].includes(id);
-};
+export const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
 export const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });

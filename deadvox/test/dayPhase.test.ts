@@ -1,24 +1,17 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { SECONDS_PER_DAY } from '../src/core/clock.ts';
+import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { sunExposedAt } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
 import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
-const cycle = registry.dayCycle ?? DEFAULT_DAY_CYCLE;
+const registry = baseRegistry();
+const cycle = requireDayCycle(registry);
 const shambler = registry.zombies.get('shambler')!;
 const scale = makeScale(0.5);
 const floor = (_x: number, y: number) => y === 0;
@@ -105,8 +98,6 @@ describe('sun-owned day phases', () => {
     }
 
     expect(Math.max(...nightLightIntensities)).toBeLessThan(Math.min(...dayLightIntensities));
-    expect(parseSpawnTime('dawn', cycle)).toBe(dayPhaseAt(cycle, 0).dawn);
-    expect(parseSpawnTime('dusk', cycle)).toBe(dayPhaseAt(cycle, 0).sunset);
   });
 
   it('lets twilight sight reach the quarter-range target but not the three-quarter target', () => {

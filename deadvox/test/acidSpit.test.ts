@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { type AcidSpitRelease, acidSpitWindupProgress, type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
@@ -11,7 +12,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 const { registry } = startupContent();
 const ACID = registry.zombies.get('acid_zombie')!;
 const SPIT = ACID.acidSpit!;
-const DAY_CYCLE = dayCycleFor(registry.dayCycle);
+const DAY_CYCLE = requireDayCycle(registry);
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR: SolidAt = (_x, y) => y === 0;

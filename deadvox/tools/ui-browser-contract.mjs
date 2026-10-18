@@ -287,6 +287,7 @@ try {
   const uiTokens = await evaluate(`(async () => {
     const { buildRegistry } = await import('/src/core/content.ts');
     const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
+    const { default: baseUi } = await import('/src/content/base/ui.json');
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 640px; height: 360px; visibility: hidden';
     frame.srcdoc = '<!doctype html><link rel="stylesheet" href="/src/ui/style.css"><button class="inv-option">Probe</button>';
@@ -298,7 +299,7 @@ try {
       const sound = { id: 'player_nope', variants: ['assets/audio/nope.ogg'], gain: 0.5, pitchJitter: [1, 1], gainJitter: [1, 1], minIntervalSimSeconds: 0.75, category: 'body', noise: { enabled: false, radiusMetres: 1 } };
       const { registry, issues } = buildRegistry([
         { source: 'ui-probe-sounds.json', data: { sounds: [sound] } },
-        { source: 'ui-probe.json', data: { ui: [{ id: 'core', refusalSound: sound.id, ...tuning }] } },
+        { source: 'ui-probe.json', data: { ui: [{ ...baseUi.ui.find((row) => row.id === 'core'), refusalSound: sound.id, ...tuning }] } },
       ]);
       if (issues.length) throw new Error('Invalid UI probe fixture: ' + JSON.stringify(issues));
       applyUiTokens(registry, frame.contentDocument.documentElement);

@@ -4,6 +4,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
 import { gamePerHour, simSeconds } from '../src/core/time.ts';
+import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const context = { usage: ['Medical'], tier: 'Tier2' } as const;
 const itemDefinition = (id: string, usage: string[], tiers: string[]) => ({
@@ -17,6 +18,7 @@ const itemDefinition = (id: string, usage: string[], tiers: string[]) => ({
 });
 const fixture = () => {
   const result = buildRegistry([
+    playerInventorySource(),
     {
       source: 'selector-fixture',
       data: {
@@ -116,58 +118,24 @@ describe('central loot selection', () => {
     expect(selectLootType(registry, point(), [{ type: host.id, weight: 1 }], Rng.stream(5, 'child'))).toBeUndefined();
   });
 
-  it('records corpse identity separately from its current position', () => {
-    const registry = fixture();
-    const stock = registry.items.get('stock')!;
-    registry.items.set(stock.id, { ...stock, economy: { usage: ['Infected'], tiers: ['Tier1'] } });
-    const first = corpseLootPoint('supply', 31, [0, 0, 0]);
-    const moved = corpseLootPoint('supply', 31, [3, 1, 0]);
-    expect(moved.id).toBe(first.id);
-    const rolled = rollLoot(registry, moved, Rng.stream(2, 'corpse'));
-    expect(rolled).not.toHaveLength(0);
-    expect(
-      rolled.every(
-        (entry) =>
-          entry.origin.kind === 'economy' &&
-          entry.origin.source === first.id &&
-          entry.origin.channel === 'corpse' &&
-          entry.origin.mode === 'random',
-      ),
-    ).toBe(true);
+  it('keeps a corpse point identity when the corpse moves', () => {
+    expect(corpseLootPoint('supply', 31, [3, 1, 0]).id).toBe(corpseLootPoint('supply', 31, [0, 0, 0]).id);
   });
 
-  it('does not merge stacks whose source or fixed/random attribution differs', () => {
-    const inventory = new Inventory(fixture());
-    const origin = { kind: 'economy', source: 'first', channel: 'container', mode: 'fixed' } as const;
-    const first = inventory.create('stock', 1, 1, origin);
-    expect(inventory.add(first, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
-    for (const other of [{ ...origin, source: 'second' }, { ...origin, mode: 'random' } as const]) {
-      const item = inventory.create('stock', 1, 1, other);
-      expect(inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
-      expect(inventory.itemByUid(item.uid)).toBe(item);
-    }
-    expect([...inventory.items()]).toHaveLength(3);
-    expect(Object.isFrozen(first.origin)).toBe(true);
-  });
-
-  it('retains source attribution through movement, split, same-origin merge and an inventory save round-trip', () => {
+  it('stacks otherwise-identical items rolled from different loot points', () => {
     const registry = fixture();
     const inventory = new Inventory(registry);
-    const origin = { kind: 'economy', source: 'fixture-point', channel: 'surface', mode: 'fixed' } as const;
-    inventory.furnish(
-      { type: 'unused', pos: [0, 0, 0], size: [1, 1, 1], facing: 's' },
-      [],
-      [{ type: 'stock', count: 4, condition: 1, origin }],
-    );
-    const original = [...inventory.items()][0]!.item;
-    expect(original.origin).toEqual(origin);
-    expect(inventory.move(original, { kind: 'pile', pos: [1, 0, 0] }, 2).ok).toBe(true);
-    const parts = [...inventory.items()].map(({ item: entry }) => entry);
-    expect(parts).toHaveLength(2);
-    expect(parts.every((entry) => JSON.stringify(entry.origin) === JSON.stringify(origin))).toBe(true);
-    expect(inventory.move(parts.find((entry) => entry !== original)!, { kind: 'pile', pos: [0, 1, 0] }).ok).toBe(true);
-    expect([...inventory.items()]).toHaveLength(1);
-    const restored = Inventory.restoreState(registry, JSON.parse(JSON.stringify(inventory.snapshotState())));
-    expect([...restored.items()].map(({ item: entry }) => entry.origin)).toEqual([origin]);
+    const fixedStock = (id: string): LootSpawnPoint => ({
+      ...point(id),
+      supply: { kind: 'fixed', items: [{ item: 'stock', count: 1 }] },
+    });
+    for (const id of ['first-point', 'second-point']) {
+      for (const rolled of rollLoot(registry, fixedStock(id), Rng.stream(1, id))) {
+        expect(inventory.add(inventory.createRolled(rolled), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+      }
+    }
+    const stacks = [...inventory.items()].map(({ item }) => item);
+    expect(stacks).toHaveLength(1);
+    expect(stacks[0]!.count).toBe(2);
   });
 });

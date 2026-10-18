@@ -1,13 +1,13 @@
 import { PLAYER, sprintJumpRise } from '../game/player.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { HAMLET_TEMPLATES } from './hamlet.ts';
 import { hash3, pickWeighted, Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
 import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
-import type { MapPoolDef, ScenarioDef } from './schema.ts';
+import type { CityBenchmarkDef, MapPoolDef, ScenarioDef } from './schema.ts';
+import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
 import type { Rect } from './site.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { BlockBox } from './structure.ts';
@@ -23,14 +23,13 @@ import {
   templateResolves,
 } from './templates.ts';
 
-export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
 interface PoolRef {
   readonly id: string;
   readonly style?: string | undefined;
 }
 type PoolChoice = Readonly<PoolRef & { weight: number; atLeast?: number; atMost?: number }>;
 const rowKey = ({ id, style }: PoolRef): string => `${id}@${style ?? ''}`;
-export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps' | 'ring'> & {
+export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps' | 'ring' | 'settlementKind'> & {
   readonly pool?: string | undefined;
   readonly templates: readonly PoolChoice[];
   readonly streetProps?: readonly string[] | undefined;
@@ -64,20 +63,30 @@ export interface CityPlan {
   readonly composition: ScenarioComposition | undefined;
 }
 
-export const benchmarkCityGrid = (): CityGrid => ({
-  street: CITY.street,
-  blockX: CITY.blockX,
-  blockZ: CITY.blockZ,
-  pad: CITY.pad,
-  gap: CITY.gap,
-  blend: CITY.blend,
-  blocksX: Math.ceil(CITY.reach / (CITY.street + CITY.blockX)),
-  blocksZ: Math.ceil(CITY.reach / (CITY.street + CITY.blockZ)),
-  templates: HAMLET_TEMPLATES.map((id) => ({ id, weight: 1 })),
-});
+export const benchmarkCityGrid = (registry: Registry): CityGrid => {
+  const entries = [...registry.cityBenchmarks.values()];
+  if (entries.length !== 1) {
+    throw new Error('The stress-test city needs exactly one city benchmark definition');
+  }
+  return benchmarkGridOf(registry, entries[0]!);
+};
 
-export const cityRowDepth = (grid: Pick<CityShape, 'blockZ' | 'pad' | 'rows' | 'street'>): number =>
-  Math.floor((grid.blockZ - 2 * grid.pad - ((grid.rows ?? 2) / 2 - 1) * grid.street) / (grid.rows ?? 2));
+const benchmarkGridOf = (registry: Registry, benchmark: CityBenchmarkDef): CityGrid => {
+  const { id: _id, reachMetres, pool, ...geometry } = benchmark;
+  const reach = reachMetres / BLOCK_SIZE;
+  return {
+    ...geometry,
+    blocksX: Math.ceil(reach / (geometry.street + geometry.blockX)),
+    blocksZ: Math.ceil(reach / (geometry.street + geometry.blockZ)),
+    pool,
+    templates: choicesOf(
+      admittedChoices(registry, pool, geometry.settlementKind, {
+        along: geometry.blockX - 2 * geometry.pad,
+        depth: cityRowDepth(geometry),
+      }),
+    ),
+  };
+};
 
 /** The street grid alone: every cell's street and block, out to the street along each edge. */
 const cityCore = (grid: CityShape): Rect => {
@@ -332,18 +341,15 @@ const choicesOf = (
 /** The scenario's city with its named pools resolved to weighted building ids. */
 export const cityGridOf = (registry: Registry, city: ScenarioDef['city']): CityGrid => {
   const { pool, ring, ...grid } = city;
-  const resolve = (id: string) => {
-    const choices = registry.mapPools.get(id)?.choices;
-    if (!choices) {
-      throw new Error(`Missing city pool "${id}"`);
-    }
-    return choicesOf(choices);
-  };
+  const resolve = (id: string, along: number) =>
+    choicesOf(admittedChoices(registry, id, city.settlementKind, { along, depth: cityRowDepth(city) }));
   return {
     ...grid,
     pool,
-    templates: resolve(pool),
-    ...(ring ? { ring: { ...ring, templates: resolve(ring.pool) } } : {}),
+    templates: resolve(pool, city.blockX - 2 * city.pad),
+    ...(ring
+      ? { ring: { ...ring, templates: resolve(ring.pool, Math.min(city.blockX, city.blockZ) - 2 * city.pad) } }
+      : {}),
   };
 };
 
@@ -361,20 +367,19 @@ const poolStyleIssue = (
 };
 
 /** Building slots every plan has: each row of each non-service block holds at least one building. */
-const guaranteedSlots = (city: ScenarioDef['city'], incidental: number, hasStart: boolean): number => {
+const guaranteedSlots = (
+  city: Pick<CityShape, 'blocksX' | 'blocksZ' | 'rows'>,
+  incidental: number,
+  hasStart: boolean,
+): number => {
   const blocks = 4 * city.blocksX * city.blocksZ - 1 - Number(hasStart);
-  return blocks * ((city.rows ?? 2) - (incidental > 0 ? 1 : 0));
+  return blocks * (city.rows - (incidental > 0 ? 1 : 0));
 };
 
 /** Building slots the edge ring always has: one per cell along each side. */
 const ringSlots = (city: ScenarioDef['city']): number => 4 * (city.blocksX + city.blocksZ);
 
-const poolRowIssues = (
-  registry: Registry,
-  pool: MapPoolDef,
-  at: string,
-  fit: { along: number; depth: number },
-): [string, string][] =>
+const poolRowIssues = (registry: Registry, pool: MapPoolDef, at: string): [string, string][] =>
   pool.choices.flatMap(({ ref }, index): [string, string][] => {
     const choiceAt = `${at}.choices[${index}].ref`;
     if (ref.kind === 'piece') {
@@ -391,9 +396,7 @@ const poolRowIssues = (
     if (styleIssue) {
       return [[`${choiceAt}.style`, styleIssue]];
     }
-    return building.size[0] > fit.along || building.size[2] > fit.depth
-      ? [[choiceAt, `${ref.kind} "${ref.id}" does not fit the reserved row`]]
-      : [];
+    return building.eligibility ? [] : [[choiceAt, `${ref.kind} "${ref.id}" has no building eligibility`]];
   });
 
 const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
@@ -416,21 +419,109 @@ const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, str
     if (!pool) {
       return [[at, `no map pool "${id}"`]];
     }
-    const required = pool.choices.reduce((sum, { atLeast }) => sum + (atLeast ?? 0), 0);
+    const along = (at === '.city.ring.pool' ? Math.min(city.blockX, city.blockZ) : city.blockX) - 2 * city.pad;
+    const choices = admittedChoices(registry, id, city.settlementKind, { along, depth });
+    const required = choices.reduce((sum, { atLeast }) => sum + (atLeast ?? 0), 0);
     const quotaIssues: [string, string][] =
       required > slots
         ? [[at, `pool "${pool.id}" needs ${required} quota buildings but the grid guarantees only ${slots}`]]
         : [];
-    const along = (at === '.city.ring.pool' ? Math.min(city.blockX, city.blockZ) : city.blockX) - 2 * city.pad;
-    return [...quotaIssues, ...poolRowIssues(registry, pool, at, { along, depth })];
+    const emptyIssues: [string, string][] = choices.some(({ weight, atMost }) => weight > 0 && atMost !== 0)
+      ? []
+      : [[at, `pool "${id}" has no eligible weighted buildings for settlement kind "${city.settlementKind}"`]];
+    return [...quotaIssues, ...poolRowIssues(registry, pool, at), ...emptyIssues];
   });
+};
+
+interface SettlementConsumer {
+  section: 'scenarios' | 'cityBenchmarks';
+  id: string;
+  path: string;
+  pool: string;
+  kind: string;
+  fit: { along: number; depth: number };
+}
+
+const benchmarkPoolIssues = (registry: Registry, benchmark: CityBenchmarkDef): [string, string][] => {
+  const { pool, settlementKind } = benchmark;
+  const issues: [string, string][] = [];
+  if (registry.cityBenchmarks.size > 1) {
+    issues.push(['.id', 'the stress-test city supports only one benchmark definition']);
+  }
+  const collection = registry.mapPools.get(pool);
+  if (!collection) {
+    return [...issues, ['.pool', `no map pool "${pool}"`]];
+  }
+  issues.push(...poolRowIssues(registry, collection, '.pool'));
+  const grid = benchmarkGridOf(registry, benchmark);
+  if (!grid.templates.some(({ weight, atMost }) => weight > 0 && atMost !== 0)) {
+    issues.push(['.pool', `pool "${pool}" has no eligible weighted buildings for settlement kind "${settlementKind}"`]);
+  }
+  const required = grid.templates.reduce((sum, { atLeast }) => sum + (atLeast ?? 0), 0);
+  const slots = 4 * grid.blocksX * grid.blocksZ * grid.rows;
+  if (required > slots) {
+    issues.push(['.pool', `pool "${pool}" needs ${required} quota buildings but the grid guarantees only ${slots}`]);
+  }
+  return issues;
+};
+
+export const settlementCollectionIssues = (registry: Registry) => {
+  const issues: { section: 'mapPools' | 'cityBenchmarks'; id: string; path: string; message: string }[] = [];
+  const consumers: SettlementConsumer[] = [];
+  for (const { id, city } of registry.scenarios.values()) {
+    const depth = cityRowDepth(city);
+    consumers.push({
+      section: 'scenarios',
+      id,
+      path: '.city.pool',
+      pool: city.pool,
+      kind: city.settlementKind,
+      fit: { along: city.blockX - 2 * city.pad, depth },
+    });
+    if (city.ring) {
+      consumers.push({
+        section: 'scenarios',
+        id,
+        path: '.city.ring.pool',
+        pool: city.ring.pool,
+        kind: city.settlementKind,
+        fit: { along: Math.min(city.blockX, city.blockZ) - 2 * city.pad, depth },
+      });
+    }
+  }
+  for (const benchmark of registry.cityBenchmarks.values()) {
+    const { id, pool, settlementKind } = benchmark;
+    const fit = { along: benchmark.blockX - 2 * benchmark.pad, depth: cityRowDepth(benchmark) };
+    consumers.push({ section: 'cityBenchmarks', id, path: '.pool', pool, kind: settlementKind, fit });
+    for (const [path, message] of benchmarkPoolIssues(registry, benchmark)) {
+      issues.push({ section: 'cityBenchmarks', id, path, message });
+    }
+  }
+  for (const pool of registry.mapPools.values()) {
+    const uses = consumers.filter((consumer) => consumer.pool === pool.id);
+    if (uses.length === 0) {
+      continue;
+    }
+    pool.choices.forEach(({ ref }, index) => {
+      const reasons = uses.map(({ kind, fit, section, id, path }) => {
+        const reason = eligibilityExclusion(registry, ref, kind, fit);
+        return reason === undefined ? undefined : `${section} "${id}"${path}: ${reason}`;
+      });
+      if (reasons.every((reason) => reason !== undefined)) {
+        issues.push({
+          section: 'mapPools',
+          id: pool.id,
+          path: `.choices[${index}].ref`,
+          message: `collection "${pool.id}" building "${ref.id}" is excluded for every consumer: ${reasons.join('; ')}`,
+        });
+      }
+    });
+  }
+  return issues;
 };
 
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
-  if (!registry.blockIds.has('asphalt')) {
-    issues.push(['.city', 'city needs asphalt content']);
-  }
   const { city, serviceTemplate, population } = scenario;
   if (population.roadsideOffset * 2 >= city.street) {
     issues.push([
@@ -597,7 +688,7 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
       counts.set(rowKey(building), (counts.get(rowKey(building)) ?? 0) + 1);
     }
     const limit = Math.min(maxStoreys, registry.templates.get(building.id)?.maxStoreys ?? maxStoreys);
-    const storeys = 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * limit);
+    const storeys = 1 + Math.floor(hash3(seed, i, j * grid.rows + row, k + 1000) * limit);
     const template = compiled(building, storeys, `city:${i},${j}/row:${row}/building:${k}`);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const bank = j * pitchZ + cityRowStart(grid, row);
@@ -936,7 +1027,7 @@ export const buildCityPlan = ({
       if (start && i === startCell[0] && j === startCell[1]) {
         return [start];
       }
-      return Array.from({ length: grid.rows ?? 2 }, (_, row) => fillRow(context, [i, j], row)).flat();
+      return Array.from({ length: grid.rows }, (_, row) => fillRow(context, [i, j], row)).flat();
     });
   };
   const placements = fillWithQuotas(context, fillCells, scenario ? `scenario:${scenario.id}:city` : 'city');

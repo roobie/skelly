@@ -9,20 +9,20 @@ import {
 } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
+import { siteGenerationOf, sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const BUNDLED_CONTENT = startupContent();
-// Building and certifying one bundled gauntlet city is CPU-bound, so the timeout scales with the sites built and
-// leaves headroom for a shared CPU, instead of vitest's flat default.
-const GAUNTLET_SITE_MS = 4000;
 
 const profile = fixtureScenario();
 const { registry, issues } = buildRegistry(fixtureScenarioSources(profile));
@@ -189,7 +189,17 @@ describe('one finished city plan', () => {
     const solid = native.blocks.find((block) => block.solid)!.id;
     const cityRegistry = {
       ...native,
-      templates: new Map([...native.templates, [fixture.id, { ...fixture, palette: { '=': solid, C: solid } }]]),
+      templates: new Map([
+        ...native.templates,
+        [
+          fixture.id,
+          {
+            ...fixture,
+            eligibility: { settlementKinds: [bundled.city.settlementKind] },
+            palette: { '=': solid, C: solid },
+          },
+        ],
+      ]),
       mapPools: new Map([
         ...native.mapPools,
         [
@@ -216,12 +226,16 @@ describe('one finished city plan', () => {
       return { spawns, hordes };
     };
 
-    it('supplies ordinary wanderers and hordes even when city buildings have no spawn markers', () => {
-      const { spawns, hordes } = populationOf({});
-      expect(spawns.length).toBeGreaterThan(0);
-      expect(hordes.length).toBeGreaterThan(0);
-      expect(hordes.every((horde) => horde.members > 0)).toBe(true);
-    });
+    it(
+      'supplies ordinary wanderers and hordes even when city buildings have no spawn markers',
+      () => {
+        const { spawns, hordes } = populationOf({});
+        expect(spawns.length).toBeGreaterThan(0);
+        expect(hordes.length).toBeGreaterThan(0);
+        expect(hordes.every((horde) => horde.members > 0)).toBe(true);
+      },
+      GAUNTLET_SITE_MS,
+    );
 
     // Each case builds the whole city and certifies it again, though only the population differs. Zero and two cover
     // "none" and "distinct streets"; a 1-horde case adds nothing, since a count slip shows at 0 or 2 too.
@@ -238,20 +252,32 @@ describe('one finished city plan', () => {
       hordeCases.length * GAUNTLET_SITE_MS,
     );
 
-    it('adds more stragglers when the scenario asks for extras', () => {
-      const base = populationOf({ extraStragglers: 0 }).spawns.length;
-      expect(populationOf({ extraStragglers: 3 }).spawns.length).toBeGreaterThan(base);
-    });
+    it(
+      'adds more stragglers when the scenario asks for extras',
+      () => {
+        const base = populationOf({ extraStragglers: 0 }).spawns.length;
+        expect(populationOf({ extraStragglers: 3 }).spawns.length).toBeGreaterThan(base);
+      },
+      2 * GAUNTLET_SITE_MS,
+    );
 
-    it('leaves no zombies or hordes when settlement pressure and authored markers are both off', () => {
-      const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
-      expect(spawns).toEqual([]);
-      expect(hordes).toEqual([]);
-    });
+    it(
+      'leaves no zombies or hordes when settlement pressure and authored markers are both off',
+      () => {
+        const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
+        expect(spawns).toEqual([]);
+        expect(hordes).toEqual([]);
+      },
+      GAUNTLET_SITE_MS,
+    );
 
-    it('rejects more hordes than the city has street groups', () => {
-      expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
-    });
+    it(
+      'rejects more hordes than the city has street groups',
+      () => {
+        expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
+      },
+      GAUNTLET_SITE_MS,
+    );
   });
 
   it('fills paired inner banks while keeping alleys, perimeter gates and the service reserve clear', () => {
@@ -283,9 +309,9 @@ describe('one finished city plan', () => {
     const alleyZ =
       scenario.city.street +
       scenario.city.pad +
-      2 * Math.floor((scenario.city.blockZ - 2 * scenario.city.pad - scenario.city.street) / scenario.city.rows!);
+      2 * Math.floor((scenario.city.blockZ - 2 * scenario.city.pad - scenario.city.street) / scenario.city.rows);
     expect(site.surface.top(scenario.city.street + scenario.city.pad + 2, alleyZ)).toBe(
-      admitted.registry.blockIds.get('asphalt'),
+      sitePalette(admitted.registry).paving,
     );
     expect(plan.structures.length).toBeGreaterThan(0);
     const occupied = (point: Vec3) =>
@@ -396,6 +422,7 @@ describe('one finished city plan', () => {
             chunk = generateChunk(
               {
                 seed: 73,
+                shape: terrainShapeOf(registry),
                 scale,
                 surface: site.surface,
                 blocks: { grass: solid, dirt: solid, rock: solid, sand: solid },
@@ -473,29 +500,33 @@ describe('one finished city plan', () => {
     expect(scenarioPlanIssues(admitted, scenario).map(([path]) => path)).toContain('.city.ring.pool');
   });
 
-  it('keeps every gauntlet spawn inside the walled area and clear of the wall', () => {
-    const native = BUNDLED_CONTENT.registry;
-    const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-    const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
-    const spawns: { pos: Vec3 }[] = [];
-    for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
-      for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
-        spawns.push(...site.zombiesIn(cx, cz), ...site.hordesIn(cx, cz));
+  it(
+    'keeps every gauntlet spawn inside the walled area and clear of the wall',
+    () => {
+      const native = BUNDLED_CONTENT.registry;
+      const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
+      const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
+      const spawns: { pos: Vec3 }[] = [];
+      for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
+        for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
+          spawns.push(...site.zombiesIn(cx, cz), ...site.hordesIn(cx, cz));
+        }
       }
-    }
-    expect(spawns.length).toBeGreaterThan(0);
-    const inWall = ([x, y, z]: Vec3) =>
-      site.plan.structures.some(
-        ({ min, max }) => x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
-      );
-    for (const { pos } of spawns) {
-      expect(pos[0]).toBeGreaterThanOrEqual(site.bounds.x0);
-      expect(pos[0]).toBeLessThan(site.bounds.x1);
-      expect(pos[2]).toBeGreaterThanOrEqual(site.bounds.z0);
-      expect(pos[2]).toBeLessThan(site.bounds.z1);
-      expect(inWall(pos)).toBe(false);
-    }
-  });
+      expect(spawns.length).toBeGreaterThan(0);
+      const inWall = ([x, y, z]: Vec3) =>
+        site.plan.structures.some(
+          ({ min, max }) => x >= min[0] && x < max[0] && y >= min[1] && y < max[1] && z >= min[2] && z < max[2],
+        );
+      for (const { pos } of spawns) {
+        expect(pos[0]).toBeGreaterThanOrEqual(site.bounds.x0);
+        expect(pos[0]).toBeLessThan(site.bounds.x1);
+        expect(pos[2]).toBeGreaterThanOrEqual(site.bounds.z0);
+        expect(pos[2]).toBeLessThan(site.bounds.z1);
+        expect(inWall(pos)).toBe(false);
+      }
+    },
+    GAUNTLET_SITE_MS,
+  );
 
   it('reserves each candidate/turn class inside the apron and keeps ordinary rows out of street space', () => {
     const plan = planned();
@@ -534,7 +565,21 @@ describe('one finished city plan', () => {
     expect(mod(plan.spawn[2], pitchZ)).toBeLessThan(grid.street);
     const site = new CitySite(73, registry, scale, plan);
     expect(site.surface.height(plan.spawn[0], plan.spawn[2], floor + 9)).toBe(floor);
-    expect(site.surface.top(plan.spawn[0], plan.spawn[2])).toBe(registry.blockIds.get('asphalt'));
+    expect(site.surface.top(plan.spawn[0], plan.spawn[2])).toBe(sitePalette(registry).paving);
+  });
+
+  it('paves its streets with the block the site palette names, not a fixed block id', () => {
+    const entry = siteGenerationOf(registry);
+    const other = [...registry.blockIds.keys()].find((name) => name !== entry.palette.paving)!;
+    const repaved = {
+      ...registry,
+      siteGeneration: new Map(registry.siteGeneration).set(CORE_CONTENT_IDS.authoredSite, {
+        ...entry,
+        palette: { ...entry.palette, paving: other },
+      }),
+    };
+    const site = new CitySite(73, repaved, scale, planned());
+    expect(site.surface.top(site.plan.spawn[0], site.plan.spawn[2])).toBe(registry.blockIds.get(other));
   });
 
   it('never stacks a template past its authored maxStoreys while an unlimited one still stacks', () => {

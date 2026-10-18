@@ -9,6 +9,7 @@ import { BindingRegistry, KeyboardInput } from '../src/game/inputBindings.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
+import { LOOK_FIXTURE } from './lookFixture.ts';
 
 const keyEvent = (code: string) => ({
   code,
@@ -122,7 +123,12 @@ describe('spawnMenuViewModel', () => {
           setOcclusion: () => undefined,
         },
         new FakeMood(),
-        { weather: { fogginess: 0.2 }, shadows: new FakeShadows(), flashlight: { strength: 1 } },
+        {
+          defaults: LOOK_FIXTURE,
+          weather: { fogginess: 0.2 },
+          shadows: new FakeShadows(),
+          flashlight: { strength: 1 },
+        },
       ),
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,

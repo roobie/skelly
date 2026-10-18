@@ -22,6 +22,26 @@ export const nextMenuCursor = (
   x: Math.max(0, Math.min(viewport.width - 1, position.x + movement.x)),
   y: Math.max(0, Math.min(viewport.height - 1, position.y + movement.y)),
 });
+const pendingLocks = new WeakMap<HTMLElement, Promise<void>>();
+
+export function requestInputLock(target: HTMLElement): Promise<void> {
+  const pending = pendingLocks.get(target);
+  if (pending) {
+    return pending;
+  }
+  if (document.pointerLockElement === target) {
+    return Promise.resolve();
+  }
+  const request = Promise.resolve(target.requestPointerLock())
+    .catch((error: unknown) => {
+      // biome-ignore lint/suspicious/noConsole: preserve native permission failures for browser diagnosis.
+      console.warn('Pointer lock request failed', error);
+    })
+    .finally(() => pendingLocks.delete(target));
+  pendingLocks.set(target, request);
+  return request;
+}
+
 export class Input {
   readonly reload = new ReloadInput();
   yaw = 0;
@@ -182,11 +202,7 @@ export class Input {
     this.cursorY = cursor.y;
   }
   lock(): void {
-    // Firefox can return undefined; native permission refusal leaves the overlay available for another click.
-    (this.target.requestPointerLock() as Promise<void> | undefined)?.catch((error: unknown) => {
-      // biome-ignore lint/suspicious/noConsole: preserve native permission failures for browser diagnosis.
-      console.warn('Pointer lock request failed', error);
-    });
+    requestInputLock(this.target);
   }
   unlock(): void {
     if (this.locked) {

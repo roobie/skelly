@@ -1,8 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { dominantSide } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { fragmentDirections } from '../src/core/explosive.ts';
 import type { Item } from '../src/core/items.ts';
@@ -23,14 +20,9 @@ import type { ZombieRegions } from '../src/core/zombieRegions.ts';
 import type { Detonation } from '../src/core/zombies.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const BLOCK = 0.5;
 const GRENADE = 'frag_grenade';
 const FUSE = registry.items.get(GRENADE)!.explosive!.fuseSimSeconds;

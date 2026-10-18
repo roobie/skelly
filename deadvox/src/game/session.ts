@@ -9,14 +9,14 @@ import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } f
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
-import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
-import type { RecipeDef, Registry } from '../core/content.ts';
+import { hourOfDay } from '../core/clock.ts';
+import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
-import { dayCycleFor, dayPhaseAt } from '../core/dayPhase.ts';
+import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
 import {
@@ -49,13 +49,7 @@ import { PlayerCombat } from '../core/playerCombat.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
 import type { SolidAt } from '../core/raycast.ts';
-import {
-  bindReach,
-  pileDistance as distanceToPile,
-  furnitureDistance,
-  INVENTORY_CHEST,
-  INVENTORY_REACH,
-} from '../core/reach.ts';
+import { bindReach, pileDistance as distanceToPile, furnitureDistance, reachTuning } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
@@ -68,7 +62,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
-import { wearMeleeWeaponOnHit } from '../core/wear.ts';
+import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
 import { SEVERED_ITEM } from '../core/zombieRegionNames.ts';
@@ -233,8 +227,6 @@ const setSessionFirearmsSkillZeroHandling = (
     mechanics.setSkillZeroHandlingFor(firearmUid, value);
   }
 };
-/** Seconds a player's noise stays audible to shamblers. */
-const VOCAL_NOISE_LIFETIME = 0.5;
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
 
 /** What the player is doing with the keyboard and mouse, read each tick. */
@@ -586,7 +578,7 @@ const observeScenarioMovement = (
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
-  const dayCycle = dayCycleFor(registry.dayCycle);
+  const dayCycle = requireDayCycle(registry);
   const shamblerVoice = shamblerVoiceLaw(figureSeedPool(registry.zombies));
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
@@ -666,19 +658,28 @@ export const createSession = (options: SessionOptions) => {
     get position() {
       return body.pos;
     },
+    get clock() {
+      return sim.clock;
+    },
   };
   const reach = bindReach(reachPlayer);
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
-  const chest = (): Vec3 => [body.pos[0], body.pos[1] + INVENTORY_CHEST / s, body.pos[2]];
+  const chest = (): Vec3 => [
+    body.pos[0],
+    body.pos[1] + reachTuning(inventory.registry).chestHeightMetres / s,
+    body.pos[2],
+  ];
   const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
 
   const bodyTuning = playerBodyTuning(registry, options.scenario?.body);
   const sim = new Simulation({
     seed,
     bodyTuning,
+    onImpact: (amount, region, kind) =>
+      wearOnPlayerHit(inventory, region, amount, bodyTuning.outerWearMultiplier[kind]),
     analgesics: (item) => registry.items.get(item)?.analgesic,
     compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),
-    clock: { ratio: CLOCK_RATIO, start: options.start },
+    clock: { ratio: dayCycle.clockRatio, start: options.start },
   });
   const { compression } = sim;
   let scenarioRun: ScenarioRun | undefined;
@@ -736,13 +737,13 @@ export const createSession = (options: SessionOptions) => {
       noiseId = playerAudio.vocalNoiseId;
     }
     const noisePosition = [...position] as Vec3;
-    const expiresAt = time + VOCAL_NOISE_LIFETIME;
+    const expiresAt = time + senseTuning.vocalNoiseLifetimeSimSeconds;
     if (emittedAsNoise) {
       playerAudio.vocalNoise = {
         id: noiseId!,
         pos: noisePosition,
         radiusMetres: emittedNoiseRadius,
-        expiresAt: time + VOCAL_NOISE_LIFETIME,
+        expiresAt,
       };
     }
     sim.events.emit({ kind: 'sound', ...sound });
@@ -965,7 +966,11 @@ export const createSession = (options: SessionOptions) => {
   };
   const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {
     if (body.onGround) {
-      if (!wasGrounded && airbornePeakY !== undefined && isHardLanding((airbornePeakY - body.pos[1]) * s)) {
+      if (
+        !wasGrounded &&
+        airbornePeakY !== undefined &&
+        isHardLanding((airbornePeakY - body.pos[1]) * s, senseTuning.footsteps)
+      ) {
         playPlayerSound('player_landing_hard', time);
       }
       airbornePeakY = undefined;
@@ -976,7 +981,12 @@ export const createSession = (options: SessionOptions) => {
       wasGrounded && body.onGround
         ? Math.hypot(body.pos[0] - previousPosition[0], body.pos[2] - previousPosition[2]) * s
         : 0;
-    const footsteps = advanceFootsteps(footstepClock, travelled > 0 ? playerMovement() : 'still', travelled);
+    const footsteps = advanceFootsteps(
+      footstepClock,
+      travelled > 0 ? playerMovement() : 'still',
+      travelled,
+      senseTuning.footsteps,
+    );
     footstepClock = footsteps.clock;
     for (let i = 0; i < footsteps.steps; i++) {
       const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), registry.blocks);
@@ -1050,7 +1060,7 @@ export const createSession = (options: SessionOptions) => {
         return;
       }
       const source = zombieStore.get(attacker);
-      applyZombiePlayerHit(sim, inventory, bodyTuning, {
+      applyZombiePlayerHit(sim, {
         damage: source ? modified('attack.damage', amount, source) : amount,
         sourceName: source?.type.name ?? 'zombie',
         regionRoll: sim.rng(`player-hit-region:${attacker}:${sim.time}`).next(),
@@ -1058,7 +1068,7 @@ export const createSession = (options: SessionOptions) => {
         kind,
       });
     },
-    onAcidPlayerHit: (hit) => applyZombiePlayerHit(sim, inventory, bodyTuning, hit),
+    onAcidPlayerHit: (hit) => applyZombiePlayerHit(sim, hit),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
     onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
     onSound: (event, position, zombie) => {
@@ -1429,9 +1439,12 @@ export const createSession = (options: SessionOptions) => {
       (intent.forward !== 0 || intent.right !== 0) &&
       !handling &&
       !readyGait &&
-      canSprint(sim.needs, sprinting);
+      canSprint(sim.needs, sprinting, sim.body.staminaRules);
     survival.setSprinting(sprinting);
-    stepStamina(sim.needs, dt, sprinting, bodyTuning.staminaRegenDelaySimSeconds);
+    stepStamina(sim.needs, dt, sprinting, {
+      ...sim.body.staminaRules,
+      staminaRegenDelaySimSeconds: bodyTuning.staminaRegenDelaySimSeconds,
+    });
     const readyFirearm = Object.values(inventory.hands).find((item) => item && registry.items.get(item.type)?.firearm);
     const readyMovementFactor =
       readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
@@ -1451,7 +1464,7 @@ export const createSession = (options: SessionOptions) => {
     );
     const tools = debug?.();
     if (tools?.noclip) {
-      footstepClock = advanceFootsteps(footstepClock, 'still', 0).clock;
+      footstepClock = advanceFootsteps(footstepClock, 'still', 0, senseTuning.footsteps).clock;
       airbornePeakY = undefined;
       tools.stepNoclip({
         body,
@@ -1559,6 +1572,7 @@ export const createSession = (options: SessionOptions) => {
       const noise = registry.sounds.get(event)?.noise;
       playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
     },
+    closeBlockedMessages: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.doorCloseBlockedMessages,
   });
   registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
   sim.actions.prying = {
@@ -1645,7 +1659,7 @@ export const createSession = (options: SessionOptions) => {
         entities,
         origin: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
         direction: aimDirection(yaw, pitch, NEUTRAL_AIM),
-        maxDistance: INVENTORY_REACH / s,
+        maxDistance: reachTuning(inventory.registry).reachMetres / s,
         blockSize: s,
         isSolid: options.isOpaque,
       });
@@ -1782,7 +1796,7 @@ export const createSession = (options: SessionOptions) => {
       queue.enqueueAction(
         'furniture.search',
         `Search the ${nameOf(entity)}`,
-        inventory.scaleHandlingTime(searchTime(entities.defOf(entity))),
+        inventory.scaleHandlingTime(searchTime(entities.defOf(entity), reachTuning(inventory.registry))),
         {
           entityUid: entity.uid,
         },

@@ -17,7 +17,7 @@ import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target, wo
 import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
-import type { ReachSnapshot } from '../core/reach.ts';
+import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
@@ -56,18 +56,10 @@ export const targetForPackedFloorDrop = (
 
 /** Wear slots always shown, so there's somewhere to drop clothing and a slung long gun. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'legs', 'back', 'waist'];
-const SLOT_LABEL: Record<WearSlot, string> = {
-  head: 'Head',
-  torso: 'Torso',
-  legs: 'Legs',
-  back: 'Back',
-  waist: 'Waist',
-  hands: 'Hands',
-  feet: 'Feet',
-  shoulder: 'Shoulder',
-};
 
 export interface ScreenHooks {
+  /** What each wear slot is called; from the core ui content. */
+  slotLabels: Readonly<Record<WearSlot, string>>;
   reach: () => ReachSnapshot;
   /** The air block at the player's feet, where drops land. */
   feet: () => Vec3;
@@ -1110,7 +1102,7 @@ export class InventoryScreen {
       const item = this.inv.worn[slot];
       return {
         target: `worn:${slot}`,
-        label: SLOT_LABEL[slot],
+        label: this.hooks.slotLabels[slot],
         item: item ? this.itemViewModel(item, 'inv-item inv-item-slot') : undefined,
         pockets: item ? this.pocketsViewModel(item) : [],
       };
@@ -1150,7 +1142,7 @@ export class InventoryScreen {
         searchLabel:
           entity.searched || this.hooks.searching(entity)
             ? undefined
-            : secs(this.inv.scaleHandlingTime(searchTime(def))),
+            : secs(this.inv.scaleHandlingTime(searchTime(def, reachTuning(this.inv.registry)))),
         grids: searchedGrids,
       };
     });

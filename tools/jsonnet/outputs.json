@@ -13,6 +13,10 @@
       "output": "deadvox/src/content/base/assets/manifest.json"
     },
     {
+      "source": "deadvox/src/content/base/benchmark-city.jsonnet",
+      "output": "deadvox/src/content/base/benchmark-city.json"
+    },
+    {
       "source": "deadvox/src/content/base/blocks.jsonnet",
       "output": "deadvox/src/content/base/blocks.json"
     },
@@ -113,6 +117,10 @@
       "output": "deadvox/src/content/base/locks.json"
     },
     {
+      "source": "deadvox/src/content/base/look.jsonnet",
+      "output": "deadvox/src/content/base/look.json"
+    },
+    {
       "source": "deadvox/src/content/base/loot.jsonnet",
       "output": "deadvox/src/content/base/loot.json"
     },
@@ -129,12 +137,24 @@
       "output": "deadvox/src/content/base/models-items.json"
     },
     {
+      "source": "deadvox/src/content/base/range.jsonnet",
+      "output": "deadvox/src/content/base/range.json"
+    },
+    {
       "source": "deadvox/src/content/base/readables.jsonnet",
       "output": "deadvox/src/content/base/readables.json"
     },
     {
       "source": "deadvox/src/content/base/recipes.jsonnet",
       "output": "deadvox/src/content/base/recipes.json"
+    },
+    {
+      "source": "deadvox/src/content/base/rural-police-fixtures.jsonnet",
+      "output": "deadvox/src/content/base/rural-police-fixtures.json"
+    },
+    {
+      "source": "deadvox/src/content/base/rural-police.jsonnet",
+      "output": "deadvox/src/content/base/rural-police.json"
     },
     {
       "source": "deadvox/src/content/base/saves.jsonnet",
@@ -195,6 +215,18 @@
     {
       "source": "deadvox/test/fixtures/mods/browser-mod.jsonnet",
       "output": "deadvox/test/fixtures/mods/browser-mod.json"
+    },
+    {
+      "source": "deadvox/test/fixtures/mods/cel-mod-spike.jsonnet",
+      "output": "deadvox/test/fixtures/mods/cel-mod-spike.json"
+    },
+    {
+      "source": "deadvox/test/fixtures/mods/cel-reuse-spike.jsonnet",
+      "output": "deadvox/test/fixtures/mods/cel-reuse-spike.json"
+    },
+    {
+      "source": "deadvox/test/fixtures/mods/expression-spike.jsonnet",
+      "output": "deadvox/test/fixtures/mods/expression-spike.json"
     },
     {
       "source": "gungen/cartridges/308-winchester.jsonnet",

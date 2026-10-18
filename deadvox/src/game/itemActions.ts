@@ -1,5 +1,6 @@
 import type { Body } from '../core/body.ts';
 import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
@@ -16,8 +17,6 @@ export interface ItemAction {
   readonly magazine?: 'strip';
 }
 
-const STRIP_ROUND: ItemAction = { id: 'magazine:strip', label: 'Strip a round', magazine: 'strip' };
-
 /** What the treatment treats in the wound (`Body.canTreat`): its bleeding tier, else its infection stage. */
 const woundDescription = (body: Body, region: BodyRegion, treatment: TreatmentDef): string => {
   const tier = treatment.bleeding === undefined ? undefined : body.bleedingTier(region);
@@ -26,7 +25,8 @@ const woundDescription = (body: Body, region: BodyRegion, treatment: TreatmentDe
 
 export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
   if (magazineSpec(inventory.registry, item.type)) {
-    return (item.cartridges?.length ?? 0) > 0 ? [STRIP_ROUND] : [];
+    const label = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.itemActionLabels.stripRound;
+    return (item.cartridges?.length ?? 0) > 0 ? [{ id: 'magazine:strip', label, magazine: 'strip' }] : [];
   }
   const { treatment } = defOf(inventory.registry, item.type);
   if (!treatment) {

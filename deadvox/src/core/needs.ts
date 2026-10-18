@@ -19,56 +19,45 @@ export type Need = 'calories' | 'hydration' | 'fatigue';
 
 const NEEDS: readonly Need[] = ['calories', 'hydration', 'fatigue'];
 
-/** Change per game hour. Fatigue's comes from the body, and resting or sleeping overrides it. */
-export const NEED_RATES: Readonly<Record<Exclude<Need, 'fatigue'>, number>> = { calories: -3, hydration: -5 };
-
 /** Awake or asleep: each has its own fatigue ceiling for recovery in body content. */
 export type RecoveryState = 'awake' | 'asleep';
 
-const HEALTH = {
-  /** Lost while starving (calories at 0) and while dehydrated (hydration at 0); both add up. */
-  starving: -4,
-  dehydrated: -8,
-} as const;
+/** Crossing one makes a need critical: it interrupts a long action and wears stamina recovery. */
+export interface CriticalRule {
+  readonly need: Need;
+  readonly below?: number | undefined;
+  readonly above?: number | undefined;
+  readonly message: string;
+}
 
-/** Stamina per second of simulation time. */
-export const STAMINA = {
-  sprint: -5,
-  recover: 4,
-  /** Recovery is halved when you're exhausted, starving or parched (see CRITICAL). */
-  worn: 0.5,
-  /** Below this you're winded and can't start sprinting. */
-  winded: 10,
-} as const;
-
-export const SPAWN_NEEDS: Readonly<Needs> = {
-  calories: 40,
-  hydration: 35,
-  fatigue: 70,
-  stamina: 100,
-  staminaRegenDelayRemainingSimSeconds: 0,
-};
+/** Stamina's content, per second of simulation time, as the stamina steps read it. */
+export interface StaminaRules {
+  readonly sprintPerSimSecond: number;
+  readonly recoverPerSimSecond: number;
+  readonly wornRecoveryFactor: number;
+  readonly windedBelow: number;
+  readonly critical: readonly CriticalRule[];
+}
 
 /** 100% calories is this many kilocalories, and 100% hydration this many millilitres. */
-const FULL = { kcal: 2500, ml: 2500 } as const;
-
-/** Crossing one of these interrupts a long action. */
-const CRITICAL: readonly { need: Need; below?: number; above?: number; message: string }[] = [
-  { need: 'calories', below: 10, message: "You're starving" },
-  { need: 'hydration', below: 10, message: "You're parched" },
-  { need: 'fatigue', above: 90, message: "You're exhausted" },
-];
+export interface NourishmentScale {
+  readonly kcal: number;
+  readonly ml: number;
+}
 
 const clamp = (v: number): number => Math.min(100, Math.max(0, v));
 
 /** Fatigue is sleep debt and only has a floor; the other needs run from 0 to 100. */
 const bound = (need: Need, v: number): number => (need === 'fatigue' ? Math.max(0, v) : clamp(v));
 
-const isCritical = (needs: Needs, rule: (typeof CRITICAL)[number]): boolean =>
+const isCritical = (needs: Needs, rule: CriticalRule): boolean =>
   (rule.below !== undefined && needs[rule.need] < rule.below) ||
   (rule.above !== undefined && needs[rule.need] > rule.above);
 
 type NeedsFloor = Readonly<{ calories: number; hydration: number }>;
+
+/** Health lost per game hour at the empty end of calories and of hydration; both add up. */
+type HealthLoss = Readonly<{ starving: number; dehydrated: number }>;
 
 /** Recovery per game hour while the gate is open, and the gate's limits, all from body content. */
 interface Recovery {
@@ -103,13 +92,13 @@ export const needsAllowRecovery = (needs: Needs, body: RecoveryBody, state: Reco
   healthRegenRate(needs, recoveryOf(body, state)) > 0;
 
 /** Health's rate per game hour for the needs and health as they are now. */
-const healthRate = (needs: Needs, health: number, recovery: Recovery): number => {
+const healthRate = (needs: Needs, health: number, recovery: Recovery, loss: HealthLoss): number => {
   let rate = 0;
   if (needs.calories <= 0) {
-    rate += HEALTH.starving;
+    rate -= loss.starving;
   }
   if (needs.hydration <= 0) {
-    rate += HEALTH.dehydrated;
+    rate -= loss.dehydrated;
   }
   if (rate < 0) {
     return rate;
@@ -161,19 +150,24 @@ const segmentRates = (
   needs: Needs,
   health: number,
   rates: Readonly<Record<Need, number>>,
-  recovery: Recovery,
+  { recovery, loss }: { recovery: Recovery; loss: HealthLoss },
 ): { health: number; regionRecovery: number } => {
   const ahead = { ...needs };
   for (const need of NEEDS) {
     ahead[need] = bound(need, needs[need] + rates[need] * 1e-6);
   }
-  return { health: healthRate(ahead, health, recovery), regionRecovery: healthRegenRate(ahead, recovery) };
+  return { health: healthRate(ahead, health, recovery, loss), regionRecovery: healthRegenRate(ahead, recovery) };
 };
 
 /** The body as the needs step uses it. */
 export interface HealthPool {
   readonly health: number;
   readonly fatigueRisePerGameHour: number;
+  /** Calories and hydration lost per game hour. */
+  readonly needDrainPerGameHour: Readonly<{ calories: number; hydration: number }>;
+  readonly healthLossPerGameHour: HealthLoss;
+  readonly criticalNeeds: readonly CriticalRule[];
+  readonly badlyHurt: Readonly<{ below: number; message: string }>;
   readonly healthRecoveryPerGameHour: number;
   readonly healthRecoveryNeedsFloor: NeedsFloor;
   healthRecoveryFatigueCeiling: (state: RecoveryState) => number;
@@ -193,8 +187,11 @@ export interface StepNeedsOptions {
 }
 
 /** The rates while awake: fatigue accrues at the body's rate. */
-export const awakeRates = (body: Pick<HealthPool, 'fatigueRisePerGameHour'>): Readonly<Record<Need, number>> => ({
-  ...NEED_RATES,
+export const awakeRates = (
+  body: Pick<HealthPool, 'fatigueRisePerGameHour' | 'needDrainPerGameHour'>,
+): Readonly<Record<Need, number>> => ({
+  calories: -body.needDrainPerGameHour.calories,
+  hydration: -body.needDrainPerGameHour.hydration,
   fatigue: body.fatigueRisePerGameHour,
 });
 
@@ -217,7 +214,7 @@ export const stepNeeds = (
   let left = hours;
   let elapsedGameHours = 0;
   while (left > 0 && body.health > 0) {
-    const segment = segmentRates(needs, body.health, rates, recovery);
+    const segment = segmentRates(needs, body.health, rates, { recovery, loss: body.healthLossPerGameHour });
     const healthRatePerHour = damageImmune ? Math.max(0, segment.health) : segment.health;
     const h = Math.min(
       left,
@@ -241,17 +238,19 @@ export const stepNeeds = (
     elapsedGameHours += h;
     left -= h;
   }
-  const messages = CRITICAL.filter((rule) => !isCritical(before, rule) && isCritical(needs, rule)).map(
-    (rule) => rule.message,
-  );
-  if (beforeHealth >= 25 && body.health < 25) {
-    messages.push("You're badly hurt");
+  const messages = body.criticalNeeds
+    .filter((rule) => !isCritical(before, rule) && isCritical(needs, rule))
+    .map((rule) => rule.message);
+  const { below, message } = body.badlyHurt;
+  if (beforeHealth >= below && body.health < below) {
+    messages.push(message);
   }
   return messages;
 };
 
-/** Stamina recovers at half speed when you're worn down. */
-const worn = (needs: Needs): boolean => needs.fatigue > 90 || needs.calories < 10 || needs.hydration < 10;
+/** Stamina recovers slower while any need is critical. */
+const worn = (needs: Needs, critical: readonly CriticalRule[]): boolean =>
+  critical.some((rule) => isCritical(needs, rule));
 
 /** Spends stamina and starts its authored recovery delay on the transition to empty. */
 export const spendStamina = (
@@ -279,7 +278,7 @@ export const stepStamina = (
   needs: Needs,
   seconds: number,
   sprinting: boolean,
-  staminaRegenDelaySimSeconds = 0,
+  { staminaRegenDelaySimSeconds = 0, ...rules }: StaminaRules & { staminaRegenDelaySimSeconds?: number },
 ): void => {
   if (
     !Number.isFinite(seconds) ||
@@ -290,7 +289,7 @@ export const stepStamina = (
     throw new Error('Invalid stamina step');
   }
   if (sprinting) {
-    spendStamina(needs, -STAMINA.sprint * seconds, staminaRegenDelaySimSeconds);
+    spendStamina(needs, rules.sprintPerSimSecond * seconds, staminaRegenDelaySimSeconds);
     return;
   }
   let recoverySeconds = seconds;
@@ -300,23 +299,27 @@ export const stepStamina = (
     recoverySeconds -= waiting;
   }
   if (recoverySeconds > 0) {
-    needs.stamina = clamp(needs.stamina + STAMINA.recover * (worn(needs) ? STAMINA.worn : 1) * recoverySeconds);
+    const factor = worn(needs, rules.critical) ? rules.wornRecoveryFactor : 1;
+    needs.stamina = clamp(needs.stamina + rules.recoverPerSimSecond * factor * recoverySeconds);
   }
 };
 
 /** Whether you can sprint: not while winded, and once winded, not until you've got some breath back. */
-export const canSprint = (needs: Needs, sprinting: boolean): boolean =>
-  sprinting ? needs.stamina > 0 : needs.stamina >= STAMINA.winded;
+export const canSprint = (needs: Needs, sprinting: boolean, rules: Pick<StaminaRules, 'windedBelow'>): boolean =>
+  sprinting ? needs.stamina > 0 : needs.stamina >= rules.windedBelow;
 
 /** What eating or drinking something gives, in percent. */
-const nourishment = (food: { calories: number; water: number }): { calories: number; hydration: number } => ({
-  calories: (food.calories / FULL.kcal) * 100,
-  hydration: (food.water / FULL.ml) * 100,
+const nourishment = (
+  food: { calories: number; water: number },
+  full: NourishmentScale,
+): { calories: number; hydration: number } => ({
+  calories: (food.calories / full.kcal) * 100,
+  hydration: (food.water / full.ml) * 100,
 });
 
 /** Eats or drinks something that isn't rotten, in place. */
-export const consume = (needs: Needs, food: { calories: number; water: number }): void => {
-  const gain = nourishment(food);
+export const consume = (needs: Needs, food: { calories: number; water: number }, full: NourishmentScale): void => {
+  const gain = nourishment(food, full);
   needs.calories = clamp(needs.calories + gain.calories);
   needs.hydration = clamp(needs.hydration + gain.hydration);
 };

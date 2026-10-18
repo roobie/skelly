@@ -623,6 +623,9 @@ try {
       `${backend} fresh storage must have no saved world`,
     );
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
     await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
     const periodicGeneration = await waitForGeneration(undefined, 'periodic');
     await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
@@ -761,6 +764,9 @@ try {
     }
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
     await page.click('#save-replace-confirm', { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
     assert.notEqual(
       await page.evaluate(() => globalThis.deadvoxSaveTest.controller.snapshot().world.id),
       savedWorldId,
@@ -1094,6 +1100,9 @@ try {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
     await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction(
       async () => {

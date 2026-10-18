@@ -11,13 +11,19 @@ import {
 } from '../src/core/itemThrow.ts';
 import { pileItemPosition } from '../src/core/pileLayout.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1, origin: { kind: 'fixture' } });
+const base = baseRegistry();
+const { throwArcHeightMetres: arcHeightMetres } = reachTuning(base);
+
+const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1 });
 const testRegistry = (weights: Record<string, number>): Registry =>
   ({
     items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight }])),
     models: new Map(),
+    inventory: base.inventory,
   }) as unknown as Registry;
 const presentationInventory = (item: Item): Inventory => {
   const pile = { pos: [2, 0, 0] as [number, number, number], items: [{ item, x: 0, y: 0, rotated: false }] };
@@ -185,7 +191,7 @@ describe('held-item throws', () => {
     throws.update(5, inventory);
     expect(throws.activeCount).toBe(0);
     expect(visual.visible).toBe(false);
-    expect(visual.position.toArray()).toEqual(itemFlightPoint(start, landing, 1));
+    expect(visual.position.toArray()).toEqual(itemFlightPoint(start, landing, 1, arcHeightMetres));
     throws.dispose();
   });
 
@@ -207,6 +213,7 @@ describe('held-item throws', () => {
       from,
       direction: [1, 0, 0],
       distanceMetres: 4,
+      arcHeightMetres,
       blockSize: 1,
       minY: -8,
       isSolid,
@@ -223,6 +230,7 @@ describe('held-item throws', () => {
       from: [1.5, 8.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 4,
+      arcHeightMetres,
       blockSize: 1,
       minY: -8,
       isSolid: () => false,
@@ -237,6 +245,7 @@ describe('held-item throws', () => {
       from: [1.5, 1.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 8,
+      arcHeightMetres,
       blockSize: 1,
       minY: -8,
       isSolid,
@@ -253,6 +262,7 @@ describe('held-item throws', () => {
       from: [1.5, 1.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 8,
+      arcHeightMetres,
       blockSize: 1,
       minY: -8,
       isSolid,

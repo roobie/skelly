@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest';
+import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { BODY_REGIONS } from '../src/core/body.ts';
 import {
   calendarAt,
-  defaultClock,
   nextTimeOfDay,
   parseTimeOfDay,
   SECONDS_PER_DAY,
-  SPAWN_TIME,
   simSecondsPerHour,
   skipTarget,
 } from '../src/core/clock.ts';
 import { SKIP_COMPRESSION } from '../src/core/compression.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
-import { awakeRates, SPAWN_NEEDS } from '../src/core/needs.ts';
+import { dayPhaseAt } from '../src/core/dayPhase.ts';
+import { awakeRates } from '../src/core/needs.ts';
 import { SCHEDULER_TIME_EPSILON } from '../src/core/scheduler.ts';
 import type { BodyTuningDef, TreatmentDef } from '../src/core/schema.ts';
 import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
+import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
@@ -26,7 +26,10 @@ const PIERCE_ALWAYS_BLEEDS: BodyTuningDef = {
   ...BODY_TUNING_FIXTURE,
   bleeding: {
     ...BODY_TUNING_FIXTURE.bleeding,
-    tiers: tiers.map((tier, index) => ({ ...tier, chance: { ...tier.chance, pierce: index === 0 ? 1 : 0 } })),
+    tiers: tiers.map((tier, index) => ({
+      ...tier,
+      chancePerDamage: { ...tier.chancePerDamage, pierce: index === 0 ? 1 : 0 },
+    })),
   },
 };
 /** The test's own treatments by item type; the dressing closes every fixture band at any roll. */
@@ -41,7 +44,7 @@ const treatmentHooks = (sim: Simulation): NonNullable<Simulation['actions']['tre
   finish: (region, _itemUid, itemType) =>
     sim.body.treat(region, TREATMENTS[itemType]!, () => 0.5) ? true : 'Treatment no longer applies',
 });
-const HOUR = simSecondsPerHour(defaultClock);
+const HOUR = simSecondsPerHour(BASE_CLOCK);
 
 /** Runs 60 fps frames until the simulation reaches `until`. Returns the real seconds taken. */
 const runUntil = (sim: Simulation, until: number): number => {
@@ -57,14 +60,13 @@ const runUntil = (sim: Simulation, until: number): number => {
 };
 
 describe('clock', () => {
-  it('starts at SPAWN_TIME in daylight and advances the calendar at the clock ratio', () => {
-    const start = calendarAt(defaultClock, 0);
-    expect(defaultClock.start).toBe(SPAWN_TIME);
-    expect(start).toBe(SPAWN_TIME);
-    const phase = dayPhaseAt(DEFAULT_DAY_CYCLE, start);
+  it("starts at the day cycle's default start in daylight and advances the calendar at the clock ratio", () => {
+    const start = calendarAt(BASE_CLOCK, 0);
+    expect(start).toBe(parseTimeOfDay(coreDayCycle.dayCycle.defaultStartGameTimeOfDay));
+    const phase = dayPhaseAt(BASE_DAY_CYCLE, start);
     expect(phase.phase).toBe('day');
     expect(phase.sunset).toBeGreaterThan(start);
-    expect(calendarAt(defaultClock, HOUR) - start).toBe(3600);
+    expect(calendarAt(BASE_CLOCK, HOUR) - start).toBe(3600);
   });
 
   it('parses a time of day', () => {
@@ -339,13 +341,13 @@ describe('Simulation', () => {
     expect(realPlain).toBeCloseTo(HOUR, 0);
     expect(realFast).toBeLessThan(HOUR / 10);
     expect(fast.time).toBeCloseTo(plain.time, 9);
-    expect(fast.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * fast.time, 6);
-    expect(plain.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * plain.time, 6);
+    expect(fast.calendar - calendarAt(BASE_CLOCK, 0)).toBeCloseTo(BASE_CLOCK.ratio * fast.time, 6);
+    expect(plain.calendar - calendarAt(BASE_CLOCK, 0)).toBeCloseTo(BASE_CLOCK.ratio * plain.time, 6);
     // Needs lag by at most one grown step: 30 s, 4 game minutes.
     const rates = awakeRates(plain.body);
     const tolerance = (Math.max(...Object.values(rates).map(Math.abs)) * 4) / 60;
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {
-      expect(plain.needs[need]).toBeCloseTo(SPAWN_NEEDS[need] + rates[need], 6);
+      expect(plain.needs[need]).toBeCloseTo(plain.body.spawnNeeds[need] + rates[need], 6);
       expect(Math.abs(fast.needs[need] - plain.needs[need])).toBeLessThanOrEqual(tolerance);
     }
   });
@@ -398,7 +400,7 @@ describe('Simulation', () => {
     sim.needs.fatigue = 89.9;
     sim.compress();
     runUntil(sim, HOUR);
-    expect(sim.compression.interruption).toBe("You're exhausted");
+    expect(sim.compression.interruption).toBe(sim.body.criticalNeeds.find((rule) => rule.need === 'fatigue')!.message);
     expect(sim.time).toBeLessThanOrEqual(HOUR + SCHEDULER_TIME_EPSILON);
   });
 
@@ -455,8 +457,8 @@ describe('Simulation', () => {
 
   describe('debug time skip', () => {
     it('computes the target as game hours of simulation seconds after now', () => {
-      expect(skipTarget(defaultClock, 0, 1)).toBe(HOUR);
-      expect(skipTarget(defaultClock, 100, 23)).toBe(100 + 23 * HOUR);
+      expect(skipTarget(BASE_CLOCK, 0, 1)).toBe(HOUR);
+      expect(skipTarget(BASE_CLOCK, 100, 23)).toBe(100 + 23 * HOUR);
       expect(skipTarget({ ratio: 4, start: 0 }, 10, 2)).toBe(10 + 2 * 900);
     });
 
@@ -468,7 +470,9 @@ describe('Simulation', () => {
         advanceLiveFrame(sim, realSeconds(FRAME), until);
       }
       // Spawn needs run out of hydration and rest within about 5 game hours.
-      expect(sim.compression.interruption).toBe("You're parched");
+      expect(sim.compression.interruption).toBe(
+        sim.body.criticalNeeds.find((rule) => rule.need === 'hydration')!.message,
+      );
       expect(sim.time).toBeLessThan(until);
       expect(sim.needs.hydration).toBeLessThan(10);
     });
@@ -523,7 +527,7 @@ describe('Simulation', () => {
       let worstFrameTicks = 0;
       while (sim.time < until - 1e-6 && frames < 600) {
         // Keeps the needs from turning critical, which would interrupt the skip.
-        Object.assign(sim.needs, SPAWN_NEEDS);
+        Object.assign(sim.needs, sim.body.spawnNeeds);
         const before = ticks;
         advanceLiveFrame(sim, realSeconds(FRAME), until);
         worstFrameTicks = Math.max(worstFrameTicks, ticks - before);

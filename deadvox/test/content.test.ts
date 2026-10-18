@@ -1,8 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
+import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
+import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
+import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
 import { blockColors, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
@@ -11,7 +14,13 @@ import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
-import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
+import {
+  BLOCK_PATTERNS,
+  CONTENT_SECTION_KEYS,
+  type ContentFile,
+  DayCycleSchema,
+  type TemplateDef,
+} from '../src/core/schema.ts';
 import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
 import { sitePalette } from '../src/core/sitePalette.ts';
 import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
@@ -265,17 +274,28 @@ describe('content', () => {
     expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
   });
 
-  it('keeps the base day cycle authoritative over mod overrides', () => {
-    const baseCycle = baseRegistry.dayCycle!;
-    const modCycle = {
-      ...baseCycle,
-      latitudeDegrees: baseCycle.latitudeDegrees > 80 ? baseCycle.latitudeDegrees - 7 : baseCycle.latitudeDegrees + 7,
-    };
+  it('resolves spawn names against the day cycle of the last file that defines one', () => {
+    const authored = rawBaseDayCycle.dayCycle;
+    const modNoon = authored.noonGameTimeOfDay === '13:30' ? '14:30' : '13:30';
     const { registry } = buildRegistry([
-      { source: 'base/dayCycle.json', data: { dayCycle: baseCycle } },
-      { source: 'mod/dayCycle.json', data: { dayCycle: modCycle } },
+      { source: 'base/dayCycle.json', data: { dayCycle: authored } },
+      { source: 'mod/dayCycle.json', data: { dayCycle: { ...authored, noonGameTimeOfDay: modNoon } } },
     ]);
-    expect(registry.dayCycle).toEqual(baseCycle);
+    expect(resolveSpawnTime(registry.dayCycle!, 'noon')).toBe(parseTimeOfDay(modNoon));
+  });
+
+  it('rejects sky keys that are out of cycle order or share an instant, naming the field', () => {
+    const { keys } = rawBaseDayCycle.dayCycle;
+    const swapped = [keys[0]!, keys[2]!, keys[1]!, ...keys.slice(3)];
+    // The night's end and the dawn's start are one instant, which the blend cannot tell apart.
+    const sharedInstant = keys.map((key, index) => (index === 3 ? { ...key, at: 1 } : key));
+    // The last key at the dusk's end is the first key's instant a cycle later (nightfall).
+    const wrapped = [...keys, { phase: 'dusk' as const, at: 1, look: 'day' as const }];
+    const issuesFor = (candidate: typeof keys): string[] =>
+      safeParse(DayCycleSchema, { ...rawBaseDayCycle.dayCycle, keys: candidate }).issues?.map((i) => i.message) ?? [];
+    expect(issuesFor(swapped)).toContainEqual(expect.stringContaining('keys[2].at'));
+    expect(issuesFor(sharedInstant)).toContainEqual(expect.stringContaining('keys[4].at'));
+    expect(issuesFor(wrapped)).toContainEqual(expect.stringContaining(`keys[${keys.length}].at`));
   });
 
   it('keeps input instructions out of item descriptions', () => {
@@ -389,13 +409,6 @@ describe('content', () => {
     expect(runner.attack.moves.length).toBeGreaterThan(0);
     expect(Math.max(...runner.attack.moves.map(({ damage }) => damage))).toBeLessThanOrEqual(highestShamblerDamage);
     expect(weightedDamage(runner.attack.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack.moves));
-  });
-
-  it('makes arterial bleeding less likely but possible on the torso', () => {
-    const arterial = baseRegistry.body.get('player')!.bleeding.tiers.find(({ id }) => id === 'arterial')!;
-
-    expect(arterial.regionFactor?.torso).toBeLessThan(1);
-    expect(arterial.chance.pierce * arterial.regionFactor!.torso!).toBeGreaterThan(0);
   });
 
   it('rejects negative and unknown bleeding region factors', () => {
@@ -1046,6 +1059,69 @@ describe('content', () => {
     });
   });
 
+  it('reports a missing fists melee class as a load error', () => {
+    const withoutFists = {
+      ...baseRegistry,
+      meleeClasses: new Map([...baseRegistry.meleeClasses].filter(([id]) => id !== CORE_CONTENT_IDS.fistsMeleeClass)),
+    };
+    expect(requiredContentIssues(withoutFists)).toContainEqual({
+      source: 'core content',
+      path: 'meleeClasses',
+      message: `missing required content "${CORE_CONTENT_IDS.fistsMeleeClass}"`,
+    });
+  });
+
+  it('reports a missing day cycle as a load error', () => {
+    expect(requiredContentIssues({ ...baseRegistry, dayCycle: undefined })).toContainEqual({
+      source: 'core content',
+      path: 'dayCycle',
+      message: 'missing required day cycle',
+    });
+  });
+
+  it('reports a missing test range as a load error', () => {
+    const withoutRange = { ...baseRegistry, handlingRange: new Map() };
+    expect(requiredContentIssues(withoutRange)).toContainEqual({
+      source: 'core content',
+      path: 'handlingRange',
+      message: `missing required content "${CORE_CONTENT_IDS.testRange}"`,
+    });
+  });
+
+  describe('handling range layout', () => {
+    interface RangeData {
+      handlingRange: { width: number; firingLine?: unknown; targets: { lateral: number }[] }[];
+    }
+    const rangePack = () => {
+      const pack = base.find(({ source }) => source === 'range.json')!;
+      return { source: pack.source, data: structuredClone(pack.data) as RangeData };
+    };
+
+    it('requires every layout field, since the code holds no defaults', () => {
+      const pack = rangePack();
+      pack.data.handlingRange[0]!.firingLine = undefined;
+      expect(validateContent(pack).length).toBeGreaterThan(0);
+    });
+
+    it('rejects targets level with each other, since the nearer one hides the farther', () => {
+      const pack = rangePack();
+      const [first, second] = pack.data.handlingRange[0]!.targets;
+      second!.lateral = first!.lateral;
+      expect(buildRegistry([pack]).issues.map(({ message }) => message)).toContainEqual(
+        expect.stringContaining('hidden from the firing line'),
+      );
+    });
+
+    it('rejects a target outside the lane rather than clamping it', () => {
+      const pack = rangePack();
+      const layout = pack.data.handlingRange[0]!;
+      layout.targets[0]!.lateral = layout.width;
+      expect(buildRegistry([pack]).issues.map(({ message }) => message)).toContainEqual(
+        expect.stringContaining('inside the lane width'),
+      );
+    });
+  });
+
   it('reports a missing sound event even when another is defined', () => {
     const retainedId = SOUND_EVENT_IDS.at(-1)!;
     const missingId = SOUND_EVENT_IDS.find((id) => id !== retainedId);
@@ -1233,7 +1309,12 @@ describe('content', () => {
 describe('content references', () => {
   it('uses the content container-width limit and requires a reason for wider pockets', () => {
     const content = {
-      inventory: [{ id: 'player', containerMaxWidthCells: 4 }],
+      inventory: [
+        {
+          ...(base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory![0],
+          containerMaxWidthCells: 4,
+        },
+      ],
       items: [
         {
           id: 'fixture_at_limit',

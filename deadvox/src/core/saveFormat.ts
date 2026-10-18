@@ -1,6 +1,6 @@
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
-import { BODY_REGIONS, MELEE_DAMAGE_KINDS } from './body.ts';
+import { BODY_REGIONS, DAMAGE_KINDS, MELEE_DAMAGE_KINDS } from './body.ts';
 import { getBuildRevision } from './buildInfo.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
@@ -152,7 +152,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 50;
+export const SAVE_SCHEMA_VERSION = 52;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -307,6 +307,29 @@ const simulationFields = {
   scheduler,
   needs,
   body: bodyState,
+  exposures: obj({
+    simTimestamp: nonNegative,
+    nextId: nonNegativeInt,
+    exposures: arr(
+      obj({
+        region: enumeration(BODY_REGIONS),
+        kind: enumeration(DAMAGE_KINDS),
+        damage: nonNegative,
+        roll: num({ min: 0, max: 1 }),
+        infectionRoll: num({ min: 0, max: 1 }),
+        infectionAtRisk: opt(bool),
+        openedTier: opt(nonNegativeInt),
+        sources: arr(
+          obj({
+            id: str({ nonEmpty: true }),
+            cause: str({ nonEmpty: true }),
+            rate: nonNegative,
+            remaining: opt(positive),
+          }),
+        ),
+      }),
+    ),
+  }),
   compression: obj({
     // Content owns the cap; saves only require a valid finite multiplier.
     c: num({ min: 1 }),
@@ -324,15 +347,6 @@ let placedSchema: Schema;
 itemSchema = obj({
   uid: positiveInt,
   type: str({ id: true }),
-  origin: union(
-    obj({
-      kind: enumeration(['economy']),
-      source: str({ nonEmpty: true }),
-      channel: enumeration(['container', 'surface', 'corpse']),
-      mode: enumeration(['fixed', 'random']),
-    }),
-    obj({ kind: enumeration(['crafted', 'fixture', 'created']) }),
-  ),
   count: positiveInt,
   lootedCount: opt(nonNegativeInt),
   condition: num({ min: 0, max: 1 }),
@@ -496,7 +510,6 @@ const longAction = obj({
         obj({
           kind: enumeration(['rest', 'sleep']),
           furnitureUid: positiveInt,
-          label: str({ nonEmpty: true }),
           rate: finite,
           startFatigue: nonNegative,
           wakeAt: opt(finite),
@@ -1110,6 +1123,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         scheduler: snapshot.character.simulation.scheduler,
         needs: snapshot.character.simulation.needs,
         body: snapshot.character.simulation.body,
+        exposures: snapshot.character.simulation.exposures,
         compression: snapshot.character.simulation.compression,
         ...(snapshot.character.simulation.pendingInterrupt === undefined
           ? {}

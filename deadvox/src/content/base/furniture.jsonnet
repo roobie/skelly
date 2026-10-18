@@ -81,7 +81,7 @@
     },
     {
       "id": "range_table",
-      "name": "Shooting table",
+      "name": "Simple wooden table",
       "size": [4, 2, 2],
       "color": "#786b55",
       "shape": [

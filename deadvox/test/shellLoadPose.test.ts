@@ -1,10 +1,8 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { Box3, Group, Mesh, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldAnchorOffset } from '../src/core/heldPose.ts';
 import { Inventory, SIDES } from '../src/core/inventory.ts';
@@ -12,17 +10,9 @@ import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const base = 'src/content/base';
-const { registry, issues } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
-);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 
 it('the firing hand follows the exported bolt knob rather than moving the support hand', async () => {
   const rifle = [...registry.items.values()].find((item) => item.firearm?.bolt)!;

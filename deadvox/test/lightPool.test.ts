@@ -1,7 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import {
   chargeOf,
@@ -19,17 +17,12 @@ import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
-import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { baseRegistry } from './baseRegistry.ts';
+import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
-const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
-const { registry } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => read(`src/content/base/${file}`)),
-);
+const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
 const SCALE = makeScale(0.5);
 const TEST_LIGHTS = [
@@ -292,15 +285,17 @@ describe('made-light point pool', () => {
 
   it('uses daytime sky exposure for light gating, not direct sun angle', () => {
     const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
-    const open = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: () => false });
+    const cycle = BASE_DAY_CYCLE;
+    const open = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: () => false, cycle });
     const roofed = sunExposedAt({
       position: [0.5, 1, 0.5],
       gameHours: 12,
       skyTop: 20,
       isOpaque: (_x, y) => y === 2,
+      cycle,
     });
-    const shadow = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: wallShadow });
-    const night = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 0, skyTop: 20, isOpaque: () => false });
+    const shadow = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: wallShadow, cycle });
+    const night = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 0, skyTop: 20, isOpaque: () => false, cycle });
 
     expect(open).toBe(true);
     expect(roofed).toBe(false);

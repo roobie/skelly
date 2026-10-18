@@ -122,6 +122,7 @@ try {
   await page.waitForFunction(() => globalThis.readingWitness, undefined, { timeout: 60_000 });
   await page.waitForFunction(
     () =>
+      document.querySelector('#world-loading')?.dataset.state === 'ready' &&
       globalThis.readingWitness.input.locked &&
       !globalThis.readingWitness.session.sim.paused &&
       [...globalThis.readingWitness.engine.entities.all].some((entity) => entity.type === 'crate'),
@@ -407,7 +408,10 @@ try {
     const progressHandle = await page.waitForFunction(() => {
       const { session, restViewModel } = globalThis.readingWitness;
       const gauge = document.querySelector('#rest [role="progressbar"]');
-      const vm = restViewModel(session.rest.action, true, session.sim, true);
+      const vm = restViewModel(session.rest.action, true, session.sim, {
+        messagesVisible: true,
+        restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
+      });
       if (
         !(gauge && session.rest.action?.sleepOnset) ||
         vm.percent <= 0 ||
@@ -1176,7 +1180,10 @@ try {
     assert.equal(await page.locator('#continue').isVisible(), false);
     await page.locator('#go').click();
     await page.waitForFunction(
-      () => globalThis.readingWitness && globalThis.readingWitness.session.sim.dead === undefined,
+      () =>
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        globalThis.readingWitness &&
+        globalThis.readingWitness.session.sim.dead === undefined,
       undefined,
       { timeout: 60_000 },
     );

@@ -71,6 +71,7 @@ local slot(id, piece, at, size, turn=0) = {
   ],
   mapAssemblies: [{
     id: 'gauntlet_medical_site', size: [18, 9, 16], lootContext: context,
+    eligibility: { settlementKinds: ['city'] },
     slots: [
       slot('ground', 'gauntlet_city_ground', [0, 0, 0], [18, 1, 16]),
       slot('apron', 'gauntlet_triage_apron', [0, 1, 0], [18, 8, 16]),

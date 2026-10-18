@@ -1,6 +1,4 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through Deadvox's TypeScript alias.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
@@ -14,7 +12,6 @@ import {
 } from '../src/core/amalgamFigure.ts';
 import { AmalgamShape } from '../src/core/amalgamShape.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
@@ -28,24 +25,19 @@ import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
   activeAmalgamMembers,
-  FISTS_MELEE,
   PLAYER_CHEST_METRES,
   type PlayerSense,
   ZombieSystem,
   zombieAttackReachMetres,
 } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, contentLookup, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const BLOCK_SIZE = makeScale(0.5).blockSize;
 const FLOOR = (_x: number, y: number): boolean => y === 0;
 const player = (): PlayerSense => ({

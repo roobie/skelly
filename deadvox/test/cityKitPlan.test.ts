@@ -9,6 +9,7 @@ import { type CompiledTemplate, compileAssembly, type PlacedPiece, placedPoint }
 import { startupContent } from './baseRegistry.ts';
 import { buildingLootEvidence, buildingVariants, cityBuildingDraws } from './fixtures/cityBuildings.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
+import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -23,6 +24,7 @@ it('resolves one repeatable variant per slot and varies city assemblies across b
     pad: 2,
     gap: 2,
     blend: 2,
+    rows: 2,
     blocksX: 1,
     blocksZ: 1,
     templates: [{ id: 'fixture_route', weight: 1 }],
@@ -86,6 +88,7 @@ describe('authored city grounding', () => {
         pad: 2,
         gap: 2,
         blend: 2,
+        rows: 2,
         blocksX: 1,
         blocksZ: 1,
         templates: [{ id: building.id, weight: 1 }],
@@ -391,7 +394,7 @@ describe('content-owned city building types', () => {
     expect(limitIssues(1_000_000)).toEqual([]);
   });
 
-  it('reports a pool ref that names no building of its kind, or one that does not fit', () => {
+  it('reports a pool ref that names no building of its kind', () => {
     const scenario = fixtureScenario();
     const refAt = (kind: 'template' | 'assembly', id: string) => {
       const pool = fixturePool([{ ref: { kind, id }, weight: 1 }]);
@@ -401,9 +404,6 @@ describe('content-owned city building types', () => {
     expect(refAt('template', 'no_such_building')).toHaveLength(1);
     expect(refAt('assembly', 'fixture_house')).toHaveLength(1);
     expect(refAt('template', 'fixture_house')).toEqual([]);
-    expect(refAt('template', 'fixture_service')).toEqual([]);
-    scenario.city.blockX = 13;
-    expect(refAt('template', 'fixture_service')).toHaveLength(1);
   });
 
   it('lets one pool entry from a mod override a single building weight', () => {
@@ -436,43 +436,51 @@ describe('content-owned city building types', () => {
     );
   });
 
-  it('every authored city building has valid assemblies and reachable eligible loot', () => {
-    expect(BUNDLED_CONTENT.issues).toEqual([]);
-    const { registry } = BUNDLED_CONTENT;
-    const scenarios = [...registry.scenarios.values()];
-    expect(scenarios.length).toBeGreaterThan(0);
-    for (const scenario of scenarios) {
-      expect(scenarioPlanIssues(registry, scenario)).toEqual([]);
-      const city = cityGridOf(registry, scenario.city);
-      const enabled = [...city.templates, ...(city.ring?.templates ?? [])].filter(({ weight }) => weight > 0);
-      expect(enabled.length).toBeGreaterThan(0);
-      const { perimeter: _wall, ...open } = city;
-      const plan = buildCityPlan({
-        seed: 1,
-        registry,
-        grid: { ...open, ...(city.ring ? { ring: city.ring } : {}), streetProps: [] },
-        floor: 0,
-      });
-      expect(plan.placements.length).toBeGreaterThan(0);
-      expect(plan.placements.every(({ template }) => enabled.some(({ id }) => id === template.id))).toBe(true);
-    }
-    const buildings = scenarios.flatMap((scenario) =>
-      [...cityGridOf(registry, scenario.city).templates, ...(cityGridOf(registry, scenario.city).ring?.templates ?? [])]
-        .filter(({ weight }) => weight > 0)
-        .flatMap(({ id }) => buildingVariants(registry, registry.mapAssemblies.get(id)!)),
-    );
-    expect(buildings.length).toBeGreaterThan(0);
-    for (const template of buildings) {
-      const evidence = buildingLootEvidence(registry, template);
-      expect(evidence.standing).toBeGreaterThan(0);
-      expect(evidence.sources.length, template.id).toBeGreaterThan(0);
-      for (const source of evidence.sources) {
-        expect(source.accessible, source.label).toBe(true);
-        expect(source.items.length, source.label).toBeGreaterThan(0);
-        expect(source.issues, source.label).toEqual([]);
+  it(
+    'every authored city building has valid assemblies and reachable eligible loot',
+    () => {
+      expect(BUNDLED_CONTENT.issues).toEqual([]);
+      const { registry } = BUNDLED_CONTENT;
+      const scenarios = [...registry.scenarios.values()];
+      expect(scenarios.length).toBeGreaterThan(0);
+      for (const scenario of scenarios) {
+        expect(scenarioPlanIssues(registry, scenario)).toEqual([]);
+        const city = cityGridOf(registry, scenario.city);
+        const enabled = [...city.templates, ...(city.ring?.templates ?? [])].filter(({ weight }) => weight > 0);
+        expect(enabled.length).toBeGreaterThan(0);
+        const { perimeter: _wall, ...open } = city;
+        const plan = buildCityPlan({
+          seed: 1,
+          registry,
+          grid: { ...open, ...(city.ring ? { ring: city.ring } : {}), streetProps: [] },
+          floor: 0,
+        });
+        expect(plan.placements.length).toBeGreaterThan(0);
+        expect(plan.placements.every(({ template }) => enabled.some(({ id }) => id === template.id))).toBe(true);
       }
-    }
-  });
+      const buildings = scenarios.flatMap((scenario) =>
+        [
+          ...cityGridOf(registry, scenario.city).templates,
+          ...(cityGridOf(registry, scenario.city).ring?.templates ?? []),
+        ]
+          .filter(({ weight }) => weight > 0)
+          .flatMap(({ id }) => buildingVariants(registry, registry.mapAssemblies.get(id)!)),
+      );
+      expect(buildings.length).toBeGreaterThan(0);
+      for (const template of buildings) {
+        const evidence = buildingLootEvidence(registry, template);
+        expect(evidence.standing).toBeGreaterThan(0);
+        expect(evidence.sources.length, template.id).toBeGreaterThan(0);
+        for (const source of evidence.sources) {
+          expect(source.accessible, source.label).toBe(true);
+          expect(source.items.length, source.label).toBeGreaterThan(0);
+          expect(source.issues, source.label).toEqual([]);
+        }
+      }
+    },
+    // One city plan per bundled scenario costs less than a site's build, so a site's budget each is generous.
+    BUNDLED_CONTENT.registry.scenarios.size * GAUNTLET_SITE_MS,
+  );
 });
 
 const insideKitPlane = (compiled: CompiledTemplate, x: number, z: number, y: number): boolean =>

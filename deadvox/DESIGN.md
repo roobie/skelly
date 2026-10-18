@@ -117,12 +117,14 @@ performance changes. See
 [CHALLENGES.md](CHALLENGES.md) for active performance constraints.
 
 Render scale adapts by default, so slower machines trade sharpness for frame
-rate and faster ones keep the full image. Content must at least be able to
+rate and faster ones keep the full image. The trade must not depend on enabling
+post effects or reduce the readability of separate UI layers. Content must at least be able to
 switch adaptation off and tune it, so a mod can choose a fixed scale or a
-different trade (`PILLARS.md`, "Content forward compatibility"). The adaptive
-default awaits the adaptive render-scale work under #680; until it lands,
-content sets a fixed default. See `src/content/base/graphics.jsonnet` and
-`src/render/mood.ts`, `Mood.setRenderScale`. Look changes made for performance
+different trade (`PILLARS.md`, "Content forward compatibility"). Explicit player
+choices retain ownership rather than being overwritten by adaptation. See
+`src/content/base/graphics.jsonnet`, `src/render/adaptiveScale.ts`, `AdaptiveScale`,
+`src/render/mood.ts`, `Mood.setRenderScale`, and `src/render/screenScale.ts`, `ScreenScale`.
+Look changes made for performance
 follow `deadvox/GRAPHICS.md`, "Look decisions".
 
 Half-metre blocks keep doorways, furniture and interiors at human scale, and
@@ -542,8 +544,9 @@ specific sites and their rewards.
 
 Keep the firearm-handling range in the debug test house, not ordinary world
 sites, so test stock cannot become a playable-world loot source. Derive rack
-contents from firearm and ammunition compatibility. See `HandlingRange` in
-`src/core/range.ts` and `testHouseRangeSupply` in `src/game/testHouseRange.ts`.
+contents from firearm and ammunition compatibility. The range layout is content, see
+`deadvox/docs/content.md`. See `HandlingRange` in `src/core/range.ts` and
+`testHouseRangeSupply` in `src/game/testHouseRange.ts`.
 
 ### Loot
 
@@ -554,13 +557,14 @@ same admission without becoming optional. Source-point identity owns the random
 stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
-Keep an item's birth origin when it moves, splits, acquires fitted parts or is saved.
-Unlike origins do not merge, so later counts can attribute supply without confusing
-its source with its current map, cargo or player owner. Explicit debug stock is
-fixture supply, never ordinary economy stock; crafted results have a separate origin.
-Current ownership stays in the inventory tree, not in the birth record. See
-`src/core/itemOrigin.ts`, `ItemOrigin`; `src/core/items.ts`, `stackRoom`; and
-`src/core/inventory.ts`, `Inventory.items`.
+Items carry no record of where they were born. A central economy counts items by type
+and by where they are when it counts (map, cargo, player, hoard), so a birthplace adds
+nothing to the count, and keeping one only stopped equal items from stacking. State
+the economy needs about a spawn location (whether its item was taken, refill, required
+stock, how long an untouched item lasts) belongs to the loot point, not to the item.
+Debug stock is kept out of the world economy by the scene that supplies it, not by a
+mark on the item. See `src/core/items.ts`, `stackRoom`, and `src/core/loot.ts`,
+`LootSpawnPoint`.
 
 ## Items and inventory
 
@@ -798,18 +802,39 @@ and `src/game/player.ts`, `physicsFor`.
 
 Bleeding tiers are content-owned: tuning a tier changes content, not mechanism.
 Wound severity moves continuously within tier bands so closure and dressing
-reduce it gradually rather than in jumps. Each hit makes one deterministic tier
-roll using damage kind and region; a stronger result replaces a milder tier,
-never the reverse. A weaker hit cannot reduce existing bleeding, so hit order
-cannot heal. Arteries remain possible in the torso, but less likely. See
-`BleedingTierSchema` in `src/core/schema.ts` and `bleedingWound` plus
-`Body.bleedingTierForHit` in `src/core/body.ts`.
+reduce it gradually rather than in jumps. Damage drives wound thresholds and
+outer-layer wear for both blows and continuous exposure: a stronger burn must
+corrode faster without depending on frame size. A blow is one exposure; continuous
+contact and its lingering burn retain a single wound draw per region and damage
+kind. Accumulating damage can cross stronger thresholds, but cannot heal an
+existing wound. Rates are starting points tuned by play, not calibrated to a
+reference attack: a per-damage rate cannot preserve every attack's per-hit
+outcome, so feel takes precedence over a fixed balance point.
+See `src/core/body.ts`, `Body.bleedingTierForHit` and
+`bleedingWound`; `src/core/damageExposure.ts`, `DamageExposures`.
 
-Attacks author their move and possible body regions. Worn armour and clothing
-take wear but do not change damage, damage kind, or bleeding chance. Move choices
-are authored in `src/content/base/zombies.jsonnet`, `attack.moves`.
-`pickZombieHitRegion` in `src/core/zombies.ts` and `wearOnPlayerHit` in
-`src/core/wear.ts` apply those choices and armour wear.
+Lingering damage belongs to the damage kind, not a particular enemy. Its rate
+tapers linearly after contact ends, and re-entry before it ends retains the
+exposure's damage and draw. A lingering hit starts its tail at hit damage divided
+by linger duration, so the tail adds half the immediate hit. Stronger globs are
+intentional: this relation avoids another independently balanced attack value.
+Ending an exposure early removes the burn, not damage,
+wear or wounds already taken. Long actions cannot run during contact or its tail;
+a persistent refusal owns that constraint instead of an interrupt every step.
+Blows still interrupt when they land. An idle exposure system must not fragment
+unrelated action timing or replay; it only imposes tick boundaries while a burn
+is live. A save taken within a tick must continue like live play; pending
+activation must not replay dormant time. See `src/core/scheduler.ts`,
+`SystemSpec.enabled` and `Scheduler.snapshotState`;
+`src/core/sim.ts`, `Simulation.expose`,
+`Simulation.leaveExposure`, `Simulation.endExposure` and `Simulation.actionRefusal`;
+`src/core/longAction.ts`, `LongActions.interruptExposure`.
+
+Worn armour and clothing take damage-proportional wear but do not mitigate flesh
+damage or bleeding chance. Keeping wear at the shared impact boundary prevents
+falls, projectiles and lingering damage from bypassing it. See
+`src/core/wear.ts`, `wearOnPlayerHit`; `src/core/sim.ts`, `Simulation.impact`;
+`src/game/session.ts`, `createSession`.
 
 Modifier ownership follows the actor supplying the effect, not its target.
 `src/core/body.ts`, `Body.modified`, resolves the player's bodily values;
@@ -980,7 +1005,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 - **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, "Reload, rack, remove" and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`; `src/core/pellets.ts`, `projectileShot`; `src/core/zombies.ts`, `ZombieSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
 - **Modular weapons:** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount, which gungen does not export, is the one mount deadvox owns (see [Shoulder and sling](#shoulder-and-sling)). These boundaries keep rendering, saves and compatibility consistent. Firearm details must remain responsive as the inventory fills while the world continues; see `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.candidates`; `src/ui/inventoryScreen.ts`, `viewModel`; `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
 
-  Optics keep their authored reticle and use one content-authored magnification setting, preserving a recognizable sight picture without adding a cycling input. Magnification stays within gungen's supported range. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/core/opticView.ts`, `opticViewSettings` and `projectLensAperture`; `src/render/opticLens.ts`, `OpticLensRenderer`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
+  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/render/firearmSight.ts`, `sightedFirearmModel`. Optics keep their authored reticle and use one content-authored magnification setting, preserving a recognizable sight picture without adding a cycling input. Magnification stays within gungen's supported range. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/core/opticView.ts`, `opticViewSettings` and `projectLensAperture`; `src/render/opticLens.ts`, `OpticLensRenderer`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
 
   Gungen's geometry and material export is the single source for attachment mass; `weightOf` uses `massKg` for attachment items, so their required content `weight` is not authoritative. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear; foregrips affect aim and stance; a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
@@ -1338,15 +1363,18 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
   night range through twilight and reduced when you crouch), hearing (noise events)
   and smell (a trail the player leaves, which rain washes out). The base pack's
   day cycle applies to every site; its late-June, mid-latitude cycle with nautical
-  twilight gives long daylight without modeling seasonal change. See
-  `src/content/base/dayCycle.json`, `dayCycle`, for its authored settings. Sky,
+  twilight gives long daylight without modeling seasonal change. The day cycle is
+  required content with no code default, so a pack without one fails to load rather
+  than silently playing under a hidden sun. See
+  `src/content/base/dayCycle.json`, `dayCycle`, for its authored settings, sky
+  looks and weather fog included (`docs/content.md`, "Day cycle"). Sky,
   sight blending, horde roaming and named spawn windows follow solar boundaries
   rather than fixed clock hours. Hordes roam from sunset through dawn
   until sunrise, and spawn words resolve from those same boundaries. Terrain height
   alone should not end a clear pursuit; sight over a rise is bounded by occlusion,
   not by spending range on vertical distance.
   See `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/zombies.ts`, `seesPlayer`
-  and `ZombieSystem.updateHordes`; and `src/core/clock.ts`, `parseSpawnTime`.
+  and `ZombieSystem.updateHordes`; and `src/core/clock.ts`, `resolveSpawnTime`.
 - A shambler moves directly toward its current attention target in the horizontal plane. Collision resolution preserves available tangential motion; when a head-on intent has none, `ZombieSystem.tick` uses the seeded `obstacleSlideSide` to supply it. `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the distance configured in `src/content/base/zombies.jsonnet`, then resumes toward its current target. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
 - Shamblers do not gain stair knowledge from an attention target on another floor.
 - For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
@@ -1483,9 +1511,9 @@ and `src/game/config.ts`, `GameConfig`. Startup admission remains part of the
 simulation fingerprint because it can change a world without changing a simulation
 call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
 
-Whole-definition overrides keep composition in the authoring language rather than
-creating a second patch language. Browser Jsonnet and uploaded assets remain
-follow-up work in #633. The panel remains opt-in pending BR's entry-flow decision;
+A whole-definition override restates the entry, so it freezes the base as of its
+writing; how a mod changes one field instead is decided in
+`docs/decisions/0007-typed-field-patches.md`, "Decision". Browser Jsonnet and uploaded assets remain follow-up work in #633. The panel remains opt-in pending BR's entry-flow decision;
 see `src/ui/modsPanel.ts`, `chooseMods`.
 
 Remote intake shares local admission so a host cannot bypass the content contract.
@@ -1587,6 +1615,7 @@ so scale does not force a later redesign:
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
+- **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
 - **Day and night** follow one sun model derived from the base pack's latitude,
   fixed date and nautical twilight. The sky and fog follow the resulting phases;
   light and night looks blend through dusk and dawn, and a flashlight matters

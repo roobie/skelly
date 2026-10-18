@@ -123,10 +123,14 @@ jobs:
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' }}
         timeout-minutes: 1
         run: node test/browser/insecure-saves.mjs
-      - name: Install headed Firefox
+      - name: Install expression probe browsers and headed Firefox
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         timeout-minutes: 3
-        run: npx playwright install firefox
+        run: npx playwright install firefox chromium
+      - name: Isolated expression Wasm cross-engine contract
+        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        timeout-minutes: 1
+        run: node tools/probe-wasm-expressions.mjs
       # Native first-click #168, Firefox OPFS #224 and Continue #170 remain quarantined.
       - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}

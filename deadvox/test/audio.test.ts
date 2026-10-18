@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import { GameAudio } from '../src/game/audio.ts';
+import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
 const senseTuning = {
   id: 'fixture_player',
@@ -14,6 +15,8 @@ const senseTuning = {
     bodyHeightMetres: 1.2,
   },
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
+  footsteps: BASE_SENSE_TUNING.footsteps,
+  vocalNoiseLifetimeSimSeconds: BASE_SENSE_TUNING.vocalNoiseLifetimeSimSeconds,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,

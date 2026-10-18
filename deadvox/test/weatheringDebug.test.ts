@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { WeatheringDef } from '../src/core/schema.ts';
-import { DEFAULT_FOGGINESS, DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
+import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { startupContent } from './baseRegistry.ts';
+import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
 import { FakeMood } from './fakeMood.ts';
+import { LOOK_FIXTURE } from './lookFixture.ts';
 
 describe('debug weathering controls', () => {
   it('selects another authored profile and updates live mesh uniforms for edits', () => {
@@ -25,7 +27,8 @@ describe('debug weathering controls', () => {
       setWeathering: (settings: WeatheringDef | undefined) => applied.push(settings),
     };
     const look = new LookControls(undefined, meshes, new FakeMood(), {
-      weather: { fogginess: DEFAULT_FOGGINESS },
+      defaults: LOOK_FIXTURE,
+      weather: { fogginess: BASE_DAY_CYCLE.weather.defaultFogginess },
       flashlight: { strength: 1 },
       weathering: {
         state: {

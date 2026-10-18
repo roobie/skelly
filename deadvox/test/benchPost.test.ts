@@ -1,10 +1,26 @@
 import { describe, expect, it, vi } from 'vitest';
-import { benchDraw, benchPostFromUrl, postUrlPart } from '../src/bench/post.ts';
+import { applyBenchWeathering, benchDraw, benchPostFromUrl, postUrlPart } from '../src/bench/post.ts';
 import { benchRunFromUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
+import { DEFAULT_WEATHERING_PROFILE_ID } from '../src/core/weather.ts';
+import type { StartupContent } from '../src/game/bundledContent.ts';
+import { makeConfig } from '../src/game/config.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
+import { baseRegistry, startupContent } from './baseRegistry.ts';
 
 const params = (query: string) => new URLSearchParams(query);
+
+const registry = baseRegistry();
+
+describe('benchmark weathering', () => {
+  it('uses its own registry profile, not the play default, so retuning the default leaves the bench workload alone', () => {
+    const config = makeConfig(1, 64, { registry } as unknown as StartupContent);
+    applyBenchWeathering(config);
+    expect(config.weatheringProfileId).not.toBe(DEFAULT_WEATHERING_PROFILE_ID);
+    expect(config.weathering).toBeDefined();
+    expect(config.weathering).toEqual(registry.weathering.get(config.weatheringProfileId));
+  });
+});
 
 describe('benchmark post-processing option', () => {
   it('is off unless &post=1, so the default benchmark renders as it always did', () => {
@@ -31,6 +47,7 @@ describe('benchmark post-processing option', () => {
     let captured: { calls: number; triangles: number } | undefined;
     const engine = {
       renderer: { info, toneMapping: 0, toneMappingExposure: 1 },
+      registry: startupContent().registry,
       scene: {},
       camera: { position: {} },
       meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },

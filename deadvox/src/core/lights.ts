@@ -8,7 +8,7 @@ import type { BlockEntity } from './blockEntities.ts';
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { type DayCycle, DEFAULT_DAY_CYCLE } from './dayPhase.ts';
+import type { DayCycle } from './dayPhase.ts';
 import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { isInHeldItemSlotTree, itemRoots } from './itemTree.ts';
@@ -120,13 +120,13 @@ export const sunExposedAt = ({
   gameHours,
   skyTop,
   isOpaque,
-  cycle = DEFAULT_DAY_CYCLE,
+  cycle,
 }: {
   position: readonly [number, number, number];
   gameHours: number;
   skyTop: number;
   isOpaque: SolidAt;
-  cycle?: DayCycle;
+  cycle: DayCycle;
 }): boolean => {
   if (sunDirection(gameHours, cycle)[1] <= 0) {
     return false;
@@ -156,7 +156,7 @@ export class SunExposureCache {
     this.opaqueTopByColumn.clear();
   }
 
-  isExposedAt(position: readonly [number, number, number], gameHours: number, cycle = DEFAULT_DAY_CYCLE): boolean {
+  isExposedAt(position: readonly [number, number, number], gameHours: number, cycle: DayCycle): boolean {
     if (sunDirection(gameHours, cycle)[1] <= 0 || this.skyTop - position[1] <= 0) {
       return false;
     }
@@ -322,8 +322,7 @@ export const swapBattery = (inventory: Inventory, light: Item, battery: Item, sp
   }
   const oldBattery = light.slots?.battery;
   const old = oldBattery ? (chargeOf(registry, oldBattery) ?? 0) : 0;
-  const replacement =
-    battery.count > 1 ? inventory.create(battery.type, 1, battery.condition, battery.origin) : battery;
+  const replacement = battery.count > 1 ? inventory.create(battery.type, 1, battery.condition) : battery;
   if (battery.charges !== undefined) {
     replacement.charges = battery.charges;
   }

@@ -11,9 +11,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { Site } from '../src/core/site.ts';
 import { type Placement, placedPieces } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
-import { makeConfig } from '../src/game/config.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { testHouseScene } from '../src/game/worldSetup.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureEconomy } from './economyFixtures.ts';
 
@@ -81,7 +79,7 @@ const expectRoutedColumn = (site: Site, placements: readonly Placement[]) => {
             candidate.destination.every((value, axis) => value === spawn.spec.pos[axis]),
         );
         expect(point).toBeDefined();
-        expect(entry.origin).toMatchObject({ kind: 'economy', source: point!.id, channel });
+        expect(entry.count).toBeGreaterThan(0);
       }
     }
   }
@@ -120,15 +118,7 @@ describe('loot source routing', () => {
     expectRoutedColumn(authored, authored.placements);
   });
 
-  it('marks test-house table supply as fixture-origin without changing world admission metadata', () => {
-    const registry = fixtureRegistry();
-    const house = testHouseScene(makeConfig(17, 64, content), registry);
-    const supplied = house.furniture.flatMap((spawn) => spawn.loot);
-    expect(supplied.length).toBeGreaterThan(0);
-    expect(supplied.every((entry) => entry.origin.kind === 'fixture')).toBe(true);
-  });
-
-  it('routes a real session death through Infected admission and retains the corpse origin on its pile', () => {
+  it('routes a real session death through Infected admission', () => {
     const registry = fixtureRegistry();
     const forbidden = 'fixture_forbidden';
     registry.items.set(forbidden, {
@@ -181,12 +171,5 @@ describe('loot source routing', () => {
     const dropped = items.filter((item) => item.type === stock);
     expect(dropped.length).toBeGreaterThan(0);
     expect(items.some((item) => item.type === forbidden)).toBe(false);
-    const source = selection.corpseLootPoint(table, id, [4, 1, 0]);
-    expect(
-      dropped.every(
-        (item) =>
-          item.origin.kind === 'economy' && item.origin.source === source.id && item.origin.channel === 'corpse',
-      ),
-    ).toBe(true);
   });
 });

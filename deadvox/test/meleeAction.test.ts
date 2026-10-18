@@ -1,17 +1,15 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
-import { buildRegistry, type ZombieDef } from '../src/core/content.ts';
+import type { ZombieDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
-import { SPAWN_NEEDS, STAMINA, stepStamina } from '../src/core/needs.ts';
+import { stepStamina } from '../src/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '../src/core/playerCombat.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { FISTS_MELEE, type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
+import { type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import {
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,
@@ -20,17 +18,13 @@ import {
   startPlayerMelee,
 } from '../src/game/melee.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
@@ -301,8 +295,10 @@ describe('player melee action', () => {
   });
 
   it('refuses a zero-stamina swing even when its weapon has no stamina cost', () => {
-    const needs = { ...SPAWN_NEEDS };
-    stepStamina(needs, needs.stamina / -STAMINA.sprint + 1, true);
+    const fixtureBody = new Body(BODY_TUNING_FIXTURE);
+    const rules = fixtureBody.staminaRules;
+    const needs = fixtureBody.spawnNeeds;
+    stepStamina(needs, needs.stamina / rules.sprintPerSimSecond + 1, true, rules);
     expect(needs.stamina).toBe(0);
     const system = makeSystem();
     const missRay = { origin: [0, 2, 2] as Vec3, direction: [1, 0, 0] as Vec3 };

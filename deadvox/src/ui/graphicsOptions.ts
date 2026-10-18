@@ -11,7 +11,7 @@ const valueText = (value: number | boolean): string => {
 
 const scaleControl = (
   key: GraphicsKey,
-  option: GraphicsOptions['renderScale'],
+  option: GraphicsOptions['bloomScale'],
   state: { value: number; overridden: boolean; change: (value: number | boolean) => void },
 ): TemplateResult => {
   const setFromPointer = (event: MouseEvent | PointerEvent): void => {

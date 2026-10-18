@@ -1,8 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Box3, BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { interactionAffordance } from '../src/core/interactionAffordance.ts';
 import { pickInteractionTarget } from '../src/core/interactionPick.ts';
@@ -13,14 +10,9 @@ import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { markInteractionTarget } from '../src/render/interactionMarker.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const itemType = [...registry.items.values()].find(
   (def) => def.model === undefined && def.pileDisplay !== PILE_DISPLAY_KIND.scatter,
 )?.id;

@@ -4,9 +4,9 @@ import { worldOpaque, worldSolid } from './collision.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { raycast } from './raycast.ts';
-import { INVENTORY_CHEST, INVENTORY_REACH } from './reach.ts';
+import { reachTuning } from './reach.ts';
 import { makeScale } from './scale.ts';
-import { sitePalette } from './sitePalette.ts';
+import { sitePalette, terrainShapeOf } from './sitePalette.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { footprint, type Placement } from './templates.ts';
 import { World } from './world.ts';
@@ -64,6 +64,7 @@ export class ScenarioRouteSpace {
       seed: site.seed,
       scale: makeScale(HAMLET_BLOCK_SIZE),
       blocks: sitePalette(site.registry).terrain,
+      shape: terrainShapeOf(site.registry),
       surface: site.surface,
     };
     this.solid = worldSolid(this.world, site.registry, this.entities);
@@ -238,13 +239,14 @@ export class ScenarioRouteSpace {
   }
 
   visibleReach(point: Readonly<Vec3>, entity: BlockEntity): boolean {
-    const chest: Vec3 = [point[0], point[1] + INVENTORY_CHEST / HAMLET_BLOCK_SIZE, point[2]];
+    const { chestHeightMetres, reachMetres } = reachTuning(this.site.registry);
+    const chest: Vec3 = [point[0], point[1] + chestHeightMetres / HAMLET_BLOCK_SIZE, point[2]];
     const target = chest.map((value, axis) =>
       Math.max(entity.pos[axis]!, Math.min(value, entity.pos[axis]! + entity.size[axis]!)),
     ) as Vec3;
     const offset = target.map((value, axis) => value - chest[axis]!) as Vec3;
     const distance = Math.hypot(...offset);
-    if (distance * HAMLET_BLOCK_SIZE > INVENTORY_REACH) {
+    if (distance * HAMLET_BLOCK_SIZE > reachMetres) {
       return false;
     }
     if (distance === 0) {

@@ -3,6 +3,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { startupContent } from './baseRegistry.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -85,7 +86,7 @@ describe('practice objectives', () => {
     const inventory = new Inventory(BUNDLED_CONTENT.registry);
     const queue = new HandlingQueue(inventory);
     const survival = new Survival(new Simulation({ seed: 1 }), inventory, queue, {
-      reach: bindReach({ inventory, position: state.position, blockSize: 1 }),
+      reach: bindReach({ inventory, position: state.position, blockSize: 1, clock: BASE_CLOCK }),
       feet: () => ({ kind: 'pile', pos: state.position }),
       notice: vi.fn(),
       read: vi.fn(),

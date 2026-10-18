@@ -7,12 +7,10 @@ import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 export type RestKind = 'rest' | 'sleep';
-const REST_LABEL: Readonly<Record<RestKind, string>> = { rest: 'Resting', sleep: 'Sleeping' };
 const RUN_WHILE_REFUSED: ReadonlySet<string> = new Set(['treatment', 'craft', 'reading']);
 export interface RestAction {
   kind: RestKind;
   furnitureUid: number;
-  label: string;
   rate: number;
   startFatigue: number;
   /** The Sim time a sleep set with an alarm ends at; without one, sleep ends once rested. */
@@ -143,8 +141,7 @@ const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
         rest.sleepOnset.elapsedGameSeconds < 0 ||
         rest.sleepOnset.elapsedGameSeconds > rest.sleepOnset.durationGameSeconds)) ||
     !Number.isSafeInteger(rest.furnitureUid) ||
-    rest.furnitureUid < 1 ||
-    typeof rest.label !== 'string'
+    rest.furnitureUid < 1
   ) {
     throw new Error('Invalid rest descriptor');
   }
@@ -268,7 +265,7 @@ export class LongActions {
     sim.scheduler.register({ id: 'long-action', rate: 1, maxStep: 30, tick: (_dt, time) => this.advance(time) });
   }
   private bodyActionRefusal(): string | undefined {
-    return this.sim.body.actionRefusal;
+    return this.sim.actionRefusal;
   }
   /**
    * Prying runs at 1×, and so do treatment, crafting and reading while the body refuses compression: a
@@ -392,7 +389,6 @@ export class LongActions {
       rest: {
         kind,
         furnitureUid,
-        label: REST_LABEL[kind],
         rate,
         startFatigue: this.sim.needs.fatigue,
         ...(wakeAt === undefined ? {} : { wakeAt }),
@@ -646,6 +642,12 @@ export class LongActions {
       this.current.stopped = true;
     }
     this.sim.compression.stop();
+  }
+  interruptExposure(reason: string): void {
+    const job = this.current;
+    if (job && !job.stopped) {
+      this.stopOrInterrupt(job, reason);
+    }
   }
   interruptUncompressed(reason: string): void {
     const job = this.current;

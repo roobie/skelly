@@ -1,17 +1,10 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { PerspectiveCamera, Scene } from 'three';
 import { expect, it } from 'vitest';
 import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
-const { registry } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => read(`src/content/base/${file}`)),
-);
+const registry = baseRegistry();
 
 it('uses the game sprint rule to reduce active sources in the benchmark fixture', () => {
   const engine = {

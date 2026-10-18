@@ -1,8 +1,10 @@
+import type { ClockSettings } from '../src/core/clock.ts';
 import type { Registry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
 import { gameHours, gameMinutes, gamePerHour, realSeconds, simRate, simSeconds } from '../src/core/time.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   id: 'player-fixture',
@@ -14,6 +16,8 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   proneEyeHeightMetres: 0.2,
   shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
   outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
+  exposureRefusal: 'Fixture exposure',
+  linger: { acid: { simSeconds: simSeconds(3) } },
   landing: {
     safeSpeedMetresPerSimSecond: simRate(8),
     damagePerSquaredSpeed: 0.25,
@@ -41,7 +45,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         closeSimSeconds: simSeconds(60),
         treatmentEffort: 1,
         minDamage: 0,
-        chance: { blunt: 0.1, cut: 0.3, pierce: 0.3, acid: 0 },
+        chancePerDamage: { blunt: 0.01, cut: 0.03, pierce: 0.03, acid: 0 },
         drip: { rate: 0.5, size: 1 },
         pain: 2,
       },
@@ -54,7 +58,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         closeSimSeconds: simSeconds(600),
         treatmentEffort: 2,
         minDamage: 5,
-        chance: { blunt: 0.05, cut: 0.3, pierce: 0.3, acid: 0 },
+        chancePerDamage: { blunt: 0.005, cut: 0.03, pierce: 0.03, acid: 0 },
         drip: { rate: 1, size: 1 },
         pain: 6,
       },
@@ -68,7 +72,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         treatmentEffort: 4,
         minDamage: 20,
         regionFactor: { head: 0, torso: 0.5, leftArm: 0, rightArm: 0 },
-        chance: { blunt: 0.01, cut: 0.1, pierce: 0.1, acid: 0 },
+        chancePerDamage: { blunt: 0.001, cut: 0.01, pierce: 0.01, acid: 0 },
         drip: { rate: 4, size: 1.5 },
         pain: 12,
       },
@@ -93,6 +97,25 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   bloodRecoveryPerSimSecond: simRate(0.002),
   shockRecoveryPerSimSecond: simRate(0.1),
   advancedInfectionHealthLossPerSimSecond: simRate(0.0005),
+  // The fixture's own needs, so survival tests never lean on base content's tuning.
+  needs: {
+    spawn: { calories: 40, hydration: 35, fatigue: 70, stamina: 100 },
+    drainPerGameHour: { calories: gamePerHour(3), hydration: gamePerHour(5) },
+    healthLossPerGameHour: { starving: gamePerHour(4), dehydrated: gamePerHour(8) },
+    stamina: {
+      sprintPerSimSecond: simRate(5),
+      recoverPerSimSecond: simRate(4),
+      wornRecoveryFactor: 0.5,
+      windedBelow: 10,
+    },
+    full: { kcal: 2500, ml: 2500 },
+    critical: [
+      { need: 'calories', below: 10, message: 'Fixture starving' },
+      { need: 'hydration', below: 10, message: 'Fixture parched' },
+      { need: 'fatigue', above: 90, message: 'Fixture exhausted' },
+    ],
+    badlyHurt: { below: 25, message: 'Fixture badly hurt' },
+  },
   fatigueRisePerGameHour: gamePerHour(4),
   restFatigueRecoveryPerGameHour: gamePerHour(5),
   sleepFatigueRecoveryPerGameHour: gamePerHour(10),
@@ -137,13 +160,15 @@ export const COMPRESSION_CAPS_FIXTURE: CompressionCaps = {
 
 export class Simulation extends CoreSimulation {
   constructor(
-    options: Omit<SimOptions, 'bodyTuning' | 'compressionCaps'> & {
+    options: Omit<SimOptions, 'bodyTuning' | 'compressionCaps' | 'clock'> & {
       bodyTuning?: BodyTuningDef;
       compressionCaps?: CompressionCaps;
+      clock?: ClockSettings;
     },
   ) {
     super({
       ...options,
+      clock: options.clock ?? BASE_CLOCK,
       bodyTuning: options.bodyTuning ?? BODY_TUNING_FIXTURE,
       compressionCaps: options.compressionCaps ?? COMPRESSION_CAPS_FIXTURE,
     });

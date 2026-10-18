@@ -19,7 +19,10 @@ import { Mood } from '../src/render/mood.ts';
 const scale = (label: string) => ({ label, min: 0.2, max: 0.9, default: 0.6 });
 const toggle = (label: string) => ({ label, default: true, options: [false, true] });
 const tuning: GraphicsOptions = {
-  renderScale: scale('Fixture scene'),
+  renderScale: {
+    ...scale('Fixture scene'),
+    adaptive: { enabled: true, targetRealMs: 10, min: 0.2, max: 0.9, step: 0.1, hysteresisRealMs: 1, sampleWindow: 4 },
+  },
   bloomScale: scale('Fixture bloom'),
   smallSunMap: toggle('Fixture shadow'),
   fastCamo: toggle('Fixture camo'),
@@ -36,6 +39,24 @@ it('validates graphics ranges, defaults and allowed toggle choices before admitt
   const invalid: GraphicsOptions[] = [
     { ...tuning, renderScale: { ...tuning.renderScale, min: 0.8, max: 0.3 } },
     { ...tuning, bloomScale: { ...tuning.bloomScale, default: 1 } },
+    {
+      ...tuning,
+      renderScale: {
+        ...tuning.renderScale,
+        adaptive: { ...tuning.renderScale.adaptive, min: tuning.renderScale.min / 2 },
+      },
+    },
+    {
+      ...tuning,
+      renderScale: { ...tuning.renderScale, adaptive: { ...tuning.renderScale.adaptive, sampleWindow: 0 } },
+    },
+    {
+      ...tuning,
+      renderScale: {
+        ...tuning.renderScale,
+        adaptive: { ...tuning.renderScale.adaptive, hysteresisRealMs: tuning.renderScale.adaptive.targetRealMs },
+      },
+    },
     { ...tuning, smallSunMap: { ...tuning.smallSunMap, options: [] } },
     { ...tuning, fastCamo: { ...tuning.fastCamo, options: [false] } },
     { ...tuning, coarseWeathering: { ...tuning.coarseWeathering, options: [true, true] } },
@@ -108,7 +129,7 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
   writeGraphicsSettings(tuning, { renderScale: tuning.renderScale.min, fastCamo: false }, storage);
   const params = writeGraphicsParams(new URLSearchParams(), tuning, { fastCamo: true });
   const controls = new GraphicsControls(tuning, targets, { debug: false, params, storage });
-  expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.min);
+  expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.min, true);
   expect(targets.mood.setBloomScale).toHaveBeenLastCalledWith(tuning.bloomScale.default);
   expect(targets.shadows.setSmallSunMap).toHaveBeenLastCalledWith(tuning.smallSunMap.default);
   expect(targets.meshes.setFastCamo).toHaveBeenLastCalledWith(false);
@@ -118,7 +139,7 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
   expect(targets.meshes.setCachedSurfaceNoise).toHaveBeenLastCalledWith(false);
   controls.clear('cachedSurfaceNoise');
   controls.clear('renderScale');
-  expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.default);
+  expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.default, false);
   expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
   const debug = new GraphicsControls(tuning, targets, { debug: true, params, storage });
   debug.set('fastCamo', false);
@@ -129,7 +150,12 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
 });
 
 it('mood scale setters enforce content bounds without the former URL trial floors', () => {
-  const mood = new Mood({} as WebGLRenderer, new Scene(), new PerspectiveCamera(), tuning);
+  const mood = new Mood(
+    { domElement: new EventTarget() } as unknown as WebGLRenderer,
+    new Scene(),
+    new PerspectiveCamera(),
+    tuning,
+  );
   mood.setRenderScale(tuning.renderScale.min);
   mood.setBloomScale(tuning.bloomScale.min);
   expect(mood.renderScale).toBe(tuning.renderScale.min);

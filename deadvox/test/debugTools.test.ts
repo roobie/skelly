@@ -8,7 +8,7 @@ import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { FISTS_MELEE, ZombieSystem } from '../src/core/zombies.ts';
+import { ZombieSystem } from '../src/core/zombies.ts';
 import { equipDebugBackpack, equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
@@ -16,6 +16,7 @@ import { startingLoadout } from '../src/game/loadout.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const registry = baseRegistry();

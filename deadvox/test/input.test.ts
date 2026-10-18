@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Input, nextMenuCursor } from '../src/game/input.ts';
+import { Input, nextMenuCursor, requestInputLock } from '../src/game/input.ts';
 import { keyboardInput, shouldCancelInputForViewerFocus } from '../src/game/inputBindings.ts';
 
 const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => boolean = () => true) => {
@@ -83,7 +83,8 @@ describe('pointer input', () => {
     expect(input.pitch).toBe(-0.2);
   });
   it('surfaces native pointer-lock refusal without an unhandled rejection', async () => {
-    const { input, target } = fixture();
+    const { input, target, document } = fixture();
+    document.pointerLockElement = null;
     const error = new Error('Pointer lock refused');
     vi.mocked(target.requestPointerLock).mockRejectedValue(error);
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -94,6 +95,33 @@ describe('pointer input', () => {
     } finally {
       warn.mockRestore();
     }
+  });
+  it('shares the gesture-time lock request with entry and permits a later fresh gesture after release', async () => {
+    const { input, target, document } = fixture();
+    document.pointerLockElement = null;
+    let grant!: () => void;
+    vi.mocked(target.requestPointerLock).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          grant = resolve;
+        }),
+    );
+
+    const pending = requestInputLock(target);
+    expect(target.requestPointerLock).toHaveBeenCalledOnce();
+    input.lock();
+    expect(target.requestPointerLock).toHaveBeenCalledOnce();
+    document.pointerLockElement = target;
+    grant();
+    await pending;
+    input.lock();
+    expect(target.requestPointerLock).toHaveBeenCalledOnce();
+
+    document.pointerLockElement = null;
+    input.lock();
+    expect(target.requestPointerLock).toHaveBeenCalledTimes(2);
+    grant();
+    await requestInputLock(target);
   });
   it('ignores viewer mouse transitions and look when the viewer is suppressed while live input remains admitted', () => {
     const run = (viewerAllowed: boolean, locked: boolean) => {

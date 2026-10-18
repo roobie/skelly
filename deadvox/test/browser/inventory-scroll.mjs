@@ -1,6 +1,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
 // biome-ignore-all lint/performance/noAwaitInLoops: one page and cursor; declared wheel trials cannot overlap
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +18,9 @@ const root = fileURLToPath(new URL('../..', import.meta.url));
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
 const RACK_GRID = [5, 6];
+const {
+  inventory: [baseInventoryRow],
+} = JSON.parse(readFileSync(resolve(root, 'src/content/base/inventory.json'), 'utf8'));
 const refusalSound = {
   source: 'inventory-scroll-sounds',
   data: {
@@ -40,7 +44,7 @@ const content = [
   {
     source: 'inventory-scroll-fixture',
     data: {
-      inventory: [{ id: 'player', containerMaxWidthCells: 5 }],
+      inventory: [{ ...baseInventoryRow, containerMaxWidthCells: 5 }],
       furniture: [
         {
           id: 'scroll_rack',
@@ -89,6 +93,8 @@ const content = [
 const fixture = `
 import '/src/ui/style.css';
 import uiFile from '/src/content/base/ui.json';
+import recipesFile from '/src/content/base/recipes.json';
+import { CORE_CONTENT_IDS } from '/src/core/contentIds.ts';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
@@ -96,11 +102,18 @@ import { HandlingQueue } from '/src/core/handling.ts';
 import { visibleGridName } from '/src/core/inventoryGridName.ts';
 import { buildBundledContent } from '/src/game/bundledContent.ts';
 const BUNDLED_CONTENT = buildBundledContent();
+import { requireDayCycle } from '/src/core/content.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
 import { applyUiTokens } from '/src/ui/uiTokens.ts';
-const { registry, issues } = buildRegistry([...${JSON.stringify(content)}, { source: 'ui.json', data: uiFile }]);
+const handlingSkills = recipesFile.skills.filter((skill) => skill.id === CORE_CONTENT_IDS.inventoryManagement);
+if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory skill');
+const { registry, issues } = buildRegistry([
+  ...${JSON.stringify(content)},
+  { source: 'ui.json', data: uiFile },
+  { source: 'inventory-skill-fixture', data: { skills: handlingSkills } },
+]);
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
 applyUiTokens(registry, document.documentElement);
 const inventory = new Inventory(registry);
@@ -160,11 +173,12 @@ let needsText = 'health 100% · stamina 100%';
 const dispatches = [];
 let capToken;
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
-  reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
+  reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: { ratio: requireDayCycle(BUNDLED_CONTENT.registry).clockRatio, start: 0 } }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
   body: () => body, character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
+  slotLabels: Object.fromEntries(['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, 'fixture ' + slot])),
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
@@ -206,7 +220,7 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
   useUiTuning(tuning) {
     const ui = buildRegistry([
       ${JSON.stringify(refusalSound)},
-      { source: 'ui-tuning-fixture', data: { ui: [{ id: 'core', refusalSound: 'player_nope', ...tuning }] } },
+      { source: 'ui-tuning-fixture', data: { ui: [{ ...BUNDLED_CONTENT.registry.ui.get('core'), refusalSound: 'player_nope', ...tuning }] } },
     ]);
     if (ui.issues.length) throw Error('Invalid UI tuning fixture: ' + JSON.stringify(ui.issues));
     applyUiTokens(ui.registry, document.documentElement);

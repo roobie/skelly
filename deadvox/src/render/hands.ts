@@ -46,12 +46,14 @@ import {
 } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { OpticLensFrame, OpticViewSettings } from '../core/opticView.ts';
 import { opticViewSettings, projectLensAperture } from '../core/opticView.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { HELD_DISPLAY_KIND } from '../core/schema.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { createCompass } from './compass.ts';
 import {
   type FirearmAction,
@@ -64,6 +66,7 @@ import {
   revolverOpenAmount,
   sampleActionPose,
 } from './firearmModel.ts';
+import { sightedFirearmModel } from './firearmSight.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
@@ -126,6 +129,9 @@ interface HeldReadiness {
   readonly progress: number;
   readonly aimingDownSights: boolean;
 }
+
+/** The hand a carried item's tree path is rooted in. */
+const HELD_ROOT_PATH = /^inventory\.hands\.(left|right)\./;
 
 export interface HeldHandlingFrame {
   readonly firearms: readonly HeldFirearmPose[];
@@ -262,8 +268,7 @@ export class HeldItems {
     this.restoreRummageSupport();
     this.sync();
     this.poseFirearms(firearmPoses);
-    const loweredPitchRadians =
-      this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.loweredPitchRadians ?? 0;
+    const { loweredPitchRadians } = firearmsCombatTuning(this.inventory.registry);
     const leadingSide = dominantSide(this.inventory.character);
     const readyPose = readiness ? readyFirearmPose(leadingSide) : undefined;
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;
@@ -480,9 +485,9 @@ export class HeldItems {
     item: Item | undefined;
     itemDefinition: ReturnType<typeof defOf> | undefined;
   }) {
-    const modelDefinition = itemDefinition?.model
-      ? this.inventory.registry.models.get(itemDefinition.model)
-      : undefined;
+    const baseModel = itemDefinition?.model ? this.inventory.registry.models.get(itemDefinition.model) : undefined;
+    const modelDefinition =
+      item && itemDefinition?.firearm ? sightedFirearmModel(this.inventory.registry, item) : baseModel;
     const firearmReadiness = handling.readiness?.uid === item?.uid ? readyAmount : 0;
     const aimingDownSights = Boolean(
       item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
@@ -1134,9 +1139,24 @@ export class HeldItems {
     arm.position.set(...transform.offset);
   }
 
+  /** The model drawn for an item: its own if held, else the held root's model that carries it (a mounted light). */
+  private shownModelOf(item: Item): Object3D | undefined {
+    const own = this.shown.get(item.uid);
+    if (own) {
+      return own;
+    }
+    for (const { item: found, path } of this.inventory.carriedTree()) {
+      if (found === item) {
+        const side = isInHeldItemSlotTree(path) ? (HELD_ROOT_PATH.exec(path)?.[1] as HandSide | undefined) : undefined;
+        return side && this.shown.get(this.inventory.hands[side]!.uid);
+      }
+    }
+    return undefined;
+  }
+
   /** Where a held item's lens is, in world metres; false if it isn't held. Call after `update`. */
   lensOf(item: Item, out: Vector3): boolean {
-    const lens = this.shown.get(item.uid)?.getObjectByName(LENS);
+    const lens = this.shownModelOf(item)?.getObjectByName(LENS);
     if (!lens) {
       return false;
     }

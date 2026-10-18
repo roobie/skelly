@@ -1,10 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -29,16 +26,12 @@ import {
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
+import { baseRegistry } from './baseRegistry.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
-const contentDir = join(import.meta.dirname, '../src/content/base');
-const { registry } = buildRegistry(
-  readdirSync(contentDir)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(contentDir, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 
 const dom = new Window();
 for (const key of [
@@ -135,7 +128,7 @@ function setup(contentRegistry = registry) {
     throwItem: () => undefined,
   };
   const hooks = {
-    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
+    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => [0, 0, 0] as [number, number, number],
     nearby: () => [...inv.piles.values()],
     distance: () => 0,
@@ -153,6 +146,16 @@ function setup(contentRegistry = registry) {
     character: () => character,
     body: () => body,
     needs: () => needs,
+    slotLabels: {
+      head: 'fixture head',
+      torso: 'fixture torso',
+      legs: 'fixture legs',
+      back: 'fixture back',
+      waist: 'fixture waist',
+      hands: 'fixture hands',
+      feet: 'fixture feet',
+      shoulder: 'fixture shoulder',
+    },
     wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
     attachmentCandidates: (_firearmUid: number, _slotId: string) => [beans],

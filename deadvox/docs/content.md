@@ -12,7 +12,9 @@ read_if:
   - you author decals or scenario outbreak age
   - you author a scenario, its start-building rooms or ways down, or move scenario rules from code into content
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
+  - you author or change the day cycle, the sky looks or the weather fog tuning
   - you change the debug kit ownership view
+  - you change settlement building eligibility, city collections or benchmark candidate admission
 ---
 
 # Content sections and recipes
@@ -94,9 +96,40 @@ playable-pack admission rather than inventing missing policy in a renderer. See
 `src/content/base/graphics.jsonnet`, `src/core/graphics.ts`, `GraphicsOptionsSchema`, and
 `src/core/content.ts`, `requiredContentIssues`.
 
+## Inventory action tunables and labels
+
+Inventory action timing and throw shape are tuning of the player's inventory row, and
+the label of an item action is player-facing text in the core ui row.
+Keeping them in content lets a mod retune or reword them without a code change. The schema
+requires every field, so a pack that omits one fails validation instead of silently
+inheriting a code default. Readers take the values from the registry. See
+`src/core/schema.ts`, `InventoryTuningSchema` and `UiTuningSchema`, and `src/core/reach.ts`,
+`reachTuning`.
+
+## Handling range
+
+The layout of the test range is content, so a mod can lay out its own range. The schema
+requires every field, with no code default. Each target carries its own lateral placement
+because fire runs down the lane: targets in line hide the farther ones, so validation
+rejects a layout where any target is hidden from the firing line, or sits outside the lane,
+rather than clamping it silently. See `src/core/schema.ts`, `HandlingRangeSchema`, and
+`src/core/rangeLayout.ts`, `handlingRangeIssues`.
+
 ## Weathering profiles
 
 Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `WeatheringSchema` in `src/core/schema.ts` and `referenceIssues` in `src/core/content.ts`. `configFromUrl` in `src/game/config.ts` selects the site profile.
+
+## Day cycle
+
+One required row owns how the day reads, sun and sky and fog together, and how long a game day lasts in play, so a mod that changes the latitude, the mood or the pace of the day needs no engine code. A new session takes the pace from content; a save keeps the pace it was saved with, and restoring it under different content is refused rather than silently retimed. Every field is required, with no code default and no fallback, so a pack that omits one fails to load rather than playing under a hidden look. Looks are keyed by solar phase so an author edits a phase, not an index, and colours are hex that authors can read.
+
+Where each look sits in its phase is content too, because it is timing tuning a pack may want, such as a longer deep night. The schema, not code, keeps the blend's invariant: keys run in cycle order and each sits strictly later than the one before, and the last stays short of the first a cycle later (the blend wraps from one to the other), and a violation is rejected with the field named, never clamped or reordered. How looks blend stays in code, as mechanism shared by every pack (`src/core/sky.ts`, `skyAt`). Tests take the cycle from base content through `test/dayPhaseFixture.ts` and never restate it. See `src/core/schema.ts`, `DayCycleSchema`, for what the row holds, and `src/core/weather.ts`, `skyInWeather`.
+
+## Footstep and vocal-noise tuning
+
+Footstep and vocal-noise tuning is a property of the player's body, so it lives in the player's sense row beside the other hearing tunables and a mod that changes the body needs no engine code. Every field is required, with no code default, so a pack that omits one fails to load. See `src/core/schema.ts`, `SenseSchema`.
+
+Two nearby constants stay in code on purpose. The stride-phase origin is mechanism: it aligns the first footfall with the shared gait phase that presentation and aim wobble also read, so a pack tuning spacing never needs it (`src/core/footsteps.ts`, `initialFootstepClock`). The hit-flinch duration is the length of mobgen's flinch clip, so a second copy in content could disagree with the animation it must match (`src/core/zombiePose.ts`, `HIT_FLINCH_DURATION`). Tests take the row from `test/senseFixture.ts`, `BASE_SENSE_TUNING`, and never restate it.
 
 ## Content test registries
 
@@ -123,11 +156,15 @@ Fixed loot takes eligibility from its resolved authored source context, not a co
 
 Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `siteGeneration` in `src/core/schema.ts`, `site-generation.json`, and `AuthoredSite` in `src/core/authoredSite.ts`.
 
-Every site kind shares one block palette in the same entry, so a block choice has a single content home. Hamlet-only choices (hedge and the template pools) sit apart in its `hamlet` field. Code reads them through `sitePalette` in `src/core/sitePalette.ts`; names that resolve to nothing are validation errors (`checkSiteGeneration` in `src/core/content.ts`), never a runtime fallback. The one exception is `benchmarkCityGrid` in `src/core/cityPlan.ts`, which has no registry and keeps the hamlet template list in `HAMLET_TEMPLATES` in `src/core/hamlet.ts` until the city sweep under #393 reads it from content.
+Terrain shape and the tree and forest tunables are required `siteGeneration` fields (see `src/core/schema.ts`, `siteGeneration`) with no code default, so a mod can reshape the landscape and woods without touching logic and a missing value fails validation instead of silently using a stale one. Code receives the terrain values as one explicit shape (`terrainShapeOf` in `src/core/sitePalette.ts`) rather than reading module constants, so every caller names the world it generates. Geometry, such as tree crowns and placement jitter, and bench-only mechanism values stay in code because they are not tuning a mod should change.
+
+Every site kind shares one block palette in the same entry, so a block choice has a single content home. Hamlet-only choices (hedge and the template pools) sit apart in its `hamlet` field. Code reads them through `sitePalette` in `src/core/sitePalette.ts`; names that resolve to nothing are validation errors (`checkSiteGeneration` in `src/core/content.ts`), never a runtime fallback.
+
+Keep site-placement tuning required so missing content fails validation rather than silently selecting a code default. See `src/core/schema.ts`, `SiteGenerationSchema`. Optional benchmark geometry belongs with its independent consumer, not required site-generation content; see `deadvox/docs/content.md`, "City building types".
 
 Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
-Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, "Spawning"; see `PaletteThingSchema` in `src/core/schema.ts` and `SPAWN_TIMES` in `src/core/clock.ts`.
+Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, "Spawning"; see `PaletteThingSchema` in `src/core/schema.ts` and `resolveSpawnTime` in `src/core/clock.ts`, which gives the names their times from the day cycle content.
 
 A map piece makes a cell a spawn point through a palette `spawn` entry with an optional `chance`; a 1x1x1 marker piece is air that claims its cell and carries one such entry. A slot offers weighted marker pieces, and its pick, drawn once when the assembly compiles, decides the zombie type, while `chance` rolls per world. Lab threat varies by overriding the slot choices; see `src/content/base/gauntlet-lab-threat.libsonnet`, `markerPiece`.
 
@@ -226,17 +263,23 @@ and `deadvox/docs/aftermath.md`, "Door variants".
 
 ### City building types
 
-The city pool is authored, not inferred from item usage or building names. Keep prevalence and guarantees in the scenario's named pool so a mod can tune them without changing geometry. Quotas guarantee specialty buildings; residential prevalence comes from weights alone. An impossible quota must fail loudly rather than silently omit a required building. Quota recovery stays bounded and deterministic rather than searching layouts. See `src/core/schema.ts`, `MapPoolSchema` and `PoolRefSchema`, and `src/core/cityPlan.ts`, `cityGridOf`, `cityPoolIssues`, `fillRow` and `buildCityPlan`.
+An authored collection owns prevalence and guarantees; each building owns its fit. Keeping those policies separate lets a mod tune prevalence without changing geometry and prevents collection membership from forcing an unsuitable building into a settlement. Eligibility uses content-named settlement kinds, not engine enums, and reuses the building's authored footprint for plot fit rather than maintaining a second size that can disagree with its geometry. Templates and assemblies follow the same admission rule. See `src/core/schema.ts`, `BuildingEligibilitySchema`, `TemplateSchema`, `MapAssemblySchema` and `MapPoolSchema`, `src/core/settlementPools.ts`, `eligibilityExclusion`, and `src/core/cityPlan.ts`, `cityGridOf`.
+
+Filtering must not hide an ineffective addition: a collection entry excluded for every consumer is a load error naming the collection, building and reasons. A consumer with no eligible weighted candidates also fails at load. A shared collection may legitimately serve different kinds or plot sizes, provided each entry serves at least one consumer. Quotas apply to admitted entries; impossible guarantees fail loudly, and recovery stays bounded and deterministic rather than searching layouts. See `src/core/cityPlan.ts`, `settlementCollectionIssues`, `cityPoolIssues`, `chooseBuilding` and `buildCityPlan`.
+
+The stress-test benchmark owns an independent named pool because the hamlet roster means “place each entry”, not “draw candidates”. Reusing that roster silently turns repetition into weight and lets a hamlet edit change the benchmark workload. Benchmark definitions are optional scenario content, not core requirements or playable reachability sources; a stack without a benchmark can still validate. See `src/content/base/benchmark-city.jsonnet`, `cityBenchmarks` and `mapPools`, `src/core/cityPlan.ts`, `benchmarkCityGrid`, and `src/core/content.ts`, `REQUIRED_CORE_CONTENT`. Classification follows `docs/pack-split.md`, "Classification rule".
+
+Pools and eligibility remain static content so they can become inputs to an expression selector without competing with it. There is no separate selector language here. Additive mod admission waits for the typed merge mechanism in `docs/decisions/0007-typed-field-patches.md`, "Decision"; collection ownership does not imply that list additions are already implemented.
 
 Special buildings must be deliberately designed and curated as plausible places, not generic rooms with different loot. Room function, furnishings, circulation and supplies must agree: a police station needs public reception, working desks, holding cells and a small secured armoury. The gauntlet requires exactly one police station. Its structure should read as a municipal masonry building, not a timber house; wooden furniture and door leaves do not imply wooden partitions or ceilings. See `src/content/base/gauntlet-city-police.libsonnet`, `piece`; `src/content/base/gauntlet-city-building-types.libsonnet`, `mapAssemblies`; and `src/content/base/scenarios.jsonnet`, `mapPools`.
 
 Loose furniture in abandoned buildings should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-city-police.libsonnet`, `chairSlots`.
 
-Keep type geometry separate from the pool, and the pool separate from the scenario, so changing prevalence never requires editing a building or restating the scenario: a mod changes one building's weight by overriding the pool by id. Referenced assemblies, pieces, styles and loot tables remain independently overridable by id. See `src/content/base/scenarios.jsonnet` and `src/core/content.ts`, `buildRegistry`.
+Keep geometry, collection and consumer independently overridable so a prevalence edit need not restate a building or a scenario. See `src/content/base/scenarios.jsonnet`, `mapPools`, and `src/core/content.ts`, `buildRegistry`.
 
 Supply shops supplement the houses, while police stations and gun shops remain scarce. Their civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. Medical tents provide treatment supplies rather than a guaranteed full kit. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-city-building-types.libsonnet`, `src/content/base/gauntlet-city-medical.libsonnet`, and `src/core/loot.ts`, `lootTypeIssue`.
 
-The edge ring is a second pool on the city, `city.ring`, with a setback from the wall. Its slots go through the same weighted choice and quotas as the grid, so a ring pool is authored and validated like the city pool, and a ring naming a missing pool fails validation with its path. The ring pool's quotas are checked against the ring's own slots, and the city pool's guaranteed slots leave ring slots out. A ring needs a perimeter to back onto. The ring reuses ordinary buildings, so population takes ring spawns from template markers, not the street-frontage groups that give the grid its settlement pressure; a ring building has no street frontage to group by.
+The edge ring follows the same admission and selection policy as the street grid, but its guarantees must fit its own slots rather than borrowing grid capacity. It needs a perimeter to back onto. Population uses authored markers because a ring building has no street frontage to group by. See `src/core/cityPlan.ts`, `cityPoolIssues` and `fillRing`, and `src/core/gauntlet.ts`, `GauntletSite`.
 
 Every shop shows a street cue that no house carries, and no two shop types share one, so a player walking the street can tell a shop from a house, and one kind of shop from another, before entering. The cue is built from blocks that only shop fronts use, on the street face and in the yard in front of it. A cue prop must never narrow what a standing player or shambler can walk: the yard cells in front of a door keep full standing headroom, so a prop that hangs over the yard goes above the standing body, not at head height. The rule is data-only, with no code special cases per shop type. See `src/content/base/gauntlet-city-building-types.libsonnet`, `shell`, and `test/cityKitPlan.test.ts`, "gauntlet shop fronts".
 

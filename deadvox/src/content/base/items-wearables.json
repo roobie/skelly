@@ -37,7 +37,7 @@
         "encumbrance": 10,
         "slot": "legs",
         "warmth": 10,
-        "wearPerHit": 0.01
+        "wearPerDamage": 0.0011999999999999999
       },
       "weight": 700
     },
@@ -78,7 +78,7 @@
         "encumbrance": 12,
         "slot": "legs",
         "warmth": 12,
-        "wearPerHit": 0.01
+        "wearPerDamage": 0.0011999999999999999
       },
       "weight": 800
     },
@@ -104,7 +104,7 @@
         "encumbrance": 8,
         "slot": "torso",
         "warmth": 25,
-        "wearPerHit": 0.012
+        "wearPerDamage": 0.0015
       },
       "weight": 600
     },
@@ -140,7 +140,7 @@
         "encumbrance": 12,
         "slot": "torso",
         "warmth": 35,
-        "wearPerHit": 0.0080000000000000002
+        "wearPerDamage": 0.001
       },
       "weight": 1200
     },
@@ -181,7 +181,7 @@
         "encumbrance": 6,
         "slot": "torso",
         "warmth": 5,
-        "wearPerHit": 0.014999999999999999
+        "wearPerDamage": 0.002
       },
       "weight": 900
     },

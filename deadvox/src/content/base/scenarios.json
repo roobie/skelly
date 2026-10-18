@@ -164,6 +164,7 @@
           "setback": 7
         },
         "rows": 4,
+        "settlementKind": "city",
         "street": 12,
         "streetProps": ["gauntlet_street_cars"]
       },

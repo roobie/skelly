@@ -8,6 +8,7 @@ import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { CONTACT_SKIN, stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { TemplateDef } from '../src/core/schema.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, placedPoint, type Turn } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
@@ -190,6 +191,7 @@ describe('explicit storeys and ordinary-block flights', () => {
     const world = new World();
     const terrain = {
       seed: 1,
+      shape: terrainShapeOf(registry),
       scale,
       blocks: {
         grass: registry.blockIds.get('grass')!,
