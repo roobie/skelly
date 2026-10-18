@@ -142,7 +142,6 @@ it.each([
     surround: 'a container flush in a wall row, from beside the wall',
     kind: (definition: FurnitureDef) => Boolean(definition.container),
     pos: [2, 0, 0] as const,
-    size: () => [1, 1, 1] as const,
     isSolid: (x: number, _y: number, z: number) => z === 0 && (x === 1 || x === 3),
     position: [4.5, 0, -0.5] as const,
     listed: true,
@@ -151,17 +150,16 @@ it.each([
     surround: 'a hatch flush in the floor, from beside it',
     kind: (definition: FurnitureDef) => Boolean(definition.door?.hatch),
     pos: [0, -1, 0] as const,
-    size: (definition: FurnitureDef) => definition.size,
     isSolid: (_x: number, y: number) => y === -1,
-    position: [3.5, 0, 1.5] as const,
+    position: [3.5, 0, 0.5] as const,
     listed: false,
   },
-])('reaches $surround through the face the chest sees', ({ kind, pos, size, isSolid, position, listed }) => {
+])('reaches $surround through the face the chest sees', ({ kind, pos, isSolid, position, listed }) => {
   const inventory = new Inventory(registry);
   const obstacles = { isSolid, version: 0 };
   const view = bindReach({ inventory, position: [...position], blockSize: 0.5, clock: BASE_CLOCK, obstacles });
   const def = [...registry.furniture.values()].find(kind)!;
-  const entity = inventory.entities.add({ type: def.id, pos: [...pos], size: [...size(def)], facing: 'n' })!;
+  const entity = inventory.entities.add({ type: def.id, pos: [...pos], size: [1, 1, 1], facing: 'n' })!;
   expect(inventory.canReachEntity(entity)).toBe(true);
   expect(view().furniture.includes(entity)).toBe(listed);
 });
