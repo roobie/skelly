@@ -1,3 +1,5 @@
+import bundledModList from '../config/bundled-mods.json' with { type: 'json' };
+import { bundledModCatalogue } from '../core/bundledModCatalogue.ts';
 import type { ContentIssue } from '../core/content.ts';
 import { type BrowserMod, evaluateMods } from './browserMods.ts';
 import { baseSources, type StartupContent } from './bundledContent.ts';
@@ -17,10 +19,12 @@ interface Row {
 }
 type Factors = Readonly<Record<keyof typeof BEGINNER_FACTORS, number>>;
 
+/** Builds a mod's data from the base sources, so base tuning changes carry through. */
+type Derive = (base: readonly { data: unknown }[]) => Record<string, unknown>;
+
 interface BundledMod {
   id: string;
-  /** Builds the mod's data from the base sources, so base tuning changes carry through. */
-  derive: (base: readonly { data: unknown }[]) => Record<string, unknown>;
+  derive: Derive;
 }
 
 const baseRows = (base: readonly { data: unknown }[], section: string): Row[] => {
@@ -49,15 +53,21 @@ const scaleHostile = (row: Row, factors: Factors): Row => {
   return out;
 };
 
-const BUNDLED_MODS: readonly BundledMod[] = [
-  {
+const DERIVATIONS: Readonly<Record<string, Derive>> = {
+  beginner: (base) => ({
     id: 'beginner',
-    derive: (base) => ({
-      id: 'beginner',
-      zombies: baseRows(base, 'zombies').map((row) => scaleHostile(row, BEGINNER_FACTORS)),
-    }),
-  },
-];
+    zombies: baseRows(base, 'zombies').map((row) => scaleHostile(row, BEGINNER_FACTORS)),
+  }),
+};
+
+// The list is content so the site launcher reads the same file; an entry with no derivation is an error.
+const BUNDLED_MODS: readonly BundledMod[] = bundledModCatalogue(bundledModList).map(({ id }) => {
+  const derive = Object.hasOwn(DERIVATIONS, id) ? DERIVATIONS[id] : undefined;
+  if (!derive) {
+    throw new Error(`Bundled mod "${id}" has no derivation`);
+  }
+  return { id, derive };
+});
 
 export const bundledModIdsFromUrl = (params: URLSearchParams): string[] => {
   const value = params.get('mods');
