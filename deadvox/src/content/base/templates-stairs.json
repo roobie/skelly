@@ -670,6 +670,7 @@
       "palette": {
         ".": "air",
         "C": {
+          "fixed": true,
           "furniture": "kitchen_cupboard",
           "loot": "stairs_demo_shells"
         },

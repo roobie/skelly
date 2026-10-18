@@ -340,6 +340,7 @@
         "w": "brick",
         "C": {
           "furniture": "kitchen_cupboard",
+          "fixed": true,
           "loot": "stairs_demo_shells"
         }
       },

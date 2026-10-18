@@ -10,8 +10,8 @@ local item(id, weight, count=null, condition=null) =
   + (if count == null then {} else { count: count })
   + (if condition == null then {} else { condition: condition });
 local nothing(weight) = { nothing: true, weight: weight };
-local at(furniture, x, z, facing='n', loot=null) =
-  { furniture: furniture, x: x, z: z, facing: facing, loot: loot };
+local at(furniture, x, z, facing='n', loot=null, fixed=false) =
+  { furniture: furniture, x: x, z: z, facing: facing, loot: loot, fixed: fixed };
 local shambler(x, z) = { x: x, z: z, spawn: true };
 // Placements stay in two bands, rows 6-7 and rows 10-11. Rows 4-5 are the lane a body walks between
 // the entry anchor, the stair landings and the street door, so they stay clear.
@@ -19,7 +19,7 @@ local scenes = [
   {
     id: 'meal', beats: 1, weight: 3,
     things: [
-      at('kitchen_cupboard', 0, 11, loot='gauntlet_home_kitchen'),
+      at('kitchen_cupboard', 0, 11, loot='gauntlet_home_kitchen', fixed=true),
       at('desk', 2, 6), at('chair', 1, 6, 'e'), at('chair', 5, 7),
     ],
   },
@@ -55,7 +55,7 @@ local scenes = [
   },
   {
     id: 'calm', beats: 0, weight: 2,
-    things: [at('crate', 0, 10), at('kitchen_cupboard', 12, 11), at('chair', 6, 6, 's')],
+    things: [at('crate', 0, 10), at('kitchen_cupboard', 12, 11, fixed=true), at('chair', 6, 6, 's')],
   },
 ];
 assert std.all([scene.beats <= 1 for scene in scenes]) : 'a room holds at most one beat';
@@ -96,6 +96,7 @@ local piece(level, scene) =
       [thing.char]: { furniture: thing.furniture }
                     + (if thing.facing == 'n' then {} else { facing: thing.facing })
                     + (if thing.loot == null then {} else { loot: thing.loot })
+                    + (if thing.fixed then { fixed: true } else {})
       for thing in things
     },
     layers: grid(cell),

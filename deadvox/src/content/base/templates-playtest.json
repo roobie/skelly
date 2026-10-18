@@ -368,6 +368,7 @@
           "furniture": "fridge"
         },
         "K": {
+          "fixed": true,
           "furniture": "kitchen_cupboard"
         },
         "R": {
@@ -549,6 +550,7 @@
         "#": "brick",
         ".": "air",
         "C": {
+          "fixed": true,
           "furniture": "counter",
           "loot": "snacks"
         },
@@ -559,6 +561,7 @@
           "furniture": "fridge"
         },
         "K": {
+          "fixed": true,
           "furniture": "kitchen_cupboard",
           "loot": "kitchen_cupboard"
         },
@@ -850,6 +853,7 @@
         "#": "brick",
         ".": "air",
         "C": {
+          "fixed": true,
           "furniture": "counter",
           "loot": "snacks"
         },

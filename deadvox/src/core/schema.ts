@@ -243,6 +243,15 @@ const InventoryTuningSchema = strictObject({
   throwFlightSimSeconds: Positive,
   /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
   throwArcHeightMetres: NonNegative,
+  /** Carrying furniture in both hands (`DESIGN.md`, "Moving furniture"). */
+  furnitureMove: strictObject({
+    /** The largest piece the player can lift, along each side. */
+    maxSizeMetres: Positive,
+    /** Stamina spent to lift a piece. */
+    liftStamina: NonNegative,
+    /** Stamina spent per Sim second of carrying; running out drops the piece. */
+    carryStaminaPerSimSecond: SimRate,
+  }),
 });
 
 const UiTuningSchema = strictObject({
@@ -1274,6 +1283,8 @@ const PaletteThingSchema = pipe(
     facing: optional(picklist(['n', 'e', 's', 'w'])),
     /** Initial lock state, only on a door; ids are unique within an authored site. */
     lock: optional(DoorLockSchema),
+    /** Fastened where it stands, like a fitted cupboard, so the player can't move it. */
+    fixed: optional(literal(true)),
     /** A zombie type that may stand here; the cell itself is air. */
     spawn: optional(Id),
     chance: optional(Fraction),
@@ -1288,8 +1299,10 @@ const PaletteThingSchema = pipe(
   ),
   check((e) => e.spawn !== undefined || e.window === undefined, '"window" only goes with "spawn"'),
   check(
-    (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined && e.lock === undefined),
-    '"loot", "facing" and "lock" only go with "furniture"',
+    (e) =>
+      e.furniture !== undefined ||
+      (e.loot === undefined && e.facing === undefined && e.lock === undefined && e.fixed === undefined),
+    '"loot", "facing", "lock" and "fixed" only go with "furniture"',
   ),
   check((e) => e.spawn !== undefined || e.chance === undefined, '"chance" only goes with "spawn"'),
 );

@@ -51,10 +51,10 @@
           "furniture": "wood_door"
         },
         "K": {
-          "furniture": "kitchen_cupboard"
+          "furniture": "kitchen_cupboard", "fixed": true
         },
         "C": {
-          "furniture": "counter"
+          "furniture": "counter", "fixed": true
         },
         "F": {
           "furniture": "fridge"
@@ -231,11 +231,11 @@
           "furniture": "sofa"
         },
         "J": {
-          "furniture": "kitchen_cupboard",
+          "furniture": "kitchen_cupboard", "fixed": true,
           "facing": "w"
         },
         "G": {
-          "furniture": "counter",
+          "furniture": "counter", "fixed": true,
           "facing": "w"
         },
         "F": {
@@ -417,7 +417,7 @@
           "loot": "snacks"
         },
         "C": {
-          "furniture": "counter",
+          "furniture": "counter", "fixed": true,
           "loot": "snacks"
         },
         "F": {
@@ -599,7 +599,7 @@
           "loot": "snacks"
         },
         "C": {
-          "furniture": "counter",
+          "furniture": "counter", "fixed": true,
           "loot": "snacks"
         },
         "F": {

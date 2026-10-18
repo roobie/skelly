@@ -170,6 +170,7 @@ export const furnitureOf = (
           size: piece.size,
           facing: piece.facing,
           ...(piece.lock ? { lock: piece.lock } : {}),
+          ...(piece.fixed ? { fixed: true as const } : {}),
         },
         loot: [],
       })),
