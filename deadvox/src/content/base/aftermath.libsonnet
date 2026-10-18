@@ -29,8 +29,8 @@ local fill(size, char) = [[std.join('', [char for x in std.range(1, size[0])]) f
   furniture: [
     tipped('chair_on_back', 'chair', 'Chair on its back', forward, 1, ['rest']),
     tipped('chair_on_side', 'chair', 'Chair on its side', sideways, 0, ['rest']),
-    // An appearance needs a container, so an overturned crate is empty and decorative.
-    tipped('crate_overturned', 'crate', 'Overturned crate', [0, 1, 2], 0, ['appearance', 'container', 'loot']),
+    // Empty and decorative. The crate is mirror-symmetric, so no axis reverses; mirroring would only add float noise below zero.
+    tipped('crate_overturned', 'crate', 'Overturned crate', [0, 1, 2], -1, ['container', 'loot']),
     tipped('shelf_fallen', 'shelf', 'Fallen shelf', forward, 1, []),
     tipped('shelf_on_side', 'shelf', 'Shelf on its side', sideways, 0, []),
     tipped('wardrobe_fallen', 'wardrobe', 'Fallen wardrobe', forward, 1, []),

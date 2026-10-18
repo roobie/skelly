@@ -276,9 +276,9 @@
       "id": "headlamp",
       "light": {
         "beam": {
-          "angleDegrees": 24,
+          "angleDegrees": 48,
           "decay": 1,
-          "penumbra": 0.34999999999999998,
+          "penumbra": 0.5,
           "spill": {
             "enabled": false,
             "intensity": 0.17999999999999999,
