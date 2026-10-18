@@ -411,13 +411,6 @@ describe('content', () => {
     expect(weightedDamage(runner.attack.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack.moves));
   });
 
-  it('makes arterial bleeding less likely but possible on the torso', () => {
-    const arterial = baseRegistry.body.get('player')!.bleeding.tiers.find(({ id }) => id === 'arterial')!;
-
-    expect(arterial.regionFactor?.torso).toBeLessThan(1);
-    expect(arterial.chance.pierce * arterial.regionFactor!.torso!).toBeGreaterThan(0);
-  });
-
   it('rejects negative and unknown bleeding region factors', () => {
     const body = baseRegistry.body.get('player')!;
     const withRegionFactor = (regionFactor: Record<string, number>) => ({

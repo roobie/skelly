@@ -802,18 +802,28 @@ and `src/game/player.ts`, `physicsFor`.
 
 Bleeding tiers are content-owned: tuning a tier changes content, not mechanism.
 Wound severity moves continuously within tier bands so closure and dressing
-reduce it gradually rather than in jumps. Each hit makes one deterministic tier
-roll using damage kind and region; a stronger result replaces a milder tier,
-never the reverse. A weaker hit cannot reduce existing bleeding, so hit order
-cannot heal. Arteries remain possible in the torso, but less likely. See
-`BleedingTierSchema` in `src/core/schema.ts` and `bleedingWound` plus
-`Body.bleedingTierForHit` in `src/core/body.ts`.
+reduce it gradually rather than in jumps. Damage drives wound thresholds and
+outer-layer wear for both blows and continuous exposure: a stronger burn must
+corrode faster without depending on frame size. A blow is one exposure; continuous
+contact and its lingering burn retain a single wound draw per region and damage
+kind. Accumulating damage can cross stronger thresholds, but cannot heal an
+existing wound. See `src/core/body.ts`, `Body.bleedingTierForHit` and
+`bleedingWound`; `src/core/damageExposure.ts`, `DamageExposures`.
 
-Attacks author their move and possible body regions. Worn armour and clothing
-take wear but do not change damage, damage kind, or bleeding chance. Move choices
-are authored in `src/content/base/zombies.jsonnet`, `attack.moves`.
-`pickZombieHitRegion` in `src/core/zombies.ts` and `wearOnPlayerHit` in
-`src/core/wear.ts` apply those choices and armour wear.
+Lingering damage belongs to the damage kind, not a particular enemy. Its rate
+tapers linearly after contact ends, and re-entry before it ends retains the
+exposure's damage and draw. Ending an exposure early removes the burn, not damage,
+wear or wounds already taken. Long actions cannot run during contact or its tail;
+a persistent refusal owns that constraint instead of an interrupt every step.
+Blows still interrupt when they land. See `src/core/sim.ts`, `Simulation.expose`,
+`Simulation.leaveExposure`, `Simulation.endExposure` and `Simulation.actionRefusal`;
+`src/core/longAction.ts`, `LongActions.interruptExposure`.
+
+Worn armour and clothing take damage-proportional wear but do not mitigate flesh
+damage or bleeding chance. Keeping wear at the shared impact boundary prevents
+falls, projectiles and lingering damage from bypassing it. See
+`src/core/wear.ts`, `wearOnPlayerHit`; `src/core/sim.ts`, `Simulation.impact`;
+`src/game/session.ts`, `createSession`.
 
 Modifier ownership follows the actor supplying the effect, not its target.
 `src/core/body.ts`, `Body.modified`, resolves the player's bodily values;

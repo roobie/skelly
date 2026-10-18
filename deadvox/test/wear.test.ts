@@ -33,7 +33,7 @@ const hitRegistry = buildRegistry([
           category: 'clothing',
           weight: 100,
           size: [1, 1],
-          wearable: { slot: 'head', encumbrance: 0, wearPerHit: 0.1 },
+          wearable: { slot: 'head', encumbrance: 0, wearPerDamage: 0.1 },
         },
       ],
     },
@@ -66,9 +66,9 @@ describe('item wear', () => {
     const otherWorn = inventory.create(other);
     expect(inventory.add(worn, { kind: 'worn' })).toBe(true);
     expect(inventory.add(otherWorn, { kind: 'worn' })).toBe(true);
-    const rate = hitRegistry.items.get(item)!.wearable!.wearPerHit!;
+    const rate = hitRegistry.items.get(item)!.wearable!.wearPerDamage!;
 
-    wearOnPlayerHit(inventory, region, 1);
+    wearOnPlayerHit(inventory, region, 1, 1);
 
     expect(worn.condition).toBe(1 - rate);
     expect(otherWorn.condition).toBe(1);
@@ -78,11 +78,11 @@ describe('item wear', () => {
     const inventory = new Inventory(hitRegistry);
     const outer = inventory.create('jacket');
     expect(inventory.add(outer, { kind: 'worn' })).toBe(true);
-    const rate = hitRegistry.items.get('jacket')!.wearable!.wearPerHit!;
+    const rate = hitRegistry.items.get('jacket')!.wearable!.wearPerDamage!;
     const multiplier = 2;
 
-    wearOnPlayerHit(inventory, 'torso', multiplier);
+    wearOnPlayerHit(inventory, 'torso', 3, multiplier);
 
-    expect(outer.condition).toBeCloseTo(1 - rate * multiplier);
+    expect(outer.condition).toBeCloseTo(1 - rate * 3 * multiplier);
   });
 });

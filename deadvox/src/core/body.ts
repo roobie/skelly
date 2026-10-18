@@ -581,9 +581,8 @@ export class Body implements ModifierActor {
   }
 
   /**
-   * The index of the tier a hit opens, or undefined when it doesn't bleed. One roll in [0, 1): each tier the
-   * hit qualifies for (damage at least its `minDamage`) takes its chance for the hit's kind, scaled by the
-   * content region factor, as its share of the roll, so no kind is ruled out.
+   * One roll is retained throughout an exposure. Increasing accumulated damage crosses random tier
+   * thresholds without making the outcome depend on how many simulation steps delivered it.
    */
   bleedingTierForHit(damage: number, region: BodyRegion, kind: DamageKind, roll: number): number | undefined {
     const { tiers } = this.tuning.bleeding;
@@ -593,7 +592,8 @@ export class Body implements ModifierActor {
       if (damage < tier.minDamage) {
         continue;
       }
-      share += this.modified('bleeding.chance', tier.chance[kind]) * (tier.regionFactor?.[region] ?? 1);
+      share +=
+        this.modified('bleeding.chance', tier.chancePerDamage[kind]) * damage * (tier.regionFactor?.[region] ?? 1);
       if (roll < share) {
         return index;
       }

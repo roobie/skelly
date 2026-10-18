@@ -26,7 +26,10 @@ const PIERCE_ALWAYS_BLEEDS: BodyTuningDef = {
   ...BODY_TUNING_FIXTURE,
   bleeding: {
     ...BODY_TUNING_FIXTURE.bleeding,
-    tiers: tiers.map((tier, index) => ({ ...tier, chance: { ...tier.chance, pierce: index === 0 ? 1 : 0 } })),
+    tiers: tiers.map((tier, index) => ({
+      ...tier,
+      chancePerDamage: { ...tier.chancePerDamage, pierce: index === 0 ? 1 : 0 },
+    })),
   },
 };
 /** The test's own treatments by item type; the dressing closes every fixture band at any roll. */
