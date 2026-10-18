@@ -1,4 +1,4 @@
-import { Box3, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { Box3, Color, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -120,7 +120,13 @@ describe('furniture detail', () => {
     for (let vertex = 0; vertex < colors.count; vertex++) {
       painted.add([colors.getX(vertex), colors.getY(vertex), colors.getZ(vertex)].map((c) => c.toFixed(3)).join());
     }
-    expect(painted.size).toBe(2);
+    const expected = new Set(
+      ['#ff0000', '#102030'].map((hex) => {
+        const color = new Color(hex);
+        return [color.r, color.g, color.b].map((c) => c.toFixed(3)).join();
+      }),
+    );
+    expect(painted).toEqual(expected);
   });
 
   it('rejects detail on furniture whose other visual authority would hide it', () => {
