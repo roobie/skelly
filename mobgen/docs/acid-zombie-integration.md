@@ -8,10 +8,32 @@ read_if:
 
 # Acid zombie integration plan
 
-BR approved the ground-up acid zombie from the m8 study. The study built
-it in a standalone copy of mobgen's core, so nothing of it is in skelly yet. This plan says
-how it lands and why in that order. What the model must show stays in
-`deadvox/docs/acid-zombie.md`, "Model".
+The ground-up acid zombie from the m8 study is approved. The study built it in a standalone
+copy of mobgen's core, so nothing of it is in skelly yet. This plan says how it lands and
+why in that order. What the model must show stays in `deadvox/docs/acid-zombie.md`, "Model",
+and its behaviour, including acid immunity and the leg-burning puddle, stays in that doc's
+other sections.
+
+## Body rules the plan starts from
+
+These are settled, and every round below builds on them:
+
+- **The sac is part of the torso.** It has no hit region of its own, and shooting it is a
+  torso hit. It is cosmetic for this tier, and it stays a distinct bone because later tiers
+  of the line may give it effects.
+- **The sac bursts only on death, and only cosmetically.** No simulation outcome depends on
+  it.
+- **The wind-up brightens only the sac.** The eyes keep a fixed glow, so the sac alone
+  carries the telegraph.
+- **Size:** taller and bulkier than a shambler, between 1.1 and 1.25 times its size, so it
+  stands out of a crowd at its range band.
+- **One sac and no growths.** Being built from the ground up already sets it apart from
+  shamblers, so it needs no further variation.
+- **Its own heavier gait and look-at profile,** not the shambler's.
+- **A crusted, hardened back,** which never severs.
+
+Acid immunity also covers the puddle, so the acid body needs no handling of its own for leg
+burns. Immunity is a property of the type's content, not of the body.
 
 ## Core delta
 
@@ -20,10 +42,10 @@ not be expressed without it, and each one is general, so it belongs in core rath
 an acid module:
 
 - **Bone frames, joint limits and a disposition** (`fixed`, `sever`, `burst`) on `Bone`
-  (`src/core/body.ts`). A sac that bursts instead of falling off, and a crusted shoulder that
+  (`src/core/body.ts`). A sac that never falls off but bursts on death, and a crusted back that
   never severs, are body facts, not Deadvox special cases.
 - **Materials as content.** The closed material list and the shared palette become a
-  per-template material table with colour and emissive strength. The acid glow and the sac
+  per-template material table with colour and glow. The acid glow and the sac
   colour are look tuning, which `PILLARS.md`, "Content forward compatibility" puts in content.
 - **Per-plan budgets and limb bones** on `BodyPlanDef` (`src/core/generate.ts`). The old
   shared scaling assumed humanoid height and head proportions, and a regex picked limb
@@ -126,18 +148,18 @@ humanoid lookup would find nothing.
 
 - **Hit regions.** Region membership moves from the humanoid constant into the body plan,
   so each plan says which of its bones form head, torso and limbs. Renaming acid bones to
-  humanoid names would hide that it is its own skeleton, and BR asked for a ground-up body.
-  The sac either becomes a new region whose hit bursts it, or folds into torso; that is
-  BR's call (below).
+  humanoid names would hide that it is its own skeleton. The sac's bone is listed under
+  torso, so no region or region name is added.
 - **Severing.** Severable subtrees come from the bone disposition rather than
   `src/mob/dismember.ts`, `SEVERABLE_PARTS`. The crowd gore mask already sizes itself from
   the widest body (`deadvox/src/render/mobActors.ts` passes the bone count to
   `crowdTextureLayout`), so the acid bone count needs no encoding change. The severed item
   each region leaves (`deadvox/src/core/zombieRegionNames.ts`, `SEVERED_ITEM`) names
-  shambler items, and whether acid parts get their own items is BR's call.
-- **Burst.** A burst bone is removed without leaving a severed item, and it can trigger an
-  effect. Its gameplay consequence (a splash on the attacker, or none) is a Deadvox design
-  choice that belongs in `deadvox/docs/acid-zombie.md`, not in mobgen.
+  shambler items, and what acid parts leave is an open choice (below).
+- **Death burst.** On death the sac's voxels are removed without leaving a severed item and
+  without any simulation consequence, so presentation reads death and the sac stays out of
+  saves and fingerprints. Keeping it a disposition rather than a Deadvox special case lets a
+  later tier attach an effect by data.
 - **Poses and gait.** `deadvox/src/core/zombiePose.ts` and the mobgen pose modules address
   humanoid bones by name. The acid body needs its own idle, walk, attack, hit-reaction and
   death poses, written against its bones and limits as the dog and crawler did. Its spit
@@ -146,13 +168,15 @@ humanoid lookup would find nothing.
   `skull`. The mouth that releases a spit should come from the model, replacing the grab
   height stand-in (`deadvox/src/core/zombies.ts`, `AcidSpitRelease`), because line of sight
   is checked from the mouth.
-- **Materials and glow.** Deadvox reads colour and emissive strength from the body's material
-  table. That keeps the glow a content value instead of a Deadvox list of glowing
-  material names. The wind-up brightening is per-actor state, so it rides the crowd data
-  texture beside the severed mask rather than being baked into the mesh.
-- **Spawn and scale.** The study measured at its own voxel size. Deadvox's `bodyScale` and
-  the shipped voxel size decide on-screen size, and matching the shambler's scale is BR's
-  call.
+- **Materials and glow.** Deadvox reads colour and glow from the body's material table. That
+  keeps the glow a content value instead of a Deadvox list of glowing material names. How
+  the glow renders is an open choice (below). The wind-up brightening is per-actor state
+  that touches only the sac's material, so it rides the crowd data texture beside the
+  severed mask rather than being baked into the mesh. The eyes have no per-actor channel.
+- **Scale.** The study measured at its own voxel size. On-screen size comes from the
+  template's proportions, Deadvox's `bodyScale` and the shipped voxel size together, and
+  the result must land in the size range above. The template carries the proportions, so a
+  later tier changes size by data.
 
 ### Far level of detail is its own later item
 
@@ -180,22 +204,24 @@ before it lands.
    hit-reaction and death poses, the look-at profile, and the mouth anchor. Done when: the
    viewer plays each pose within joint limits with feet on the ground, and a gaze test turns
    the skull.
-4. **Deadvox consumption** (hard coder). Add plan-owned region bones, disposition-driven
-   severing, the sac rule BR picks, the emissive material path and the per-actor wind-up glow,
-   the `acid` model id and the content switch off the placeholder shambler body, and flip
-   readiness. Done when: Deadvox validates and loads it; hits, severs and the sac behave by
-   BR's ruling in a browser smoke flow extended (not added) per `AGENTS.md`, "Tests"; and saves
-   round-trip.
-5. **Acid effects** (routine coder), only if BR wants them now: falling drips and burst
-   splash as presentation in `deadvox/src/render/acidEffects.ts`, `AcidEffects`. Done when:
-   the effects play without changing any simulation outcome.
+4. **Deadvox consumption** (hard coder). Add plan-owned region bones with the sac under
+   torso, disposition-driven severing, the cosmetic death burst, the chosen glow path with
+   the sac-only wind-up brightening, the `acid` model id and the content switch off the
+   placeholder shambler body, and flip readiness. Done when: Deadvox validates and loads it;
+   a shot on the sac counts as a torso hit, severs follow the dispositions, and death removes
+   the sac without changing any simulation outcome, in a browser smoke flow extended (not
+   added) per `AGENTS.md`, "Tests"; it stands in the ruled size range beside a shambler; and
+   saves round-trip.
+5. **Acid effects** (routine coder), timed by the open effects choice: falling drips and
+   the death splash as presentation in `deadvox/src/render/acidEffects.ts`, `AcidEffects`.
+   Done when: the effects play without changing any simulation outcome.
 
 The far level of detail follows as its own item, cross-mob, with an owner the lead routes.
 
 ## PR #832
 
-Close it unmerged. Its body reused the humanoid builder, which BR rejected in favour of a
-ground-up body. Its Deadvox wiring targets the humanoid skeleton and the old palette, both
+The recommendation is to close it unmerged. Its body reused the humanoid builder, and the
+approved body is built from the ground up instead. Its Deadvox wiring targets the humanoid skeleton and the old palette, both
 of which round 1 replaces. Its branch is far behind main, and carrying it forward would
 cost more than rewriting it.
 
@@ -204,23 +230,14 @@ brightness per actor through the crowd texture, which becomes the glow line in "
 Deadvox needs". Drips falling from the jaw are Deadvox presentation, not voxels, which is
 round 5. Its acid body design doc is superseded by this plan.
 
-## BR's choices
+## Open choices
 
-Each is one question for a card. Nothing above decides them.
+Only these remain open, and nothing above decides them:
 
-1. **Glow.** How does the acid read? Options: emissive acid material; bright colour only, no
-   emission; emissive with a translucent sac.
-2. **Effects timing.** When do drips and burst splash come? Options: with the Deadvox round;
-   drool voxels only, effects later; later as their own item.
-3. **Sac as a target.** What does shooting the sac do? Options: its own hit region that
-   bursts; part of torso with no burst; its own region that bursts and splashes the
-   attacker.
-4. **Scale.** How big is the acid zombie beside a shambler? Options: same scale as
-   the study; match shambler height; bulkier than a shambler by a content `bodyScale`.
-5. **Severed items.** What does a severed acid part leave? Options: reuse the shambler
-   items; new acid part items; nothing for now.
-6. **Far level of detail.** How should per-bone far meshes meet the triangle cap for every mob?
-   Options: one rigid silhouette mesh at distance; cheaper per-bone meshes; raise the cap
-   for few-per-scene mobs.
-7. **PR #832.** Close it unmerged as recommended? Options: close; keep it open as a
-   reference until round 4 lands.
+1. **Glow render path.** How the acid's glow is drawn. Round 4 builds whichever path is
+   chosen.
+2. **Effects timing.** When the drips and the death splash come, which decides whether
+   round 5 runs now.
+3. **Severed parts.** What a severed acid part leaves behind.
+4. **Far level of detail.** How per-bone far meshes meet the triangle cap for every mob.
+5. **PR #832.** Whether to close it unmerged as recommended.
