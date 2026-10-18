@@ -60,7 +60,7 @@ import type { Site } from '../core/site.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
@@ -694,7 +694,7 @@ export const createSession = (options: SessionOptions) => {
   } = restoreSessionAudio(restored, soundPicker);
 
   const admitSound = (
-    event: SoundEventId,
+    event: SoundId,
     position: Vec3,
     time: number,
     {
@@ -761,12 +761,12 @@ export const createSession = (options: SessionOptions) => {
     return true;
   };
   const playWorldSound = (
-    event: SoundEventId,
+    event: SoundId,
     position: Vec3,
     time = sim.time,
     meta: SoundEmissionMeta & { body?: MobBody } = {},
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
-  const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
+  const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
   const awardInventoryPractice = (): void => {
     const training = skillActivityPractice(registry, CORE_CONTENT_IDS.inventoryManagement, 'handling');

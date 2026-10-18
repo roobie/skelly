@@ -9,7 +9,6 @@ import {
   meleePoseAndContact,
 } from './meleePose.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import type { MeleeWeapon } from './zombies.ts';
 
 export interface MeleeActionState extends MeleeActionPose {
@@ -87,7 +86,7 @@ const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean 
     (Number.isFinite(weapon.limbDamageMultiplier) && weapon.limbDamageMultiplier > 0)) &&
   (weapon.speedMultiplier === undefined || (Number.isFinite(weapon.speedMultiplier) && weapon.speedMultiplier > 0)) &&
   [weapon.swingSound, weapon.hitSound, weapon.hitLayerSound].every(
-    (sound) => sound === undefined || SOUND_EVENT_IDS.includes(sound),
+    (sound) => sound === undefined || sound.length > 0,
   ) &&
   (weapon.type === undefined || MELEE_DAMAGE_KINDS.includes(weapon.type));
 

@@ -6,20 +6,20 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { SoundEventId } from '../src/core/soundEvents.ts';
+import type { SoundId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { hearVocalNoise } from '../src/core/zombies.ts';
-import { GameAudio, VOICE_CAPS } from '../src/game/audio.ts';
+import { GameAudio } from '../src/game/audio.ts';
 import { firearmShotEmission, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const audios: GameAudio[] = [];
-const GUNSHOT_CAP = VOICE_CAPS.get('gunshot')!;
-const SHOT_BURST = GUNSHOT_CAP + 1;
 const baseRegistry = startupContent().registry;
+const GUNSHOT_CAP = baseRegistry.sounds.get('gunshot')!.voiceCap!;
+const SHOT_BURST = GUNSHOT_CAP + 1;
 const senseTuning = {
   id: 'fixture_player',
   movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
@@ -147,7 +147,7 @@ const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
   const picker = new SoundPicker(53, registry.sounds);
   const selected: SoundEmission[] = [];
   // Playback tests supply selected emissions; GameAudio has no gameplay admission/picker API.
-  const play = (event: SoundEventId, position: Vec3, time: number, meta: SoundEmissionMeta = {}) => {
+  const play = (event: SoundId, position: Vec3, time: number, meta: SoundEmissionMeta = {}) => {
     const pick = picker.pick(event, time)!;
     const emission = {
       event,

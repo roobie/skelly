@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import type { Manifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import type { SoundId } from '../core/soundEvents.ts';
 import { HEARTBEAT_FILES, HEARTBEAT_TUNING, heartbeatForStamina } from '../game/audioPresentation.ts';
 
 export interface SoundTriggerGuide {
@@ -252,7 +252,6 @@ const TRIGGER_ENTRIES = [
       trigger: 'A thrown hand grenade goes off when its fuse runs out.',
       debugHint:
         '?debug=1&loadout=grenade: click the primary mouse button to pull the pin, tap T for the throwing stance, hold then release the primary mouse button to throw, and step back.',
-      note: 'Placeholder: the shotgun recording pitched down until a recorded blast is chosen.',
     },
   ],
   ['rifle_bolt_cycle', { trigger: 'Double-press R with the hunting rifle in hand to work the bolt.' }],
@@ -289,13 +288,12 @@ const TRIGGER_ENTRIES = [
   ],
   ['item_drop_wood', { trigger: 'Drop an item into a pile, or spill it onto the ground.' }],
   ['pouch_take', { trigger: 'Take an item out of a pocket on a worn item.' }],
-] satisfies readonly (readonly [SoundEventId, SoundTriggerGuide])[];
+] satisfies readonly (readonly [SoundId, SoundTriggerGuide])[];
 
-export const SOUND_TRIGGER_GUIDE = Object.fromEntries(TRIGGER_ENTRIES) as Record<SoundEventId, SoundTriggerGuide>;
-const ORDER = TRIGGER_ENTRIES.map(([id]) => id);
+export const SOUND_TRIGGER_GUIDE = Object.fromEntries(TRIGGER_ENTRIES) as Record<SoundId, SoundTriggerGuide>;
 
 /** BR's listening verdicts, joined into the existing guide note shown on /sounds.html. */
-const BR_STATUS_NOTES = new Map<SoundEventId, string>([
+const BR_STATUS_NOTES = new Map<SoundId, string>([
   ['player_hurt_light', 'Approved by BR (2026-10-02).'],
   [
     'player_nope',
@@ -404,7 +402,7 @@ interface SoundVariantGuide {
 }
 
 export interface SoundGuideEntry {
-  readonly id: SoundEventId;
+  readonly id: SoundId;
   readonly category: SoundDef['category'];
   readonly trigger: string;
   readonly debugHint: string | null;
@@ -494,12 +492,11 @@ export const renderHeartbeatSoundGuide = (
 export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest): SoundGuideEntry[] => {
   const byFile = assetSourcesByFile(manifest);
   const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
-  return ORDER.flatMap((id) => {
+  return TRIGGER_ENTRIES.flatMap(([id, trigger]: readonly [SoundId, SoundTriggerGuide]) => {
     const sound = definitions.get(id);
     if (!sound) {
       return [];
     }
-    const trigger: SoundTriggerGuide = SOUND_TRIGGER_GUIDE[id];
     return [
       {
         id,

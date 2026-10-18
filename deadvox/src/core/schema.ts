@@ -365,11 +365,11 @@ const WeaponSchema = strictObject({
     /** Overrides the weapon class's swing-speed multiplier. */
     speedMultiplier: optional(Positive),
     /** Swing presentation event; absent uses the shared swing. */
-    swingSound: optional(picklist(SOUND_EVENT_IDS)),
+    swingSound: optional(Id),
     /** Hit presentation event; absent uses the shared hit. */
-    hitSound: optional(picklist(SOUND_EVENT_IDS)),
+    hitSound: optional(Id),
     /** Played over the hit, such as a metal ring for a metal weapon. */
-    hitLayerSound: optional(picklist(SOUND_EVENT_IDS)),
+    hitLayerSound: optional(Id),
     type: picklist(MELEE_DAMAGE_KINDS),
   }),
 });
@@ -431,13 +431,13 @@ const FirearmSchema = strictObject({
   bolt: optional(vBoolean()),
   roundLoadSimSeconds: optional(PositiveSimSeconds),
   /** Shot presentation event; every firearm selects one, so a new gun needs no code edit. */
-  shotSound: picklist(SOUND_EVENT_IDS),
+  shotSound: Id,
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
-  suppressedShotSound: optional(picklist(SOUND_EVENT_IDS)),
+  suppressedShotSound: optional(Id),
   /** Trigger pulled on an empty chamber; absent stays silent. The revolver's cylinder has its own click. */
-  dryFireSound: optional(picklist(SOUND_EVENT_IDS)),
+  dryFireSound: optional(Id),
   /** Working the action by hand; absent uses the pump's rack or the shared charging handle. */
-  chargeSound: optional(picklist(SOUND_EVENT_IDS)),
+  chargeSound: optional(Id),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
@@ -757,6 +757,8 @@ const SoundSchema = strictObject({
   minIntervalSimSeconds: SimSeconds,
   category: picklist(['world', 'body', 'ui']),
   noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
+  /** Most voices of this sound at once; a new one steals the oldest so a burst stays bounded. Absent is uncapped. */
+  voiceCap: optional(pipe(Count, minValue(1, 'must be at least 1'))),
   wall: optional(
     strictObject({
       gain: pipe(NonNegative, maxValue(1, 'must be at most 1')),

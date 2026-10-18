@@ -19,7 +19,7 @@ import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
 import type { BodyTuningDef, CompressionCaps } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { SoundEventId } from './soundEvents.ts';
+import type { SoundId } from './soundEvents.ts';
 import type { SoundEmission } from './soundPicker.ts';
 import type { SimSeconds } from './time.ts';
 
@@ -29,7 +29,7 @@ export type SimEvent =
   | { kind: 'damage'; amount: number; cause: string }
   | { kind: 'death'; cause: string }
   | ({ kind: 'sound' } & SoundEmission)
-  | { kind: 'noise'; event: SoundEventId; position: Vec3; id: number; radiusMetres: number; expiresAt: number };
+  | { kind: 'noise'; event: SoundId; position: Vec3; id: number; radiusMetres: number; expiresAt: number };
 
 export type Timed<E> = E & { readonly time: number };
 

@@ -18,7 +18,6 @@ import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import type { HordeState, ZombieState, ZombieSystemState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
@@ -662,9 +661,9 @@ const meleeAction = nullable(
       headDamageMultiplier: opt(positive),
       limbDamageMultiplier: opt(positive),
       speedMultiplier: opt(positive),
-      swingSound: opt(enumeration(SOUND_EVENT_IDS)),
-      hitSound: opt(enumeration(SOUND_EVENT_IDS)),
-      hitLayerSound: opt(enumeration(SOUND_EVENT_IDS)),
+      swingSound: opt(str({ id: true })),
+      hitSound: opt(str({ id: true })),
+      hitLayerSound: opt(str({ id: true })),
       type: opt(enumeration(MELEE_DAMAGE_KINDS)),
     }),
   }),

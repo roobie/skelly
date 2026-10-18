@@ -45,7 +45,14 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
-const baseSounds = base.find(({ source }) => source === 'sounds.json')!;
+const baseSounds = {
+  source: 'sounds.json',
+  data: {
+    sounds: base
+      .filter(({ source }) => source.startsWith('sounds'))
+      .flatMap(({ data }) => (data as { sounds: unknown[] }).sounds),
+  },
+};
 const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
   const zombieFile = base.find((file) => file.source === 'zombies.json')!;
   const data = structuredClone(zombieFile.data) as {

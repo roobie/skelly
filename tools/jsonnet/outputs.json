@@ -173,6 +173,10 @@
       "output": "deadvox/src/content/base/sounds-revolver.json"
     },
     {
+      "source": "deadvox/src/content/base/sounds-weapons.jsonnet",
+      "output": "deadvox/src/content/base/sounds-weapons.json"
+    },
+    {
       "source": "deadvox/src/content/base/templates-cabins.jsonnet",
       "output": "deadvox/src/content/base/templates-cabins.json"
     },

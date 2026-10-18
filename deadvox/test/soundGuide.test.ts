@@ -14,10 +14,12 @@ import {
   SOUND_TRIGGER_GUIDE,
 } from '../src/ui/soundGuide.ts';
 
-const sounds = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as SoundDef[];
+// The listening sheet loads every sounds*.json content file.
+const sounds = readdirSync('src/content/base')
+  .filter((file) => file.startsWith('sounds') && file.endsWith('.json'))
+  .sort()
+  .flatMap((file) => JSON.parse(readFileSync(join('src/content/base', file), 'utf8')).sounds as SoundDef[]);
 const manifest = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as Manifest;
-// The listening sheet also loads the revolver rows.
-sounds.push(...(JSON.parse(readFileSync('src/content/base/sounds-revolver.json', 'utf8')).sounds as SoundDef[]));
 const heartbeatFixtureManifest = {
   sources: [
     {

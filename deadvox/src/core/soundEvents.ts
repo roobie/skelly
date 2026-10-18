@@ -1,4 +1,7 @@
-/** Sound events available to gameplay or exact-variant preview on the listening sheet. */
+/**
+ * Sound events the code plays by name, so content must define each one. Sounds that content
+ * selects, such as a weapon's shot or swing, stay out of this list: a new one needs no code edit.
+ */
 export const SOUND_EVENT_IDS = [
   'player_hurt_light',
   'player_nope',
@@ -20,16 +23,12 @@ export const SOUND_EVENT_IDS = [
   'shambler_step_wood',
   'shambler_step_leaves',
   'melee_swing',
-  'melee_swing_light',
-  'melee_swing_heavy',
   'melee_hit',
   'melee_hit_fist',
-  'melee_hit_metal',
   'gunshot',
   'gunshot_pbs1_reference',
   'gunshot_m4',
   'gunshot_m4_suppressed',
-  'gunshot_tikka',
   'revolver_shot',
   'revolver_dry_click',
   'revolver_crane_open',
@@ -48,8 +47,6 @@ export const SOUND_EVENT_IDS = [
   'magazine_round_strip',
   'magazine_change',
   'rifle_charge',
-  'rifle_bolt_cycle',
-  'firearm_dry_click',
   'item_drop_wood',
   'pouch_take',
   'amalgam_idle',
@@ -76,3 +73,6 @@ export const SOUND_EVENT_IDS = [
 ] as const;
 
 export type SoundEventId = (typeof SOUND_EVENT_IDS)[number];
+
+/** Any sound id in content; content validation checks that a selected one exists. */
+export type SoundId = string;

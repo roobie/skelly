@@ -41,7 +41,7 @@ import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { type SolidBricks, testedBricks } from './solidBricks.ts';
-import type { SoundEventId } from './soundEvents.ts';
+import type { SoundId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
@@ -166,9 +166,9 @@ export interface MeleeWeapon {
   readonly headDamageMultiplier?: number | undefined;
   readonly limbDamageMultiplier?: number | undefined;
   readonly speedMultiplier?: number | undefined;
-  readonly swingSound?: SoundEventId | undefined;
-  readonly hitSound?: SoundEventId | undefined;
-  readonly hitLayerSound?: SoundEventId | undefined;
+  readonly swingSound?: SoundId | undefined;
+  readonly hitSound?: SoundId | undefined;
+  readonly hitLayerSound?: SoundId | undefined;
   readonly type?: MeleeDamageType | undefined;
 }
 
@@ -579,7 +579,7 @@ export interface ZombieSystemOptions {
   onSevered?: (zombie: Zombie, region: ZombieRegion) => void;
   /** Sound-source position is in block coordinates; body is present when the shambler made the sound or was hit.
    * The player's own swing and hit set `playerMelee`, since content picks their events. */
-  onSound?: (event: SoundEventId, position: Vec3, body?: Zombie, playerMelee?: boolean) => void;
+  onSound?: (event: SoundId, position: Vec3, body?: Zombie, playerMelee?: boolean) => void;
   /** A spit left the mouth. No damage is applied here; the owner of the in-flight glob takes it from this. */
   onAcidSpit?: (release: AcidSpitRelease) => void;
   onAcidPlayerHit?: (hit: ZombiePlayerHit) => void;
@@ -921,7 +921,7 @@ const meleeOutcome = (killed: boolean, incapacitated: boolean, part: string | un
   return part ? 'severed' : 'nothing';
 };
 
-const meleeHitSounds = (weapon: MeleeWeapon, isFist: boolean): SoundEventId[] => {
+const meleeHitSounds = (weapon: MeleeWeapon, isFist: boolean): SoundId[] => {
   const hitSound = weapon.hitSound ?? (isFist ? 'melee_hit_fist' : 'melee_hit');
   return weapon.hitLayerSound === undefined ? [hitSound] : [hitSound, weapon.hitLayerSound];
 };

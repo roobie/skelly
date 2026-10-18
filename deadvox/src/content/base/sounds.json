@@ -81,30 +81,6 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
-      "id": "rifle_bolt_cycle",
-      "variants": ["assets/audio/rifle-bolt-cycle-01.ogg"],
-      "gain": 0.5,
-      "pitchJitter": [0.97, 1.03],
-      "gainJitter": [0.95, 1.05],
-      "minIntervalSimSeconds": 0,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
-    },
-    {
-      "id": "firearm_dry_click",
-      "variants": [
-        "assets/audio/firearm-dry-click-01.ogg",
-        "assets/audio/firearm-dry-click-02.ogg",
-        "assets/audio/firearm-dry-click-03.ogg"
-      ],
-      "gain": 0.3,
-      "pitchJitter": [0.95, 1.05],
-      "gainJitter": [0.95, 1.05],
-      "minIntervalSimSeconds": 0.15,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
-    },
-    {
       "id": "shotgun_hull_drop",
       "variants": [
         "assets/audio/shotgun-hull-01.ogg",
@@ -381,30 +357,6 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
-      "id": "melee_swing_light",
-      "variants": [
-        "assets/audio/melee-swing-light-01.ogg",
-        "assets/audio/melee-swing-light-02.ogg",
-        "assets/audio/melee-swing-light-03.ogg"
-      ],
-      "gain": 0.45,
-      "pitchJitter": [0.96, 1.06],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.3,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
-    },
-    {
-      "id": "melee_swing_heavy",
-      "variants": ["assets/audio/melee-swing-heavy-01.ogg"],
-      "gain": 0.6,
-      "pitchJitter": [0.86, 0.98],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.5,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
-    },
-    {
       "id": "melee_hit",
       "variants": [
         "assets/audio/melee-hit-01.ogg",
@@ -430,26 +382,13 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
-      "id": "melee_hit_metal",
-      "variants": [
-        "assets/audio/melee-hit-metal-01.ogg",
-        "assets/audio/melee-hit-metal-02.ogg",
-        "assets/audio/melee-hit-metal-03.ogg"
-      ],
-      "gain": 0.35,
-      "pitchJitter": [0.95, 1.05],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
-    },
-    {
       "id": "gunshot",
       "variants": ["assets/audio/gunshot-akm-01.ogg", "assets/audio/gunshot-akm-02.ogg"],
       "gain": 1,
       "pitchJitter": [1, 1],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
+      "voiceCap": 32,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 100 }
     },
@@ -460,6 +399,7 @@
       "pitchJitter": [1, 1],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
+      "voiceCap": 32,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 50 }
     },
@@ -470,6 +410,7 @@
       "pitchJitter": [0.98, 1.02],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
+      "voiceCap": 32,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 100 }
     },
@@ -480,16 +421,7 @@
       "pitchJitter": [1, 1],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 100 }
-    },
-    {
-      "id": "gunshot_tikka",
-      "variants": ["assets/audio/gunshot-tikka-01.ogg", "assets/audio/gunshot-tikka-02.ogg"],
-      "gain": 1,
-      "pitchJitter": [0.98, 1.02],
-      "gainJitter": [1, 1],
-      "minIntervalSimSeconds": 0,
+      "voiceCap": 32,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 100 }
     },

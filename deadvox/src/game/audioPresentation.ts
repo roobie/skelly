@@ -3,10 +3,10 @@ import type { Vec3 } from '../core/coords.ts';
 import type { MoveStart } from '../core/handling.ts';
 import type { Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import type { SoundId } from '../core/soundEvents.ts';
 
 export interface HandlingSoundCue {
-  readonly event: SoundEventId;
+  readonly event: SoundId;
   readonly position: Vec3;
 }
 
@@ -26,8 +26,8 @@ export const createRefusalPresenter = (
 };
 
 /** Every shot event authored by a firearm, for gameplay-noise and listening-guide checks. */
-export const firearmShotSoundEvents = (registry: Registry): ReadonlySet<SoundEventId> => {
-  const events = new Set<SoundEventId>();
+export const firearmShotSoundEvents = (registry: Registry): ReadonlySet<SoundId> => {
+  const events = new Set<SoundId>();
   for (const item of registry.items.values()) {
     if (!item.firearm) {
       continue;
@@ -55,7 +55,7 @@ export const firearmShotSound = (
   registry: Registry,
   item: Item,
   perspective: 'player' | 'actor' = 'player',
-): { event: SoundEventId; sourceLabel: string; listenerRelative: boolean } => {
+): { event: SoundId; sourceLabel: string; listenerRelative: boolean } => {
   const profile = defOf(registry, item.type).firearm;
   if (!profile) {
     throw new Error(`item "${item.type}" is not a firearm`);

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { makeScale } from '../src/core/scale.ts';
-import type { SoundEventId } from '../src/core/soundEvents.ts';
+import type { SoundId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
@@ -74,7 +74,7 @@ it("plays a melee weapon's own swing, hit and hit layer instead of the shared de
   const shared = ['melee_swing', 'melee_hit', 'melee_hit_fist'];
   const [swingSound, hitSound, hitLayerSound] = [...registry.sounds.keys()].filter(
     (id) => !(shared.includes(id) || id.startsWith('shambler')),
-  ) as SoundEventId[];
+  ) as SoundId[];
   const played = swingAtShambler({ ...FISTS_MELEE, swingSound, hitSound, hitLayerSound }).map((sound) => sound.event);
 
   expect(played).toContain('shambler_hurt');

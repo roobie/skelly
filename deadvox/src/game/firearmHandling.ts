@@ -31,7 +31,7 @@ import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { makeScale } from '../core/scale.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import type { SoundId } from '../core/soundEvents.ts';
 import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
 import { type RevolverFrame, RevolverHandling } from './revolverHandling.ts';
@@ -264,7 +264,7 @@ export class FirearmMechanics {
   /** Simulation: resolves the shot's hits. It runs before `onTrajectory`, which is presentation only. */
   private readonly onShot: (shot: PelletShot, time: number, firearm: Item) => void;
   private readonly onTrajectory: (trajectory: FirearmTrajectory, time: number) => void;
-  private readonly onSound: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
+  private readonly onSound: (event: SoundId, position: Vec3 | undefined, time: number) => void;
   private readonly onCommittedShot: (
     seed: number,
     recoilKickRadians: number,
@@ -304,7 +304,7 @@ export class FirearmMechanics {
       onCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
       onShot?: (shot: PelletShot, time: number, firearm: Item) => void;
       onTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
-      onSound?: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
+      onSound?: (event: SoundId, position: Vec3 | undefined, time: number) => void;
       onCommittedShot?: (
         seed: number,
         recoilKickRadians: number,
