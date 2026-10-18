@@ -160,7 +160,7 @@ Terrain shape and the tree and forest tunables are required `siteGeneration` fie
 
 Every site kind shares one block palette in the same entry, so a block choice has a single content home. Hamlet-only choices (hedge and the template pools) sit apart in its `hamlet` field. Code reads them through `sitePalette` in `src/core/sitePalette.ts`; names that resolve to nothing are validation errors (`checkSiteGeneration` in `src/core/content.ts`), never a runtime fallback.
 
-Site placement and the stress-test city's block geometry are required fields of the same entry (`SiteGenerationSchema` in `src/core/schema.ts`). The stress-test city has no scenario to carry its street grid, so the entry does; a scenario's own city fields stay on the scenario. Making them required keeps a missing value a validation error, not a silent code default.
+Keep site-placement tuning required so missing content fails validation rather than silently selecting a code default. See `src/core/schema.ts`, `SiteGenerationSchema`. Optional benchmark geometry belongs with its independent consumer, not required site-generation content; see `deadvox/docs/content.md`, "City building types".
 
 Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
