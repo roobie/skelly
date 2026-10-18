@@ -1,0 +1,84 @@
+{
+  "bodyMassKg": 105,
+  "bodyPlan": "acid",
+  "description": "Forward-set cube head, exposed acid sac and asymmetric stooped rig.",
+  "materials": {
+    "acid": {
+      "color": [0.56100000000000005, 0.89000000000000001, 0.22700000000000001],
+      "emissive": 1
+    },
+    "bone": {
+      "color": [0.81999999999999995, 0.78000000000000003, 0.60999999999999999],
+      "emissive": 0
+    },
+    "claw": {
+      "color": [0.23899999999999999, 0.21199999999999999, 0.16500000000000001],
+      "emissive": 0
+    },
+    "crust": {
+      "color": [0.41999999999999998, 0.28999999999999998, 0.17999999999999999],
+      "emissive": 0
+    },
+    "gore": {
+      "color": [0.34000000000000002, 0.065000000000000002, 0.044999999999999998],
+      "emissive": 0
+    },
+    "mottle": {
+      "color": [0.35699999999999998, 0.28999999999999998, 0.20000000000000001],
+      "emissive": 0
+    },
+    "mouth": {
+      "color": [0.16500000000000001, 0.114, 0.085999999999999993],
+      "emissive": 0
+    },
+    "skin": {
+      "color": [0.66300000000000003, 0.70599999999999996, 0.47799999999999998],
+      "emissive": 0
+    },
+    "trousers": {
+      "color": [0.184, 0.30599999999999999, 0.29799999999999999],
+      "emissive": 0
+    }
+  },
+  "name": "acid",
+  "organic": {
+    "armPeak": [0.10000000000000001, 0.59999999999999998],
+    "forePeak": [0.10000000000000001, 0.5],
+    "maximumJointDifferenceVoxels": 2,
+    "maximumSectionFill": 0.84999999999999998,
+    "measureDivisor": 4,
+    "minimumBackBulge": 0.029999999999999999,
+    "minimumPalmExtraVoxels": 2,
+    "minimumSectionAspect": 1.2,
+    "minimumTaperVoxels": 2,
+    "profileToleranceVoxels": 1
+  },
+  "params": {
+    "belly": {
+      "max": 1.3999999999999999,
+      "min": 0.90000000000000002
+    },
+    "girth": {
+      "max": 1.05,
+      "min": 0.80000000000000004
+    },
+    "headD": {
+      "max": 1.1499999999999999,
+      "min": 0.94999999999999996
+    },
+    "headW": {
+      "max": 1.1499999999999999,
+      "min": 0.88
+    },
+    "hipFrac": {
+      "max": 0.75,
+      "min": 0.55000000000000004
+    },
+    "shoulderFrac": {
+      "max": 0.29999999999999999,
+      "min": 0.22500000000000001
+    }
+  },
+  "skinB": [0.56100000000000005, 0.61199999999999999, 0.44700000000000001],
+  "status": "comparison-only"
+}
