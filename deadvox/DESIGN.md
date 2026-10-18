@@ -830,11 +830,20 @@ activation must not replay dormant time. See `src/core/scheduler.ts`,
 `Simulation.leaveExposure`, `Simulation.endExposure` and `Simulation.actionRefusal`;
 `src/core/longAction.ts`, `LongActions.interruptExposure`.
 
-Worn armour and clothing take damage-proportional wear but do not mitigate flesh
-damage or bleeding chance. Keeping wear at the shared impact boundary prevents
-falls, projectiles and lingering damage from bypassing it. See
-`src/core/wear.ts`, `wearOnPlayerHit`; `src/core/sim.ts`, `Simulation.impact`;
-`src/game/session.ts`, `createSession`.
+**Worn coverage.** Each body region lists the wear slots that cover it in content,
+outermost first, so new slots and layers are a content change rather than a code
+path. A blow meets the first worn slot in that list, so footwear and gloves sit
+last on their limbs and take blows only on a bare limb. A contact with a named
+touch, ground or hand, meets that touch's slot first, because a puddle reaches
+the boots before the trousers and a grip reaches the gloves before the sleeve.
+Worn items take damage-proportional wear but do not mitigate flesh damage or
+bleeding chance, except that an item impervious to a damage kind stops that kind
+outright: no damage, wear, wound, linger or action refusal. Imperviousness is per
+kind on the wearable, so rubber boots can stop acid without a boots rule in code.
+Keeping wear and imperviousness at the shared impact boundary prevents falls,
+projectiles and lingering damage from bypassing them. See `src/core/wear.ts`,
+`wornItemMet` and `playerWearHooks`; `src/core/sim.ts`, `SimOptions`,
+`Simulation.impact` and `Simulation.expose`.
 
 Modifier ownership follows the actor supplying the effect, not its target.
 `src/core/body.ts`, `Body.modified`, resolves the player's bodily values;

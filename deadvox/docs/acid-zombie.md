@@ -38,11 +38,11 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 **Acid is a damage kind.** Acid sits beside the melee kinds, not among them: weapons, melee classes and per-region melee resistance take only melee kinds, while zombie attack moves, injury and wear content take every kind. So bleeding chance, wound depth, pain and shock are authored for acid in content, not special-cased in code. The aim is a burn: content gives acid a low bleeding chance and high pain. Hazmat's "resists acid" gets a key to resist. See `src/core/body.ts`, `MELEE_DAMAGE_KINDS` and `DAMAGE_KINDS`.
 
-**Acid eats the outer worn layer.** A hit wears the outermost worn item on the struck region harder than melee does, so clothing and armour become a consumable against spitters and a reason to carry spares. Worn armour takes wear but doesn't change damage (`DESIGN.md`, "Bleeding"), so this costs gear, not health. The multiplier is per damage kind in content, not an acid check in the wear code. See `src/core/wear.ts`, `wearOnPlayerHit`.
+**Acid eats the outer worn layer.** A hit wears the worn item it meets first on the struck region harder than melee does, so clothing and armour become a consumable against spitters and a reason to carry spares. Worn armour takes wear but doesn't change damage unless it is impervious to acid (`DESIGN.md`, "Worn coverage"), so this costs gear, not health. The multiplier is per damage kind in content, not an acid check in the wear code. See `src/core/wear.ts`, `wearOnPlayerHit`.
 
 ## Puddles
 
-A glob that hits the ground leaves a short-lived puddle that burns the legs of anyone standing in it. The glob's ground-contact boundary is `src/core/zombies.ts`, `AcidGroundImpact`. Ground becomes terrain to read, and a missed spit still denies space. Its lifetime, size and burn rate are content. Acid immunity covers puddles too, so a spitter can stand in its own acid. A puddle is simulation state, not a decal.
+A glob that hits the ground leaves a short-lived puddle that burns the legs of anyone standing in it. The glob's ground-contact boundary is `src/core/zombies.ts`, `AcidGroundImpact`. Ground becomes terrain to read, and a missed spit still denies space. Its lifetime, size and burn rate are content. Acid immunity covers puddles too, so a spitter can stand in its own acid. A puddle meets footwear first, so boots impervious to acid let the player stand in one unharmed (`DESIGN.md`, "Worn coverage"). A puddle is simulation state, not a decal.
 
 ## Movement
 
