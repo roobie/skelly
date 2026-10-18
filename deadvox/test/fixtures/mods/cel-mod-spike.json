@@ -3,12 +3,12 @@
     "dependencies": [],
     "functions": [
       {
-        "expression": "add(2.0, add(level, divide(drain, 10.0)))",
+        "expression": "2 + level + drain / 10",
         "name": "cost",
         "params": ["level", "drain"]
       },
       {
-        "expression": "clamp(mul(add(intellect, level), add(1.0, divide(drain, 100.0))), 0.0, 100.0)",
+        "expression": "clamp((intellect + level) * (1 + drain / 100), 0, 100)",
         "name": "strength",
         "params": ["intellect", "level", "drain"]
       }
@@ -16,7 +16,7 @@
     "id": "mom",
     "rules": [
       {
-        "effects": "[spend(mom_cost(level, state[\"mom:uses\"])), roll < 0.8 ? damage(mom_strength(intellect, level, state[\"mom:uses\"])) : overload(1.0), change(\"mom:uses\", min(1.0, sub(100.0, state[\"mom:uses\"])))]",
+        "effects": "[spend(mom_cost(level, state[\"mom:uses\"])), roll < 0.8 ? damage(mom_strength(intellect, level, state[\"mom:uses\"])) : overload(1.0), change(\"mom:uses\", min(1, 100 - state[\"mom:uses\"]))]",
         "event": "cast",
         "id": "mom:power",
         "when": "flags.exists(flag, flag == \"focused\") && target[\"distance\"] < 10.0"
@@ -38,7 +38,7 @@
     "id": "attune",
     "rules": [
       {
-        "effects": "[change(\"attune:drain\", min(7.0, sub(100.0, state[\"attune:drain\"])))]",
+        "effects": "[change(\"attune:drain\", min(7, 100 - state[\"attune:drain\"]))]",
         "event": "cast",
         "id": "attune:gain",
         "onTrue": "attune:consequence",
@@ -56,7 +56,7 @@
         "when": "true"
       },
       {
-        "effects": "[change(\"attune:drain\", sub(max(0.0, sub(state[\"attune:drain\"], 2.0)), state[\"attune:drain\"]))]",
+        "effects": "[change(\"attune:drain\", max(0, state[\"attune:drain\"] - 2) - state[\"attune:drain\"])]",
         "event": "decay",
         "id": "attune:decay",
         "when": "true"
@@ -82,13 +82,13 @@
     "dependencies": ["mom"],
     "functions": [
       {
-        "expression": "max(0.0, sub(add(level, divide(drain, 10.0)), 1.0))",
+        "expression": "max(0, level + drain / 10 - 1)",
         "name": "cost",
         "params": ["level", "drain"],
         "replaces": "mom_cost"
       },
       {
-        "expression": "divide(mom_strength(intellect, level, drain), 2.0)",
+        "expression": "mom_strength(intellect, level, drain) / 2",
         "name": "echo",
         "params": ["intellect", "level", "drain"]
       }

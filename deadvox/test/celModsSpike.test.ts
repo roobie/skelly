@@ -238,15 +238,15 @@ describe('restricted CEL mod harness (not shipped)', () => {
   );
 
   it.each([
-    ['divide(1.0, level) > 0.0 || true', '[damage(1.0)]', false],
+    ['1.0 / level > 0.0 || true', '[damage(1.0)]', false],
     ['exp(intellect) > 0.0 || true', '[damage(1.0)]', false],
-    ['divide(1.0, level) > 0.0 && false', '[damage(1.0)]', false],
-    ['[0.0, 1.0].exists(x, divide(1.0, x) > 0.0)', '[damage(1.0)]', false],
+    ['1.0 / level > 0.0 && false', '[damage(1.0)]', false],
+    ['[0.0, 1.0].exists(x, 1.0 / x > 0.0)', '[damage(1.0)]', false],
     ['[0.0, 1.0].exists(x, fixture_risky(x) > 0.0)', '[damage(1.0)]', true],
     ['true', '[damage((fixture_risky(level) > 0.0 || true) ? 1.0 : 0.0)]', true],
   ])('rejects evaluated callback failures even when CEL suppresses them: %s / %s', (when, effects, named) => {
     const defs = fixture(effects, when);
-    defs[0]!.functions.push({ name: 'risky', params: ['n'], expression: 'divide(1.0, n)' });
+    defs[0]!.functions.push({ name: 'risky', params: ['n'], expression: '1.0 / n' });
     defs[0]!.state.push({ key: 'fixture:counter', min: 0, max: 2, initial: 0, bands: [] });
     defs[0]!.rules.unshift({
       id: 'fixture:a_commit',
@@ -273,9 +273,9 @@ describe('restricted CEL mod harness (not shipped)', () => {
   });
 
   it.each([
-    'true || divide(1.0, level) > 0.0',
-    '!(false && divide(1.0, level) > 0.0)',
-    '[1.0, 0.0].exists(x, divide(1.0, x) > 0.0)',
+    'true || 1.0 / level > 0.0',
+    '!(false && 1.0 / level > 0.0)',
+    '[1.0, 0.0].exists(x, 1.0 / x > 0.0)',
     'true ? true : exp(intellect) > 0.0',
   ])('does not fail for checked callbacks in branches never evaluated: %s', (when) => {
     const h = harness(fixture('[damage(1.0)]', when));
@@ -285,7 +285,7 @@ describe('restricted CEL mod harness (not shipped)', () => {
   });
 
   it('clears a suppressed callback failure before the next evaluation of the same program', () => {
-    const h = harness(fixture('[damage(1.0)]', 'divide(1.0, level) > 0.0 || true'));
+    const h = harness(fixture('[damage(1.0)]', '1.0 / level > 0.0 || true'));
     expect(h.tick('cast', { ...input, level: 0 }, budget).issues.length).toBeGreaterThan(0);
     const success = h.tick('cast', input, budget);
     expect(success.issues).toEqual([]);
@@ -319,7 +319,7 @@ describe('restricted CEL mod harness (not shipped)', () => {
     expect(accessed).toBe(false);
   });
 
-  it.each(['[damage(divide(1.0, level))]', '[damage(exp(intellect))]', '[damage(target["missing"])]'])(
+  it.each(['[damage(1.0 / level)]', '[damage(exp(intellect))]', '[damage(target["missing"])]'])(
     'turns runtime math or input errors into located issues and rolls the tick back: %s',
     (expression) => {
       const h = harness(fixture(expression));
@@ -356,6 +356,8 @@ describe('restricted CEL mod harness (not shipped)', () => {
   it('records the native CEL arithmetic hazard that the checked math profile excludes', () => {
     const env = new Environment();
     expect(Number.isFinite(env.evaluate('1.0 / 0.0'))).toBe(false);
-    expect(() => harness(fixture('[damage(1.0 / 0.0)]'))).toThrow('checked math');
+    expect(harness(fixture('[damage(1.0 / 0.0)]')).tick('cast', input, budget).issues[0]?.message).toContain(
+      'division by zero',
+    );
   });
 });

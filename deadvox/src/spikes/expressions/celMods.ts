@@ -1,5 +1,6 @@
 import { type ASTNode, Environment, serialize } from '@marcbachmann/cel-js';
 import type { ContentIssue } from '../../core/content.ts';
+import { AuthorError, serializeRewrite } from './celRewrite.ts';
 import { ModLoadError } from './modLoadError.ts';
 
 const identifierPattern = /^[a-z][a-z0-9_]*$/;
@@ -11,7 +12,7 @@ function compareId(a: { id: string }, b: { id: string }): number {
   return a.id < b.id ? -1 : 1;
 }
 
-export const modProfile = 'cel-js-8.0.0-mod-spike-2';
+export const modProfile = 'cel-js-8.0.0-mod-spike-3';
 export const modLimits = Object.freeze({
   source: 4096,
   nodes: 256,
@@ -87,6 +88,12 @@ export interface TickResult {
   spent: number;
 }
 
+function numericOperand(value: unknown): number {
+  if (typeof value === 'bigint' && value >= -BigInt(limits.magnitude) && value <= BigInt(limits.magnitude)) {
+    return Number(value);
+  }
+  return finite(value);
+}
 function finite(value: unknown): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > limits.magnitude) {
     throw new Error('expected bounded finite double');
@@ -104,6 +111,16 @@ const maths: Record<string, { arity: number; run: (...args: number[]) => number 
         throw new Error('division by zero');
       }
       return a! / b!;
+    },
+  },
+  negate: { arity: 1, run: (a) => -a! },
+  remainder: {
+    arity: 2,
+    run: (a, b) => {
+      if (b === 0) {
+        throw new Error('division by zero');
+      }
+      return a! % b!;
     },
   },
   pow: { arity: 2, run: (a, b) => a! ** b! },
@@ -198,9 +215,12 @@ export function compileModExpression(
     env.registerVariable(key, type);
   }
   for (const [key, math] of Object.entries(maths)) {
-    register(`${key}(${new Array(math.arity).fill('double').join(',')}): double`, (...args: number[]) =>
-      finite(math.run(...args.map(finite))),
-    );
+    for (let mask = 0; mask < 2 ** math.arity; mask++) {
+      const types = Array.from({ length: math.arity }, (_, i) => (mask & (1 << i) ? 'int' : 'double'));
+      register(`${key}(${types.join(',')}): double`, (...args: (number | bigint)[]) =>
+        finite(math.run(...args.map(numericOperand))),
+      );
+    }
   }
   for (const [key, verb] of Object.entries(verbs)) {
     register(`${key}(${verb.arity === 2 ? 'string,double' : 'double'}): Effect`, (...args: (string | number)[]) => {
@@ -249,15 +269,49 @@ export function compileModExpression(
       finite(fn.program.run(Object.fromEntries(fn.def.params.map((param, i) => [param, finite(args[i])])))),
     );
   }
-  const parsed = env.parse(source);
+  const original = env.parse(source);
+  function authorError(error: unknown, node: ASTNode): Error {
+    if (error instanceof AuthorError) {
+      return error;
+    }
+    const message = error instanceof Error ? error.message.split('\n')[0] : String(error);
+    return new AuthorError(`${label}: ${message} at offset ${node.start}\n${source}`, { cause: error });
+  }
+  const arithmeticAliases = new Set<string>();
+  const rewritten = serializeRewrite(original.ast, (key, node) => {
+    // Per-call aliases retain the author anchor even when CEL suppresses a callback exception.
+    const alias = `_checked_${key}_${arithmeticAliases.size}`;
+    arithmeticAliases.add(alias);
+    const math = maths[key]!;
+    for (let mask = 0; mask < 2 ** math.arity; mask++) {
+      const types = Array.from({ length: math.arity }, (_, i) => (mask & (1 << i) ? 'int' : 'double'));
+      register(`${alias}(${types.join(',')}): double`, (...args: (number | bigint)[]) => {
+        try {
+          return finite(math.run(...args.map(numericOperand)));
+        } catch (error) {
+          throw authorError(error, node);
+        }
+      });
+    }
+    return alias;
+  });
+  const parsed = env.parse(rewritten.source);
+  function located(error: unknown): Error {
+    const detail = error as { node?: { start?: number } };
+    return authorError(error, rewritten.locate(detail?.node));
+  }
   function at(node: ASTNode, message: string): never {
-    throw new Error(`${message} at offset ${node.start}`);
+    throw located({ node, toString: () => message });
   }
   function literalCost(node: Extract<ASTNode, { op: 'value' }>): number {
-    if (typeof node.args === 'number') {
-      finite(node.args);
+    if (typeof node.args === 'number' || typeof node.args === 'bigint') {
+      try {
+        numericOperand(node.args);
+      } catch (error) {
+        throw located({ node, toString: () => (error instanceof Error ? error.message : String(error)) });
+      }
     } else if (typeof node.args !== 'boolean' && typeof node.args !== 'string') {
-      at(node, 'only double, bool and string literals');
+      at(node, 'only int, double, bool and string literals');
     }
     if (typeof node.args === 'string' && node.args.length > limits.text) {
       at(node, 'string limit');
@@ -278,6 +332,7 @@ export function compileModExpression(
   function callCost(node: Extract<ASTNode, { op: 'call' }>, macro: boolean): number {
     const [key, args] = node.args;
     const known =
+      arithmeticAliases.has(key) ||
       Object.hasOwn(maths, key) ||
       Object.hasOwn(verbs, key) ||
       ['weighted', 'rank'].includes(key) ||
@@ -333,7 +388,7 @@ export function compileModExpression(
       case 'rcall':
         return macroCost(node, macro);
       default:
-        return at(node, `operator ${node.op} excluded; use checked math functions for arithmetic`);
+        return at(node, `operator ${node.op} excluded`);
     }
   }
   const total = cost(parsed.ast);
@@ -342,10 +397,10 @@ export function compileModExpression(
   }
   const checked = parsed.check();
   if (!checked.valid) {
-    throw checked.error;
+    throw located(checked.error);
   }
   if (checked.type !== result) {
-    throw new Error(`expected ${result}, got ${checked.type}`);
+    throw authorError(new Error(`expected ${result}, got ${checked.type}`), original.ast);
   }
   return {
     canonical: serialize(parsed.ast),
@@ -361,11 +416,7 @@ export function compileModExpression(
         }
         return value;
       } catch (error) {
-        const { node } = error as { node?: { start?: number } };
-        throw new Error(
-          `${label}: ${error instanceof Error ? error.message : String(error)} at offset ${node?.start ?? parsed.ast.start}`,
-          { cause: error },
-        );
+        throw located(error);
       } finally {
         activeFrame = previous;
       }

@@ -51,6 +51,16 @@ widening of the scalar contract. See `deadvox/tools/bench-expressions.mjs`, `mea
 Node probes, and `deadvox/src/spikes/expressions/README.md`, "Published runtime boundary", for the
 Wasm comparison's limits.
 
+The isolated mod profile preserves author operator syntax by rewriting parsed arithmetic to checked
+numeric calls before serializing and compiling it. Intermediate failures must not disappear inside
+predicates, so final-result validation is insufficient. Public typed parser and serializer APIs
+avoid modifying third-party files at install time or depending on undocumented runtime handler
+tables. Serialization must preserve tree structure and literal types; an expression that cannot
+round-trip is rejected rather than silently changed. See
+`deadvox/src/spikes/expressions/celRewrite.ts`, `serializeRewrite`, and
+`deadvox/test/celRewriteSpike.test.ts` for that boundary and its limitations. This does not adopt a
+production arithmetic profile or a general integer-to-double conversion policy.
+
 Restricted profiles do not establish the safety or cost of unrestricted runtimes. Representative
 engine contracts exercise a MoM-shaped rule layer, not a port of its world mechanics. Target
 fidelity, triggers, randomness, effect vocabulary, mod state, composition, effect combining, field

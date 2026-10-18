@@ -54,13 +54,23 @@ This keeps language implementation in the package rather than rebuilding an eval
 engine. Named functions cannot capture mutable game state: callers pass numeric snapshots
 explicitly.
 
-Native double arithmetic can silently produce infinity even inside a predicate. The mod profile
-therefore admits arithmetic through typed, finite-checking functions rather than native arithmetic
-operators. The package refuses replacement of its built-in numeric operator overloads; wrapping a
-final result alone would miss invalid intermediate values. See `celMods.ts`, `maths`, and
-`../../../test/celModsSpike.test.ts` for the executable hazard probe. This is harness-supplied
-arithmetic, not evidence for safe native operator syntax. Choosing operator syntax would require
-numeric range analysis or evaluator instrumentation before claiming the same error contract.
+Native double arithmetic can silently produce infinity even inside a predicate, so checking only
+a final result would miss invalid intermediates. Author arithmetic therefore passes through a
+parse-rewrite-serialize boundary before compilation; see `celRewrite.ts`, `serializeRewrite`, and
+`celMods.ts`, `compileModExpression`. Public typed APIs keep the package as received and avoid
+owning an install-time library patch or depending on undocumented runtime handler tables.
+The numeric-only checked boundary rejects string and list concatenation rather than silently
+retaining unchecked operators. Checked integer operands promote to bounded doubles, so author
+arithmetic does not inherit native integer truncating division or integer overflow behaviour.
+Integer literals still have CEL's integer type outside the checked signatures; this is not a
+general implicit conversion policy for effects, named functions or comparisons.
+
+Serialization is a semantic boundary, not merely formatting. The loader rejects a changed tree or
+literal instead of compiling it: the package serializer can round fractional doubles and omit
+parentheses in nested comparisons. See `../../../test/celRewriteSpike.test.ts` for fidelity,
+operator-removal and mixed-signature probes. Adoption remains open; rejecting a valid authored
+expression because it cannot survive the serializer is an authoring limitation, not safe support
+for that expression.
 
 CEL's logical operators and macros can recover from an evaluated callback exception when another
 operand supplies a decisive result. The spike's strict checked-callback contract therefore needs
@@ -71,9 +81,11 @@ through the caller's latch. Unevaluated short-circuit branches record no failure
 engine-boundary error policy, not a replacement evaluator or a production adoption decision.
 CEL-native errors that never enter a checked callback retain CEL's recoverable semantics.
 
-Runtime issues identify the rule's predicate or effects expression; named-body errors also identify
-the defining mod and function. Offsets may fall back to the expression root for callback errors,
-so this is partial author-facing location evidence, not exact subexpression source mapping.
+Diagnostics must refer to authored source, not generated calls. The rewrite pairs structurally
+identical trees to recover original locations; per-call checked aliases retain arithmetic anchors
+even through suppressed callback errors. See `celRewrite.ts`, `serializeRewrite`, and `celMods.ts`,
+`compileModExpression`. Other callback failures without CEL locations fall back to the original
+expression root, so this is not exact subexpression evidence for every host callback.
 
 Termination relies on rejecting recursion, dynamic dispatch, unbounded collections and nested
 macros, not on an unavailable interpreter instruction counter. Bounded all/exists over literal or
@@ -138,7 +150,7 @@ marshalling and the asynchronous binding boundary even for synchronous baselines
 and retained-rule evaluation must not be conflated. A repeated-load mean excludes first-use runtime
 initialization. Node microbenchmarks remain probes, not browser or whole-simulation frame-budget
 guarantees. For CEL mod rules, `../../../tools/bench-expressions.mjs`, `measureModRules`, measures
-load-time parse/profile/typecheck with functions already registered, then unconditional predicate
+load-time compilation with functions already registered, then unconditional predicate
 and effect evaluation on fixed snapshots. It excludes harness construction, effect application,
 state copying and scheduling. The `--mods --bundles` mode compares deployable scalar CEL and mod
 profile entries so wrapper growth is not mistaken for additional CEL package code. Browser microbenchmarks are not whole-simulation guarantees either.
