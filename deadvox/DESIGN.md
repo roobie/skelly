@@ -734,9 +734,22 @@ item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
   its page, the author, the licence linked to its text, and what we changed. It
   opens from the start and pause card, and it's how we give the credit CC BY
   asks for.
+- **Synthesised sounds.** A sound variant can be a jfxr preset in content
+  instead of a recording. jfxr's editor is the design tool for BR and modders,
+  and the jfxr library renders what the editor plays, so a preset pasted from
+  the editor sounds the same in game and needs neither an asset file nor a
+  credit. The game renders a preset once and plays it like a recording, so
+  every playback rule applies to both, and any sound can move between the two.
+  A preset is one voice, so it suits simple sounds such as knocks, hums and
+  engine tones. Compound sounds, such as a gunshot's crack, boom and tail
+  together, lose fidelity, so they stay recordings, as do voices. Validation
+  rejects a preset that jfxr would silently clamp or ignore, so content plays
+  what it says. If the library ever falls short, the fallback is a fork, which
+  becomes our own code. The renderer is `src/core/soundSynth.ts`,
+  `renderSoundRecipe`.
 - Keep the curated `/sounds.html` sheet with sound-event variants and status.
   A change that adds, replaces, or re-levels a sound updates the sheet in the
-  same change.
+  same change. The sheet marks a synthesised variant as such.
 
 ## Crafting
 

@@ -1,6 +1,7 @@
 import { html, render } from 'lit-html';
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
 import soundFile from './content/base/sounds.json' with { type: 'json' };
+import synthSoundFile from './content/base/sounds-synth.json' with { type: 'json' };
 import uiFile from './content/base/ui.json' with { type: 'json' };
 import type { Manifest } from './core/assets.ts';
 import { buildRegistry } from './core/content.ts';
@@ -13,6 +14,7 @@ import { applyUiTokens } from './ui/uiTokens.ts';
 const source = '../content/base/sounds.json';
 const { registry, issues } = buildRegistry([
   { source, data: soundFile },
+  { source: '../content/base/sounds-synth.json', data: synthSoundFile },
   { source: '../content/base/ui.json', data: uiFile },
 ]);
 // The page shares the game's style sheet, which is measured in these tokens.
@@ -64,8 +66,8 @@ const sheet = html`
       <p class="eyebrow">DEADVOX · AUDIO REFERENCE</p>
       <h1>Listening sheet</h1>
       <p>
-        Generated from <code>sounds.json</code> and <code>assets/manifest.json</code>. Sound-event preview buttons play
-        the exact listed file at base event gain and pitch 1, through the game's saved master/category volume settings; variant
+        Generated from the sound content and <code>assets/manifest.json</code>. Sound-event preview buttons play
+        the exact listed file or recipe at base event gain and pitch 1, through the game's saved master/category volume settings; variant
         selection jitter and cooldown are bypassed.
       </p>
       <p class="sound-debug-note">
@@ -101,13 +103,19 @@ const sheet = html`
                   <code class="variant-file">${variant.file}</code>
                   <span class="variant-credit">
                     ${
-                      variant.sourceUrl
-                        ? html`<a href=${variant.sourceUrl} target="_blank" rel="noreferrer">${variant.sourcePack}</a>`
-                        : variant.sourcePack
+                      variant.synthesised
+                        ? variant.sourcePack
+                        : html`${
+                            variant.sourceUrl
+                              ? html`<a href=${variant.sourceUrl} target="_blank" rel="noreferrer">${variant.sourcePack}</a>`
+                              : variant.sourcePack
+                          }
+                          · ${variant.author} · ${variant.licence}`
                     }
-                    · ${variant.author} · ${variant.licence}
                   </span>
-                  <button type="button" @click=${() => playExact(event.id, variant.file)}>Play exact file</button>
+                  <button type="button" @click=${() => playExact(event.id, variant.file)}>
+                    ${variant.synthesised ? 'Play synthesised' : 'Play exact file'}
+                  </button>
                 </li>
               `,
             )}
