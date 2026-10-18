@@ -15,6 +15,7 @@ export const mainSourceOverlays = [
   'game/engine.ts',
   'game/play.ts',
   'render/playView.ts',
+  'render/acidEffects.ts',
   'game/worldLoading.ts',
   'ui/worldLoading.ts',
   'render/skylight.ts',
