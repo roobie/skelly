@@ -141,6 +141,10 @@
       "output": "deadvox/src/content/base/recipes.json"
     },
     {
+      "source": "deadvox/src/content/base/rural-police-fixtures.jsonnet",
+      "output": "deadvox/src/content/base/rural-police-fixtures.json"
+    },
+    {
       "source": "deadvox/src/content/base/rural-police.jsonnet",
       "output": "deadvox/src/content/base/rural-police.json"
     },
