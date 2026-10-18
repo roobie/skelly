@@ -20,6 +20,7 @@ import {
   optional,
   picklist,
   pipe,
+  rawCheck,
   record,
   regex,
   strictObject,
@@ -1471,6 +1472,37 @@ const WeatherTuningSchema = strictObject({
   nearTighten: pipe(UnitFraction, maxValue(0.99)),
   farTighten: pipe(UnitFraction, maxValue(0.99)),
 });
+const SKY_PHASES = ['night', 'dawn', 'day', 'dusk'] as const;
+/** Where a look sits in a solar phase: 0 is the phase's start, 1 its end. */
+const SkyKeySchema = strictObject({
+  phase: picklist(SKY_PHASES),
+  at: UnitFraction,
+  look: picklist(['night', 'deepNight', 'dawn', 'day', 'dusk']),
+});
+/**
+ * The blend sorts keys by time and wraps the last to the first, so two keys at one instant would
+ * make the blend span a whole day. Keys therefore run in cycle order, strictly later each time,
+ * and the last stays short of the first a cycle later.
+ */
+const SkyKeysSchema = pipe(
+  array(SkyKeySchema),
+  minLength(2),
+  rawCheck(({ dataset, addIssue }) => {
+    if (!dataset.typed) {
+      return;
+    }
+    const positions = dataset.value.map((key) => SKY_PHASES.indexOf(key.phase) + key.at);
+    positions.forEach((position, index) => {
+      if (index > 0 && position <= positions[index - 1]!) {
+        addIssue({ message: `keys[${index}].at must come strictly after the key before it in cycle order` });
+      }
+    });
+    const last = positions.length - 1;
+    if (positions[last]! >= positions[0]! + SKY_PHASES.length) {
+      addIssue({ message: `keys[${last}].at must come strictly before the first key a cycle later` });
+    }
+  }),
+);
 export const DayCycleSchema = strictObject({
   /** Calendar seconds per simulation second: how long a game day lasts in play. A new session takes it; a save keeps its own. */
   clockRatio: Positive,
@@ -1485,6 +1517,8 @@ export const DayCycleSchema = strictObject({
     day: SkyLookSchema,
     dusk: SkyLookSchema,
   }),
+  /** Which look sits where in its phase, in cycle order; timing tuning, with the order the blend needs enforced here. */
+  keys: SkyKeysSchema,
   weather: WeatherTuningSchema,
   /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
   defaultStartGameTimeOfDay: GameTimeOfDay,

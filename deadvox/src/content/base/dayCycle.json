@@ -10,6 +10,19 @@
     "defaultStartGameTimeOfDay": "10:00",
     "midnightGameTimeOfDay": "00:00",
     "noonGameTimeOfDay": "12:00",
+    "keys": [
+      { "phase": "night", "at": 0, "look": "night" },
+      { "phase": "night", "at": 0.3, "look": "deepNight" },
+      { "phase": "night", "at": 0.7, "look": "deepNight" },
+      { "phase": "night", "at": 0.9, "look": "night" },
+      { "phase": "dawn", "at": 0, "look": "night" },
+      { "phase": "dawn", "at": 1, "look": "dawn" },
+      { "phase": "day", "at": 0.12, "look": "day" },
+      { "phase": "day", "at": 0.85, "look": "day" },
+      { "phase": "day", "at": 0.95, "look": "dusk" },
+      { "phase": "dusk", "at": 0, "look": "dusk" },
+      { "phase": "dusk", "at": 0.72, "look": "night" }
+    ],
     "looks": {
       "night": {
         "sky": "#0a0d12",
