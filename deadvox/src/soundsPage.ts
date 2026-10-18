@@ -1,22 +1,14 @@
 import { html, render } from 'lit-html';
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
-import uiFile from './content/base/ui.json' with { type: 'json' };
 import type { Manifest } from './core/assets.ts';
-import { buildRegistry } from './core/content.ts';
 import { CORE_CONTENT_IDS } from './core/contentIds.ts';
 import type { SoundId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
+import { buildSoundsPageContent } from './soundsPageContent.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
 
-const soundFiles = import.meta.glob<unknown>('./content/base/sounds*.json', { eager: true, import: 'default' });
-const { registry, issues } = buildRegistry([
-  ...Object.entries(soundFiles)
-    .sort(([a], [b]) => a.localeCompare(b))
-    // Named as the game names them from src/game, so audio finds each sound's files beside its source.
-    .map(([path, data]) => ({ source: `.${path}`, data })),
-  { source: '../content/base/ui.json', data: uiFile },
-]);
+const { registry, issues } = buildSoundsPageContent();
 // The page shares the game's style sheet, which is measured in these tokens.
 applyUiTokens(registry, document.documentElement);
 const guide = buildSoundGuide([...registry.sounds.values()], assetManifest as Manifest);
