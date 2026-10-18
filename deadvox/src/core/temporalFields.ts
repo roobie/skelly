@@ -44,6 +44,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'inventory[].search.minSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].search.maxSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].throwFlightSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'inventory[].furnitureMove.carryStaminaPerSimSecond',
+    clock: 'Sim',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
   { path: 'items.food.consumeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.analgesic.takeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.light.power.swapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
