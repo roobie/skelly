@@ -727,9 +727,17 @@ item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
   its page, the author, the licence linked to its text, and what we changed. It
   opens from the start and pause card, and it's how we give the credit CC BY
   asks for.
+- **Synthesised sounds.** A sound variant can be a recipe in content instead
+  of a recording. A recipe needs no asset file, so it has no licence or credit
+  to manage, and a modder can add a sound without making or sourcing a file.
+  The game renders a recipe once and plays it like a recording, so every
+  playback rule applies to both, and any sound can move between the two.
+  Recordings stay for what synthesis does poorly: voices, gunshots and
+  mechanical handling. The renderer is `src/core/soundSynth.ts`,
+  `renderSoundRecipe`.
 - Keep the curated `/sounds.html` sheet with sound-event variants and status.
   A change that adds, replaces, or re-levels a sound updates the sheet in the
-  same change.
+  same change. The sheet marks a synthesised variant as such.
 
 ## Crafting
 

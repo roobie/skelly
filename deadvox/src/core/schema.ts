@@ -7,6 +7,7 @@ import {
   array,
   check,
   finite,
+  type GenericSchema,
   type InferOutput,
   integer,
   literal,
@@ -53,6 +54,7 @@ import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
+import { SOUND_RECIPE_MAX_SECONDS, SYNTH_FILTERS, SYNTH_NOISE_COLOURS, SYNTH_WAVES } from './soundSynth.ts';
 import {
   gameHours,
   gameMinutes,
@@ -735,11 +737,59 @@ const SoundMultipliers = pipe(
   check(([min, max]) => min <= max, 'minimum must not exceed maximum'),
 );
 
+/** Breakpoints of [seconds, value], ramped linearly and held past either end. */
+const synthEnvelope = (value: GenericSchema<number>) =>
+  pipe(
+    array(tuple([NonNegative, value])),
+    nonEmpty('needs at least one point'),
+    check(
+      (points) => points.every(([time], i) => i === 0 || points[i - 1]![0] <= time),
+      'point times must not decrease',
+    ),
+  );
+
+const SynthSourceSchema = variant('type', [
+  strictObject({ type: literal('noise'), colour: picklist(SYNTH_NOISE_COLOURS) }),
+  strictObject({ type: literal('tone'), wave: picklist(SYNTH_WAVES), frequencyHz: synthEnvelope(Positive) }),
+]);
+
+const SoundRecipeSchema = strictObject({
+  recipe: Id,
+  durationSeconds: pipe(
+    Positive,
+    maxValue(SOUND_RECIPE_MAX_SECONDS, `must be at most ${SOUND_RECIPE_MAX_SECONDS} seconds`),
+  ),
+  seed: pipe(number(), integer('must be a whole number')),
+  layers: pipe(
+    array(
+      strictObject({
+        source: SynthSourceSchema,
+        filters: optional(
+          array(
+            strictObject({ type: picklist(SYNTH_FILTERS), frequencyHz: synthEnvelope(Positive), q: Positive }),
+          ),
+        ),
+        gain: synthEnvelope(NonNegative),
+      }),
+    ),
+    nonEmpty('needs at least one layer'),
+  ),
+});
+
 const SoundSchema = strictObject({
   id: Id,
   variants: pipe(
-    array(pipe(string(), regex(/^assets\/audio\/[a-z0-9_.-]+\.ogg$/, 'expected an Ogg file under assets/audio/'))),
+    array(
+      union([
+        pipe(string(), regex(/^assets\/audio\/[a-z0-9_.-]+\.ogg$/, 'expected an Ogg file under assets/audio/')),
+        SoundRecipeSchema,
+      ]),
+    ),
     nonEmpty('needs at least one variant'),
+    check((variants) => {
+      const names = variants.flatMap((v) => (typeof v === 'string' ? [] : [v.recipe]));
+      return new Set(names).size === names.length;
+    }, 'recipe names must be unique within a sound'),
   ),
   gain: pipe(Positive, maxValue(1, 'must be at most 1')),
   pitchJitter: SoundMultipliers,
@@ -2733,6 +2783,7 @@ export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
+export type SoundRecipe = InferOutput<typeof SoundRecipeSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;

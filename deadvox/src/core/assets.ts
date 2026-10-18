@@ -121,7 +121,7 @@ export const soundFileIssues = (
   [...registry.sounds.values()].flatMap((sound) => {
     const origin = registry.soundOrigins.get(sound.id)!;
     return sound.variants.flatMap((file, i) =>
-      exists(origin.source, file)
+      typeof file !== 'string' || exists(origin.source, file)
         ? []
         : [{ source: origin.source, path: `${origin.path}.variants[${i}]`, message: `"${file}" is not in the pack` }],
     );

@@ -2,6 +2,7 @@ import { html } from 'lit-html';
 import type { Manifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
+import { soundVariantKey } from '../core/soundSynth.ts';
 import { HEARTBEAT_FILES, HEARTBEAT_TUNING, heartbeatForStamina } from '../game/audioPresentation.ts';
 
 export interface SoundTriggerGuide {
@@ -366,6 +367,7 @@ interface SoundVariantGuide {
   readonly author: string;
   readonly licence: string;
   readonly sourceUrl: string | null;
+  readonly synthesised?: true;
 }
 
 export interface SoundGuideEntry {
@@ -400,6 +402,16 @@ const soundVariant = (file: string, source: Manifest['sources'][number] | undefi
   author: source?.author ?? 'Uncredited',
   licence: source?.licence ?? 'Unknown licence',
   sourceUrl: source?.url ?? null,
+});
+
+// A recipe has no recording behind it, so there is no one to credit and no licence to name.
+const synthesisedVariant = (file: string): SoundVariantGuide => ({
+  file,
+  sourcePack: 'Synthesised from a recipe in content; no recording or credit',
+  author: 'None',
+  licence: 'None',
+  sourceUrl: null,
+  synthesised: true,
 });
 
 export const buildHeartbeatSoundGuide = (manifest: Manifest): HeartbeatSoundGuide => {
@@ -477,7 +489,11 @@ export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest)
         minIntervalSimSeconds: sound.minIntervalSimSeconds,
         noiseRadiusMetres: sound.noise.enabled ? sound.noise.radiusMetres : null,
         note: [BR_STATUS_NOTES.get(id), trigger.note].filter((note) => note !== undefined).join(' '),
-        variants: sound.variants.map((file) => soundVariant(file, byFile.get(file))),
+        variants: sound.variants.map((variant) =>
+          typeof variant === 'string'
+            ? soundVariant(variant, byFile.get(variant))
+            : synthesisedVariant(soundVariantKey(id, variant)),
+        ),
       },
     ];
   });
