@@ -257,6 +257,10 @@
       "output": "gungen/designs/hunting-rifle.json"
     },
     {
+      "source": "mobgen/src/mob/acidTemplate.jsonnet",
+      "output": "mobgen/src/mob/acidTemplate.json"
+    },
+    {
       "source": "mobgen/src/mob/materialTemplates.jsonnet",
       "output": "mobgen/src/mob/materialTemplates.json"
     },

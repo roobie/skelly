@@ -143,6 +143,34 @@ export const aabbOf = (shape: Shape): Aabb => {
   }
 };
 
+const capsuleTop = (shape: Capsule): number => {
+  const axis = sub(shape.b, shape.a);
+  const span = Math.hypot(...axis);
+  if (span === 0) {
+    return shape.a[1] + shape.ra;
+  }
+  const up = axis[1] / span;
+  const equator = Math.hypot(axis[0], axis[2]) / span;
+  // The projection-based SDF has hemispherical end caps, not a union of endpoint spheres.
+  return Math.max(shape.a[1] + shape.ra * (up <= 0 ? 1 : equator), shape.b[1] + shape.rb * (up >= 0 ? 1 : equator));
+};
+
+/** Exact upper support of an additive primitive, unlike the conservative rotated AABB. */
+export const topOf = (shape: Shape): number => {
+  if (shape.kind === 'capsule') {
+    return capsuleTop(shape);
+  }
+  const row: Vec3 = shape.rot ? [shape.rot[3], shape.rot[4], shape.rot[5]] : [0, 1, 0];
+  if (shape.kind === 'ellipsoid') {
+    return shape.center[1] + Math.hypot(...row.map((value, axis) => value * shape.radii[axis]!));
+  }
+  return (
+    shape.center[1] +
+    row.reduce((sum, value, axis) => sum + Math.abs(value) * (shape.half[axis]! - shape.round), 0) +
+    shape.round
+  );
+};
+
 export const union = (boxes: readonly Aabb[]): Aabb => {
   if (boxes.length === 0) {
     return { min: [0, 0, 0], max: [0, 0, 0] };
