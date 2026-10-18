@@ -10,6 +10,8 @@ export type ReplayActionPayload =
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
   | { kind: 'furniture.interact'; entityUid: number }
+  | { kind: 'furniture.lift'; entityUid: number }
+  | { kind: 'furniture.place'; pos: [number, number, number] }
   | { kind: 'zombie.downed'; zombieId: number; way: DownedBodyWay }
   | { kind: 'inventory.search'; entityUid: number }
   | { kind: 'inventory.work'; itemUid: number; operation: WorkOperation }
@@ -26,6 +28,8 @@ export type ReplayActionPayload =
   | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
 
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
+const isTriple = (value: unknown, isPart: (part: unknown) => boolean = Number.isFinite): boolean =>
+  Array.isArray(value) && value.length === 3 && value.every(isPart);
 const isSpot = (value: unknown): boolean =>
   Boolean(value) &&
   typeof value === 'object' &&
@@ -91,24 +95,18 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.count as number) > 0
       );
     case 'inventory.to-hands':
-      return (
-        isUid(payload.itemUid) &&
-        Array.isArray(payload.feet) &&
-        payload.feet.length === 3 &&
-        payload.feet.every(Number.isFinite)
-      );
+      return isUid(payload.itemUid) && isTriple(payload.feet);
     case 'inventory.search':
     case 'furniture.interact':
+    case 'furniture.lift':
       return isUid(payload.entityUid);
+    case 'furniture.place':
+      return isTriple(payload.pos, Number.isSafeInteger);
     case 'zombie.downed':
       return isUid(payload.zombieId) && isDownedBodyWay(payload.way);
     case 'item.pickup':
       return (
-        isUid(payload.itemUid) &&
-        (payload.mode === 'pocket' || payload.mode === 'wield') &&
-        Array.isArray(payload.feet) &&
-        payload.feet.length === 3 &&
-        payload.feet.every(Number.isFinite)
+        isUid(payload.itemUid) && (payload.mode === 'pocket' || payload.mode === 'wield') && isTriple(payload.feet)
       );
     case 'inventory.work':
       return isUid(payload.itemUid) && ['continue', 'apart', 'disassemble'].includes(payload.operation as string);
@@ -165,6 +163,9 @@ export interface ReplayCommandOwners {
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
   interact: (entityUid: number) => string | undefined;
+  lift: (entityUid: number) => string | undefined;
+  /** Sets the carried piece down at the aimed cell. */
+  place: (pos: [number, number, number]) => string | undefined;
   clearDownedBody: (zombieId: number, way: DownedBodyWay) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
@@ -196,6 +197,10 @@ export const applyReplayActionPayload = (
       return owners.pickup(payload.itemUid, payload.mode, payload.feet);
     case 'furniture.interact':
       return owners.interact(payload.entityUid);
+    case 'furniture.lift':
+      return owners.lift(payload.entityUid);
+    case 'furniture.place':
+      return owners.place(payload.pos);
     case 'zombie.downed':
       return owners.clearDownedBody(payload.zombieId, payload.way);
     case 'inventory.search':

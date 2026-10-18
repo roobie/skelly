@@ -16,6 +16,7 @@ import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
+import { movableRefusal } from '../core/furnitureMove.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
@@ -27,6 +28,7 @@ import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
+import { raycast } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { pileScatterPlacements } from '../core/scatterPile.ts';
@@ -1786,6 +1788,8 @@ export const startPlay = (
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
+    lift: (uid) => session.liftFurniture(uid),
+    place: (pos) => session.placeFurniture(pos),
     clearDownedBody: (id, way) => session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
     craftContinue: () => {
@@ -2362,6 +2366,19 @@ export const startPlay = (
     return target?.kind === 'furniture' ? target.entity : undefined;
   };
 
+  /** The open cell in front of the surface in the crosshair, or at the end of reach when none is near. */
+  const aimedCell = (): [number, number, number] => {
+    const origin = eye();
+    const direction = lookDir();
+    const reach = reachTuning(registry).useReachMetres / s;
+    const hit = raycast(origin, direction, reach, engine.isSolid);
+    const cell = hit
+      ? hit.block.map((coordinate, axis) => coordinate + hit.normal[axis]!)
+      : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reach));
+    return [cell[0]!, cell[1]!, cell[2]!];
+  };
+  const liftable = (entity: BlockEntity): boolean => movableRefusal(inventory, entity, s) === undefined;
+
   const keyLockHint = (entity: BlockEntity): string | undefined => {
     if (!entities.defOf(entity).door) {
       return undefined;
@@ -2427,7 +2444,10 @@ export const startPlay = (
     });
   };
 
-  /** A tap pockets an item or finishes off a downed body; a hold wields the item or dismembers the body. */
+  /**
+   * A tap pockets an item or finishes off a downed body; a hold wields the item, dismembers
+   * the body or lifts a piece small enough to carry.
+   */
   function interactionPayload(target: InteractionTarget, mode: 'pocket' | 'wield'): ReplayActionPayload {
     switch (target.kind) {
       case 'item':
@@ -2435,17 +2455,22 @@ export const startPlay = (
       case 'body':
         return { kind: 'zombie.downed', zombieId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
       default:
-        return { kind: 'furniture.interact', entityUid: target.entity.uid };
+        return mode === 'wield' && liftable(target.entity)
+          ? { kind: 'furniture.lift', entityUid: target.entity.uid }
+          : { kind: 'furniture.interact', entityUid: target.entity.uid };
     }
   }
 
+  /** While a piece is carried, either press sets it down wherever the crosshair points. */
   function completeWorldInteraction(mode: 'pocket' | 'wield'): void {
     const target = interactionPressTarget;
     interactionPressTarget = undefined;
-    if (!target) {
+    const payload: ReplayActionPayload | undefined = entities.carrying()
+      ? { kind: 'furniture.place', pos: aimedCell() }
+      : target && interactionPayload(target, mode);
+    if (!payload) {
       return;
     }
-    const payload = interactionPayload(target, mode);
     const reason = dispatchScreenCommand(payload);
     if (reason) {
       showRefusal(reason, sim.time);
@@ -3035,19 +3060,57 @@ export const startPlay = (
       },
       visible,
     );
+  /** Where the carried piece would stand if set down now, for the ghost and the prompt. */
+  const carryPreview = () => {
+    const entity = entities.carrying();
+    return entity && { entity, spot: session.furniturePlacement(aimedCell()) };
+  };
+  /** Outlines the crosshair target, or, while carrying, where the piece would be set down. */
+  const markOutline = (
+    target: InteractionTarget | undefined,
+    carry: ReturnType<typeof carryPreview>,
+    outline: boolean,
+  ): void => {
+    if (!carry) {
+      markInteractionTarget(target, outline, markerServices);
+    } else if (outline && 'pos' in carry.spot) {
+      const [x, y, z] = carry.spot.pos;
+      const [w, h, d] = carry.entity.size;
+      view.furniture.markBounds(
+        `carry:${carry.entity.uid}`,
+        [(x + w / 2) * s, (y + h / 2) * s, (z + d / 2) * s],
+        [w * s, h * s, d * s],
+      );
+    } else {
+      view.furniture.markBounds(undefined, [0, 0, 0], [0, 0, 0]);
+    }
+  };
+  const interactionHintFor = (
+    target: InteractionTarget | undefined,
+    carry: ReturnType<typeof carryPreview>,
+  ): string | undefined => {
+    const label = labelForAction('world.interact');
+    if (carry) {
+      return 'refusal' in carry.spot ? carry.spot.refusal : `${label}: set down ${nameOf(carry.entity)}`;
+    }
+    switch (target?.kind) {
+      case 'item':
+        return `${label}: pocket ${inventory.name(target.item)} · ${label} (hold): wield`;
+      case 'furniture':
+        return liftable(target.entity) ? `${useText(target.entity)} · ${label} (hold): lift` : useText(target.entity);
+      case 'body':
+        return downedBodyHint(target.id);
+      default:
+        return undefined;
+    }
+  };
   const promptText = (
     now: number,
     visible: Readonly<HudOptionsState>,
     target: InteractionTarget | undefined,
+    carry: ReturnType<typeof carryPreview>,
   ): string => {
-    let interactionHint: string | undefined;
-    if (target?.kind === 'item') {
-      interactionHint = `${labelForAction('world.interact')}: pocket ${inventory.name(target.item)} · ${labelForAction('world.interact')} (hold): wield`;
-    } else if (target?.kind === 'furniture') {
-      interactionHint = useText(target.entity);
-    } else if (target?.kind === 'body') {
-      interactionHint = downedBodyHint(target.id);
-    }
+    const interactionHint = interactionHintFor(target, carry);
     return playPromptText(
       {
         now,
@@ -3649,7 +3712,8 @@ export const startPlay = (
     menuPointer.update();
 
     const affordance = affordanceForFrame(visible);
-    markInteractionTarget(affordance.target, visible.interactionOutline, markerServices);
+    const carry = carryPreview();
+    markOutline(affordance.target, carry, visible.interactionOutline);
     const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
     debugTools?.setCrosshairVisible(visible.crosshair);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
@@ -3659,7 +3723,7 @@ export const startPlay = (
         hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '', visible),
         crosshairVisible: crosshair.visible,
         crosshairScreenPosition: crosshair.screenPosition,
-        prompt: promptText(now, visible, affordance.target),
+        prompt: promptText(now, visible, affordance.target, carry),
       },
     );
     renderRestAndWait(visible.messages);
