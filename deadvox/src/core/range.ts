@@ -4,59 +4,69 @@ import { smoothstep } from './authoredTerrain.mjs';
 import type { EntitySpec } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk } from './coords.ts';
 import type { Scale } from './scale.ts';
+import type { HandlingRangeDef } from './schema.ts';
 import { type FurnitureSpawn, grow, type Rect, rectDistance } from './site.ts';
 import { sitePalette, terrainShapeOf } from './sitePalette.ts';
 import type { Facing } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
-const HANDLING_RANGE = {
-  gap: 8,
-  blend: 8,
-  length: 82,
-  width: 40,
-  firingLineOffset: 8,
-  targetOffsets: [28, 48, 68],
-  targetHalfWidth: 2,
-  targetHeight: 4,
-  tableOffset: 3,
-} as const;
+/** The range layout content; its absence is reported by `requiredContentIssues`. */
+const handlingRangeOf = (registry: Registry): HandlingRangeDef => {
+  const layout = registry.handlingRange.get(CORE_CONTENT_IDS.testRange);
+  if (!layout) {
+    throw new Error(`content does not define handling range "${CORE_CONTENT_IDS.testRange}"`);
+  }
+  return layout;
+};
+
+/** A target's centre column in block coordinates; each target has its own lateral placement. */
+export interface RangeTarget {
+  readonly x: number;
+  readonly z: number;
+}
 
 /** A firing lane and its worldgen additions, positioned beside a site's bounds. Coordinates are blocks. */
 export class HandlingRange {
   readonly beside: Rect;
   readonly rect: Rect;
-  readonly blend = HANDLING_RANGE.blend;
+  readonly blend: number;
   readonly blendBounds: Rect;
   readonly floor: number;
   readonly firingLine: Rect;
-  readonly targetXs: readonly number[];
+  readonly targets: readonly RangeTarget[];
   readonly table: EntitySpec;
+  private readonly layout: HandlingRangeDef;
   private readonly blocks: { asphalt: number; planks: number; hazard: number; brick: number };
 
   constructor(seed: number, registry: Registry, scale: Scale, { beside, floor }: { beside: Rect; floor?: number }) {
+    const layout = handlingRangeOf(registry);
+    this.layout = layout;
+    this.blend = layout.blend;
     const centreZ = Math.floor((beside.z0 + beside.z1) / 2);
     this.beside = { ...beside };
-    const x0 = beside.x1 + HANDLING_RANGE.gap;
+    const x0 = beside.x1 + layout.gap;
+    const halfWidth = Math.floor(layout.width / 2);
     this.rect = {
       x0,
-      z0: centreZ - HANDLING_RANGE.width / 2,
-      x1: x0 + HANDLING_RANGE.length,
-      z1: centreZ + HANDLING_RANGE.width / 2,
+      z0: centreZ - halfWidth,
+      x1: x0 + layout.length,
+      z1: centreZ - halfWidth + layout.width,
     };
     this.blendBounds = grow(this.rect, this.blend);
     this.floor =
       floor ??
       terrainHeight(seed, terrainShapeOf(registry), scale, Math.floor((this.rect.x0 + this.rect.x1) / 2), centreZ);
-    const lineX = this.rect.x0 + HANDLING_RANGE.firingLineOffset;
+    const lineX = this.rect.x0 + layout.firingLine.offset;
     this.firingLine = {
       x0: lineX,
-      z0: this.rect.z0 + 3,
-      x1: lineX + 2,
-      z1: this.rect.z1 - 3,
+      z0: this.rect.z0 + layout.firingLine.inset,
+      x1: lineX + layout.firingLine.depth,
+      z1: this.rect.z1 - layout.firingLine.inset,
     };
-    this.targetXs = HANDLING_RANGE.targetOffsets.map((offset) => x0 + offset);
+    this.targets = layout.targets.map(({ offset, lateral }) => ({ x: x0 + offset, z: centreZ + lateral }));
     const tableType = 'range_table';
     const tableSize = registry.furniture.get(tableType)?.size;
     if (!tableSize) {
@@ -64,7 +74,7 @@ export class HandlingRange {
     }
     this.table = {
       type: tableType,
-      pos: [this.rect.x0 + HANDLING_RANGE.tableOffset, this.floor + 1, centreZ - 1],
+      pos: [this.rect.x0 + layout.table.offset, this.floor + 1, centreZ + layout.table.lateral],
       size: [...tableSize],
       facing: 's' satisfies Facing,
     };
@@ -112,20 +122,16 @@ export class HandlingRange {
         chunk.set(x - chunkX, y - chunkY, z - chunkZ, id);
       }
     };
-    const centreZ = Math.floor((this.rect.z0 + this.rect.z1) / 2);
-    for (const targetX of this.targetXs) {
-      this.stampTarget(set, targetX, centreZ);
+    for (const target of this.targets) {
+      this.stampTarget(set, target);
     }
   }
 
-  private stampTarget(
-    set: (x: number, y: number, z: number, id: number) => void,
-    targetX: number,
-    centreZ: number,
-  ): void {
-    for (let dz = -HANDLING_RANGE.targetHalfWidth; dz <= HANDLING_RANGE.targetHalfWidth; dz++) {
-      for (let dy = 1; dy <= HANDLING_RANGE.targetHeight; dy++) {
-        const edge = Math.abs(dz) === HANDLING_RANGE.targetHalfWidth || dy === 1 || dy === HANDLING_RANGE.targetHeight;
+  private stampTarget(set: (x: number, y: number, z: number, id: number) => void, { x, z }: RangeTarget): void {
+    const { halfWidth, height } = this.layout.target;
+    for (let dz = -halfWidth; dz <= halfWidth; dz++) {
+      for (let dy = 1; dy <= height; dy++) {
+        const edge = Math.abs(dz) === halfWidth || dy === 1 || dy === height;
         const bullseye = Math.abs(dz) <= 1 && (dy === 2 || dy === 3);
         let block = this.blocks.hazard;
         if (bullseye) {
@@ -133,12 +139,12 @@ export class HandlingRange {
         } else if (edge) {
           block = this.blocks.planks;
         }
-        set(targetX, this.floor + dy, centreZ + dz, block);
+        set(x, this.floor + dy, z + dz, block);
       }
     }
-    for (const dz of [-HANDLING_RANGE.targetHalfWidth - 1, HANDLING_RANGE.targetHalfWidth + 1]) {
-      for (let dy = 0; dy < HANDLING_RANGE.targetHeight; dy++) {
-        set(targetX, this.floor + dy, centreZ + dz, this.blocks.planks);
+    for (const dz of [-halfWidth - 1, halfWidth + 1]) {
+      for (let dy = 0; dy < height; dy++) {
+        set(x, this.floor + dy, z + dz, this.blocks.planks);
       }
     }
   }

@@ -13,6 +13,7 @@ import { visibleGridName } from './inventoryGridName.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
+import { handlingRangeIssues } from './rangeLayout.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
   type BlockDef,
@@ -988,6 +989,14 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
   }
 };
 
+const checkHandlingRanges = (registry: Registry, report: Report) => {
+  for (const layout of registry.handlingRange.values()) {
+    for (const [path, message] of handlingRangeIssues(layout)) {
+      report('handlingRange', layout.id, path, message);
+    }
+  }
+};
+
 const checkZombies = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const zombie of registry.zombies.values()) {
@@ -1245,6 +1254,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkTemplates(registry, report);
   checkSpawnWindows(registry, report);
   checkSiteGeneration(registry, report);
+  checkHandlingRanges(registry, report);
   for (const issue of mapKitIssues(registry)) {
     report(issue.section, issue.id, issue.path, issue.message);
   }
@@ -1264,6 +1274,7 @@ export const REQUIRED_CORE_CONTENT = [
   { section: 'body', id: CORE_CONTENT_IDS.player },
   { section: 'compression', id: CORE_CONTENT_IDS.player },
   { section: 'figures', id: CORE_CONTENT_IDS.player },
+  { section: 'handlingRange', id: CORE_CONTENT_IDS.testRange },
   { section: 'inventory', id: CORE_CONTENT_IDS.player },
   { section: 'meleeClasses', id: CORE_CONTENT_IDS.fistsMeleeClass },
   { section: 'saves', id: CORE_CONTENT_IDS.autosave },

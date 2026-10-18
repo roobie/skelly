@@ -133,6 +133,10 @@
       "output": "deadvox/src/content/base/models-items.json"
     },
     {
+      "source": "deadvox/src/content/base/range.jsonnet",
+      "output": "deadvox/src/content/base/range.json"
+    },
+    {
       "source": "deadvox/src/content/base/readables.jsonnet",
       "output": "deadvox/src/content/base/readables.json"
     },

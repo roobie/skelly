@@ -5,6 +5,7 @@ export const CORE_CONTENT_IDS = {
   player: 'player',
   autosave: 'autosave',
   authoredSite: 'authored',
+  testRange: 'test_range',
   firearmsCombat: 'firearms_combat',
   meleeCombat: 'melee_combat',
   fistsMeleeClass: 'fists',

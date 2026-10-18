@@ -1,0 +1,38 @@
+{
+  "handlingRange": [
+    {
+      "blend": 8,
+      "firingLine": {
+        "depth": 2,
+        "inset": 3,
+        "offset": 8
+      },
+      "gap": 8,
+      "id": "test_range",
+      "length": 82,
+      "table": {
+        "lateral": -1,
+        "offset": 3
+      },
+      "target": {
+        "halfWidth": 2,
+        "height": 4
+      },
+      "targets": [
+        {
+          "lateral": -8,
+          "offset": 28
+        },
+        {
+          "lateral": 8,
+          "offset": 48
+        },
+        {
+          "lateral": 0,
+          "offset": 68
+        }
+      ],
+      "width": 40
+    }
+  ]
+}
