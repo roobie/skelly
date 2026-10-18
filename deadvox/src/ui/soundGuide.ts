@@ -273,6 +273,10 @@ const TRIGGER_ENTRIES = [
   ],
   ['item_drop_wood', { trigger: 'Drop an item into a pile, or spill it onto the ground.' }],
   ['pouch_take', { trigger: 'Take an item out of a pocket on a worn item.' }],
+  ['breath_inhale', { trigger: 'Not played in game yet: waits for hold-breath. Preview it here.' }],
+  ['breath_exhale', { trigger: 'Not played in game yet: waits for hold-breath. Preview it here.' }],
+  ['breath_gasp', { trigger: 'Not played in game yet: waits for hold-breath. Preview it here.' }],
+  ['door_knock_jfxr', { trigger: 'Preview only; not used by gameplay.' }],
 ] satisfies readonly (readonly [SoundEventId, SoundTriggerGuide])[];
 
 export const SOUND_TRIGGER_GUIDE = Object.fromEntries(TRIGGER_ENTRIES) as Record<SoundEventId, SoundTriggerGuide>;
@@ -333,6 +337,10 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ],
   ['item_drop_wood', 'Approved by BR (2026-10-02) on wood; splitting by pile surface remains future work.'],
   ['pouch_take', 'Approved by BR (2026-10-02).'],
+  ['breath_inhale', 'A jfxr preset, awaiting BR’s listen.'],
+  ['breath_exhale', 'A jfxr preset, awaiting BR’s listen.'],
+  ['breath_gasp', 'A jfxr preset, awaiting BR’s listen.'],
+  ['door_knock_jfxr', 'BR’s own jfxr door-knock preset, kept for listening.'],
   ['shambler_idle', 'Approved by BR (2026-10-02).'],
   ['shambler_alert', 'Approved by BR (2026-10-02).'],
   ['shambler_attack', 'Approved by BR (2026-10-02).'],

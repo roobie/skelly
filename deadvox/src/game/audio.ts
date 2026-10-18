@@ -255,7 +255,7 @@ export class GameAudio {
   /** Plays one exact variant, keyed by `soundVariantKey`, at the event's base gain, with no picker jitter or cooldown. */
   preview(event: SoundEventId, file: string): boolean {
     const sound = this.registry.sounds.get(event);
-    if (!sound?.variants.some((variant) => soundVariantKey(sound.id, variant) === file)) {
+    if (!sound?.variants.some((listed) => soundVariantKey(sound.id, listed) === file)) {
       return false;
     }
     const variant = this.variantSource(event, sound, file);
@@ -468,14 +468,18 @@ export class GameAudio {
     return packPath ? PACK_FILES[`${packPath}/${file}`] : undefined;
   }
 
-  private variantBuffer(context: AudioContext, file: string, variant: SoundRecipe | string): Promise<AudioBuffer | null> {
+  private variantBuffer(
+    context: AudioContext,
+    file: string,
+    variant: SoundRecipe | string,
+  ): Promise<AudioBuffer | null> {
     if (typeof variant === 'string') {
       return this.loadBuffer(context, file, variant);
     }
     let buffer = this.buffers.get(file);
     if (!buffer) {
-      const samples = renderSoundRecipe(variant, context.sampleRate);
-      buffer = context.createBuffer(1, samples.length, context.sampleRate);
+      const { samples, sampleRate } = renderSoundRecipe(variant);
+      buffer = context.createBuffer(1, samples.length, sampleRate);
       buffer.copyToChannel(samples, 0);
       this.buffers.set(file, buffer);
     }

@@ -7,7 +7,6 @@ import {
   array,
   check,
   finite,
-  type GenericSchema,
   type InferOutput,
   integer,
   literal,
@@ -29,6 +28,7 @@ import {
   transform,
   tuple,
   union,
+  unknown,
   variant,
   boolean as vBoolean,
 } from 'valibot';
@@ -54,7 +54,7 @@ import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
-import { SOUND_RECIPE_MAX_SECONDS, SYNTH_FILTERS, SYNTH_NOISE_COLOURS, SYNTH_WAVES } from './soundSynth.ts';
+import { jfxrPresetIssues } from './soundSynth.ts';
 import {
   gameHours,
   gameMinutes,
@@ -737,42 +737,18 @@ const SoundMultipliers = pipe(
   check(([min, max]) => min <= max, 'minimum must not exceed maximum'),
 );
 
-/** Breakpoints of [seconds, value], ramped linearly and held past either end. */
-const synthEnvelope = (value: GenericSchema<number>) =>
-  pipe(
-    array(tuple([NonNegative, value])),
-    nonEmpty('needs at least one point'),
-    check(
-      (points) => points.every(([time], i) => i === 0 || points[i - 1]![0] <= time),
-      'point times must not decrease',
-    ),
-  );
-
-const SynthSourceSchema = variant('type', [
-  strictObject({ type: literal('noise'), colour: picklist(SYNTH_NOISE_COLOURS) }),
-  strictObject({ type: literal('tone'), wave: picklist(SYNTH_WAVES), frequencyHz: synthEnvelope(Positive) }),
-]);
-
+/** A jfxr preset as the jfxr editor saves it, named so picks and the sound sheet can tell it apart. */
 const SoundRecipeSchema = strictObject({
   recipe: Id,
-  durationSeconds: pipe(
-    Positive,
-    maxValue(SOUND_RECIPE_MAX_SECONDS, `must be at most ${SOUND_RECIPE_MAX_SECONDS} seconds`),
-  ),
-  seed: pipe(number(), integer('must be a whole number')),
-  layers: pipe(
-    array(
-      strictObject({
-        source: SynthSourceSchema,
-        filters: optional(
-          array(
-            strictObject({ type: picklist(SYNTH_FILTERS), frequencyHz: synthEnvelope(Positive), q: Positive }),
-          ),
-        ),
-        gain: synthEnvelope(NonNegative),
-      }),
-    ),
-    nonEmpty('needs at least one layer'),
+  jfxr: pipe(
+    record(string(), unknown()),
+    rawCheck(({ dataset, addIssue }) => {
+      if (dataset.typed) {
+        for (const message of jfxrPresetIssues(dataset.value)) {
+          addIssue({ message });
+        }
+      }
+    }),
   ),
 });
 
