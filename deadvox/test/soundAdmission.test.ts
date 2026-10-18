@@ -1,25 +1,15 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { createSession, IDLE, type SessionAudio } from '../src/game/session.ts';
+import { startupContent } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: `../content/base/${file}`,
-      data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown,
-    })),
-);
+const { registry } = startupContent();
 const seed = 73;
 const makeSession = (play: SessionAudio['play'], content: Registry = registry) =>
   createSession({

@@ -1,12 +1,10 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import process from 'node:process';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';
 import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
+import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
@@ -48,18 +46,13 @@ import {
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
-const BASE = 'src/content/base';
 const SHAMBLER_CPU_BUDGET_MS = 1;
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const DAY_CYCLE = requireDayCycle(registry);
 const DUSK = resolveSpawnTime(registry.dayCycle!, 'dusk');
 const dayStateAtHour = (hour: number) => dayPhaseAt(DAY_CYCLE, hour * 3600);

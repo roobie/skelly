@@ -1,8 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import type { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import {
@@ -15,13 +13,9 @@ import { pileItemPosition } from '../src/core/pileLayout.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const { registry: base } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((source) => ({ source, data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')) as unknown })),
-);
+const base = baseRegistry();
 const { throwArcHeightMetres: arcHeightMetres } = reachTuning(base);
 
 const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1, origin: { kind: 'fixture' } });

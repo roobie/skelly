@@ -1,8 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
+import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { sunExposedAt } from '../src/core/lights.ts';
@@ -10,14 +8,9 @@ import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
 import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const cycle = requireDayCycle(registry);
 const shambler = registry.zombies.get('shambler')!;
 const scale = makeScale(0.5);

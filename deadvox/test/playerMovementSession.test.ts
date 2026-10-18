@@ -1,7 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
@@ -17,18 +16,11 @@ import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { type MoveIntent, PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
-const { registry, issues } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 
 const FLAT: SolidAt = (_x, y) => y === 0;
 

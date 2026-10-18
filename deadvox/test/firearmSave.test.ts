@@ -1,8 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { type AimStep, assertAimState } from '../src/core/aim.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import type { Item } from '../src/core/items.ts';
 import { pelletShot } from '../src/core/pellets.ts';
@@ -26,14 +23,10 @@ import {
 import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
-const base = 'src/content/base';
-const baseFiles = readdirSync(base)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
-const { registry } = buildRegistry(baseFiles);
+const registry = baseRegistry();
 const version: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,

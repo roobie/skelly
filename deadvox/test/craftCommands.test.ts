@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   Character,
@@ -8,7 +6,6 @@ import {
   practiceForNextLevel,
   SKILL_LEVEL_LEGENDARY,
 } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { disassemblyOutputs } from '../src/core/disassembly.ts';
@@ -16,18 +13,11 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 
-const { registry } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-    })),
-);
+const registry = baseRegistry();
 const make = (handedness?: HandSide) => {
   const character = new Character(registry, handedness ? { handedness } : {});
   const inventory = new Inventory(registry, undefined, undefined, character);

@@ -1,19 +1,12 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
+import { requireDayCycle } from '../src/core/content.ts';
 import { lookDefaultsOf } from '../src/core/lookDefaults.ts';
 import { clampExposure, clampGrade, lookOf, moodOf, TONE_KEYS } from '../src/core/mood.ts';
 import { defaultLookUrlState, parseLookParams, writeLookParams } from '../src/debug/lookUrl.ts';
 import { TONE_MODES } from '../src/render/look.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const defaults = lookDefaultsOf(registry);
 const urlDefaults = { look: defaults, defaultFogginess: requireDayCycle(registry).weather.defaultFogginess };
 

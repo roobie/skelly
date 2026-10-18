@@ -1,9 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide, offSide } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
 import type { HandSide } from '../src/core/inventory.ts';
@@ -16,18 +13,10 @@ import { World } from '../src/core/world.ts';
 import { type MoveIntent, PLAYER } from '../src/game/player.ts';
 import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
-const BASE = 'src/content/base';
-const { registry, issues } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 
 const scale = makeScale(0.5);
 const FACING_EAST = -Math.PI / 2;

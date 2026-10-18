@@ -1,7 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { angularVelocity, type RigidBody } from '../src/core/rigidBody.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -10,17 +7,12 @@ import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } f
 import { type HitImpulse, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BLOCK = 0.5;
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
 const BAT_DEF = registry.items.get('baseball_bat')!.weapon!.melee!;
 const BAT = { ...BAT_DEF, cooldown: BAT_DEF.cooldownSimSeconds };

@@ -1,9 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { Character } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
@@ -11,14 +8,10 @@ import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
-const base = 'src/content/base';
-const { registry: source } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
-);
+const source = baseRegistry();
 const rifleType = 'rifle_assault';
 const projectionErrorPixels = (direction: readonly number[]): readonly [number, number, number] => {
   const viewportHeight = 720;
