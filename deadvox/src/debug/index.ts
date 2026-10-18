@@ -1088,7 +1088,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       new URLSearchParams(location.search).get('loadout') === COMPASS_DEBUG_LOADOUT &&
       !hooks.inventory.hands[dominantSide(hooks.inventory.character)]
     ) {
-      hooks.inventory.add(hooks.inventory.createFixture('compass'), {
+      hooks.inventory.add(hooks.inventory.create('compass'), {
         kind: 'hand',
         side: dominantSide(hooks.inventory.character),
       });

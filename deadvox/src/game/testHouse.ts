@@ -254,7 +254,7 @@ const placeRepairCornerItem = ({
   const stackSize = registry.items.get(type)?.stack ?? 1;
   let remaining = count;
   while (remaining > 0) {
-    const item = inventory.createFixture(type, Math.min(remaining, stackSize), condition);
+    const item = inventory.create(type, Math.min(remaining, stackSize), condition);
     const added = pileIndexes.some((index) => inventory.add(item, { kind: 'pile', pos: pilePositions[index]! }));
     if (!added) {
       throw new Error(`No room for ${type} in the test-house repair corner`);

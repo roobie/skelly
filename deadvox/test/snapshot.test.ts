@@ -656,7 +656,7 @@ describe('craft job codec and ownership', () => {
         gather: 0,
         elapsed: 37,
         duration: disassemblyWorkTime(radio),
-        components: [{ uid: sourceUid, type: radio.id, count: 1, condition: 0, origin: { kind: 'fixture' } }],
+        components: [{ uid: sourceUid, type: radio.id, count: 1, condition: 0 }],
       };
       const decodedDisassembly = await decodeSave(await encodeFixture(disassembly), {
         version: formatVersion,

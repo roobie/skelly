@@ -120,7 +120,7 @@ describe('authored scenario composition', () => {
             (candidate) => candidate.channel === channel && candidate.destination.join(',') === anchor.join(','),
           )!;
           expect(point.context.usage).toEqual(['Medical']);
-          expect(entry.origin).toMatchObject({ kind: 'economy', source: point.id, channel });
+          expect(entry.count).toBeGreaterThan(0);
         }
       }
       expect(

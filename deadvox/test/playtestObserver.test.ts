@@ -15,7 +15,7 @@ const runFurnitureChain = (startsInFurniture: boolean, metrics = new SessionMetr
   inventory.add(backpack, { kind: 'hand', side: 'right' });
   const cupboard = inventory.furnish(
     { type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' },
-    startsInFurniture ? [{ type: 'rag', count: 1, condition: 1, origin: { kind: 'fixture' } }] : [],
+    startsInFurniture ? [{ type: 'rag', count: 1, condition: 1 }] : [],
   )!;
   inventory.entities.markSearched(cupboard);
   const item = startsInFurniture ? cupboard.pockets![0]![0]!.item : inventory.create('rag');

@@ -6,7 +6,6 @@
 import { array, check, type InferOutput, picklist, pipe, strictObject } from 'valibot';
 import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import { copyOrigin, type ItemOrigin } from './itemOrigin.ts';
 import { Rng } from './random.ts';
 import type { FixedLootItemDef } from './schema.ts';
 
@@ -152,7 +151,6 @@ export const lootTypeIssue = (
 };
 
 export interface Rolled {
-  readonly origin: ItemOrigin;
   type: string;
   count: number;
   /** 0 to 1, rounded to hundredths so identical rolls stack. */
@@ -180,11 +178,11 @@ const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T 
  * Items for one count of an entry: a stackable item comes as stacks of up to its
  * limit, anything else as separate items.
  */
-const itemsOf = (registry: Registry, { type, count, condition, origin }: Rolled): Rolled[] => {
+const itemsOf = (registry: Registry, { type, count, condition }: Rolled): Rolled[] => {
   const limit = registry.items.get(type)?.stack ?? 1;
   const out: Rolled[] = [];
   for (let left = count; left > 0; left -= limit) {
-    out.push({ type, count: Math.min(left, limit), condition, origin });
+    out.push({ type, count: Math.min(left, limit), condition });
   }
   return out;
 };
@@ -215,9 +213,6 @@ export const selectLootType = (
   return admitted.length === 0 ? undefined : pick(admitted, rng).type;
 };
 
-const originOf = (point: LootSpawnPoint, mode: 'fixed' | 'random'): ItemOrigin =>
-  copyOrigin(point.fixture ? { kind: 'fixture' } : { kind: 'economy', source: point.id, channel: point.channel, mode });
-
 const fixedItems = (
   registry: Registry,
   items: readonly FixedLootItemDef[],
@@ -232,9 +227,7 @@ const fixedItems = (
       }
       return [];
     }
-    return itemsOf(registry, { type, count, condition, origin: originOf(point, 'fixed') }).map((rolled) =>
-      fitted ? { ...rolled, fitted } : rolled,
-    );
+    return itemsOf(registry, { type, count, condition }).map((rolled) => (fitted ? { ...rolled, fitted } : rolled));
   });
 
 const leafCandidates = (entries: readonly LootEntry[]): WeightedCandidate[] =>
@@ -283,7 +276,7 @@ const rollTable = (registry: Registry, tableId: string, point: LootSpawnPoint, r
     } else if (entry?.item !== undefined) {
       const count = entry.count ? rng.int(entry.count[0], entry.count[1]) : 1;
       const condition = entry.condition ? Math.round(rng.range(entry.condition[0], entry.condition[1]) * 100) / 100 : 1;
-      out.push(...itemsOf(registry, { type: entry.item, count, condition, origin: originOf(point, 'random') }));
+      out.push(...itemsOf(registry, { type: entry.item, count, condition }));
     }
   }
   return out;

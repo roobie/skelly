@@ -556,13 +556,14 @@ same admission without becoming optional. Source-point identity owns the random
 stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
-Keep an item's birth origin when it moves, splits, acquires fitted parts or is saved.
-Unlike origins do not merge, so later counts can attribute supply without confusing
-its source with its current map, cargo or player owner. Explicit debug stock is
-fixture supply, never ordinary economy stock; crafted results have a separate origin.
-Current ownership stays in the inventory tree, not in the birth record. See
-`src/core/itemOrigin.ts`, `ItemOrigin`; `src/core/items.ts`, `stackRoom`; and
-`src/core/inventory.ts`, `Inventory.items`.
+Items carry no record of where they were born. A central economy counts items by type
+and by where they are when it counts (map, cargo, player, hoard), so a birthplace adds
+nothing to the count, and keeping one only stopped equal items from stacking. State
+the economy needs about a spawn location (whether its item was taken, refill, required
+stock, how long an untouched item lasts) belongs to the loot point, not to the item.
+Debug stock is kept out of the world economy by the scene that supplies it, not by a
+mark on the item. See `src/core/items.ts`, `stackRoom`, and `src/core/loot.ts`,
+`LootSpawnPoint`.
 
 ## Items and inventory
 
