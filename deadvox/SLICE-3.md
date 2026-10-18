@@ -100,11 +100,6 @@ Paperwork; no game code.
 > the UI must show unreadied vs readied
 > unreadied does not have muzzle forward - rather downward
 
-**BR, 2026-10-18 23:09, on blocking:**
-
-> En-garde alone blocks, and S is no longer needed
-> but it's not perfect - higher skill=higher mitigation _and_ we need a visual cue
-
 **Lead's question in #267, 2026-10-05 13:12:**
 
 > 3. What does left click do with an unreadied firearm: nothing, or the nope?
