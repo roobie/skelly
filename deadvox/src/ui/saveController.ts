@@ -837,9 +837,7 @@ export class SaveController {
     const savedChoice = this.showSavedChoice;
     $('overlay').classList.toggle('saved-choice', savedChoice);
     $('title-choice-heading').hidden = !savedChoice;
-    const pastLauncher = this.entered || this.requestedContinue;
-    $('new-character-options').hidden = pastLauncher;
-    $('mod-options').hidden = pastLauncher;
+    $('new-character-options').hidden = this.entered || this.requestedContinue;
     $('go').setAttribute('aria-disabled', String(!(this.entered || (this.ready && this.newWorldLauncher))));
     button.disabled = !(this.ready && controls.continueEnabled);
     button.hidden = !(controls.showTitleControls && this.restored) || this.entered;

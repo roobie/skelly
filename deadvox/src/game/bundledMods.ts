@@ -17,14 +17,8 @@ interface Row {
 }
 type Factors = Readonly<Record<keyof typeof BEGINNER_FACTORS, number>>;
 
-export interface BundledModChoice {
+interface BundledMod {
   id: string;
-  label: string;
-  /** Hover detail naming what the mod changes, which the player cannot see before playing. */
-  detail: string;
-}
-
-interface BundledMod extends BundledModChoice {
   /** Builds the mod's data from the base sources, so base tuning changes carry through. */
   derive: (base: readonly { data: unknown }[]) => Record<string, unknown>;
 }
@@ -58,31 +52,12 @@ const scaleHostile = (row: Row, factors: Factors): Row => {
 const BUNDLED_MODS: readonly BundledMod[] = [
   {
     id: 'beginner',
-    label: 'Beginner',
-    detail: 'Zombies deal less damage, move slower, sense less and fall sooner.',
     derive: (base) => ({
       id: 'beginner',
       zombies: baseRows(base, 'zombies').map((row) => scaleHostile(row, BEGINNER_FACTORS)),
     }),
   },
 ];
-
-export const bundledModChoices: readonly BundledModChoice[] = BUNDLED_MODS.map(({ id, label, detail }) => ({
-  id,
-  label,
-  detail,
-}));
-
-/** The page address that starts with exactly `ids` as bundled mods, keeping every other parameter. */
-export const bundledModsUrl = (href: string, ids: readonly string[]): string => {
-  const target = new URL(href);
-  if (ids.length > 0) {
-    target.searchParams.set('mods', ids.join(','));
-  } else {
-    target.searchParams.delete('mods');
-  }
-  return target.href;
-};
 
 export const bundledModIdsFromUrl = (params: URLSearchParams): string[] => {
   const value = params.get('mods');

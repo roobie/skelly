@@ -27,7 +27,6 @@ import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
-import { mountModOptions } from './ui/modOptions.ts';
 import { chooseMods } from './ui/modsPanel.ts';
 import { contentLookup, SaveController } from './ui/saveController.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
@@ -203,13 +202,6 @@ if (bench === 'report') {
       event.stopPropagation();
       location.assign(tutorialUrl(location.href, true));
     });
-    if (!showMods) {
-      // Choosing bundled mods would replace the player mods `mods=1` loaded, so that page has no list.
-      mountModOptions(
-        document.getElementById('mod-options')!,
-        bundled.admitted.map(({ id }) => id),
-      );
-    }
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
     const saveController = new SaveController(backend, bundled.admitted, browserSelection?.admitted);

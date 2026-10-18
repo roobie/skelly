@@ -2,7 +2,7 @@
 read_if:
   - you author or change Deadvox content sources or their build pipeline
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
-  - you add or change a bundled mod such as beginner mode, or how the launcher list or `?mods=` selects one
+  - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
@@ -64,10 +64,8 @@ The panel remains opt-in pending BR's decision about making it the default entry
 
 ## Bundled mods
 
-A bundled mod ships with the game but applies only when chosen. The new-world launcher lists
-every bundled mod so a new player can turn on beginner mode without knowing a URL parameter;
-`?mods=` names the same choice in a link. `?mods=1` is the separate mods panel, and its page
-has no list because a bundled choice would replace the player mods it loaded. Each one goes through
+A bundled mod ships with the game but is applied only when asked, with `?mods=` and
+a comma-separated list of ids; `?mods=1` is the separate mods panel. Each one goes through
 the same intake as a player mod, so an unknown id is refused at startup with the usual
 diagnostics instead of being ignored. A bundled mod is derived from the base sources when
 it is selected, never written out as a second set of numbers, so it follows base tuning.
@@ -83,11 +81,8 @@ night does not draw enemies from full range. The mode exists so a new player can
 game against slower, weaker enemies that notice less.
 
 A save records each active bundled mod as a content pack in its version identity, so a
-beginner-mode world is stored apart from a normal one. Content and save identity are fixed
-before the launcher shows, so changing the list reloads with the new `?mods=` rather than
-swapping content live. The list therefore always shows the running mods, and Continue resumes
-a save only under the mods it was made with; changing the list switches which saved world is
-offered and leaves the other preserved. See `src/ui/modOptions.ts`, `mountModOptions`, and
+beginner-mode world is stored apart from a normal one. The URL alone decides the mode, because
+no menu switch exists for it: a world loads only when started with the same `?mods=`. See
 `src/core/saveFormat.ts`, `currentSaveVersionIdentity`.
 
 ## Core-pack integrity
