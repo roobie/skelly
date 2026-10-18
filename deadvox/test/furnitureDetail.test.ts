@@ -1,4 +1,4 @@
-import { Box3, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { Box3, Color, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -87,6 +87,46 @@ describe('furniture detail', () => {
     entities.markSearched(first);
     furniture.sync(entities);
     expect((furniture.group.children[0] as Mesh).geometry).toBe(geometry);
+  });
+
+  it('paints shape boxes with their own colour, falling back to the furniture colour', () => {
+    const { registry, issues } = buildRegistry([
+      {
+        source: 'tinted.json',
+        data: {
+          furniture: [
+            {
+              id: 'tinted_heap',
+              name: 'Heap',
+              size: [2, 1, 2],
+              color: '#102030',
+              shape: [
+                { position: [0, 0, 0], size: [1, 0.5, 1], color: '#ff0000' },
+                { position: [1, 0, 1], size: [1, 0.5, 1] },
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(registry);
+    const meshes = new FurnitureMeshes(0.5);
+    entities.add({ type: 'tinted_heap', size: [2, 1, 2], pos: [0, 0, 0], facing: 'n' });
+    meshes.sync(entities);
+    const mesh = meshes.group.children[0] as Mesh;
+    const colors = mesh.geometry.getAttribute('color');
+    const painted = new Set<string>();
+    for (let vertex = 0; vertex < colors.count; vertex++) {
+      painted.add([colors.getX(vertex), colors.getY(vertex), colors.getZ(vertex)].map((c) => c.toFixed(3)).join());
+    }
+    const expected = new Set(
+      ['#ff0000', '#102030'].map((hex) => {
+        const color = new Color(hex);
+        return [color.r, color.g, color.b].map((c) => c.toFixed(3)).join();
+      }),
+    );
+    expect(painted).toEqual(expected);
   });
 
   it('rejects detail on furniture whose other visual authority would hide it', () => {

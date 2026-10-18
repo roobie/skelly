@@ -1122,6 +1122,8 @@ const FurnitureShapeBoxSchema = strictObject({
   position: tuple([NonNegative, NonNegative, NonNegative]),
   /** Extent in cell coordinates. */
   size: tuple([Positive, Positive, Positive]),
+  /** Paints this box instead of the furniture's colour, so a heap can mix materials. */
+  color: optional(Color),
 });
 
 const FurnitureSchema = pipe(

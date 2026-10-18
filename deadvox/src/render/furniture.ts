@@ -136,7 +136,7 @@ export class FurnitureMeshes {
     if (def.door) {
       return this.door(entity, material, def);
     }
-    if (def.appearance) {
+    if (def.appearance || def.shape?.some((box) => box.color)) {
       return this.shaped(entity, def, this.material('#ffffff', true));
     }
     if (def.shape) {
@@ -169,10 +169,20 @@ export class FurnitureMeshes {
     let geometry = this.shapeGeometries.get(def.id);
     if (!geometry) {
       const [width, , depth] = def.size;
-      const parts = (def.shape ?? []).map(({ position, size }) => {
+      const tinted = def.shape?.some((box) => box.color) ?? false;
+      const parts = (def.shape ?? []).map(({ position, size, color }) => {
         const [x, y, z] = position;
         const [w, h, d] = size;
-        return new BoxGeometry(w, h, d).translate(x + w / 2 - width / 2, y + h / 2, z + d / 2 - depth / 2);
+        const part = new BoxGeometry(w, h, d).translate(x + w / 2 - width / 2, y + h / 2, z + d / 2 - depth / 2);
+        if (tinted) {
+          const paint = new Color(color ?? def.color);
+          const { count } = part.getAttribute('position');
+          part.setAttribute(
+            'color',
+            new Float32BufferAttribute(Array.from({ length: count }, () => [paint.r, paint.g, paint.b]).flat(), 3),
+          );
+        }
+        return part;
       });
       geometry = def.appearance ? furnitureDetail(def) : mergeGeometries(parts, false);
       for (const part of parts) {
