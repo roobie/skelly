@@ -63,49 +63,49 @@ export interface ReachSnapshot {
 export const pileDistance = (position: Vec3, pile: Vec3, blockSize: number): number =>
   Math.hypot(pile[0] + 0.5 - position[0], pile[1] - position[1], pile[2] + 0.5 - position[2]) * blockSize;
 
+const chestOf = (player: ReachPlayer): Vec3 => [
+  player.position[0],
+  player.position[1] + reachTuning(player.inventory.registry).chestHeightMetres / player.blockSize,
+  player.position[2],
+];
+
 /** Chest to nearest point of the whole furniture box, not its anchor/centre. */
 export const furnitureDistance = (player: ReachPlayer, entity: BlockEntity): number =>
-  player.inventory.entities.distance(entity, [
-    player.position[0],
-    player.position[1] + reachTuning(player.inventory.registry).chestHeightMetres / player.blockSize,
-    player.position[2],
-  ]) * player.blockSize;
+  player.inventory.entities.distance(entity, chestOf(player)) * player.blockSize;
+
+type Box = readonly [low: Vec3, high: Vec3];
+type BodyBox = Pick<Body, 'pos' | 'halfWidth' | 'height'>;
+
+const bodyBox = (body: BodyBox): Box => [
+  [body.pos[0] - body.halfWidth, body.pos[1], body.pos[2] - body.halfWidth],
+  [body.pos[0] + body.halfWidth, body.pos[1] + body.height, body.pos[2] + body.halfWidth],
+];
 
 /** Chest to nearest point of a body's box, as for furniture. */
-export const bodyDistance = (player: ReachPlayer, body: Pick<Body, 'pos' | 'halfWidth' | 'height'>): number => {
-  const chestHeight = reachTuning(player.inventory.registry).chestHeightMetres;
-  const chest: Vec3 = [player.position[0], player.position[1] + chestHeight / player.blockSize, player.position[2]];
-  const low: Vec3 = [body.pos[0] - body.halfWidth, body.pos[1], body.pos[2] - body.halfWidth];
-  const high: Vec3 = [body.pos[0] + body.halfWidth, body.pos[1] + body.height, body.pos[2] + body.halfWidth];
+export const bodyDistance = (player: ReachPlayer, body: BodyBox): number => {
+  const chest = chestOf(player);
+  const [low, high] = bodyBox(body);
   const gaps = chest.map((value, axis) => value - Math.min(Math.max(value, low[axis]!), high[axis]!));
   return Math.hypot(...gaps) * player.blockSize;
 };
-
-const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
-  pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres;
 
 // Stop just short of the face: a line that ends inside the box crosses the cell beside it
 // whenever the player stands off the face, refusing a door or a wall-row shelf in plain view.
 const FACE_GAP_BLOCKS = 1e-3;
 
-const clearLine = (player: ReachPlayer, entity: BlockEntity, obstacles: ReachObstacles): boolean => {
-  const { entities, registry } = player.inventory;
-  const chest: Vec3 = [
-    player.position[0],
-    player.position[1] + reachTuning(registry).chestHeightMetres / player.blockSize,
-    player.position[2],
-  ];
-  const low = entity.pos;
-  const high = entity.pos.map((value, axis) => value + entity.size[axis]!);
+/** The furniture being reached never blocks its own line. */
+const clearLine = (player: ReachPlayer, obstacles: ReachObstacles, [low, high]: Box, target?: BlockEntity): boolean => {
+  const { entities } = player.inventory;
+  const chest = chestOf(player);
   const blocked = (x: number, y: number, z: number): boolean => {
     const occupant = entities.at(x, y, z);
     if (!occupant) {
       return obstacles.isSolid(x, y, z);
     }
-    return occupant.uid !== entity.uid && Boolean(entities.defOf(occupant).door) && entities.blocks(occupant);
+    return occupant.uid !== target?.uid && Boolean(entities.defOf(occupant).door) && entities.blocks(occupant);
   };
-  const reaches = (target: Vec3): boolean => {
-    const offset = target.map((value, axis) => value - chest[axis]!) as Vec3;
+  const reaches = (point: Vec3): boolean => {
+    const offset = point.map((value, axis) => value - chest[axis]!) as Vec3;
     const length = Math.hypot(...offset);
     if (length === 0) {
       return true;
@@ -119,27 +119,31 @@ const clearLine = (player: ReachPlayer, entity: BlockEntity, obstacles: ReachObs
       return [];
     }
     const plane = value < low[axis]! ? low[axis]! - FACE_GAP_BLOCKS : high[axis]! + FACE_GAP_BLOCKS;
-    const target = chest.map((other, otherAxis) =>
+    const point = chest.map((other, otherAxis) =>
       otherAxis === axis
         ? plane
         : Math.min(Math.max(other, low[otherAxis]! + FACE_GAP_BLOCKS), high[otherAxis]! - FACE_GAP_BLOCKS),
     ) as Vec3;
-    return [target];
+    return [point];
   });
   return faceTargets.length === 0 || faceTargets.some(reaches);
 };
 
+const lineInReach = (player: ReachPlayer, box: Box, target?: BlockEntity): boolean =>
+  player.obstacles === undefined || clearLine(player, player.obstacles, box, target);
+
 const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
   furnitureDistance(player, entity) <= reachTuning(player.inventory.registry).reachMetres &&
-  (player.obstacles === undefined || clearLine(player, entity, player.obstacles));
+  lineInReach(player, [entity.pos, entity.pos.map((value, axis) => value + entity.size[axis]!) as Vec3], entity);
 
-/** Generic spatial collection: not inventory admission. */
-const pilesInRadius = (inventory: Inventory, position: Vec3, radiusBlocks: number): Pile[] => {
-  const distance = (pile: Pile) => pileDistance(position, pile.pos, 1);
-  return [...inventory.piles.values()]
-    .filter((pile) => distance(pile) <= radiusBlocks)
-    .sort((a, b) => distance(a) - distance(b));
-};
+const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
+  pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres &&
+  lineInReach(player, [position, position.map((value) => value + 1) as Vec3]);
+
+/** A downed body is reached as furniture is: within the limit, along a clear line to its box. */
+export const bodyInReach = (player: ReachPlayer, body: BodyBox): boolean =>
+  bodyDistance(player, body) <= reachTuning(player.inventory.registry).reachMetres &&
+  lineInReach(player, bodyBox(body));
 
 /** Wire the existing move validator to this same live core policy. */
 export const bindReach = (player: ReachPlayer): (() => ReachSnapshot) => {
@@ -176,7 +180,10 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
   ) {
     return previous.snapshot;
   }
-  const piles = pilesInRadius(inventory, position, reachTuning(inventory.registry).reachMetres / blockSize);
+  const pileDistanceOf = (pile: Pile) => pileDistance(position, pile.pos, blockSize);
+  const piles = [...inventory.piles.values()]
+    .filter((pile) => pileInReach(player, pile.pos))
+    .sort((a, b) => pileDistanceOf(a) - pileDistanceOf(b));
   const furniture = [...inventory.entities.all]
     .filter((entity) => entity.pockets !== undefined && furnitureInReach(player, entity))
     .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b));
