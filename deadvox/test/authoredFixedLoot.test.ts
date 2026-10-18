@@ -580,9 +580,11 @@ const doorPanelFor = (door: DoorPiece) =>
     {
       uid: 1,
       type: door.furniture,
+      origin: door.pos,
       pos: door.pos,
       size: door.size,
       facing: door.facing,
+      carried: false,
       searched: false,
       open: true,
     } satisfies BlockEntity,
@@ -1629,9 +1631,11 @@ describe('authored fixed loot', () => {
       const renderEntity = {
         uid: 1,
         type: car.furniture,
+        origin: car.pos,
         pos: car.pos,
         size: car.size,
         facing: car.facing,
+        carried: false,
         searched: false,
         open: false,
       } satisfies BlockEntity;
@@ -1645,9 +1649,11 @@ describe('authored fixed loot', () => {
       const liftEntity = {
         uid: 2,
         type: supportingLift!.furniture,
+        origin: supportingLift!.pos,
         pos: supportingLift!.pos,
         size: supportingLift!.size,
         facing: supportingLift!.facing,
+        carried: false,
         searched: false,
         open: false,
       } satisfies BlockEntity;

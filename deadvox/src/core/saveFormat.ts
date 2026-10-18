@@ -153,7 +153,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 52;
+export const SAVE_SCHEMA_VERSION = 53;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -477,9 +477,12 @@ const inventoryCore = obj({
 const blockEntitySchema = obj({
   uid: positiveInt,
   type: str({ id: true }),
+  origin: tuple(safeInt, safeInt, safeInt),
   pos: tuple(safeInt, safeInt, safeInt),
   size: tuple(positiveInt, positiveInt, positiveInt),
   facing: enumeration(['n', 'e', 's', 'w']),
+  carried: opt(enumeration([true])),
+  fixed: opt(enumeration([true])),
   searched: bool,
   open: bool,
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
@@ -1263,7 +1266,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   const chunkSet = new Set<string>();
   const entityIds = new Set<number>();
   const zombieIds = new Set<number>();
-  const anchors = new Set<string>();
+  const origins = new Set<string>();
   const spawnKeys = new Set<string>();
   const regionChunks = WORLD_REGION_METRES / (CHUNK * worldOptions.blockSize);
   if (!Number.isSafeInteger(regionChunks) || regionChunks <= 0) {
@@ -1314,11 +1317,11 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
         throw new Error(`Duplicate block entity id ${entity.uid}`);
       }
       entityIds.add(entity.uid);
-      const anchor = entity.pos.join(',');
-      if (anchors.has(anchor)) {
-        throw new Error(`Duplicate block entity anchor ${anchor}`);
+      const origin = entity.origin.join(',');
+      if (origins.has(origin)) {
+        throw new Error(`Duplicate block entity origin ${origin}`);
       }
-      anchors.add(anchor);
+      origins.add(origin);
       if (
         regionIndex(entity.pos[0], worldOptions.blockSize) !== regionX ||
         regionIndex(entity.pos[2], worldOptions.blockSize) !== regionZ

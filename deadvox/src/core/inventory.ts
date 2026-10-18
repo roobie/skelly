@@ -330,7 +330,7 @@ export class Inventory {
           return inventory.piles.values();
         },
         get entities() {
-          return inventory.entities.all;
+          return inventory.entities.records;
         },
       });
     }
