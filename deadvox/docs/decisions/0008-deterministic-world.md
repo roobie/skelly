@@ -6,7 +6,8 @@ read_if:
   - you're changing what column loading, unloading or streaming may do to the simulation
   - you're changing how time compression is derived
   - you're changing what generation or save identity covers once mods evaluate expressions
-  - you're asking whether multiplayer is in scope and what it asks of the simulation
+  - you're asking whether and when multiplayer ships and what it asks of the simulation
+  - you're deciding where catch-up must agree with ordinary ticking and where the coarse model takes over
 tags: [deadvox, adr, determinism, simulation, worldgen, saves, multiplayer, mods, catch-up]
 ---
 
@@ -26,26 +27,30 @@ Time compression follows frame time, and loading or unloading a column has simul
 
 The same seed and the same inputs give the same world and the same simulation, bit for bit, in every supported browser. Multiplayer is in scope as lockstep: peers exchange inputs and each runs the whole simulation.
 
+- **Version.** The determinism contract ships in version 1. Networked lockstep play ships after it.
+
 - **Save truth.** The snapshot is the save's truth. The input log beside it is bounded and serves replay and debugging; it never replaces the snapshot.
 - **Numbers.** The simulation core and worldgen compute with doubles. The engine's approximated Math functions and `**` are banned there by lint, and a project-owned deterministic math module, built only from operations the spec rounds exactly, provides them. Mod expressions call only that module. Randomness comes only from the seeded streams.
 - **Enforcement.** The lint ban, and a check that compares simulation and worldgen fingerprints on two engines, both gate CI.
 - **Time compression** is a pure function of simulated input. Frame rate decides how fast the simulation runs in real time, never its outcome.
 - **Streaming.** Simulation effects may follow the player's position, which is an input, but never the timing of a column load or unload. Tier changes are computed from position on the tick; the streamer serves them and does not cause them.
 - **Around the player.** The player's region and all eight neighbouring regions are simulated, each with the player's presence as an input. With several players, the simulated set is the union of their blocks.
-- **Catch-up.** Within a defined time or distance horizon, a region's catch-up agrees with full ticking within each system's tolerance. Beyond it, the system's coarse model is canonical. Either way catch-up is deterministic, because replay reruns it.
+- **Catch-up.** The horizon is the edge of the block around the player. A region in the block runs the region model with the player's presence, and its catch-up while unloaded agrees with full ticking within each system's tolerance. A region that leaves the block switches to the system's coarse model, which is canonical. Either way catch-up is deterministic, because replay reruns it.
 - **Generation identity** covers the evaluated output of the content in a canonical form, not the pack sources. Expressions evaluated per tick are engine behaviour, which the simulation fingerprint covers.
 
 ## Reasons for the details
 
 - **Simulation as well as worldgen.** Worldgen agreement alone protects saved edits from terrain that changed under a browser update, but lockstep and cross-browser replay need the simulation to agree too. The price of adopting it grows with every new file that calls the engine's functions, so it is cheapest now.
 - **Lockstep.** It allows multiplayer with little bandwidth and no game server. Adopting it later costs more than now, because each system written without the contract adds rework; leaving it later is cheap, since it means dropping the checks.
+- **Contract in version 1, play after it.** The contract adds little beyond what the lint ban and cross-engine check already require, and it keeps lockstep cheap to add later. Networked play or a two-peer harness can still be added later at little cost.
 - **Snapshot plus a bounded log.** Loading is bounded by save size rather than play time, and a determinism error cannot compound across sessions. The bounded log still reproduces a bug inside its window.
 - **Floats with our own functions.** The cost is moderate and contained: one small module, call sites swapped one at a time, some speed per function, and a lint rule that keeps them swapped. Tunables stay plain JSON numbers, whose parsing is already exact, worldgen noise keeps its form and physics code keeps its shape. Mod expressions stay usable by calling only the module's functions. Seeded outputs change once, and undoing the choice means dropping the rule. Fixed point stays open later at its own price.
 - **Enforce now.** Drift is caught in the change that introduces it, not found later across every file written meanwhile. The check asserts that fingerprints are equal, not any value, so it pins nothing that drifts.
 - **Pure compression.** Live play and replay then agree without recording compression. The change is contained in the frame driver and the scheduler. It rules out pacing the outcome by frame budget, which no rule needs.
 - **Position, not load timing.** Load timing is the part that breaks determinism; position is an input, so distance tiers keep working. This keeps the save's promise that play continues as if save and load had not happened, keeps lockstep possible and takes column events out of the replay. Forbidding every residency effect would instead make the simulation read terrain on demand everywhere.
 - **The block of nine.** A region next to the player's should behave as though the player is next to it, and the diagonal neighbours are as adjacent as the others, so all eight count. Which regions are in the block depends only on position, so it fits the streaming rule and lockstep. Its stepped cost is nine regions per player, whatever the map size. State a region gains while in the block goes into the snapshot when it leaves, so it needs no ledger. Widening the block later is a tuning change.
-- **A catch-up horizon.** Short absences are the ones a player can compare with what they saw; long ones are not. Agreement tests are needed only for short catch-up, and chaotic systems such as pursuit, physics and combat cannot agree with ticking over long absences anyway. Moving the horizon later moves a boundary, not code.
+- **A catch-up horizon.** Short absences are the ones a player can compare with what they saw; long ones are not, and chaotic systems such as pursuit, physics and combat cannot agree with ticking over long absences anyway.
+- **The horizon at the block's edge.** It adds no state and no tunable. Agreement tests cover only the region model against ordinary ticking, for a region in the block but unloaded; the coarse model needs determinism tests, not agreement tests.
 - **Evaluated output.** Reorganising a pack without changing what it means keeps saves valid, where a source hash would treat two equal results as different worlds. Moving to source identity stays cheap.
 
 ## Consequences
@@ -56,6 +61,8 @@ Crossing a region border admits or drops several regions at once, so admission n
 
 The block decides influence near the player only. Influence that travels farther than one region, or continues after the player leaves, is carried by edits stored as diffs; a region event ledger or abstract hordes would add to that without a rewrite.
 
-The world has a second fidelity regime beyond the horizon, so a player may find that it behaves differently out of sight over long absences.
+Until networked play ships, nothing exercises input order across peers, so input timing, peer streams and the union of blocks may need rework when they first meet real peers.
+
+The world has a second fidelity regime beyond the block, so a player may find that it behaves differently out of sight. Because the horizon is the block's edge, widening the block moves the horizon, and the two can't be tuned apart. A player who steps two regions away and straight back gets a coarse result over an absence of seconds. Border hysteresis has to cover both the block and the horizon. A later time or distance horizon adds a boundary and leaves the models alone.
 
 Identity needs a canonical form for evaluated content, and every new content field enters it.

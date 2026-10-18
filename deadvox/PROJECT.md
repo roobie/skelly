@@ -13,7 +13,7 @@ Deadvox is a browser-based survival game combining a large scavenged world with 
 
 ## Project boundaries
 
-- Static hosting with no game server. Multiplayer is lockstep, so the simulation agrees bit for bit across browsers; see [ADR 0008](docs/decisions/0008-deterministic-world.md).
+- Static hosting with no game server. The simulation agrees bit for bit across browsers from version 1, so lockstep multiplayer can follow it; see [ADR 0008](docs/decisions/0008-deterministic-world.md).
 - Content is data and can be extended with mods.
 - Simulation state is plain data so it can pause, compress time, catch up and save.
 - The UI stays outside `src/core`; Gungen exports firearm models that Deadvox validates and loads.

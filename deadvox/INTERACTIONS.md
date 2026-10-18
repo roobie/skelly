@@ -47,6 +47,6 @@ Wait stops on movement. Rest can be cancelled through its anchor or its cancel a
 
 An appliance is a block entity whose behavior comes from components, not its id. Containers own pockets; controls issue commands; workstations provide recipe qualities; processes run without the player; power joins the electricity graph.
 
-A process runs while its chunk is loaded and catches up when it loads again. Settle its state at every rate change before applying the new rate; otherwise unloaded time can disagree with live ticking. Test catch-up against ordinary ticking, including a rate change. Appliance controls, processes and power are Slice 5 work.
+A process runs while its chunk is loaded and catches up when it loads again. Settle its state at every rate change before applying the new rate; otherwise unloaded time can disagree with live ticking. Inside the block around the player, test catch-up against ordinary ticking, including a rate change; beyond it, test that the coarse result is deterministic. See [ADR 0008](docs/decisions/0008-deterministic-world.md). Appliance controls, processes and power are Slice 5 work.
 
 Cooking uses a lit workstation when its recipe requires heat. A player craft stops if that requirement is lost; a process owned by an appliance does not occupy the player's hands or require compression.

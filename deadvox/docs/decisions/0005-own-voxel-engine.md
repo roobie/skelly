@@ -12,7 +12,7 @@ tags: [deadvox, adr, engine, voxel, rendering]
 
 ## Context
 
-Deadvox prioritizes a deep simulation and a moddable, text-dense interface. Its world must pause, advance at different rates, catch up unloaded areas and save as project-owned data. Multiplayer is lockstep, so the engine needs deterministic simulation but no server authority or network chunk streaming, making a small project-owned voxel engine practical; see [ADR 0008](0008-deterministic-world.md).
+Deadvox prioritizes a deep simulation and a moddable, text-dense interface. Its world must pause, advance at different rates, catch up unloaded areas and save as project-owned data. Multiplayer, after version 1, is lockstep, so the engine needs deterministic simulation but no server authority or network chunk streaming, making a small project-owned voxel engine practical; see [ADR 0008](0008-deterministic-world.md).
 
 ## Decision
 

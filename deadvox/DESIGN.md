@@ -99,8 +99,8 @@ place the authorities gave up on.
    player isn't. Food rots, generators run dry, hordes drift and zombies evolve.
    Areas the player left are caught up when they return, not frozen.
 6. **Browser first.** A static site with no backend, running on a mid-range
-   laptop. Each player's machine runs the whole world, and multiplayer is
-   lockstep, so peers exchange only inputs; see
+   laptop. Each player's machine runs the whole world. Multiplayer, after
+   version 1, is lockstep, so peers exchange only inputs; see
    [ADR 0008](docs/decisions/0008-deterministic-world.md).
 
 ## Performance and scale
@@ -250,9 +250,10 @@ Unloaded areas continue progressing and catch up when loaded. Use closed-form
 updates where they preserve the same outcome cheaply, and bounded coarse steps
 where they do not. The player's region and its eight neighbours are simulated
 with the player's presence as an input, because a region next to the player
-should behave as though the player is there. Within the catch-up horizon,
-catch-up agrees with ordinary ticking within each system's tolerance, because a player can compare a short
-absence with what they saw; beyond it the coarse model is canonical. See
+should behave as though the player is there. Inside that block, catch-up
+agrees with ordinary ticking within each system's tolerance, because a player
+can compare a short absence with what they saw; once a region leaves the block,
+the coarse model is canonical. See
 [ADR 0008](docs/decisions/0008-deterministic-world.md). Food age derives from its creation time, so unloaded food
 needs no decay pass. Unloaded zombies are represented by regional hordes, which
 become individual actors when the area returns. See [Zombies](#zombies).

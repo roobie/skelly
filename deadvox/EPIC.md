@@ -79,7 +79,9 @@ described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES
 
 ### Not in version 1
 
-- Multiplayer.
+- Networked lockstep multiplayer. The determinism contract it relies on does
+  ship in version 1; see
+  [ADR 0008](docs/decisions/0008-deterministic-world.md).
 - Mobile and touch controls.
 - NPC survivors, factions, traders and quests.
 - Farming, animals and hunting (wildlife may appear as scenery).
