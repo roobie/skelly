@@ -47,8 +47,9 @@ contract open.
 A mod changes a core tuning value only through a modifier hook that core declares, never by
 replacing the value. A declared hook names what a mod may change, so core keeps authority over the
 mechanism the value tunes, and a diagnostic can name every mod that modified it; replacement would
-let one mod silently take the value over from core and from every other mod. The hook vocabulary
-and the order in which several mods' modifiers stack remain open.
+let one mod silently take the value over from core and from every other mod. The hook vocabulary,
+the order in which several mods' modifiers stack, and whether a setting pack may replace core
+values remain open.
 
 A save whose mod state no longer matches the mod is refused, as a pack mismatch is; see
 `deadvox/docs/decisions/0002-saves.md`, "Compatibility". The game and the modding framework own

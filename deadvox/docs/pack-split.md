@@ -38,7 +38,7 @@ This is the dependency boundary that `../../docs/decisions/0004-content-language
 
 Classify an entry, not a file. A file that mixes kinds is split along its entries.
 
-**Skill entries are never core content.** Skill support stays in the engine and must work with zero skills. Keeping the actual skills outside core forces a clean, provider-neutral contract instead of reliance on built-in ids. That boundary matters especially when mods can drive behaviour through the expression language. Each setting declares its own skills. Settings and mods share skills only through mechanism roles, and no common skill id is promised: content that interacts with a skill, such as a recipe or a hook, references the role, so a mod plugs in by providing a role, as a skill that conjures an item from a custom pack would.
+**Skill entries are never core content.** Skill support stays in the engine and must work with zero skills. Keeping the actual skills outside core forces a clean, provider-neutral contract instead of reliance on built-in ids. That boundary matters especially when mods can drive behaviour through the expression language. Each setting declares its own skills. Settings and mods share skills only through mechanism roles, and no common skill id is promised: content that interacts with a skill, such as a recipe or a hook, references the role. Referencing a role is not providing its skill. A custom pack that a skill interacts with, such as an item pack that a conjuring skill produces from, declares that interaction against the role's owner and references the role; the skill stays with its one provider (see "Skill providers"), so ordinary interaction never needs a provider takeover.
 
 **An entry that depends on a skill is not core either.** It moves out of core into a setting, even when it would otherwise pass the genre test, as a recipe that needs a crafting skill would. Core must work with zero skills, and such an entry would not. Keeping it in core would need a skill-free variant: a second contract kept only so that one entry can sit lower. Moving it keeps the downward-only rule free of exceptions.
 
@@ -50,7 +50,7 @@ For other entries:
 
 **References decide the lowest possible layer.** An entry can sit no lower than the highest layer it references. A loot table that names a setting item is setting content, whatever the table's purpose. Moving a referenced entry down so that its referrer can follow is a classification decision of its own and needs the same test. It must never be a side effect.
 
-**Tunables of a core mechanism are core.** Values that tune the mechanism itself, such as player body, senses and needs, belong with the mechanism's pack, even when this setting chose them. A setting pack overrides them through the ordinary later-pack override (`PILLARS.md`, "Content forward compatibility"). A mod changes a core tunable only through a modifier hook that core declares, never by replacing the value; see `../../docs/decisions/0004-content-language.md`, "Runtime design".
+**Tunables of a core mechanism are core.** Values that tune the mechanism itself, such as player body, senses and needs, belong with the mechanism's pack, even when this setting chose them. A mod changes a core tunable only through a modifier hook that core declares, never by replacing the value; the hook vocabulary and the order in which modifiers stack are open (`../../docs/decisions/0004-content-language.md`, "Runtime design"). Whether a setting pack may replace core values is open.
 
 ### Hard cases
 
@@ -134,3 +134,5 @@ Each question is open on #637. When it is ruled, the rule and its reason replace
 - **Does an overridden skill stay visible, and does it keep its saved experience?** Blocks provider override admission.
 - **Where does the default start row belong?** Blocks default-row placement in round 5.
 - **The shared scenario pack's name.** Blocks its folder in round 5.
+- **May a setting pack replace core values, or does it use declared hooks like a mod?** Blocks a setting pack changing a core tunable.
+- **The names of an ability's composed parts.** Deferred until the expression language (#313) settles how abilities compose; round 3 leaves the ability's shape and name alone.
