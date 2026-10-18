@@ -26,6 +26,25 @@ const tuning = {
   doorCloseBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
   itemActionLabels: { stripRound: 'fixture strip' },
   wearSlotLabels,
+  furnitureMoveMessages: Object.fromEntries(
+    [
+      'tooBig',
+      'fastened',
+      'handsFull',
+      'tired',
+      'standingOn',
+      'fallsOnPlayer',
+      'fallsOnOther',
+      'nowhereToLand',
+      'noRoom',
+      'playerInWay',
+      'otherInWay',
+      'coversHatch',
+      'blocksLadder',
+      'outOfReach',
+      'wornOut',
+    ].map((key) => [key, `fixture ${key}`]),
+  ),
 };
 
 it('applies validated core-mod UI tuning to document-root CSS properties', () => {
@@ -62,11 +81,19 @@ it('rejects UI tuning without a refusal sound, or whose refusal sound is not loa
 });
 
 it('rejects UI tuning missing any player-facing text field, with no code default', () => {
-  const { restLabels: _r, doorCloseBlockedMessages: _d, itemActionLabels: _i, wearSlotLabels: _w, ...bare } = tuning;
+  const {
+    restLabels: _r,
+    doorCloseBlockedMessages: _d,
+    itemActionLabels: _i,
+    wearSlotLabels: _w,
+    furnitureMoveMessages: _f,
+    ...bare
+  } = tuning;
   const missing = validateContent({ source: 'no-text.json', data: { ui: [bare] } });
   expect(missing.map(({ path }) => path)).toEqual([
     'ui[0].restLabels',
     'ui[0].doorCloseBlockedMessages',
+    'ui[0].furnitureMoveMessages',
     'ui[0].itemActionLabels',
     'ui[0].wearSlotLabels',
   ]);
