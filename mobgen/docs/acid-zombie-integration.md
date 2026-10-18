@@ -175,13 +175,35 @@ humanoid lookup would find nothing.
   is checked from the mouth.
 - **Materials and glow.** Deadvox reads colour and glow from the body's material table. That
   keeps the glow a content value instead of a Deadvox list of glowing material names. How
-  the glow renders is an open choice (below). The wind-up brightening is per-actor state
+  it renders is in "Glow render path" below. The wind-up brightening is per-actor state
   that touches only the sac's material, so it rides the crowd data texture beside the
   severed mask rather than being baked into the mesh. The eyes have no per-actor channel.
 - **Scale.** The study measured at its own voxel size; the acid body ships at the
   shambler's. Its height and breadth come from the template's proportions, so a later tier
   changes its build by data, and no uniform scale applies because one would change the
   height.
+
+### Glow render path
+
+The sac and eyes use an emissive material: they give off their own light, and the wind-up
+raises the sac's emission. The glow also lights the surroundings by borrowing slots from the
+renderer's existing point-light pool (`deadvox/src/render/lightPool.ts`, `LightPool`), which
+item lights also use. The nearest glowing actors take the slots first, and their light casts
+no shadows.
+
+Emission is chosen over a colour change because a recoloured sac is still shaded by the
+scene's lighting, so it darkens with its surroundings instead of reading as a light source.
+Emission costs no more and feeds the existing bloom without a pass of its own. It is chosen
+over a translucent sac because translucency adds a transparent draw for every crowd variant
+even when few actors glow, cannot order overlapping sacs correctly within a crowd batch, and
+would need further geometry to show the sac's contents.
+
+Borrowed slots are chosen over a light path built for crowds. Such a path is costly: its cost
+grows with the number of glowing actors and the light's reach, and it costs something even
+when nothing glows. It would also still need occlusion, receiver coverage and a world-domain
+policy before it could ship. Borrowed slots add no draws, passes or shader paths, and a lab
+storey holds few acid zombies (`deadvox/docs/acid-zombie.md`, "Spawning"), so lighting only the
+nearest of them loses little.
 
 ### Far level of detail is its own later item
 
@@ -220,15 +242,16 @@ before it lands.
    viewer plays each pose within joint limits with feet on the ground, and a gaze test turns
    the skull.
 4. **Deadvox consumption and effects** (hard coder). Add plan-owned region bones with the
-   sac under torso, disposition-driven severing, the cosmetic death burst, the chosen glow
-   path with the sac-only wind-up brightening, the falling drips and the death splash as
+   sac under torso, disposition-driven severing, the cosmetic death burst, the emissive
+   glow with the sac-only wind-up brightening and its borrowed-slot light, the falling drips and the death splash as
    presentation in `deadvox/src/render/acidEffects.ts`, `AcidEffects`, the `acid` model id
    and the content switch off the placeholder shambler body, and flip readiness. The effects
    ship in this round so the mob ships with them. Done when: Deadvox validates and loads it;
    a shot on the sac counts as a torso hit, severs follow the dispositions and drop the
    shambler's severed-part items, and death removes the sac and plays the splash without
    changing any simulation outcome, in a browser smoke flow extended (not added) per
-   `AGENTS.md`, "Tests"; the drips play without changing any simulation outcome; it stands
+   `AGENTS.md`, "Tests"; the drips play without changing any simulation outcome; the nearest acid zombies light
+   their surroundings through the shared light slots; it stands
    at a shambler's height beside one; saves round-trip; and PR #832 is closed.
 
 The far level of detail follows as its own item, cross-mob, with an owner the lead routes.
@@ -245,10 +268,3 @@ Two ideas carry over as design. Mobgen marks what glows and Deadvox drives the b
 per actor through the crowd texture, which is the glow line in "What Deadvox needs". Drips
 falling from the jaw are Deadvox presentation, not voxels, which is round 4. Its acid body
 design doc is superseded by this plan.
-
-## Open choices
-
-Only this remains open, and nothing above decides it:
-
-- **Glow render path.** How the acid's glow is drawn. Round 4 builds whichever path is
-  chosen.
