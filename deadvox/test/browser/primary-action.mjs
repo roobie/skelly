@@ -2575,9 +2575,29 @@ try {
       reticleKind: model.attachment.properties.reticleKind,
     };
     const frame = r.view.held.opticLensFrame;
-    return { frame: { magnification: frame.magnification, reticleKind: frame.reticleKind }, expected };
+    return {
+      frame: { magnification: frame.magnification, reticleKind: frame.reticleKind },
+      expected,
+      range: model.attachment.properties.magnification,
+      step: definition.opticZoom?.step,
+    };
   }, firearm.uid);
   assert.deepEqual(opticView.frame, opticView.expected, 'ADS lens uses the mounted optic content and export');
+  assert.ok(
+    opticView.range?.min < opticView.range?.max && opticView.step > 0,
+    'ADS wheel fixture needs a variable optic',
+  );
+  const zoomDirection = opticView.frame.magnification < opticView.range.max ? -1 : 1;
+  const selectedPower = Math.max(
+    opticView.range.min,
+    Math.min(opticView.range.max, opticView.frame.magnification - zoomDirection * opticView.step),
+  );
+  await page.mouse.wheel(0, zoomDirection * 120);
+  await page.waitForFunction(
+    (power) => globalThis.primaryActionTest.view.held.opticLensFrame?.magnification === power,
+    selectedPower,
+  );
+  assert.notEqual(selectedPower, opticView.frame.magnification, 'the wheel changes the actual ADS lens frame');
   await page.mouse.click(640, 450);
   await page.evaluate(() => globalThis.primaryActionTest.session.frame(0.1));
   await page.waitForFunction(() => globalThis.primaryActionTest.caseEffects.activeCount > 0);

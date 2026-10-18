@@ -4,6 +4,7 @@ read_if:
   - you change input ownership, browser-native behavior or pointer actions
   - you change stances, firearm handling, throwing, treatment or long-action controls
   - you change how the HUD toggle or quickbar gestures work
+  - you change optic zoom or its wheel ownership
   - you diagnose native keyboard delivery or input refusal
 ---
 
@@ -20,7 +21,7 @@ The browser keeps native text entry, IME, selection, clipboard and focus travers
 
 Physical key positions define bindings; labels follow the browser's keyboard layout. A modifier's own physical edge takes precedence over its aggregate flag because inconsistent edge flags must not disable unrelated movement. This does not authorize reconstructing other missing key events. Rebinding must consider alternate bindings and held gates so a hidden conflict cannot steal movement or run two actions. See `src/game/inputBindings.ts`, `KeyboardInput`, `BindingRegistry` and `bindingConflict`.
 
-The wheel is not a keyboard chord. In play it steps the wielded item's action; in a menu it scrolls the pane under the drawn cursor, including at the pane's edge. Elsewhere the game leaves it to the browser. See `src/ui/menuPointer.ts`, `mountMenuPointer`.
+The wheel is not a keyboard chord. Menus keep their scroll ownership so aiming cannot steal a pane's input. Variable-optic ADS takes precedence over wielded-item action selection during play; fixed optics and non-ADS play leave that route alone. See `src/game/play.ts`, `startPlay`; `src/game/opticZoom.ts`, `OpticZoom.wheel`; and `src/ui/menuPointer.ts`, `mountMenuPointer`.
 
 Bindings are origin-local browser-profile preferences, not saved-character or account state. Stored rows are untrusted and invalid entries are dropped rather than becoming controls. See `src/game/inputBindings.ts`, `BindingRegistry`.
 

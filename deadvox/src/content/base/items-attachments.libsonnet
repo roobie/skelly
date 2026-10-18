@@ -1,8 +1,10 @@
+local opticZoom = { step: 1, rememberPerWeapon: true };
+
 {
   "items": [
     {
       id: 'optic_hunting_3_9x', name: '3–9× hunting scope', category: 'misc',
-      weight: 400, size: [2, 2], model: 'optic_hunting_3_9x', opticMagnification: 6,
+      weight: 400, size: [2, 2], model: 'optic_hunting_3_9x', opticMagnification: 6, opticZoom: opticZoom,
     },
     {
       "id": "optic_digital_thermal",
@@ -27,7 +29,8 @@
       "weight": 900,
       "size": [2, 2],
       "model": "optic_high_mag_5_25x",
-      "opticMagnification": 10
+      "opticMagnification": 10,
+      opticZoom: opticZoom,
     },
     {
       "id": "optic_holographic",
@@ -44,7 +47,8 @@
       "weight": 520,
       "size": [2, 2],
       "model": "optic_lpvo_1_6x",
-      "opticMagnification": 3
+      "opticMagnification": 3,
+      opticZoom: opticZoom,
     },
     {
       "id": "optic_mini_reflex",

@@ -1,4 +1,6 @@
+import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import type { Item } from './items.ts';
 import type { ItemDef, ModelDef } from './schema.ts';
 
 export type ReticleKind = 'dot' | 'crosshair' | 'chevron';
@@ -7,6 +9,26 @@ export interface OpticViewSettings {
   readonly magnification: number;
   readonly reticleKind?: ReticleKind;
 }
+
+export interface OpticZoomFrame {
+  readonly uid: number;
+  readonly opticUid: number;
+  readonly magnification: number;
+}
+
+export const mountedOptic = (
+  registry: Pick<Registry, 'items' | 'models'>,
+  firearm: Item,
+): { uid: number; item: ItemDef; model: ModelDef } | undefined => {
+  for (const child of Object.values(firearm.slots ?? {})) {
+    const item = registry.items.get(child.type);
+    const model = item?.model === undefined ? undefined : registry.models.get(item.model);
+    if (item && model?.attachment?.kind === 'optic') {
+      return { uid: child.uid, item, model };
+    }
+  }
+  return undefined;
+};
 
 export interface LensAperture {
   readonly center: readonly [number, number];
@@ -29,7 +51,7 @@ export const opticViewSettings = (item: ItemDef, { attachment }: ModelDef): Opti
     return undefined;
   }
   const range = attachment.properties.magnification;
-  if (range && range.min < range.max && item.opticMagnification === undefined) {
+  if (range && range.min < range.max && (item.opticMagnification === undefined || item.opticZoom === undefined)) {
     return undefined;
   }
   const magnification = item.opticMagnification ?? range?.min ?? 1;

@@ -145,6 +145,7 @@ import {
   unarmedMeleeWeapon,
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
+import { OpticZoom } from './opticZoom.ts';
 import type { MoveIntent } from './player.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { bleedingStatusRows } from './playStatus.ts';
@@ -975,6 +976,11 @@ export const startPlay = (
     search,
   } = session;
   const playHalted = { value: false };
+  const opticZoom = new OpticZoom(registry);
+  const zoomFirearm = () => {
+    const selected = selectPrimaryAction(inventory);
+    return selected.kind === 'firearm' ? selected.item : undefined;
+  };
   const hasActiveFirearmInput = (): boolean =>
     replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
   const isFirearmReady = (uid: number): boolean =>
@@ -2318,7 +2324,9 @@ export const startPlay = (
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
       } else if (input.locked && !input.menuPointer) {
-        if (debugTools?.buildOn || !cycleWieldedAction(e.deltaY)) {
+        if (opticZoom.wheel(zoomFirearm(), isAimingDownSights(), e.deltaY)) {
+          e.preventDefault();
+        } else if (debugTools?.buildOn || !cycleWieldedAction(e.deltaY)) {
           debugTools?.wheel(e.deltaY);
         } else {
           e.preventDefault();
@@ -3191,6 +3199,7 @@ export const startPlay = (
     const { job: handlingJob, progress: grabProgress } = handlingPresentation();
     view.updateHeld(dt, pose, survival.lit, {
       firearms: firearms.frames(),
+      opticZoom: opticZoom.frame(zoomFirearm(), isAimingDownSights()),
       ...(readiness === undefined ? {} : { readiness }),
       aim: aim.frame,
       job: handlingJob,

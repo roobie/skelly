@@ -536,8 +536,9 @@ const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlyS
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
   const attachment = model?.attachment;
   const range = attachment?.properties.magnification;
+  const variable = attachment?.kind === 'optic' && range !== undefined && range.min < range.max;
   if (item.opticMagnification !== undefined && attachment?.kind !== 'optic') {
-    report('items', item.id, '.opticMagnification', 'a fixed ADS magnification needs an optic model');
+    report('items', item.id, '.opticMagnification', 'an initial ADS magnification needs an optic model');
     return;
   }
   if (item.opticMagnification !== undefined && range === undefined) {
@@ -547,15 +548,25 @@ const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlyS
     range &&
     (item.opticMagnification < range.min || item.opticMagnification > range.max)
   ) {
-    report('items', item.id, '.opticMagnification', 'the fixed ADS magnification is outside the exported range');
+    report('items', item.id, '.opticMagnification', 'the initial ADS magnification is outside the exported range');
   }
-  if (obtainable.has(item.id) && range && range.min < range.max && item.opticMagnification === undefined) {
+  if (obtainable.has(item.id) && variable && item.opticMagnification === undefined) {
     report(
       'items',
       item.id,
       '.opticMagnification',
-      'an obtainable variable-power optic needs a fixed ADS magnification',
+      'an obtainable variable-power optic needs an initial ADS magnification',
     );
+  }
+  checkOpticZoom(item, variable, obtainable.has(item.id), report);
+};
+
+const checkOpticZoom = (item: ItemDef, variable: boolean, obtainable: boolean, report: Report): void => {
+  if (item.opticZoom !== undefined && !variable) {
+    report('items', item.id, '.opticZoom', 'zoom tuning needs a variable-power optic model');
+  }
+  if (variable && (obtainable || item.opticMagnification !== undefined) && !item.opticZoom) {
+    report('items', item.id, '.opticZoom', 'a supported variable-power optic needs zoom tuning');
   }
 };
 
