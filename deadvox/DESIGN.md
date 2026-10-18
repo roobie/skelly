@@ -544,8 +544,9 @@ specific sites and their rewards.
 
 Keep the firearm-handling range in the debug test house, not ordinary world
 sites, so test stock cannot become a playable-world loot source. Derive rack
-contents from firearm and ammunition compatibility. See `HandlingRange` in
-`src/core/range.ts` and `testHouseRangeSupply` in `src/game/testHouseRange.ts`.
+contents from firearm and ammunition compatibility. The range layout is content, see
+`deadvox/docs/content.md`. See `HandlingRange` in `src/core/range.ts` and
+`testHouseRangeSupply` in `src/game/testHouseRange.ts`.
 
 ### Loot
 
