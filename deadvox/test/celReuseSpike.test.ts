@@ -147,6 +147,35 @@ describe('CEL reuse evidence (not adoption)', () => {
     expect(() => compile('cel.bind(x, 1.0 / 0.0, x > 0.0 || true)', {}, 'bool').run({})).toThrow('division by zero');
   });
 
+  it('rejects alias-built nested aggregates before reserving equality or membership work', () => {
+    const tree = (comparison: string): string => {
+      let source = comparison;
+      for (let i = 4; i >= 0; i--) {
+        const a = i ? `[${new Array(modLimits.collection).fill(`a${i - 1}`).join(',')}]` : '[0.0]';
+        const b = i ? `[${new Array(modLimits.collection).fill(`b${i - 1}`).join(',')}]` : '[0.0]';
+        source = `cel.bind(a${i}, ${a}, cel.bind(b${i}, ${b}, ${source}))`;
+      }
+      return source;
+    };
+    for (const comparison of ['a4 == b4', 'a4 in [b4]']) {
+      expect(() => compile(tree(comparison), {}, 'bool')).toThrow('nested aggregate construction');
+    }
+    for (const value of [
+      '[flags]',
+      '[true ? flags : flags]',
+      '[cel.bind(flags, flags, flags)]',
+      '{"nested": flags}',
+      '[bandsv1_copy([1.0])]',
+    ]) {
+      expect(() => compile(`${value} == ${value}`, { flags: 'list<string>' }, 'bool')).toThrow(
+        'nested aggregate construction',
+      );
+    }
+    const flat = compile('cel.bind(a, [1.0], cel.bind(b, [1.0], a == b && 1.0 in b))', {}, 'bool');
+    expect(flat.run({})).toBe(true);
+    expect(compile('[cel.bind(flags, 1.0, flags)]', { flags: 'list<string>' }, 'list<double>').run({})).toEqual([1]);
+  });
+
   it('exposes checked engine helpers without dependencies and namespaces a same-name mod helper', () => {
     const standalone = mods().filter((m) => m.id === 'standalone');
     expect(standalone[0]!.dependencies).toEqual([]);

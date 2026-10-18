@@ -46,21 +46,20 @@ mini-mods live in `../../../test/fixtures/mods/cel-mod-spike.jsonnet`; nothing i
 imports the harness. The dummy engine applies counter changes and accumulates effects on one
 engine-bound actor ledger, not a world simulation. World verbs remain engine work.
 
-CEL supplies the parser, AST locations, typed function signatures, list/map evaluation,
-all/exists macros and expression-local `cel.bind`. Native binding avoids owning a second binding
-language or duplicating a costly expression. The rewrite retains native binding and its checked
-arithmetic; structural cost charges the bound value once and every body reference. It does not
-admit arbitrary collection-transforming macros. See `celMods.ts`, `compileModExpression`, and
-`../../../test/celReuseSpike.test.ts` for checker, single-evaluation and lexical-scope evidence. The harness supplies dependency-scoped symbols and state snapshots,
-function-body compilation and replacement, event ordering, effect validation, seeded draws,
-counter ownership and save validation. State snapshots contain only the rule's own and visible
-dependencies' keys, so aggregate membership and equality cannot reveal independent mods' state.
-This keeps language implementation in the package rather than rebuilding an evaluator in the
-engine. Named functions cannot capture mutable game state: callers pass bounded snapshots
-explicitly. See `celMods.ts`, `FunctionDef`, for admitted typed parameters and results, and
-`../../../test/celReuseSpike.test.ts` for list and record-like map reuse. CEL's checker remains
-authoritative; the host validates and copies collection arguments and results because collection
-size is part of the termination proof, not just a type constraint.
+Native CEL binding avoids owning a second binding language or duplicating a costly expression.
+The restricted aggregate profile deliberately excludes nested collection construction: aliases can
+otherwise turn a small authored tree into exponentially more equality or membership work without
+increasing its outer collection width. Flat aggregates preserve useful local reuse without owning
+expanded-shape accounting. See `celMods.ts`, `compileModExpression`, and
+`../../../test/celReuseSpike.test.ts` for the enforced profile, checker, single-evaluation and
+lexical-scope evidence. This restriction is a spike trade-off, not a production adoption decision.
+
+Scoped state snapshots prevent aggregate membership and equality from revealing independent mods'
+state. Named functions require explicit snapshots rather than capturing mutable game state, so
+language implementation stays in CEL rather than a second engine evaluator. See `celMods.ts`,
+`ModHarness` and `FunctionDef`, and `../../../test/celReuseSpike.test.ts` for list and record-like
+map reuse. CEL's checker remains authoritative; host collection validation and copying are part of
+the termination proof, not just type hygiene.
 
 Native double arithmetic can silently produce infinity even inside a predicate, so checking only
 a final result would miss invalid intermediates. Author arithmetic therefore passes through a

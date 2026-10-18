@@ -12,7 +12,7 @@ function compareId(a: { id: string }, b: { id: string }): number {
   return a.id < b.id ? -1 : 1;
 }
 
-export const modProfile = 'cel-js-8.0.0-mod-spike-4';
+export const modProfile = 'cel-js-8.0.0-mod-spike-5';
 export const engineLibraryIdentity = 'cel-engine-library-spike-1';
 export const modLimits = Object.freeze({
   source: 4096,
@@ -243,6 +243,9 @@ export function compileModExpression(
   }
   env.registerType('Effect', { fields: { kind: 'string', key: 'string', amount: 'double' } });
   for (const [key, type] of Object.entries(schema)) {
+    if (!functionTypes.has(type)) {
+      throw new Error(`unsupported variable type ${type}`);
+    }
     env.registerVariable(key, type);
   }
   for (const [key, math] of Object.entries(maths)) {
@@ -434,7 +437,77 @@ export function compileModExpression(
         return at(node, `operator ${node.op} excluded`);
     }
   }
+  function aggregateMacro(node: Extract<ASTNode, { op: 'rcall' }>, bindings: ReadonlyMap<string, boolean>): boolean {
+    const [key, receiver, args] = node.args;
+    const local = new Map(bindings);
+    const variable = (args[0] as Extract<ASTNode, { op: 'id' }>).args;
+    if (key === 'bind') {
+      local.set(variable, aggregate(args[1]!, bindings));
+      return aggregate(args[2]!, local);
+    }
+    aggregate(receiver, bindings);
+    local.set(variable, false);
+    aggregate(args[1]!, local);
+    return false;
+  }
+  function aggregateCall(node: Extract<ASTNode, { op: 'call' }>, bindings: ReadonlyMap<string, boolean>): boolean {
+    const [key, args] = node.args;
+    for (const child of args) {
+      aggregate(child, bindings);
+    }
+    const resultType = functions.get(key)?.def.result ?? 'double';
+    return key === 'weighted' || resultType.startsWith('list<') || resultType.startsWith('map<');
+  }
+  function aggregate(node: ASTNode, bindings: ReadonlyMap<string, boolean>): boolean {
+    switch (node.op) {
+      case 'id':
+        return bindings.get(node.args) ?? false;
+      case 'value':
+        return false;
+      case 'list':
+      case 'map': {
+        const children = node.op === 'map' ? node.args.flat() : node.args;
+        // Flat aggregates keep comparison work bounded even when bindings share their values.
+        const nested = children.map((child) => aggregate(child, bindings));
+        if (nested.some(Boolean)) {
+          at(node, 'nested aggregate construction excluded');
+        }
+        return true;
+      }
+      case 'call':
+        return aggregateCall(node, bindings);
+      case 'rcall':
+        return aggregateMacro(node, bindings);
+      case '?:': {
+        const shapes = node.args.map((child) => aggregate(child, bindings));
+        return shapes[1]! || shapes[2]!;
+      }
+      case '!_':
+        aggregate(node.args, bindings);
+        return false;
+      case '[]':
+      case '&&':
+      case '||':
+      case '==':
+      case '!=':
+      case '<':
+      case '<=':
+      case '>':
+      case '>=':
+      case 'in':
+        for (const child of node.args) {
+          aggregate(child, bindings);
+        }
+        return false;
+      default:
+        return at(node, `operator ${node.op} excluded`);
+    }
+  }
   const total = cost(parsed.ast);
+  aggregate(
+    parsed.ast,
+    new Map(Object.entries(schema).map(([key, type]) => [key, type.startsWith('list<') || type.startsWith('map<')])),
+  );
   if (!Number.isSafeInteger(total) || total > limits.magnitude) {
     throw new Error('expanded evaluation cost limit');
   }
