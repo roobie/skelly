@@ -4,7 +4,7 @@ import { defOf, type Item } from './items.ts';
 import type { BodyTuningDef } from './schema.ts';
 
 /** The worn item a hit on the region meets first (`DESIGN.md`, "Worn coverage"). */
-export const wornItemMet = (
+const wornItemMet = (
   inventory: Inventory,
   tuning: BodyTuningDef,
   region: BodyRegion,
