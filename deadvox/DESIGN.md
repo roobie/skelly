@@ -40,6 +40,7 @@ read_if:
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
   - you're changing military progression or loot economy admission
   - you're changing firearm case ejection, landing, or save presentation
@@ -1016,6 +1017,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   Readied-gait sway and look lag follow firearms skill, while dispersion and recoil remain separate. An unskilled character's readied sway is large with any firearm because they've never handled one; at skill 10, the character hardly sways. Each firearm's skill-zero values set the relative steadiness between guns. Automatic follow-ups sway at least as much as single shots, so sway does not drop during burst fire. Sharing `src/core/footsteps.ts`, `FootstepClock`, keeps the stride-synced path aligned with gait, and content owns the shape and skill endpoints. See `src/core/aim.ts`, `frameFromState`, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`.
 
   Mean-reverting Brownian drift avoids unbounded sway; smoothing keeps fixed-tick noise from reading as frame-level twitch. The shared walking lune remains separate, firearms skill continues to scale sway, and content owns the noise tuning. Saving the running state lets Continue and replay segments preserve the exact path, avoiding a motion discontinuity. The vertical/horizontal lune ratio remains independently tunable without changing the drift. See `src/core/aim.ts`, `advanceOrnsteinUhlenbeckAxis` and `AimController.snapshotState`, `src/core/saveState.ts`, `snapshotSession`, `src/game/inputReplay.ts`, `encodeInputReplay`, `src/game/config.ts`, `configFromUrl`, and `src/content/base/recipes.json`, `firearms_combat`.
+
+  **Holding breath** lets the player steady a readied firearm for a moment, so a careful shot through an optic is earned by timing rather than by waiting out the drift. It damps the wobble drift only; recoil and dispersion keep their owners, because breath steadies the body, not the gun. Held breath and whatever limits it change where shots go, so they are simulation state: saved with aim state and restored by input replay (`CONTROLS.md`, "Replay boundary"). Its durations, recovery and steadying factor are content (`PILLARS.md`, "Content forward compatibility"). Open for BR under d447: which input holds it; whether it works from the hip, in any ADS or only through a magnified optic, and while moving; what limits it and how stamina and being winded bear on it; what follows running out; how it combines with skill and pain; and what the player hears and sees. See `src/core/aim.ts`, `AimController.advance`, and `src/game/session.ts`, `advanceSessionAim`.
 
   Ready stance gates firearm fire; sprinting prohibits it. Duck-walk speed is
   owned by firearms combat, and melee combat owns block success. A held, completed
