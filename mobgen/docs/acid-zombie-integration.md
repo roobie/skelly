@@ -156,9 +156,11 @@ humanoid lookup would find nothing.
 - **Severing.** Severable subtrees come from the bone disposition rather than
   `src/mob/dismember.ts`, `SEVERABLE_PARTS`. The crowd gore mask already sizes itself from
   the widest body (`deadvox/src/render/mobActors.ts` passes the bone count to
-  `crowdTextureLayout`), so the acid bone count needs no encoding change. The severed item
-  each region leaves (`deadvox/src/core/zombieRegionNames.ts`, `SEVERED_ITEM`) names
-  shambler items, and what acid parts leave is an open choice (below).
+  `crowdTextureLayout`), so the acid bone count needs no encoding change. A severed acid
+  part drops the shambler's severed-part item for its region
+  (`deadvox/src/core/zombieRegionNames.ts`, `SEVERED_ITEM`), and no new item content is
+  added. That mapping is keyed by region, and the acid bones map into the same regions, so
+  it needs no acid entry.
 - **Death burst.** On death the sac's voxels are removed without leaving a severed item and
   without any simulation consequence, so presentation reads death and the sac stays out of
   saves and fingerprints. Keeping it a disposition rather than a Deadvox special case lets a
@@ -221,7 +223,8 @@ before it lands.
    torso, disposition-driven severing, the cosmetic death burst, the chosen glow path with
    the sac-only wind-up brightening, the `acid` model id and the content switch off the
    placeholder shambler body, and flip readiness. Done when: Deadvox validates and loads it;
-   a shot on the sac counts as a torso hit, severs follow the dispositions, and death removes
+   a shot on the sac counts as a torso hit, severs follow the dispositions and drop the
+   shambler's severed-part items, and death removes
    the sac without changing any simulation outcome, in a browser smoke flow extended (not
    added) per `AGENTS.md`, "Tests"; it stands at a shambler's height beside one; saves
    round-trip; and PR #832 is closed.
@@ -252,4 +255,3 @@ Only these remain open, and nothing above decides them:
    chosen.
 2. **Effects timing.** When the drips and the death splash come, which decides whether
    round 5 runs now.
-3. **Severed parts.** What a severed acid part leaves behind.
