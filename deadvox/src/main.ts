@@ -25,6 +25,7 @@ import { tutorialRequested, tutorialUrl } from './game/tutorial.ts';
 import { WorldLoading } from './game/worldLoading.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
+import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
 import { chooseMods } from './ui/modsPanel.ts';
 import { contentLookup, SaveController } from './ui/saveController.ts';
@@ -146,6 +147,7 @@ if (bench === 'report') {
   if (config.debug) {
     inputBindings.setDebugRun();
   }
+  mountFullscreenOptions(document.getElementById('fullscreen-options')!);
   mountInputOptions(document.getElementById('input-options')!, config.debug);
   mountControlsCard(
     document.getElementById('controls')!,
