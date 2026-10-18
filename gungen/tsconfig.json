@@ -27,5 +27,6 @@
     "allowUnusedLabels": false,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "test", "vite.config.ts"]
+  // Deadvox's jfxr declaration, shared because gungen tests import the registry that reaches soundSynth.ts.
+  "include": ["src", "test", "vite.config.ts", "../deadvox/src/core/jfxr.d.ts"]
 }

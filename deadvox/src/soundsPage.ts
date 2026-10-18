@@ -13,7 +13,8 @@ const soundFiles = import.meta.glob<unknown>('./content/base/sounds*.json', { ea
 const { registry, issues } = buildRegistry([
   ...Object.entries(soundFiles)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([source, data]) => ({ source, data })),
+    // Named as the game names them from src/game, so audio finds each sound's files beside its source.
+    .map(([path, data]) => ({ source: `.${path}`, data })),
   { source: '../content/base/ui.json', data: uiFile },
 ]);
 // The page shares the game's style sheet, which is measured in these tokens.
@@ -66,7 +67,7 @@ const sheet = html`
       <h1>Listening sheet</h1>
       <p>
         Generated from the <code>sounds*.json</code> content files and <code>assets/manifest.json</code>. Sound-event preview buttons play
-        the exact listed file at base event gain and pitch 1, through the game's saved master/category volume settings; variant
+        the exact listed file or recipe at base event gain and pitch 1, through the game's saved master/category volume settings; variant
         selection jitter and cooldown are bypassed.
       </p>
       <p class="sound-debug-note">
@@ -102,13 +103,19 @@ const sheet = html`
                   <code class="variant-file">${variant.file}</code>
                   <span class="variant-credit">
                     ${
-                      variant.sourceUrl
-                        ? html`<a href=${variant.sourceUrl} target="_blank" rel="noreferrer">${variant.sourcePack}</a>`
-                        : variant.sourcePack
+                      variant.synthesised
+                        ? variant.sourcePack
+                        : html`${
+                            variant.sourceUrl
+                              ? html`<a href=${variant.sourceUrl} target="_blank" rel="noreferrer">${variant.sourcePack}</a>`
+                              : variant.sourcePack
+                          }
+                          · ${variant.author} · ${variant.licence}`
                     }
-                    · ${variant.author} · ${variant.licence}
                   </span>
-                  <button type="button" @click=${() => playExact(event.id, variant.file)}>Play exact file</button>
+                  <button type="button" @click=${() => playExact(event.id, variant.file)}>
+                    ${variant.synthesised ? 'Play synthesised' : 'Play exact file'}
+                  </button>
                 </li>
               `,
             )}

@@ -333,7 +333,8 @@ describe('passable but opaque vegetation', () => {
     const eventForAsset = (category: 'body' | 'world', asset: string) => {
       const sound = [...registry.sounds.values()].find(
         (definition) =>
-          definition.category === category && definition.variants.some((variant) => variant.includes(asset)),
+          definition.category === category &&
+          definition.variants.some((variant) => typeof variant === 'string' && variant.includes(asset)),
       );
       expect(sound, `${category} sound for ${asset}`).toBeDefined();
       return sound!.id;

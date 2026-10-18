@@ -3,6 +3,7 @@ import type { Vec3 } from './coords.ts';
 import { Rng, type RngState } from './random.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundId } from './soundEvents.ts';
+import { soundVariantKey } from './soundSynth.ts';
 
 export interface SoundPick {
   file: string;
@@ -135,6 +136,6 @@ export class SoundPicker {
     state.lastPlayedAt = now;
     const pitch = state.rng.range(sound.pitchJitter[0], sound.pitchJitter[1]);
     const gain = sound.gain * state.rng.range(sound.gainJitter[0], sound.gainJitter[1]);
-    return { file: sound.variants[variant]!, pitch, gain };
+    return { file: soundVariantKey(sound.id, sound.variants[variant]!), pitch, gain };
   }
 }
