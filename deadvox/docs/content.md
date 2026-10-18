@@ -418,6 +418,10 @@ Use `deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing
 
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
 
+## Furniture solidity
+
+A corpse that is a loot container is non-solid, because a body the player must path around only gets in the way. Walkers, zombies included, cross its cells, and sight and aim pass through it as through any non-solid furniture. It stays pickable and searchable because picking ignores solidity. Its `shape` stays low, because a full one-block box would hide dropped items, thrown items, spent cases and acid puddles settling on the floor inside it. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/furniturePick.ts`, `firstPickCell`; and `test/furniture.test.ts`, "lets a body walk through a non-solid container yet keeps it pickable".
+
 ## Authored decals
 
 Decals are presentation-only surface marks, not furniture or blocks. They cannot change
