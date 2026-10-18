@@ -233,7 +233,8 @@ before it lands.
    plan-owned hooks; see `src/mob/budgets.ts`, `heightHeadBudgets`. Core fixture coverage is in
    `test/materials.test.ts` and `test/budgetHooks.test.ts`. Keep existing validation and
    Deadvox model-load checks passing without budget or fixture loosening when extending these
-   contracts. The feature-only measurement rasterizer belongs to the body round below.
+   contracts. Shape probes exclude forced marrow and ownership repair because either would disguise
+   flesh discontinuities; see `src/core/voxelize.ts`, `rasterizeFeatures`.
 2. **Acid body plan and template** (hard coder). Add the plan, template and
    measurement module as `comparison-only`, with the probe fixtures, identity properties and
    gated sweeps, plus a viewer entry. Its parameter ranges vary breadth, never height.

@@ -680,7 +680,7 @@ const checkBodyReferences = (body: Body, materials: readonly Material[]): void =
   }
 };
 
-export const voxelize = (body: Body, size: number, seed: number): Voxels => {
+const rasterize = (body: Body, size: number, seed: number, includeSkeleton: boolean): Voxels => {
   const materials = checkMaterials(body);
   checkBodyReferences(body, materials);
   const { addByBone, carves, paints } = classifyFeatures(body);
@@ -691,13 +691,20 @@ export const voxelize = (body: Body, size: number, seed: number): Voxels => {
 
   computeField(grid, body, addByBone, boneAabbs);
   applyCarves(grid, carves, { body, addByBone, seed });
-  applyMarrow(grid, body, boneIndexById);
-  if (body.jointAdjacencyPolicy === 'reserve-overlaps') {
-    repairOverlappingJointAdjacency(grid, body, boneIndexById);
-  } else {
-    repairJointAdjacencyInPlace(grid, body, boneIndexById);
+  if (includeSkeleton) {
+    applyMarrow(grid, body, boneIndexById);
+    if (body.jointAdjacencyPolicy === 'reserve-overlaps') {
+      repairOverlappingJointAdjacency(grid, body, boneIndexById);
+    } else {
+      repairJointAdjacencyInPlace(grid, body, boneIndexById);
+    }
   }
   const color = assignMaterials(grid, body, { addByBone, paints, seed, materials });
 
   return { size: grid.size, origin: grid.origin, dims: grid.dims, owner: grid.owner, color, materials };
 };
+
+export const voxelize = (body: Body, size: number, seed: number): Voxels => rasterize(body, size, seed, true);
+
+// Measurement must not mistake forced marrow or joint repair for flesh geometry.
+export const rasterizeFeatures = (body: Body, size: number, seed: number): Voxels => rasterize(body, size, seed, false);
