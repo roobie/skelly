@@ -53,7 +53,7 @@ Buildings and roads span independently generated chunks. If chunks consult one a
 
 ## 11. Catch-up simulation
 
-Unloaded areas use coarse or closed-form updates, while loaded areas tick normally. Divergence makes time away behave differently from time present. Keep catch-up beside each system's tick and test that both paths agree within the system's stated tolerance. Needs and food begin in Slice 1; power and fire follow in Slice 5.
+Unloaded areas use coarse or closed-form updates, while loaded areas tick normally. Divergence near the player makes time away behave differently from time present, and a player can compare a short absence with what they saw. Keep catch-up beside each system's tick and test that both paths agree within the system's stated tolerance inside the catch-up horizon; beyond it the coarse model is canonical, but still deterministic. The regions around the player are simulated with the player's presence as an input. See [ADR 0008](docs/decisions/0008-deterministic-world.md). Needs and food begin in Slice 1; power and fire follow in Slice 5.
 
 ## 12. Browser limits
 
