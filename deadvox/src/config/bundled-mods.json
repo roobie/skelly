@@ -1,0 +1,9 @@
+{
+  "mods": [
+    {
+      "detail": "Zombies deal less damage, move slower, sense less and fall sooner.",
+      "id": "beginner",
+      "label": "Beginner"
+    }
+  ]
+}

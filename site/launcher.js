@@ -54,6 +54,20 @@ const page = (state) => html`  <main>
                 <option value="boxes">Boxes</option>
               </select>
             </label>
+            ${
+              state.bundledMods.length > 0
+                ? html`
+            <fieldset id="deadvox-mods-field" ?hidden=${!visible('deadvox-mods-field', state)}>
+              <legend>Mods</legend>
+              ${state.bundledMods.map(
+                (mod) => html`
+              <label class="check" title=${mod.detail}>
+                <input name="mods" data-url-param="mods" data-mod-id=${mod.id} type="checkbox" .checked=${state.deadvox.mods.includes(mod.id)} .disabled=${!enabled('deadvox', 'mods', state)}/> ${mod.label}
+              </label>`,
+              )}
+            </fieldset>`
+                : ''
+            }
             <label class="check" id="deadvox-debug-field" ?hidden=${!visible('deadvox-debug-field', state)}>
               <input name="debug" data-url-param="debug" type="checkbox" data-state-key="debug" .checked=${state.deadvox.debug} .disabled=${!enabled('deadvox', 'debug', state)}/> Enable development tools (?debug=1)
             </label>
@@ -222,6 +236,7 @@ const model = {
     storeys: '3',
     density: '',
     actors: '',
+    mods: [],
     debug: false,
     loadout: '',
     at: '',
@@ -248,6 +263,7 @@ const model = {
     status: '',
   },
   copied: '',
+  bundledMods: [],
 };
 const root = document.body.firstElementChild;
 const renderPage = () => render(page(model), root);
@@ -259,6 +275,7 @@ const visibility = {
   'deadvox-storeys-field': (d) => d.site === 'city' && d.bench !== 'report' && d.bench !== 'shamblers',
   'deadvox-density-field': (d) => d.site === 'forest' && d.bench !== 'report' && d.bench !== 'shamblers',
   'deadvox-actors-field': (d) => d.bench === '',
+  'deadvox-mods-field': (d) => d.bench === '',
   'deadvox-debug-field': (d) => d.bench === '',
   'deadvox-loadout-field': (d) => d.bench === '' && d.debug,
   'deadvox-at-field': (d) => d.bench === '' && d.debug,
@@ -288,6 +305,7 @@ const deadvoxControlVisibility = {
   storeys: 'deadvox-storeys-field',
   density: 'deadvox-density-field',
   actors: 'deadvox-actors-field',
+  mods: 'deadvox-mods-field',
   debug: 'deadvox-debug-field',
   loadout: 'deadvox-loadout-field',
   at: 'deadvox-at-field',
@@ -387,6 +405,7 @@ const makeDeadvox = (d) => {
   if (m === '') {
     setDefault(p, 'radius', d.radius, '96');
     setDefault(p, 'actors', d.actors, '');
+    setDefault(p, 'mods', d.mods.join(','), '');
     if (d.debug) {
       addDebugParams(p, d);
     }
@@ -479,11 +498,17 @@ const refresh = (form) => {
 const onInput = (e) => {
   const f = e.currentTarget.id === 'deadvox-form' ? 'deadvox' : 'gungen';
   const t = e.target;
+  const m = model[f];
+  const mod = t.dataset.modId;
+  if (mod) {
+    m.mods = t.checked ? [...m.mods.filter((id) => id !== mod), mod] : m.mods.filter((id) => id !== mod);
+    refresh(f);
+    return;
+  }
   const k = t.dataset.stateKey;
   if (!k) {
     return;
   }
-  const m = model[f];
   if (t.type === 'radio') {
     if (t.checked) {
       m[k] = t.value;
@@ -603,5 +628,26 @@ const onCopy = async (e) => {
     model.copied = '';
   }
 };
+// The list is deadvox content published beside the game; without it the control is simply absent.
+// It is a static page that cannot import the game's schema check, so it admits the list whole or not at all.
+const loadBundledMods = async (fetcher, url) => {
+  try {
+    const response = await fetcher(url);
+    const { mods } = await response.json();
+    const text = (value) => typeof value === 'string' && value.trim() !== '';
+    const sound =
+      response.ok &&
+      Array.isArray(mods) &&
+      mods.every((mod) => mod && text(mod.id) && text(mod.label) && text(mod.detail)) &&
+      new Set(mods.map((mod) => mod.id)).size === mods.length;
+    return sound ? mods : [];
+  } catch {
+    return [];
+  }
+};
 refresh('deadvox');
 refresh('gungen');
+loadBundledMods(fetch, new URL('deadvox/bundled-mods.json', location.href)).then((mods) => {
+  model.bundledMods = mods;
+  refresh('deadvox');
+});
