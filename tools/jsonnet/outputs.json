@@ -205,6 +205,10 @@
       "output": "deadvox/test/fixtures/mods/cel-mod-spike.json"
     },
     {
+      "source": "deadvox/test/fixtures/mods/cel-reuse-spike.jsonnet",
+      "output": "deadvox/test/fixtures/mods/cel-reuse-spike.json"
+    },
+    {
       "source": "deadvox/test/fixtures/mods/expression-spike.jsonnet",
       "output": "deadvox/test/fixtures/mods/expression-spike.json"
     },

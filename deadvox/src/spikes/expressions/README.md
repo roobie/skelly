@@ -3,6 +3,7 @@ read_if:
   - you're evaluating expression runtimes or extending the isolated Wasm spike
   - you're interpreting the expression benchmark or its safety claims
   - you're evaluating CEL for MoM-shaped mod logic or its engine contracts
+  - you're assessing function libraries, local bindings or engine helper reuse in the CEL spike
 ---
 
 # Expression runtime evidence
@@ -45,14 +46,21 @@ mini-mods live in `../../../test/fixtures/mods/cel-mod-spike.jsonnet`; nothing i
 imports the harness. The dummy engine applies counter changes and accumulates effects on one
 engine-bound actor ledger, not a world simulation. World verbs remain engine work.
 
-CEL supplies the parser, AST locations, typed function signatures, list/map evaluation and
-all/exists macros. The harness supplies dependency-scoped symbols and state snapshots,
+CEL supplies the parser, AST locations, typed function signatures, list/map evaluation,
+all/exists macros and expression-local `cel.bind`. Native binding avoids owning a second binding
+language or duplicating a costly expression. The rewrite retains native binding and its checked
+arithmetic; structural cost charges the bound value once and every body reference. It does not
+admit arbitrary collection-transforming macros. See `celMods.ts`, `compileModExpression`, and
+`../../../test/celReuseSpike.test.ts` for checker, single-evaluation and lexical-scope evidence. The harness supplies dependency-scoped symbols and state snapshots,
 function-body compilation and replacement, event ordering, effect validation, seeded draws,
 counter ownership and save validation. State snapshots contain only the rule's own and visible
 dependencies' keys, so aggregate membership and equality cannot reveal independent mods' state.
 This keeps language implementation in the package rather than rebuilding an evaluator in the
-engine. Named functions cannot capture mutable game state: callers pass numeric snapshots
-explicitly.
+engine. Named functions cannot capture mutable game state: callers pass bounded snapshots
+explicitly. See `celMods.ts`, `FunctionDef`, for admitted typed parameters and results, and
+`../../../test/celReuseSpike.test.ts` for list and record-like map reuse. CEL's checker remains
+authoritative; the host validates and copies collection arguments and results because collection
+size is part of the termination proof, not just a type constraint.
 
 Native double arithmetic can silently produce infinity even inside a predicate, so checking only
 a final result would miss invalid intermediates. Author arithmetic therefore passes through a
@@ -88,7 +96,7 @@ even through suppressed callback errors. See `celRewrite.ts`, `serializeRewrite`
 expression root, so this is not exact subexpression evidence for every host callback.
 
 Termination relies on rejecting recursion, dynamic dispatch, unbounded collections and nested
-macros, not on an unavailable interpreter instruction counter. Bounded all/exists over literal or
+traversal macros, not on an unavailable interpreter instruction counter. Bounded all/exists over literal or
 validated input lists remain useful without permitting arbitrary comprehensions. The structural
 reservation includes reachable function bodies, worst-case macro traversal and bounded aggregate
 comparisons. The tick spends that reservation before evaluation, across event roots and chained
@@ -121,9 +129,27 @@ ability to evaluate a pure expression.
 - **Mod state:** bounded namespaced counters are exercised, not chosen. Engine-only state would remove
   mod declarations; arbitrary records need richer schemas, size bounds and save validation. Flags,
   enums and per-character progression are not proved by a numeric counter.
-- **Composition:** hard dependencies with named function calls/replacement and an optional gated interaction
-  pack are exercised, not chosen. Independent mods would prohibit cross-references; hard-only
-  composition would remove optional gating. Rule references are engine-envelope links, not CEL calls.
+- **Composition:** dependency-scoped function libraries, replacement and an optional gated interaction
+  pack are exercised, not chosen. See `celMods.ts`, `ModHarness`, and
+  `../../../test/fixtures/mods/cel-reuse-spike.jsonnet`. Lexical owner scopes prevent a dependent's
+  replacement from altering its library or an independent sibling; visible replacement conflicts
+  are rejected rather than resolved by incidental load order. Library bodies retain their owner's
+  bindings, not a caller's overrides. These rules trade global patching power for local reasoning.
+  Dependency IDs can encode a library version without a solver: changing the ID requires dependent
+  references to change; retaining the ID with a breaking signature produces checker diagnostics.
+  Compatible body changes still change mod identity. Independent mods would prohibit cross-references;
+  hard-only composition would remove optional gating. Rule references are engine-envelope links,
+  not CEL calls.
+- **Local reuse:** native expression-local binding and typed collection functions are exercised, not
+  chosen as a production profile. See `../../../test/celReuseSpike.test.ts`. Jsonnet helpers can
+  share authoring text but cannot provide replaceable runtime symbols; named functions can, at the
+  cost of typed boundaries, collection validation/copying and reachable-body cost reservation.
+- **Engine library:** checked, typed engine helpers available without dependencies are exercised, not
+  chosen. See `celMods.ts`, `maths`, `compileModExpression` and `engineLibraryIdentity`. Mod namespacing
+  keeps a same-name mod helper distinct; engine symbols cannot be replaced through a mod declaration.
+  Changing engine helper semantics requires a library identity change for strict save/replay
+  rejection, even when mod source stays unchanged. A production engine-library vocabulary, version
+  policy and save migration policy remain open.
 - **Effect combining:** dependency order then lexical rule order, sequential effects and tick rollback are
   exercised, not chosen. Priorities or conflict rejection change harness validation and dispatch,
   not CEL. A later rule sees earlier state changes, including changes from a chained rule.
@@ -150,9 +176,11 @@ marshalling and the asynchronous binding boundary even for synchronous baselines
 and retained-rule evaluation must not be conflated. A repeated-load mean excludes first-use runtime
 initialization. Node microbenchmarks remain probes, not browser or whole-simulation frame-budget
 guarantees. For CEL mod rules, `../../../tools/bench-expressions.mjs`, `measureModRules`, measures
-load-time compilation with functions already registered, then unconditional predicate
+load-time compilation with each rule's scoped functions already compiled, then unconditional predicate
 and effect evaluation on fixed snapshots. It excludes harness construction, effect application,
-state copying and scheduling. The `--mods --bundles` mode compares deployable scalar CEL and mod
+state copying and scheduling. The `--mods --reuse` probe adds the reuse fixture; named calls include
+collection boundary validation/copying, but neither mode measures library compilation or the whole
+mod-loader lifecycle. The `--mods --bundles` mode compares deployable scalar CEL and mod
 profile entries so wrapper growth is not mistaken for additional CEL package code. Browser microbenchmarks are not whole-simulation guarantees either.
 
 See `../../../test/expressionWasmCases.ts`, `wasmCases`, for behaviour checks shared between Node

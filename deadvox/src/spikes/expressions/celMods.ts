@@ -12,7 +12,8 @@ function compareId(a: { id: string }, b: { id: string }): number {
   return a.id < b.id ? -1 : 1;
 }
 
-export const modProfile = 'cel-js-8.0.0-mod-spike-3';
+export const modProfile = 'cel-js-8.0.0-mod-spike-4';
+export const engineLibraryIdentity = 'cel-engine-library-spike-1';
 export const modLimits = Object.freeze({
   source: 4096,
   nodes: 256,
@@ -25,7 +26,8 @@ export const modLimits = Object.freeze({
 const limits = modLimits;
 export interface FunctionDef {
   name: string;
-  params: string[];
+  params: (string | { name: string; type: string })[];
+  result?: string;
   expression: string;
   replaces?: string;
 }
@@ -128,7 +130,36 @@ const maths: Record<string, { arity: number; run: (...args: number[]) => number 
   min: { arity: 2, run: (a, b) => Math.min(a!, b!) },
   max: { arity: 2, run: (a, b) => Math.max(a!, b!) },
   clamp: { arity: 3, run: (x, lo, hi) => Math.max(lo!, Math.min(hi!, x!)) },
+  lerp: { arity: 3, run: (a, b, t) => finite(a! + finite(finite(b! - a!) * t!)) },
 };
+function parameters(def: FunctionDef): { name: string; type: string }[] {
+  return def.params.map((param) => (typeof param === 'string' ? { name: param, type: 'double' } : param));
+}
+const functionTypes = new Set(['double', 'bool', 'string', 'list<double>', 'list<string>', 'map<string, double>']);
+function functionSignature(def: FunctionDef): string {
+  return JSON.stringify([parameters(def).map((p) => p.type), def.result ?? 'double']);
+}
+function boundedValue(value: unknown, type: string): unknown {
+  if (type === 'double') {
+    return finite(value);
+  }
+  if (type === 'bool' && typeof value === 'boolean') {
+    return value;
+  }
+  if (type === 'string' && typeof value === 'string' && value.length <= limits.text) {
+    return value;
+  }
+  if (type.startsWith('list<') && Array.isArray(value) && value.length <= limits.collection) {
+    return value.map((entry) => boundedValue(entry, type.slice(5, -1)));
+  }
+  if (type === 'map<string, double>') {
+    const entries = value instanceof Map ? [...value] : Object.entries(ownRecord(value));
+    if (entries.length <= limits.collection) {
+      return new Map(entries.map(([key, entry]) => [boundedValue(key, 'string'), finite(entry)]));
+    }
+  }
+  throw new Error(`invalid bounded ${type}`);
+}
 const verbs: Record<string, { arity: number; kind: string }> = {
   spend: { arity: 1, kind: 'spend' },
   damage: { arity: 1, kind: 'damage' },
@@ -265,8 +296,12 @@ export function compileModExpression(
     },
   );
   for (const [key, fn] of functions) {
-    register(`${key}(${fn.def.params.map(() => 'double').join(',')}): double`, (...args: number[]) =>
-      finite(fn.program.run(Object.fromEntries(fn.def.params.map((param, i) => [param, finite(args[i])])))),
+    const params = parameters(fn.def);
+    register(`${key}(${params.map((p) => p.type).join(',')}): ${fn.def.result ?? 'double'}`, (...args: unknown[]) =>
+      boundedValue(
+        fn.program.run(Object.fromEntries(params.map((param, i) => [param.name, boundedValue(args[i], param.type)]))),
+        fn.def.result ?? 'double',
+      ),
     );
   }
   const original = env.parse(source);
@@ -318,16 +353,15 @@ export function compileModExpression(
     }
     return 1;
   }
-  function indexCost(node: Extract<ASTNode, { op: '[]' }>): number {
+  function indexCost(node: Extract<ASTNode, { op: '[]' }>, macro: boolean): number {
     const [receiver, index] = node.args;
-    if (receiver.op !== 'id' || !['state', 'target'].includes(receiver.args)) {
-      at(node, 'only declared maps may be indexed');
+    if (index.op !== 'value' || !['string', 'bigint'].includes(typeof index.args)) {
+      at(node, 'index must be a literal string or integer');
     }
-    const key = literal(index);
-    if (receiver.op === 'id' && receiver.args === 'state' && !states.has(key)) {
-      at(node, `unknown state ${key}`);
+    if (receiver.op === 'id' && receiver.args === 'state' && !states.has(literal(index))) {
+      at(node, `unknown state ${literal(index)}`);
     }
-    return 3;
+    return 1 + cost(receiver, macro) + cost(index, macro);
   }
   function callCost(node: Extract<ASTNode, { op: 'call' }>, macro: boolean): number {
     const [key, args] = node.args;
@@ -345,17 +379,26 @@ export function compileModExpression(
     }
     const intrinsic = ['weighted', 'rank'].includes(key) ? limits.collection * 4 : 1;
     return (
-      1 + (functions.get(key)?.program.cost ?? intrinsic) + args.reduce((sum, child) => sum + cost(child, macro), 0)
+      1 +
+      (functions.has(key) ? functions.get(key)!.program.cost + limits.collection * (args.length + 1) * 4 : intrinsic) +
+      args.reduce((sum, child) => sum + cost(child, macro), 0)
     );
   }
   function macroCost(node: Extract<ASTNode, { op: 'rcall' }>, macro: boolean): number {
     const [key, receiver, args] = node.args;
+    if (
+      key === 'bind' &&
+      receiver.op === 'id' &&
+      receiver.args === 'cel' &&
+      args.length === 3 &&
+      args[0]?.op === 'id'
+    ) {
+      return 1 + cost(args[1]!, macro) + cost(args[2]!, macro);
+    }
     if (macro || !['exists', 'all'].includes(key) || args.length !== 2 || args[0]?.op !== 'id') {
       at(node, 'only non-nested all/exists macros');
     }
-    if (!(receiver.op === 'list' || (receiver.op === 'id' && receiver.args === 'flags'))) {
-      at(node, 'macro receiver must be a bounded list');
-    }
+    // Every admitted collection producer is bounded, including typed parameters and bind values.
     return 1 + cost(receiver, true) + limits.collection * cost(args[1]!, true);
   }
   function cost(node: ASTNode, macro = false): number {
@@ -378,7 +421,7 @@ export function compileModExpression(
       case 'in':
         return limits.nodes * limits.collection + node.args.reduce((sum, child) => sum + cost(child, macro), 0);
       case '[]':
-        return indexCost(node);
+        return indexCost(node, macro);
       case 'list':
         return 1 + node.args.reduce((sum, child) => sum + cost(child, macro), 0);
       case 'map':
@@ -483,6 +526,10 @@ export class ModHarness {
   readonly rules = new Map<string, LoadedRule>();
   readonly functions = new Map<string, LoadedFunction>();
   readonly declarations = new Map<string, StateDef>();
+  private readonly scopes = new Map<string, Map<string, LoadedFunction>>();
+  functionScope(mod: string): Map<string, LoadedFunction> {
+    return new Map(this.scopes.get(mod));
+  }
   private values: Record<string, number> = Object.create(null);
   private rng: number;
   private totals: Record<string, number> = Object.create(null);
@@ -502,7 +549,12 @@ export class ModHarness {
     this.loadFunctions(sorted, visible);
     this.loadRules(sorted, visible);
     this.checkRuleReferences(visible);
-    this.identity = JSON.stringify({ profile: modProfile, limits, packs: sorted });
+    this.identity = JSON.stringify({
+      profile: modProfile,
+      engineLibrary: engineLibraryIdentity,
+      limits,
+      packs: sorted,
+    });
   }
   private orderPacks(packs: ModDef[]): ModDef[] {
     const ids = new Set(packs.map((pack) => pack.id));
@@ -604,6 +656,38 @@ export class ModHarness {
         }
       }
     }
+    const selections = this.selectFunctions(sorted, visible, definitions);
+    this.compileFunctions(definitions, selections);
+  }
+  private selectFunctions(
+    sorted: ModDef[],
+    visible: Map<string, Set<string>>,
+    definitions: Map<string, { owner: string; def: FunctionDef }>,
+  ): Map<string, Map<string, string>> {
+    const selections = new Map<string, Map<string, string>>();
+    for (const pack of sorted) {
+      const selected = new Map<string, string>();
+      const replacements = new Set<string>();
+      for (const [key, entry] of definitions) {
+        if (visible.get(pack.id)!.has(entry.owner)) {
+          selected.set(key, key);
+          if (entry.def.replaces) {
+            if (replacements.has(entry.def.replaces)) {
+              fail(pack.id, 'functions', `conflicting replacement ${entry.def.replaces}`);
+            }
+            replacements.add(entry.def.replaces);
+            selected.set(entry.def.replaces, key);
+          }
+        }
+      }
+      selections.set(pack.id, selected);
+    }
+    return selections;
+  }
+  private compileFunctions(
+    definitions: Map<string, { owner: string; def: FunctionDef }>,
+    selections: Map<string, Map<string, string>>,
+  ): void {
     const pending = new Set(definitions.keys());
     const stack = new Set<string>();
     const loadFunction = (key: string): void => {
@@ -625,8 +709,11 @@ export class ModHarness {
             case 'id':
               return;
             case 'call':
-              if (definitions.has(node.args[0])) {
-                loadFunction(node.args[0]);
+              {
+                const selected = selections.get(entry.owner)!.get(node.args[0]);
+                if (selected) {
+                  loadFunction(selected);
+                }
               }
               node.args[1].forEach(discover);
               return;
@@ -650,17 +737,17 @@ export class ModHarness {
           }
         };
         discover(ast);
-        const scope = new Map([...this.functions].filter(([, fn]) => visible.get(entry.owner)!.has(fn.owner)));
-        // A dependent replacement is visible under the original function's public name.
-        for (const [id, fn] of this.functions) {
-          if (definitions.get(id)?.def.replaces && visible.get(entry.owner)!.has(id.split('_')[0]!)) {
-            scope.set(id, fn);
+        const scope = new Map<string, LoadedFunction>();
+        for (const [alias, selected] of selections.get(entry.owner)!) {
+          const fn = this.functions.get(selected);
+          if (fn) {
+            scope.set(alias, fn);
           }
         }
         const program = compileModExpression(entry.def.expression, {
           label: `${entry.owner}:functions.${entry.def.name}`,
-          schema: Object.fromEntries(entry.def.params.map((p) => [p, 'double'])),
-          result: 'double',
+          schema: Object.fromEntries(parameters(entry.def).map((p) => [p.name, p.type])),
+          result: entry.def.result ?? 'double',
           functions: scope,
           states: new Set(),
         });
@@ -677,6 +764,9 @@ export class ModHarness {
     for (const key of definitions.keys()) {
       loadFunction(key);
     }
+    for (const [mod, selected] of selections) {
+      this.scopes.set(mod, new Map([...selected].map(([alias, key]) => [alias, this.functions.get(key)!])));
+    }
   }
   private addFunctionDefinition(
     mod: string,
@@ -688,20 +778,32 @@ export class ModHarness {
     if (def.params.length > limits.collection) {
       throw new Error('function parameter limit');
     }
-    for (const param of def.params) {
-      name(param);
+    const params = parameters(def);
+    if (new Set(params.map((p) => p.name)).size !== params.length) {
+      throw new Error('duplicate parameter');
     }
-    const key = def.replaces ?? `${mod}_${def.name}`;
+    for (const param of params) {
+      name(param.name);
+      if (!functionTypes.has(param.type)) {
+        throw new Error(`unsupported parameter type ${param.type}`);
+      }
+    }
+    if (!functionTypes.has(def.result ?? 'double')) {
+      throw new Error('unsupported result type');
+    }
+    const key = `${mod}_${def.name}`;
     if (def.replaces) {
-      const original = definitions.get(key);
+      const original = definitions.get(def.replaces);
       if (
         !(original && visible.has(original.owner)) ||
         original.owner === mod ||
-        original.def.params.length !== def.params.length
+        original.def.replaces ||
+        functionSignature(original.def) !== functionSignature(def)
       ) {
-        throw new Error(`invalid replacement ${key}`);
+        throw new Error(`invalid replacement ${def.replaces}`);
       }
-    } else if (definitions.has(key) || Object.hasOwn(maths, key) || Object.hasOwn(verbs, key)) {
+    }
+    if (definitions.has(key) || Object.hasOwn(maths, key) || Object.hasOwn(verbs, key)) {
       throw new Error(`duplicate function ${key}`);
     }
     definitions.set(key, { owner: mod, def });
@@ -718,11 +820,7 @@ export class ModHarness {
           if (def.event && !['cast', 'decay'].includes(def.event)) {
             throw new Error(`unknown event ${def.event}`);
           }
-          const scope = new Map(
-            [...this.functions].filter(
-              ([id, fn]) => visible.get(pack.id)!.has(fn.owner) || visible.get(pack.id)!.has(id.split('_')[0]!),
-            ),
-          );
+          const scope = this.functionScope(pack.id);
           const states = stateScope(pack.id);
           this.rules.set(def.id, {
             mod: pack.id,

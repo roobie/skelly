@@ -1,0 +1,113 @@
+[
+  {
+    "dependencies": [],
+    "functions": [
+      {
+        "expression": "{\"low\": bands[0], \"high\": bands[1]}",
+        "name": "table",
+        "params": [
+          {
+            "name": "bands",
+            "type": "list<double>"
+          }
+        ],
+        "result": "map<string, double>"
+      },
+      {
+        "expression": "lerp(table[\"low\"], table[\"high\"], clamp(value / 10, 0, 1))",
+        "name": "score",
+        "params": [
+          {
+            "name": "table",
+            "type": "map<string, double>"
+          },
+          {
+            "name": "value",
+            "type": "double"
+          }
+        ],
+        "result": "double"
+      },
+      {
+        "expression": "bands",
+        "name": "copy",
+        "params": [
+          {
+            "name": "bands",
+            "type": "list<double>"
+          }
+        ],
+        "result": "list<double>"
+      }
+    ],
+    "id": "bandsv1",
+    "rules": [],
+    "state": []
+  },
+  {
+    "dependencies": ["bandsv1"],
+    "functions": [],
+    "id": "plain",
+    "rules": [
+      {
+        "effects": "cel.bind(table, bandsv1_table([1.0, 4.0]), [damage(bandsv1_score(table, level))])",
+        "event": "cast",
+        "id": "plain:use",
+        "when": "true"
+      }
+    ],
+    "state": []
+  },
+  {
+    "dependencies": ["bandsv1"],
+    "functions": [
+      {
+        "expression": "table[\"high\"]",
+        "name": "score",
+        "params": [
+          {
+            "name": "table",
+            "type": "map<string, double>"
+          },
+          {
+            "name": "value",
+            "type": "double"
+          }
+        ],
+        "replaces": "bandsv1_score",
+        "result": "double"
+      }
+    ],
+    "id": "changed",
+    "rules": [
+      {
+        "effects": "cel.bind(table, bandsv1_table([1.0, 4.0]), [damage(bandsv1_score(table, level))])",
+        "event": "cast",
+        "id": "changed:use",
+        "when": "true"
+      }
+    ],
+    "state": []
+  },
+  {
+    "dependencies": [],
+    "functions": [
+      {
+        "expression": "value * 2",
+        "name": "clamp",
+        "params": ["value"],
+        "result": "double"
+      }
+    ],
+    "id": "standalone",
+    "rules": [
+      {
+        "effects": "[damage(clamp(lerp(1.0, 3.0, 0.5), 0.0, 3.0)), overload(rank(level, [1.0, 4.0])), spend(standalone_clamp(1.0))]",
+        "event": "cast",
+        "id": "standalone:use",
+        "when": "true"
+      }
+    ],
+    "state": []
+  }
+]
