@@ -2,7 +2,7 @@
 read_if:
   - you're evaluating the engine, physics or rendering stack
   - you're changing the boundary between simulation, rendering and authored content
-  - you're asking why Deadvox is a browser-based single-player game
+  - you're asking why Deadvox is a browser game with no game server
 tags: [deadvox, adr, engine, voxel, rendering]
 ---
 
@@ -12,7 +12,7 @@ tags: [deadvox, adr, engine, voxel, rendering]
 
 ## Context
 
-Deadvox prioritizes a deep simulation and a moddable, text-dense interface. Its world must pause, advance at different rates, catch up unloaded areas and save as project-owned data. Single-player removes networking and server authority as engine requirements, making a small project-owned voxel engine practical.
+Deadvox prioritizes a deep simulation and a moddable, text-dense interface. Its world must pause, advance at different rates, catch up unloaded areas and save as project-owned data. Multiplayer is lockstep, so the engine needs deterministic simulation but no server authority or network chunk streaming, making a small project-owned voxel engine practical; see [ADR 0008](0008-deterministic-world.md).
 
 ## Decision
 
@@ -24,7 +24,7 @@ Keeping the simulation as plain data separate from rendering supports pause, tim
 
 - Luanti's server-driven formspec UI limits client-side UI modding; Wasm does not change that boundary.
 - noa supplies voxel systems on Babylon.js, handing systems the game can keep project-owned to a library.
-- Voxelize's authoritative server and network chunk streaming solve multiplayer needs this game does not have.
+- Voxelize's authoritative server and network chunk streaming solve a server-authoritative multiplayer that lockstep does not need.
 - Divine Voxel Engine uses worker-based world generation and meshing, but hands meshing to a library rather than keeping the small engine project-owned.
 - Godot 4's networking no longer decides the choice, and its web export and UI fit the browser-native interface less well.
 - Bevy adds a Rust-to-Wasm toolchain while bringing fewer built-in game systems than the other engine options.

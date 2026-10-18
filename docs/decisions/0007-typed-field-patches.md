@@ -73,5 +73,7 @@ needs migrating before v1.0 beta.
 Validation needs an origin per patched field, not only per entry, so a diagnostic can name
 every mod that changed a value. A conflict between two mods becomes a load error a player
 can act on, at the cost of requiring mod authors to declare overrides and dependencies.
-Save identity keeps recording the ordered pack list, which already fixes the patched
-result. See `deadvox/src/core/saveFormat.ts`, `currentSaveVersionIdentity`.
+Save identity records the ordered pack list, which fixes the patched result; see
+`deadvox/src/core/saveFormat.ts`, `currentSaveVersionIdentity`. It holds until d433
+moves identity to the evaluated content, as
+`deadvox/docs/decisions/0008-deterministic-world.md`, "Decision" rules.

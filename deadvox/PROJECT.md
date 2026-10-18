@@ -7,13 +7,13 @@ read_if:
 
 # Deadvox
 
-Deadvox is a browser-based, single-player survival game combining a large scavenged world with detailed items, bodies and crafting. Its simulation and authored content are project-owned; the renderer is three.js and the interface is HTML/CSS. The project's reasons are in [ADR 0005](docs/decisions/0005-own-voxel-engine.md).
+Deadvox is a browser-based survival game combining a large scavenged world with detailed items, bodies and crafting. Its simulation and authored content are project-owned; the renderer is three.js and the interface is HTML/CSS. The project's reasons are in [ADR 0005](docs/decisions/0005-own-voxel-engine.md).
 
 **Play:** <https://roobie.github.io/skelly/deadvox/>. URL configuration is owned by `src/game/config.ts`, `configFromUrl`; benchmark configuration is owned by `src/bench/run.ts`, `benchRunFromUrl`.
 
 ## Project boundaries
 
-- Single-player and static hosting; no server or multiplayer.
+- Static hosting with no game server. Multiplayer is lockstep, so the simulation agrees bit for bit across browsers; see [ADR 0008](docs/decisions/0008-deterministic-world.md).
 - Content is data and can be extended with mods.
 - Simulation state is plain data so it can pause, compress time, catch up and save.
 - The UI stays outside `src/core`; Gungen exports firearm models that Deadvox validates and loads.

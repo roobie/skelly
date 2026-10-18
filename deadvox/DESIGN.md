@@ -99,7 +99,9 @@ place the authorities gave up on.
    player isn't. Food rots, generators run dry, hordes drift and zombies evolve.
    Areas the player left are caught up when they return, not frozen.
 6. **Browser first.** A static site with no backend, running on a mid-range
-   laptop. It's singleplayer, so the player's machine is the whole world.
+   laptop. Each player's machine runs the whole world, and multiplayer is
+   lockstep, so peers exchange only inputs; see
+   [ADR 0008](docs/decisions/0008-deterministic-world.md).
 
 ## Performance and scale
 
@@ -246,7 +248,12 @@ screenshots.
 
 Unloaded areas continue progressing and catch up when loaded. Use closed-form
 updates where they preserve the same outcome cheaply, and bounded coarse steps
-where they do not. Food age derives from its creation time, so unloaded food
+where they do not. The player's region and its eight neighbours are simulated
+with the player's presence as an input, because a region next to the player
+should behave as though the player is there. Within the catch-up horizon,
+catch-up agrees with ordinary ticking within each system's tolerance, because a player can compare a short
+absence with what they saw; beyond it the coarse model is canonical. See
+[ADR 0008](docs/decisions/0008-deterministic-world.md). Food age derives from its creation time, so unloaded food
 needs no decay pass. Unloaded zombies are represented by regional hordes, which
 become individual actors when the area returns. See [Zombies](#zombies).
 
@@ -256,7 +263,9 @@ Keep simulation rules independent of the DOM and renderer so they can be tested
 without a browser and moved to a worker if their cost requires it. Bounded steps
 and explicit system order keep simulation work predictable during compression.
 Each system owns a seeded random stream so the same seed and inputs reproduce
-the same result. Systems communicate through events rather than calling one
+the same result, bit for bit in every supported browser, so lockstep
+multiplayer and cross-browser replay hold; see
+[ADR 0008](docs/decisions/0008-deterministic-world.md). Systems communicate through events rather than calling one
 another directly, which keeps consequences observable and boundaries testable.
 
 
