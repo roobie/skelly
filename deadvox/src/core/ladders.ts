@@ -4,7 +4,8 @@
 
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
-import type { HandSide, Inventory } from './inventory.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
+import type { HandHold, HandSide, Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import type { Body } from './physics.ts';
 import type { Facing } from './templates.ts';
@@ -86,9 +87,10 @@ export interface LadderHoldOptions {
 
 /**
  * The player's hold on a ladder: grabbed with F but not reached yet, or climbed with the off hand on it. Every hand
- * use and every move into or out of a hand is admitted through it, so the hand on the ladder does nothing else.
+ * use, every move into or out of a hand and every furniture lift is admitted through it, so the hand on the ladder
+ * does nothing else. A carried piece fills both hands, so no ladder is held while one is carried.
  */
-export class LadderHold {
+export class LadderHold implements HandHold {
   private readonly options: LadderHoldOptions;
   private hold: { readonly on: true } | { readonly on: false; readonly grabbed: BlockEntity } | undefined;
 
@@ -144,6 +146,11 @@ export class LadderHold {
     return holding !== undefined && needed ? this.holding() : undefined;
   }
 
+  /** Why both hands can't take up a piece of furniture: one is on the ladder. */
+  liftRefusal(): string | undefined {
+    return this.on ? this.holding() : undefined;
+  }
+
   private holding(): string {
     return `Your ${this.hand()} hand is holding the ladder`;
   }
@@ -152,17 +159,22 @@ export class LadderHold {
     return this.on && defOf(this.options.inventory.registry, item.type).twoHanded === true;
   }
 
-  /** F at a ladder grabs it; the climb starts once the body reaches it. */
-  grab(entity: BlockEntity): void {
+  /** F at a ladder grabs it, the climb starting once the body reaches it; returns why not. */
+  grab(entity: BlockEntity): string | undefined {
+    const { inventory } = this.options;
+    if (this.options.entities.carrying()) {
+      return inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
+    }
     this.hold = this.reached() ? { on: true } : { on: false, grabbed: entity };
+    return undefined;
   }
 
   /**
    * The ladder piece the player climbs this step, updating the hold: `letGo` (a jump or a knockout) lets go, as does
-   * leaving the ladder once on it or walking away from one grabbed but not reached.
+   * leaving the ladder once on it, walking away from one grabbed but not reached, or lifting a piece meanwhile.
    */
   piece(letGo: boolean): BlockEntity | undefined {
-    if (letGo) {
+    if (letGo || this.options.entities.carrying()) {
       this.hold = undefined;
     }
     const piece = this.hold ? this.reached() : undefined;

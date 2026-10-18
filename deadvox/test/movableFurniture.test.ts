@@ -3,6 +3,7 @@ import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type FurnitureMover, liftFurniture } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { LadderHold } from '../src/core/ladders.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import {
   capture,
@@ -105,5 +106,55 @@ describe('movable furniture', () => {
     expect(inventory.move(tool, { kind: 'pile', pos: moved }).ok).toBe(true);
     expect(liftFurniture(mover(inventory), piece)).toBeUndefined();
     expect(inventory.plan(tool, { kind: 'hand', side: 'right' })).toEqual({ ok: false, reason: messages.handsFull });
+  });
+
+  describe('with a ladder', () => {
+    const ladderDef = [...registry.furniture.values()].find((def) => def.climbable)!;
+    const setup = () => {
+      const inventory = new Inventory(registry);
+      const furniture = mover(inventory);
+      const piece = inventory.furnish(spec)!;
+      const ladderAt = (pos: Vec3) =>
+        inventory.entities.add({ type: ladderDef.id, pos, size: ladderDef.size, facing: 'n' })!;
+      const hold = new LadderHold({
+        entities: inventory.entities,
+        body: furniture.player,
+        inventory,
+        reachBelow: 0.5,
+        reach: 50,
+      });
+      inventory.handHold = hold;
+      return { inventory, furniture, piece, ladderAt, hold };
+    };
+
+    it('refuses a lift while a hand is on the ladder', () => {
+      const { furniture, piece, ladderAt, hold } = setup();
+      expect(hold.grab(ladderAt([30, origin[1], 30]))).toBeUndefined();
+      expect(hold.on).toBe(true);
+
+      const holding = hold.refusal(hold.hand()!);
+      expect(holding).toBeDefined();
+      expect(liftFurniture(furniture, piece)).toBe(holding);
+    });
+
+    it('lets go of a ladder grabbed but not reached when a piece is lifted', () => {
+      const { inventory, furniture, piece, ladderAt, hold } = setup();
+      expect(hold.grab(ladderAt([10, origin[1], 10]))).toBeUndefined();
+      expect(hold.snapshotState()).toMatchObject({ on: false });
+
+      expect(liftFurniture(furniture, piece)).toBeUndefined();
+      expect(hold.piece(false)).toBeUndefined();
+      expect(hold.snapshotState()).toBeNull();
+      expect(inventory.entities.carrying()).toBe(piece);
+    });
+
+    it('refuses to grab a ladder while carrying a piece', () => {
+      const { furniture, piece, ladderAt, hold } = setup();
+      expect(liftFurniture(furniture, piece)).toBeUndefined();
+
+      expect(hold.grab(ladderAt([30, origin[1], 30]))).toBe(messages.handsFull);
+      expect(hold.piece(false)).toBeUndefined();
+      expect(hold.on).toBe(false);
+    });
   });
 });

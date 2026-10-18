@@ -265,8 +265,9 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): strin
   if (!inventory.canReachEntity(entity)) {
     return messages.outOfReach;
   }
-  if (inventory.entities.carrying() || inventory.hands.right || inventory.hands.left) {
-    return messages.handsFull;
+  const handsRefusal = inventory.liftRefusal();
+  if (handsRefusal) {
+    return handsRefusal;
   }
   if (mover.stamina < reachTuning(inventory.registry).furnitureMove.liftStamina) {
     return messages.tired;

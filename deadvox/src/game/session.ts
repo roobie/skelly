@@ -925,7 +925,7 @@ export const createSession = (options: SessionOptions) => {
     reach: PLAYER.reach / s,
     restored: restoredPlayer?.ladder,
   });
-  inventory.handRefusal = (item, from, to) => ladderHold.moveRefusal(item, from, to);
+  inventory.handHold = ladderHold;
   const throwCharge = new ThrowCharge(inventory, ladderHold);
   // A throw held when the ladder takes its hand ends there, so it is never released from the hand on the ladder.
   const refuseThrowForLadder = (): void => {
@@ -1844,9 +1844,9 @@ export const createSession = (options: SessionOptions) => {
       if (sim.body.actionRefusal) {
         return sim.body.actionRefusal;
       }
-      ladderHold.grab(entity);
+      const refusal = ladderHold.grab(entity);
       refuseThrowForLadder();
-      return undefined;
+      return refusal;
     },
     get playerEyeHeightMetres() {
       return playerEyeHeightMetres();

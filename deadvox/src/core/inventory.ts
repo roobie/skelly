@@ -90,6 +90,14 @@ export const dropSpots = (feet: Vec3): Vec3[] => [
 
 export type HandSide = 'right' | 'left';
 
+/** Something outside the inventory that can hold a hand, so the hand does nothing else meanwhile. */
+export interface HandHold {
+  /** Why a move can't take `item` out of hand `from` or into hand `to`. */
+  moveRefusal: (item: Item, from: HandSide | undefined, to: HandSide | undefined) => string | undefined;
+  /** Why both hands can't take up a piece of furniture. */
+  liftRefusal: () => string | undefined;
+}
+
 export interface Pile {
   /** Block position of the floor it lies on. */
   readonly pos: Vec3;
@@ -201,12 +209,8 @@ export class Inventory {
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
   /** Where the actor stands, in blocks; the game sets it. Undefined means no side is known. */
   actorPosition: () => Vec3 | undefined = () => undefined;
-  /**
-   * Why a move can't take `item` out of hand `from` or into hand `to` because a hand holds something outside the
-   * inventory, such as a ladder; the game sets it.
-   */
-  handRefusal: (item: Item, from: HandSide | undefined, to: HandSide | undefined) => string | undefined = () =>
-    undefined;
+  /** What holds a hand from outside the inventory, such as a ladder; the game sets it. */
+  handHold: HandHold = { moveRefusal: () => undefined, liftRefusal: () => undefined };
 
   /** A deep plain-data copy of carried, worn, piled and furnished items and allocators. */
   snapshotState(): Readonly<InventoryState> {
@@ -1108,11 +1112,19 @@ export class Inventory {
     return { swap: otherItem, ...(targetSpot ? { at: targetSpot } : {}) };
   }
 
+  /** Why both hands can't take up a piece of furniture: one holds an item, a piece or something outside. */
+  liftRefusal(): string | undefined {
+    if (this.entities.carrying() || this.hands.right || this.hands.left) {
+      return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
+    }
+    return this.handHold.liftRefusal();
+  }
+
   private handMoveRefusal(item: Item, from: Location, target: Target): string | undefined {
     if (target.kind === 'hand' && this.entities.carrying()) {
       return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
     }
-    return this.handRefusal(
+    return this.handHold.moveRefusal(
       item,
       from.kind === 'hand' ? from.side : undefined,
       target.kind === 'hand' ? target.side : undefined,
