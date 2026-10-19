@@ -6,6 +6,14 @@ local service = std.filter(function(t) t.id == 'gauntlet_service', content.mapAs
 local ground = lab.ground;
 local hatch = lab.entry.hatch;
 local ladder = lab.entry.ladder;
+local sewer = import 'gauntlet-sewer.libsonnet';
+local street = 12;
+local pad = 2;
+local block = std.max(service.size[0], service.size[2]) + 24;
+local serviceCell = [-1, -1];
+local serviceAt = [serviceCell[axis] * (street + block) + street + pad for axis in [0, 1]];
+local intake = lab.anchors.storeys[0].standing[1];
+local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
 {
   scenarios: [{
     id: 'gauntlet', kind: 'gauntlet',
@@ -50,11 +58,18 @@ local ladder = lab.entry.ladder;
       settlementKind: 'city',
       blocksX: 2, blocksZ: 2,
       bounds: layout.bounds, lots: layout.lots, paving: layout.paving, fillRows: false,
-      service: { cell: [-1, -1], turn: 0, routes: yard.routes },
-      street: 12,
-      blockX: std.max(service.size[0], service.size[2]) + 24,
-      blockZ: std.max(service.size[0], service.size[2]) + 24,
-      pad: 2, gap: 1, blend: 24,
+      // The sewer runs from the HQ yard to the lab's south wall, its guard room's doorway in line with the port.
+      underground: [{
+        id: 'hq_sewer', assembly: 'gauntlet_sewer',
+        position: [serviceAt[0] + lab.port.x - sewer.door.x0, serviceAt[1] + lab.depth], turn: 0,
+        mouths: [sewer.mouth],
+        ports: [{ id: 'lab_south', outside: sewer.outside, threshold: threshold, inside: [threshold[0], intake, threshold[2] - 3] }],
+      }],
+      service: { cell: serviceCell, turn: 0, routes: yard.routes },
+      street: street,
+      blockX: block,
+      blockZ: block,
+      pad: pad, gap: 1, blend: 24,
       flatSurroundings: true,
       rows: 4,
       perimeter: {

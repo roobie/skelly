@@ -10,10 +10,19 @@ import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
+import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
+import {
+  compileAssembly,
+  compileTemplate,
+  footprint,
+  type Placement,
+  placedBlockAt,
+  placedPoint,
+  type Turn,
+} from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
@@ -25,6 +34,7 @@ if (!profile) {
   throw new Error('Missing composed scenario');
 }
 const COMPOSED_LADDER = /composed ladder/;
+const UNDERGROUND_OVERLAP = /overlaps the city/;
 // The heavy cases are CPU-bound, so their timeouts scale with the simulated work and leave headroom for a shared
 // CPU, instead of vitest's flat default (#792).
 const WALK_MS_PER_STOREY = 4800;
@@ -146,6 +156,19 @@ const obstruct = (chunk: Chunk, point: Readonly<Vec3>): void => {
     );
   }
 };
+const ownedCells = (placement: Placement, y: number): Vec3[] => {
+  const [width, depth] = footprint(placement);
+  const [x0, , z0] = placement.origin;
+  const cells: Vec3[] = [];
+  for (let z = z0; z < z0 + depth; z++) {
+    for (let x = x0; x < x0 + width; x++) {
+      if (placedBlockAt(placement, [x, y, z]) !== undefined) {
+        cells.push([x, y, z]);
+      }
+    }
+  }
+  return cells;
+};
 
 class ObstructedSite extends CitySite {
   readonly obstruction: Readonly<Vec3>;
@@ -265,6 +288,85 @@ describe('final composed body-route certificate', () => {
     const site = new CitySite(9, boundaryRegistry, scale, { ...base, placements: [...base.placements, placement] });
     const space = new ScenarioRouteSpace(site);
     expect(space.clear([CHUNK + 1, base.floor + 1, 6])).toBe(false);
+  });
+
+  it('rejects a sewer tunnel walled off between its mouth and the lab port', () => {
+    const [sewer] = base.underground;
+    if (!sewer) {
+      throw new Error('Production city has no underground witness');
+    }
+    const { placement, definition } = sewer;
+    const mouth = placedPoint(placement, definition.mouths[0]!.lower);
+    const outside = placedPoint(placement, definition.ports[0]!.outside);
+    const z = Math.floor((mouth[2] + outside[2]) / 2);
+    const [width] = footprint(placement);
+    const [west, bottom] = placement.origin;
+    const site = siteOf();
+    const original = site.stamp.bind(site);
+    const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
+      original(chunk);
+      for (let x = west; x < west + width; x++) {
+        for (let y = bottom + 1; y < bottom + placement.template.groundLayer!; y++) {
+          obstruct(chunk, [x, y, z]);
+        }
+      }
+    });
+    try {
+      const result = scenarioCertificate(site);
+      expect(
+        result.issues.some(
+          ([path, message]) => path === '.city.underground[0].ports[0]' && message.includes('from the mouth'),
+        ),
+      ).toBe(true);
+    } finally {
+      stamp.mockRestore();
+    }
+  });
+
+  it('admits the sewer port only where its threshold crosses the service shell', () => {
+    expect(undergroundPortIssues(registry, profile, compiled)).toEqual([]);
+    const [sewer] = profile.city.underground!;
+    const [port] = sewer!.ports;
+    const [x, y, z] = port!.threshold;
+    const walled = { ...port!, threshold: [x + 8, y, z] as Vec3, inside: [x + 8, y, z - 3] as Vec3 };
+    const city = { ...profile.city, underground: [{ ...sewer!, ports: [walled] }] };
+    expect(undergroundPortIssues(registry, { ...profile, city }, compiled).map(([path]) => path)).toEqual([
+      '.city.underground[0].ports[0]',
+    ]);
+  });
+
+  it('refuses a city plan whose underground elements claim the same cells', () => {
+    const [sewer] = profile.city.underground!;
+    const underground = [sewer!, { ...sewer!, id: `${sewer!.id}_copy` }];
+    const city = { ...profile.city, underground };
+    expect(() =>
+      buildCityPlan({ seed: 9, registry, floor: 64, grid: cityGridOf(registry, city), scenario: { ...profile, city } }),
+    ).toThrow(UNDERGROUND_OVERLAP);
+  });
+
+  it('refuses a city plan whose underground element runs through a building above ground', () => {
+    const [sewer] = base.underground;
+    if (!sewer) {
+      throw new Error('Production city has no underground witness');
+    }
+    const street = 64 + 1;
+    const [own] = ownedCells(sewer.placement, street);
+    const building = base.placements.find(
+      (placement) => placement !== sewer.placement && ownedCells(placement, street).length > 0,
+    );
+    if (!(own && building)) {
+      throw new Error('Need an owned street-level cell in the sewer and in a building');
+    }
+    const [target] = ownedCells(building, street);
+    const [element] = profile.city.underground!;
+    const position: [number, number] = [
+      element!.position[0] + target![0] - own[0],
+      element!.position[1] + target![2] - own[2],
+    ];
+    const city = { ...profile.city, underground: [{ ...element!, position }] };
+    expect(() =>
+      buildCityPlan({ seed: 9, registry, floor: 64, grid: cityGridOf(registry, city), scenario: { ...profile, city } }),
+    ).toThrow(UNDERGROUND_OVERLAP);
   });
 
   it('rejects a fixed resource whose declared standing route is obstructed', () => {

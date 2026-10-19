@@ -7,6 +7,8 @@ local rows = {
   containment: [row(null, 0, 3), row('shambler', 0.6, 5)],
   failure: [row(null, 0, 2), row('shambler', 0.6, 3), row('runner', 0.6, 2), row('crawler', 0.6, 2)],
   bottom: [row(null, 0, 1), row('shambler', 0.6, 2), row('runner', 0.6, 3), row('crawler', 0.6, 3)],
+  // The sewer is the quieter trade for the street run, so its few cells stay sparse.
+  sewer: [row(null, 0, 2), row('shambler', 0.6, 1)],
 };
 // Live marker cells per room kind, of the three every room punches out of its shell; breach and quarantine rooms are the densest.
 // The amalgam's body needs a whole empty room, so it has its own centre cell, live only in the holding room; every room on the plain shell punches that cell.
@@ -54,4 +56,7 @@ local slot = function(room, name, cell, choices) {
       for room in roomSlots
       if kindAt(room) == std.strReplace(room.choices[0].ref.id, 'gauntlet_lab_', '')
     ],
+  // Threat slots at a host's own marker cells, each weighted by one row set; the host leaves those cells unclaimed.
+  markerSlots: function(host, rowSet, at)
+    [slot({ id: host, at: [0, 0, 0] }, i, at[i], rows[rowSet]) for i in std.range(0, std.length(at) - 1)],
 }

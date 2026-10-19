@@ -6,12 +6,13 @@ import {
   placeCityLots,
   rectsOverlap,
 } from './cityLots.ts';
+import { cityUndergroundIssues, type PlannedUnderground, placeUnderground } from './cityUnderground.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { hash3, pickWeighted, Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
-import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
+import { portalLadderPoint, scenarioPortalIssues, undergroundPortIssues } from './scenarioPortal.ts';
 import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
 import type { CityBenchmarkDef, MapPoolDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
@@ -63,6 +64,7 @@ export interface CityPlan {
   readonly core: Rect;
   readonly placements: readonly Placement[];
   readonly lots?: readonly PlannedLot[];
+  readonly underground: readonly PlannedUnderground[];
   readonly structures: readonly BlockBox[];
   readonly service: Placement | undefined;
   readonly serviceBlock: Cell | undefined;
@@ -565,6 +567,7 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
     ...cityPoolIssues(registry, scenario),
     ...cityLotIssues(registry, city, cityBounds(city)),
     ...cityLotQuotaIssues(registry, city),
+    ...cityUndergroundIssues(registry, city, cityBounds(city)),
     ...scenarioStartIssues(registry, scenario),
   );
   const template = registry.templates.get(serviceTemplate);
@@ -588,6 +591,7 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
       issues.push(['.decalLimit', `service template places ${decals} decals; the limit is ${scenario.decalLimit}`]);
     }
     issues.push(...scenarioPortalIssues(registry, scenario, compiled));
+    issues.push(...undergroundPortIssues(registry, scenario, compiled));
     issues.push(...scenarioCompositionIssues(registry, scenario, compiled));
   } catch (error) {
     issues.push(['.serviceTemplate', error instanceof Error ? error.message : String(error)]);
@@ -1164,6 +1168,8 @@ export const buildCityPlan = ({
     ...(perimeter ? wallPlacements(context, bounds, perimeter) : []),
   );
   const structures = perimeter ? cityPerimeter(registry, perimeter, bounds, floor) : [];
+  const underground = placeUnderground(grid, { floor, compiled: context.compiled, placements });
+  placements.push(...underground.map(({ placement }) => placement));
   return Object.freeze({
     grid: freezeGrid(grid),
     floor,
@@ -1178,6 +1184,7 @@ export const buildCityPlan = ({
     ),
     placements: Object.freeze(placements),
     lots,
+    underground,
     service,
     serviceBlock,
     candidates: Object.freeze(candidates),

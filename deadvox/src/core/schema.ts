@@ -1888,6 +1888,20 @@ const CityLotSchema = strictObject({
   /** A direct crossing prevents a route around the fence from certifying a blocked breach. */
   routes: optional(array(PerimeterCrossingSchema)),
 });
+/** A corridor under the city; elements, mouths and ports are lists so a later junction is one more entry. */
+const CityUndergroundSchema = strictObject({
+  id: Id,
+  assembly: Id,
+  position: tuple([CellCoordinate, CellCoordinate]),
+  turn: picklist([0, 1, 2, 3]),
+  /** Ladders up to the street, in element cells. */
+  mouths: pipe(array(strictObject({ ladder: CellPosition, upper: CellPosition, lower: CellPosition })), minLength(1)),
+  /** Openings into the service: `outside` in element cells; `threshold` and `inside` in service cells. */
+  ports: pipe(
+    array(strictObject({ id: Id, outside: CellPosition, threshold: CellPosition, inside: CellPosition })),
+    minLength(1),
+  ),
+});
 // Action ids are code-owned and dotted, so `Id` does not fit; `controlRowIssue` checks them against the actions.
 const ControlSchema = strictObject({
   id: pipe(string(), minLength(1)),
@@ -1994,6 +2008,7 @@ const ScenarioSchema = strictObject({
     streetProps: optional(pipe(array(Id), maxLength(16))),
     bounds: optional(LayoutRect),
     lots: optional(array(CityLotSchema)),
+    underground: optional(array(CityUndergroundSchema)),
     fillRows: optional(vBoolean()),
     paving: optional(array(LayoutRect)),
     service: optional(
