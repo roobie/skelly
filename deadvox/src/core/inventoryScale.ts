@@ -42,6 +42,19 @@ export const pocketScaleIssue = (
   return sizeFits(grid, { w: long!, h: short! }) ? undefined : 'pocket is larger than the furniture it is inside';
 };
 
+/** Rigid storage cannot create space by being packed inside another container. */
+export const rigidPocketScaleIssue = (item: ItemDef): string | undefined => {
+  if (!item.container?.rigid) {
+    return undefined;
+  }
+  const { pockets } = item.container;
+  const [w, h] = item.size;
+  return pockets.every(({ grid }) => sizeFits(grid, { w, h })) &&
+    pockets.reduce((area, { grid: [pw, ph] }) => area + pw * ph, 0) <= w * h
+    ? undefined
+    : 'rigid container pockets exceed its footprint';
+};
+
 const tableItems = (registry: Registry, table: string, seen = new Set<string>()): Set<string> => {
   const items = new Set<string>();
   if (seen.has(table)) {

@@ -23,9 +23,9 @@ const { registry } = buildRegistry(
     .map((name) => ({ source: name, data: JSON.parse(readFileSync(join(directory, name), 'utf8')) as unknown })),
 );
 
-const setup = (handedness?: 'right' | 'left') => {
-  const character = new Character(registry, handedness ? { handedness } : {});
-  const inventory = new Inventory(registry, undefined, undefined, character);
+const setup = (handedness?: 'right' | 'left', contentRegistry = registry) => {
+  const character = new Character(contentRegistry, handedness ? { handedness } : {});
+  const inventory = new Inventory(contentRegistry, undefined, undefined, character);
   const player: ReachPlayer = { inventory, position: [0.5, 0, 0.5], blockSize: 1, clock: BASE_CLOCK };
   const view = bindReach(player);
   const queue = new HandlingQueue(inventory);
@@ -108,11 +108,39 @@ it.each(['plain', 'nested'] as const)('%s ground items cross the absolute 2m bou
 });
 
 it('nearest furniture cell is reachable without revealing unsearched nested contents', () => {
-  const t = setup();
-  const def = [...registry.furniture.values()].find((definition) => definition.container)!;
-  const entity = t.inventory.entities.add({ type: def.id, pos: [2, 0, 0], size: [4, 2, 1], facing: 'n' })!;
-  const bag = t.add('school_backpack', { kind: 'furniture', entity, pocket: 0 });
-  const beans = t.add('canned_beans', { kind: 'pocket', owner: bag, pocket: 0 });
+  const { registry: fixtureRegistry, issues } = buildRegistry([
+    playerInventorySource(),
+    {
+      source: 'nested-furniture.json',
+      data: {
+        items: [
+          {
+            id: 'fixture_case',
+            name: 'Case',
+            category: 'bag',
+            weight: 1,
+            size: [2, 2],
+            container: { rigid: true, pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
+          },
+          { id: 'fixture_plain', name: 'Plain', category: 'material', weight: 1, size: [1, 1] },
+        ],
+        furniture: [
+          {
+            id: 'fixture_cabinet',
+            name: 'Cabinet',
+            size: [4, 2, 1],
+            color: '#ffffff',
+            container: { pockets: [{ grid: [4, 4], handlingSimSeconds: 1 }] },
+          },
+        ],
+      },
+    },
+  ]);
+  expect(issues).toEqual([]);
+  const t = setup(undefined, fixtureRegistry);
+  const entity = t.inventory.entities.add({ type: 'fixture_cabinet', pos: [2, 0, 0], size: [4, 2, 1], facing: 'n' })!;
+  const bag = t.add('fixture_case', { kind: 'furniture', entity, pocket: 0 });
+  const beans = t.add('fixture_plain', { kind: 'pocket', owner: bag, pocket: 0 });
   expect(t.view().furniture).toContain(entity);
   expect(t.view().entries).toHaveLength(0);
   t.inventory.entities.markSearched(entity);

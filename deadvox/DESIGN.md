@@ -858,14 +858,17 @@ interior. A soft bag nests only when empty, because nesting it loaded would
 turn that extra interior into space gained by stacking bags. A hard case is no
 smaller outside than inside, so it gains no space wherever it goes: loaded, it
 may go into any container with room, furniture included, as in DayZ. Rigidity
-belongs to the item's definition, as a rigid flag on its container component,
-so saves don't change; validation must hold a rigid item's pockets within its
-footprint. Loaded nesting goes one level deep: a loaded case may sit in a bag,
-but nothing loaded sits in the case. Free nesting is plausible and realistic,
-but not worth its complexity yet, and the rule can widen to it later. No item
-is rigid until the nesting build round adds the flag, its check, the depth rule
-and the first hard case, so every loaded container still goes only into a
-floor pile; see `src/core/inventory.ts`, `Inventory.gridPlacement`.
+belongs to the definition rather than saved instance state. Free nesting is
+plausible and realistic, but not worth its complexity yet; one loaded-case level
+keeps storage manageable without excluding packed cases. Packing and filling
+must obey the same limit so move order cannot create extra storage. See
+`src/core/schema.ts`, `ItemSchema`; `src/core/inventoryScale.ts`,
+`rigidPocketScaleIssue`; and `src/core/inventory.ts`, `Inventory.gridPlacement`.
+
+The ammo can uses the ordinary cuboid item presentation and shed loot, because
+a steel box suits that shape and belongs among tools without needing a firearm
+model or military-only supply. See `src/content/base/items-other.libsonnet`,
+`ammo_can`, and `src/content/base/loot.jsonnet`, `shed_tools`.
 
 A soft bag's interior has no bound against its footprint; each bag is balanced
 by hand in content. Two soft bags of one volume, a plastic garbage bag and a
