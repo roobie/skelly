@@ -11534,32 +11534,7 @@
           }
         ]
       },
-      "anchors": {
-        "yard_east_breach": {
-          "at": [70.5, 41, 50],
-          "kind": "standing"
-        },
-        "yard_east_edge": {
-          "at": [72, 41, 50],
-          "kind": "point"
-        },
-        "yard_gate": {
-          "at": [35.5, 41, 62],
-          "kind": "standing"
-        },
-        "yard_gate_edge": {
-          "at": [35.5, 41, 64],
-          "kind": "point"
-        },
-        "yard_west_breach": {
-          "at": [1.5, 41, 20],
-          "kind": "standing"
-        },
-        "yard_west_edge": {
-          "at": [0, 41, 20],
-          "kind": "point"
-        }
-      },
+      "anchors": {},
       "id": "gauntlet_service",
       "joins": [],
       "lootContext": {

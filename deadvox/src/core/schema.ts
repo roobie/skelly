@@ -1832,6 +1832,9 @@ const CityBenchmarkSchema = strictObject({
   ...CityBlockGeometry,
   reachMetres: PositiveMetres,
 });
+const PerimeterCrossingSchema = strictObject({ id: Id, inside: CellPosition, outside: CellPosition });
+export type PerimeterCrossingDef = InferOutput<typeof PerimeterCrossingSchema>;
+
 const CityLotSchema = strictObject({
   id: Id,
   position: tuple([CellCoordinate, CellCoordinate]),
@@ -1844,7 +1847,7 @@ const CityLotSchema = strictObject({
     ]),
   ),
   /** A direct crossing prevents a route around the fence from certifying a blocked breach. */
-  routes: optional(array(strictObject({ id: Id, inside: CellPosition, outside: CellPosition }))),
+  routes: optional(array(PerimeterCrossingSchema)),
 });
 // Action ids are code-owned and dotted, so `Id` does not fit; `controlRowIssue` checks them against the actions.
 const ControlSchema = strictObject({
@@ -1958,6 +1961,7 @@ const ScenarioSchema = strictObject({
       strictObject({
         cell: tuple([CellCoordinate, CellCoordinate]),
         turn: picklist([0, 1, 2, 3]),
+        routes: optional(array(PerimeterCrossingSchema)),
       }),
     ),
     pool: Id,

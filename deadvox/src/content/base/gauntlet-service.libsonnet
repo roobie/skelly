@@ -73,7 +73,7 @@ local small = function(id, size, furniture, layers, claims, facing='n') {
       slot('south_west_floor', 'piece', 'gauntlet_service_room_floor', [4, 40, 42], [18, 1, 14]),
       slot('south_middle_floor', 'piece', 'gauntlet_service_room_floor', [27, 40, 42], [18, 1, 14]),
       slot('south_east_floor', 'piece', 'gauntlet_service_room_floor', [50, 40, 42], [18, 1, 14]),
-    ] + yard.slots, joins: [], ports: [], anchors: yard.anchors,
+    ] + yard.slots, joins: [], ports: [], anchors: {},
     access: { ground: 'ground', entrance: [36, 41, 26], storeys: [{ id: 'ground', floor: 41 }], stairs: [] },
   }],
 }

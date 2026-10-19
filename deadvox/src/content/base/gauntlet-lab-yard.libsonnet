@@ -67,12 +67,9 @@ local rubbleBays = [[8, 40, 10], [56, 40, 16], [17, 40, 48], [59, 40, 53]];
           [kit.slot('shrub_' + i, shrub, shrubBays[i]) for i in std.range(0, std.length(shrubBays) - 1)] +
           [kit.slot('creeper_' + i, creeper, creepBays[i]) for i in std.range(0, std.length(creepBays) - 1)] +
           [kit.slot('rubble_' + i, dressing.rubble, rubbleBays[i], i % 4) for i in std.range(0, std.length(rubbleBays) - 1)],
-  anchors: {
-    yard_gate: { kind: 'standing', at: [35.5, 41, 62] },
-    yard_gate_edge: { kind: 'point', at: [35.5, 41, 64] },
-    yard_west_breach: { kind: 'standing', at: [1.5, 41, 20] },
-    yard_west_edge: { kind: 'point', at: [0, 41, 20] },
-    yard_east_breach: { kind: 'standing', at: [70.5, 41, 50] },
-    yard_east_edge: { kind: 'point', at: [72, 41, 50] },
-  },
+  routes: [
+    { id: 'yard_gate', inside: [35.5, 41, 61], outside: [35.5, 41, 66] },
+    { id: 'yard_west_breach', inside: [3, 41, 20], outside: [-2, 41, 20] },
+    { id: 'yard_east_breach', inside: [69, 41, 50], outside: [74, 41, 50] },
+  ],
 }

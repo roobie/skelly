@@ -2,7 +2,7 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { pickWeighted, Rng } from './random.ts';
 import type { ScenarioRouteSpace } from './scenarioRoute.ts';
-import type { MapPoolDef, ScenarioDef } from './schema.ts';
+import type { MapPoolDef, PerimeterCrossingDef, ScenarioDef } from './schema.ts';
 import { eligibilityExclusion } from './settlementPools.ts';
 import { footprint, type Placement, placedPoint } from './templates.ts';
 
@@ -119,13 +119,23 @@ export const cityLotIssues = (registry: Registry, city: LotContext, bounds: Retu
   return issues;
 };
 
-const crossingIssues = (lot: PlannedLot, space: ScenarioRouteSpace, entry: Vec3, path: string): Issue[] => {
+interface PerimeterRoutes {
+  readonly placement: Placement;
+  readonly routes: readonly PerimeterCrossingDef[];
+}
+
+const crossingIssues = (
+  { placement, routes }: PerimeterRoutes,
+  space: ScenarioRouteSpace,
+  entry: Vec3,
+  path: string,
+): Issue[] => {
   const issues: Issue[] = [];
-  for (const [index, route] of (lot.definition.routes ?? []).entries()) {
+  for (const [index, route] of routes.entries()) {
     const routePath = `${path}.routes[${index}]`;
-    const inside = placedPoint(lot.placement!, route.inside);
-    const outside = placedPoint(lot.placement!, route.outside);
-    if (!space.path(entry, inside, { placement: lot.placement! })) {
+    const inside = placedPoint(placement, route.inside);
+    const outside = placedPoint(placement, route.outside);
+    if (!space.path(entry, inside, { placement })) {
       issues.push([routePath, 'authored perimeter crossing must be reachable from the building entrance']);
     }
     if (!space.sweep(inside, outside)) {
@@ -134,6 +144,24 @@ const crossingIssues = (lot: PlannedLot, space: ScenarioRouteSpace, entry: Vec3,
   }
   return issues;
 };
+export const perimeterRouteIssues = (
+  { placement, routes }: PerimeterRoutes,
+  space: ScenarioRouteSpace,
+  feet: readonly Readonly<Vec3>[],
+  path: string,
+): Issue[] => {
+  const entrance = placement.template.access?.entrance;
+  if (!entrance) {
+    return [[path, 'authored building needs an entrance pose']];
+  }
+  const entry = placedPoint(placement, entrance);
+  const issues: Issue[] = [];
+  if (!feet.some((foot) => space.path(foot, entry))) {
+    issues.push([path, 'authored building entrance is not reachable from the start']);
+  }
+  return [...issues, ...crossingIssues({ placement, routes }, space, entry, path)];
+};
+
 export const cityLotRouteIssues = (
   lots: readonly PlannedLot[],
   space: ScenarioRouteSpace,
@@ -145,16 +173,9 @@ export const cityLotRouteIssues = (
       continue;
     }
     const path = `.city.lots[${index}]`;
-    const entrance = lot.placement.template.access?.entrance;
-    if (!entrance) {
-      issues.push([path, 'authored building needs an entrance pose']);
-      continue;
-    }
-    const entry = placedPoint(lot.placement, entrance);
-    if (!feet.some((foot) => space.path(foot, entry))) {
-      issues.push([path, 'authored building entrance is not reachable from the start']);
-    }
-    issues.push(...crossingIssues(lot, space, entry, path));
+    issues.push(
+      ...perimeterRouteIssues({ placement: lot.placement, routes: lot.definition.routes ?? [] }, space, feet, path),
+    );
   }
   return issues;
 };
