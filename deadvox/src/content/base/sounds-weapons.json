@@ -18,14 +18,27 @@
       "category": "body",
       "gain": 0.5,
       "gainJitter": [0.94999999999999996, 1.05],
-      "id": "rifle_bolt_cycle",
+      "id": "rifle_bolt_open",
       "minIntervalSimSeconds": 0,
       "noise": {
         "enabled": false,
         "radiusMetres": 1
       },
       "pitchJitter": [0.96999999999999997, 1.03],
-      "variants": ["assets/audio/rifle-bolt-cycle-01.ogg"]
+      "variants": ["assets/audio/rifle-bolt-open-01.ogg"]
+    },
+    {
+      "category": "body",
+      "gain": 0.5,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "rifle_bolt_close",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.96999999999999997, 1.03],
+      "variants": ["assets/audio/rifle-bolt-close-01.ogg"]
     },
     {
       "category": "body",
@@ -43,6 +56,19 @@
         "assets/audio/firearm-dry-click-02.ogg",
         "assets/audio/firearm-dry-click-03.ogg"
       ]
+    },
+    {
+      "category": "body",
+      "gain": 0.34999999999999998,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "shotgun_dry_click",
+      "minIntervalSimSeconds": 0.14999999999999999,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.94999999999999996, 1.05],
+      "variants": ["assets/audio/shotgun-dry-click-01.ogg"]
     },
     {
       "category": "world",

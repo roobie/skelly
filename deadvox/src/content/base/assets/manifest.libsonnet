@@ -83,8 +83,12 @@
       "author": "LFA",
       "licence": "CC0-1.0",
       "download": "equipment_clicks3.wav",
-      "files": ["assets/audio/rifle-bolt-cycle-01.ogg", "assets/audio/revolver-case-pick-01.ogg"],
-      "changes": "Slices 12.10–13.72 s (bolt-action cocking cycle) and 7.95–8.20 s (light click, the revolver case pick). Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+      "files": [
+        "assets/audio/rifle-bolt-open-01.ogg",
+        "assets/audio/rifle-bolt-close-01.ogg",
+        "assets/audio/revolver-case-pick-01.ogg"
+      ],
+      "changes": "Slices 12.10–12.80 s (bolt-action lift and draw, the bolt open), 12.80–13.72 s (push and turn down, the bolt close) and 7.95–8.20 s (light click, the revolver case pick). Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
     },
     {
       "title": "DSLR Camera Sounds",
@@ -95,9 +99,10 @@
       "files": [
         "assets/audio/firearm-dry-click-01.ogg",
         "assets/audio/firearm-dry-click-02.ogg",
-        "assets/audio/firearm-dry-click-03.ogg"
+        "assets/audio/firearm-dry-click-03.ogg",
+        "assets/audio/shotgun-dry-click-01.ogg"
       ],
-      "changes": "Three isolated short clicks, 2.79–2.90, 6.455–6.565 and 7.45–7.53 s, as a closed-action dry fire; the longer motor runs are left out. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+      "changes": "Three isolated short clicks, 2.79–2.90, 6.455–6.565 and 7.45–7.53 s, as a closed-action dry fire, and the heavier click at 4.48–4.64 s as the pump shotgun's; the longer motor runs are left out. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
     },
     {
       "title": "Huge Explosion",
@@ -493,9 +498,9 @@
       "url": null,
       "author": "BR",
       "licence": "CC0-1.0",
-      "download": "m4unsup_single_sc_field_v2b.wav and m4sup1_single_sc_field_v2.wav",
-      "files": ["assets/audio/gunshot-m4-01.ogg", "assets/audio/gunshot-m4-suppressed-01.ogg"],
-      "changes": "BR's original synthesised M4 shots. Trimmed trailing silence only, then converted from 48 kHz 16-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
+      "download": "m4sup1_single_sc_field_v2.wav",
+      "files": ["assets/audio/gunshot-m4-suppressed-01.ogg"],
+      "changes": "BR's original synthesised suppressed M4 shot. Trimmed trailing silence only, then converted from 48 kHz 16-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
     },
     {
       "title": "Project-built low-poly hand-tool and content stand-ins",
