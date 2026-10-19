@@ -3,9 +3,13 @@ local air = ['..................', '..................'];
 local circulation = ['AAAAARRRRRRAAAAAAA', 'AAAAARRRRRRAAAAAAA'];
 local shrubs = ['.BBB........BBB...', '.BBB........BBB...'];
 local shrubClaims = ['ASSSARRRRRRASSSAAA', 'ASSSARRRRRRASSSAAA'];
-local fenced = ['.BBB........FFFF..', '.BBB..............'];
+local fenced = ['.BBB........FFFF..', '.BBB........iiii..'];
 local fencedUpper = ['............FFFF..', '..................'];
-local fenceClaims = ['ASSSARRRRRRASSSSAA', 'ASSSARRRRRRAAAAAAA'];
+local fenceClaims = ['ASSSARRRRRRASSSSAA', 'ASSSARRRRRRASSSSAA'];
+local grownLow = ['GGGSS......wGSSGGG', 'GGwSS......GwSSGwG'];
+local grownLowClaims = ['SSSSSRRRRRRSSSSSSS', 'SSSSSRRRRRRSSSSSSS'];
+local grownTall = ['...SS........SS...', '...SS........SS...'];
+local grownTallClaims = ['AAASSRRRRRRAASSAAA', 'AAASSRRRRRRAASSAAA'];
 local upperClaims = ['AAAAARRRRRRASSSSAA', 'AAAAARRRRRRAAAAAAA'];
 local yard = {
   id: 'gauntlet_yard_open', size: [18, 4, 2], style: 'brick_townhouse', lootContext: context,
@@ -43,10 +47,17 @@ local yard = {
     },
     yard + {
       id: 'gauntlet_yard_fenced', palette: yard.palette + {
-        B: { furniture: 'gauntlet_yard_shrub' }, F: { furniture: 'gauntlet_yard_fence' },
+        B: { furniture: 'gauntlet_yard_shrub' }, F: { furniture: 'gauntlet_yard_fence' }, i: { furniture: 'creeper_strip' },
       },
       layers: [fenced, fenced, fencedUpper, air],
       ownership: { layers: [fenceClaims, fenceClaims, upperClaims, circulation] },
+    },
+    yard + {
+      id: 'gauntlet_yard_overgrown', palette: yard.palette + {
+        G: { role: 'trim', material: 'tall_grass' }, S: { furniture: 'shrub_tall' }, w: { furniture: 'weed_tuft' },
+      },
+      layers: [grownLow, grownTall, grownTall, air],
+      ownership: { layers: [grownLowClaims, grownTallClaims, grownTallClaims, circulation] },
     },
   ],
   slot: {
@@ -55,6 +66,7 @@ local yard = {
       { ref: { kind: 'piece', id: 'gauntlet_yard_open' }, weight: 1 },
       { ref: { kind: 'piece', id: 'gauntlet_yard_shrubs' }, weight: 3 },
       { ref: { kind: 'piece', id: 'gauntlet_yard_fenced' }, weight: 2 },
+      { ref: { kind: 'piece', id: 'gauntlet_yard_overgrown' }, weight: 2 },
     ],
   },
 }
