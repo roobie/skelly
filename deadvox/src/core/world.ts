@@ -242,13 +242,18 @@ const FACE_NEIGHBOURS: readonly Vec3[] = [
  * every block of its six neighbours (layers below `bottomCy` count as solid). Deep
  * underground chunks are like this, and meshing them would produce nothing.
  */
-export const isEnclosed = (world: World, [cx, cy, cz]: Vec3, bottomCy = Number.NEGATIVE_INFINITY): boolean => {
+export const isEnclosed = (
+  world: World,
+  [cx, cy, cz]: Vec3,
+  bottomCy = Number.NEGATIVE_INFINITY,
+  occluders?: Uint8Array,
+): boolean => {
   const solidThrough = (x: number, y: number, z: number) => {
     if (y < bottomCy) {
       return true;
     }
     const id = world.getChunk(x, y, z)?.uniformId;
-    return id !== undefined && id !== 0;
+    return id !== undefined && id !== 0 && (occluders?.[id] ?? 1) !== 0;
   };
   return solidThrough(cx, cy, cz) && FACE_NEIGHBOURS.every(([dx, dy, dz]) => solidThrough(cx + dx, cy + dy, cz + dz));
 };

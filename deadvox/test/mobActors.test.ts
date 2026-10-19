@@ -326,6 +326,7 @@ const incapacitate = (zombie: Zombie) => {
   const origin: Vec3 = [center[0] - zombie.facing[0] * 2, center[1], center[2] - zombie.facing[2] * 2];
   const direction: Vec3 = [center[0] - origin[0], center[1] - origin[1], center[2] - origin[2]];
   const hit = system.swing(origin, direction, {
+    motion: 'swing',
     damage: Number.MAX_SAFE_INTEGER,
     reach: 3,
     cooldown: 0,

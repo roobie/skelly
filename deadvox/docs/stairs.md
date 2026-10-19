@@ -3,7 +3,7 @@ read_if:
   - you're authoring multi-storey templates, stairs or root cellars
   - you're changing floor-opening validation, stair traversal or site lighting
   - you're changing asynchronous lighting pixel comparisons, first-mesh fairness or real-hardware camp attribution
-  - you change main-reference source overlays or their core API boundary
+  - you change main-reference source overlays, their caller adapters or their core API boundary
   - you're changing cross-floor zombie behavior or its browser witness
 ---
 
@@ -21,7 +21,7 @@ Buried rooms need world-derived sky visibility because wide ambient occlusion re
 
 Shamblers do not navigate stairs as routes. A resident can drift onto a flight while beelining, but a target on another floor does not grant stair knowledge. Door bashing remains deferred under #273 until mob and obstacle strength exist. See `src/core/zombies.ts`, `ZombieSystem.tick`.
 
-The first-mesh reference keeps main's startup caller, markup and lighting dependencies coherent while retaining branch core contracts, fixture content and browser. An older core owner can invalidate its branch callers before rendering; mixing startup revisions can halt mesh delivery without a page error. Content construction, configuration and world setup must share the startup caller's revision: a singleton-to-factory change crosses that whole boundary even when module paths survive. Deleted startup dependencies must resolve from the reference. Enter Play before waiting for meshes: the title screen does not construct the played world. The reference measures delivered geometry, not first rendered pixels or a pristine whole build. Missing overlays and browser errors invalidate the evidence; timestamps remain observations rather than default timing assertions. The exact event base matters because shallow merge parents need not contain it. See `test/browser/sky-main-arrival.mjs`, `mainSourceOverlays`, `mainOverlayPath` and `measureMainFirstMesh`, and `test/sky-main-arrival.test.mjs`.
+The first-mesh reference keeps main's presentation and startup dependencies coherent while retaining branch core contracts, fixture content and browser. Adapt reference callers at that boundary instead of reverting the branch's core owner: interaction picking needs both physical reach and visual access even when main supplies a single predicate. A caller mismatch can halt startup before geometry arrives, and the loading owner can catch it without a page error. The reference measures delivered geometry, not first rendered pixels or a pristine whole build; observations are not default timing assertions. Enter Play before measuring because the title screen does not construct the played world. Missing overlays and browser errors invalidate the evidence. Use the exact event base because shallow merge parents need not contain it. See `test/browser/sky-main-arrival.mjs`, `mainSourceOverlays`, `adaptMainInteractionPick` and `measureMainFirstMesh`; `src/game/worldLoading.ts`, `WorldLoading.fail`; and `test/sky-main-arrival.test.mjs`.
 
 The performance gate needs a real GPU on the immutable published preview. Software-rendered CI establishes correctness, ownership and admission fairness, not a frame-rate verdict. Its relative job trace remains useful for locating candidate selection, snapshot preparation, admission, execution and publication delay; dispatch and return gaps also contain delivery and scheduling, not pure transfer. See `test/browser/sky-timing.mjs`, `summarizeSkyTiming`.
 

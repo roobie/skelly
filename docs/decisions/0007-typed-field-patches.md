@@ -29,7 +29,7 @@ changes, not the one cheapest to build first.
 A mod may change fields of another pack's definition through typed patch operations that
 the loader checks when the pack is admitted. The schema marks which fields accept which
 operations; a field it does not mark accepts none. Whole-definition replacement stays
-available for a mod that means to replace an entry.
+available for a mod that means to replace an entry, under the same conflict rule.
 
 **Checked at load.** A patch whose target id, field or operation does not exist, or whose
 field does not accept that operation, is a load error naming the mod, the target and the
@@ -45,11 +45,16 @@ record.
 **Schema marking.** Marking bounds what a mod can break and what validation must explain,
 because only marked fields can have more than one author.
 
-**Conflicts.** List additions commute: two mods adding to one list both keep their
-additions, in pack order, and never conflict. A scalar set, or a list replaced, by two
-mods fails closed with a conflict message naming the field, both mods and the fix, unless
-the later mod declares that it overrides the earlier one and depends on it, directly or
-transitively. Load order alone never decides. This is the rule for competing skill
+**Conflicts.** A mod may override another mod's value or object only if it depends on
+that mod, directly or transitively, and declares the override. Setting a scalar,
+replacing a list and replacing a whole definition are overrides. Two mods with no
+dependency path between them must not override the same value or object: the load must
+fail closed with a conflict message naming the target, both mods and the fix, a check d476
+builds. List additions are not overrides: they commute, so two mods adding to one list
+both keep their additions, in pack order, and never conflict. Load order alone never
+decides, because the order in which a player enables mods says nothing about which one
+meant to win. The dependency makes an override deliberate: the overriding mod names what
+it takes over and always loads after the owner. This is the rule for competing skill
 providers in `deadvox/docs/pack-split.md`, "Skill providers", so one rule covers every
 place where two mods claim one thing.
 
@@ -65,8 +70,13 @@ place where two mods claim one thing.
 
 ## Not decided
 
-When the merge step is built. Whole-entry mods keep working when it lands, and nothing
-needs migrating before v1.0 beta.
+Which item builds the merge step for field patches. The conflict check is d476's, and
+admitting an override needs the pack dependencies of #637 round 1; see
+`deadvox/docs/pack-split.md`, "Round split". Until d476 lands,
+`deadvox/src/core/content.ts`, `merge` lets any later pack replace an entry whole, so
+"Conflicts" binds mod authors without the loader enforcing it. Once d476 lands, a
+whole-entry mod that replaces another pack's entry loads only if it depends on that pack
+and declares the override. Nothing needs migrating before v1.0 beta.
 
 ## Consequences
 

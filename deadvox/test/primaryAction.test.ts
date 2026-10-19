@@ -27,6 +27,7 @@ const capabilities = [
     kind: 'melee',
     weapon: {
       melee: {
+        motion: 'swing',
         damage: 1,
         reach: 1,
         cooldownSimSeconds: 1,

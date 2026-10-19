@@ -37,6 +37,7 @@ const shamblerFootstepEvents = new Set<SoundId | undefined>(
 
 const blockBlow: ZombieDef['attack']['moves'][number] = {
   id: 'fixture-blow',
+  motion: 'swing',
   weight: 1,
   damage: 10,
   damageKind: 'blunt',

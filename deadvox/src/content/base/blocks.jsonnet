@@ -39,7 +39,14 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
     block('cobblestone_mossy', 'Mossy cobblestone', '#5f6b58', 'stone', { pattern: 'cobble', weatherable: true }),
     block('dressed_stone', 'Dressed stone', '#bcab8a', 'stone', { pattern: 'dressed', weatherable: true }),
     block('hazard_yellow', 'Hazard paint', '#c9a43a', 'stone', { weatherable: false }),
-    block('chain_link', 'Chain-link fence', '#89979a', 'stone', { weatherable: false }),
+    block('chain_link', 'Chain-link fence', '#89979a', 'stone', {
+      weatherable: false,
+      opaque: false,
+      soundBlocking: false,
+      meleePass: { motions: ['thrust'], minimumZombieReachMetres: 1 },
+      wireMesh: { cellsPerBlock: 4, wireFraction: 0.08 },
+      fencePosts: { widthBlocks: 0.12, spacingBlocks: 6 },
+    }),
     block('sandbag', 'Sandbag', '#9b8d6a', 'stone', { weatherable: false }),
     block('camo_woodland', 'Weathered woodland camouflage', '#777b6a', 'stone', {
       pattern: 'camo',

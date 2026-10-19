@@ -159,6 +159,7 @@ describe('attacker modifiers', () => {
     };
     const move: ZombieDef['attack']['moves'][number] = {
       id: 'fixture-hit',
+      motion: 'swing',
       weight: 1,
       damage: 4,
       damageKind: 'cut',

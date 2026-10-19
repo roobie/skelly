@@ -5,7 +5,7 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
-  - you're changing world block shapes or slab geometry
+  - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
@@ -51,7 +51,7 @@ read_if:
   - you're changing what the death card identifies about the played world
   - you're changing what the death-screen loot tally counts
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
-  - you're changing melee weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
+  - you're changing melee motions, weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
@@ -167,6 +167,46 @@ body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
 ### Block shapes
+
+A wire fence must keep bodies out without hiding what is on the other side.
+Movement solidity and sight opacity are independent content choices; wire coverage
+and tint belong to content too, so another fence needs no identity-based engine rule.
+Open wire geometry leaves holes in rendered shadows rather than casting a wall's
+shadow. Interaction requires both physical and visual access: seeing a container
+through wire does not let the player loot it, and passable foliage still hides it.
+See `src/core/schema.ts`, `BlockSchema`; `src/core/collision.ts`, `worldOpaque`;
+`src/core/wireMesh.ts`, `wirePolygons`; and `src/core/interactionPick.ts`, `pickInteractionTarget`.
+
+Fence supports make ends, isolated cells, corners and junctions read as built structure rather than
+floating wire. Derive them from neighbouring opted-in cells instead of making authors
+place a second object. Content owns pole size and straight-run spacing; anchor that
+spacing to the world, not a discovered run end or chunk origin, so loading and rebuild
+order cannot move it. Meshing waits for neighbouring live columns before treating an
+edge as an end. Poles stay inside the fence's occupied cells and do not introduce a
+separate gameplay obstacle or change the wire's passage rules. See `src/core/fencePosts.ts`,
+`deriveFencePosts`; and `src/game/streamer.ts`, `Streamer.neighboursGenerated`.
+
+Shots and thrown items stop at wire to keep physical collision simple. Size-based
+passage, where small objects fit through openings and large ones stop, is the
+expected direction rather than a promise that visible holes already simulate size.
+Firearm aiming must not offer a target behind a physical blocker; opacity still
+hides targets in foliage. See `src/core/zombies.ts`, `ZombieSystem.aimAt` and
+`ZombieSystem.firePellets`; and `src/core/itemThrow.ts`, `traceItemLanding`.
+
+Wire passes only thrusting melee: a directed strike can reach through an opening,
+while a swing or wrestle needs space the fence denies. This gives fence defence a
+fight of its own without mistaking piercing damage for a thrust. Zombie thrusts
+also need enough effective reach; both conditions must hold at windup start and
+contact. Blocks select permitted motions and the minimum zombie reach in content,
+so the rule is symmetric rather than a creature or weapon identity exception.
+See `src/core/collision.ts`, `worldMeleeBlocker`; and `src/core/zombies.ts`,
+`ZombieSystem.reachableZombieMoves` and `ZombieSystem.resolvePlayerMelee`.
+
+Sound passes open wire because chain-link barely dampens it. Sound blocking has
+its own content property: sight is the wrong key because foliage hides without
+muffling. Furniture still owns whether its closed state blocks sound.
+See `src/core/collision.ts`, `worldSoundBlocking`; `src/core/zombies.ts`,
+`ZombieSystem.updatePerception`; and `src/game/audio.ts`, `GameAudio`.
 
 The partial-block set remains under discussion in #221; do not implement it
 before playtest 1. Its purposes, in priority order, are roof silhouettes,
@@ -651,14 +691,33 @@ same admission without becoming optional. Source-point identity owns the random
 stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
-Items carry no record of where they were born. A central economy counts items by type
-and by where they are when it counts (map, cargo, player, hoard), so a birthplace adds
-nothing to the count, and keeping one only stopped equal items from stacking. State
-the economy needs about a spawn location (whether its item was taken, refill, required
-stock, how long an untouched item lasts) belongs to the loot point, not to the item.
-Debug stock is kept out of the world economy by the scene that supplies it, not by a
-mark on the item. See `src/core/items.ts`, `stackRoom`, and `src/core/loot.ts`,
-`LootSpawnPoint`.
+Placement follows a DayZ-style central economy: usage tags and tiers decide which items
+a source admits, and budgets are to bound how much of each type the world holds (#699).
+See `src/core/loot.ts`, `economyEligible`.
+The one exception to the DayZ model is restock: by default the economy places a
+place's loot once, when the place is first generated, and never restocks it. What a
+player takes stays gone, so scarcity holds, a searched place stays spent instead of
+becoming a farm, and a spent place pushes the player on to new ones. The world is then
+its generation plus what players did to it, so a save need record only changes.
+Dynamic events (crashes, convoys and the like) bring supply under their own rules,
+outside this default.
+
+Having rolled should be a property of the chunk column that loot arrives with, not of
+a loot point or an item: a column loaded once never rolls loot again. One mark per
+column covers every point in it, including points with no furniture to anchor them,
+so nothing done to a point (moving, emptying or destroying what it filled) can make it
+roll again. Furniture follows the same mark: once a column has rolled, furniture
+removed from it stays gone, because a returning piece would bring a fresh roll of its
+loot, which is a restock. Until d470 adds that mark, a piece of furniture's claimed
+origin does both jobs: it stays claimed wherever the piece is carried, so the piece is
+never added again and its loot never rolls again; see `src/core/blockEntities.ts`,
+`BlockEntities.add`.
+
+Items carry no record of where they were born. A budget is to count items by type and
+by where they are (map, cargo, player, hoard), which needs no birthplace, and keeping one
+only stopped equal items from stacking. Debug stock is kept out of the world economy by
+the scene that supplies it, not by a mark on the item. See `src/core/items.ts`,
+`stackRoom`, and `src/core/loot.ts`, `LootSpawnPoint`.
 
 ## Items and inventory
 
@@ -1024,21 +1083,21 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
 ## Combat and noise
 
-- **Melee.** Weapons differ by damage type, reach, speed, and stamina cost.
-  Hits resolve against posed body regions after a wind-up; misses and blocked
-  swings still spend stamina and cooldown. Saves preserve an active swing so
-  Continue cannot skip or repeat its pending contact. Changing held items cancels
-  contact without refunding cooldown. En-garde blocks without changing movement
-  pace; blocks and landed hits train melee combat. Weapon classes have different tradeoffs: blunt weapons are
-  slower and more consistent, edged weapons sever more readily, and piercing
-  weapons are faster with greater damage variance. Class defaults and per-weapon
-  overrides in `src/content/base/items-tools.jsonnet` remain provisional tuning
-  pending BR's feel comparisons.
-  Damage spread consumes its
-  random draw even when tuned to zero, so later dismemberment rolls stay stable.
-  Zero stamina refuses a swing, and saved recovery time survives Continue. See
-  `PlayerCombat.resolveContact` in `src/core/playerCombat.ts` and
-  `ZombieSystem.applyMeleeHit` in `src/core/zombies.ts`.
+- **Melee.** Every player and zombie melee move declares a motion: thrust, swing
+  or wrestle. Motion describes how an attack reaches its target; damage kind
+  describes the injury, so a bite can wrestle and still pierce. Keeping them
+  separate prevents an injury label from granting passage through wire. Content
+  validation requires the choice rather than inferring it from an actor or item
+  identity. See `src/core/meleeMotion.ts`, `MELEE_MOTIONS`; and `src/core/schema.ts`,
+  `WeaponSchema`, `UnarmedAttackSchema` and `ZombieMovesSchema`.
+
+  Misses and obstructions still spend stamina and cooldown, so swinging has a cost
+  even without a hit. Saves retain the active move, including its motion, so Continue
+  cannot skip or repeat contact or change which obstacles it passes. Changing held
+  items cancels contact without refunding cooldown. Damage spread consumes its draw
+  even at zero variance so later dismemberment rolls stay stable. Class tuning remains
+  content-owned for feel comparisons. See `src/core/playerCombat.ts`, `PlayerCombat.resolveContact`;
+  `src/core/saveFormat.ts`, `meleeAction`; and `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`.
 
   A block always takes part of a melee blow, so holding the guard is a choice
   whose payoff the player feels on every hit; an all-or-nothing roll would read
@@ -1752,6 +1811,16 @@ play, not only decorate it.
     keeps visibility rules attached to the obstacle rather than making scenery
     appear or disappear with player input. `src/core/zombies.ts`, `seesPlayer`
     and `hearingTier`, own the stance's visibility and hearing effects.
+  - **Low growth:** furniture hides someone only by being solid
+    (`src/core/collision.ts`, `worldOpaque`), so only a block can be passable and
+    still hide you. Overgrowth that should hide you without stopping you is
+    therefore the hedge block; grass, weeds, creepers and shaped shrubs take
+    their rules from their own content properties.
+  - **Placement:** authored sites default to light growth, weeds and a few
+    shrubs, which keeps them legible and their paths clear; heavier growth is
+    left for sites that should feel abandoned. Whether hiding growth stands near
+    a gate is each site's own content choice, because no project-wide rule
+    exists yet.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
     moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do

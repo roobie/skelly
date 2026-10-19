@@ -276,27 +276,27 @@
           "........................",
           "........................",
           "........................",
-          "........................",
-          "........................",
-          "........................",
-          "........................"
+          ".................aaaaaa.",
+          "................aaaaaaa.",
+          "................aaaaaaa.",
+          "..................aaaa.."
         ],
         [
           "ffffffffffffffffffffffff",
-          "f......................f",
+          "f........iiiiii........f",
           "f...RRR................f",
           "f........TTTTTT........f",
+          "f.ss.....TTTTTT........f",
+          "f.ss.....TTTTTT........f",
           "f........TTTTTT........f",
           "f........TTTTTT........f",
-          "f........TTTTTT........f",
-          "f........TTTTTT........f",
-          "f......................f",
-          "f......................f",
+          "f................w..w..f",
+          "f..................w..wf",
           "fffffffffffffffffff...ff"
         ],
         [
           "ffffffffffffffffffffffff",
-          "f......................f",
+          "f........iiiiii........f",
           "f...RRR................f",
           "f........TTTTTT........f",
           "f........TTTTTT........f",
@@ -392,9 +392,19 @@
         "V": {
           "furniture": "gauntlet_car_wreck_0_0_intact"
         },
+        "a": "asphalt",
         "f": "chain_link",
+        "i": {
+          "furniture": "creeper_strip"
+        },
         "p": {
           "furniture": "substation_pole"
+        },
+        "s": {
+          "furniture": "shrub_small"
+        },
+        "w": {
+          "furniture": "weed_tuft"
         }
       },
       "size": [24, 8, 11]
@@ -443,9 +453,19 @@
         "V": {
           "furniture": "gauntlet_car_wreck_0_0_intact"
         },
+        "a": "asphalt",
         "f": "chain_link",
+        "i": {
+          "furniture": "creeper_strip"
+        },
         "p": {
           "furniture": "substation_pole"
+        },
+        "s": {
+          "furniture": "shrub_small"
+        },
+        "w": {
+          "furniture": "weed_tuft"
         }
       },
       "size": [2, 21, 2]
@@ -478,9 +498,19 @@
         "V": {
           "furniture": "gauntlet_car_wreck_0_0_intact"
         },
+        "a": "asphalt",
         "f": "chain_link",
+        "i": {
+          "furniture": "creeper_strip"
+        },
         "p": {
           "furniture": "substation_pole"
+        },
+        "s": {
+          "furniture": "shrub_small"
+        },
+        "w": {
+          "furniture": "weed_tuft"
         }
       },
       "size": [4, 5, 9]

@@ -51,6 +51,7 @@ import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
+import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
@@ -160,10 +161,31 @@ const BlockSchema = strictObject({
   id: Id,
   name: Name,
   color: Color,
-  /** Blocks movement. Non-solid blocks still render as cubes for now. */
+  /** Blocks movement independently of sight and render geometry. */
   solid: vBoolean(),
   /** Blocks sight/aim/picking; ordinary blocks inherit their movement rule when omitted. */
   opaque: optional(vBoolean()),
+  soundBlocking: optional(vBoolean()),
+  meleePass: optional(
+    strictObject({
+      motions: array(picklist(MELEE_MOTIONS)),
+      minimumZombieReachMetres: Positive,
+    }),
+  ),
+  /** Poles stay inside the occupied cell, so they need no separate collision rule. */
+  fencePosts: optional(
+    strictObject({
+      widthBlocks: pipe(Positive, maxValue(1)),
+      spacingBlocks: pipe(number(), integer(), minValue(1)),
+    }),
+  ),
+  /** Open wire geometry; wireFraction controls coverage, while color supplies the tint. */
+  wireMesh: optional(
+    strictObject({
+      cellsPerBlock: pipe(number(), integer(), minValue(1), maxValue(16)),
+      wireFraction: pipe(number(), minValue(0.01), maxValue(0.5)),
+    }),
+  ),
   /** Content-owned brushing events: gentle movement and fast movement. */
   rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
   /**
@@ -381,6 +403,7 @@ const ToolSchema = strictObject({
 
 const WeaponSchema = strictObject({
   melee: strictObject({
+    motion: picklist(MELEE_MOTIONS),
     damage: Positive,
     /** Metres beyond the player's hand; the arm's reach is added when swinging. */
     reach: Positive,
@@ -415,6 +438,7 @@ const WeaponSchema = strictObject({
 
 /** The bare-handed attack, which no item supplies. */
 const UnarmedAttackSchema = strictObject({
+  motion: picklist(MELEE_MOTIONS),
   damage: Positive,
   /** Metres beyond the player's hand; the arm's reach is added when swinging. */
   reach: Positive,
@@ -1957,19 +1981,18 @@ const MeleeDamageResistanceSchema = strictObject({
 });
 
 /** What a landed hit can be, picked by weight as it lands (`DESIGN.md`, "Bleeding"). */
-const ZombieMovesSchema = pipe(
-  array(
-    strictObject({
-      id: Id,
-      weight: Positive,
-      damage: Positive,
-      damageKind: picklist(DAMAGE_KINDS),
-      hitRegions: pipe(
-        array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
-        nonEmpty('needs at least one hit region'),
-      ),
-    }),
+const DamageMoveSchema = strictObject({
+  id: Id,
+  weight: Positive,
+  damage: Positive,
+  damageKind: picklist(DAMAGE_KINDS),
+  hitRegions: pipe(
+    array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
+    nonEmpty('needs at least one hit region'),
   ),
+});
+const ZombieMovesSchema = pipe(
+  array(strictObject({ ...DamageMoveSchema.entries, motion: picklist(MELEE_MOTIONS) })),
   nonEmpty('needs at least one move'),
 );
 
@@ -1990,7 +2013,7 @@ const AcidSpitSchema = pipe(
       splashRadiusMetres: Positive,
       splashRealSeconds: PositiveRealSeconds,
     }),
-    moves: ZombieMovesSchema,
+    moves: pipe(array(DamageMoveSchema), nonEmpty('needs at least one move')),
     puddle: strictObject({
       lifetimeSimSeconds: PositiveSimSeconds,
       radiusMetres: Positive,

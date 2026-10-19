@@ -27,8 +27,9 @@ Use the repository-wide authoring and conversion rule in `../../docs/jsonnet.md`
 
 Give each browser mod a required top-level `id`, independent of its delivery URL
 or filename. Missing identities and repeat selections are refused so a renamed
-upload or mirrored URL cannot silently admit the same mod twice. Different mods
-may override the same definitions; identity is not a definition-id collision rule.
+upload or mirrored URL cannot silently admit the same mod twice. Identity is not a
+definition-id collision rule; which mod may override another's definition is
+`../../docs/decisions/0007-typed-field-patches.md`, "Conflicts".
 The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
 and `evaluateMods`. Bundled core-pack fragments remain content files rather than
 independent mods; see `src/game/bundledContent.ts`, `buildBundledContent`.
@@ -393,7 +394,7 @@ Separate item admission from table weights and world placement. Exact tier membe
 
 Templates own procedural defaults. Authored building contexts override them; when that override is absent, the site's tier combines with template usage. Anchor overrides replace usage without changing the resolved tier. See `src/core/authoredPlacement.ts`, `placementOf`, and `src/core/site.ts`, `lootSourcesOf`. Native content metadata is an explicit authoring choice with unknown-row assertions, not a runtime default; see `src/content/base/economy.libsonnet`, `authorItem` and `context`.
 
-Keep empty source descriptions so future refill work need not regenerate geometry. Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
+Keep empty source descriptions so a dynamic event can address any source without regenerating geometry; world loot itself rolls once per chunk column (`deadvox/DESIGN.md`, "Loot"). Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
 
 Debug descriptions are fixture-scoped so showcase stock cannot define production eligibility. Explicit fixture stock may include demonstration items without changing their economy metadata. The world selector still rejects those types in ordinary pools; see `src/game/worldSetup.ts`, `fixtureLootSource`, and `src/core/loot.ts`, `selectLootType`.
 
