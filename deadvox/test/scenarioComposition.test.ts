@@ -78,6 +78,49 @@ const fixture = () => {
   return { profile, registry: built.registry };
 };
 
+const eventFixture = () => {
+  const { profile, registry } = fixture();
+  const host = {
+    id: 'fixture_event_host',
+    eligibility: { settlementKinds: ['fixture_city'] },
+    lootContext: fixtureLootContext(),
+    size: [5, 3, 5] as [number, number, number],
+    palette: { '.': 'air', '=': 'fixture_solid', H: { furniture: 'fixture_event_host_piece' } },
+    layers: [
+      ['=====', '=====', '=====', '=====', '====='],
+      ['.....', '.HH..', '.....', '.....', '.....'],
+      ['.....', '.....', '.....', '.....', '.....'],
+    ],
+  };
+  const event = {
+    id: 'fixture_event',
+    lootContext: { usage: ['Military'] as 'Military'[], tier: 'Tier2' as const },
+    size: [1, 2, 1] as [number, number, number],
+    palette: { '.': 'air', '=': { ground: true as const }, E: { furniture: 'fixture_crate' } },
+    layers: [['='], ['E']],
+  };
+  registry.furniture.set('fixture_event_host_piece', {
+    ...registry.furniture.get('fixture_crate')!,
+    id: 'fixture_event_host_piece',
+    size: [2, 1, 1],
+  });
+  registry.templates.set(host.id, host);
+  registry.templates.set(event.id, event);
+  profile.city.fillRows = false;
+  profile.city.lots = [
+    { id: 'fixture_event_lot', position: [-10, -10], size: [5, 5], turn: 1, source: { kind: 'template', id: host.id } },
+  ];
+  profile.composition!.events = [
+    {
+      template: event.id,
+      lot: 'fixture_event_lot',
+      at: [0, 0, 0],
+      fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'fixture_event_token' }] }],
+    },
+  ];
+  return { profile, registry, host, event };
+};
+
 describe('authored scenario composition', () => {
   it('places fixed container and surface items at the turned anchor independent of column requests', () => {
     const { profile, registry } = fixture();
@@ -134,6 +177,61 @@ describe('authored scenario composition', () => {
       expect(Object.isFrozen(composition.descents[0]!.lower)).toBe(true);
       expect(site.authoredPlacements).toBe(site.placements);
     }
+  });
+
+  it('checks event stock under the event context, not its host context', () => {
+    const { profile, registry, event } = eventFixture();
+    expect(scenarioPlanIssues(registry, profile)).toEqual([]);
+    registry.templates.set(event.id, { ...event, lootContext: fixtureLootContext() });
+    expect(
+      scenarioPlanIssues(registry, profile).filter(([path]) => path.startsWith('.composition.events')),
+    ).toHaveLength(1);
+  });
+
+  it('refuses an event outside its lot', () => {
+    const { profile, registry } = eventFixture();
+    profile.composition!.events![0]!.at = [5, 0, 0];
+    expect(scenarioPlanIssues(registry, profile)).toContainEqual([
+      '.composition.events[0].at',
+      'an event lies outside its lot',
+    ]);
+  });
+
+  it('refuses an event over every cell of a host furniture footprint', () => {
+    const { profile, registry } = eventFixture();
+    profile.composition!.events![0]!.at = [2, 0, 1];
+    expect(scenarioPlanIssues(registry, profile)).toContainEqual([
+      '.composition.events[0].at',
+      "an event overlaps its host's blocks or furniture",
+    ]);
+  });
+
+  it('refuses an event over its host blocks', () => {
+    const { profile, registry, host } = eventFixture();
+    registry.templates.set(host.id, {
+      ...host,
+      layers: [host.layers[0]!, ['.....', '.HH..', '.....', '...=.', '.....'], host.layers[2]!],
+    });
+    profile.composition!.events![0]!.at = [3, 0, 3];
+    expect(scenarioPlanIssues(registry, profile)).toContainEqual([
+      '.composition.events[0].at',
+      "an event overlaps its host's blocks or furniture",
+    ]);
+  });
+
+  it('composes event stock at its lot turn without making an event a lead', () => {
+    const { profile, registry } = eventFixture();
+    const plan = buildCityPlan({
+      seed: 5,
+      registry,
+      floor: 32,
+      grid: cityGridOf(registry, profile.city),
+      scenario: profile,
+    });
+    const composition = plan.composition!;
+    expect(composition.events[0]!.turn).toBe(plan.lots![0]!.placement!.turn);
+    expect(composition.lootSources.some(({ placement }) => placement === composition.events[0])).toBe(true);
+    expect(composition.leads).toHaveLength(profile.composition!.leads.length);
   });
 
   it('rejects dangling resource, unreadable public lead and out-of-block landmark metadata', () => {
@@ -270,13 +368,9 @@ describe('promised stop stock', () => {
     const poolLot = profile.city.lots!.find(({ source }) => source?.kind === 'pool')!;
     composition.stops!.push({ lot: poolLot.id, fixedLoot: structuredClone(stop!.fixedLoot) });
     const paths = scenarioPlanIssues(registry, profile).map(([path]) => path);
-    expect(paths).toEqual(
-      expect.arrayContaining([
-        '.composition.stops[0].fixedLoot[0].at',
-        '.composition.start.fixedLoot[0].at',
-        '.composition.stops[1].lot',
-      ]),
-    );
+    expect(paths).toContain('.composition.stops[0].fixedLoot[0].at');
+    expect(paths).toContain('.composition.start.fixedLoot[0].at');
+    expect(paths).toContain(`.composition.stops[${composition.stops!.length - 1}].lot`);
     composition.stops!.pop();
     const grid = cityGridOf(registry, profile.city);
     expect(() => buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile })).toThrow(

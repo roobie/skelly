@@ -16,7 +16,14 @@ import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
 import { siteGenerationOf, sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
+import {
+  cellsOf,
+  compileAssembly,
+  compileTemplate,
+  footprint,
+  kitSlotChoices,
+  placedSpawns,
+} from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
@@ -225,6 +232,37 @@ describe('one finished city plan', () => {
       }
       return { spawns, hordes };
     };
+
+    it(
+      'spawns each composed event marker once',
+      () => {
+        const scenario = structuredClone(bundled);
+        const event = scenario.composition!.events![0]!;
+        const template = native.templates.get(event.template)!;
+        const markerTemplate = {
+          ...template,
+          id: 'fixture_event_marker',
+          palette: { ...template.palette, Z: { spawn: 'shambler', chance: 1 } },
+        };
+        const testRegistry = {
+          ...native,
+          templates: new Map([...native.templates, [markerTemplate.id, markerTemplate]]),
+        };
+        scenario.composition!.events = [{ ...event, template: markerTemplate.id }];
+        const site = new GauntletSite({ seed: 73, registry: testRegistry, scale, scenario });
+        const markers = placedSpawns(site.plan.composition!.events[0]!);
+        const spawns = Array.from({ length: toChunk(site.bounds.x1) - toChunk(site.bounds.x0) + 1 }, (_, column) =>
+          // biome-ignore lint/suspicious/noShadow: The nested chunk coordinates are independent axes.
+          Array.from({ length: toChunk(site.bounds.z1) - toChunk(site.bounds.z0) + 1 }, (_, row) =>
+            site.zombiesIn(toChunk(site.bounds.x0) + column, toChunk(site.bounds.z0) + row),
+          ),
+        ).flat(2);
+        for (const marker of markers) {
+          expect(spawns.filter((spawn) => spawn.pos.join(',') === marker.pos.join(','))).toHaveLength(1);
+        }
+      },
+      GAUNTLET_SITE_MS,
+    );
 
     it(
       'supplies ordinary wanderers and hordes even when city buildings have no spawn markers',

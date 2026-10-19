@@ -525,8 +525,12 @@ context. Stock that does not suit the host building comes from a special event: 
 small authored scene, such as a dead special operations soldier, with its own loot
 context, which the instance places on another building's lot. The event is not
 linked to that building; it sits on cells the host leaves empty and is not a clue.
-An authored event carries the promised reward, so fixed stock still passes the
-economy check without bending a place's theme. Stock that suits the place but not
+The soldier carries an AR-pattern rifle and one magazine until the NVGs exist, so
+the substation gives a military reward ahead of the lab; the NVGs join the same
+body when the item lands. An event may author its own threat, which spawns with it
+so the scene tells its story; how those markers count against the scenario's
+population budget remains open. An authored event carries the promised reward, so
+fixed stock still passes the economy check without bending a place's theme. Stock that suits the place but not
 its context's tier is a content fix to the context instead: the crisis HQ is a
 military command post, so its tier admits military items such as a rifle, and no
 event is needed there. See `src/content/base/crisis-hq.jsonnet`, `military`.
@@ -544,9 +548,10 @@ keeps that risk in view. Each stop has its own role, and the player
 may visit them in any order, so finding the stock rewards exploring rather than
 following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
 `src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
-`composeScenario`; `src/core/placementLoot.ts`, `placementLootIssues`;
-`src/core/inventory.ts`, `furnish`; and `src/content/base/scenarios.jsonnet`,
-`composition`.
+`composeScenario` and `eventIssues`; `src/core/placementLoot.ts`,
+`placementLootIssues`; `src/core/inventory.ts`, `furnish`; and
+`src/content/base/scenarios.jsonnet`, `composition`; and
+`src/content/base/gauntlet.jsonnet`, `utilities`.
 
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the

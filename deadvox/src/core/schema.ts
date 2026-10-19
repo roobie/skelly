@@ -1927,6 +1927,16 @@ const ScenarioSchema = strictObject({
       }),
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
       /** Core stock the instance promises in a fixed lot's building; the building's template stays unchanged. */
+      events: optional(
+        array(
+          strictObject({
+            template: Id,
+            lot: Id,
+            at: CellPosition,
+            fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a promised item')),
+          }),
+        ),
+      ),
       stops: optional(
         array(
           strictObject({
