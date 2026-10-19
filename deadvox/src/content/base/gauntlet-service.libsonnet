@@ -20,8 +20,32 @@ local small = function(id, size, furniture, layers, claims, facing='n') {
   id: id, size: size, style: 'service_brick', lootContext: context, palette: { F: { furniture: furniture, facing: facing } }, layers: layers,
   ownership: { layers: claims }, anchors: {}, ports: [],
 };
+local scavenger = small('gauntlet_service_scavenger', [4, 1, 2], 'gauntlet_dead_scavenger', [['FFFF', 'FFFF']], [['SSSS', 'SSSS']]) + {
+  palette: { F: { furniture: 'gauntlet_dead_scavenger', facing: 'n', loot: 'gauntlet_scavenger_pockets' } },
+};
+// Others who came for the lab before the player lie by its hatch: see `DESIGN.md`, "Gauntlet".
+local scavengers = [[36, 41, 47], [45, 41, 44], [49, 41, 39]];
 {
-  mapPieces: [floorPiece(p) for p in circulation.mapPieces if p.id != 'gauntlet_lab_entry_cross'] + [floorPiece(rooms.mapPieces[0]) + { id: 'gauntlet_service_room_floor', anchors: {}, ports: [] },
+  furniture: [{
+    id: 'gauntlet_dead_scavenger', name: 'Dead scavenger', size: [4, 1, 2], color: '#4d5048', solid: false,
+    shape: [
+      { position: [0.2, 0, 0.5], size: [1.2, 0.15, 0.4] },
+      { position: [0.2, 0, 1.1], size: [1.2, 0.15, 0.4] },
+      { position: [1.4, 0, 0.45], size: [1.5, 0.25, 1.1] },
+      { position: [2.9, 0, 0.65], size: [0.5, 0.25, 0.7] },
+    ],
+    container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
+  }],
+  loot: [{ id: 'gauntlet_scavenger_pockets', rolls: [1, 2], entries: [
+    { item: 'cartridge_357_h_magnum', weight: 2, count: [1, 3] },
+    { item: 'bandage', weight: 2 },
+    { item: 'aa_battery', weight: 1, count: [1, 2] },
+    { item: 'lighter', weight: 1 },
+    { item: 'chocolate_bar', weight: 1 },
+    { table: 'junk', weight: 1 },
+    { nothing: true, weight: 2 },
+  ] }],
+  mapPieces: [scavenger] + [floorPiece(p) for p in circulation.mapPieces if p.id != 'gauntlet_lab_entry_cross'] + [floorPiece(rooms.mapPieces[0]) + { id: 'gauntlet_service_room_floor', anchors: {}, ports: [] },
     floorPiece(circulation.mapPieces[1]) + { id: 'gauntlet_service_hatch_floor', layers: [hatchFloor], ownership: { layers: [hatchFloorClaims] } },
     { id: 'gauntlet_service_apron', size: [7, 8, 4], style: 'service_brick', lootContext: context,
       palette: { '.': { role: 'opening', material: 'air' } },
@@ -73,7 +97,8 @@ local small = function(id, size, furniture, layers, claims, facing='n') {
       slot('south_west_floor', 'piece', 'gauntlet_service_room_floor', [4, 40, 42], [18, 1, 14]),
       slot('south_middle_floor', 'piece', 'gauntlet_service_room_floor', [27, 40, 42], [18, 1, 14]),
       slot('south_east_floor', 'piece', 'gauntlet_service_room_floor', [50, 40, 42], [18, 1, 14]),
-    ] + yard.slots, joins: [], ports: [], anchors: {},
+    ] + [slot('scavenger_' + i, 'piece', scavenger.id, scavengers[i], scavenger.size) for i in std.range(0, std.length(scavengers) - 1)]
+    + yard.slots, joins: [], ports: [], anchors: {},
     access: { ground: 'ground', entrance: [36, 41, 26], storeys: [{ id: 'ground', floor: 41 }], stairs: [] },
   }],
 }

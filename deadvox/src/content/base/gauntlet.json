@@ -2310,6 +2310,39 @@
       "solidFill": 0.01
     },
     {
+      "color": "#4d5048",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 4],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "id": "gauntlet_dead_scavenger",
+      "name": "Dead scavenger",
+      "shape": [
+        {
+          "position": [0.20000000000000001, 0, 0.5],
+          "size": [1.2, 0.14999999999999999, 0.40000000000000002]
+        },
+        {
+          "position": [0.20000000000000001, 0, 1.1000000000000001],
+          "size": [1.2, 0.14999999999999999, 0.40000000000000002]
+        },
+        {
+          "position": [1.3999999999999999, 0, 0.45000000000000001],
+          "size": [1.5, 0.25, 1.1000000000000001]
+        },
+        {
+          "position": [2.8999999999999999, 0, 0.65000000000000002],
+          "size": [0.5, 0.25, 0.69999999999999996]
+        }
+      ],
+      "size": [4, 1, 2],
+      "solid": false
+    },
+    {
       "color": "#c94b3d",
       "id": "gauntlet_button",
       "name": "Nuclear objective button",
@@ -2849,6 +2882,42 @@
       ],
       "id": "gauntlet_sewer_guard_ammunition",
       "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "count": [1, 3],
+          "item": "cartridge_357_h_magnum",
+          "weight": 2
+        },
+        {
+          "item": "bandage",
+          "weight": 2
+        },
+        {
+          "count": [1, 2],
+          "item": "aa_battery",
+          "weight": 1
+        },
+        {
+          "item": "lighter",
+          "weight": 1
+        },
+        {
+          "item": "chocolate_bar",
+          "weight": 1
+        },
+        {
+          "table": "junk",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ],
+      "id": "gauntlet_scavenger_pockets",
+      "rolls": [1, 2]
     }
   ],
   "mapAssemblies": [
@@ -12168,6 +12237,51 @@
           ],
           "id": "south_east_floor",
           "size": [18, 1, 14],
+          "turn": 0
+        },
+        {
+          "at": [36, 41, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_service_scavenger",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "scavenger_0",
+          "size": [4, 1, 2],
+          "turn": 0
+        },
+        {
+          "at": [45, 41, 44],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_service_scavenger",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "scavenger_1",
+          "size": [4, 1, 2],
+          "turn": 0
+        },
+        {
+          "at": [49, 41, 39],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_service_scavenger",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "scavenger_2",
+          "size": [4, 1, 2],
           "turn": 0
         },
         {
@@ -25661,6 +25775,28 @@
       "ports": [],
       "size": [1, 1, 1],
       "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_service_scavenger",
+      "layers": [["FFFF", "FFFF"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [["SSSS", "SSSS"]]
+      },
+      "palette": {
+        "F": {
+          "facing": "n",
+          "furniture": "gauntlet_dead_scavenger",
+          "loot": "gauntlet_scavenger_pockets"
+        }
+      },
+      "ports": [],
+      "size": [4, 1, 2],
+      "style": "service_brick"
     },
     {
       "anchors": {},
