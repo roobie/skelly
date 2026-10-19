@@ -459,7 +459,13 @@ export class BlockEntities {
 
   isSolid(x: number, y: number, z: number): boolean {
     const entity = this.at(x, y, z);
-    if (entity === undefined || !this.blocks(entity)) {
+    return entity !== undefined && this.blocks(entity) && this.hasPartAt(x, y, z);
+  }
+
+  /** Whether the entity covering a cell has a part there: a vehicle's only where its parts are. */
+  hasPartAt(x: number, y: number, z: number): boolean {
+    const entity = this.at(x, y, z);
+    if (entity === undefined) {
       return false;
     }
     const def = this.defOf(entity);

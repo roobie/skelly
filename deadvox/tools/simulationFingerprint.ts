@@ -65,8 +65,6 @@ export const SIMULATION_EXCLUSIONS = [
   // play.ts retains timestamp-to-dt policy, input sampling, actions and simulation advancement.
   'src/render',
   'src/debug',
-  // Shared vehicle part geometry is a static presentation prop, not simulation or saved state.
-  'src/vehicles',
   // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
   'src/core/sideButton.ts',
   // Credits and asset-manifest validation at startup change neither simulation nor save state.

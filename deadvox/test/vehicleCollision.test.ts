@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { pickFurniture } from '../src/core/furniturePick.ts';
 import { type Pose, rotatedSize, rotationOf } from '../src/core/orientation.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -67,27 +68,24 @@ const facings = ['n', 'e', 's', 'w'] as const;
 const tips = ['back', 'front', 'left', 'right', 'top'] as const;
 const poses: Pose[] = facings.flatMap((facing) => [{ facing }, ...tips.map((tip) => ({ facing, tip }))]);
 
-it('lets a jump at the bonnet land on it and stops a jump at the cabin', () => {
+it('stands a player dropped on the bonnet below the box top and stops a jump at the cabin', () => {
   const entities = new BlockEntities(base);
   const car = entities.add({ type: intact.id, pos: [0, 0, 0], size: [...intact.size], facing: 'n' })!;
   const solid = (x: number, y: number, z: number) => y < 0 || entities.isSolid(x, y, z);
-  const [width, , depth] = car.size;
+  const [width, height, depth] = car.size;
   const physics = physicsFor(half);
   const intent = (forward: number, jump: boolean) => ({ forward, right: 0, jump, sprint: false, walk: false });
 
-  // A north-facing piece's front, the bonnet, is its low-z face.
-  const front = createPlayerBody(half, width / 2, 0, -6);
-  let jumped = false;
-  for (let step = 0; step < 240; step++) {
-    const landed = jumped && front.onGround;
-    const jump: boolean = !jumped && front.onGround && front.pos[2] + front.halfWidth >= -2.4;
-    jumped ||= jump;
-    steer(front, half, Math.PI, intent(landed ? 0 : 1, jump));
+  // A north-facing piece's front, the bonnet, is its low-z face. Dropping onto it, rather than jumping
+  // at it, keeps the test free of run and jump tuning.
+  const front = createPlayerBody(half, width / 2, height + 1, depth / 4);
+  for (let step = 0; step < 600 && !front.onGround; step++) {
     stepBody(front, 1 / 60, solid, physics);
   }
   const under = front.pos.map((at, axis) => Math.floor(axis === 1 ? at - 0.01 : at)) as Vec3;
   expect(front.onGround).toBe(true);
   expect(entities.at(...under)).toBe(car);
+  expect(front.pos[1]).toBeLessThan(car.pos[1] + height);
 
   const side = createPlayerBody(half, -4, 0, depth / 2);
   for (let step = 0; step < 240; step++) {
@@ -95,6 +93,32 @@ it('lets a jump at the bonnet land on it and stops a jump at the cabin', () => {
     stepBody(side, 1 / 60, solid, physics);
   }
   expect(side.pos[0] + side.halfWidth).toBeLessThanOrEqual(car.pos[0]);
+});
+
+it('lets a pick through the air above the bonnet miss the car and a pick at the cabin hit it', () => {
+  const entities = new BlockEntities(base);
+  const car = entities.add({ type: intact.id, pos: [0, 0, 0], size: [...intact.size], facing: 'n' })!;
+  const [width, height, depth] = car.size;
+  const top = height - 1;
+  const rowSolid = (y: number, z: number) =>
+    Array.from({ length: width }, (_, x) => x).some((x) => entities.isSolid(x, y, z));
+  const rows = Array.from({ length: depth }, (_, z) => z);
+  const overBonnet = rows.find((z) => !rowSolid(top, z) && rowSolid(top - 1, z));
+  const cabin = rows.find((z) => rowSolid(top, z));
+  expect(overBonnet).toBeDefined();
+  expect(cabin).toBeDefined();
+  // A level ray across the car's top layer, in its box the whole way.
+  const pick = (z: number) =>
+    pickFurniture({
+      entities,
+      origin: [-2, top + 0.5, z + 0.5],
+      direction: [1, 0, 0],
+      maxDistance: width + 4,
+      blockSize: half.blockSize,
+      isSolid: (x, y, at) => entities.isSolid(x, y, at),
+    });
+  expect(pick(overBonnet!)).toBeUndefined();
+  expect(pick(cabin!)).toBe(car);
 });
 
 const placedOffsets = (type: string, pose: Pose) => {

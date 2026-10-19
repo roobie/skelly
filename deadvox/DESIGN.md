@@ -1769,10 +1769,11 @@ their state.
     blocks through one path, and the vehicle slice builds on this rule instead of
     replacing it. A body panel is a thin shell, so a column of cells counts as filled
     between its lowest and highest part; a cell blocks when enough of it is filled, and
-    that fraction is content, so a pack tunes it. Placing, settling and the "nothing
-    falls on a body" check still take the piece's whole box. See
-    `src/vehicles/solid.ts`, `solidBlocks`, and `src/core/blockEntities.ts`,
-    `BlockEntities.isSolid`.
+    that fraction is content, so a pack tunes it. Picking and the crosshair read the same
+    cells, so aiming at empty air above a bonnet selects nothing that could not be bumped
+    into. Placing, settling and the "nothing falls on a body" check still take the piece's
+    whole box. See `src/vehicles/solid.ts`, `solidBlocks`, and
+    `src/core/blockEntities.ts`, `BlockEntities.hasPartAt`.
 
 **Open, deliberately (not part of the goal yet):**
 
