@@ -1,0 +1,962 @@
+{
+  "controls": [
+    {
+      "id": "stance.ready",
+      "keys": [
+        {
+          "code": "Mouse2"
+        }
+      ]
+    },
+    {
+      "id": "aim.ads-toggle",
+      "keys": [
+        {
+          "code": "Mouse1"
+        }
+      ]
+    },
+    {
+      "id": "movement.forward",
+      "keys": [
+        {
+          "code": "KeyW"
+        }
+      ]
+    },
+    {
+      "id": "movement.back",
+      "keys": [
+        {
+          "code": "KeyS"
+        }
+      ]
+    },
+    {
+      "id": "movement.left",
+      "keys": [
+        {
+          "code": "KeyA"
+        }
+      ]
+    },
+    {
+      "id": "movement.right",
+      "keys": [
+        {
+          "code": "KeyD"
+        }
+      ]
+    },
+    {
+      "id": "movement.sprint",
+      "keys": [
+        {
+          "code": "ShiftLeft"
+        },
+        {
+          "code": "ShiftRight"
+        }
+      ]
+    },
+    {
+      "id": "movement.walk-toggle",
+      "keys": [
+        {
+          "code": "KeyZ"
+        }
+      ]
+    },
+    {
+      "id": "player.crouch-toggle",
+      "keys": [
+        {
+          "code": "KeyC"
+        }
+      ]
+    },
+    {
+      "id": "player.throw",
+      "keys": [
+        {
+          "code": "KeyT"
+        }
+      ]
+    },
+    {
+      "id": "movement.jump",
+      "keys": [
+        {
+          "code": "Space"
+        }
+      ]
+    },
+    {
+      "id": "noclip.ascend",
+      "keys": [
+        {
+          "code": "Space"
+        }
+      ]
+    },
+    {
+      "id": "noclip.descend",
+      "keys": [
+        {
+          "code": "KeyC"
+        }
+      ]
+    },
+    {
+      "id": "hand.use-off",
+      "keys": [
+        {
+          "code": "Equal"
+        }
+      ]
+    },
+    {
+      "id": "light.worn-toggle",
+      "keys": [
+        {
+          "code": "KeyL"
+        }
+      ]
+    },
+    {
+      "id": "world.interact",
+      "keys": [
+        {
+          "code": "KeyF"
+        }
+      ]
+    },
+    {
+      "id": "firearm.reload",
+      "keys": [
+        {
+          "code": "KeyR"
+        }
+      ]
+    },
+    {
+      "id": "ui.inventory-toggle",
+      "keys": [
+        {
+          "code": "Tab"
+        }
+      ]
+    },
+    {
+      "id": "ui.inventory-tab-items",
+      "keys": [
+        {
+          "code": "KeyG"
+        }
+      ]
+    },
+    {
+      "id": "ui.inventory-tab-skills",
+      "keys": [
+        {
+          "code": "KeyV"
+        }
+      ]
+    },
+    {
+      "id": "ui.inventory-tab-crafting",
+      "keys": [
+        {
+          "code": "KeyB"
+        }
+      ]
+    },
+    {
+      "id": "ui.inventory-tab-actions",
+      "keys": [
+        {
+          "code": "KeyH"
+        }
+      ]
+    },
+    {
+      "id": "ui.main-menu-toggle",
+      "keys": [
+        {
+          "code": "F9"
+        }
+      ]
+    },
+    {
+      "id": "hud.toggle",
+      "keys": [
+        {
+          "code": "Backquote"
+        }
+      ]
+    },
+    {
+      "id": "handling.stop",
+      "keys": [
+        {
+          "code": "KeyX"
+        }
+      ]
+    },
+    {
+      "id": "craft.continue",
+      "keys": [
+        {
+          "code": "Enter"
+        }
+      ]
+    },
+    {
+      "id": "compression.continue",
+      "keys": [
+        {
+          "code": "Enter"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.use.1",
+      "keys": [
+        {
+          "code": "Digit1"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.use.2",
+      "keys": [
+        {
+          "code": "Digit2"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.use.3",
+      "keys": [
+        {
+          "code": "Digit3"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.use.4",
+      "keys": [
+        {
+          "code": "Digit4"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.use.5",
+      "keys": [
+        {
+          "code": "Digit5"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.assign.1",
+      "keys": [
+        {
+          "code": "Digit1"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.assign.2",
+      "keys": [
+        {
+          "code": "Digit2"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.assign.3",
+      "keys": [
+        {
+          "code": "Digit3"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.assign.4",
+      "keys": [
+        {
+          "code": "Digit4"
+        }
+      ]
+    },
+    {
+      "id": "quickbar.assign.5",
+      "keys": [
+        {
+          "code": "Digit5"
+        }
+      ]
+    },
+    {
+      "id": "inventory.previous",
+      "keys": [
+        {
+          "code": "ArrowUp"
+        },
+        {
+          "code": "ArrowLeft"
+        }
+      ]
+    },
+    {
+      "id": "inventory.next",
+      "keys": [
+        {
+          "code": "ArrowDown"
+        },
+        {
+          "code": "ArrowRight"
+        }
+      ]
+    },
+    {
+      "id": "inventory.search",
+      "keys": [
+        {
+          "code": "KeyS"
+        }
+      ]
+    },
+    {
+      "id": "inventory.hands",
+      "keys": [
+        {
+          "code": "KeyW"
+        }
+      ]
+    },
+    {
+      "id": "inventory.wear",
+      "keys": [
+        {
+          "code": "KeyY"
+        }
+      ]
+    },
+    {
+      "id": "inventory.drop",
+      "keys": [
+        {
+          "code": "KeyD"
+        }
+      ]
+    },
+    {
+      "id": "inventory.rotate",
+      "keys": [
+        {
+          "code": "KeyR"
+        }
+      ]
+    },
+    {
+      "id": "inventory.best-pocket",
+      "keys": [
+        {
+          "code": "Enter"
+        }
+      ]
+    },
+    {
+      "id": "inventory.take-all-like",
+      "keys": [
+        {
+          "code": "KeyA"
+        }
+      ]
+    },
+    {
+      "id": "inventory.quick-action-gate",
+      "keys": [
+        {
+          "code": "KeyT"
+        }
+      ]
+    },
+    {
+      "id": "reading.close",
+      "keys": [
+        {
+          "code": "Tab"
+        }
+      ]
+    },
+    {
+      "id": "reading.line-up",
+      "keys": [
+        {
+          "code": "ArrowUp"
+        }
+      ]
+    },
+    {
+      "id": "reading.line-down",
+      "keys": [
+        {
+          "code": "ArrowDown"
+        }
+      ]
+    },
+    {
+      "id": "reading.page-up",
+      "keys": [
+        {
+          "code": "PageUp"
+        }
+      ]
+    },
+    {
+      "id": "reading.page-down",
+      "keys": [
+        {
+          "code": "PageDown"
+        },
+        {
+          "code": "Space"
+        }
+      ]
+    },
+    {
+      "id": "reading.first",
+      "keys": [
+        {
+          "code": "Home"
+        }
+      ]
+    },
+    {
+      "id": "reading.last",
+      "keys": [
+        {
+          "code": "End"
+        }
+      ]
+    },
+    {
+      "id": "spawn.previous",
+      "keys": [
+        {
+          "code": "ArrowUp"
+        }
+      ]
+    },
+    {
+      "id": "spawn.next",
+      "keys": [
+        {
+          "code": "ArrowDown"
+        }
+      ]
+    },
+    {
+      "id": "spawn.dismiss",
+      "keys": [
+        {
+          "code": "Tab"
+        }
+      ]
+    },
+    {
+      "id": "spawn.confirm",
+      "keys": [
+        {
+          "code": "Enter"
+        }
+      ]
+    },
+    {
+      "id": "debug.gate",
+      "keys": [
+        {
+          "code": "F2"
+        }
+      ]
+    },
+    {
+      "id": "debug.panel-toggle",
+      "keys": [
+        {
+          "code": "Backquote"
+        }
+      ]
+    },
+    {
+      "id": "debug.input-replay-export",
+      "keys": [
+        {
+          "code": "Backquote",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
+      "id": "debug.input-replay-import",
+      "keys": [
+        {
+          "code": "KeyI",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
+      "id": "debug.performance-toggle",
+      "keys": [
+        {
+          "code": "F4"
+        }
+      ]
+    },
+    {
+      "id": "debug.interaction-ray-toggle",
+      "keys": [
+        {
+          "code": "KeyU"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-toggle",
+      "keys": [
+        {
+          "code": "KeyB"
+        }
+      ]
+    },
+    {
+      "id": "debug.impact-laser",
+      "keys": [
+        {
+          "code": "KeyC"
+        }
+      ]
+    },
+    {
+      "id": "debug.spawn-menu-toggle",
+      "keys": [
+        {
+          "code": "KeyG"
+        }
+      ]
+    },
+    {
+      "id": "debug.god-toggle",
+      "keys": [
+        {
+          "code": "KeyH"
+        }
+      ]
+    },
+    {
+      "id": "debug.noclip-toggle",
+      "keys": [
+        {
+          "code": "KeyP"
+        }
+      ]
+    },
+    {
+      "id": "debug.spectator-camera-toggle",
+      "keys": [
+        {
+          "code": "F6"
+        }
+      ]
+    },
+    {
+      "id": "debug.third-person-toggle",
+      "keys": [
+        {
+          "code": "Numpad0"
+        }
+      ]
+    },
+    {
+      "id": "debug.perception-labels-toggle",
+      "keys": [
+        {
+          "code": "F7"
+        }
+      ]
+    },
+    {
+      "id": "debug.spawn-unaware-shambler",
+      "keys": [
+        {
+          "code": "Numpad3"
+        }
+      ]
+    },
+    {
+      "id": "debug.test-noise",
+      "keys": [
+        {
+          "code": "F8"
+        }
+      ]
+    },
+    {
+      "id": "debug.compression-test",
+      "keys": [
+        {
+          "code": "KeyT"
+        }
+      ]
+    },
+    {
+      "id": "debug.interruption-test",
+      "keys": [
+        {
+          "code": "KeyN"
+        }
+      ]
+    },
+    {
+      "id": "debug.hurt",
+      "keys": [
+        {
+          "code": "KeyK"
+        }
+      ]
+    },
+    {
+      "id": "debug.spawn-shamblers",
+      "keys": [
+        {
+          "code": "KeyV"
+        }
+      ]
+    },
+    {
+      "id": "debug.spawn-zombie.runner",
+      "keys": [
+        {
+          "code": "Numpad1"
+        }
+      ]
+    },
+    {
+      "id": "debug.spawn-zombie.crawler",
+      "keys": [
+        {
+          "code": "Numpad2"
+        }
+      ]
+    },
+    {
+      "id": "debug.spawn-zombie.amalgam",
+      "keys": [
+        {
+          "code": "Numpad4"
+        }
+      ]
+    },
+    {
+      "id": "debug.melee-aim-toggle",
+      "keys": [
+        {
+          "code": "KeyY"
+        }
+      ]
+    },
+    {
+      "id": "debug.freeze-shamblers",
+      "keys": [
+        {
+          "code": "KeyO"
+        }
+      ]
+    },
+    {
+      "id": "debug.review-map-toggle",
+      "keys": [
+        {
+          "code": "KeyM"
+        }
+      ]
+    },
+    {
+      "id": "debug.freeze-game",
+      "keys": [
+        {
+          "code": "Numpad5"
+        }
+      ]
+    },
+    {
+      "id": "debug.tone-cycle",
+      "keys": [
+        {
+          "code": "KeyJ"
+        }
+      ]
+    },
+    {
+      "id": "debug.exposure-decrease",
+      "keys": [
+        {
+          "code": "Minus"
+        }
+      ]
+    },
+    {
+      "id": "debug.exposure-increase",
+      "keys": [
+        {
+          "code": "Equal"
+        }
+      ]
+    },
+    {
+      "id": "debug.linear-colours-toggle",
+      "keys": [
+        {
+          "code": "KeyI"
+        }
+      ]
+    },
+    {
+      "id": "debug.patterns-toggle",
+      "keys": [
+        {
+          "code": "Semicolon"
+        }
+      ]
+    },
+    {
+      "id": "debug.ambient-occlusion-toggle",
+      "keys": [
+        {
+          "code": "KeyA"
+        }
+      ]
+    },
+    {
+      "id": "debug.post-toggle",
+      "keys": [
+        {
+          "code": "KeyF"
+        }
+      ]
+    },
+    {
+      "id": "debug.bloom-toggle",
+      "keys": [
+        {
+          "code": "Quote"
+        }
+      ]
+    },
+    {
+      "id": "debug.bloom-clip-decrease",
+      "keys": [
+        {
+          "code": "Delete"
+        }
+      ]
+    },
+    {
+      "id": "debug.bloom-clip-increase",
+      "keys": [
+        {
+          "code": "Insert"
+        }
+      ]
+    },
+    {
+      "id": "debug.torch-decrease",
+      "keys": [
+        {
+          "code": "NumpadSubtract"
+        }
+      ]
+    },
+    {
+      "id": "debug.torch-increase",
+      "keys": [
+        {
+          "code": "NumpadAdd"
+        }
+      ]
+    },
+    {
+      "id": "debug.film-toggle",
+      "keys": [
+        {
+          "code": "Backslash"
+        }
+      ]
+    },
+    {
+      "id": "debug.sun-shadow-toggle",
+      "keys": [
+        {
+          "code": "Digit0"
+        }
+      ]
+    },
+    {
+      "id": "debug.torch-shadow-toggle",
+      "keys": [
+        {
+          "code": "Home"
+        }
+      ]
+    },
+    {
+      "id": "debug.shadow-distance-cycle",
+      "keys": [
+        {
+          "code": "PageUp"
+        }
+      ]
+    },
+    {
+      "id": "debug.crack-check-toggle",
+      "keys": [
+        {
+          "code": "End"
+        }
+      ]
+    },
+    {
+      "id": "debug.hot-pixel-check-toggle",
+      "keys": [
+        {
+          "code": "PageDown"
+        }
+      ]
+    },
+    {
+      "id": "debug.fog-decrease",
+      "keys": [
+        {
+          "code": "KeyL"
+        }
+      ]
+    },
+    {
+      "id": "debug.fog-increase",
+      "keys": [
+        {
+          "code": "Slash"
+        }
+      ]
+    },
+    {
+      "id": "debug.grade-decrease",
+      "keys": [
+        {
+          "code": "BracketLeft"
+        }
+      ]
+    },
+    {
+      "id": "debug.grade-increase",
+      "keys": [
+        {
+          "code": "BracketRight"
+        }
+      ]
+    },
+    {
+      "id": "debug.skip-long",
+      "keys": [
+        {
+          "code": "Comma"
+        }
+      ]
+    },
+    {
+      "id": "debug.skip-hour",
+      "keys": [
+        {
+          "code": "Period"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-slot.1",
+      "keys": [
+        {
+          "code": "Digit1"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-slot.2",
+      "keys": [
+        {
+          "code": "Digit2"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-slot.3",
+      "keys": [
+        {
+          "code": "Digit3"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-slot.4",
+      "keys": [
+        {
+          "code": "Digit4"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-slot.5",
+      "keys": [
+        {
+          "code": "Digit5"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-slot.6",
+      "keys": [
+        {
+          "code": "Digit6"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-slot.7",
+      "keys": [
+        {
+          "code": "Digit7"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-slot.8",
+      "keys": [
+        {
+          "code": "Digit8"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-slot.9",
+      "keys": [
+        {
+          "code": "Digit9"
+        }
+      ]
+    }
+  ]
+}
