@@ -98,7 +98,8 @@ export class CitySite implements Site {
         const localZ = mod(z, grid.street + grid.blockZ);
         const alley = alleys.some((start) => localZ >= start && localZ < start + grid.street);
         const street = mod(x, grid.street + grid.blockX) < grid.street || localZ < grid.street || alley;
-        return central || (rectDistance(core, x, z) === 0 && street) ? this.paving : undefined;
+        const authored = grid.paving?.some((rect) => rect.x0 <= x && x < rect.x1 && rect.z0 <= z && z < rect.z1);
+        return authored || central || (rectDistance(core, x, z) === 0 && street) ? this.paving : undefined;
       },
     };
   }

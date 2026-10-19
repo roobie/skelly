@@ -1,4 +1,5 @@
 import { PLAYER, sprintJumpRise } from '../game/player.ts';
+import { cityLotIssues, lotChoices, lotRect, type PlannedLot, placeCityLots, rectsOverlap } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { hash3, pickWeighted, Rng } from './random.ts';
@@ -31,6 +32,7 @@ type PoolChoice = Readonly<PoolRef & { weight: number; atLeast?: number; atMost?
 const rowKey = ({ id, style }: PoolRef): string => `${id}@${style ?? ''}`;
 export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps' | 'ring' | 'settlementKind'> & {
   readonly pool?: string | undefined;
+  readonly settlementKind?: string | undefined;
   readonly templates: readonly PoolChoice[];
   readonly streetProps?: readonly string[] | undefined;
   readonly ring?: Readonly<{ pool: string; setback: number; templates: readonly PoolChoice[] }> | undefined;
@@ -54,6 +56,7 @@ export interface CityPlan {
   /** The street grid inside `bounds`, without the edge ring. */
   readonly core: Rect;
   readonly placements: readonly Placement[];
+  readonly lots?: readonly PlannedLot[];
   readonly structures: readonly BlockBox[];
   readonly service: Placement | undefined;
   readonly serviceBlock: Cell | undefined;
@@ -261,6 +264,32 @@ const dressingIssues = (registry: Registry, city: ScenarioDef['city'], perimeter
   return issues;
 };
 
+const authoredClearanceIssues = (
+  registry: Registry,
+  city: ScenarioDef['city'],
+  wallTop: number,
+): [string, string][] => {
+  const issues: [string, string][] = [];
+  const bounds = cityBounds(city);
+  for (const [index, lot] of (city.lots ?? []).entries()) {
+    for (const { ref } of lotChoices(registry, city, lot)) {
+      const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id)!;
+      const [width, depth] =
+        lot.turn % 2 === 0 ? [building.size[0], building.size[2]] : [building.size[2], building.size[0]];
+      const distance = Math.min(
+        lot.position[0] - bounds.x0,
+        bounds.x1 - lot.position[0] - width,
+        lot.position[1] - bounds.z0,
+        bounds.z1 - lot.position[1] - depth,
+      );
+      if (building.size[1] + sprintJumpRise(distance * BLOCK_SIZE - 2 * PLAYER.halfWidth) / BLOCK_SIZE >= wallTop) {
+        issues.push([`.city.lots[${index}]`, `a jump from "${ref.id}" clears the containment wall`]);
+      }
+    }
+  }
+  return issues;
+};
+
 /** A sprint jump from the roof edge must still be below the wall-plus-wire top where it crosses the wall. */
 const clearanceIssues = (registry: Registry, scenario: ScenarioDef, perimeter: Perimeter): [string, string][] => {
   const { city } = scenario;
@@ -281,6 +310,7 @@ const clearanceIssues = (registry: Registry, scenario: ScenarioDef, perimeter: P
         ]
       : [];
   });
+  issues.push(...authoredClearanceIssues(registry, city, wallTop));
   const start = scenario.composition?.start;
   if (start) {
     const definition = registry.templates.get(start.template) ?? registry.mapAssemblies.get(start.template);
@@ -406,11 +436,14 @@ const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, str
     {
       at: '.city.pool',
       id: city.pool,
-      slots: guaranteedSlots(
-        city,
-        scenario.composition?.incidentalTemplates.length ?? 0,
-        scenario.composition !== undefined,
-      ),
+      slots:
+        city.fillRows === false
+          ? 0
+          : guaranteedSlots(
+              city,
+              scenario.composition?.incidentalTemplates.length ?? 0,
+              scenario.composition !== undefined,
+            ),
     },
     ...(city.ring ? [{ at: '.city.ring.pool', id: city.ring.pool, slots: ringSlots(city) }] : []),
   ];
@@ -420,6 +453,9 @@ const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, str
       return [[at, `no map pool "${id}"`]];
     }
     const along = (at === '.city.ring.pool' ? Math.min(city.blockX, city.blockZ) : city.blockX) - 2 * city.pad;
+    if (city.fillRows === false && at === '.city.pool') {
+      return [];
+    }
     const choices = admittedChoices(registry, id, city.settlementKind, { along, depth });
     const required = choices.reduce((sum, { atLeast }) => sum + (atLeast ?? 0), 0);
     const quotaIssues: [string, string][] =
@@ -465,11 +501,10 @@ const benchmarkPoolIssues = (registry: Registry, benchmark: CityBenchmarkDef): [
   return issues;
 };
 
-export const settlementCollectionIssues = (registry: Registry) => {
-  const issues: { section: 'mapPools' | 'cityBenchmarks'; id: string; path: string; message: string }[] = [];
+const scenarioConsumers = ({ id, city }: ScenarioDef): SettlementConsumer[] => {
   const consumers: SettlementConsumer[] = [];
-  for (const { id, city } of registry.scenarios.values()) {
-    const depth = cityRowDepth(city);
+  const depth = cityRowDepth(city);
+  if (city.fillRows !== false) {
     consumers.push({
       section: 'scenarios',
       id,
@@ -478,17 +513,37 @@ export const settlementCollectionIssues = (registry: Registry) => {
       kind: city.settlementKind,
       fit: { along: city.blockX - 2 * city.pad, depth },
     });
-    if (city.ring) {
-      consumers.push({
-        section: 'scenarios',
-        id,
-        path: '.city.ring.pool',
-        pool: city.ring.pool,
-        kind: city.settlementKind,
-        fit: { along: Math.min(city.blockX, city.blockZ) - 2 * city.pad, depth },
-      });
-    }
   }
+  for (const [index, lot] of (city.lots ?? []).entries()) {
+    if (lot.source?.kind !== 'pool') {
+      continue;
+    }
+    const [along, lotDepth] = lot.turn % 2 === 0 ? lot.size : [lot.size[1], lot.size[0]];
+    consumers.push({
+      section: 'scenarios',
+      id,
+      path: `.city.lots[${index}].source`,
+      pool: lot.source.id,
+      kind: city.settlementKind,
+      fit: { along, depth: lotDepth },
+    });
+  }
+  if (city.ring) {
+    consumers.push({
+      section: 'scenarios',
+      id,
+      path: '.city.ring.pool',
+      pool: city.ring.pool,
+      kind: city.settlementKind,
+      fit: { along: Math.min(city.blockX, city.blockZ) - 2 * city.pad, depth },
+    });
+  }
+  return consumers;
+};
+
+export const settlementCollectionIssues = (registry: Registry) => {
+  const issues: { section: 'mapPools' | 'cityBenchmarks'; id: string; path: string; message: string }[] = [];
+  const consumers = [...registry.scenarios.values()].flatMap(scenarioConsumers);
   for (const benchmark of registry.cityBenchmarks.values()) {
     const { id, pool, settlementKind } = benchmark;
     const fit = { along: benchmark.blockX - 2 * benchmark.pad, depth: cityRowDepth(benchmark) };
@@ -520,6 +575,19 @@ export const settlementCollectionIssues = (registry: Registry) => {
   return issues;
 };
 
+const fixedServiceIssues = ({ city, composition }: ScenarioDef): [string, string][] => {
+  if (!city.service) {
+    return [];
+  }
+  const [x, z] = city.service.cell;
+  const start = composition?.start.cell;
+  const inGrid = x >= -city.blocksX && x < city.blocksX && z >= -city.blocksZ && z < city.blocksZ;
+  const distinct = !start || x !== start[0] || z !== start[1];
+  return inGrid && distinct
+    ? []
+    : [['.city.service.cell', 'service needs a reserved cell distinct from the start inside the grid']];
+};
+
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
   const { city, serviceTemplate, population } = scenario;
@@ -530,9 +598,11 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
     ]);
   }
   const width = city.blockX - 2 * city.pad;
+  issues.push(...fixedServiceIssues(scenario));
   issues.push(
     ...cityDecorationIssues(registry, scenario),
     ...cityPoolIssues(registry, scenario),
+    ...cityLotIssues(registry, city, cityBounds(city)),
     ...scenarioStartIssues(registry, scenario),
   );
   const template = registry.templates.get(serviceTemplate);
@@ -557,6 +627,7 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
     }
     issues.push(...scenarioPortalIssues(registry, scenario, compiled));
     issues.push(...scenarioCompositionIssues(registry, scenario, compiled));
+    placeCityLots(registry, city, { seed: 0, floor: 0, compiled: templateCompiler(registry, 0) });
   } catch (error) {
     issues.push(['.serviceTemplate', error instanceof Error ? error.message : String(error)]);
   }
@@ -668,6 +739,19 @@ const chooseBuilding = (
   return selected && fits(selected) ? selected : open.find((choice) => choice.weight > 0 && fits(choice));
 };
 
+const rowSpan = (obstacles: Rect[], start: number, end: number, gap: number): { x: number; next: number } => {
+  let x = start;
+  for (;;) {
+    const occupied = obstacles.find((rect) => rect.x0 <= x && x < rect.x1);
+    if (!occupied) {
+      break;
+    }
+    x = occupied.x1 + gap;
+  }
+  return { x, next: Math.min(end, ...obstacles.filter((rect) => rect.x0 > x).map((rect) => rect.x0 - gap)) };
+};
+const isIncidental = (context: FillContext, index: number, row: number): boolean =>
+  index === 0 && row === 0 && context.incidentalTemplates.length > 0;
 const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
   const { seed, floor, grid, registry, compiled, maxStoreys, counts } = context;
   const pitchX = grid.street + grid.blockX;
@@ -676,12 +760,24 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
   const turn = row % 2 === 0 ? 0 : 2;
   let x = i * pitchX + grid.street + grid.pad;
   const placements: Placement[] = [];
+  const bank = j * pitchZ + cityRowStart(grid, row);
+  const rowZ = bank + (row % 2) * cityRowDepth(grid);
+  const obstacles = (grid.lots ?? [])
+    .map(lotRect)
+    .filter((rect) => rect.z0 < rowZ + cityRowDepth(grid) && rowZ < rect.z1);
   for (let k = 0; ; k++) {
+    const span = rowSpan(obstacles, x, end, grid.gap);
+    ({ x } = span);
+    const { next } = span;
     const fits = ({ id, style }: PoolRef) =>
-      footprint({ template: compiled({ id, style }, 1), origin: [0, 0, 0], turn })[0] <= end - x;
-    const incidental = k === 0 && row === 0 && context.incidentalTemplates.length > 0;
+      footprint({ template: compiled({ id, style }, 1), origin: [0, 0, 0], turn })[0] <= next - x;
+    const incidental = isIncidental(context, k, row);
     const building = chooseBuilding(context, fits, incidental, `city:${i},${j}/row:${row}/building:${k}/type`);
     if (!building) {
+      if (next < end) {
+        x = next + grid.gap;
+        continue;
+      }
       break;
     }
     if (!(incidental && context.incidentalTemplates.includes(building.id))) {
@@ -691,7 +787,6 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
     const storeys = 1 + Math.floor(hash3(seed, i, j * grid.rows + row, k + 1000) * limit);
     const template = compiled(building, storeys, `city:${i},${j}/row:${row}/building:${k}`);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
-    const bank = j * pitchZ + cityRowStart(grid, row);
     const z = row % 2 === 0 ? bank : bank + 2 * cityRowDepth(grid) - depth;
     placements.push(freezePlacement({ template, origin: [x, groundedY(template, floor), z], turn }));
     x += width + grid.gap;
@@ -972,6 +1067,57 @@ const ringPlacements = (context: FillContext, bounds: Rect, scenario?: ScenarioD
   );
 };
 
+const countsForLots = (lots: readonly PlannedLot[], pool: string | undefined): Map<string, number> => {
+  const counts = new Map<string, number>();
+  for (const { definition, ref } of lots) {
+    if (definition.source?.kind !== 'pool' || definition.source.id !== pool || !ref) {
+      continue;
+    }
+    const key = rowKey(ref);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+};
+const checkReservedLots = (lots: readonly PlannedLot[], reserved: (Placement | undefined)[]): void => {
+  for (const placement of reserved) {
+    if (!placement) {
+      continue;
+    }
+    const [width, depth] = footprint(placement);
+    const rect = {
+      x0: placement.origin[0],
+      z0: placement.origin[2],
+      x1: placement.origin[0] + width,
+      z1: placement.origin[2] + depth,
+    };
+    if (lots.some(({ definition }) => rectsOverlap(rect, lotRect(definition)))) {
+      throw new Error(`Authored lot overlaps reserved building "${placement.template.id}"`);
+    }
+  }
+};
+
+const planService = (
+  context: FillContext,
+  scenario: ScenarioDef | undefined,
+  candidates: Cell[],
+): { service: Placement | undefined; serviceBlock: Cell | undefined } => {
+  if (!scenario) {
+    return { service: undefined, serviceBlock: undefined };
+  }
+  const { grid, seed, floor } = context;
+  const serviceBlock =
+    grid.service?.cell ??
+    candidates[Rng.stream(seed, `scenario:${scenario.id}:service-block`).int(0, candidates.length - 1)]!;
+  const service = servicePlacement({
+    template: context.compiled({ id: scenario.serviceTemplate }, 1, `scenario:${scenario.id}:service`),
+    floor,
+    grid,
+    cell: serviceBlock,
+    turn: grid.service?.turn ?? (Rng.stream(seed, `scenario:${scenario.id}:service-turn`).int(0, 3) as Turn),
+  });
+  return { service, serviceBlock };
+};
+
 export const buildCityPlan = ({
   seed,
   registry,
@@ -990,9 +1136,6 @@ export const buildCityPlan = ({
   const cells = cityCells(grid);
   const startCell = scenario?.composition?.start.cell ?? [0, 0];
   const candidates = cells.filter(([i, j]) => i !== startCell[0] || j !== startCell[1]);
-  const serviceBlock = scenario
-    ? candidates[Rng.stream(seed, `scenario:${scenario.id}:service-block`).int(0, candidates.length - 1)]!
-    : undefined;
   const context: FillContext = {
     seed,
     floor,
@@ -1004,22 +1147,18 @@ export const buildCityPlan = ({
     counts: new Map(),
     forced: [],
   };
-  const service =
-    scenario && serviceBlock
-      ? servicePlacement({
-          template: context.compiled({ id: scenario.serviceTemplate }, 1, `scenario:${scenario.id}:service`),
-          floor,
-          grid,
-          cell: serviceBlock,
-          turn: Rng.stream(seed, `scenario:${scenario.id}:service-turn`).int(0, 3) as Turn,
-        })
-      : undefined;
+  const { service, serviceBlock } = planService(context, scenario, candidates);
+  const lots = placeCityLots(registry, grid, { seed, floor, compiled: context.compiled });
   const start = startPlacement(context, scenario);
   const composition =
-    service && scenario && start ? composeScenario(registry, scenario, service, { floor, start }) : undefined;
+    service && scenario && start ? composeScenario(registry, scenario, service, { floor, start, lots }) : undefined;
+  const lotCounts = countsForLots(lots, grid.pool);
   const fillCells = (forced: PoolRef[]): Placement[] => {
-    context.counts = new Map();
+    context.counts = new Map(lotCounts);
     context.forced = forced;
+    if (grid.fillRows === false) {
+      return [service, start].filter((placement): placement is Placement => placement !== undefined);
+    }
     return cells.flatMap(([i, j]) => {
       if (service && serviceBlock?.[0] === i && serviceBlock[1] === j) {
         return [service];
@@ -1030,7 +1169,12 @@ export const buildCityPlan = ({
       return Array.from({ length: grid.rows }, (_, row) => fillRow(context, [i, j], row)).flat();
     });
   };
-  const placements = fillWithQuotas(context, fillCells, scenario ? `scenario:${scenario.id}:city` : 'city');
+  const placements =
+    grid.fillRows === false
+      ? fillCells([])
+      : fillWithQuotas(context, fillCells, scenario ? `scenario:${scenario.id}:city` : 'city');
+  placements.unshift(...lots.flatMap(({ placement }) => (placement ? [placement] : [])));
+  checkReservedLots(lots, [service, start]);
   if (composition) {
     placements.push(...composition.leads, ...composition.landmarks);
   }
@@ -1059,6 +1203,7 @@ export const buildCityPlan = ({
       }),
     ),
     placements: Object.freeze(placements),
+    lots,
     service,
     serviceBlock,
     candidates: Object.freeze(candidates),

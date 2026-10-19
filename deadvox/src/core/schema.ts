@@ -1790,6 +1790,20 @@ const CityBenchmarkSchema = strictObject({
   ...CityBlockGeometry,
   reachMetres: PositiveMetres,
 });
+const CityLotSchema = strictObject({
+  id: Id,
+  position: tuple([CellCoordinate, CellCoordinate]),
+  size: tuple([pipe(Count, minValue(1)), pipe(Count, minValue(1))]),
+  turn: picklist([0, 1, 2, 3]),
+  source: optional(
+    union([
+      strictObject({ kind: picklist(['template', 'assembly']), id: Id, style: optional(Id) }),
+      strictObject({ kind: literal('pool'), id: Id }),
+    ]),
+  ),
+  /** A direct crossing prevents a route around the fence from certifying a blocked breach. */
+  routes: optional(array(strictObject({ inside: CellPosition, outside: CellPosition }))),
+});
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -1809,8 +1823,20 @@ const ScenarioSchema = strictObject({
       }),
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
       leads: tuple([
-        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
-        strictObject({ template: Id, fixedLoot: optional(array(FixedLootOverride)) }),
+        strictObject({
+          template: Id,
+          fixedLoot: optional(array(FixedLootOverride)),
+          lot: optional(Id),
+          at: optional(CellPosition),
+          standing: optional(CellPosition),
+        }),
+        strictObject({
+          template: Id,
+          fixedLoot: optional(array(FixedLootOverride)),
+          lot: optional(Id),
+          at: optional(CellPosition),
+          standing: optional(CellPosition),
+        }),
       ]),
       landmarks: tuple([Id, Id]),
       incidentalTemplates: pipe(array(Id), minLength(1), maxLength(32)),
@@ -1842,6 +1868,7 @@ const ScenarioSchema = strictObject({
     groupSize: pipe(Count, minValue(1), maxValue(64)),
     /** Hordes in the whole city, each on a different seeded street group. */
     hordes: pipe(Count, maxValue(16)),
+    hordeAreas: optional(array(LayoutRect)),
     /** Metres each side of a street's centreline where stragglers stand. */
     roadsideOffset: pipe(Count, minValue(1), maxValue(32)),
     /** Stragglers added to each group on top of its hamlet-sized count. */
@@ -1870,6 +1897,15 @@ const ScenarioSchema = strictObject({
     /** One row of buildings around the grid, backs to the wall and fronts to the outermost street. */
     ring: optional(strictObject({ pool: Id, setback: pipe(Count, minValue(1), maxValue(64)) })),
     streetProps: optional(pipe(array(Id), maxLength(16))),
+    lots: optional(array(CityLotSchema)),
+    fillRows: optional(vBoolean()),
+    paving: optional(array(LayoutRect)),
+    service: optional(
+      strictObject({
+        cell: tuple([CellCoordinate, CellCoordinate]),
+        turn: picklist([0, 1, 2, 3]),
+      }),
+    ),
     pool: Id,
   }),
 });

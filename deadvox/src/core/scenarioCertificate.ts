@@ -1,4 +1,5 @@
 import type { BlockEntity } from './blockEntities.ts';
+import { cityLotRouteIssues } from './cityLots.ts';
 import type { CitySite } from './citySite.ts';
 import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -243,15 +244,20 @@ class Certificate {
           spawn.spec.pos[2] >= placement.origin[2] &&
           spawn.spec.pos[2] < placement.origin[2] + placement.template.size[2],
       );
-    const nearby: Vec3 = [placement.origin[0] - 1, plan.floor + 1, placement.origin[2] - 1];
+    const nearby: Readonly<Vec3> = this.composition.leadFaces?.[index] ?? [
+      placement.origin[0] - 1,
+      plan.floor + 1,
+      placement.origin[2] - 1,
+    ];
     const corner: Vec3 = [street / 2, plan.floor + 1, nearby[2]];
     const visible = sources.some((source) => {
       const entity = this.entityAt(source.spec.pos);
       return entity && this.space.visibleReach(nearby, entity);
     });
+    const named = this.composition.leadFaces?.[index] !== undefined;
     const accessible =
-      this.startFeet.some((foot) => this.space.path(foot, corner)) &&
-      this.space.sweep(corner, nearby) &&
+      this.startFeet.some((foot) => this.space.path(foot, named ? nearby : corner)) &&
+      (named || this.space.sweep(corner, nearby)) &&
       this.space.standing(nearby) &&
       visible;
     if (!accessible) {
@@ -262,6 +268,7 @@ class Certificate {
 
   run(): ScenarioCertificate {
     this.start();
+    this.issues.push(...cityLotRouteIssues(this.site.plan.lots ?? [], this.space, this.startFeet));
     this.street();
     this.floors();
     this.ladder(this.site.plan.portal!, '.portal');

@@ -1,3 +1,4 @@
+import { lotChoices, type PlannedLot } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type PlacementLootSource, placementLootIssues } from './placementLoot.ts';
@@ -16,6 +17,7 @@ import {
 export interface ScenarioComposition {
   readonly start: ScenarioStart;
   readonly leads: readonly Placement[];
+  readonly leadFaces?: readonly (Readonly<Vec3> | undefined)[];
   readonly landmarks: readonly Placement[];
   readonly lootSources: readonly PlacementLootSource[];
   readonly objective: Readonly<Vec3>;
@@ -34,6 +36,21 @@ type CompositionDef = NonNullable<ScenarioDef['composition']>;
 type Issue = [string, string];
 type ExtraKind = 'leads' | 'landmarks' | 'incidentalTemplates';
 
+const leadPlacementIssues = (scenario: ScenarioDef, index: number, size: Vec3): Issue[] => {
+  const lead = scenario.composition!.leads[index]!;
+  const { city } = scenario;
+  const path = `.composition.leads[${index}]`;
+  if (lead.lot) {
+    const parent = city.lots?.find((lot) => lot.id === lead.lot);
+    return parent?.source && parent.source.kind !== 'pool' && lead.at && lead.standing
+      ? []
+      : [[path, 'a named lead needs a fixed building lot, local placement and readable standing pose']];
+  }
+  return [size[0], size[2]].some((extent) => extent > city.street / 2 - 1)
+    ? [[path, 'public lead must fit beside its street junction']]
+    : [];
+};
+
 const extraTemplateIssues = (
   registry: Registry,
   scenario: ScenarioDef,
@@ -49,9 +66,7 @@ const extraTemplateIssues = (
   const { city } = scenario;
   const side = Math.max(service.size[0], service.size[2]);
   if (kind === 'leads') {
-    if ([template.size[0], template.size[2]].some((extent) => extent > city.street / 2 - 1)) {
-      issues.push([path, 'public lead must fit beside its street junction']);
-    }
+    issues.push(...leadPlacementIssues(scenario, index, template.size));
     const compiled = compileTemplate(registry, template);
     const { pieces } = compiled;
     const fixedLoot = scenario.composition!.leads[index]!.fixedLoot ?? [];
@@ -151,10 +166,16 @@ const scenarioBuildingSources = (registry: Registry, scenario: ScenarioDef): str
   if (!registry.mapPools.has(city.pool) || (city.ring && !registry.mapPools.has(city.ring.pool))) {
     return [];
   }
-  const choices = admittedChoices(registry, city.pool, city.settlementKind, {
-    along: city.blockX - 2 * city.pad,
-    depth: cityRowDepth(city),
-  });
+  const choices =
+    city.fillRows === false
+      ? []
+      : admittedChoices(registry, city.pool, city.settlementKind, {
+          along: city.blockX - 2 * city.pad,
+          depth: cityRowDepth(city),
+        });
+  for (const lot of city.lots ?? []) {
+    choices.push(...lotChoices(registry, city, lot));
+  }
   if (city.ring) {
     choices.push(
       ...admittedChoices(registry, city.ring.pool, city.settlementKind, {
@@ -192,7 +213,7 @@ export const composeScenario = (
   registry: Registry,
   scenario: ScenarioDef,
   service: Placement,
-  { floor, start }: { floor: number; start: Placement },
+  { floor, start, lots = [] }: { floor: number; start: Placement; lots?: readonly PlannedLot[] },
 ): ScenarioComposition | undefined => {
   const authored = scenario.composition;
   if (!authored) {
@@ -215,14 +236,32 @@ export const composeScenario = (
   };
   const { city } = scenario;
   const side = Math.max(service.template.size[0], service.template.size[2]);
-  const leads = Object.freeze([
-    placement(authored.leads[0].template, [Math.floor(city.street / 2) + 1, floor, Math.floor(city.street / 2) + 1]),
-    placement(authored.leads[1].template, [
-      Math.floor(city.street / 2) + 1,
-      floor,
-      -city.blocksZ * (city.street + city.blockZ) + Math.floor(city.street / 2) + 1,
-    ]),
-  ]);
+  const leadFaces: (Readonly<Vec3> | undefined)[] = [];
+  const leads = Object.freeze(
+    authored.leads.map((lead, index): Placement => {
+      if (!lead.lot) {
+        leadFaces.push(undefined);
+        return placement(lead.template, [
+          Math.floor(city.street / 2) + 1,
+          floor,
+          index === 0
+            ? Math.floor(city.street / 2) + 1
+            : -city.blocksZ * (city.street + city.blockZ) + Math.floor(city.street / 2) + 1,
+        ]);
+      }
+      const parent = lots.find(({ definition }) => definition.id === lead.lot)?.placement;
+      if (!(parent && lead.at && lead.standing)) {
+        throw new Error(`Missing named lead lot "${lead.lot}" or its poses`);
+      }
+      const template = compileTemplate(registry, registry.templates.get(lead.template)!);
+      const near = placedPoint(parent, lead.at);
+      const far = placedPoint(parent, lead.at.map((value, axis) => value + template.size[axis]!) as Vec3);
+      const origin = near.map((value, axis) => Math.min(value, far[axis]!)) as Vec3;
+      leadFaces.push(Object.freeze(placedPoint(parent, lead.standing)));
+      Object.freeze(origin);
+      return Object.freeze({ template, origin, turn: parent.turn });
+    }),
+  );
   const landmarks = Object.freeze(
     authored.landmarks.map((id, index) =>
       placement(id, [service.origin[0] + side + 4, floor, service.origin[2] + index * Math.floor(side / 2)]),
@@ -243,6 +282,7 @@ export const composeScenario = (
   return Object.freeze({
     start: composeStart(authored.start, start),
     leads,
+    leadFaces: Object.freeze(leadFaces),
     landmarks,
     lootSources: Object.freeze([
       Object.freeze({ placement: service, fixedLoot }),
