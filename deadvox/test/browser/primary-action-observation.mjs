@@ -82,6 +82,8 @@ export const observationPlugin = {
         };
       }`,
     );
+    // The fixture drops the way the game does, so a full pile at the feet spills to the next spot.
+    observedCode = `import { dropTarget as primaryActionDropTarget } from '../core/options.ts';\n${observedCode}`;
     return observedCode.replace(
       marker,
       `
@@ -153,7 +155,7 @@ export const observationPlugin = {
     clearHand: (side) => {
       const held = inventory.hands[side];
       if (held) {
-        const result = inventory.move(held, { kind: 'pile', pos: feet() });
+        const result = inventory.move(held, primaryActionDropTarget(inventory, held, feet()).target);
         if (!result.ok) throw new Error('Could not drop fixture hand: ' + result.reason);
       }
     },

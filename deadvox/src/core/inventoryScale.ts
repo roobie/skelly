@@ -2,7 +2,7 @@
 // footprint and pocket is a real size rounded up to it. These checks hold content to that unit.
 
 import type { FurnitureDef, ItemDef, ModelDef, Registry } from './content.ts';
-import type { GridSize } from './items.ts';
+import { type GridSize, sizeFits } from './items.ts';
 import { BLOCK_SIZE } from './scale.ts';
 
 /** What one block of floor holds. A long item lies past the block's edge, so the pile is longer than the block. */
@@ -10,9 +10,6 @@ export const PILE_GRID: GridSize = { w: 12, h: 6 };
 
 // Rounding metres up to cells must not turn a float's last bit into a whole extra cell.
 const cellsFor = (metres: number, cellMetres: number): number => Math.ceil(metres / cellMetres - 1e-9);
-
-const fits = ([w, h]: readonly [number, number], grid: GridSize): boolean =>
-  (w <= grid.w && h <= grid.h) || (h <= grid.w && w <= grid.h);
 
 /** How far the model's grip and anchors reach along its long x axis: a floor for the real length. */
 const anchorSpanMetres = (model: ModelDef): number | undefined => {
@@ -42,7 +39,7 @@ export const pocketScaleIssue = (
   const [long, short] = [...furniture.size]
     .sort((a, b) => b - a)
     .map((blocks) => cellsFor(blocks * BLOCK_SIZE, cellMetres));
-  return fits(grid, { w: long!, h: short! }) ? undefined : 'pocket is larger than the furniture it is inside';
+  return sizeFits(grid, { w: long!, h: short! }) ? undefined : 'pocket is larger than the furniture it is inside';
 };
 
 const tableItems = (registry: Registry, table: string, seen = new Set<string>()): Set<string> => {
@@ -68,7 +65,7 @@ export const rolledFitIssue = (registry: Registry, furniture: FurnitureDef, tabl
   const pockets = furniture.container?.pockets ?? [];
   const misfit = [...tableItems(registry, table)].find((id) => {
     const item = registry.items.get(id);
-    return item && !pockets.some(({ grid: [w, h] }) => fits(item.size, { w, h }));
+    return item && !pockets.some(({ grid: [w, h] }) => sizeFits(item.size, { w, h }));
   });
   return misfit === undefined
     ? undefined
@@ -77,4 +74,4 @@ export const rolledFitIssue = (registry: Registry, furniture: FurnitureDef, tabl
 
 /** Dropping puts an item in a floor pile, so every item has to fit one. */
 export const pileFitIssue = (item: ItemDef, pile: GridSize): string | undefined =>
-  fits(item.size, pile) ? undefined : 'footprint is larger than a floor pile';
+  sizeFits(item.size, pile) ? undefined : 'footprint is larger than a floor pile';

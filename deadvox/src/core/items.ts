@@ -543,11 +543,13 @@ export const findSpot = (
   return undefined;
 };
 
+/** Whether a footprint fits an empty grid of this size, either way round. */
+export const sizeFits = ([w, h]: readonly [number, number], grid: GridSize): boolean =>
+  (w <= grid.w && h <= grid.h) || (h <= grid.w && w <= grid.h);
+
 /** Whether the item could fit in an empty grid of this size, either way round. */
-export const couldFit = (registry: Registry, grid: GridSize, item: Item): boolean => {
-  const [w, h] = defOf(registry, item.type).size;
-  return (w <= grid.w && h <= grid.h) || (h <= grid.w && w <= grid.h);
-};
+export const couldFit = (registry: Registry, grid: GridSize, item: Item): boolean =>
+  sizeFits(defOf(registry, item.type).size, grid);
 
 /** The placed item covering a cell, if any. */
 export const itemAt = (registry: Registry, placed: readonly Placed[], x: number, y: number): Placed | undefined =>

@@ -56,7 +56,7 @@ describe('grid placement', () => {
 
   it('rotates an item to fit, and refuses one too big either way', () => {
     const { inv, hoodie, jeans } = dressed();
-    const knife = onFloor(inv, 'kabar'); // 1 × 3
+    const knife = onFloor(inv, 'kabar');
     expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual({
       ok: false,
       reason: 'Too big for it',
@@ -72,7 +72,7 @@ describe('grid placement', () => {
     const water = onFloor(inv, 'water_bottle');
     inv.move(water, { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 1, y: 1, rotated: false } });
     const grid = { size: inv.pocketGrid(backpack, 0), placed: backpack.pockets![0]! };
-    const bat = inv.create('machete'); // 1 × 6
+    const bat = inv.create('machete');
     expect(fitsAt(registry, grid, bat, { x: 1, y: 0, rotated: false })).toBe(false);
     expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: false })).toBe(true);
     expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: true })).toBe(false);
