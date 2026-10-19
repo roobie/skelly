@@ -49,6 +49,10 @@
       "output": "deadvox/src/content/base/crisis-hq.json"
     },
     {
+      "source": "deadvox/src/content/base/furniture-cabins.jsonnet",
+      "output": "deadvox/src/content/base/furniture-cabins.json"
+    },
+    {
       "source": "deadvox/src/content/base/furniture-playtest.jsonnet",
       "output": "deadvox/src/content/base/furniture-playtest.json"
     },

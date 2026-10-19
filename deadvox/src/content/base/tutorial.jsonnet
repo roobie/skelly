@@ -1,4 +1,6 @@
 local rows = import 'tools/jsonnet/lib/rows.libsonnet';
+local cabinets = import 'cabinet-shapes.libsonnet';
+local supplyPaint = '#8d986d';
 local lootContext = { usage: ['Residential'], tier: 'Tier1' };
 local wall = ['WWWWWWWWWWWW', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'WWWWWDDWWWWW'];
 local cabinetWall = wall[:2] + ['WKK........W'] + wall[3:];
@@ -7,7 +9,11 @@ local cabinetWall = wall[:2] + ['WKK........W'] + wall[3:];
     id: 'tutorial_cabinet',
     name: 'Supply cabinet',
     size: [2, 3, 1],
-    color: '#8d986d',
+    color: supplyPaint,
+    shape: cabinets.supply(self.size, {
+      shell: supplyPaint, frame: '#6b7553', door: '#9ea980', upper: '#aab491',
+      metal: '#aab0a5', shadow: '#343b2f', wear: '#c1c7ac', badge: '#d2d7c6',
+    }),
     container: { pockets: [{ name: 'Supplies', grid: [8, 8], handlingSimSeconds: 0.2 }] },
   }],
   templates: [{
