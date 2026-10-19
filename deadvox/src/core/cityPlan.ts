@@ -1,5 +1,11 @@
-import { PLAYER, sprintJumpRise } from '../game/player.ts';
-import { cityLotIssues, lotChoices, lotRect, type PlannedLot, placeCityLots, rectsOverlap } from './cityLots.ts';
+import {
+  cityLotIssues,
+  cityLotQuotaIssues,
+  lotRect,
+  type PlannedLot,
+  placeCityLots,
+  rectsOverlap,
+} from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { hash3, pickWeighted, Rng } from './random.ts';
@@ -20,7 +26,6 @@ import {
   placedPoint,
   stackTemplate,
   type Turn,
-  templateEnvelope,
   templateResolves,
 } from './templates.ts';
 
@@ -39,7 +44,7 @@ export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps' | 'ring'
 };
 type CityShape = Pick<
   ScenarioDef['city'],
-  'blocksX' | 'blocksZ' | 'street' | 'blockX' | 'blockZ' | 'pad' | 'rows' | 'perimeter'
+  'blocksX' | 'blocksZ' | 'street' | 'blockX' | 'blockZ' | 'pad' | 'rows' | 'perimeter' | 'bounds'
 > & { readonly ring?: Readonly<{ setback: number }> | undefined };
 type Perimeter = NonNullable<ScenarioDef['city']['perimeter']>;
 type Cell = readonly [number, number];
@@ -96,15 +101,17 @@ const cityCore = (grid: CityShape): Rect => {
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
   return {
-    x0: -grid.blocksX * pitchX,
-    z0: -grid.blocksZ * pitchZ,
-    x1: grid.blocksX * pitchX + grid.street,
-    z1: grid.blocksZ * pitchZ + grid.street,
+    x0: Math.max(-grid.blocksX * pitchX, grid.bounds?.x0 ?? Number.NEGATIVE_INFINITY),
+    z0: Math.max(-grid.blocksZ * pitchZ, grid.bounds?.z0 ?? Number.NEGATIVE_INFINITY),
+    x1: Math.min(grid.blocksX * pitchX + grid.street, grid.bounds?.x1 ?? Number.POSITIVE_INFINITY),
+    z1: Math.min(grid.blocksZ * pitchZ + grid.street, grid.bounds?.z1 ?? Number.POSITIVE_INFINITY),
   };
 };
 
-/** The area the wall encloses: the grid plus the edge ring's row and its setback from the wall. */
 const cityBounds = (grid: CityShape): Rect => {
+  if (grid.bounds) {
+    return { ...grid.bounds };
+  }
   const core = cityCore(grid);
   const grow = grid.ring ? cityRowDepth(grid) + grid.ring.setback : 0;
   return { x0: core.x0 - grow, z0: core.z0 - grow, x1: core.x1 + grow, z1: core.z1 + grow };
@@ -264,85 +271,13 @@ const dressingIssues = (registry: Registry, city: ScenarioDef['city'], perimeter
   return issues;
 };
 
-const authoredClearanceIssues = (
-  registry: Registry,
-  city: ScenarioDef['city'],
-  wallTop: number,
-): [string, string][] => {
-  const issues: [string, string][] = [];
-  const bounds = cityBounds(city);
-  for (const [index, lot] of (city.lots ?? []).entries()) {
-    for (const { ref } of lotChoices(registry, city, lot)) {
-      const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id)!;
-      const [width, depth] =
-        lot.turn % 2 === 0 ? [building.size[0], building.size[2]] : [building.size[2], building.size[0]];
-      const distance = Math.min(
-        lot.position[0] - bounds.x0,
-        bounds.x1 - lot.position[0] - width,
-        lot.position[1] - bounds.z0,
-        bounds.z1 - lot.position[1] - depth,
-      );
-      if (building.size[1] + sprintJumpRise(distance * BLOCK_SIZE - 2 * PLAYER.halfWidth) / BLOCK_SIZE >= wallTop) {
-        issues.push([`.city.lots[${index}]`, `a jump from "${ref.id}" clears the containment wall`]);
-      }
-    }
-  }
-  return issues;
-};
-
-/** A sprint jump from the roof edge must still be below the wall-plus-wire top where it crosses the wall. */
-const clearanceIssues = (registry: Registry, scenario: ScenarioDef, perimeter: Perimeter): [string, string][] => {
-  const { city } = scenario;
-  const { ring } = city;
-  const wallTop = perimeter.height + 1 + (perimeter.wire?.height ?? 0);
-  const setback = ring ? ring.setback : city.street + city.pad;
-  const run = setback * BLOCK_SIZE - 2 * PLAYER.halfWidth;
-  const arcTop = (roof: number, distance = run) => roof + sprintJumpRise(distance) / BLOCK_SIZE;
-  const choices = registry.mapPools.get(ring?.pool ?? city.pool)?.choices ?? [];
-  const issues = choices.flatMap(({ ref }) => {
-    const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(ref.id);
-    return building && arcTop(building.size[1]) >= wallTop
-      ? [
-          [
-            ring ? '.city.ring.setback' : '.city.pad',
-            `a jump from the roof of "${ref.id}" clears the wall; lower the building or widen the setback`,
-          ] as [string, string],
-        ]
-      : [];
-  });
-  issues.push(...authoredClearanceIssues(registry, city, wallTop));
-  const start = scenario.composition?.start;
-  if (start) {
-    const definition = registry.templates.get(start.template) ?? registry.mapAssemblies.get(start.template);
-    if (!definition) {
-      return issues;
-    }
-    const template = templateEnvelope(definition);
-    const origin = serviceOrigin(template, 0, city, start.cell);
-    const bounds = cityBounds(city);
-    const distance = Math.min(
-      origin[0] - bounds.x0,
-      bounds.x1 - origin[0] - template.size[0],
-      origin[2] - bounds.z0,
-      bounds.z1 - origin[2] - template.size[2],
-    );
-    if (arcTop(origin[1] + template.size[1], distance * BLOCK_SIZE - 2 * PLAYER.halfWidth) >= wallTop) {
-      issues.push([
-        '.composition.start.template',
-        `a jump from the roof of "${start.template}" clears the wall; lower the start building or move it farther from the wall`,
-      ]);
-    }
-  }
-  return issues;
-};
-
 const perimeterIssues = (registry: Registry, scenario: ScenarioDef, perimeter: Perimeter): [string, string][] => {
   const { city } = scenario;
   const blocks = [perimeter.block, ...(perimeter.wire ? [perimeter.wire.block] : [])];
   const issues: [string, string][] = blocks
     .filter((block) => !registry.blockIds.has(block))
     .map((block) => ['.city.perimeter', `no block "${block}"`]);
-  issues.push(...dressingIssues(registry, city, perimeter), ...clearanceIssues(registry, scenario, perimeter));
+  issues.push(...dressingIssues(registry, city, perimeter));
   if (blocks.every((block) => registry.blockIds.has(block))) {
     const bounds = cityBounds(city);
     for (const gap of perimeterGaps(cityPerimeter(registry, perimeter, bounds, 0), bounds, 0, perimeter.height)) {
@@ -575,6 +510,31 @@ export const settlementCollectionIssues = (registry: Registry) => {
   return issues;
 };
 
+const reservedLotIssues = (
+  registry: Registry,
+  { city, composition, serviceTemplate }: ScenarioDef,
+): [string, string][] => {
+  const reserved = [
+    ...(composition ? [{ id: composition.start.template, cell: composition.start.cell, turn: 0 }] : []),
+    ...(city.service ? [{ id: serviceTemplate, ...city.service }] : []),
+  ];
+  const issues: [string, string][] = [];
+  for (const building of reserved) {
+    const definition = registry.mapAssemblies.get(building.id) ?? registry.templates.get(building.id);
+    if (!definition) {
+      continue;
+    }
+    const x0 = building.cell[0] * (city.street + city.blockX) + city.street + city.pad;
+    const z0 = building.cell[1] * (city.street + city.blockZ) + city.street + city.pad;
+    const [width, depth] =
+      building.turn % 2 === 0 ? [definition.size[0], definition.size[2]] : [definition.size[2], definition.size[0]];
+    const rect = { x0, z0, x1: x0 + width, z1: z0 + depth };
+    if ((city.lots ?? []).some((lot) => rectsOverlap(rect, lotRect(lot)))) {
+      issues.push(['.city.lots', `authored lot overlaps reserved building "${building.id}"`]);
+    }
+  }
+  return issues;
+};
 const fixedServiceIssues = ({ city, composition }: ScenarioDef): [string, string][] => {
   if (!city.service) {
     return [];
@@ -598,11 +558,12 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
     ]);
   }
   const width = city.blockX - 2 * city.pad;
-  issues.push(...fixedServiceIssues(scenario));
+  issues.push(...fixedServiceIssues(scenario), ...reservedLotIssues(registry, scenario));
   issues.push(
     ...cityDecorationIssues(registry, scenario),
     ...cityPoolIssues(registry, scenario),
     ...cityLotIssues(registry, city, cityBounds(city)),
+    ...cityLotQuotaIssues(registry, city),
     ...scenarioStartIssues(registry, scenario),
   );
   const template = registry.templates.get(serviceTemplate);
@@ -627,7 +588,6 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
     }
     issues.push(...scenarioPortalIssues(registry, scenario, compiled));
     issues.push(...scenarioCompositionIssues(registry, scenario, compiled));
-    placeCityLots(registry, city, { seed: 0, floor: 0, compiled: templateCompiler(registry, 0) });
   } catch (error) {
     issues.push(['.serviceTemplate', error instanceof Error ? error.message : String(error)]);
   }
@@ -664,6 +624,18 @@ const cityCells = (grid: CityGrid): Cell[] => {
   const cells: Cell[] = [];
   for (let j = -grid.blocksZ; j < grid.blocksZ; j++) {
     for (let i = -grid.blocksX; i < grid.blocksX; i++) {
+      const { bounds } = grid;
+      const x0 = i * (grid.street + grid.blockX);
+      const z0 = j * (grid.street + grid.blockZ);
+      if (
+        bounds &&
+        (x0 < bounds.x0 ||
+          z0 < bounds.z0 ||
+          x0 + grid.street + grid.blockX > bounds.x1 ||
+          z0 + grid.street + grid.blockZ > bounds.z1)
+      ) {
+        continue;
+      }
       cells.push(Object.freeze([i, j] as const));
     }
   }

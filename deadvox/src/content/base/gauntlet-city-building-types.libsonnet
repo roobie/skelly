@@ -1,4 +1,4 @@
-local police = import 'gauntlet-city-police.libsonnet';
+local police = import 'gauntlet-police.libsonnet';
 local residential = { usage: ['Residential'], tier: 'Tier1' };
 local hunting = { usage: ['Hunting'], tier: 'Tier1' };
 local industrial = { usage: ['Industrial'], tier: 'Tier1' };
@@ -16,12 +16,6 @@ local wall = [
 ];
 local shopWindows = [
   '..................', '..................', '###...#DD#...###..', '#..............#..',
-  '#..............#..', '#..............#..', '#..............#..', '#..............#..',
-  '#..............#..', '#..............#..', '#..............#..', '#..............#..',
-  '#..............#..', '#..............#..', '#..............#..', '################..',
-];
-local policeWindows = [
-  '..................', '..................', '###..##DD##..###..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#..', '################..',
@@ -137,14 +131,6 @@ local yard(block) = { role: 'trim', block: block };
     signBlock('shop_grille', 'Shopfront grille', '#2b2d30', { opaque: false }),
   ],
   mapStyles: [
-    frontStyle('gauntlet_police', {
-      sign: yard('shop_blue'), post: yard('shop_blue'),
-      partition: { role: 'shell', block: 'concrete' },
-      floor: { role: 'interior_floor', block: 'concrete' },
-      roofing_sheet: { role: 'interior_floor', block: 'concrete' },
-      roofing_slab: { role: 'interior_floor', block: 'concrete' },
-      footing: { role: 'support', block: 'concrete' },
-    }),
     frontStyle('gauntlet_food_shop', {
       sign: yard('shop_green'), awning_a: yard('shop_green'), awning_b: yard('shop_white'),
       produce: yard('shop_produce'),
@@ -155,10 +141,6 @@ local yard(block) = { role: 'trim', block: block };
     }),
   ],
   mapPieces: [
-    shell('gauntlet_police_front', 'gauntlet_police', hunting, policeWindows, { l: 'post' }, [
-      [0, 1, 2, 'l'], [1, 1, 2, 'l'], [2, 1, 2, 'l'], [3, 1, 2, 'l'],
-      [0, 1, 13, 'l'], [1, 1, 13, 'l'], [2, 1, 13, 'l'], [3, 1, 13, 'l'],
-    ]),
     shell('gauntlet_food_front', 'gauntlet_food_shop', residential, shopWindows, { a: 'awning_a', b: 'awning_b', p: 'produce' }, [
       [4, 0, 1, 'ababababababab'], [4, 1, 1, 'ababababababab'],
       [0, 1, 2, 'pp'], [0, 1, 12, 'pp'], [1, 1, 2, 'p'], [1, 1, 13, 'p'],
@@ -171,8 +153,6 @@ local yard(block) = { role: 'trim', block: block };
       [0, 1, 2, 'qq'], [1, 1, 2, 'qq'], [2, 1, 2, 'qq'],
       [0, 1, 12, 'pppp'], [1, 1, 12, 'pppp'],
     ]),
-    police.piece,
-  ] + police.chairPieces + [
     room('gauntlet_food_aisles', residential, shopRows, shopTall, {
       C: { furniture: 'counter', fixed: true, loot: 'gauntlet_food_stock' },
       S: stock('gauntlet_food_stock'), G: stock('gauntlet_food_stock'), A: box('gauntlet_food_stock'),
@@ -188,24 +168,6 @@ local yard(block) = { role: 'trim', block: block };
     }),
   ],
   mapAssemblies: [
-    building('gauntlet_police_station', hunting, 'gauntlet_police_front', 'gauntlet_police_rooms') + {
-      slots: [
-        s + if s.id == 'ground' || s.id == 'roof' then {
-          choices: [choice + { ref+: { style: 'gauntlet_police' } } for choice in s.choices],
-        } else {}
-        for s in super.slots
-      ] + police.chairSlots,
-      anchors: {
-        entry: { kind: 'standing', at: [8, 1, 4] },
-        reception: { kind: 'standing', at: [8, 1, 6] },
-        office: { kind: 'standing', at: [12, 1, 6] },
-        holding: { kind: 'standing', at: [8, 1, 9] },
-        cell_west: { kind: 'standing', at: [4, 1, 13] },
-        cell_east: { kind: 'standing', at: [9, 1, 13] },
-        armoury: { kind: 'point', at: [14, 1, 12] },
-      },
-      access: { ground: 'floor_0', entrance: [8, 1, 4], storeys: [{ id: 'floor_0', floor: 1 }], stairs: [] },
-    },
     building('gauntlet_food_store', residential, 'gauntlet_food_front', 'gauntlet_food_aisles'),
     building('gauntlet_gun_store', hunting, 'gauntlet_gun_front', 'gauntlet_gun_sales'),
     building('gauntlet_hardware_store', industrial, 'gauntlet_hardware_front', 'gauntlet_hardware_aisles'),

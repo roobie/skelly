@@ -68,14 +68,14 @@ it('keeps enclosed building roof voxels inside their exterior wall footprint', (
   let checked = 0;
   for (const { compiled, roofCells } of buildings) {
     const solid = solidCells(compiled);
-    const top = solid.reduce((height, [, y]) => Math.max(height, y), Number.NEGATIVE_INFINITY);
     const doors = compiled.pieces
       .filter((piece) => registry.furniture.get(piece.furniture)?.door)
       .flatMap((piece) =>
         [...cellsOf(piece.size)].map(([x, y, z]) => [x + piece.pos[0], y + piece.pos[1], z + piece.pos[2]] as Vec3),
       );
     let enclosures = 0;
-    const slabs = roofCells ? roofIslands(roofCells) : [solid.filter(([, y]) => y === top)];
+    const courses = [...new Set(solid.map(([, y]) => y))].sort((a, b) => b - a);
+    const slabs = roofCells ? roofIslands(roofCells) : courses.map((height) => solid.filter(([, y]) => y === height));
     for (const slab of slabs) {
       const underside = Math.min(...slab.map(([, y]) => y));
       const projection = new Set(slab.map(([x, , z]) => `${x},${z}`));
@@ -103,6 +103,9 @@ it('keeps enclosed building roof voxels inside their exterior wall footprint', (
           `${compiled.id}: roof outside walls`,
         )
         .toBe(true);
+      if (!roofCells) {
+        break;
+      }
     }
     if (!roofCells) {
       expect(enclosures, `${compiled.id}: an enclosed building was checked`).toBeGreaterThan(0);

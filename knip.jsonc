@@ -28,6 +28,7 @@
         "/test/fixtures/scenarioStart.ts",
         "/test/browser/sky-selection.ts",
         "/test/browser/interaction-marker-lighting.ts",
+        "/test/browser/gauntlet-doors.mjs",
         "/src/spikes/expressions/contract.ts",
         "/src/spikes/expressions/starlark.ts",
         "/src/spikes/expressions/luau.ts",

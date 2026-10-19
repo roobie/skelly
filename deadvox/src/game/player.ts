@@ -22,20 +22,6 @@ export const PLAYER = {
 /** m/s². Heavier than Earth's; it makes jumps feel snappy. */
 const GRAVITY = 28;
 
-/**
- * Most metres a jump can have risen above its take-off point after covering `run` metres of clear
- * ground, edge of the body to the obstacle. Up to the distance a sprint covers before the apex, a
- * slower jump peaks exactly at the obstacle, so the rise is the apex; beyond it the sprint arc is
- * the highest.
- */
-export const sprintJumpRise = (run: number): number => {
-  if (run <= (PLAYER.jump * PLAYER.sprint) / GRAVITY) {
-    return PLAYER.jump ** 2 / (2 * GRAVITY);
-  }
-  const t = run / PLAYER.sprint;
-  return PLAYER.jump * t - (GRAVITY * t * t) / 2;
-};
-
 export const physicsFor = (scale: Scale): PhysicsParams => ({
   gravity: GRAVITY / scale.blockSize,
   stepHeight: PLAYER.stepHeight / scale.blockSize,

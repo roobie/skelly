@@ -143,6 +143,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const { placedPieces } = await import('/src/core/templates.ts');
       const { furnitureSurfacePosition } = await import('/src/core/furnitureSurface.ts');
       const { scenarioCertificate } = await import('/src/core/scenarioCertificate.ts');
+      const { routeDoorOpener } = await import('/test/browser/gauntlet-doors.mjs');
+      const openDoors = routeDoorOpener(engine, session);
       const { leaveRoof } = await import('/test/fixtures/scenarioStart.ts');
       const certificate = scenarioCertificate(engine.site);
       let foot;
@@ -154,25 +156,32 @@ export const gauntletFlow = async (browser, baseUrl) => {
       w.manual = true;
       const oldIntent = input.intent;
       input.intent = () => IDLE;
-      const walkBeside = (entity, at) => {
-        const standing = [entity.pos[0] - 1, at[2] + 0.5];
-        const route = certificate.space.path(foot, [standing[0], engine.site.plan.floor + 1, standing[1]]);
+      const walkPoint = async (point) => {
+        const distance = () => Math.hypot(point[0] - session.body.pos[0], point[2] - session.body.pos[2]);
+        const frames = Math.ceil((distance() / 2 + 3) * 60);
+        input.intent = () => ({ ...IDLE, forward: 1, walk: true });
+        for (let n = 0; n < frames && distance() >= 0.04; n++) {
+          engine.streamer.update(session.body.pos[0], session.body.pos[2]);
+          openDoors();
+          input.yaw = Math.atan2(session.body.pos[0] - point[0], session.body.pos[2] - point[2]);
+          input.pitch = 0;
+          session.frame(1 / 60);
+          if (n % 120 === 0) {
+            await new Promise(requestAnimationFrame);
+          }
+        }
+        input.intent = () => IDLE;
+        if (distance() >= 0.04) {
+          throw new Error('Could not walk beside the public-paper support');
+        }
+      };
+      const walkBeside = async (standing) => {
+        const route = certificate.space.path(foot, standing);
         if (!route) {
           throw new Error('No route from roof exit to public paper');
         }
         for (const point of route) {
-          const distance = () => Math.hypot(point[0] - session.body.pos[0], point[2] - session.body.pos[2]);
-          const frames = Math.ceil((distance() / 2 + 3) * 60);
-          input.intent = () => ({ ...IDLE, forward: 1, walk: true });
-          for (let n = 0; n < frames && distance() >= 0.04; n++) {
-            input.yaw = Math.atan2(session.body.pos[0] - point[0], session.body.pos[2] - point[2]);
-            input.pitch = 0;
-            session.frame(1 / 60);
-          }
-          input.intent = () => IDLE;
-          if (distance() >= 0.04) {
-            throw new Error('Could not walk beside the public-paper support');
-          }
+          await walkPoint(point);
         }
       };
       try {
@@ -190,6 +199,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
           frame: () => session.frame(1 / 60),
           blockSize: engine.config.scale.blockSize,
         });
+        await walkBeside(engine.site.plan.composition.leadFaces[0]);
         const entity = [...engine.entities.all].find((value) => value.pos.every((v, axis) => v === clue.pos[axis]));
         if (!entity) {
           throw new Error('Public lead not streamed at start');
@@ -202,7 +212,6 @@ export const gauntletFlow = async (browser, baseUrl) => {
         if (!paper) {
           throw new Error('Public paper not on its support');
         }
-        walkBeside(entity, at);
         const pickup = session.queue.enqueue(paper, { kind: 'hand', side: 'right' });
         if (!pickup.ok) {
           throw new Error(pickup.reason);
@@ -270,7 +279,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const originalIntent = input.intent;
       input.intent = () => intent;
       w.manual = true;
-      const queued = new Set();
+      const { routeDoorOpener } = await import('/test/browser/gauntlet-doors.mjs');
+      const openDoors = routeDoorOpener(engine, session);
       const tick = () => {
         engine.streamer.update(session.body.pos[0], session.body.pos[2]);
         session.frame(1 / 60);
@@ -289,26 +299,6 @@ export const gauntletFlow = async (browser, baseUrl) => {
           throw new Error(
             `${label}: ${JSON.stringify({ pos: session.body.pos, hold: session.ladderHold.snapshotState() })}`,
           );
-        }
-      };
-      const openDoors = () => {
-        for (const entity of engine.entities.all) {
-          const { door } = engine.entities.defOf(entity);
-          if (
-            !door ||
-            door.hatch ||
-            entity.open ||
-            entity.lock?.locked ||
-            queued.has(entity.uid) ||
-            !session.inventory.canReachEntity(entity)
-          ) {
-            continue;
-          }
-          const opening = doorPlan(session.inventory, entity, 'open');
-          if (opening.ok) {
-            queued.add(entity.uid);
-            session.queue.enqueueAction(DOOR_ACTION, 'Open route door', opening.time, { entityUid: entity.uid });
-          }
         }
       };
       const walk = async (points) => {

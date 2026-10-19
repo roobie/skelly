@@ -8,8 +8,8 @@ local loot = { usage: [], tier: 'Tier1' };
       id: 'gauntlet_perimeter_lining', size: [8, 4, 3], lootContext: loot,
       palette: palette + { F: { furniture: 'gauntlet_perimeter_notice' } },
       layers: [
-        ['........', 'HJJJJJJH', 'HJJJJJJH'],
-        ['........', 'HJJJJJJH', 'HJJJJJJH'],
+        ['...J....', 'HJJJJJJH', 'HJJJJJJH'],
+        ['........', 'HJ.JJJ.H', 'HJJJJJJH'],
         ['........', '........', '...FF...'],
         ['........', '........', '...FF...'],
       ],

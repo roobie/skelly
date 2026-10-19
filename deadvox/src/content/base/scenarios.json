@@ -5,25 +5,6 @@
         {
           "ref": {
             "id": "gauntlet_city_1",
-            "kind": "assembly"
-          },
-          "weight": 36
-        },
-        {
-          "ref": {
-            "id": "gauntlet_food_store",
-            "kind": "assembly"
-          },
-          "weight": 6
-        }
-      ],
-      "id": "gauntlet_ring"
-    },
-    {
-      "choices": [
-        {
-          "ref": {
-            "id": "gauntlet_city_1",
             "kind": "assembly",
             "style": "brick_townhouse"
           },
@@ -102,23 +83,6 @@
           "weight": 4
         },
         {
-          "atMost": 2,
-          "ref": {
-            "id": "gauntlet_medical_site",
-            "kind": "assembly"
-          },
-          "weight": 3
-        },
-        {
-          "atLeast": 1,
-          "atMost": 1,
-          "ref": {
-            "id": "gauntlet_police_station",
-            "kind": "assembly"
-          },
-          "weight": 2
-        },
-        {
           "atLeast": 1,
           "atMost": 1,
           "ref": {
@@ -138,11 +102,702 @@
         "blend": 24,
         "blockX": 96,
         "blockZ": 96,
-        "blocksX": 1,
-        "blocksZ": 1,
+        "blocksX": 2,
+        "blocksZ": 2,
+        "bounds": {
+          "x0": -216,
+          "x1": 120,
+          "z0": -108,
+          "z1": 120
+        },
+        "fillRows": false,
         "flatSurroundings": true,
         "gap": 1,
+        "lots": [
+          {
+            "id": "police",
+            "position": [14, -45],
+            "routes": [
+              {
+                "id": "p1",
+                "inside": [2, 1, 26],
+                "outside": [-2, 1, 26]
+              },
+              {
+                "id": "p2",
+                "inside": [51, 1, 36.5],
+                "outside": [56, 1, 36.5]
+              },
+              {
+                "id": "gate",
+                "inside": [35, 1, 2],
+                "outside": [35, 1, -2]
+              },
+              {
+                "id": "p3",
+                "inside": [22, 1, 40],
+                "outside": [22, 1, 45]
+              }
+            ],
+            "size": [54, 43],
+            "source": {
+              "id": "gauntlet_rural_police",
+              "kind": "assembly"
+            },
+            "turn": 2
+          },
+          {
+            "id": "medical",
+            "position": [64, 14],
+            "routes": [
+              {
+                "id": "m1",
+                "inside": [9.5, 1, 1],
+                "outside": [9.5, 1, -2]
+              },
+              {
+                "id": "m2",
+                "inside": [2, 1, 21.5],
+                "outside": [-2, 1, 21.5]
+              },
+              {
+                "id": "m3",
+                "inside": [18, 1, 29.5],
+                "outside": [23, 1, 29.5]
+              },
+              {
+                "id": "gate",
+                "inside": [10.5, 1, 35],
+                "outside": [10.5, 1, 40]
+              }
+            ],
+            "size": [21, 38],
+            "source": {
+              "id": "gauntlet_rural_medical",
+              "kind": "assembly"
+            },
+            "turn": 2
+          },
+          {
+            "id": "hq",
+            "position": [-62, 24],
+            "routes": [
+              {
+                "id": "h1",
+                "inside": [42, 1, 2],
+                "outside": [42, 1, -2]
+              },
+              {
+                "id": "h2",
+                "inside": [2, 1, 44],
+                "outside": [-2, 1, 44]
+              },
+              {
+                "id": "gate",
+                "inside": [25, 1, 57],
+                "outside": [25, 1, 62]
+              }
+            ],
+            "size": [60, 60],
+            "source": {
+              "id": "gauntlet_crisis_hq",
+              "kind": "assembly"
+            },
+            "turn": 3
+          },
+          {
+            "id": "substation",
+            "position": [-204, 40],
+            "routes": [
+              {
+                "id": "s1",
+                "inside": [6, 1, 19.5],
+                "outside": [3, 1, 19.5]
+              },
+              {
+                "id": "s2",
+                "inside": [15.5, 1, 17],
+                "outside": [15.5, 1, 13]
+              },
+              {
+                "id": "gate",
+                "inside": [25, 1, 23],
+                "outside": [25, 1, 28]
+              }
+            ],
+            "size": [34, 26],
+            "source": {
+              "id": "gauntlet_rural_substation",
+              "kind": "assembly"
+            },
+            "turn": 0
+          },
+          {
+            "id": "horde_field",
+            "position": [14, -94],
+            "size": [58, 42],
+            "turn": 0
+          },
+          {
+            "id": "campus_sightline",
+            "position": [-94, -28],
+            "size": [66, 26],
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_m96_n_2",
+            "position": [-202, -94],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_m96_n_26",
+            "position": [-178, -94],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_m96_n_50",
+            "position": [-154, -94],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_m96_n_74",
+            "position": [-130, -94],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_m96_nm_2",
+            "position": [-202, -70],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_m96_nm_26",
+            "position": [-178, -70],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_m96_nm_50",
+            "position": [-154, -70],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_m96_nm_74",
+            "position": [-130, -70],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_m96_sm_2",
+            "position": [-202, -42],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_m96_sm_26",
+            "position": [-178, -42],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_m96_sm_50",
+            "position": [-154, -42],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_m96_sm_74",
+            "position": [-130, -42],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_m96_s_2",
+            "position": [-202, -18],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_m96_s_26",
+            "position": [-178, -18],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_m96_s_50",
+            "position": [-154, -18],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_m96_s_74",
+            "position": [-130, -18],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_12_m96_e_2",
+            "position": [90, -94],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 1
+          },
+          {
+            "id": "lot_12_m96_e_26",
+            "position": [90, -70],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 1
+          },
+          {
+            "id": "lot_12_m96_e_50",
+            "position": [90, -46],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 1
+          },
+          {
+            "id": "lot_12_m96_e_74",
+            "position": [90, -22],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 1
+          },
+          {
+            "id": "lot_12_12_sm_2",
+            "position": [14, 66],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_12_12_sm_26",
+            "position": [38, 66],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_12_12_sm_50",
+            "position": [62, 66],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_12_12_sm_74",
+            "position": [86, 66],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_12_12_s_2",
+            "position": [14, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_12_12_s_26",
+            "position": [38, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_12_12_s_50",
+            "position": [62, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_12_12_s_74",
+            "position": [86, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_12_12_e_2",
+            "position": [90, 14],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 1
+          },
+          {
+            "id": "lot_12_12_e_26",
+            "position": [90, 38],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 1
+          },
+          {
+            "id": "lot_m96_12_w_2",
+            "position": [-94, 14],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 3
+          },
+          {
+            "id": "lot_m96_12_w_26",
+            "position": [-94, 38],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 3
+          },
+          {
+            "id": "lot_m96_12_w_50",
+            "position": [-94, 62],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 3
+          },
+          {
+            "id": "lot_m96_12_w_74",
+            "position": [-94, 86],
+            "size": [16, 18],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 3
+          },
+          {
+            "id": "lot_m96_12_s_26",
+            "position": [-70, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m96_12_s_50",
+            "position": [-46, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m96_12_s_74",
+            "position": [-22, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_12_n_2",
+            "position": [-202, 14],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_12_n_26",
+            "position": [-178, 14],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_12_n_50",
+            "position": [-154, 14],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_12_n_74",
+            "position": [-130, 14],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_12_s_2",
+            "position": [-202, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_12_s_26",
+            "position": [-178, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_12_s_50",
+            "position": [-154, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_12_s_74",
+            "position": [-130, 90],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_12_nm_50",
+            "position": [-154, 38],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_12_nm_74",
+            "position": [-130, 38],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 2
+          },
+          {
+            "id": "lot_m204_12_sm_50",
+            "position": [-154, 66],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          },
+          {
+            "id": "lot_m204_12_sm_74",
+            "position": [-130, 66],
+            "size": [18, 16],
+            "source": {
+              "id": "gauntlet_city",
+              "kind": "pool"
+            },
+            "turn": 0
+          }
+        ],
         "pad": 2,
+        "paving": [
+          {
+            "x0": -216,
+            "x1": -204,
+            "z0": -108,
+            "z1": 120
+          },
+          {
+            "x0": -108,
+            "x1": -96,
+            "z0": -108,
+            "z1": 120
+          },
+          {
+            "x0": 108,
+            "x1": 120,
+            "z0": -108,
+            "z1": 120
+          },
+          {
+            "x0": -216,
+            "x1": 120,
+            "z0": -108,
+            "z1": -96
+          },
+          {
+            "x0": -216,
+            "x1": 120,
+            "z0": 108,
+            "z1": 120
+          },
+          {
+            "x0": 0,
+            "x1": 12,
+            "z0": -108,
+            "z1": 120
+          },
+          {
+            "x0": -216,
+            "x1": 120,
+            "z0": 0,
+            "z1": 12
+          },
+          {
+            "x0": -22,
+            "x1": 0,
+            "z0": -50,
+            "z1": -42
+          },
+          {
+            "x0": -204,
+            "x1": -108,
+            "z0": -52,
+            "z1": -44
+          },
+          {
+            "x0": -170,
+            "x1": -108,
+            "z0": 56,
+            "z1": 64
+          }
+        ],
         "perimeter": {
           "block": "concrete",
           "gate": {
@@ -160,11 +815,11 @@
           }
         },
         "pool": "gauntlet_city",
-        "ring": {
-          "pool": "gauntlet_ring",
-          "setback": 7
-        },
         "rows": 4,
+        "service": {
+          "cell": [-1, -1],
+          "turn": 0
+        },
         "settlementKind": "city",
         "street": 12,
         "streetProps": ["gauntlet_street_cars"]
@@ -238,9 +893,11 @@
           "gauntlet_incidental_cabinet",
           "gauntlet_incidental_riser"
         ],
+        "landmarkPositions": [[-16, 0, -82], [-34, 0, -24]],
         "landmarks": ["gauntlet_water_tank", "gauntlet_loading_frame"],
         "leads": [
           {
+            "at": [26, 0, 13],
             "fixedLoot": [
               {
                 "at": [0, 1, 0],
@@ -252,9 +909,12 @@
                 ]
               }
             ],
+            "lot": "hq",
+            "standing": [25, 1, 14],
             "template": "gauntlet_public_memo"
           },
           {
+            "at": [23, 0, 17],
             "fixedLoot": [
               {
                 "at": [0, 1, 0],
@@ -266,6 +926,8 @@
                 ]
               }
             ],
+            "lot": "police",
+            "standing": [25, 1, 20],
             "template": "gauntlet_public_directions"
           }
         ],
@@ -337,6 +999,14 @@
         "authoredMarkers": true,
         "extraStragglers": 2,
         "groupSize": 7,
+        "hordeAreas": [
+          {
+            "x0": 14,
+            "x1": 72,
+            "z0": -94,
+            "z1": -52
+          }
+        ],
         "hordes": 1,
         "roadsideOffset": 3,
         "settlementPressure": true

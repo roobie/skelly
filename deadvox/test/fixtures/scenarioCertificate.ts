@@ -94,6 +94,14 @@ export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): Ci
       for (const descent of descents) {
         const hatchPos: Vec3 = [descent.ladder[0] - 1, descent.upper[1] - 1, descent.ladder[2]];
         if (toChunk(hatchPos[0]) === cx && toChunk(hatchPos[2]) === cz) {
+          const existing = sources.findIndex((source) =>
+            source.spec.pos.every((value, axis) => value === hatchPos[axis]),
+          );
+          if (existing >= 0) {
+            const source = sources[existing]!;
+            sources[existing] = { ...source, spec: { ...source.spec, lock: { id: 'cycle_b', locked: true } } };
+            continue;
+          }
           sources.push({
             spec: {
               type: 'roof_hatch',

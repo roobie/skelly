@@ -103,6 +103,7 @@ const candidatePlan = (
   const composition = composeScenario(content, profile, service, {
     floor: base.floor,
     start: base.composition!.start.placement,
+    lots: base.lots ?? [],
   })!;
   const [width, depth] = footprint(service);
   const placements = base.placements.filter((placement) => {
@@ -159,16 +160,11 @@ class ObstructedSite extends CitySite {
 }
 
 describe('final composed body-route certificate', () => {
-  for (const cell of base.candidates) {
-    it.each([0, 1, 2, 3] as const)(
-      `joins substituted production rooms, street, landings, resources and button face for candidate ${cell}, turn %s`,
-      (turn) => {
-        const selected = selectedServices[(base.candidates.indexOf(cell) + turn) % selectedServices.length]!;
-        const plan = candidatePlan(cell, turn, selected.template, substitutedRegistry);
-        expect(scenarioCertificate(new CitySite(selected.seed, substitutedRegistry, scale, plan)).issues).toEqual([]);
-      },
-    );
-  }
+  it('joins substituted production rooms and authored yards to the fixed campus, resources and objective', () => {
+    const selected = selectedServices[0]!;
+    const plan = candidatePlan(base.serviceBlock!, base.service!.turn, selected.template, substitutedRegistry);
+    expect(scenarioCertificate(new CitySite(selected.seed, substitutedRegistry, scale, plan)).issues).toEqual([]);
+  });
 
   it(
     'rejects an obstruction stamped after the service portal was locally certified',
@@ -336,7 +332,7 @@ it(
   'walks substituted rooms and closed lids, opens descents, returns alive and activates the objective from the goal-face save',
   () => {
     const selected = selectedServices[0]!;
-    const plan = candidatePlan(base.candidates[0]!, 1, selected.template, substitutedRegistry);
+    const plan = candidatePlan(base.serviceBlock!, base.service!.turn, selected.template, substitutedRegistry);
     traverseScenario(new CitySite(selected.seed, substitutedRegistry, scale, plan), profile, scale);
   },
   profile.composition!.storeys.length * WALK_MS_PER_STOREY,

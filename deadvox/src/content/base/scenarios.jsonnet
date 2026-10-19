@@ -1,4 +1,5 @@
 local content = import 'gauntlet.jsonnet';
+local layout = import 'gauntlet-layout.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local service = std.filter(function(t) t.id == 'gauntlet_service', content.mapAssemblies)[0];
 local ground = lab.ground;
@@ -21,10 +22,11 @@ local ladder = lab.entry.ladder;
         items: [{ item: 'gauntlet_maintenance_memo', placement: 'surface' }],
       }],
       leads: [
-        { template: 'gauntlet_public_memo', fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_memo', placement: 'surface' }] }] },
-        { template: 'gauntlet_public_directions', fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_directions', placement: 'surface' }] }] },
+        { template: 'gauntlet_public_memo', lot: 'hq', at: [26, 0, 13], standing: [25, 1, 14], fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_memo', placement: 'surface' }] }] },
+        { template: 'gauntlet_public_directions', lot: 'police', at: [23, 0, 17], standing: [25, 1, 20], fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_directions', placement: 'surface' }] }] },
       ],
       landmarks: ['gauntlet_water_tank', 'gauntlet_loading_frame'],
+      landmarkPositions: [[-16, 0, -82], [-34, 0, -24]],
       incidentalTemplates: ['gauntlet_incidental_bollard', 'gauntlet_incidental_cabinet', 'gauntlet_incidental_riser'],
       objective: lab.anchors.objective,
       objectiveFace: [lab.anchors.objective[0], lab.anchors.storeys[std.length(lab.anchors.storeys) - 1].standing[1], lab.anchors.objective[2] + 3],
@@ -41,10 +43,13 @@ local ladder = lab.entry.ladder;
     population: {
       settlementPressure: true, authoredMarkers: true,
       groupSize: 7, hordes: 1, roadsideOffset: 3, extraStragglers: 2,
+      hordeAreas: [{ x0: 14, z0: -94, x1: 72, z1: -52 }],
     },
     city: {
       settlementKind: 'city',
-      blocksX: 1, blocksZ: 1,
+      blocksX: 2, blocksZ: 2,
+      bounds: layout.bounds, lots: layout.lots, paving: layout.paving, fillRows: false,
+      service: { cell: [-1, -1], turn: 0 },
       street: 12,
       blockX: std.max(service.size[0], service.size[2]) + 24,
       blockZ: std.max(service.size[0], service.size[2]) + 24,
@@ -59,16 +64,9 @@ local ladder = lab.entry.ladder;
       },
       streetProps: ['gauntlet_street_cars'],
       pool: 'gauntlet_city',
-      ring: { pool: 'gauntlet_ring', setback: 7 },
     },
   }],
   mapPools: [{
-    id: 'gauntlet_ring',
-    choices: [
-      { ref: { kind: 'assembly', id: 'gauntlet_city_1' }, weight: 36 },
-      { ref: { kind: 'assembly', id: 'gauntlet_food_store' }, weight: 6 },
-    ],
-  }, {
     id: 'gauntlet_city',
     choices: [
       { ref: { kind: 'assembly', id: row.id, style: style.id }, weight: row.weight * style.share }
@@ -82,8 +80,6 @@ local ladder = lab.entry.ladder;
     ] + [
       { ref: { kind: 'assembly', id: 'gauntlet_food_store' }, weight: 6, atMost: 3 },
       { ref: { kind: 'assembly', id: 'gauntlet_hardware_store' }, weight: 4, atMost: 2 },
-      { ref: { kind: 'assembly', id: 'gauntlet_medical_site' }, weight: 3, atMost: 2 },
-      { ref: { kind: 'assembly', id: 'gauntlet_police_station' }, weight: 2, atLeast: 1, atMost: 1 },
       { ref: { kind: 'assembly', id: 'gauntlet_gun_store' }, weight: 1, atLeast: 1, atMost: 1 },
     ],
   }],

@@ -1802,7 +1802,7 @@ const CityLotSchema = strictObject({
     ]),
   ),
   /** A direct crossing prevents a route around the fence from certifying a blocked breach. */
-  routes: optional(array(strictObject({ inside: CellPosition, outside: CellPosition }))),
+  routes: optional(array(strictObject({ id: Id, inside: CellPosition, outside: CellPosition }))),
 });
 const ScenarioSchema = strictObject({
   id: Id,
@@ -1839,6 +1839,7 @@ const ScenarioSchema = strictObject({
         }),
       ]),
       landmarks: tuple([Id, Id]),
+      landmarkPositions: optional(tuple([CellPosition, CellPosition])),
       incidentalTemplates: pipe(array(Id), minLength(1), maxLength(32)),
       objective: CellPosition,
       objectiveFace: CellPosition,
@@ -1897,6 +1898,7 @@ const ScenarioSchema = strictObject({
     /** One row of buildings around the grid, backs to the wall and fronts to the outermost street. */
     ring: optional(strictObject({ pool: Id, setback: pipe(Count, minValue(1), maxValue(64)) })),
     streetProps: optional(pipe(array(Id), maxLength(16))),
+    bounds: optional(LayoutRect),
     lots: optional(array(CityLotSchema)),
     fillRows: optional(vBoolean()),
     paving: optional(array(LayoutRect)),

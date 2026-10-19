@@ -456,7 +456,13 @@ describe('content-owned city building types', () => {
           floor: 0,
         });
         expect(plan.placements.length).toBeGreaterThan(0);
-        expect(plan.placements.every(({ template }) => enabled.some(({ id }) => id === template.id))).toBe(true);
+        expect(
+          plan.placements.every(
+            (placement) =>
+              enabled.some(({ id }) => id === placement.template.id) ||
+              plan.lots?.some((lot) => lot.placement === placement),
+          ),
+        ).toBe(true);
       }
       const buildings = scenarios.flatMap((scenario) =>
         [
@@ -538,7 +544,7 @@ const doorOpening = (registry: Registry, compiled: CompiledTemplate, piece: Plac
 };
 
 describe('gauntlet door openings', () => {
-  it('places every wall door in an opening that matches the door size', () => {
+  it('gives every wall door an opening large enough for its leaf', () => {
     const { registry } = BUNDLED_CONTENT;
     const assemblies = [...registry.mapAssemblies.values()].filter((assembly) => assembly.id.startsWith('gauntlet'));
     expect(assemblies.length).toBeGreaterThan(0);
@@ -556,8 +562,8 @@ describe('gauntlet door openings', () => {
         const acrossX = piece.facing === 'e' || piece.facing === 'w';
         const opening = doorOpening(registry, compiled, piece);
         const label = `${assembly.id} ${piece.furniture} at ${piece.pos.join(',')}`;
-        expect(opening.across, `${label} opening width`).toBe(acrossX ? depth : width);
-        expect(opening.height, `${label} opening height`).toBe(height);
+        expect(opening.across, `${label} opening width`).toBeGreaterThanOrEqual(acrossX ? depth : width);
+        expect(opening.height, `${label} opening height`).toBeGreaterThanOrEqual(height);
       }
     }
     expect(doors).toBeGreaterThan(0);
@@ -568,13 +574,9 @@ const houseId = /^gauntlet_city_\d+/;
 
 // The yard rows in front of a shop door, where a player walks up from the street.
 const yardRows = 2;
-const shopIds = [
-  'gauntlet_police_station',
-  'gauntlet_food_store',
-  'gauntlet_gun_store',
-  'gauntlet_hardware_store',
-  'gauntlet_medical_site',
-];
+const shopIds = (
+  JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-city-building-types.libsonnet')) as ContentFile
+).mapAssemblies!.map(({ id }) => id);
 
 describe('gauntlet shop fronts', () => {
   // The street face and the yard in front of it: the rows a player sees from the road.

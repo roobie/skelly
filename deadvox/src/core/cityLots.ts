@@ -76,8 +76,11 @@ const sourceIssues = (registry: Registry, city: LotContext, lot: Lot, path: stri
   if (!lot.source) {
     return issues;
   }
-  if (lot.source.kind !== 'pool') {
-    const { id, kind, style } = lot.source;
+  const refs =
+    lot.source.kind === 'pool'
+      ? (registry.mapPools.get(lot.source.id)?.choices ?? []).map(({ ref }) => ref)
+      : [lot.source];
+  for (const { id, kind, style } of refs) {
     if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
       issues.push([path, 'ambiguous template and assembly']);
     }
@@ -85,7 +88,11 @@ const sourceIssues = (registry: Registry, city: LotContext, lot: Lot, path: stri
       issues.push([path, 'style needs an assembly and a known map style']);
     }
   }
-  if (!lotChoices(registry, city, lot).some(({ weight, atMost }) => weight > 0 && atMost !== 0)) {
+  if (
+    !lotChoices(registry, city, lot).some(
+      ({ weight, atLeast, atMost }) => (weight > 0 || atLeast !== undefined) && atMost !== 0,
+    )
+  ) {
     issues.push([path, 'lot has no eligible building that fits its reserved footprint']);
   }
   return issues;
@@ -118,7 +125,7 @@ const crossingIssues = (lot: PlannedLot, space: ScenarioRouteSpace, entry: Vec3,
     const routePath = `${path}.routes[${index}]`;
     const inside = placedPoint(lot.placement!, route.inside);
     const outside = placedPoint(lot.placement!, route.outside);
-    if (!space.path(entry, inside)) {
+    if (!space.path(entry, inside, { placement: lot.placement! })) {
       issues.push([routePath, 'authored perimeter crossing must be reachable from the building entrance']);
     }
     if (!space.sweep(inside, outside)) {
@@ -228,16 +235,30 @@ const placedLot = (definition: Lot, ref: Ref | undefined, { floor, compiled }: L
     placement: Object.freeze({ template, turn, origin }),
   });
 };
-export const placeCityLots = (registry: Registry, city: LotContext, compiler: LotCompiler): readonly PlannedLot[] => {
+const selectLotSources = (registry: Registry, city: LotContext, seed: number): Map<Lot, Ref> => {
   const lots = city.lots ?? [];
   const selected = new Map<Lot, Ref>();
   const pools = new Set(lots.flatMap((lot) => (lot.source?.kind === 'pool' ? [lot.source.id] : [])));
   for (const poolId of pools) {
-    for (const [lot, ref] of poolSelections(registry, city, poolId, compiler.seed)) {
+    for (const [lot, ref] of poolSelections(registry, city, poolId, seed)) {
       selected.set(lot, ref);
     }
   }
+  return selected;
+};
+export const cityLotQuotaIssues = (registry: Registry, city: LotContext): Issue[] => {
+  try {
+    selectLotSources(registry, city, 0);
+    return [];
+  } catch (error) {
+    return [['.city.lots', error instanceof Error ? error.message : String(error)]];
+  }
+};
+export const placeCityLots = (registry: Registry, city: LotContext, compiler: LotCompiler): readonly PlannedLot[] => {
+  const selected = selectLotSources(registry, city, compiler.seed);
   return Object.freeze(
-    lots.map((lot) => placedLot(lot, lot.source?.kind === 'pool' ? selected.get(lot) : lot.source, compiler)),
+    (city.lots ?? []).map((lot) =>
+      placedLot(lot, lot.source?.kind === 'pool' ? selected.get(lot) : lot.source, compiler),
+    ),
   );
 };

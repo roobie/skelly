@@ -1,3 +1,4 @@
+import { lotChoices } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { ScenarioDef } from './schema.ts';
@@ -54,9 +55,10 @@ const skylineIssues = (registry: Registry, scenario: ScenarioDef, template: Comp
   const { city, composition } = scenario;
   const buildingIds = new Set([
     scenario.serviceTemplate,
-    ...[city.pool, ...(city.ring ? [city.ring.pool] : [])].flatMap((id) =>
+    ...[...(city.fillRows === false ? [] : [city.pool]), ...(city.ring ? [city.ring.pool] : [])].flatMap((id) =>
       (registry.mapPools.get(id)?.choices ?? []).map(({ ref }) => ref.id),
     ),
+    ...(city.lots ?? []).flatMap((lot) => lotChoices(registry, city, lot).map(({ ref }) => ref.id)),
     ...composition!.leads.map((lead) => lead.template),
     ...composition!.landmarks,
     ...composition!.incidentalTemplates,

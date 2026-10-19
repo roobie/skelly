@@ -9,7 +9,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
-  - you're implementing gauntlet scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth or its visual approval gate
+  - you're implementing the authored gauntlet arrangement, scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth or its visual approval gate
   - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
@@ -406,25 +406,32 @@ mechanics in the implementation rather than repeating the format here.
 
 ### Gauntlet
 
-Gauntlet uses ordinary survival rules, not a second mission runtime. Reserving
-the service campus makes its street approach constructible; knowing a clue never
-grants access. Independent notes give alternate ways to infer the destination.
+Gauntlet uses ordinary survival rules, not a second mission runtime. Its arrangement
+is designed from the start tower outward so the roof overview, civic stops and destination
+form a legible place rather than a lucky row draw. Authored lots preserve that arrangement
+while their house draws retain replay variety. Containment bounds hold only the points
+of interest, their yards and filler housing, avoiding a fringe that makes the area too
+large. Adding a point of interest is the trigger to expand those bounds, not a reason
+to reserve empty city in advance. Reserving the service campus makes its street approach
+constructible; knowing a clue never grants access. Independent notes in separate civic
+buildings give alternate ways to infer the destination. See
+`src/content/base/gauntlet-layout.libsonnet`, `lots` and `paving`, and
+`src/core/cityLots.ts`, `placeCityLots`.
+
 The play area is closed by physical voxels, not an invisible wall: a continuous
-containment wall, with a sealed checkpoint gate where the central street meets it,
-so the limit is something the player can see and read. Ordinary movement, doors and
-destruction remain authoritative. An edge ring of buildings stands between the grid
-and the wall, backs to the wall and fronts inward across a perimeter street, so the
-wall has a lived-in face rather than an empty fence line. The wall and wire out-top
-a sprinting jump, body width included, from every ring building's full height,
-because a rooftop within reach would turn the wall into a step; the check reads the
-player's sprint jump from `src/game/player.ts`, `sprintJumpRise`. Sounds and crowds beyond the wall are a
-separate decision. The ground around the wall is flat at the city floor, because the
+containment wall with sealed checkpoints makes the limit visible. Its worn foot shows
+abandonment without an authored walk-through hole. The containment wall is deliberately
+exempt from passable breaches because it encloses the playtest area; buildings and yards
+inside it have alternate ways through their damaged perimeters. Those gaps are real
+routes, not only a weathered look. There is no perimeter band of housing. Ordinary
+movement, doors and destruction remain authoritative, rather than a separate admission
+rule predicting whether a jump can clear the wall. Sounds and crowds beyond the wall
+are a separate decision. The ground around the wall is flat at the city floor, because the
 gauntlet is a confined playtest area and relief beyond the wall would only be
 unreachable scenery; a distant ridge can return later as an authored feature. The
 scenario opts in, so other sites keep their natural ground; see `src/core/citySite.ts`,
 `surface` and `src/core/schema.ts`, `flatSurroundings`.
-See `src/core/cityPlan.ts`, `cityPerimeter`, `clearanceIssues`,
-`perimeterGaps` and `perimeterIssues`. City size, scarcity and
+See `src/core/cityPlan.ts`, `cityPerimeter`, `perimeterGaps` and `perimeterIssues`. City size, scarcity and
 pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
 remain outside #671's first version.
 
@@ -466,9 +473,9 @@ in play. See `src/core/gauntlet.ts`,
 `GauntletSite`; `test/browser/save-controller-regressions.mjs`, `observation`; and
 `test/browser/gauntlet-flow.mjs`, `gauntletFlow`.
 
-Admission fails closed because a profile with dangling references, an ambiguous
-selector or a service footprint that fits only some turns is not a valid seeded
-scenario. A landing near a ladder is insufficient if a partition separates them;
+Admission fails closed because dangling references, ambiguous selectors, overlapping
+reservations or a building that cannot fit its admitted placement would otherwise break
+the designed route before play begins. A landing near a ladder is insufficient if a partition separates them;
 local portal admission and the final composition must both preserve the normal
 ladder owner's supported, body-clear entry and braced exit. Entry palette markers
 prevent later descents from being mistaken for the entrance. Whole-cell voxel
@@ -501,9 +508,10 @@ One owned assembly supplies the service facade and underground campus, so the
 playable world and visual inspection cannot diverge into separate geometry.
 Fixed resources must remain available independently of incidental loot.
 Public documentary leads must be independently useful and spatially separate;
-reading one cannot authorize another. Reserving their destination landmarks with
-the service block keeps their descriptions seed-correct. Related utility
-silhouettes keep matching metal alone from becoming a unique destination cue. See
+reading one cannot authorize another. Named civic buildings keep the clues part of
+plausible places, while reserved destination landmarks keep the written directions
+consistent with the designed approach. Utility silhouettes alone should not reveal the
+destination. See
 `src/content/base/gauntlet-service.libsonnet`, `mapAssemblies`;
 `src/content/base/scenarios.jsonnet`, `composition`; and
 `src/core/scenarioComposition.ts`, `composeScenario`.
@@ -520,8 +528,9 @@ independent of incidental loot without bypassing ordinary inventory rules. See
 
 The final composition fails closed before Play: a locally valid template cannot
 protect the route from later stamping or furniture. The certificate reads the
-same generated, stamped chunks and furniture occupancy as play, without
-materializing the whole city. Furniture anchored across a chunk boundary still
+same planned, stamped chunks and furniture occupancy as play, without
+materializing the whole city. Authored entrances and perimeter crossings belong to that
+proof: finding a detour around a fence does not certify a blocked breach. Furniture anchored across a chunk boundary still
 belongs to an envelope that crosses that boundary. Clearance caching is private
 to this immutable initial-world proof, not a cache of live edited terrain. See
 `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`; `src/core/scenarioCertificate.ts`,
@@ -1759,8 +1768,11 @@ play, not only decorate it.
   nearby cause, not a timer or a guaranteed enemy alarm.
 - **Dilapidation:** built things show abandonment through collapsed sections,
   breaches, slumped or missing segments and rubble. A passable breach is a real
-  route, so each authored site names the gaps a player can cross. New structures
-  and reworks follow this direction; retrofitting existing structures is tracked
+  route, so each authored site names the gaps a player can cross. The gauntlet's
+  containment wall shows wear without a passable gap because it must still enclose
+  the playtest area; its interior buildings and yards are not exempt. See
+  [Gauntlet](#gauntlet). New structures and reworks follow this direction;
+  retrofitting existing structures is tracked
   in #396. See `src/content/base/camp.libsonnet`, `camp_wall_run`, `camp_gate`, and
   `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player

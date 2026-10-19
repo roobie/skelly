@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cityLotIssues, cityLotRouteIssues, lotRect, placeCityLots, rectsOverlap } from '../src/core/cityLots.ts';
-import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityPlan.ts';
+import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -100,28 +100,26 @@ describe('authored city lots', () => {
     expect(plans[0]!.service!.origin).toEqual(plans[1]!.service!.origin);
   });
 
-  it('checks every fitting pool roof against the wall at its authored position', () => {
+  it('keeps generated rows and street props inside an asymmetric authored frame', () => {
     const { registry, scenario } = fixture();
-    scenario.city.perimeter = { block: 'fixture_solid', height: 6, thickness: 2 };
-    scenario.city.fillRows = false;
-    scenario.city.lots = [poolLot('edge', [-24, -20], [4, 4])];
-    const house = registry.templates.get('fixture_house')!;
-    registry.templates.set(house.id, {
-      ...house,
-      size: [4, 12, 4],
-      layers: Array.from({ length: 12 }, () => house.layers[0]!),
-    });
-    expect(
-      scenarioPlanIssues(registry, scenario).some(
-        ([path, message]) => path === '.city.lots[0]' && message.includes('clears'),
-      ),
-    ).toBe(true);
-    scenario.city.lots[0]!.position = [-8, -8];
-    expect(
-      scenarioPlanIssues(registry, scenario).some(
-        ([path, message]) => path === '.city.lots[0]' && message.includes('clears'),
-      ),
-    ).toBe(false);
+    scenario.city = {
+      ...scenario.city,
+      street: 8,
+      blocksX: 2,
+      blocksZ: 2,
+      bounds: { x0: -56, z0: -28, x1: 36, z1: 36 },
+      streetProps: ['fixture_small_house'],
+    };
+    const plan = buildCityPlan({ seed: 3, registry, floor: 0, grid: cityGridOf(registry, scenario.city) });
+    expect(plan.placements.length).toBeGreaterThan(0);
+    expect(plan.placements.some(({ template }) => template.id === 'fixture_small_house')).toBe(true);
+    for (const placement of plan.placements) {
+      const [width, depth] = footprint(placement);
+      expect(placement.origin[0]).toBeGreaterThanOrEqual(plan.bounds.x0);
+      expect(placement.origin[2]).toBeGreaterThanOrEqual(plan.bounds.z0);
+      expect(placement.origin[0] + width).toBeLessThanOrEqual(plan.bounds.x1);
+      expect(placement.origin[2] + depth).toBeLessThanOrEqual(plan.bounds.z1);
+    }
   });
 
   it('requires a direct body crossing at a declared breach even when the fence can be walked around', () => {
@@ -149,7 +147,7 @@ describe('authored city lots', () => {
         size: [8, 7],
         turn: 0,
         source: { kind: 'template', id: template.id },
-        routes: [{ inside: [2, 1, 3], outside: [6, 1, 3] }],
+        routes: [{ id: 'breach', inside: [2, 1, 3], outside: [6, 1, 3] }],
       },
     ];
     const probe = () => {

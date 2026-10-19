@@ -81,8 +81,9 @@ const extraTemplateIssues = (
     }
   } else if (kind === 'landmarks') {
     if (
-      side + 4 + template.size[0] > city.blockX - 2 * city.pad ||
-      index * Math.floor(side / 2) + template.size[2] > side
+      !scenario.composition?.landmarkPositions &&
+      (side + 4 + template.size[0] > city.blockX - 2 * city.pad ||
+        index * Math.floor(side / 2) + template.size[2] > side)
     ) {
       issues.push([path, 'landmark must fit outside every service turn in the reserved block']);
     }
@@ -264,7 +265,16 @@ export const composeScenario = (
   );
   const landmarks = Object.freeze(
     authored.landmarks.map((id, index) =>
-      placement(id, [service.origin[0] + side + 4, floor, service.origin[2] + index * Math.floor(side / 2)]),
+      placement(
+        id,
+        authored.landmarkPositions
+          ? [
+              authored.landmarkPositions[index]![0],
+              floor + authored.landmarkPositions[index]![1],
+              authored.landmarkPositions[index]![2],
+            ]
+          : [service.origin[0] + side + 4, floor, service.origin[2] + index * Math.floor(side / 2)],
+      ),
     ),
   );
   const fixedLoot = authored.fixedLoot.map((source) => ({
