@@ -157,6 +157,14 @@
       "output": "deadvox/src/content/base/recipes.json"
     },
     {
+      "source": "deadvox/src/content/base/rural-medical-fixtures.jsonnet",
+      "output": "deadvox/src/content/base/rural-medical-fixtures.json"
+    },
+    {
+      "source": "deadvox/src/content/base/rural-medical.jsonnet",
+      "output": "deadvox/src/content/base/rural-medical.json"
+    },
+    {
       "source": "deadvox/src/content/base/rural-police-fixtures.jsonnet",
       "output": "deadvox/src/content/base/rural-police-fixtures.json"
     },
