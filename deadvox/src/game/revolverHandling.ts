@@ -16,14 +16,14 @@ interface RevolverHooks {
   readonly eject: (gun: Item, chamber: number, type: string, time: number) => void;
   readonly caseType: (gun: Item) => string;
 }
-const sounds: Record<RevolverStep, SoundEventId> = {
+// The trigger pull's click is the gun's content-selected dry-fire sound.
+const sounds: Record<Exclude<RevolverStep, 'pull'>, SoundEventId> = {
   open: 'revolver_crane_open',
   eject: 'revolver_eject',
   pick: 'revolver_case_pick',
   load: 'revolver_round_insert',
   close: 'revolver_crane_close',
   cock: 'revolver_hammer_cock',
-  pull: 'revolver_dry_click',
 };
 const labels: Record<RevolverStep, string> = {
   open: 'Open cylinder',

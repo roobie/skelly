@@ -41,6 +41,128 @@
       "changes": "Slices 2.34–2.69, 3.75–4.12 and 5.39–5.66 s, hollow plastic click candidates, no metal layer. Placeholder, not a recorded shotshell hull. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
     },
     {
+      "title": "The Free Firearm Sound Library — Tikka T3",
+      "url": "https://opengameart.org/content/the-free-firearm-sound-library",
+      "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
+      "licence": "CC0-1.0",
+      "download": "W_29P.wav, Prepared SFX, from the CC0 mirror https://github.com/buddingmonkey/FreeFirearmsSFXLibrary",
+      "files": ["assets/audio/gunshot-tikka-01.ogg", "assets/audio/gunshot-tikka-02.ogg"],
+      "changes": "W_29P near take (.30-06 bolt rifle), single-shot slices 0.52–1.60 s and 5.60–6.68 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade."
+    },
+    {
+      "title": "The Free Firearm Sound Library — AR-15",
+      "url": "https://opengameart.org/content/the-free-firearm-sound-library",
+      "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
+      "licence": "CC0-1.0",
+      "download": "D_32P.wav, Prepared SFX, from the CC0 mirror https://github.com/buddingmonkey/FreeFirearmsSFXLibrary",
+      "files": ["assets/audio/gunshot-ar15-01.ogg", "assets/audio/gunshot-ar15-02.ogg"],
+      "changes": "D_32P near take, single-shot slices 0.64–1.72 s and 5.59–6.67 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade."
+    },
+    {
+      "title": "The Free Firearm Sound Library — Smith & Wesson 642",
+      "url": "https://opengameart.org/content/the-free-firearm-sound-library",
+      "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
+      "licence": "CC0-1.0",
+      "download": "V_27P.wav (Prepared SFX) and V_0, V_1, V_3, V_5, V_7, V_18 (Master Tracks), from the CC0 mirror https://github.com/buddingmonkey/FreeFirearmsSFXLibrary",
+      "files": [
+        "assets/audio/gunshot-sw642-01.ogg",
+        "assets/audio/gunshot-sw642-02.ogg",
+        "assets/audio/revolver-crane-open-01.ogg",
+        "assets/audio/revolver-crane-close-01.ogg",
+        "assets/audio/revolver-eject-01.ogg",
+        "assets/audio/revolver-round-insert-01.ogg",
+        "assets/audio/revolver-round-insert-02.ogg",
+        "assets/audio/revolver-dry-click-01.ogg",
+        "assets/audio/revolver-hammer-cock-01.ogg"
+      ],
+      "changes": "V_27P near take (.38 Special), single-shot slices 0.75–1.83 s and 6.16–7.24 s. Handling cut from the raw takes by waveform and spectrum, not by ear: V_0 1.44–1.72 s crane open, V_1 1.16–1.45 s crane close, V_3 0.74–1.42 s eject, V_18 3.42–3.70 s and 5.18–5.46 s round insert, V_5 1.34–1.75 s dry click, V_7 0.19–0.45 s hammer cock. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade."
+    },
+    {
+      "title": "Equipment Clicks III",
+      "url": "https://opengameart.org/content/equipment-clicks-iii",
+      "author": "LFA",
+      "licence": "CC0-1.0",
+      "download": "equipment_clicks3.wav",
+      "files": [
+        "assets/audio/rifle-bolt-open-01.ogg",
+        "assets/audio/rifle-bolt-close-01.ogg",
+        "assets/audio/revolver-case-pick-01.ogg"
+      ],
+      "changes": "Slices 12.10–12.80 s (bolt-action lift and draw, the bolt open), 12.80–13.72 s (push and turn down, the bolt close) and 7.95–8.20 s (light click, the revolver case pick). Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "DSLR Camera Sounds",
+      "url": "https://freesound.org/people/Rvgerxini/sounds/571483/",
+      "author": "Rvgerxini",
+      "licence": "CC0-1.0",
+      "download": "571483__rvgerxini__dslr-camera-sounds.mp3",
+      "files": [
+        "assets/audio/firearm-dry-click-01.ogg",
+        "assets/audio/firearm-dry-click-02.ogg",
+        "assets/audio/firearm-dry-click-03.ogg",
+        "assets/audio/shotgun-dry-click-01.ogg"
+      ],
+      "changes": "Three isolated short clicks, 2.79–2.90, 6.455–6.565 and 7.45–7.53 s, as a closed-action dry fire, and the heavier click at 4.48–4.64 s as the pump shotgun's; the longer motor runs are left out. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Huge Explosion",
+      "url": "https://freesound.org/people/florianreichelt/sounds/459973/",
+      "author": "florianreichelt",
+      "licence": "CC0-1.0",
+      "download": "459973__florianreichelt__huge-explosion.mp3",
+      "files": ["assets/audio/grenade-blast-01.ogg", "assets/audio/grenade-blast-02.ogg"],
+      "changes": "The two blasts with their tails, 6.22–7.92 s and 8.18–10.45 s; the quiet lead-in and the late rumble are left out. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Light wooshes",
+      "url": "https://freesound.org/people/florianreichelt/sounds/447806/",
+      "author": "florianreichelt",
+      "licence": "CC0-1.0",
+      "download": "447806__florianreichelt__light-wooshes.wav",
+      "files": [
+        "assets/audio/melee-swing-light-01.ogg",
+        "assets/audio/melee-swing-light-02.ogg",
+        "assets/audio/melee-swing-light-03.ogg"
+      ],
+      "changes": "Three single wooshes, 4.20–4.70, 6.55–7.05 and 8.20–8.80 s, for light blades. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Whoosh",
+      "url": "https://freesound.org/people/qubodup/sounds/60013/",
+      "author": "qubodup",
+      "licence": "CC0-1.0",
+      "download": "60013__qubodup__whoosh.flac",
+      "files": ["assets/audio/melee-swing-heavy-01.ogg"],
+      "changes": "Whole file, 0–0.426 s, for heavy swings. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Metal Impact",
+      "url": "https://freesound.org/people/Rickplayer/sounds/530486/",
+      "author": "Rickplayer",
+      "licence": "CC0-1.0",
+      "download": "530486__rickplayer__metal-impact.mp3",
+      "files": ["assets/audio/melee-hit-metal-01.ogg"],
+      "changes": "The strike and its ring, 0.06–0.85 s, as a metal layer on melee hits. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Hitting metal pole",
+      "url": "https://freesound.org/people/colorsCrimsonTears/sounds/531378/",
+      "author": "colorsCrimsonTears",
+      "licence": "CC0-1.0",
+      "download": "531378__colorscrimsontears__hitting-metal-pole.wav",
+      "files": ["assets/audio/melee-hit-metal-02.ogg", "assets/audio/melee-hit-metal-03.ogg"],
+      "changes": "Single strikes 0.02–0.26 s (ring cut at the next strike) and 1.61–1.82 s (the last), as a metal layer on melee hits. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
+      "title": "Gun Reload Sound Effects",
+      "url": "https://opengameart.org/content/gun-reload-sound-effects",
+      "author": "BMacZero",
+      "licence": "CC0-1.0",
+      "download": "clipload1.wav, clipload2.wav",
+      "files": ["assets/audio/magazine-clipload-01.ogg", "assets/audio/magazine-clipload-02.ogg"],
+      "changes": "Whole files, 0–0.255 s and 0–0.209 s. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
       "title": "Torch",
       "url": "https://opengameart.org/content/torch",
       "author": "jpsweber",
@@ -377,9 +499,9 @@
       "url": null,
       "author": "BR",
       "licence": "CC0-1.0",
-      "download": "m4unsup_single_sc_field_v2b.wav and m4sup1_single_sc_field_v2.wav",
-      "files": ["assets/audio/gunshot-m4-01.ogg", "assets/audio/gunshot-m4-suppressed-01.ogg"],
-      "changes": "BR's original synthesised M4 shots. Trimmed trailing silence only, then converted from 48 kHz 16-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
+      "download": "m4sup1_single_sc_field_v2.wav",
+      "files": ["assets/audio/gunshot-m4-suppressed-01.ogg"],
+      "changes": "BR's original synthesised suppressed M4 shot. Trimmed trailing silence only, then converted from 48 kHz 16-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
     },
     {
       "title": "Project-built low-poly hand-tool and content stand-ins",

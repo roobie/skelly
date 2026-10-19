@@ -42,6 +42,9 @@ export const copyMeleeWeapon = (weapon: MeleeWeapon): MeleeWeapon => ({
   ...(weapon.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: weapon.headDamageMultiplier }),
   ...(weapon.limbDamageMultiplier === undefined ? {} : { limbDamageMultiplier: weapon.limbDamageMultiplier }),
   ...(weapon.speedMultiplier === undefined ? {} : { speedMultiplier: weapon.speedMultiplier }),
+  ...(weapon.swingSound === undefined ? {} : { swingSound: weapon.swingSound }),
+  ...(weapon.hitSound === undefined ? {} : { hitSound: weapon.hitSound }),
+  ...(weapon.hitLayerSound === undefined ? {} : { hitLayerSound: weapon.hitLayerSound }),
   ...(weapon.type === undefined ? {} : { type: weapon.type }),
 });
 
@@ -52,7 +55,7 @@ export interface PlayerCombatState {
 }
 
 export interface MeleeTargetResolver {
-  playPlayerMeleeSwing: (origin: Vec3) => void;
+  playPlayerMeleeSwing: (origin: Vec3, weapon: MeleeWeapon) => void;
   resolvePlayerMelee: (origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist: boolean) => boolean;
 }
 
@@ -82,6 +85,9 @@ const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean 
   (weapon.limbDamageMultiplier === undefined ||
     (Number.isFinite(weapon.limbDamageMultiplier) && weapon.limbDamageMultiplier > 0)) &&
   (weapon.speedMultiplier === undefined || (Number.isFinite(weapon.speedMultiplier) && weapon.speedMultiplier > 0)) &&
+  [weapon.swingSound, weapon.hitSound, weapon.hitLayerSound].every(
+    (sound) => sound === undefined || sound.length > 0,
+  ) &&
   (weapon.type === undefined || MELEE_DAMAGE_KINDS.includes(weapon.type));
 
 export class PlayerCombat {
@@ -202,7 +208,7 @@ export class PlayerCombat {
       hands: { ...start.hands },
       weapon: copyMeleeWeapon(weapon),
     };
-    this.targets.playPlayerMeleeSwing(copy(start.origin));
+    this.targets.playPlayerMeleeSwing(copy(start.origin), this.meleeAction.weapon);
     return true;
   }
 

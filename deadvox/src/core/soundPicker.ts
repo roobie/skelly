@@ -2,7 +2,7 @@ import type { SoundDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { Rng, type RngState } from './random.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { SoundEventId } from './soundEvents.ts';
+import type { SoundId } from './soundEvents.ts';
 import { soundVariantKey } from './soundSynth.ts';
 
 export interface SoundPick {
@@ -13,7 +13,7 @@ export interface SoundPick {
 
 /** A simulation-admitted choice. Positions are in blocks; playback cannot veto it. */
 export interface SoundEmission {
-  readonly event: SoundEventId;
+  readonly event: SoundId;
   readonly position: Vec3;
   readonly time: number;
   readonly pick: Readonly<SoundPick>;
@@ -41,7 +41,7 @@ interface EventState {
 }
 
 interface SoundPickerEventState {
-  event: SoundEventId;
+  event: SoundId;
   rng: RngState;
   lastVariant: number;
   lastPlayedAt: number;
@@ -53,7 +53,7 @@ export interface SoundPickerState {
 
 /** Pure, seeded selection and per-event minimum-interval bookkeeping. */
 export class SoundPicker {
-  private readonly states = new Map<SoundEventId, EventState>();
+  private readonly states = new Map<SoundId, EventState>();
   private readonly seed: number;
   private readonly sounds: ReadonlyMap<string, SoundDef>;
 
@@ -109,7 +109,7 @@ export class SoundPicker {
     }
   }
 
-  pick(event: SoundEventId, now: number): SoundPick | undefined {
+  pick(event: SoundId, now: number): SoundPick | undefined {
     const sound = this.sounds.get(event);
     if (!sound || sound.variants.length === 0) {
       return undefined;

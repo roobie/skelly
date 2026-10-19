@@ -382,6 +382,7 @@ itemSchema = obj({
       roundType: opt(str({ id: true })),
       tube: opt(arr(str({ id: true }))),
       actionOpen: opt(bool),
+      hammerDown: opt(bool),
       retainedRoundType: opt(str({ id: true })),
       landings: opt(
         arr(
@@ -661,6 +662,9 @@ const meleeAction = nullable(
       headDamageMultiplier: opt(positive),
       limbDamageMultiplier: opt(positive),
       speedMultiplier: opt(positive),
+      swingSound: opt(str({ id: true })),
+      hitSound: opt(str({ id: true })),
+      hitLayerSound: opt(str({ id: true })),
       type: opt(enumeration(MELEE_DAMAGE_KINDS)),
     }),
   }),

@@ -2,7 +2,7 @@ import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import type { SenseDef, SoundDef, SoundRecipe } from '../core/schema.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import type { SoundId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { renderSoundRecipe, soundRecipeFor, soundVariantKey } from '../core/soundSynth.ts';
@@ -20,12 +20,6 @@ export interface AudioVolumes {
 }
 
 const DEFAULT_VOLUMES: AudioVolumes = { master: 0.8, world: 0.8, body: 0.8, ui: 0.8 };
-export const VOICE_CAPS: ReadonlyMap<SoundEventId, number> = new Map([
-  ['gunshot', 32],
-  ['gunshot_pbs1_reference', 32],
-  ['gunshot_m4', 32],
-  ['gunshot_m4_suppressed', 32],
-]);
 const VOICE_FADE_SECONDS = 0.01;
 
 interface Voice {
@@ -79,7 +73,7 @@ export interface GameAudioOptions {
 }
 
 export interface HeardSound {
-  readonly event: SoundEventId;
+  readonly event: SoundId;
   readonly file: string;
   readonly sourceLabel: string | null;
   readonly distanceMetres: number;
@@ -94,7 +88,7 @@ export interface HeardSound {
 interface SourceStartOptions {
   context: AudioContext;
   nodes: Nodes;
-  event: SoundEventId;
+  event: SoundId;
   sound: SoundDef;
   pick: { file: string; gain: number; pitch: number };
   buffer: AudioBuffer;
@@ -119,9 +113,9 @@ export class GameAudio {
   private readonly tuning: SenseDef;
   private readonly report: (message: string) => void;
   private readonly recentSounds: HeardSound[] = [];
-  private readonly voices = new Map<SoundEventId, Set<Voice>>();
+  private readonly voices = new Map<SoundId, Set<Voice>>();
   // Up to one cap's worth of 10ms tails: a 40-shot cold burst can fade every retiree.
-  private readonly retiring = new Map<SoundEventId, Set<Voice>>();
+  private readonly retiring = new Map<SoundId, Set<Voice>>();
   private heartbeatTarget: HeartbeatTarget = heartbeatForStamina(100);
   private heartbeatNextAt = Number.NEGATIVE_INFINITY;
   private heartbeatLoading = false;
@@ -253,7 +247,7 @@ export class GameAudio {
   }
 
   /** Plays one exact variant, keyed by `soundVariantKey`, at the event's base gain, with no picker jitter or cooldown. */
-  preview(event: SoundEventId, file: string): boolean {
+  preview(event: SoundId, file: string): boolean {
     const sound = this.registry.sounds.get(event);
     if (!sound?.variants.some((listed) => soundVariantKey(sound.id, listed) === file)) {
       return false;
@@ -331,8 +325,7 @@ export class GameAudio {
   }
 
   /** Playback voice allocation happens after decoding; pending loads consume no playback slots. */
-  private stealOldestVoice(event: SoundEventId, context: AudioContext): void {
-    const cap = VOICE_CAPS.get(event);
+  private stealOldestVoice(event: SoundId, cap: number | undefined, context: AudioContext): void {
     const active = this.voices.get(event);
     if (cap === undefined || !active || active.size < cap) {
       return;
@@ -458,7 +451,7 @@ export class GameAudio {
   }
 
   /** A variant's recipe, or its bundled file's URL; undefined when the pack lacks the file. */
-  private variantSource(event: SoundEventId, sound: SoundDef, file: string): SoundRecipe | string | undefined {
+  private variantSource(event: SoundId, sound: SoundDef, file: string): SoundRecipe | string | undefined {
     const recipe = soundRecipeFor(sound, file);
     if (recipe) {
       return recipe;
@@ -533,7 +526,7 @@ export class GameAudio {
     sourceLabel,
     listenerRelative,
   }: SourceStartOptions): void {
-    this.stealOldestVoice(event, context);
+    this.stealOldestVoice(event, sound.voiceCap, context);
     const source = context.createBufferSource();
     const gain = context.createGain();
     source.buffer = buffer;
@@ -614,7 +607,7 @@ export class GameAudio {
         }
       },
     };
-    if (VOICE_CAPS.has(event)) {
+    if (sound.voiceCap !== undefined) {
       const active = this.voices.get(event) ?? new Set<Voice>();
       active.add(voice);
       this.voices.set(event, active);

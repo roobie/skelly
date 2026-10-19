@@ -185,6 +185,10 @@
       "output": "deadvox/src/content/base/sounds-synth.json"
     },
     {
+      "source": "deadvox/src/content/base/sounds-weapons.jsonnet",
+      "output": "deadvox/src/content/base/sounds-weapons.json"
+    },
+    {
       "source": "deadvox/src/content/base/templates-cabins.jsonnet",
       "output": "deadvox/src/content/base/templates-cabins.json"
     },

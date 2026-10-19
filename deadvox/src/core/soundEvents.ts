@@ -1,4 +1,7 @@
-/** Sound events available to gameplay or exact-variant preview on the listening sheet. */
+/**
+ * Sound events the code plays by name, so content must define each one. Sounds that content
+ * selects, such as a weapon's shot or swing, stay out of this list: a new one needs no code edit.
+ */
 export const SOUND_EVENT_IDS = [
   'player_hurt_light',
   'player_nope',
@@ -7,9 +10,6 @@ export const SOUND_EVENT_IDS = [
   'player_landing_hard',
   'player_block_full',
   'player_block_partial',
-  'breath_inhale',
-  'breath_exhale',
-  'breath_gasp',
   'footstep_grass',
   'footstep_mud',
   'footstep_sand',
@@ -32,7 +32,6 @@ export const SOUND_EVENT_IDS = [
   'gunshot_m4',
   'gunshot_m4_suppressed',
   'revolver_shot',
-  'revolver_dry_click',
   'revolver_crane_open',
   'revolver_crane_close',
   'revolver_eject',
@@ -72,7 +71,9 @@ export const SOUND_EVENT_IDS = [
   'door_close',
   'door_blocked_close',
   'lock_pry',
-  'door_knock_jfxr',
 ] as const;
 
 export type SoundEventId = (typeof SOUND_EVENT_IDS)[number];
+
+/** Any sound id in content; content validation checks that a selected one exists. */
+export type SoundId = string;

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
@@ -25,13 +25,34 @@ const itemSource = (file: string, ids: readonly string[]) => {
   }
   return { source: file, data };
 };
+// The kept items' weapons name sounds, so the fixture loads just the rows they name.
+const soundSource = (sources: readonly ReturnType<typeof itemSource>[]) => {
+  const named = new Set(
+    sources.flatMap(({ data }) =>
+      data.items.flatMap((item) =>
+        Object.values((item as { weapon?: Record<string, Record<string, unknown>> }).weapon ?? {}).flatMap((mode) =>
+          Object.entries(mode).flatMap(([key, value]) => (key.endsWith('Sound') ? [value] : [])),
+        ),
+      ),
+    ),
+  );
+  const sounds = readdirSync(base)
+    .filter((file) => file.startsWith('sounds') && file.endsWith('.json'))
+    .flatMap((file) => (JSON.parse(readFileSync(join(base, file), 'utf8')) as { sounds: { id: string }[] }).sounds)
+    .filter(({ id }) => named.has(id));
+  return { source: 'sounds.json', data: { sounds } };
+};
 const recipes = JSON.parse(readFileSync(join(base, 'recipes.json'), 'utf8')) as {
   skills: { id: string; [key: string]: unknown }[];
 };
-const fixtureBuild = buildRegistry([
-  playerInventorySource(),
+const items = [
   itemSource('items-tools.json', ['kitchen_knife']),
   itemSource('items-other.json', ['portable_radio', 'scrap_metal']),
+];
+const fixtureBuild = buildRegistry([
+  playerInventorySource(),
+  ...items,
+  soundSource(items),
   { source: 'models-melee.json', data: JSON.parse(readFileSync(join(base, 'models-melee.json'), 'utf8')) as unknown },
   {
     source: 'recipes.json',

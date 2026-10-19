@@ -15,10 +15,11 @@ import {
   SOUND_TRIGGER_GUIDE,
 } from '../src/ui/soundGuide.ts';
 
-// The files the listening sheet loads.
-const sounds = ['sounds.json', 'sounds-block.json', 'sounds-synth.json'].flatMap(
-  (file) => JSON.parse(readFileSync(join('src/content/base', file), 'utf8')).sounds as SoundDef[],
-);
+// The listening sheet loads every sounds*.json content file.
+const sounds = readdirSync('src/content/base')
+  .filter((file) => file.startsWith('sounds') && file.endsWith('.json'))
+  .sort()
+  .flatMap((file) => JSON.parse(readFileSync(join('src/content/base', file), 'utf8')).sounds as SoundDef[]);
 const manifest = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as Manifest;
 const heartbeatFixtureManifest = {
   sources: [
@@ -137,10 +138,10 @@ describe('audio listening guide', () => {
     expect(manifest.sources.flatMap(({ files }) => files)).toContain('assets/audio/melee_hit_fist-01.ogg');
   });
 
-  it('credits the AR M4 shots as CC0 synthesised audio and keeps the PBS-1 event preview-only', () => {
+  it('credits the suppressed AR shot as CC0 synthesised audio and keeps the PBS-1 event preview-only', () => {
     const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
     const guide = buildSoundGuide(sounds, manifest);
-    for (const id of ['gunshot_m4', 'gunshot_m4_suppressed'] as const) {
+    for (const id of ['gunshot_m4_suppressed'] as const) {
       const entry = guide.find((candidate) => candidate.id === id);
       expect(entry?.trigger).toBeTruthy();
       expect(entry?.noiseRadiusMetres).toBe(definitions.get(id)?.noise.radiusMetres);

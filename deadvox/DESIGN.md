@@ -38,6 +38,7 @@ read_if:
   - you're changing content-defined UI spacing or HUD scale, or choosing rem or px for a UI length
   - you're changing startup content selection or browser mod admission
   - you're changing game audio or its relationship to simulation events
+  - you're choosing or changing weapon sounds (shots, handling, dry fire, melee swings and hits)
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
@@ -1126,6 +1127,44 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   positions for zombie hearing, while independent world sources remain
   positional. See `playPlayerSound` and `playWorldSound` in `src/game/session.ts`.
 
+### Weapon sounds
+
+- **Recordings of the same kind of gun.** A shot recorded from a real gun of the same
+  action and a close cartridge beats a synth or a repitched borrow, because a borrowed
+  report makes a gun sound like another one. Where no free recording of the exact
+  cartridge exists, the nearest real one stands in, and its gain and pitch live in
+  content so a tweak after a listen is a content edit. A synth stays only where it
+  already reads as its gun; a suppressed shot keeps its synth until a recording of one
+  exists.
+- **Near takes.** Shots play from the shooter's position, so the close recording
+  matches what the shooter hears; distance comes from the game's own playback and
+  hearing, not from room tone baked into a take.
+- **Handling from the same gun first.** Mechanics heard from the recorded gun's own
+  takes match its shot; a click pack fills only the parts those takes lack.
+- **Dry fire on every gun that can run dry with the action closed.** A silent trigger
+  hides that the gun is empty; the click tells the player before the next shot is
+  needed. Dry fire is a sound per gun in content, so a gun without one stays silent
+  rather than borrowing another gun's click. See `src/game/firearmHandling.ts`,
+  `dryFire`.
+- **One click, then silence until the action is worked.** A click is the hammer or
+  striker falling, and a fallen hammer cannot fall again until something cocks it. A
+  magazine gun's slide, a bolt or a pump's rack cocks it, so after the first empty
+  pull the trigger is dead until the player works the action; a shot from a hand-worked
+  action likewise leaves the hammer down until the next stroke. A double-action trigger
+  cocks and drops the hammer itself, so such a gun clicks on every pull. Whether a pull
+  re-cocks is a fact of the gun's mechanism, not of its kind, so content decides it per
+  gun and a new double-action gun needs no code. The fallen hammer is saved, so a load
+  cannot re-arm a dead trigger. See `src/game/firearmHandling.ts`, `dropHammer`, and
+  `src/core/schema.ts`, `triggerCocks`.
+- **Bolt strokes per phase.** Opening and closing a bolt are separate actions the
+  player can stop between, so each phase plays its own cut; one whole-cycle recording
+  would play a close the player has not made. See `src/game/firearmHandling.ts`,
+  `startHandCycle`.
+- **Melee sounds by weapon weight and material.** A knife and a bat should not sound
+  alike, so a melee weapon can name its own swing, its own hit and a layer over the
+  hit, such as a metal ring for a metal striker. A weapon that names none keeps the
+  shared swing and hit. See `src/core/zombies.ts`, `MeleeWeapon`.
+
 ## Damage, destruction and dismemberment
 
 Damage should be interesting, not just bigger numbers. When armor is introduced,
@@ -1302,7 +1341,7 @@ A grenade thrown into the horde is meant to be the playtest's climax: the one mo
 - **Fragments are seeded shots.** They are rays through the same hit test as shotgun pellets, so walls and bodies stop them and fewer reach a farther body. One fragment severs a shambler's limb, and they reach past the blast, so a crowd around the landing point comes apart. A full-strength throw carries the player beyond fragment reach; shorter throws can still expose the player to fragments. Each ray is traced against every body in range, so the count sets the cost of the moment; the schema caps it. See `src/core/explosive.ts`, `fragmentDirections`; `ZombieSystem.firePellets`; and `src/core/schema.ts`, `ExplosiveSchema`.
 - **The player takes the same falloff, line of sight and fragments** in a simpler model: one blast hit to the torso, and fragments traced against a body box, which zombie bodies do not shield. A short throw hurts the thrower. See `src/core/explosive.ts`, `fragmentHitsOnBody`.
 - **The blast is the player's noise, heard from where it went off.** It carries further than any other sound, so it draws zombies from far around to the blast rather than to the thrower.
-- **Presentation is a placeholder.** The sound is the shotgun recording pitched down. The flash is a brief additive fireball inside a slower dust cloud, both sized by the blast radius, and takes no light from the fixed shader-light budget. See `src/render/blastFlashes.ts`, `BlastFlashes`.
+- **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `src/content/base/sounds.json`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
 
 `?debug=1&loadout=grenade` starts with one in hand and more packed (`src/debug/debugLoadout.ts`, `equipDebugLoadout`).
 

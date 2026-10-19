@@ -8,6 +8,7 @@
       },
       "firearm": {
         "dispersionRadians": 0.012,
+        "dryFireSound": "revolver_dry_click",
         "handling": {},
         "recoilKickRadians": 0.035000000000000003,
         "revolver": {
@@ -45,7 +46,8 @@
             "recoilRecoveryScale": 0.29999999999999999,
             "variance": 30
           }
-        }
+        },
+        "triggerCocks": true
       },
       "id": "revolver_357",
       "model": "revolver",
