@@ -62,7 +62,6 @@ to be new.
   `gungen/test/engineImportBoundary.test.ts`, `engineLayers`, so gungen's unit suite runs it.
 - [x] Run gungen's typecheck, unit suite and `validate`; they must pass unchanged.
 - [x] Move the viewer to `packages/tool-ui`, the first package under the top-level
-  `packages/` directory. Adding a package takes four edits, because each names the projects
-  one by one: the root `package.json` `workspaces` list, a `knip.jsonc` workspace entry,
-  `tools/zero-drift-check.mjs`, `SUBPROJECTS` (so its docs resolve path cues from their own
-  root), and the subproject roots listed in `AGENTS.md`, "Zero drift".
+  `packages/` directory. A new package needs the root `package.json` `workspaces` entry, a
+  `knip.jsonc` workspace entry and CI path filters; `tools/zero-drift-check.mjs`, `projectOf`,
+  already treats every `packages/<name>` as a project root.
