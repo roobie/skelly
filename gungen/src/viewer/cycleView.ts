@@ -1,7 +1,7 @@
 // Presentation-only action-cycle controls. Timelines and motion profiles stay in the gun domain module.
 
 import { applyDir, applyPoint } from '@skelly/engine/core/math.ts';
-import type { Resolved } from '@skelly/engine/core/resolve.ts';
+import type { Resolved } from '@skelly/engine/core/schema.ts';
 import {
   ArrowHelper,
   type Group,

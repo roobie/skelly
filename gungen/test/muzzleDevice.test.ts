@@ -1,6 +1,6 @@
 import { boundsOfPoints, obbPolyhedron, worldSolid } from '@skelly/engine/core/geometry.ts';
 import { applyPoint, type Vec3 } from '@skelly/engine/core/math.ts';
-import type { Resolved } from '@skelly/engine/core/resolve.ts';
+import type { Resolved } from '@skelly/engine/core/schema.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';

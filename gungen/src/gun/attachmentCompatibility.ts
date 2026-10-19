@@ -1,5 +1,5 @@
 import type { Transform } from '@skelly/engine/core/math.ts';
-import { mateTransform, type Resolved, resolve } from '@skelly/engine/core/resolve.ts';
+import { mateTransform, resolve } from '@skelly/engine/core/resolve.ts';
 import {
   keepOutBetweenParts,
   keepOutForPart,
@@ -7,7 +7,7 @@ import {
   solidOverlapBetweenParts,
   solidOverlapForPart,
 } from '@skelly/engine/core/rules.ts';
-import type { Assembly, Domain, PartDef } from '@skelly/engine/core/schema.ts';
+import type { Assembly, Domain, PartDef, Resolved } from '@skelly/engine/core/schema.ts';
 import {
   ATTACHMENT_IDS,
   type AttachmentSlotMetadata,

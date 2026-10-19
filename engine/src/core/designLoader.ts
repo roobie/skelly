@@ -28,8 +28,7 @@ import {
   parseRecord,
   parseStringArray,
 } from './parseAssembly.ts';
-import type { Resolved } from './resolve.ts';
-import type { Assembly, Domain, PartInstance } from './schema.ts';
+import type { Assembly, Domain, PartInstance, Resolved } from './schema.ts';
 import type { ConditionalChoice, ParamReference, SlotTemplate, Template } from './template.ts';
 import { validate } from './validate.ts';
 

@@ -20,8 +20,7 @@ import {
   scale,
   sub,
 } from '@skelly/engine/core/math.ts';
-import type { PortRef, Resolved, ResolvedConnection } from '@skelly/engine/core/resolve.ts';
-import type { Box, PartDef, Rule, Solid } from '@skelly/engine/core/schema.ts';
+import type { Box, PartDef, PortRef, Resolved, ResolvedConnection, Rule, Solid } from '@skelly/engine/core/schema.ts';
 import { mountCanAccept } from './mounts.ts';
 import { getOptic, opticRailContactSolids } from './optics.ts';
 import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS, TRIGGER_GUARD } from './parts.ts';

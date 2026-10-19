@@ -1,6 +1,5 @@
 import { boxFromMinMax, worldSolid } from '@skelly/engine/core/geometry.ts';
 import { applyDir, applyPoint, cross, dot, extrusionPoint, length, sub, type Vec3 } from '@skelly/engine/core/math.ts';
-import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import type {
   ClipPlane,
   KeepOut,
@@ -8,6 +7,7 @@ import type {
   PartDef,
   PartFamily,
   PortDef,
+  Resolved,
   Rule,
   Solid,
   Vec2,

@@ -7,8 +7,8 @@ import type {
 import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
 import { partNodeName } from '@skelly/engine/core/glb.ts';
 import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/core/math.ts';
-import { type Resolved, resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, PartDef } from '@skelly/engine/core/schema.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, PartDef, Resolved } from '@skelly/engine/core/schema.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { resolveGunAction } from './actionDescription.ts';

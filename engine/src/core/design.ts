@@ -1,7 +1,6 @@
 import type { Issue } from './issue.ts';
 import type { Vec3 } from './math.ts';
-import type { Resolved } from './resolve.ts';
-import type { Assembly, Domain, Gender, PartDef } from './schema.ts';
+import type { Assembly, Domain, Gender, PartDef, Resolved } from './schema.ts';
 import type { Template } from './template.ts';
 
 /** Version of the persisted design-file contract, independent of the assembly schema. */

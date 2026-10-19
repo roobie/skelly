@@ -11,8 +11,8 @@ import {
 } from './geometry.ts';
 import type { Issue } from './issue.ts';
 import { angleBetween, applyDir, applyPoint, cross, length, sub, type Transform } from './math.ts';
-import { connectionMismatch, type Resolved } from './resolve.ts';
-import type { KeepOut, PartDef, Rule } from './schema.ts';
+import { connectionMismatch } from './resolve.ts';
+import type { KeepOut, PartDef, Resolved, Rule } from './schema.ts';
 
 const TRAILING_ZEROS = /\.?0+$/;
 const fmt = (n: number): string => n.toFixed(2).replace(TRAILING_ZEROS, '');

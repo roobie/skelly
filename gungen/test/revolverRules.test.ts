@@ -1,8 +1,7 @@
 import { displayItems } from '@skelly/engine/core/display.ts';
 import { meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
-import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Solid } from '@skelly/engine/core/schema.ts';
+import type { Resolved, Solid } from '@skelly/engine/core/schema.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';

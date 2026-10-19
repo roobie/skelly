@@ -3,8 +3,7 @@
 // supplied through a Domain.
 
 import type { Issue } from './issue.ts';
-import type { ExtrusionAxis, Vec3 } from './math.ts';
-import type { Resolved } from './resolve.ts';
+import type { ExtrusionAxis, Transform, Vec3 } from './math.ts';
 
 /** Axis-aligned box in its part's local frame. */
 export interface Box {
@@ -282,4 +281,45 @@ export interface Assembly {
   readonly connections: readonly Connection[];
   /** For fixtures: the rule ids this assembly is expected to fail. */
   readonly expect?: readonly string[];
+}
+
+// ---- Resolved assembly ----
+// Defined here, not in resolve.ts, because a Rule checks a Resolved and a Resolved holds its Domain:
+// the three refer to each other, so they share one module.
+
+/** A param's final value and where it came from. */
+export interface ResolvedParam {
+  readonly value: string;
+  readonly source: 'set' | 'inherited' | 'default';
+  /** For inherited values: the neighbour's param, as "part.param". */
+  readonly from?: string;
+}
+
+export interface PortRef {
+  readonly part: string;
+  readonly port: PortDef;
+}
+
+export interface ResolvedConnection {
+  readonly index: number;
+  readonly conn: Connection;
+  readonly from: PortRef;
+  readonly to: PortRef;
+  /** tree: placed a part. loop: both parts were already placed. */
+  readonly role: 'tree' | 'loop' | 'unplaced';
+}
+
+export interface Resolved {
+  readonly assembly: Assembly;
+  readonly domain: Domain;
+  /** Built definitions of every valid part instance. */
+  readonly defs: ReadonlyMap<string, PartDef>;
+  /** The params each valid part was built with. */
+  readonly params: ReadonlyMap<string, Readonly<Record<string, ResolvedParam>>>;
+  /** Transforms of the parts that could be placed. */
+  readonly placed: ReadonlyMap<string, Transform>;
+  /** Connections that are structurally valid. */
+  readonly connections: readonly ResolvedConnection[];
+  /** Structure issues. */
+  readonly issues: readonly Issue[];
 }

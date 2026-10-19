@@ -20,44 +20,17 @@ import {
   type Transform,
 } from './math.ts';
 import { revolvedProfileError } from './revolve.ts';
-import type { Assembly, Connection, Domain, KeepOut, PartDef, PortDef } from './schema.ts';
-
-/** A param's final value and where it came from. */
-export interface ResolvedParam {
-  readonly value: string;
-  readonly source: 'set' | 'inherited' | 'default';
-  /** For inherited values: the neighbour's param, as "part.param". */
-  readonly from?: string;
-}
-
-export interface PortRef {
-  readonly part: string;
-  readonly port: PortDef;
-}
-
-export interface ResolvedConnection {
-  readonly index: number;
-  readonly conn: Connection;
-  readonly from: PortRef;
-  readonly to: PortRef;
-  /** tree: placed a part. loop: both parts were already placed. */
-  readonly role: 'tree' | 'loop' | 'unplaced';
-}
-
-export interface Resolved {
-  readonly assembly: Assembly;
-  readonly domain: Domain;
-  /** Built definitions of every valid part instance. */
-  readonly defs: ReadonlyMap<string, PartDef>;
-  /** The params each valid part was built with. */
-  readonly params: ReadonlyMap<string, Readonly<Record<string, ResolvedParam>>>;
-  /** Transforms of the parts that could be placed. */
-  readonly placed: ReadonlyMap<string, Transform>;
-  /** Connections that are structurally valid. */
-  readonly connections: readonly ResolvedConnection[];
-  /** Structure issues. */
-  readonly issues: readonly Issue[];
-}
+import type {
+  Assembly,
+  Domain,
+  KeepOut,
+  PartDef,
+  PortDef,
+  PortRef,
+  Resolved,
+  ResolvedConnection,
+  ResolvedParam,
+} from './schema.ts';
 
 /** 180° about the port's up axis: turns a port frame to face its mate. */
 const FLIP = rotation(rotY(180));

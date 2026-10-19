@@ -26,10 +26,9 @@ What the engine is, from reading its module headers and exports:
 - Material in it is appearance only: a material id maps to a color. Density and mass are
   computed inside gungen (`gungen/src/gun/attachmentMass.ts`, with sourced density tables),
   and deadvox item weights are typed by hand in content JSON.
-- Several modules form import cycles (shapes among themselves, and the assembly schema with
-  the resolver), and two files mix layers: `engine/src/core/schema.ts` holds solid types and
-  the assembly model, and `engine/src/core/design.ts` holds persistence, anchor, palette and
-  export types. `TASK.md` has the layer assignment.
+- Two files mix layers: `engine/src/core/schema.ts` holds solid types and the assembly
+  model, and `engine/src/core/design.ts` holds persistence, anchor, palette and export types.
+  `TASK.md` has the layer assignment and what is done.
 - Deadvox's model schema (`deadvox/src/core/schema.ts`, `ModelSchema`) mixes neutral fields
   with firearm ones, and gungen's output is tied to it by one root contract test
   (`test/gungen-deadvox-contract.test.mjs`) rather than a shared schema.

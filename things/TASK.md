@@ -25,8 +25,7 @@ typecheck and suite pass unchanged, and a check fails any import that runs upwar
 
 ## Known obstacles
 
-- `schema` and `resolve` import each other's types, and `design` mixes persistence,
-  anchors, palette and export types.
+- `design` mixes persistence, anchors, palette and export types.
 - `schema` holds the solid types and the assembly model together, so it has to be split,
   not moved.
 
@@ -50,7 +49,9 @@ to be new.
 
 - [x] Break the shapes cycle: `engine/src/core/shapeTypes.ts`, `TriangleMesh`, holds the result types that
   `geometry`, `revolve` and `mesh` shared.
-- [ ] Break the schema and resolve cycle without changing behavior.
+- [x] Break the schema and resolve cycle: `engine/src/core/schema.ts`, `Resolved`, now holds
+  the resolved-assembly types, because a `Rule` checks a `Resolved` and a `Resolved` holds its
+  `Domain`; `resolve` imports them and `schema` imports nothing from `resolve`.
 - [ ] Split `schema` and `design` along the layers above.
 - [ ] Move the files into layer folders and repoint every import, including gungen's.
 - [ ] Add the check that fails an upward import, and run it in CI.
