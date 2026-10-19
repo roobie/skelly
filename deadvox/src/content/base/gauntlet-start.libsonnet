@@ -147,6 +147,8 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
       { kind: 'stairs', hatch: [10, roofY, 5], upper: [18, roofY + 1, 6], lower: [14, 1, 1] },
       { kind: 'drop', upper: [6, roofY + 1, 8], edge: [5, roofY + 1, 8], landing: [5, 3, 8], lower: [5, 1, 14] },
     ],
+    // The range's revolver crate, beside its ammunition.
+    fixedLoot: [{ at: [35, 17, 6], items: [{ item: 'revolver_357', condition: 0.7, key: true }] }],
   },
   furniture: [{
     id: 'gauntlet_start_hatch', name: 'Roof hatch', size: [6, 1, 2], color: '#8d969a',

@@ -506,12 +506,36 @@ movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`
 `src/core/citySite.ts`, `CitySite`; and `src/content/base/gauntlet-city.libsonnet`,
 `templates`.
 
-The start tower guarantees a melee weapon and revolver ammunition instead of
-rolling for them, because the player who spawns on the roof can meet a fight
-before reaching the city and a roll that came up empty would leave them
+The start tower guarantees a melee weapon, a revolver and revolver ammunition
+instead of rolling for them, because the player who spawns on the roof can meet
+a fight before reaching the city and a roll that came up empty would leave them
 unarmed. It guarantees a backpack the same way, so the player can carry what
 the tower and the first streets offer before the descent instead of leaving it
-behind. See `src/content/base/gauntlet-start-rooms.libsonnet`, `loot`.
+behind. See `src/content/base/gauntlet-start-rooms.libsonnet`, `loot`, and
+`src/content/base/gauntlet-start.libsonnet`, `start`.
+
+Gauntlet stock has three layers. The economy layer is what a building's template
+rolls from its loot context and tables, so a place holds what suits it. The core
+layer is stock the gauntlet instance promises at its stops, because the lab must be
+winnable and a roll cannot promise that; Upheaval stays procedural and promises
+none. The reward layer rewards exploring and need not suit the place; it belongs
+to the gauntlet instance, not the location's template, and needs no in-game
+reason. A promise names a fixed lot and a container anchor in that lot's building and
+leaves the template unchanged. Validation refuses a promise without a fixed lot or
+an anchor, and fixed container stock that fits no pocket of its furniture; the
+seeded build and furnishing throw rather than drop it, because a silently dropped
+promise would leave the lab unwinnable. Each stop has its own role, and the player
+may visit them in any order, so finding the stock rewards exploring rather than
+following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
+`src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
+`composeScenario`; `src/core/placementLoot.ts`, `placementLootIssues`;
+`src/core/inventory.ts`, `furnish`; and `src/content/base/scenarios.jsonnet`,
+`composition`.
+
+Dead scavengers who came for the lab before the player lie by its hatch with
+rolled pockets, so the approach signals that the lab needs preparation before the
+player commits to it. See `src/content/base/gauntlet-service.libsonnet`,
+`gauntlet_scavenger_pockets`.
 
 Marker-only population omits the ordinary settlement's wanderers and horde, making
 empty marker sets silently remove street pressure. A scenario therefore scales the
@@ -568,7 +592,8 @@ only there. See
 
 One owned assembly supplies the service facade and underground campus, so the
 playable world and visual inspection cannot diverge into separate geometry.
-Fixed resources must remain available independently of incidental loot.
+Fixed resources and promised core stock must remain available independently of
+incidental loot.
 Public documentary leads must be independently useful and spatially separate;
 reading one cannot authorize another. Named civic buildings keep the clues part of
 plausible places, while reserved destination landmarks keep the written directions

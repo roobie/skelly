@@ -1922,8 +1922,19 @@ const ScenarioSchema = strictObject({
         spawn: CellPosition,
         minimumOpenDescents: optional(pipe(Count, minValue(1), maxValue(32)), 2),
         descents: pipe(array(StartDescentSchema), minLength(1), maxLength(32)),
+        /** Core stock the instance promises in the start building, at template-local furniture anchors. */
+        fixedLoot: optional(array(FixedLootOverride)),
       }),
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
+      /** Core stock the instance promises in a fixed lot's building; the building's template stays unchanged. */
+      stops: optional(
+        array(
+          strictObject({
+            lot: Id,
+            fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a promised item')),
+          }),
+        ),
+      ),
       leads: tuple([
         strictObject({
           template: Id,

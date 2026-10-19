@@ -282,20 +282,35 @@ const rollTable = (registry: Registry, tableId: string, point: LootSpawnPoint, r
   return out;
 };
 
-export const rollLoot = (registry: Registry, point: LootSpawnPoint, rng: Rng): Rolled[] => {
+/** A point's loot, split into the fixed items it must deliver and what its table rolled. */
+export const rollLootParts = (
+  registry: Registry,
+  point: LootSpawnPoint,
+  rng: Rng,
+): { fixed: Rolled[]; rolled: Rolled[] } => {
   switch (point.supply.kind) {
     case 'empty':
-      return [];
+      return { fixed: [], rolled: [] };
     case 'table':
-      return rollTable(registry, point.supply.table, point, rng);
-    case 'fixed':
-      return [
-        ...fixedItems(registry, point.supply.items, point, rng),
-        ...(point.supply.table === undefined ? [] : rollTable(registry, point.supply.table, point, rng)),
-      ];
+      return { fixed: [], rolled: rollTable(registry, point.supply.table, point, rng) };
+    case 'fixed': {
+      const fixed = fixedItems(registry, point.supply.items, point, rng);
+      return {
+        fixed: point.required ? fixed : [],
+        rolled: [
+          ...(point.required ? [] : fixed),
+          ...(point.supply.table === undefined ? [] : rollTable(registry, point.supply.table, point, rng)),
+        ],
+      };
+    }
     default:
       throw new Error('Unknown loot supply');
   }
+};
+
+export const rollLoot = (registry: Registry, point: LootSpawnPoint, rng: Rng): Rolled[] => {
+  const { fixed, rolled } = rollLootParts(registry, point, rng);
+  return [...fixed, ...rolled];
 };
 
 export const corpseLootPoint = (table: string, id: number, pos: Vec3): LootSpawnPoint => ({

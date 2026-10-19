@@ -62,7 +62,7 @@ const expectRoutedColumn = (site: Site, placements: readonly Placement[]) => {
   const [cx, cz] = sourceColumn(placements);
   const points = site.lootPointsIn(cx, cz);
   expect(points.length).toBeGreaterThan(0);
-  const roll = vi.spyOn(selection, 'rollLoot');
+  const roll = vi.spyOn(selection, 'rollLootParts');
   const spawns = site.furnitureIn(cx, cz);
   expect(roll.mock.calls.map(([, point]) => point.id)).toEqual(expect.arrayContaining(points.map((point) => point.id)));
   roll.mockRestore();

@@ -13,6 +13,7 @@ import { compileTemplate, placedPieces } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
+const PROMISED_STOCK_ERROR = /Promised stock/;
 
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureService, fixtureStart } from './fixtures/scenario.ts';
@@ -100,7 +101,7 @@ describe('authored scenario composition', () => {
         site
           .furnitureIn(toChunk(anchor[0]), toChunk(anchor[2]))
           .find((spawn) => spawn.spec.pos.join(',') === anchor.join(','))!;
-      const selection = vi.spyOn(lootSelection, 'rollLoot');
+      const selection = vi.spyOn(lootSelection, 'rollLootParts');
       const before = read();
       expect(before).toBeDefined();
       const points = site.lootPointsIn(toChunk(anchor[0]), toChunk(anchor[2]));
@@ -211,6 +212,76 @@ describe('authored scenario composition', () => {
     }
     const benchmark = buildCityPlan({ seed: 8, registry, floor: 32, grid });
     expect(new CitySite(8, registry, makeScale(0.5), benchmark).authoredPlacements).toEqual([]);
+  });
+});
+
+const bundledScenario = () => {
+  const profile = [...BUNDLED_CONTENT.registry.scenarios.values()].find((scenario) => scenario.composition)!;
+  return structuredClone(profile);
+};
+
+describe('promised stop stock', () => {
+  it('puts every promised core item in its stop building', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const profile = bundledScenario();
+    const plan = buildCityPlan({
+      seed: 9,
+      registry,
+      floor: 64,
+      grid: cityGridOf(registry, profile.city),
+      scenario: profile,
+    });
+    const site = new CitySite(9, registry, makeScale(0.5), plan);
+    const composition = profile.composition!;
+    const promises = [
+      { placement: plan.composition!.start.placement, stock: composition.start.fixedLoot ?? [] },
+      ...(composition.stops ?? []).map((stop) => ({
+        placement: plan.lots!.find(({ definition }) => definition.id === stop.lot)!.placement!,
+        stock: stop.fixedLoot,
+      })),
+    ].flatMap(({ placement, stock }) => stock.map((source) => ({ placement, source })));
+    expect(promises.length).toBeGreaterThan(0);
+    for (const { placement, source } of promises) {
+      const index = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === source.at.join(','));
+      const { pos } = placedPieces(placement)[index]!;
+      const spawn = site
+        .furnitureIn(toChunk(pos[0]), toChunk(pos[2]))
+        .find(({ spec }) => spec.pos.join(',') === pos.join(','))!;
+      const items = source.items.map(({ item }) => item);
+      const fixed = site
+        .lootPointsIn(toChunk(pos[0]), toChunk(pos[2]))
+        .filter((point) => point.destination.join(',') === pos.join(',') && point.supply.kind === 'fixed')
+        .flatMap((point) => (point.supply.kind === 'fixed' ? point.supply.items.map(({ item }) => item) : []));
+      expect(fixed).toEqual(expect.arrayContaining(items));
+      const inventory = new Inventory(registry);
+      inventory.furnish(spawn.spec, spawn.loot, spawn.surfaceLoot);
+      const held = [...inventory.items()].map(({ item }) => item.type);
+      expect(held).toEqual(expect.arrayContaining(items));
+    }
+  });
+
+  it('refuses a promise without a container anchor or a fixed lot', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const profile = bundledScenario();
+    const composition = profile.composition!;
+    const [stop] = composition.stops!;
+    stop!.fixedLoot[0]!.at = [0, 0, 0];
+    composition.start.fixedLoot![0]!.at = [0, 0, 0];
+    const poolLot = profile.city.lots!.find(({ source }) => source?.kind === 'pool')!;
+    composition.stops!.push({ lot: poolLot.id, fixedLoot: structuredClone(stop!.fixedLoot) });
+    const paths = scenarioPlanIssues(registry, profile).map(([path]) => path);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        '.composition.stops[0].fixedLoot[0].at',
+        '.composition.start.fixedLoot[0].at',
+        '.composition.stops[1].lot',
+      ]),
+    );
+    composition.stops!.pop();
+    const grid = cityGridOf(registry, profile.city);
+    expect(() => buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile })).toThrow(
+      PROMISED_STOCK_ERROR,
+    );
   });
 });
 
