@@ -1,5 +1,6 @@
 local military = { usage: ['Military'], tier: 'Tier1' };
 local yard = import 'crisis-hq-yard.libsonnet';
+local vault = import 'crisis-hq-vault.libsonnet';
 local foundation = [
   '################################',
   '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
@@ -54,7 +55,7 @@ local furnished = [
   '#........O....#WWW.....#....BB.#',
   '#........#....O........O....BB.#',
   '#........#....O........O..MMBB.#',
-  '##################DD############',
+  '###########VV#####DD############',
 ];
 local windows = [
   '###===###===###===##===##===####',
@@ -78,11 +79,11 @@ local windows = [
   '##########....#...#....O.......#',
   '#........#....#...#....#.......#',
   '#........#....###########DD#####',
-  '#........O....#........#.......#',
-  '#........O....#........#.......#',
-  '#........#....O........O.......#',
+  '=........O....#........#.......#',
+  '=........O....#........#.......#',
+  '=........#....O........O.......#',
   '#........#....O........O..MM...#',
-  '###====########==#DD############',
+  '###########VV##==#DD############',
 ];
 local windowOpenings = [
   '###...###...###...##...##...####',
@@ -106,11 +107,11 @@ local windowOpenings = [
   '##########....#...#....O.......#',
   '#........#....#...#....#.......#',
   '#........#....###########DD#####',
-  '#........O....#........#.......#',
-  '#........O....#........#.......=',
-  '#........#....O........O.......=',
+  '.........O....#........#.......#',
+  '.........O....#........#.......=',
+  '.........#....O........O.......=',
   '#........#....O........O..MM...#',
-  '###....########..#DD######====##',
+  '###########VV##..#DD######====##',
 ];
 local windowHeads = [
   '###...###...###...##...##...####',
@@ -134,11 +135,11 @@ local windowHeads = [
   '##########....#...#....#.......#',
   '#........#....#...#....#.......#',
   '#........#....##################',
+  '.........#....#........#.......#',
+  '.........#....#........#........',
+  '.........#....#........#........',
   '#........#....#........#.......#',
-  '#........#....#........#........',
-  '#........#....#........#........',
-  '#........#....#........#.......#',
-  '###....########..#########....##',
+  '###############..#########....##',
 ];
 local heads = [
   '################################',
@@ -180,6 +181,7 @@ local pitchHigh = [air, air, air, air, air, air, air, air, sheet, sheet, sheet, 
     palette: {
       '.': 'air', '#': 'concrete', k: 'concrete', '=': 'window_frame', R: 'galvanized',
       D: { furniture: 'wood_door' }, O: { furniture: 'wood_door', facing: 'e' },
+      V: { furniture: 'container_door' },
       W: { furniture: 'desk', loot: 'desk', facing: 's' },
       T: { furniture: 'hq_meeting_table' },
       c: { furniture: 'chair', facing: 's' }, p: { furniture: 'chair_on_side' },
@@ -192,16 +194,16 @@ local pitchHigh = [air, air, air, air, air, air, air, air, sheet, sheet, sheet, 
     },
     layers: [foundation, furnished, furnished, windows, windowOpenings, windowHeads, heads, foundation, pitchLow, pitchHigh],
     access: { ground: 'ground', entrance: [19, 1, 25], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
-  }] + yard.templates,
+  }, vault.template] + yard.templates,
   layouts: [{
     id: 'crisis_hq', demo: true, lootContext: military,
     bounds: { x0: 32, z0: 32, x1: 96, z1: 96 }, ground: 21, terrain: [],
-    buildings: [{ template: 'crisis_hq_main', position: [51, 21, 51], rotation: 0 }] + yard.buildings,
+    buildings: [{ template: 'crisis_hq_main', position: [51, 21, 51], rotation: 0 }, vault.building] + yard.buildings,
     player: { position: [60.5, 21.5, 82], bearing: 0 },
     shamblers: [], woodlands: [],
     tracks: [
+      { points: [[60.5, 80], [60.5, 74], [73, 74], [73, 59]], width: 4, surface: 'asphalt' },
       { points: [[60.5, 82], [60.5, 64]], width: 2, surface: 'concrete' },
-      { points: [[73, 76], [73, 59]], width: 3, surface: 'concrete' },
     ],
   }],
 }
