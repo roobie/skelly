@@ -117,9 +117,8 @@ the harness settles none of them. Each item says what the spike exercised and wh
 from the rule. The differences change the engine envelope or the admitted CEL environment, not
 CEL's ability to evaluate a pure expression.
 
-- **Target fidelity:** rule-layer fidelity is exercised; the target stays open in #313. A close MoM
-  port or same-kind world mod requires additional engine verbs and content kinds; the actor ledger
-  proves neither.
+- **Target:** only the rule layer is exercised. The rule's same-kind mod in the game's own
+  vocabulary needs further engine verbs and content kinds, which the actor ledger does not prove.
 - **Triggers:** only engine-emitted typed events are exercised. Mod-scheduled timers, enter and exit
   event pairs and timer-checked predicates need engine scheduling and cancellation, which the spike
   does not prove. CEL can consume their snapshots.

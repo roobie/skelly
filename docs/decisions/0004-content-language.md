@@ -24,7 +24,7 @@ The deeper runtime-function spike proceeds on restricted CEL. A maintained expre
 
 ## Runtime design
 
-Purity should be enforced by the language or a sandbox, so composed content can be hashed and replayed deterministically. Mind Over Matter is the golden standard the content system should support, not merely a capability benchmark. How closely the game follows it, from a port of its data to only its rule layer, stays open in #313.
+Purity should be enforced by the language or a sandbox, so composed content can be hashed and replayed deterministically. Mind Over Matter is the golden standard the content system should support, not merely a capability benchmark; the mod rules below say how closely the game follows it.
 
 Module ordering and conflict policy stay simple and useful. A mod declares the packs it requires, because a mod written for one setting would otherwise fail confusingly under another; the rule is in `deadvox/docs/pack-split.md`, "Layers". Composition and combining follow the mod rules below. Migration goes incrementally in a low number of large steps, with the steps and boundaries set in #393. Weather simulation stays in code while mods configure it, so rules read weather rather than run it; its event contract belongs to #313.
 
@@ -44,6 +44,7 @@ Restricted profiles do not establish the safety or cost of unrestricted runtimes
 
 These rules bound the format #313 designs. Each keeps the engine the owner of scheduling, state, randomness and effects, so mod content stays pure, hashable and replayable.
 
+- **Target:** the game supports a mod of the same kind as Mind Over Matter, written in the game's own vocabulary, not MoM's files or syntax as they are. Porting MoM's data would mean rebuilding a Cataclysm-shaped engine surface, such as its event vocabulary, `jmath` and vitamins, and would let one external mod set the effect vocabulary and event list every other rule builds on. Supporting only the rule layer would leave out the world verbs and content kinds such a mod needs. So the engine gains the verbs, events and content kinds a mod of this kind needs, in its own terms, and no MoM file loads unchanged.
 - **Triggers:** a rule runs on a typed engine event or on a game-time timer the mod schedules. A state the engine knows gives a pair of enter and exit events. Any other while-condition is a CEL predicate the mod's timer checks, so the engine never evaluates mod conditions every tick. Because an exit event can be missed, a rule should be able to check whether a state holds at a given point and recover; the shape of that check is open in #313.
 - **Randomness:** a rule never rolls. An effect value may hold a random thunk, named from a closed engine set with optional arguments, and the engine draws it from its seeded stream when it applies the effect. CEL therefore never sees a rolled value and stays pure. Whether thunks may nest, and where in an effect a thunk may stand, are open in #313.
 - **Effect vocabulary:** effects are engine verbs plus mod-defined effects that expand to engine verbs, so a mod can name a reusable consequence without extending the engine, and validation stays on the engine's verbs. Thunk names belong to the engine and pass through expansion unchanged.
