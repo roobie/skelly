@@ -58,6 +58,34 @@ export function adaptMainInteractionPick(source) {
   );
 }
 
+const VALUE_DECLARATION =
+  /^export\s+(?:declare\s+)?(?:async\s+)?(?:const|let|var|function\*?|(?:abstract\s+)?class|enum)\s+([\w$]+)/gm;
+const EXPORT_LIST = /^export\s*\{([^}]*)\}/gm;
+const ALIAS = /\s+as\s+/;
+const SCRIPT_MODULE = /\.(?:ts|js|mjs)$/;
+
+/** Runtime names a module exports; type-only exports are erased, so a main importer never links them. */
+export function valueExports(source) {
+  const names = new Set([...source.matchAll(VALUE_DECLARATION)].map(([, name]) => name));
+  for (const [, list] of source.matchAll(EXPORT_LIST)) {
+    for (const item of list.split(',').map((entry) => entry.trim())) {
+      if (item && !item.startsWith('type ')) {
+        names.add(item.split(ALIAS).at(-1));
+      }
+    }
+  }
+  return names;
+}
+
+/** Runtime exports of the base module that the branch module no longer provides. */
+export const removedExports = (baseSource, branchSource) => {
+  const branch = valueExports(branchSource);
+  return [...valueExports(baseSource)].filter((name) => !branch.has(name));
+};
+
+const EXPORT_SHIM = '\0main-export-shim:';
+const BASE_COPY = '?main-base';
+
 export function mainOverlayPath(root, id) {
   const [path] = id.split('?');
   const prefix = `${resolve(root)}/src/`;
@@ -91,6 +119,33 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   // too, so the overlay never fails to resolve a module main still owns.
   const baseOnlyOverlay = (relative) =>
     relative !== null && basePaths.has(`deadvox/src/${relative}`) && !branchPaths.has(`deadvox/src/${relative}`);
+  // A main source may import an export the branch removed from a module both keep. That module stays the
+  // branch's core owner: a shim re-exports it and adds only the removed names, from main's copy of the module.
+  const exportShims = new Map();
+  const removedFor = async (relative) => {
+    if (!exportShims.has(relative)) {
+      const both =
+        SCRIPT_MODULE.test(relative) &&
+        basePaths.has(`deadvox/src/${relative}`) &&
+        branchPaths.has(`deadvox/src/${relative}`);
+      exportShims.set(
+        relative,
+        both
+          ? removedExports(
+              git(['show', `${base}:deadvox/src/${relative}`]),
+              await readFile(resolve(root, 'src', relative), 'utf8'),
+            )
+          : [],
+      );
+    }
+    return exportShims.get(relative);
+  };
+  const shimmedExports = () =>
+    Object.fromEntries([...exportShims].filter(([, names]) => names.length > 0).map(([path, names]) => [path, names]));
+  const mainImporter = (importer) => {
+    const relative = mainOverlayPath(root, importer);
+    return importer.includes(BASE_COPY) || overlays.has(relative) || baseOnlyOverlay(relative);
+  };
   const mainHtml = git(['show', `${base}:deadvox/index.html`]);
   const appliedSources = new Set();
   const server = await createServer({
@@ -102,16 +157,30 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
       {
         name: 'main-first-mesh-source-overlay',
         enforce: 'pre',
-        resolveId(id, importer) {
+        async resolveId(id, importer) {
           if (!(importer && id.startsWith('.'))) {
             return null;
           }
           const path = resolve(dirname(importer.split('?')[0]), id);
           const relative = mainOverlayPath(root, path);
-          return overlays.has(relative) || baseOnlyOverlay(relative) ? path : null;
+          if (overlays.has(relative) || baseOnlyOverlay(relative)) {
+            return path;
+          }
+          if (relative !== null && mainImporter(importer) && (await removedFor(relative)).length > 0) {
+            return `${EXPORT_SHIM}${path}`;
+          }
+          return null;
         },
         load(id) {
+          if (id.startsWith(EXPORT_SHIM)) {
+            const path = id.slice(EXPORT_SHIM.length);
+            const names = exportShims.get(mainOverlayPath(root, path));
+            return `export * from ${JSON.stringify(path)};\nexport { ${names.join(', ')} } from ${JSON.stringify(`${path}${BASE_COPY}`)};\n`;
+          }
           const relative = mainOverlayPath(root, id);
+          if (id.endsWith(BASE_COPY)) {
+            return git(['show', `${base}:deadvox/src/${relative}`]);
+          }
           if (overlays.has(relative)) {
             return overlays.get(relative);
           }
@@ -207,6 +276,7 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
       base,
       sourceOverlays: mainSourceOverlays,
       appliedSources: [...appliedSources],
+      shimmedExports: shimmedExports(),
       errors,
       browser: browser.version(),
       viewport: page.viewportSize(),
@@ -224,7 +294,14 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
         errorReport: document.querySelector('[data-error-text]')?.textContent,
       }))
       .catch(() => null);
-    const failure = { error: String(error), base, appliedSources: [...appliedSources], errors, state };
+    const failure = {
+      error: String(error),
+      base,
+      appliedSources: [...appliedSources],
+      shimmedExports: shimmedExports(),
+      errors,
+      state,
+    };
     await writeFile(resolve(artifacts, 'main-first-mesh-failure.json'), JSON.stringify(failure, null, 2));
     process.stdout.write(`MAIN_FIRST_MESH_FAILURE ${JSON.stringify(failure)}\n`);
     throw error;
