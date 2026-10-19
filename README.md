@@ -21,7 +21,7 @@ skelly is a hobby monorepo built around **deadvox**, a voxel survival game that 
 
 ## Run and check locally
 
-You need Node.js and npm. From the repository root, install everything, including the pinned Jsonnet compiler:
+You need Node.js and npm. The projects are npm workspaces of the root package. From the repository root, one command installs all of them, the lit-check tool and the pinned Jsonnet compiler:
 
 ```sh
 npm run setup

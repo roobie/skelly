@@ -25,8 +25,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: mobgen/package-lock.json
-      - run: npm ci
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ..
       - run: npm run typecheck
       - run: npm test
       - run: npx vite build

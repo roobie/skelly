@@ -259,7 +259,7 @@ function sourceRelativePath(projectRoot: string, sourceRoot: string, file: strin
   const roots = [
     { root: sourceRoot, prefix: 'src/' },
     { root: resolve(projectRoot, '../mobgen/src'), prefix: 'mobgen/' },
-    { root: resolve(projectRoot, 'node_modules'), prefix: 'node_modules/' },
+    { root: resolve(projectRoot, '../node_modules'), prefix: 'node_modules/' },
   ];
   for (const { root, prefix } of roots) {
     const name = relative(root, file);

@@ -9,7 +9,7 @@ on:
       - 'gungen/**'
       - 'engine/**'
       - 'deadvox/src/**'
-      - 'deadvox/package-lock.json'
+      - 'package-lock.json'
       - 'mobgen/src/**'
       - '!**/*.md'
       - 'gungen/PROJECT.md'
@@ -20,7 +20,7 @@ on:
       - 'gungen/**'
       - 'engine/**'
       - 'deadvox/src/**'
-      - 'deadvox/package-lock.json'
+      - 'package-lock.json'
       - 'mobgen/src/**'
       - '!**/*.md'
       - 'gungen/PROJECT.md'
@@ -44,17 +44,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            engine/package-lock.json
-            gungen/package-lock.json
-      - run: npm ci --prefix ../engine
-      - run: npm ci
-      - run: npm ci --prefix ../deadvox
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ..
       - name: Cache Playwright Chromium
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('deadvox/package-lock.json') }}
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Install Playwright Chromium
         timeout-minutes: 3
         run: npx playwright install chromium
