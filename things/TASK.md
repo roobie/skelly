@@ -61,4 +61,8 @@ to be new.
 - [x] Add the check that fails an upward import, and run it in CI: it lives in
   `gungen/test/engineImportBoundary.test.ts`, `engineLayers`, so gungen's unit suite runs it.
 - [x] Run gungen's typecheck, unit suite and `validate`; they must pass unchanged.
-- [ ] Move the viewer to its own package once the root layout in #962 is decided.
+- [ ] Move the viewer to `packages/tool-ui`, the first package under the top-level
+  `packages/` directory. Adding a package takes four edits, because each names the projects
+  one by one: the root `package.json` `workspaces` list, a `knip.jsonc` workspace entry,
+  `tools/zero-drift-check.mjs`, `SUBPROJECTS` (so its docs resolve path cues from their own
+  root), and the subproject roots listed in `AGENTS.md`, "Zero drift".

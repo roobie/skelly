@@ -63,6 +63,8 @@ Settled:
   tool succeeds gungen, and gungen is deleted at the end.
 - The model schema is one neutral schema owned by `thing-core`; domain packs extend it.
 - The directory structure is fixed before any new feature work.
+- New packages live in the top-level `packages/` directory, each a workspace of the root
+  package. The four existing projects stay where they are.
 - At pre-pre-alpha no old format is kept alive; only deadvox validating and loading every
   export is owed.
 - Work is tracked in this file, `TASK.md` and GitHub issues, with no work-item prefix until
@@ -103,8 +105,8 @@ Imports run one way: foundation, shapes, assembly, thing-core, tools. Deadvox de
 ## Phases
 
 1. **Directory structure, no behavior change.** Split the engine into foundation, shapes and
-   assembly (this splits the files that mix them), move the viewer to `tool-ui`, and apply
-   the root layout decided in #962. Exit: gungen's typecheck and suite pass unchanged, and a
+   assembly (this splits the files that mix them) and move the viewer to `tool-ui`, the
+   first new package under `packages/`. Exit: gungen's typecheck and suite pass unchanged, and a
    check fails any import that runs against the direction above.
 2. **Neutral schema and physical model.** Define the envelope in `thing-core`, make
    deadvox's model schema build on it, move material densities and mass derivation out of

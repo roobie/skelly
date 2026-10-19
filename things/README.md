@@ -9,7 +9,10 @@ read_if:
 
 Authoring tools for every model deadvox draws, built on one shared core.
 
-## Packages (planned)
+## Packages
+
+The suite's packages live in the repository's top-level `packages/` directory, as workspaces
+of the root package.
 
 - `packages/thing-core`: the shared modeling core, with no knowledge of any kind of thing.
 - `packages/thing-authoring-tool`: authors and curates the non-gun things (tools, containers,
@@ -17,8 +20,8 @@ Authoring tools for every model deadvox draws, built on one shared core.
 - `packages/gun-authoring-tool`: authors and curates guns on top of the core; the successor
   to `gungen/`.
 
-Both tools depend on the core and never on each other. No package has code yet; `WORK.md`
-says when each is created.
+Both tools depend on the core and never on each other. Only `thing-core` exists, as a
+README with no code; `WORK.md` says when each package is created.
 
 ## Why
 
