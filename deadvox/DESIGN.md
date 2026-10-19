@@ -528,9 +528,25 @@ layer is stock the gauntlet instance promises at its stops, because the lab must
 winnable and a roll cannot promise that; Upheaval stays procedural and promises
 none. The reward layer rewards exploring and need not suit the place; it belongs
 to the gauntlet instance, not the location's template, and needs no in-game
-reason. A promise names a fixed lot and a container anchor in that lot's building and
+reason. Promised stock still passes the economy check under its holder's loot
+context. Stock that does not suit the host building comes from a special event: a
+small authored scene, such as a dead special operations soldier, with its own loot
+context, which the instance places on another building's lot. The event is not
+linked to that building; it sits on cells the host leaves empty and is not a clue.
+The rifle lies on the soldier's body and the magazine is in a pocket, because
+`DESIGN.md`, "The item model" keeps the pocket real-sized while loot lies outside
+containers; the substation gives a military reward ahead of the lab, and the NVGs
+join the same body when the item lands. An event may author its own threat, which spawns with it
+so the scene tells its story; how those markers count against the scenario's
+population budget remains open. An authored event carries the promised reward, so
+fixed stock still passes the economy check without bending a place's theme. Stock that suits the place but not
+its context's tier is a content fix to the context instead: the crisis HQ is a
+military command post, so its tier admits military items such as a rifle, and no
+event is needed there. See `src/content/base/crisis-hq.jsonnet`, `military`.
+A promise names a fixed lot and a container anchor in that lot's building or event and
 leaves the template unchanged. Validation refuses a promise without a fixed lot or
-an anchor, and fixed container stock that fits no pocket of its furniture; the
+an anchor, an event outside its lot or over the host's blocks or furniture, and fixed
+container stock that fits no pocket of its furniture; the
 seeded build and furnishing throw rather than drop it, because a silently dropped
 promise would leave the lab unwinnable. Certified promised stock means the item is
 there and fits its container, nothing more. No check proves that the street reaches
@@ -541,9 +557,10 @@ keeps that risk in view. Each stop has its own role, and the player
 may visit them in any order, so finding the stock rewards exploring rather than
 following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
 `src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
-`composeScenario`; `src/core/placementLoot.ts`, `placementLootIssues`;
-`src/core/inventory.ts`, `furnish`; and `src/content/base/scenarios.jsonnet`,
-`composition`.
+`composeScenario` and `eventIssues`; `src/core/placementLoot.ts`,
+`placementLootIssues`; `src/core/inventory.ts`, `furnish`; and
+`src/content/base/scenarios.jsonnet`, `composition`; and
+`src/content/base/gauntlet.jsonnet`, `utilities`.
 
 A stop's rolled stock follows its place theme, not its building. Each stop takes a
 theme context, the station's carrying the Police usage and the HQ's Military, and

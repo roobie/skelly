@@ -127,7 +127,7 @@ const hordeGroupStarts = (seed: number, starts: number[], population: ScenarioDe
   );
 };
 
-const gauntletPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
+export const gauntletPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
