@@ -776,7 +776,7 @@ shape this rule.
 The economy is instead to be planned per loot unit (`LootUnit` in code): a place with its
 own loot plan, such as a farm, a town block, an air base or a shed in the woods. The name
 joins the `Loot`-prefixed types and reads plainly in prose; "unit" alone is generic, so
-this is its one definition. A loot unit settles its whole plan when its first column
+this is its one definition. A loot unit is to settle its whole plan when its first column
 generates, so planning is eager inside the loot unit and lazy across the map. The plan
 sets floors ("this farm has at least one pump shotgun") and caps ("at most one per police
 station"), and chooses which points hold them. A loot unit's spawn points come from its
@@ -786,7 +786,7 @@ plan must weigh in a short pause, not its area. See `src/core/loot.ts`, `lootPoi
 Map-wide rarity is per-point odds set in content, not a count: the odds give the
 expected total, and scarcity is statistical. Tier gradients are a function of position,
 such as distance from the spawn area, so they need no shared state. Required stock sits
-outside every floor and cap, so story and promised stock are never squeezed out.
+outside every cap, so story and promised stock are never squeezed out.
 
 Items that come together, such as a pump shotgun and shells nearby, form an ItemSet: an
 anchor and its companions. Each ItemSet names where its companions may land, because the
@@ -794,13 +794,15 @@ right reach differs by set. Companion placement is best effort, never fail-close
 companion is tried within its set's scope and skipped if it cannot land there, so the loot
 unit still generates, since a missing box of shells costs the player less than a loot unit
 that will not generate, and skipping needs the least plan logic. A skipped companion leaves
-its set incomplete with no trace in the world, so the plan reports what it dropped as part
-of the same rule; without that report an incomplete set is silent and cannot be tuned.
-Companions sit outside the loot unit's caps, like required stock, and land whenever their
-anchor does. That leaves the most room to refine: a cap check or a chance roll on
+its set incomplete with no trace in the world, so the plan's debug report lists what it
+dropped as part of the same rule; without that report an incomplete set is silent and
+cannot be tuned. Companions come as a count per anchor, not as odds, and are placed after
+caps, like required stock, with no cap check or chance roll; lack of room within the set's
+scope is the only thing that skips one. That leaves the most room to refine: a cap check or a chance roll on
 companions can be added later, for every set or per set, without undoing anything. The
 price is that until such a refinement lands, a loot unit's ammunition can exceed a cap.
-The rest of ItemSets and scenario multipliers on odds are open on #699.
+How ItemSets are authored (which items form sets and each companion's count) and scenario
+multipliers on odds are open on #699.
 
 Loot is placed once, when its place is first generated, and never restocked. What a
 player takes stays gone, so scarcity holds, a searched place stays spent instead of
