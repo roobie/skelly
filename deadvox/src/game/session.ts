@@ -35,7 +35,14 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
-import { type FurnitureMover, liftFurniture, placeFurniture, placement } from '../core/furnitureMove.ts';
+import {
+  type FurnitureMover,
+  liftFurniture,
+  placeFurniture,
+  placement,
+  tipCarried,
+  turnCarried,
+} from '../core/furnitureMove.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
@@ -1950,6 +1957,8 @@ export const createSession = (options: SessionOptions) => {
     nameOf,
     liftFurniture: liftPiece,
     placeFurniture: placePiece,
+    turnFurniture: () => turnCarried(inventory),
+    tipFurniture: () => tipCarried(inventory),
     /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
     furniturePlacement: (aimed: Readonly<Vec3>) => placement(furnitureMover(), aimed),
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */

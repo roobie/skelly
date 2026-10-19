@@ -6,11 +6,14 @@ import {
   Float32BufferAttribute,
   Group,
   LineSegments,
+  Matrix4,
   Mesh,
   MeshLambertMaterial,
+  Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor } from '../core/blockEntities.ts';
+import { rotationOf } from '../core/orientation.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -219,12 +222,17 @@ export class FurnitureMeshes {
     }
 
     const [x, y, z] = entity.pos;
-    const [width, , depth] = entity.size;
-    const mesh = new Mesh(geometry, this.anchored(material));
-    mesh.position.set((x + width / 2) * this.blockSize, y * this.blockSize, (z + depth / 2) * this.blockSize);
-    mesh.rotation.y = { n: 0, e: -Math.PI / 2, s: Math.PI, w: Math.PI / 2 }[entity.facing];
-    mesh.scale.setScalar(this.blockSize);
-    return mesh;
+    const [width, height, depth] = entity.size;
+    const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
+    const piece = new Mesh(geometry, this.anchored(material));
+    piece.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
+    // The model stands on its own bottom centre, so its middle sits half its own height along its up axis.
+    piece.position
+      .set(x + width / 2, y + height / 2, z + depth / 2)
+      .addScaledVector(up!, -def.size[1] / 2)
+      .multiplyScalar(this.blockSize);
+    piece.scale.setScalar(this.blockSize);
+    return piece;
   }
 
   /** A panel across the doorway, hinged at its low end along the wall, or a hatch's panel. */

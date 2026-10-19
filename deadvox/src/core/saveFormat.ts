@@ -155,7 +155,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 52;
+export const SAVE_SCHEMA_VERSION = 53;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -484,6 +484,7 @@ const blockEntitySchema = obj({
   pos: tuple(safeInt, safeInt, safeInt),
   size: tuple(positiveInt, positiveInt, positiveInt),
   facing: enumeration(['n', 'e', 's', 'w']),
+  tip: opt(enumeration(['back', 'front', 'left', 'right', 'top'])),
   carried: opt(enumeration([true])),
   fixed: opt(enumeration([true])),
   searched: bool,

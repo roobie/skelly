@@ -1,4 +1,4 @@
-import { Box3, Group, type Mesh, type Object3D, Vector3 } from 'three';
+import { Box3, Group, type Mesh, type Object3D, type Quaternion, Vector3 } from 'three';
 import type { BlockEntities, BlockEntity } from '../core/blockEntities.ts';
 import type { FurnitureDef, InventoryTuningDef } from '../core/schema.ts';
 
@@ -9,7 +9,10 @@ export type CarriedViewTuning = InventoryTuningDef['furnitureMove']['carriedView
  * the carry state each frame rather than keeping its own, so it is gone as soon as the piece is no longer carried.
  */
 export class CarriedPiece {
-  /** Lives in a group that follows the camera, so its position is in view metres. */
+  /**
+   * Lives in a group that follows the camera, so its position is in view metres; it undoes the camera's turn so the
+   * piece keeps the world heading it will be set down at (`DESIGN.md`, "Moving furniture").
+   */
   readonly group = new Group();
   private readonly entities: BlockEntities;
   private readonly build: (entity: BlockEntity, def: FurnitureDef) => Object3D;
@@ -36,8 +39,8 @@ export class CarriedPiece {
     return this.group.children.length > 0;
   }
 
-  /** Catches up with the carry state and bobs the piece; `dt` is real seconds. */
-  update(dt: number): void {
+  /** Catches up with the carry state and bobs the piece; `dt` is real seconds, `camera` the view's world turn. */
+  update(dt: number, camera: Quaternion): void {
     const carried = this.entities.carrying();
     const key = carried ? `${carried.uid}:${this.entities.version}` : '';
     if (key !== this.drawn) {
@@ -55,6 +58,7 @@ export class CarriedPiece {
     const { offsetMetres, bobMetres, bobPerRealSecond } = this.tuning;
     const bob = bobMetres * Math.sin(this.bobRealSeconds * bobPerRealSecond * 2 * Math.PI);
     this.group.position.set(offsetMetres[0], offsetMetres[1] + bob, offsetMetres[2]);
+    this.group.quaternion.copy(camera).invert();
   }
 
   /** The piece centred on the group and shrunk to the tuned size. Like held items, it takes shadow but casts none. */

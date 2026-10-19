@@ -8,6 +8,7 @@ import type { Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, PILE_GRID, type Pile, type Spot } from './inventory.ts';
 import { findSpot, fitsAt, type Placed } from './items.ts';
 import { ladderOutward } from './ladders.ts';
+import { turnPose } from './orientation.ts';
 import type { Body } from './physics.ts';
 import type { SolidAt } from './raycast.ts';
 import { reachTuning } from './reach.ts';
@@ -376,5 +377,30 @@ export const placeFurniture = (mover: FurnitureMover, aimed: Readonly<Vec3>): st
   }
   inventory.entities.place(entity, result.pos);
   inventory.shiftPiles(moves);
+  return undefined;
+};
+
+/** Turns the carried piece a quarter about the world vertical, clockwise seen from above; returns why not. */
+export const turnCarried = (inventory: Inventory): string | undefined => {
+  const entity = inventory.entities.carrying();
+  if (!entity) {
+    return messagesOf(inventory).emptyHands;
+  }
+  inventory.entities.orient(entity, turnPose(entity, 'y'));
+  return undefined;
+};
+
+/** Tips the carried piece a quarter about the world x axis; returns why not. */
+export const tipCarried = (inventory: Inventory): string | undefined => {
+  const messages = messagesOf(inventory);
+  const { entities } = inventory;
+  const entity = entities.carrying();
+  if (!entity) {
+    return messages.emptyHands;
+  }
+  if (entities.defOf(entity).upright) {
+    return messages.staysUpright;
+  }
+  entities.orient(entity, turnPose(entity, 'x'));
   return undefined;
 };

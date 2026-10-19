@@ -92,6 +92,22 @@
       ]
     },
     {
+      "id": "carry.tip",
+      "keys": [
+        {
+          "code": "KeyR"
+        }
+      ]
+    },
+    {
+      "id": "carry.turn",
+      "keys": [
+        {
+          "code": "KeyT"
+        }
+      ]
+    },
+    {
       "id": "noclip.ascend",
       "keys": [
         {

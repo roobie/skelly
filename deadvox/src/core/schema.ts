@@ -301,7 +301,7 @@ const UiTuningSchema = strictObject({
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
   doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
-  /** Why a piece of furniture can't be lifted or put down, and what the player says on dropping it worn out. */
+  /** Why a piece of furniture can't be lifted, turned or put down, and what the player says on dropping it worn out. */
   furnitureMoveMessages: strictObject({
     tooBig: Name,
     fastened: Name,
@@ -318,6 +318,8 @@ const UiTuningSchema = strictObject({
     blocksLadder: Name,
     outOfReach: Name,
     wornOut: Name,
+    emptyHands: Name,
+    staysUpright: Name,
   }),
   /** What the item action list calls an action whose wording does not depend on the item or wound. */
   itemActionLabels: strictObject({ stripRound: Name }),
@@ -1240,6 +1242,8 @@ const FurnitureSchema = pipe(
     /** A debug practice surface; hits may receive a profile-specific presentation ping. */
     shotTarget: optional(literal(true)),
     scenarioGoal: optional(literal(true)),
+    /** Carried, it turns but won't tip over (`DESIGN.md`, "Moving furniture"). */
+    upright: optional(literal(true)),
     readable: optional(ReadableSchema),
     mount: optional(literal('wall')),
     container: optional(ContainerSchema),

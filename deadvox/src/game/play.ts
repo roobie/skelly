@@ -71,6 +71,7 @@ import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
   type PlayStatus,
+  playCarryText,
   playCrosshairFrame,
   playHudText,
   playInteractionText,
@@ -1795,6 +1796,8 @@ export const startPlay = (
     interact: interactFurniture,
     lift: (uid) => session.liftFurniture(uid),
     place: (pos) => session.placeFurniture(pos),
+    turn: () => session.turnFurniture(),
+    tip: () => session.tipFurniture(),
     clearDownedBody: (id, way) => session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
     craftContinue: () => {
@@ -2007,8 +2010,9 @@ export const startPlay = (
     if (debugTools?.buildOn) {
       return 'build';
     }
-    return debugTools?.noclip || spectatorCameraEnabled ? 'noclip' : 'play';
+    return debugTools?.noclip || spectatorCameraEnabled ? 'noclip' : footContext();
   };
+  const footContext = (): InputContext => (entities.carrying() ? 'carrying' : 'play');
   const inputContext = (): InputContext => {
     if (!worldLoading.ready) {
       return 'title';
@@ -2147,9 +2151,21 @@ export const startPlay = (
         stopHandling();
         break;
       default:
+        carryCommand(action);
         break;
     }
     assignQuickbarIfUnlocked(slot, at);
+  };
+  const CarryCommands: Readonly<Record<string, 'furniture.turn' | 'furniture.tip'>> = {
+    'carry.turn': 'furniture.turn',
+    'carry.tip': 'furniture.tip',
+  };
+  const carryCommand = (action: string): void => {
+    const kind = CarryCommands[action];
+    const reason = kind && dispatchScreenCommand({ kind });
+    if (reason) {
+      showRefusal(reason, sim.time);
+    }
   };
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
     if (action === 'stance.ready') {
@@ -2253,7 +2269,8 @@ export const startPlay = (
         ((action.startsWith('inventory.') && !['inventory.previous', 'inventory.next'].includes(action)) ||
           action.startsWith('quickbar.assign.') ||
           action === 'handling.stop')) ||
-      action === 'craft.continue';
+      action === 'craft.continue' ||
+      action.startsWith('carry.');
     // Gameplay records this press after toggling saved state; recording it here too duplicates the live press.
     const walkToggleHandledByGameplay = action === 'movement.walk-toggle' && phase === 'down';
     if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction || walkToggleHandledByGameplay)) {
@@ -3095,7 +3112,7 @@ export const startPlay = (
   ): string | undefined => {
     const label = labelForAction('world.interact');
     if (carry) {
-      return 'refusal' in carry.spot ? carry.spot.refusal : `${label}: set down ${nameOf(carry.entity)}`;
+      return playCarryText('refusal' in carry.spot ? carry.spot.refusal : `${label}: set down ${nameOf(carry.entity)}`);
     }
     switch (target?.kind) {
       case 'item':

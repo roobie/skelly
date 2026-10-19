@@ -5,6 +5,7 @@ import { bodyRegionLabel } from '../src/core/body.ts';
 import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import {
+  playCarryText,
   playCrosshairFrame,
   playInteractionText,
   playNeedsText,
@@ -316,6 +317,34 @@ it('omits expired notices and the duplicated rest interruption but retains the s
   const interruptedPrompt = playPromptText({ ...state, resting: false }, visible);
   expect(interruptedPrompt).toContain(state.interactionHint);
   expect(interruptedPrompt).toContain(state.interruption);
+});
+
+it('names the live turn and tip keys in the carry hint, follows a rebind, and shows none with hints off', () => {
+  const promptFor = (interaction: boolean): string =>
+    playPromptText(
+      {
+        now: 1,
+        notice: '',
+        noticeUntil: 0,
+        interactionHint: playCarryText('fixture set down'),
+        itemActionHint: undefined,
+        interruption: undefined,
+        resting: false,
+      },
+      hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, interaction }),
+    );
+  const before = promptFor(true);
+  expect(before).toContain(labelForAction('carry.turn'));
+  expect(before).toContain(labelForAction('carry.tip'));
+  expect(inputBindings.rebind('carry.turn', [{ code: 'KeyJ' }])).toBeUndefined();
+  try {
+    const after = promptFor(true);
+    expect(after).toContain(labelForAction('carry.turn'));
+    expect(after).not.toBe(before);
+    expect(promptFor(false)).toBe('');
+  } finally {
+    inputBindings.reset();
+  }
 });
 
 it('shows a refusal reason only when the messages option is on', () => {

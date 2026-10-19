@@ -43,6 +43,8 @@ const tuning = {
       'blocksLadder',
       'outOfReach',
       'wornOut',
+      'emptyHands',
+      'staysUpright',
     ].map((key) => [key, `fixture ${key}`]),
   ),
 };

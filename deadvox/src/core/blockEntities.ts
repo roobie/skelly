@@ -7,6 +7,7 @@
 import type { FurnitureDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
+import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
 import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -21,8 +22,10 @@ export interface BlockEntity {
   /** Lowest corner, in blocks; while carried, where it was lifted from. */
   pos: Vec3;
   /** Cells along x, y and z. */
-  readonly size: Vec3;
-  readonly facing: Facing;
+  size: Vec3;
+  facing: Facing;
+  /** The face it lies on; on its bottom when absent. */
+  tip?: Tip | undefined;
   /** Held in the player's hands, so it covers no cells. */
   carried: boolean;
   /** Fastened where it stands, so it can't be moved. */
@@ -44,6 +47,7 @@ export interface BlockEntityState {
   pos: Vec3;
   size: Vec3;
   facing: Facing;
+  tip?: Tip;
   carried?: true;
   fixed?: true;
   searched: boolean;
@@ -66,6 +70,7 @@ export interface EntitySpec {
   pos: Vec3;
   size: Vec3;
   facing: Facing;
+  tip?: Tip;
 }
 
 const DOOR_PANEL_THICKNESS = 0.06;
@@ -206,6 +211,7 @@ export class BlockEntities {
         pos: [...entity.pos],
         size: [...entity.size],
         facing: entity.facing,
+        ...(entity.tip ? { tip: entity.tip } : {}),
         ...(entity.carried ? { carried: true as const } : {}),
         ...(entity.fixed ? { fixed: true as const } : {}),
         searched: entity.searched,
@@ -307,6 +313,7 @@ export class BlockEntities {
       pos: [...spec.pos],
       size: [...spec.size],
       facing: spec.facing,
+      ...(spec.tip ? { tip: spec.tip } : {}),
       carried: spec.carried === true,
       ...(spec.fixed ? { fixed: true as const } : {}),
       searched: false,
@@ -363,6 +370,17 @@ export class BlockEntities {
     }
     this.occupy(entity, false);
     entity.carried = true;
+    this.version += 1;
+  }
+
+  /** Turns and tips the carried piece; its box follows, so fit and the put-down preview read the turned box. */
+  orient(entity: BlockEntity, pose: Pose): void {
+    if (!entity.carried) {
+      throw new Error('Only a carried block entity can be turned');
+    }
+    entity.size = rotatedSize(this.defOf(entity).size, rotationOf(pose));
+    entity.facing = pose.facing;
+    entity.tip = pose.tip;
     this.version += 1;
   }
 
