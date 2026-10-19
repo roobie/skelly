@@ -146,6 +146,13 @@ export const searchTime = (def: FurnitureDef, { search }: InventoryTuningDef): n
   return search.minSimSeconds + (search.maxSimSeconds - search.minSimSeconds) * Math.min(1, cells / search.cellsForMax);
 };
 
+/**
+ * A door that is the front of a shaped container (a cabinet, a safe): its cells are the furniture's body, so they
+ * stay solid when it is open. Any other door is a leaf in a doorway, however it is shaped.
+ */
+export const isBodyDoor = (def: FurnitureDef): boolean =>
+  def.door !== undefined && def.shape !== undefined && def.container !== undefined;
+
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 
 /** Whether a body's box overlaps any cell of a box of cells at a corner. */
@@ -336,12 +343,12 @@ export class BlockEntities {
   }
 
   /**
-   * An upright door that swings out of its cells: open, they are a passage, which a piece may barricade. A shaped
+   * An upright door that swings out of its cells: open, they are a passage, which a piece may barricade. A body
    * door's panel stays in its cells, and an open hatch is a drop, so both keep their cells to themselves.
    */
   private inDoorway(entity: BlockEntity): boolean {
     const def = this.defOf(entity);
-    return def.door !== undefined && !def.door.hatch && !def.shape;
+    return def.door !== undefined && !def.door.hatch && !isBodyDoor(def);
   }
 
   /** Whether a standing piece keeps other pieces out of its cells: everything does but a door open in its doorway. */
@@ -403,7 +410,7 @@ export class BlockEntities {
   /** Whether an entity's cell stops movement: closed doors and solid furniture do. */
   blocks(entity: BlockEntity): boolean {
     const def = this.defOf(entity);
-    return def.door && !def.shape ? !entity.open : def.solid !== false;
+    return def.door && !isBodyDoor(def) ? !entity.open : def.solid !== false;
   }
 
   isSolid(x: number, y: number, z: number): boolean {

@@ -1,5 +1,5 @@
 // Static spatial acceptance, not recipe closure and not runtime navigation. Doors may be opened.
-import { BlockEntities } from './blockEntities.ts';
+import { BlockEntities, isBodyDoor } from './blockEntities.ts';
 import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -332,7 +332,7 @@ export const templateDoorIssues = (registry: Registry, template: CompiledTemplat
   return template.pieces.flatMap((piece, index) => {
     const def = registry.furniture.get(piece.furniture);
     // A hatch opens into the space above and below it, not across a wall.
-    if (!def?.door || def.shape || def.door.hatch) {
+    if (!def?.door || isBodyDoor(def) || def.door.hatch) {
       return [];
     }
     const acrossX = piece.facing === 'e' || piece.facing === 'w';
