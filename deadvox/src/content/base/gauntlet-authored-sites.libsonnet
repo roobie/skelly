@@ -84,20 +84,10 @@ local subYard = find(substation.templates, 'rural_substation_yard') + {
 local subPole = find(substation.templates, 'rural_substation_pole');
 local subVan = find(substation.templates, 'rural_substation_van_spot');
 local medicalGrounds = find(medical.templates, 'rural_medical_grounds') + { palette+: { '.': { ground: true } } };
-local medicalFront = {
-  id: 'medical_front_fence', size: [21, 6, 1], lootContext: medicalMain.lootContext,
-  palette: { '.': { ground: true }, f: 'chain_link' },
-  layers: [['.....................']] + [['ffffffff.....ffffffff'] for y in std.range(1, 5)],
-};
-local medicalEast = {
-  id: 'medical_east_fence', size: [23, 6, 1], lootContext: medicalMain.lootContext,
-  palette: { '.': { ground: true }, f: 'chain_link' },
-  layers: [['.......................']] + [['ffffff...ffffffffffffff'] for y in std.range(1, 5)],
-};
-local medicalWest = medicalEast + {
-  id: 'medical_west_fence',
-  layers: [['.......................']] + [['ffffffffffffff...ffffff'] for y in std.range(1, 5)],
-};
+local medicalFences = import 'gauntlet-yard-fences.libsonnet';
+local medicalFront = medicalFences.front;
+local medicalEast = medicalFences.east;
+local medicalWest = medicalFences.west;
 local hqBack = fence(find(hq.templates, 'crisis_hq_wall'), '########################################....################') + { id: 'crisis_hq_back_breached' };
 local hqLeft = fence(find(hq.templates, 'crisis_hq_side'), '#########################################....#############') + { id: 'crisis_hq_left_breached' };
 local hqRight = find(hq.templates, 'crisis_hq_side');
