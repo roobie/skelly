@@ -12630,7 +12630,7 @@
     },
     {
       "access": {
-        "entrance": [3, 1, 10],
+        "entrance": [11, 1, 10],
         "ground": "ground",
         "stairs": [],
         "storeys": [
@@ -13164,7 +13164,7 @@
     },
     {
       "access": {
-        "entrance": [7, 1, 10],
+        "entrance": [15, 1, 10],
         "ground": "ground",
         "stairs": [],
         "storeys": [
@@ -13185,7 +13185,7 @@
         "usage": ["Industrial"]
       },
       "ports": [],
-      "size": [34, 15, 26],
+      "size": [34, 21, 26],
       "slots": [
         {
           "at": [4, 0, 0],
@@ -13214,7 +13214,7 @@
             }
           ],
           "id": "yard",
-          "size": [24, 6, 11],
+          "size": [24, 8, 11],
           "turn": 0
         },
         {
@@ -13229,7 +13229,7 @@
             }
           ],
           "id": "pole",
-          "size": [2, 15, 2],
+          "size": [2, 21, 2],
           "turn": 0
         },
         {
@@ -28168,6 +28168,7 @@
           "loot": "medical_filler"
         },
         "M": {
+          "facing": "s",
           "furniture": "medical_cabinet",
           "loot": "medical_filler"
         },
@@ -28231,8 +28232,8 @@
           "#......#B......#...#",
           "#......#B......O...#",
           "#L..WWW#.......O..M#",
-          "#L..WWW#.QQQQQQ#..M#",
-          "##DD############DD##"
+          "#L..WWW#QQ...QQ#..M#",
+          "##########DD########"
         ],
         [
           "####################",
@@ -28245,39 +28246,39 @@
           "#......#B......#...#",
           "#......#B......O...#",
           "#L..WWW#.......O..M#",
-          "#L..WWW#.QQQQQQ#..M#",
-          "##DD############DD##"
-        ],
-        [
-          "###===####===#######",
-          "#PPPPPP#KKKKKK.#a..#",
-          "#.....l#KKKKKK.#a..#",
-          "#.....l#.......#b..#",
-          "#......#.......#b..#",
-          "#......O......N#s..#",
-          "#......O......N#s..#",
-          "#......#B......#...#",
-          "#......#B......O...#",
-          "#......#.......O...#",
-          "#......#.QQQQQQ#...#",
-          "##DD===#########DD##"
-        ],
-        [
-          "###...####...#######",
-          "#PPPPPP#KKKKKK.#a..#",
-          "#.....l#KKKKKK.#a..#",
-          "#.....l#.......#b..#",
-          "#......#.......#b..#",
-          "#......O......N#s..#",
-          "#......O......N#s..#",
-          "#......#B......#...#",
-          "#......#B......O...#",
-          "#......#.......O...#",
-          "#......#.QQQQQQ#...#",
-          "##DD...#########DD##"
+          "#L..WWW#QQ...QQ#..M#",
+          "##########DD########"
         ],
         [
           "####################",
+          "#PPPPPP#KKKKKK.#a..#",
+          "#.....l#KKKKKK.#a..#",
+          "#.....l#.......#b..#",
+          "#......#.......#b..#",
+          "=......O......N#s..#",
+          "=......O......N#s..#",
+          "#......#B......#...#",
+          "#......#B......O...#",
+          "#......#.......O...#",
+          "#......#QQ...QQ#...#",
+          "##==#==###DD########"
+        ],
+        [
+          "####################",
+          "#PPPPPP#KKKKKK.#a..#",
+          "#.....l#KKKKKK.#a..#",
+          "#.....l#.......#b..#",
+          "#......#.......#b..#",
+          ".......O......N#s..#",
+          ".......O......N#s..#",
+          "#......#B......#...#",
+          "#......#B......O...#",
+          "#......#.......O...#",
+          "#......#QQ...QQ#...#",
+          "##..#..###DD########"
+        ],
+        [
+          "##..#..##..#..######",
           "#......#.......#...#",
           "#......#.......#...#",
           "#......#.......#...#",
@@ -28288,7 +28289,7 @@
           "#......#.......#...#",
           "#......#.......#...#",
           "#......#.......#...#",
-          "####################"
+          "########..##..######"
         ],
         [
           "####################",
@@ -28364,7 +28365,7 @@
             "SRRRRRRSSRRRRRRSRRRS",
             "SRRRRRRSSRRRRRRSRRRS",
             "SSRRSSSSRRRRRRRSRRSS",
-            "SSRRSSSSRSSSSSSSRRSS",
+            "SSRRSSSSSSRRRSSSRRSS",
             "SSSSSSSSSSSSSSSSSSSS"
           ],
           [
@@ -28378,7 +28379,7 @@
             "SRRRRRRSSRRRRRRSRRRS",
             "SRRRRRRSSRRRRRRSRRRS",
             "SSRRSSSSRRRRRRRSRRSS",
-            "SSRRSSSSRSSSSSSSRRSS",
+            "SSRRSSSSSSRRRSSSRRSS",
             "SSSSSSSSSSSSSSSSSSSS"
           ],
           [
@@ -28392,25 +28393,25 @@
             "SRRRRRRSSRRRRRRSRRRS",
             "SRRRRRRSSRRRRRRSRRRS",
             "SRRRRRRSRRRRRRRSRRRS",
-            "SRRRRRRSRSSSSSSSRRRS",
+            "SRRRRRRSSSRRRSSSRRRS",
             "SSSSSSSSSSSSSSSSSSSS"
           ],
           [
-            "SSSRRRSSSSRRRSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSRSSRRS",
             "SRRRRRSSSSSSSSRSSRRS",
             "SRRRRRSSRRRRRRRSSRRS",
             "SRRRRRRSRRRRRRRSSRRS",
-            "SRRRRRRSRRRRRRSSSRRS",
-            "SRRRRRRSRRRRRRSSSRRS",
+            "RRRRRRRSRRRRRRSSSRRS",
+            "RRRRRRRSRRRRRRSSSRRS",
             "SRRRRRRSSRRRRRRSRRRS",
             "SRRRRRRSSRRRRRRSRRRS",
             "SRRRRRRSRRRRRRRSRRRS",
-            "SRRRRRRSRSSSSSSSRRRS",
-            "SSSSRRRSSSSSSSSSSSSS"
+            "SRRRRRRSSSRRRSSSRRRS",
+            "SSRRSRRSSSSSSSSSSSSS"
           ],
           [
-            "SSSSSSSSSSSSSSSSSSSS",
+            "SSRRSRRSSRRSRRSSSSSS",
             "SRRRRRRSRRRRRRRSRRRS",
             "SRRRRRRSRRRRRRRSRRRS",
             "SRRRRRRSRRRRRRRSRRRS",
@@ -28421,7 +28422,7 @@
             "SRRRRRRSRRRRRRRSRRRS",
             "SRRRRRRSRRRRRRRSRRRS",
             "SRRRRRRSRRRRRRRSRRRS",
-            "SSSSSSSSSSSSSSSSSSSS"
+            "SSSSSSSSRRSSRRSSSSSS"
           ],
           [
             "SSSSSSSSSSSSSSSSSSSS",
@@ -29413,6 +29414,32 @@
           "........................",
           "........................",
           "........................"
+        ],
+        [
+          "........................",
+          "........................",
+          "........................",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          "........................",
+          "........................",
+          "........................"
+        ],
+        [
+          "........................",
+          "........................",
+          "........................",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          "........................",
+          "........................",
+          "........................"
         ]
       ],
       "lootContext": {
@@ -29498,6 +29525,32 @@
             "........................",
             "........................",
             "........................"
+          ],
+          [
+            "........................",
+            "........................",
+            "........................",
+            ".........SSSSSS.........",
+            ".........SSSSSS.........",
+            ".........SSSSSS.........",
+            ".........SSSSSS.........",
+            ".........SSSSSS.........",
+            "........................",
+            "........................",
+            "........................"
+          ],
+          [
+            "........................",
+            "........................",
+            "........................",
+            ".........SSSSSS.........",
+            ".........SSSSSS.........",
+            ".........SSSSSS.........",
+            ".........SSSSSS.........",
+            ".........SSSSSS.........",
+            "........................",
+            "........................",
+            "........................"
           ]
         ]
       },
@@ -29525,7 +29578,7 @@
         }
       },
       "ports": [],
-      "size": [24, 6, 11],
+      "size": [24, 8, 11],
       "style": "gauntlet_authored_masonry"
     },
     {
@@ -29533,6 +29586,12 @@
       "id": "gauntlet_rural_substation_pole_body",
       "layers": [
         ["..", ".."],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
         ["pp", "pp"],
         ["pp", "pp"],
         ["pp", "pp"],
@@ -29555,6 +29614,12 @@
       "ownership": {
         "layers": [
           ["..", ".."],
+          ["SS", "SS"],
+          ["SS", "SS"],
+          ["SS", "SS"],
+          ["SS", "SS"],
+          ["SS", "SS"],
+          ["SS", "SS"],
           ["SS", "SS"],
           ["SS", "SS"],
           ["SS", "SS"],
@@ -29595,7 +29660,7 @@
         }
       },
       "ports": [],
-      "size": [2, 15, 2],
+      "size": [2, 21, 2],
       "style": "gauntlet_authored_masonry"
     },
     {

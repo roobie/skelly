@@ -73,7 +73,7 @@ local subYard = find(substation.templates, 'rural_substation_yard') + {
       'f......................f',
       'fffffffffffffffffff...ff',
     ] for y in std.range(1, 4)
-  ] + [substation.templates[1].layers[5]],
+  ] + find(substation.templates, 'rural_substation_yard').layers[5:],
 };
 local subPole = find(substation.templates, 'rural_substation_pole');
 local subVan = find(substation.templates, 'rural_substation_van_spot');
@@ -125,10 +125,10 @@ local compound(id, size, context, slots, entrance) = {
       kit.slot('front_fence', medicalFront, [0, 0, 37]), kit.slot('east_fence', medicalEast, [0, 0, 14], 1),
       kit.slot('west_fence', medicalWest, [20, 0, 14], 1),
     ], [9, 1, 12]),
-    compound('gauntlet_rural_substation', [34, 15, 26], subMain.lootContext, [
+    compound('gauntlet_rural_substation', [34, std.foldl(function(height, t) std.max(height, t.size[1]), [subMain, subYard, subPole, subVan], 0), 26], subMain.lootContext, [
       furnishedSlot(subMain, [4, 0, 0]), kit.slot('yard', subYard, [4, 0, 15]),
       kit.slot('pole', subPole, [0, 0, 19]), kit.slot('van', subVan, [30, 0, 15]),
-    ], [7, 1, 10]),
+    ], [4 + subMain.access.entrance[0], subMain.access.entrance[1], subMain.access.entrance[2]]),
     compound('gauntlet_crisis_hq', [60, 10, 60], hqMain.lootContext, [
       furnishedSlot(hqMain, [6, 0, 6]), kit.slot('back_wall', hqBack, [0, 0, 0]),
       kit.slot('left_wall', hqLeft, [0, 0, 1], 1), kit.slot('right_wall', hqRight, [59, 0, 1], 1),
