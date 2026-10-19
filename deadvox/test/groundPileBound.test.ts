@@ -1,0 +1,83 @@
+import { describe, expect, it } from 'vitest';
+import type { ItemDef, Registry } from '../src/core/content.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { PILE_GRID } from '../src/core/inventoryScale.ts';
+import type { LootContext } from '../src/core/loot.ts';
+import { groundPileIssue } from '../src/core/pileBound.ts';
+import { baseRegistry } from './baseRegistry.ts';
+
+type LootDef = typeof base.loot extends Map<string, infer T> ? T : never;
+
+const base = baseRegistry();
+const context: LootContext = { usage: ['Residential'], tier: 'Tier1' };
+const economy = { usage: ['Residential'], tiers: ['Tier1'] } as ItemDef['economy'];
+const cells = PILE_GRID.w * PILE_GRID.h;
+const STACK_LIMIT = 20;
+const CAP = 65_536;
+
+const item = (id: string, size: [number, number], stack?: number): ItemDef =>
+  ({ id, name: id, category: 'misc', weight: 1, size, economy, ...(stack === undefined ? {} : { stack }) }) as ItemDef;
+const table = (id: string, rolls: [number, number], entries: LootDef['entries']): LootDef => ({ id, rolls, entries });
+
+const registry: Registry = {
+  ...base,
+  items: new Map([
+    ...base.items,
+    ...[
+      item('pile_fixture_unit', [1, 1]),
+      item('pile_fixture_wide', [2, 1]),
+      item('pile_fixture_tall', [1, 2]),
+      item('pile_fixture_block', [PILE_GRID.w, PILE_GRID.h]),
+      item('pile_fixture_stackable', [1, 1], STACK_LIMIT),
+    ].map((def): [string, ItemDef] => [def.id, def]),
+  ]),
+  loot: new Map([
+    ...base.loot,
+    ...[
+      table('pile_fixture_two_blocks', [2, 2], [{ item: 'pile_fixture_block', weight: 1 }]),
+      table('pile_fixture_few_units', [3, 3], [{ item: 'pile_fixture_unit', weight: 1 }]),
+      table(
+        'pile_fixture_mixed_shapes',
+        [4, 4],
+        [
+          { item: 'pile_fixture_wide', weight: 1 },
+          { item: 'pile_fixture_tall', weight: 1 },
+        ],
+      ),
+    ].map((def): [string, LootDef] => [def.id, def]),
+  ]),
+};
+
+const issue = (supply: Parameters<typeof groundPileIssue>[1], stateCap = CAP) =>
+  groundPileIssue(registry, supply, context, stateCap);
+
+describe('ground pile bound', () => {
+  it('refuses a supply whose worst case overfills one pile and names its table', () => {
+    const message = issue({ kind: 'table', table: 'pile_fixture_two_blocks' });
+    expect(message).toContain('pile_fixture_two_blocks');
+    expect(message).toContain('overfill');
+  });
+
+  it('accepts a supply that fits one pile', () => {
+    expect(issue({ kind: 'table', table: 'pile_fixture_few_units' })).toBeUndefined();
+  });
+
+  it('reports a supply past the state cap as unproven, never accepted', () => {
+    const message = issue({ kind: 'table', table: 'pile_fixture_mixed_shapes' }, 3);
+    expect(message).toContain('unproven');
+    expect(issue({ kind: 'table', table: 'pile_fixture_mixed_shapes' })).toBeUndefined();
+  });
+
+  it('refuses fixed stock of one stackable that play would merge, because merging is not credited', () => {
+    const stock = Array.from({ length: cells + 1 }, () => ({ item: 'pile_fixture_stackable' }));
+    const inventory = new Inventory(registry);
+    const pos: [number, number, number] = [0, 0, 0];
+    for (const { item: type } of stock) {
+      expect(inventory.add(inventory.create(type), { kind: 'pile', pos })).toBe(true);
+    }
+    const message = issue({ kind: 'fixed', items: stock });
+    expect(message).toContain('does not credit stack merging');
+    expect(message).toContain('Split the stock across several anchors');
+    expect(issue({ kind: 'fixed', items: stock.slice(1) })).toBeUndefined();
+  });
+});
