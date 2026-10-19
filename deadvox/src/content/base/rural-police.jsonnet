@@ -242,7 +242,7 @@ local lintel = [
       F: { furniture: 'fridge', facing: 's', lootUsage: ['Residential'] },
       T: { furniture: 'range_table' },
       c: { furniture: 'chair' },
-      B: { furniture: 'bed', facing: 'e' },
+      B: { furniture: 'bed', facing: 'w' },
       s: { furniture: 'sofa' },
       V: { furniture: 'gauntlet_car_wreck_0_0_intact' },
       f: { furniture: 'police_file_cabinet', facing: 's' },

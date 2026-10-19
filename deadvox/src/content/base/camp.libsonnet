@@ -232,6 +232,18 @@ local campWallRunCrouchHole = campWallRun + {
       "name": "Folding cot",
       "size": [2, 1, 4],
       "color": "#677a82",
+      "shape": [
+        { "position": [0.05, 0, 0.05], "size": [0.08, 0.3, 0.08], "color": "#4a5256" },
+        { "position": [1.87, 0, 0.05], "size": [0.08, 0.3, 0.08], "color": "#4a5256" },
+        { "position": [0.05, 0, 3.87], "size": [0.08, 0.3, 0.08], "color": "#4a5256" },
+        { "position": [1.87, 0, 3.87], "size": [0.08, 0.3, 0.08], "color": "#4a5256" },
+        { "position": [0.05, 0, 1.96], "size": [0.08, 0.3, 0.08], "color": "#4a5256" },
+        { "position": [1.87, 0, 1.96], "size": [0.08, 0.3, 0.08], "color": "#4a5256" },
+        { "position": [0.05, 0.3, 0.05], "size": [1.9, 0.08, 3.9], "color": "#5b6468" },
+        { "position": [0.12, 0.38, 0.12], "size": [1.76, 0.07, 3.76], "color": "#b7ab8a" },
+        { "position": [0.1, 0.45, 0.12], "size": [1.8, 0.1, 2.4], "color": "#5d6a4a" },
+        { "position": [0.3, 0.45, 3.2], "size": [1.4, 0.14, 0.55], "color": "#c9c3b0" }
+      ],
       "rest": {
         "quality": 0.6,
         "sleep": true
