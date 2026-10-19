@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { lootPointStream, lootPointsByColumn, rollLoot } from '../src/core/loot.ts';
+import { groundLootSupplyIssues } from '../src/core/placementLoot.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -160,7 +161,7 @@ describe('ground loot', () => {
   it.each(['table', 'fixed'] as const)(
     '%s ground supply uses container admission without a furniture destination',
     (supply) => {
-      const { registry, site } = fixture(true, supply);
+      const { registry, site, placement } = fixture(true, supply);
       const points = site.lootPointsIn(0, 0);
       const ground = points.find((point) => point.channel === 'ground')!;
       const container = points.find((point) => point.channel === 'container')!;
@@ -173,6 +174,18 @@ describe('ground loot', () => {
         const rolled = rollLoot(registry, point, lootPointStream(seed, point));
         expect(rolled.length).toBeGreaterThan(0);
         expect(rolled.every((item) => item.type === 'fixture_allowed')).toBe(true);
+      }
+      if (supply === 'fixed') {
+        const { template } = placement;
+        expect(groundLootSupplyIssues(registry, template)).toEqual([]);
+        for (const item of ['fixture_wrong_usage', 'fixture_wrong_tier']) {
+          expect(registry.items.has(item)).toBe(true);
+          const rejected = groundLootSupplyIssues(registry, {
+            ...template,
+            groundLoot: [{ ...template.groundLoot![0]!, supply: { kind: 'fixed', items: [{ item }] } }],
+          });
+          expect(rejected.map(([path]) => path)).toEqual(['.groundLoot[0].supply.items[0].item']);
+        }
       }
     },
   );
@@ -249,25 +262,22 @@ describe('ground loot', () => {
 
   it('rejects an anchor inside a wall through content validation', () => {
     const data = fixtureData();
+    expect(buildRegistry([{ source: 'wall-fixture', data }]).issues).toEqual([]);
     data.templates![0]!.layers[2]![2] = '..#.....';
     const { issues } = buildRegistry([{ source: 'wall-fixture', data }]);
-    expect(
-      issues.some((issue) => issue.path.includes('groundLoot') && issue.message.includes('standing body clearance')),
-    ).toBe(true);
+    expect(issues.map(({ path }) => path)).toEqual(['templates[0].groundLoot[0]']);
   });
 
   it('keeps anchors out of reserved circulation and route poses', () => {
     const { registry, placement } = fixture(false);
+    expect(templateGroundLootIssues(registry, placement.template)).toEqual([]);
     const reserved = new Uint8Array(placement.template.blocks.length);
     const point = placement.template.groundLoot![0]!;
     const [x, y, z] = point.pos;
     const [sx, , sz] = placement.template.size;
     reserved[x + sx * (z + sz * y)] = 1;
-    expect(
-      templateGroundLootIssues(registry, { ...placement.template, reserved }).some(([, message]) =>
-        message.includes('reserved circulation'),
-      ),
-    ).toBe(true);
+    const issues = templateGroundLootIssues(registry, { ...placement.template, reserved });
+    expect(issues.map(([path]) => path)).toEqual(['.groundLoot[0]']);
     expect(templateGroundLootReservations(placement.template, [[x + 0.5, y, z + 0.5]]).length).toBeGreaterThan(0);
   });
 });
