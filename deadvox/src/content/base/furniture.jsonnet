@@ -1,4 +1,5 @@
-{
+local shape = import 'furniture-shape.libsonnet';
+shape.colliding({
   "furniture": [
     {
       "id": "kitchen_cupboard",
@@ -283,4 +284,4 @@
       }
     }
   ]
-}
+})

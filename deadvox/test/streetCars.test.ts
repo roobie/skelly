@@ -110,9 +110,23 @@ it('rejects a vehicle look naming an unknown blueprint or part', () => {
   expect(checkCar({ dirt: 1.5 }).length).toBeGreaterThan(0);
 });
 
-it('refuses a vehicle piece whose body is empty or spills out of its size, naming the piece', () => {
+const checkShaped = (solidFill: number, height = 0.5) => {
+  const shape = [{ position: [0, 0, 0] as [number, number, number], size: [1, height, 1] as [number, number, number] }];
+  const data: ContentFile = {
+    furniture: [{ id: 'fixture_bench', name: 'Bench', size: [1, 1, 1], color: '#5b605c', shape, solidFill }],
+  };
+  return buildRegistry([{ source: 'fixture-bench.json', data }]).issues;
+};
+
+it('refuses a vehicle or shaped piece whose solid cells are empty or spill out of its size, naming the piece', () => {
   const everyFitting = BLUEPRINTS.rover!.fittings.map(({ id }) => id);
-  for (const refused of [checkCar({ removed: everyFitting }), checkCar({}, [4, 4, 4])]) {
-    expect(refused.some(({ message }) => message.includes('"fixture_car"'))).toBe(true);
+  expect(checkShaped(0.01)).toEqual([]);
+  for (const [refused, id] of [
+    [checkCar({ removed: everyFitting }), 'fixture_car'],
+    [checkCar({}, [4, 4, 4]), 'fixture_car'],
+    [checkShaped(1), 'fixture_bench'],
+    [checkShaped(0.01, 2), 'fixture_bench'],
+  ] as const) {
+    expect(refused.some(({ message }) => message.includes(`"${id}"`))).toBe(true);
   }
 });

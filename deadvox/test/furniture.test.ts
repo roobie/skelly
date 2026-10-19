@@ -250,6 +250,7 @@ describe('furniture', () => {
         { position: [0.1, 0, 0.1], size: [0.3, 0.5, 0.3] },
         { position: [0.6, 0.5, 0.1], size: [0.3, 0.5, 0.3] },
       ],
+      solidFill: 0.01,
     };
     const { registry: fixtureRegistry, issues } = buildRegistry([
       { source: 'furniture-render-fixture.json', data: { furniture: [fixture] } },
