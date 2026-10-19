@@ -10,7 +10,7 @@ import {
   MeshLambertMaterial,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { type BlockEntities, type BlockEntity, panelFor } from '../core/blockEntities.ts';
+import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor } from '../core/blockEntities.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -213,8 +213,8 @@ export class FurnitureMeshes {
   /** A panel across the doorway, hinged at its low end along the wall, or a hatch's panel. */
   private door(entity: BlockEntity, material: MeshLambertMaterial, body: FurnitureDef): Group {
     const box = panelFor(entity, body, this.blockSize);
-    const isBodyDoor = body.shape !== undefined && body.door !== undefined;
-    const panelMaterial = isBodyDoor
+    const bodyDoor = isBodyDoor(body);
+    const panelMaterial = bodyDoor
       ? this.material(`#${new Color(body.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
       : material;
     const pivot = new Group();
@@ -224,7 +224,7 @@ export class FurnitureMeshes {
     panel.scale.set(...box.size);
     panel.position.set(...box.center);
     pivot.add(panel);
-    if (isBodyDoor) {
+    if (bodyDoor) {
       const alongX = entity.facing === 'n' || entity.facing === 's';
       const faceOutward = entity.facing === 'n' || entity.facing === 'w' ? -1 : 1;
       const handle = new Mesh(this.geometry, this.material(BODY_DOOR_HANDLE_COLOR));
@@ -247,8 +247,15 @@ export class FurnitureMeshes {
     if (!body.shape) {
       return pivot;
     }
+    const shaped = this.shaped(entity, body, material);
+    if (!bodyDoor) {
+      // A doorway leaf's planks or bars hang on the hinge, so they swing open with it.
+      shaped.position.sub(pivot.position);
+      pivot.add(shaped);
+      return pivot;
+    }
     const assembly = new Group();
-    assembly.add(this.shaped(entity, body, material));
+    assembly.add(shaped);
     assembly.add(pivot);
     return assembly;
   }

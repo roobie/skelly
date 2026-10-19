@@ -73,7 +73,9 @@ An exterior door slot is a weighted choice of door pieces: intact, missing and b
 outside. Each owns exactly the opening it fills, so the shell is unchanged and any variant fits
 the slot. The intact and boarded doors own their leaf cells; the missing door leaves the
 opening as shared air, which a body may walk through. Planks stand proud of the leaf on the
-street side, so a boarded door is still a door and can be opened from inside.
+street side, so a boarded door is still a door and can be opened from inside. Its shape
+hangs on the leaf and swings open with it: once open it clears its leaf cells like any
+doorway door, and only the front of a shaped container (a cabinet, a safe) keeps its body solid (`src/core/blockEntities.ts`, `isBodyDoor`).
 
 Boarding is a barricade made from inside, so it holds against the street. The boarded door's
 content names the barricaded side (`door.barredFrom`, a face of the door's facing), and a door
