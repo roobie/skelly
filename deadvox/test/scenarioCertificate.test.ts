@@ -14,7 +14,15 @@ import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
+import {
+  compileAssembly,
+  compileTemplate,
+  footprint,
+  type Placement,
+  placedBlockAt,
+  placedPoint,
+  type Turn,
+} from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
@@ -147,6 +155,19 @@ const obstruct = (chunk: Chunk, point: Readonly<Vec3>): void => {
       registry.blockIds.get('stone')!,
     );
   }
+};
+const ownedCells = (placement: Placement, y: number): Vec3[] => {
+  const [width, depth] = footprint(placement);
+  const [x0, , z0] = placement.origin;
+  const cells: Vec3[] = [];
+  for (let z = z0; z < z0 + depth; z++) {
+    for (let x = x0; x < x0 + width; x++) {
+      if (placedBlockAt(placement, [x, y, z]) !== undefined) {
+        cells.push([x, y, z]);
+      }
+    }
+  }
+  return cells;
 };
 
 class ObstructedSite extends CitySite {
@@ -318,6 +339,31 @@ describe('final composed body-route certificate', () => {
     const [sewer] = profile.city.underground!;
     const underground = [sewer!, { ...sewer!, id: `${sewer!.id}_copy` }];
     const city = { ...profile.city, underground };
+    expect(() =>
+      buildCityPlan({ seed: 9, registry, floor: 64, grid: cityGridOf(registry, city), scenario: { ...profile, city } }),
+    ).toThrow(UNDERGROUND_OVERLAP);
+  });
+
+  it('refuses a city plan whose underground element runs through a building above ground', () => {
+    const [sewer] = base.underground;
+    if (!sewer) {
+      throw new Error('Production city has no underground witness');
+    }
+    const street = 64 + 1;
+    const [own] = ownedCells(sewer.placement, street);
+    const building = base.placements.find(
+      (placement) => placement !== sewer.placement && ownedCells(placement, street).length > 0,
+    );
+    if (!(own && building)) {
+      throw new Error('Need an owned street-level cell in the sewer and in a building');
+    }
+    const [target] = ownedCells(building, street);
+    const [element] = profile.city.underground!;
+    const position: [number, number] = [
+      element!.position[0] + target![0] - own[0],
+      element!.position[1] + target![2] - own[2],
+    ];
+    const city = { ...profile.city, underground: [{ ...element!, position }] };
     expect(() =>
       buildCityPlan({ seed: 9, registry, floor: 64, grid: cityGridOf(registry, city), scenario: { ...profile, city } }),
     ).toThrow(UNDERGROUND_OVERLAP);

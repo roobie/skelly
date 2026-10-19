@@ -460,7 +460,8 @@ describe('content-owned city building types', () => {
           plan.placements.every(
             (placement) =>
               enabled.some(({ id }) => id === placement.template.id) ||
-              plan.lots?.some((lot) => lot.placement === placement),
+              plan.lots?.some((lot) => lot.placement === placement) ||
+              plan.underground.some((element) => element.placement === placement),
           ),
         ).toBe(true);
       }
