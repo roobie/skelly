@@ -54,6 +54,8 @@ const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
+  'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
+  'src/core/scenarioRoute.ts': 'Test-only route-proof support; its sole source user is a type-only import.',
   'src/core/pileDisplay.ts': 'Presentation-only pile projection; it does not alter simulation or save identity.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
   'src/game/indexedDbCommit.ts': 'IndexedDB commit policy runs only in the save worker, outside simulation state.',
