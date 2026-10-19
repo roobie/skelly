@@ -21,7 +21,7 @@ of the root package.
   to `gungen/`.
 
 Both tools depend on the core and never on each other. Only `thing-core` exists, as a
-README with no code; `WORK.md` says when each package is created.
+README with no code; `WORK.md`, "Phases" orders the work that creates each package.
 
 ## Why
 

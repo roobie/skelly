@@ -67,12 +67,12 @@ Settled:
 - The model schema is one neutral schema owned by `thing-core`; domain packs extend it.
 - The directory structure is fixed before any new feature work.
 - New packages live in the top-level `packages/` directory, each a workspace of the root
-  package. The four existing projects stay where they are until the repo is quieter, with few
-  open PRs; then they move under `packages/` too, in a repo-wide move on its own branch.
+  package. The four existing projects stay where they are; #962 tracks moving them under
+  `packages/` too, in a repo-wide move on its own branch once few PRs are open.
 - At pre-pre-alpha no old format is kept alive; only deadvox validating and loading every
   export is owed.
-- Work is tracked in this file and GitHub issues, with no work-item prefix until the
-  repo-wide choice in the open questions is made. Each phase may keep a short-lived task
+- Work is tracked in this file and GitHub issues, with no work-item prefix until open
+  question 6 is answered. Each phase may keep a short-lived task
   file in `things/`, deleted when the phase merges.
 
 Proposed, not settled: the target structure below, the layer split inside the engine, and
@@ -87,7 +87,7 @@ every answer to an open question. Move an item up here once it is decided.
 | Parts, ports, templates, resolving, validation, generation | `engine/assembly` |
 | Materials, mass and center of mass, anchors, neutral model envelope | `thing-core` |
 | GLB and model-entry serialization | with the package that owns the format's inputs |
-| Scene (done), camera, parameter panel, URL state | `packages/tool-ui` |
+| Scene, camera, parameter panel, URL state | `packages/tool-ui` |
 | Generic parts and rules | `thing-authoring-tool` |
 | Gun parts, rules, cycling, ammo UI | `gun-authoring-tool` |
 | Gameplay and content fields | `deadvox` |
@@ -106,6 +106,8 @@ Imports run one way: foundation, shapes, assembly, thing-core, tools. Deadvox de
 4. Whether to add an export package now or keep each format with its inputs until a second
    format exists.
 5. Where parts shared by both tools live (a turned stock, for instance).
+6. Which work-item prefix the things packages use, beside `g`, `d`, `m` and `r` in
+   `AGENTS.md`, "Work item IDs"; the close-out phase writes the answer into `AGENTS.md`.
 
 ## Phases
 
