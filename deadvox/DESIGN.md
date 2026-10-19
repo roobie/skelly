@@ -682,14 +682,33 @@ same admission without becoming optional. Source-point identity owns the random
 stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
-Items carry no record of where they were born. A central economy counts items by type
-and by where they are when it counts (map, cargo, player, hoard), so a birthplace adds
-nothing to the count, and keeping one only stopped equal items from stacking. State
-the economy needs about a spawn location (whether its item was taken, refill, required
-stock, how long an untouched item lasts) belongs to the loot point, not to the item.
-Debug stock is kept out of the world economy by the scene that supplies it, not by a
-mark on the item. See `src/core/items.ts`, `stackRoom`, and `src/core/loot.ts`,
-`LootSpawnPoint`.
+Placement follows a DayZ-style central economy: usage tags and tiers decide which items
+a source admits, and budgets are to bound how much of each type the world holds (#699).
+See `src/core/loot.ts`, `economyEligible`.
+The one exception to the DayZ model is restock: by default the economy places a
+place's loot once, when the place is first generated, and never restocks it. What a
+player takes stays gone, so scarcity holds, a searched place stays spent instead of
+becoming a farm, and a spent place pushes the player on to new ones. The world is then
+its generation plus what players did to it, so a save need record only changes.
+Dynamic events (crashes, convoys and the like) bring supply under their own rules,
+outside this default.
+
+Having rolled should be a property of the chunk column that loot arrives with, not of
+a loot point or an item: a column loaded once never rolls loot again. One mark per
+column covers every point in it, including points with no furniture to anchor them,
+so nothing done to a point (moving, emptying or destroying what it filled) can make it
+roll again. Furniture follows the same mark: once a column has rolled, furniture
+removed from it stays gone, because a returning piece would bring a fresh roll of its
+loot, which is a restock. Until d470 adds that mark, a piece of furniture's claimed
+origin does both jobs: it stays claimed wherever the piece is carried, so the piece is
+never added again and its loot never rolls again; see `src/core/blockEntities.ts`,
+`BlockEntities.add`.
+
+Items carry no record of where they were born. A budget is to count items by type and
+by where they are (map, cargo, player, hoard), which needs no birthplace, and keeping one
+only stopped equal items from stacking. Debug stock is kept out of the world economy by
+the scene that supplies it, not by a mark on the item. See `src/core/items.ts`,
+`stackRoom`, and `src/core/loot.ts`, `LootSpawnPoint`.
 
 ## Items and inventory
 
