@@ -645,21 +645,22 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 By default, world loot rolls once, when its place is first generated, and is inert
 after that: nothing spawns over time. What a player takes or leaves stays that way, so
 scarcity holds, a searched place stays spent instead of becoming a farm, and the world
-is its generation plus what players did to it, so a save records only changes.
+is its generation plus what players did to it, so a save need record only changes.
 Dynamic events (crashes, convoys and the like) bring supply under their own rules,
 outside this default.
 
-Having rolled is a property of the chunk column that loot arrives with, not of a loot
-point or an item: a column loaded once never rolls loot again. One mark per column
-covers every point in it, including points with no furniture to anchor them, and
-nothing done to a point (moving, emptying or destroying what it filled) can make it
-roll again.
+Having rolled should be a property of the chunk column that loot arrives with, not of
+a loot point or an item: a column loaded once never rolls loot again. One mark per
+column covers every point in it, including points with no furniture to anchor them,
+so nothing done to a point (moving, emptying or destroying what it filled) can make it
+roll again. Until d470 adds that mark, a piece of furniture's claimed origin keeps its
+loot from rolling again; see `src/core/blockEntities.ts`, `BlockEntities.add`.
 
 Items carry no record of where they were born. Counting items by type and by where
 they are (map, cargo, player, hoard) needs no birthplace, and keeping one only stopped
-equal items from stacking. Debug stock is kept out of the world economy by the scene that supplies it, not by a
-mark on the item. See `src/core/items.ts`, `stackRoom`, and `src/core/loot.ts`,
-`LootSpawnPoint`.
+equal items from stacking. Debug stock is kept out of the world economy by the scene
+that supplies it, not by a mark on the item. See `src/core/items.ts`, `stackRoom`, and
+`src/core/loot.ts`, `LootSpawnPoint`.
 
 ## Items and inventory
 
