@@ -24,6 +24,7 @@ interface VehicleBody {
 }
 
 const fitted = new Map<string, Fitted>();
+const solids = new Map<string, readonly Vec3i[]>();
 
 /** A blueprint's voxels without the `removed` fittings. */
 export const fittedGrid = (blueprint: string, removed: readonly string[]): Fitted => {
@@ -54,7 +55,15 @@ export const fittedGrid = (blueprint: string, removed: readonly string[]): Fitte
  * and a cabin's walls alone fill too little of a block to stop anyone walking into it. A block outside `size`
  * is kept so a load check can refuse it.
  */
-export const solidBlocks = ({ blueprint, removed, solidFill }: VehicleBody, [width, , depth]: Vec3i): Vec3i[] => {
+export const solidBlocks = (
+  { blueprint, removed, solidFill }: VehicleBody,
+  [width, , depth]: Vec3i,
+): readonly Vec3i[] => {
+  const key = JSON.stringify([blueprint, removed, solidFill, width, depth]);
+  const known = solids.get(key);
+  if (known !== undefined) {
+    return known;
+  }
   const { grid, baseY } = fittedGrid(blueprint, removed);
   const [length, , across] = BLUEPRINTS[blueprint]!.lattice.map((cells) => cells * VOXELS_PER_CELL) as [
     number,
@@ -74,13 +83,19 @@ export const solidBlocks = ({ blueprint, removed, solidFill }: VehicleBody, [wid
     const [x, , z] = keyVoxel(column);
     const i = Math.floor((z + 0.5 - across / 2) / VOXELS_PER_BLOCK + width / 2);
     const k = Math.floor((length / 2 - x - 0.5) / VOXELS_PER_BLOCK + depth / 2);
-    for (let y = low; y <= high; y++) {
-      const block = `${i},${Math.floor((y - baseY + 0.5) / VOXELS_PER_BLOCK)},${k}`;
-      filled.set(block, (filled.get(block) ?? 0) + 1);
+    const top = high - baseY + 1;
+    for (let row = low - baseY; row < top; ) {
+      const j = Math.floor(row / VOXELS_PER_BLOCK);
+      const end = Math.min(top, (j + 1) * VOXELS_PER_BLOCK);
+      const block = `${i},${j},${k}`;
+      filled.set(block, (filled.get(block) ?? 0) + end - row);
+      row = end;
     }
   }
   const needed = solidFill * VOXELS_PER_BLOCK ** 3;
-  return [...filled].flatMap(([block, count]) =>
+  const blocks = [...filled].flatMap(([block, count]) =>
     count >= needed ? [block.split(',').map(Number) as unknown as Vec3i] : [],
   );
+  solids.set(key, blocks);
+  return blocks;
 };
