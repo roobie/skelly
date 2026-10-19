@@ -63,7 +63,7 @@ export const playCrosshairFrame = (
 };
 
 export interface PlayHudFrame {
-  readonly hud: string;
+  readonly hud: HintText;
   readonly prompt: HintText;
   readonly crosshairVisible: boolean;
   readonly crosshairScreenPosition?: { readonly left: number; readonly top: number } | undefined;
@@ -144,24 +144,27 @@ export const playNeedsText = ({
   ].join('\n');
 };
 
-const optionalLine = (visible: boolean, text: string): string => (visible ? text : '');
+const optionalLine = (visible: boolean, text: HintText): HintText => (visible ? text : '');
 
-export const playHudText = (state: PlayHudState, visible: Readonly<HudOptionsState>): string => {
+export const playHudText = (state: PlayHudState, visible: Readonly<HudOptionsState>): TemplateResult | '' => {
   const { calendar, speed, paused, carriedGrams, fps, seed, radiusMetres, walking, meshed, pending, looking } = state;
   const [x, y, z] = state.positionMetres.map((v) => v.toFixed(1));
   const acceleration = speed > 1.05 ? `   ×${speed.toFixed(0)}` : '';
-  return [
-    optionalLine(visible.clock, `${formatClock(calendar)}${acceleration}${paused ? '   paused' : ''}`),
-    optionalLine(visible.stats, playNeedsText(state)),
-    optionalLine(visible.stats, `carrying ${(carriedGrams / 1000).toFixed(1)} kg`),
-    optionalLine(visible.details, `${fps.toFixed(0)} fps   seed ${seed}`),
-    optionalLine(visible.details, `radius ${radiusMetres} m   ${walking ? 'walking' : 'jogging'} (Z)`),
-    optionalLine(visible.details, `pos ${x} ${y} ${z} m`),
-    optionalLine(visible.details, `chunks ${meshed} meshed, ${pending} pending`),
-    optionalLine(visible.interaction && Boolean(looking), `looking at ${looking}`),
-  ]
-    .filter((line) => line !== '')
-    .join('\n');
+  return hintLines(
+    [
+      optionalLine(visible.clock, `${formatClock(calendar)}${acceleration}${paused ? '   paused' : ''}`),
+      optionalLine(visible.stats, playNeedsText(state)),
+      optionalLine(visible.stats, `carrying ${(carriedGrams / 1000).toFixed(1)} kg`),
+      optionalLine(visible.details, `${fps.toFixed(0)} fps   seed ${seed}`),
+      optionalLine(
+        visible.details,
+        html`radius ${radiusMetres} m   ${walking ? 'walking' : 'jogging'} (${keyCap('movement.walk-toggle')})`,
+      ),
+      optionalLine(visible.details, `pos ${x} ${y} ${z} m`),
+      optionalLine(visible.details, `chunks ${meshed} meshed, ${pending} pending`),
+      optionalLine(visible.interaction && Boolean(looking), `looking at ${looking}`),
+    ].filter((line) => line !== ''),
+  );
 };
 
 export interface PlayPromptState {

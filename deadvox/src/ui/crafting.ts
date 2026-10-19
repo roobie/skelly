@@ -73,7 +73,7 @@ export const renderCraftStatus = (
                 ? html`<button type="button" @click=${actions.continue}>Continue (${keyCap('craft.continue')})</button>`
                 : nothing
             }
-            <button type="button" @click=${actions.stop}>Stop (X)</button>
+            <button type="button" @click=${actions.stop}>Stop (${keyCap('handling.stop')})</button>
           `,
         })
       : nothing,

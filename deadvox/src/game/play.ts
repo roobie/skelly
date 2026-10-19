@@ -3057,7 +3057,7 @@ export const startPlay = (
     };
   };
   const needsText = (): string => playNeedsText(statusView());
-  const hudText = (looking: string, visible: Readonly<HudOptionsState>): string =>
+  const hudText = (looking: string, visible: Readonly<HudOptionsState>) =>
     playHudText(
       {
         ...statusView(),

@@ -399,7 +399,7 @@ const furnitureBodyTemplate = (
     return html`<p class="inv-muted">Searching…</p>`;
   }
   if (furniture.searchLabel) {
-    return html`<button class="inv-option" type="button" @click=${() => search(furniture.uid)}><span>Search it (S)</span><span class="inv-time">${furniture.searchLabel}</span></button>`;
+    return html`<button class="inv-option" type="button" @click=${() => search(furniture.uid)}><span>Search it (${keyCap('inventory.search')})</span><span class="inv-time">${furniture.searchLabel}</span></button>`;
   }
   return furniture.grids.map(
     (pocket) => html`
