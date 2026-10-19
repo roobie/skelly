@@ -41,10 +41,10 @@ export interface CapturedSky {
 }
 export const skyFurniture = (entities: BlockEntities, bounds: SkyBounds): SkyBounds[] =>
   [...entities.all]
-    .filter((entity) => entities.blocks(entity))
-    .map((entity) => ({
-      min: [...entity.pos] as Vec3,
-      max: entity.pos.map((value, axis) => value + entity.size[axis]!) as Vec3,
+    .flatMap((entity) => entities.blockingBoxes(entity))
+    .map(({ pos, size }) => ({
+      min: [...pos] as Vec3,
+      max: pos.map((value, axis) => value + size[axis]!) as Vec3,
     }))
     .filter((box) => overlapsSky(bounds, box));
 

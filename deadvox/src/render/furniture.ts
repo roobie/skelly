@@ -141,7 +141,7 @@ export class FurnitureMeshes {
       return workshopLift(entity, this.blockSize);
     }
     if (def.vehicle) {
-      return vehicleModel(entity, def.vehicle, this.blockSize);
+      return vehicleModel(entity, def.vehicle, def.size[1], this.blockSize);
     }
     if (def.door) {
       return this.door(entity, material, def);

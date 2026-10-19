@@ -100,7 +100,8 @@
         "blueprint": "rover",
         "body": "#b3a07c",
         "dirt": 0.14999999999999999,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -112,7 +113,8 @@
         "blueprint": "rover",
         "body": "#b3a07c",
         "dirt": 0.14999999999999999,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -124,7 +126,8 @@
         "blueprint": "rover",
         "body": "#b3a07c",
         "dirt": 0.14999999999999999,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -145,7 +148,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -164,7 +168,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -196,7 +201,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -208,7 +214,8 @@
         "blueprint": "rover",
         "body": "#b3a07c",
         "dirt": 0.5,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -220,7 +227,8 @@
         "blueprint": "rover",
         "body": "#b3a07c",
         "dirt": 0.5,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -232,7 +240,8 @@
         "blueprint": "rover",
         "body": "#b3a07c",
         "dirt": 0.5,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -253,7 +262,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -272,7 +282,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -304,7 +315,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -316,7 +328,8 @@
         "blueprint": "rover",
         "body": "#b3a07c",
         "dirt": 0.84999999999999998,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -328,7 +341,8 @@
         "blueprint": "rover",
         "body": "#b3a07c",
         "dirt": 0.84999999999999998,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -340,7 +354,8 @@
         "blueprint": "rover",
         "body": "#b3a07c",
         "dirt": 0.84999999999999998,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -361,7 +376,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -380,7 +396,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -412,7 +429,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -424,7 +442,8 @@
         "blueprint": "rover",
         "body": "#6f7f8f",
         "dirt": 0.14999999999999999,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -436,7 +455,8 @@
         "blueprint": "rover",
         "body": "#6f7f8f",
         "dirt": 0.14999999999999999,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -448,7 +468,8 @@
         "blueprint": "rover",
         "body": "#6f7f8f",
         "dirt": 0.14999999999999999,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -469,7 +490,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -488,7 +510,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -520,7 +543,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -532,7 +556,8 @@
         "blueprint": "rover",
         "body": "#6f7f8f",
         "dirt": 0.5,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -544,7 +569,8 @@
         "blueprint": "rover",
         "body": "#6f7f8f",
         "dirt": 0.5,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -556,7 +582,8 @@
         "blueprint": "rover",
         "body": "#6f7f8f",
         "dirt": 0.5,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -577,7 +604,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -596,7 +624,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -628,7 +657,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -640,7 +670,8 @@
         "blueprint": "rover",
         "body": "#6f7f8f",
         "dirt": 0.84999999999999998,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -652,7 +683,8 @@
         "blueprint": "rover",
         "body": "#6f7f8f",
         "dirt": 0.84999999999999998,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -664,7 +696,8 @@
         "blueprint": "rover",
         "body": "#6f7f8f",
         "dirt": 0.84999999999999998,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -685,7 +718,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -704,7 +738,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -736,7 +771,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -748,7 +784,8 @@
         "blueprint": "rover",
         "body": "#8c3b32",
         "dirt": 0.14999999999999999,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -760,7 +797,8 @@
         "blueprint": "rover",
         "body": "#8c3b32",
         "dirt": 0.14999999999999999,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -772,7 +810,8 @@
         "blueprint": "rover",
         "body": "#8c3b32",
         "dirt": 0.14999999999999999,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -793,7 +832,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -812,7 +852,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -844,7 +885,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -856,7 +898,8 @@
         "blueprint": "rover",
         "body": "#8c3b32",
         "dirt": 0.5,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -868,7 +911,8 @@
         "blueprint": "rover",
         "body": "#8c3b32",
         "dirt": 0.5,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -880,7 +924,8 @@
         "blueprint": "rover",
         "body": "#8c3b32",
         "dirt": 0.5,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -901,7 +946,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -920,7 +966,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -952,7 +999,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -964,7 +1012,8 @@
         "blueprint": "rover",
         "body": "#8c3b32",
         "dirt": 0.84999999999999998,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -976,7 +1025,8 @@
         "blueprint": "rover",
         "body": "#8c3b32",
         "dirt": 0.84999999999999998,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -988,7 +1038,8 @@
         "blueprint": "rover",
         "body": "#8c3b32",
         "dirt": 0.84999999999999998,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1009,7 +1060,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1028,7 +1080,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1060,7 +1113,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1072,7 +1126,8 @@
         "blueprint": "rover",
         "body": "#4f6b4a",
         "dirt": 0.14999999999999999,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1084,7 +1139,8 @@
         "blueprint": "rover",
         "body": "#4f6b4a",
         "dirt": 0.14999999999999999,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1096,7 +1152,8 @@
         "blueprint": "rover",
         "body": "#4f6b4a",
         "dirt": 0.14999999999999999,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1117,7 +1174,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1136,7 +1194,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1168,7 +1227,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1180,7 +1240,8 @@
         "blueprint": "rover",
         "body": "#4f6b4a",
         "dirt": 0.5,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1192,7 +1253,8 @@
         "blueprint": "rover",
         "body": "#4f6b4a",
         "dirt": 0.5,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1204,7 +1266,8 @@
         "blueprint": "rover",
         "body": "#4f6b4a",
         "dirt": 0.5,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1225,7 +1288,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1244,7 +1308,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1276,7 +1341,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1288,7 +1354,8 @@
         "blueprint": "rover",
         "body": "#4f6b4a",
         "dirt": 0.84999999999999998,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1300,7 +1367,8 @@
         "blueprint": "rover",
         "body": "#4f6b4a",
         "dirt": 0.84999999999999998,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1312,7 +1380,8 @@
         "blueprint": "rover",
         "body": "#4f6b4a",
         "dirt": 0.84999999999999998,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1333,7 +1402,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1352,7 +1422,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1384,7 +1455,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1396,7 +1468,8 @@
         "blueprint": "rover",
         "body": "#c8c3b4",
         "dirt": 0.14999999999999999,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1408,7 +1481,8 @@
         "blueprint": "rover",
         "body": "#c8c3b4",
         "dirt": 0.14999999999999999,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1420,7 +1494,8 @@
         "blueprint": "rover",
         "body": "#c8c3b4",
         "dirt": 0.14999999999999999,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1441,7 +1516,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1460,7 +1536,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1492,7 +1569,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1504,7 +1582,8 @@
         "blueprint": "rover",
         "body": "#c8c3b4",
         "dirt": 0.5,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1516,7 +1595,8 @@
         "blueprint": "rover",
         "body": "#c8c3b4",
         "dirt": 0.5,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1528,7 +1608,8 @@
         "blueprint": "rover",
         "body": "#c8c3b4",
         "dirt": 0.5,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1549,7 +1630,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1568,7 +1650,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1600,7 +1683,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1612,7 +1696,8 @@
         "blueprint": "rover",
         "body": "#c8c3b4",
         "dirt": 0.84999999999999998,
-        "removed": []
+        "removed": [],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1624,7 +1709,8 @@
         "blueprint": "rover",
         "body": "#c8c3b4",
         "dirt": 0.84999999999999998,
-        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"]
+        "removed": ["door-front-near", "door-front-far", "door-rear-near", "door-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1636,7 +1722,8 @@
         "blueprint": "rover",
         "body": "#c8c3b4",
         "dirt": 0.84999999999999998,
-        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"]
+        "removed": ["wheel-front-near", "wheel-front-far", "wheel-rear-near", "wheel-rear-far"],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1657,7 +1744,8 @@
           "front-panel",
           "front-bumper",
           "rear-bumper"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1676,7 +1764,8 @@
           "rear-bumper",
           "wheel-rear-near",
           "wheel-rear-far"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {
@@ -1708,7 +1797,8 @@
           "tailgate-upper",
           "tailgate-lower",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {

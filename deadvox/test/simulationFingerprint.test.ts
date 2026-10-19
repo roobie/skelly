@@ -296,8 +296,8 @@ describe('simulation source fingerprint', () => {
     expect(unclassified, `Unclassified runtime source modules: ${unclassified.join(', ')}`).toEqual([]);
     expect(graph.sources.has('src/core/authoredTerrain.mjs')).toBe(true);
     expect(graph.sources.has('src/core/authoredTerrain.d.mts')).toBe(false);
-    expect(SIMULATION_EXCLUSIONS).toContain('src/vehicles');
-    expect(graph.sources.has('src/vehicles/model.ts')).toBe(false);
+    // A vehicle piece's solid blocks come from its fitted parts, so that geometry decides collision.
+    expect(graph.sources.has('src/vehicles/solid.ts')).toBe(true);
   });
 
   it('fingerprints pure mobgen modules imported by the simulation', async () => {

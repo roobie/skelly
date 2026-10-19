@@ -4,22 +4,26 @@ import {
   BufferGeometry,
   Color,
   Group,
+  Matrix4,
   Mesh,
   MeshLambertMaterial,
   MeshPhongMaterial,
+  Quaternion,
+  Vector3,
 } from 'three';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { FurnitureDef } from '../core/content.ts';
+import { rotationOf } from '../core/orientation.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
-import { BLUEPRINTS, CATALOGUE } from '../vehicles/catalogue.ts';
+import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
-import { newInstance, type Paint, PartLibrary, VOXEL } from '../vehicles/model.ts';
-import { GLASS, keyVoxel, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
+import { newInstance, type Paint, VOXEL } from '../vehicles/model.ts';
+import { fittedGrid } from '../vehicles/solid.ts';
+import { GLASS, type MeshBuffers, meshGrid, type Rgb } from '../vehicles/voxels.ts';
 
 /** A furniture def's procedural variant of a vehicle: its blueprint, paint, dirt and absent parts. */
 export type VehicleLook = NonNullable<FurnitureDef['vehicle']>;
 
-const partLibrary = new PartLibrary(CATALOGUE);
 const SEAM_DARKENING = 0.72;
 const GRIME = new Color('#4a3b2c');
 const GRIME_ON_PAINT = 0.65;
@@ -71,12 +75,7 @@ const displayOf = (look: VehicleLook): Display => {
   let display = displays.get(key);
   if (display === undefined) {
     const instance = vehicleInstanceOf(look);
-    const grid: VoxelGrid = new Map();
-    for (const fitting of instance.fittings) {
-      for (const [voxel, material] of partLibrary.placed(fitting).grid) {
-        grid.set(voxel, material);
-      }
-    }
+    const { grid, baseY } = fittedGrid(look.blueprint, look.removed);
     const { solid, clear } = meshGrid(
       grid,
       (material) => rgb(instance.paint, look.dirt, material),
@@ -84,9 +83,7 @@ const displayOf = (look: VehicleLook): Display => {
     );
     const { lattice } = BLUEPRINTS[look.blueprint]!;
     display = {
-      solidBaseY: Math.min(
-        ...[...grid].flatMap(([voxel, material]) => (material === GLASS ? [] : [keyVoxel(voxel)[1] * VOXEL])),
-      ),
+      solidBaseY: baseY * VOXEL,
       solidGeometry: geometryOf(solid, lattice),
       clearGeometry: geometryOf(clear, lattice),
     };
@@ -123,16 +120,27 @@ const addBox = (group: Group, material: MeshLambertMaterial, blockSize: number, 
   group.add(mesh);
 };
 
-/** Renders a furniture def's vehicle look, standing on its lowest solid voxel. */
-export const vehicleModel = (entity: BlockEntity, look: VehicleLook, blockSize = BLOCK_SIZE): Group => {
+/** The model's forward +x turned to the piece's front, local −z. */
+const FORWARD_TO_FRONT = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2);
+
+/** Renders a furniture def's vehicle look in the piece's pose, standing on its lowest solid voxel. */
+export const vehicleModel = (
+  entity: BlockEntity,
+  look: VehicleLook,
+  pieceHeight: number,
+  blockSize = BLOCK_SIZE,
+): Group => {
   const group = new Group();
   const { solidBaseY, solidGeometry, clearGeometry } = displayOf(look);
-  group.position.set(
-    (entity.pos[0] + entity.size[0] / 2) * blockSize,
-    entity.pos[1] * blockSize - solidBaseY,
-    (entity.pos[2] + entity.size[2] / 2) * blockSize,
-  );
-  group.rotation.y = Math.PI / 2;
+  const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
+  group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!)).multiply(FORWARD_TO_FRONT);
+  const [x, y, z] = entity.pos;
+  const [width, height, depth] = entity.size;
+  group.position
+    .set(x + width / 2, y + height / 2, z + depth / 2)
+    .addScaledVector(up!, -pieceHeight / 2)
+    .multiplyScalar(blockSize)
+    .addScaledVector(up!, -solidBaseY);
   if (solidGeometry) {
     const mesh = new Mesh(solidGeometry, solidMaterial);
     mesh.castShadow = true;

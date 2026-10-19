@@ -355,7 +355,8 @@
           "wheel-rear-near",
           "wheel-rear-far",
           "spare-wheel"
-        ]
+        ],
+        "solidFill": 0.40000000000000002
       }
     },
     {

@@ -118,7 +118,8 @@ const firstPickCell = ({
     if (!definition || (throughLadders && definition.climbable)) {
       return isSolid(x, y, z);
     }
-    return !definition.door || isBodyDoor(definition) || !entity!.open;
+    // A piece is picked only where it can be collided with, so aiming at empty air never selects one.
+    return definition.door ? isBodyDoor(definition) || !entity!.open : entities.hasPartAt(x, y, z);
   });
 
 export interface FurniturePickHit {
