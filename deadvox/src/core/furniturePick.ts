@@ -1,5 +1,5 @@
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
-import { type DoorPanelBox, panelFor } from './blockEntities.ts';
+import { type DoorPanelBox, isBodyDoor, panelFor } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
 import { type RayHit, raycast, type SolidAt } from './raycast.ts';
 
@@ -118,7 +118,7 @@ const firstPickCell = ({
     if (!definition || (throughLadders && definition.climbable)) {
       return isSolid(x, y, z);
     }
-    return !definition.door || definition.shape !== undefined || !entity!.open;
+    return !definition.door || isBodyDoor(definition) || !entity!.open;
   });
 
 export interface FurniturePickHit {
@@ -138,14 +138,14 @@ const resolvePick = ({
   blockSize: number;
 }): FurniturePickHit | undefined => {
   const cellEntity = cellHit ? entities.at(...cellHit.block) : undefined;
-  const shapedDoor = panelHit && entities.defOf(panelHit.entity).shape !== undefined;
-  const sameUnshapedDoorCell = !shapedDoor && panelHit && cellEntity?.uid === panelHit.entity.uid;
+  const bodyDoor = panelHit && isBodyDoor(entities.defOf(panelHit.entity));
+  const sameUnshapedDoorCell = !bodyDoor && panelHit && cellEntity?.uid === panelHit.entity.uid;
   if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || sameUnshapedDoorCell)) {
     return { entity: panelHit.entity, distanceBlocks: panelHit.distance / blockSize };
   }
   if (cellEntity && cellHit) {
     const definition = entities.defOf(cellEntity);
-    if (!definition.door || (definition.shape !== undefined && cellEntity.open)) {
+    if (!definition.door || (isBodyDoor(definition) && cellEntity.open)) {
       return { entity: cellEntity, distanceBlocks: cellHit.distance };
     }
   }

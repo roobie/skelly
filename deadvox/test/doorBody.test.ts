@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { FurnitureDef, Registry } from '../src/core/content.ts';
+import { pickFurnitureAndObstruction } from '../src/core/furniturePick.ts';
 
 const shape = [{ position: [0, 0, 0] as [number, number, number], size: [2, 4, 1] as [number, number, number] }];
 const door = { handlingSimSeconds: 0.3 };
@@ -27,5 +28,21 @@ describe('opened doors', () => {
   it('keeps the body of a container front solid when it is open', () => {
     opened('body_front', 4);
     expect(entities.isSolid(0, 0, 4)).toBe(true);
+  });
+
+  it('stops a pick ray at an open container front but not at an open shaped door leaf', () => {
+    opened('shaped_leaf', 10);
+    opened('body_front', 14);
+    const obstruction = (z: number) =>
+      pickFurnitureAndObstruction({
+        entities,
+        origin: [1, 1.5, z - 1.5],
+        direction: [0, 0, 1],
+        maxDistance: 3,
+        blockSize: 0.5,
+        isSolid: () => false,
+      }).obstructionDistanceBlocks;
+    expect(obstruction(10)).toBeUndefined();
+    expect(obstruction(14)).toBeCloseTo(1.5);
   });
 });

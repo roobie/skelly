@@ -375,8 +375,9 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   climber stands in front of a ladder, since either would wall off a floor. An
   open upright door's doorway takes a piece, because barricading a door is a
   use, not a mistake; the door then cannot close over it, and a moved piece
-  blocks shamblers like any solid. A shaped door's panel stays in its cells,
-  and an open hatch is a drop, so neither takes a piece. See `src/core/blockEntities.ts`, `inDoorway`.
+  blocks shamblers like any solid. The front of a shaped container is its
+  body, which an open door doesn't clear, and an open hatch is a drop, so
+  neither takes a piece. See `src/core/blockEntities.ts`, `inDoorway`.
 - **A carried piece carries its contents.** An explosive inside a carried
   piece goes off at its carrier, because the piece is in their hands, not where
   it last stood. See `src/game/session.ts`, `detonationPoint`.

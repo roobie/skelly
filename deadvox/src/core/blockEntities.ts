@@ -139,7 +139,7 @@ const hatchPanel = (entity: BlockEntity, blockSize: number): DoorPanelBox => {
 
 /** The panel a door shows and is picked by: a hatch's, or an upright door's. */
 export const panelFor = (entity: BlockEntity, definition: FurnitureDef, blockSize: number): DoorPanelBox =>
-  definition.door?.hatch ? hatchPanel(entity, blockSize) : doorPanel(entity, blockSize, definition.shape !== undefined);
+  definition.door?.hatch ? hatchPanel(entity, blockSize) : doorPanel(entity, blockSize, isBodyDoor(definition));
 
 export const searchTime = (def: FurnitureDef, { search }: InventoryTuningDef): number => {
   const cells = (def.container?.pockets ?? []).reduce((sum, p) => sum + p.grid[0] * p.grid[1], 0);

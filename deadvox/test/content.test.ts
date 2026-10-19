@@ -4,6 +4,7 @@ import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type 
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
+import { isBodyDoor } from '../src/core/blockEntities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
 import { blockColors, requiredContentIssues, validateContent } from '../src/core/content.ts';
@@ -2199,8 +2200,8 @@ describe('templates', () => {
     });
     expect(exteriorDoors.length).toBeGreaterThan(0);
     for (const piece of exteriorDoors) {
-      // Shaped doors open a cabinet front but keep their body solid, sealing an exterior passage.
-      expect(baseRegistry.furniture.get(piece.furniture)!.shape, piece.furniture).toBeUndefined();
+      // A container front opens but keeps its body solid, sealing an exterior passage.
+      expect(isBodyDoor(baseRegistry.furniture.get(piece.furniture)!), piece.furniture).toBe(false);
     }
   });
 
