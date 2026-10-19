@@ -2186,9 +2186,9 @@ describe('templates', () => {
 
   it('keeps upright doors on template outer faces passable when opened', () => {
     const exteriorDoors = [...baseRegistry.templates.values()].flatMap((definition) => {
-      const template = compileTemplate(baseRegistry, definition);
-      const [width, , depth] = template.size;
-      return template.pieces.filter((piece) => {
+      const compiled = compileTemplate(baseRegistry, definition);
+      const [width, , depth] = compiled.size;
+      return compiled.pieces.filter((piece) => {
         const furniture = baseRegistry.furniture.get(piece.furniture)!;
         if (!furniture.door || furniture.door.hatch) {
           return false;
