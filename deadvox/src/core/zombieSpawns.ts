@@ -8,7 +8,7 @@ import type { ZombieSystem } from './zombies.ts';
 export interface ZombieColumnLoad {
   cx: number;
   cz: number;
-  site: Site;
+  site: Pick<Site, 'zombiesIn' | 'hordesIn'>;
   registry: Registry;
   zombies: ZombieSystem;
 }

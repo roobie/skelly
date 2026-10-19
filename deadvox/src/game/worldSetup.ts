@@ -13,7 +13,7 @@ import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
-import { type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
+import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
@@ -25,7 +25,7 @@ import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouse
 import { testHouseRangeSupply } from './testHouseRange.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
-export interface WorldSetup {
+export interface WorldSetup extends ColumnSource {
   config: GameConfig;
   registry: Registry;
   /** Content problems, one per line; empty when all content loaded. */
@@ -45,9 +45,6 @@ export interface WorldSetup {
   streamer: Streamer;
   /** Player start in metres (feet), and the yaw that faces the hamlet or the test house. */
   spawn: { pos: Vec3; yaw: number };
-  /** The test house's furniture and table-authored loot in a column; authored/procedural sites bring their own. */
-  furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
-  lootPointsIn: Site['lootPointsIn'];
 }
 
 const fixtureLootSource = (
@@ -293,7 +290,8 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const { seed, scale } = config;
 
   const house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined;
-  const built = buildDebugWeatheringTestSite(config, registry) ?? siteForReviewMap(config, registry, house);
+  const built: Site | undefined =
+    buildDebugWeatheringTestSite(config, registry) ?? siteForReviewMap(config, registry, house);
   const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: FurnitureSpawn[] } = built
     ? { structures: [], spawn: built.spawn, furniture: house?.furniture ?? [] }
     : (house ?? testHouseScene(config, registry));
@@ -340,8 +338,12 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     streamer,
     spawn: site.spawn,
     lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? houseLootPoints.get(`${cx},${cz}`) ?? [],
-    furnitureIn: (cx, cz) =>
-      site.furniture.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
+    furnitureIn: (cx, cz) => [
+      ...(built?.furnitureIn(cx, cz) ?? []),
+      ...site.furniture.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
+    ],
+    zombiesIn: (cx, cz) => built?.zombiesIn(cx, cz) ?? [],
+    hordesIn: (cx, cz) => built?.hordesIn?.(cx, cz) ?? [],
   };
 }
 

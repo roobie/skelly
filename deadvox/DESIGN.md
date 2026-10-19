@@ -44,7 +44,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
-  - you're changing military progression, loot economy admission, ground supply, roll-once persistence or its debug-overlay scope
+  - you're changing military progression, loot economy admission, ground supply or roll-once persistence, including debug overlays
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
   - you're changing when a running game warns before page exit relative to its last save
@@ -726,15 +726,15 @@ the two come together or not at all. The world is then its generation plus what
 players did to it, so a save need record only changes. Dynamic events (crashes,
 convoys and the like) bring supply under their own rules, outside this default.
 
-For site-generated world supply, roll-once ownership belongs to the column rather
-than individual points or surviving furniture: emptying or moving supply must not
-turn a spent place back into fresh generation. Furniture and loose supply share that
-barrier so changing a point cannot invite another roll. Once a column has rolled,
-furniture removed from it is not re-added, because a returning piece would bring a
-fresh roll of its loot, which is a restock. See `src/game/session.ts`, `onColumn`, and
-`src/core/saveState.ts`, `SaveSnapshot`. The debug test-house overlay is outside this
-column-mark guarantee; see `src/game/play.ts`, `applyColumnLoad`, and
-`src/core/blockEntities.ts`, `BlockEntities.add`.
+Every visited column shares one roll-once rule, including empty columns and debug
+overlays: visiting a column means the same thing whether or not it belongs to a site.
+Ownership belongs to the column rather than individual points or surviving furniture,
+so emptying or moving supply cannot turn a spent place back into fresh generation.
+Furniture and loose supply share that barrier so changing a point cannot invite
+another roll. Once a column has rolled, furniture removed from it is not re-added,
+because a returning piece would bring a fresh roll of its loot, which is a restock.
+See `src/game/session.ts`, `onColumn`, `src/game/columnArrival.ts`, `columnArrival`,
+and `src/core/saveState.ts`, `SaveSnapshot`.
 
 Loose supply needs supported standing space and visible reach, not furniture, so it
 uses the same physical reach rule as piles the player puts down. Reserved circulation,

@@ -65,7 +65,7 @@ import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import { Simulation } from '../core/sim.ts';
-import type { Site } from '../core/site.ts';
+import type { ColumnSource } from '../core/site.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
@@ -630,11 +630,11 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
-  const generateColumnSupply = (cx: number, cz: number, site: Site): void => {
-    for (const { spec, loot, surfaceLoot } of site.furnitureIn(cx, cz)) {
+  const generateColumnSupply = (cx: number, cz: number, source: ColumnSource): void => {
+    for (const { spec, loot, surfaceLoot } of source.furnitureIn(cx, cz)) {
       inventory.furnish(spec, loot, surfaceLoot);
     }
-    for (const point of site.lootPointsIn(cx, cz)) {
+    for (const point of source.lootPointsIn(cx, cz)) {
       if (point.channel !== 'ground') {
         continue;
       }
@@ -1901,17 +1901,14 @@ export const createSession = (options: SessionOptions) => {
       return playerEyeHeightMetres();
     },
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
-    onColumn: (cx: number, cz: number, site: Site | undefined) => {
-      if (!site) {
-        return;
-      }
+    onColumn: (cx: number, cz: number, source: ColumnSource) => {
       const key = `${cx},${cz}`;
       if (!rolledColumns.has(key)) {
-        generateColumnSupply(cx, cz, site);
+        generateColumnSupply(cx, cz, source);
         // Empty columns also stay rolled: absence of furniture or a surviving pile is not fresh supply.
         rolledColumns.add(key);
       }
-      spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem });
+      spawner.onColumn({ cx, cz, site: source, registry, zombies: zombieSystem });
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),
     /** Queues a search of a container, unless one is queued or done. */

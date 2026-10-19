@@ -97,6 +97,7 @@ import {
   handlingMoveStartCue,
 } from './audioPresentation.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
+import { columnArrival } from './columnArrival.ts';
 import { continueActionResumesJob } from './continueAction.ts';
 import type {
   DebugHooks,
@@ -1035,14 +1036,7 @@ export const startPlay = (
       blockSize: s,
     });
   }
-  // Furniture, with the loot rolled for it, arrives with its column.
-  const applyColumnLoad = (cx: number, cz: number): void => {
-    session.onColumn(cx, cz, engine.site);
-    for (const { spec, loot, surfaceLoot } of engine.furnitureIn(cx, cz)) {
-      inventory.furnish(spec, loot, surfaceLoot);
-    }
-  };
-  const applyColumnUnload = (cx: number, cz: number): void => session.onColumnUnload(cx, cz);
+  const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {
     terrain: streamer,
     onColumnLoad: applyColumnLoad,
