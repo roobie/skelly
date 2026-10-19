@@ -43,7 +43,7 @@ local plaque(id, name, color, readable) = {
         { position: [0.84, 0.55, 0], size: [0.04, 0.4, 0.03], color: '#363c3a' },
         { position: [1.12, 0.55, 0], size: [0.04, 0.4, 0.03], color: '#363c3a' },
         // A red cross on a white plate above the doors marks it as medical.
-        { position: [0.74, 2.33, 0.015], size: [0.52, 0.44, 0.015], color: '#e8ebe6' },
+        { position: [0.74, 2.33, 0.015], size: [0.52, 0.44, 0.045], color: '#e8ebe6' },
         { position: [0.935, 2.38, 0], size: [0.13, 0.34, 0.015], color: '#b3302c' },
         { position: [0.83, 2.48, 0], size: [0.34, 0.14, 0.015], color: '#b3302c' },
       ],
