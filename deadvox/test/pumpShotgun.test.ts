@@ -14,7 +14,7 @@ import { BUCK_HALF_ANGLE, type PelletShot } from '../src/core/pellets.ts';
 import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { SoundEventId } from '../src/core/soundEvents.ts';
+import type { SoundId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
 import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
@@ -76,7 +76,7 @@ const fixture = (
   const effects: FirearmShotEffect[] = [];
   const shots: PelletShot[] = [];
   const trajectories: FirearmTrajectory[] = [];
-  const sounds: { event: SoundEventId; time: number }[] = [];
+  const sounds: { event: SoundId; time: number }[] = [];
   const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: ejectionPose.blockSize,
     isSolid: isSolid ?? ((_x, y, _z) => y < ejectionPose.feet[1]),
@@ -898,7 +898,7 @@ describe('real pump ammunition', () => {
     const ejectAt = action.hand.rearwardSimSeconds * action.ejectAt;
     f.finish(ejectAt, 4 + ejectAt);
     const restored = Inventory.restoreState(f.inventory.registry, f.inventory.snapshotState());
-    const cues: { event: SoundEventId; time: number }[] = [];
+    const cues: { event: SoundId; time: number }[] = [];
     const landedCases: Item[] = [];
     const mechanics = new FirearmMechanics(restored, new HandlingQueue(restored), {
       blockSize: pose.blockSize,

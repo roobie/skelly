@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import type { Manifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import type { SoundId } from '../core/soundEvents.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
 import { HEARTBEAT_FILES, HEARTBEAT_TUNING, heartbeatForStamina } from '../game/audioPresentation.ts';
 
@@ -191,7 +191,13 @@ const TRIGGER_ENTRIES = [
     },
   ],
   ['melee_swing', { trigger: 'Click the primary mouse button to swing while able to attack.' }],
+  ['melee_swing_light', { trigger: 'Swing a light blade (knife or machete).' }],
+  ['melee_swing_heavy', { trigger: 'Swing a heavy weapon (bat, pipe or crowbar).' }],
   ['melee_hit', { trigger: 'Land a weapon melee swing on a shambler.' }],
+  [
+    'melee_hit_metal',
+    { trigger: 'Land a swing with a metal weapon (pipe, crowbar or hammer); it layers over the melee hit.' },
+  ],
   [
     'melee_hit_fist',
     {
@@ -215,6 +221,15 @@ const TRIGGER_ENTRIES = [
         'Fire the AR-pattern rifle with a real suppressor fitted; it reduces the shot’s hearing distance, and wear makes it carry farther.',
     },
   ],
+  ['gunshot_tikka', { trigger: 'Fire the bolt-action hunting rifle.' }],
+  ['revolver_shot', { trigger: 'Fire the revolver on a live round.' }],
+  ['revolver_dry_click', { trigger: 'Pull the revolver’s trigger on an empty or spent chamber.' }],
+  ['revolver_crane_open', { trigger: 'Start a revolver reload: the crane swings out.' }],
+  ['revolver_crane_close', { trigger: 'Finish or release a revolver reload: the crane closes.' }],
+  ['revolver_eject', { trigger: 'Dump the cylinder with the ejector rod.' }],
+  ['revolver_case_pick', { trigger: 'Top up the revolver: each spent case is picked out by hand.' }],
+  ['revolver_round_insert', { trigger: 'Load one loose round into an open cylinder.' }],
+  ['revolver_hammer_cock', { trigger: 'Cock the revolver’s hammer for a single-action shot.' }],
   [
     'shotgun_blast',
     {
@@ -259,7 +274,34 @@ const TRIGGER_ENTRIES = [
       trigger: 'A thrown hand grenade goes off when its fuse runs out.',
       debugHint:
         '?debug=1&loadout=grenade: click the primary mouse button to pull the pin, tap T for the throwing stance, hold then release the primary mouse button to throw, and step back.',
-      note: 'Placeholder: the shotgun recording pitched down until a recorded blast is chosen.',
+    },
+  ],
+  [
+    'rifle_bolt_open',
+    {
+      trigger:
+        'Hold R with the hunting rifle in hand and loose cartridges carried to open the bolt for loading; a double-press of R opens it first in a full cycle.',
+    },
+  ],
+  [
+    'rifle_bolt_close',
+    {
+      trigger:
+        'Release R after loading the hunting rifle to close the bolt; a double-press of R closes it after the open.',
+    },
+  ],
+  [
+    'firearm_dry_click',
+    {
+      trigger:
+        'Pull the trigger of a magazine gun or the hunting rifle with an empty chamber; it clicks once, then stays silent until the action is worked.',
+    },
+  ],
+  [
+    'shotgun_dry_click',
+    {
+      trigger:
+        'Pull the pump shotgun’s trigger with an empty chamber; it clicks once, then stays silent until it is racked.',
     },
   ],
   [
@@ -282,7 +324,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger:
         'With an AR or AK in hand, hold R to change or insert a magazine, or tap then hold R to remove it. The job finishes even if R is released.',
-      note: 'Stand-in: the pump rack-forward recording, pitched down; a magazine latch and seating sound is future work (d114).',
+      note: 'BMacZero’s clip loads, BR’s pick.',
     },
   ],
   [
@@ -298,13 +340,12 @@ const TRIGGER_ENTRIES = [
   ['breath_exhale', { trigger: 'Not played in game yet: waits for hold-breath. Preview it here.' }],
   ['breath_gasp', { trigger: 'Not played in game yet: waits for hold-breath. Preview it here.' }],
   ['door_knock_jfxr', { trigger: 'Preview only; not used by gameplay.' }],
-] satisfies readonly (readonly [SoundEventId, SoundTriggerGuide])[];
+] satisfies readonly (readonly [SoundId, SoundTriggerGuide])[];
 
-export const SOUND_TRIGGER_GUIDE = Object.fromEntries(TRIGGER_ENTRIES) as Record<SoundEventId, SoundTriggerGuide>;
-const ORDER = TRIGGER_ENTRIES.map(([id]) => id);
+export const SOUND_TRIGGER_GUIDE = Object.fromEntries(TRIGGER_ENTRIES) as Record<SoundId, SoundTriggerGuide>;
 
 /** BR's listening verdicts, joined into the existing guide note shown on /sounds.html. */
-const BR_STATUS_NOTES = new Map<SoundEventId, string>([
+const BR_STATUS_NOTES = new Map<SoundId, string>([
   ['player_hurt_light', 'Approved by BR (2026-10-02).'],
   [
     'player_nope',
@@ -345,15 +386,35 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
     'shambler_step_leaves',
     'Approved by BR (2026-10-02) with one variant; leaves-02 was rejected as linoleum and remains unreferenced.',
   ],
-  ['melee_swing', 'Approved by BR (2026-10-02); more swing variants remain future work.'],
+  ['melee_swing', 'Approved by BR (2026-10-02); the fallback for a melee weapon with no swing of its own.'],
   ['melee_hit', 'Approved by BR (2026-10-02).'],
   [
     'melee_hit_fist',
     'Placeholder: BR approved this stand-in (2026-10-02); replace when a better fist-hit source is found.',
   ],
+  ['melee_swing_light', 'Cut from florianreichelt’s “Light wooshes”, BR’s pick; awaiting BR’s listen.'],
+  ['melee_swing_heavy', 'qubodup’s bamboo “Whoosh” pitched down, BR’s pick; awaiting BR’s listen.'],
+  ['melee_hit_metal', 'Cut from “Metal Impact” and “Hitting metal pole”, BR’s pick; awaiting BR’s listen.'],
+  ['gunshot_tikka', 'FFSL Tikka T3 near take, BR’s pick; awaiting BR’s listen.'],
+  ['revolver_shot', 'FFSL S&W 642 near take, BR’s pick; a .38 Special may sound quieter than the game’s .357.'],
+  [
+    'revolver_hammer_cock',
+    'Cut from the S&W 642 raw takes by waveform, not by ear; the 642 hides its hammer, so check the label.',
+  ],
+  ['revolver_dry_click', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['revolver_crane_open', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['revolver_crane_close', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['revolver_eject', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['revolver_case_pick', 'Equipment Clicks III fallback: the S&W 642 takes hold no case pick; awaiting BR’s listen.'],
+  ['revolver_round_insert', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
+  ['rifle_bolt_open', 'The lift and draw of the Equipment Clicks III bolt cocking, BR’s pick; awaiting BR’s listen.'],
+  ['rifle_bolt_close', 'The push and turn of the Equipment Clicks III bolt cocking, BR’s pick; awaiting BR’s listen.'],
+  ['firearm_dry_click', 'Shutter clicks cut from “DSLR Camera Sounds”, BR’s pick; awaiting BR’s listen.'],
+  ['shotgun_dry_click', 'The heavier shutter click from “DSLR Camera Sounds”, BR’s pick; awaiting BR’s listen.'],
+  ['grenade_blast', 'The two blasts in florianreichelt’s “Huge Explosion”, BR’s pick; awaiting BR’s listen.'],
   ['gunshot', 'Approved; AKM variants used for the AK-pattern rifle and firearms without a dedicated shot profile.'],
   ['gunshot_pbs1_reference', 'Reserved PBS-1 suppressed AKM alternatives; not used by gameplay.'],
-  ['gunshot_m4', 'CC0 synthesised M4 shot used for the AR-pattern rifle without a suppressor.'],
+  ['gunshot_m4', 'FFSL AR-15 near take, BR’s pick; awaiting BR’s listen.'],
   [
     'gunshot_m4_suppressed',
     'CC0 synthesised suppressed M4 shot used when a real suppressor is fitted to the AR-pattern rifle.',
@@ -402,7 +463,7 @@ interface SoundVariantGuide {
 }
 
 export interface SoundGuideEntry {
-  readonly id: SoundEventId;
+  readonly id: SoundId;
   readonly category: SoundDef['category'];
   readonly trigger: string;
   readonly debugHint: string | null;
@@ -502,12 +563,11 @@ export const renderHeartbeatSoundGuide = (
 export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest): SoundGuideEntry[] => {
   const byFile = assetSourcesByFile(manifest);
   const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
-  return ORDER.flatMap((id) => {
+  return TRIGGER_ENTRIES.flatMap(([id, trigger]: readonly [SoundId, SoundTriggerGuide]) => {
     const sound = definitions.get(id);
     if (!sound) {
       return [];
     }
-    const trigger: SoundTriggerGuide = SOUND_TRIGGER_GUIDE[id];
     return [
       {
         id,

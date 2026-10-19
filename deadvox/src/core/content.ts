@@ -401,8 +401,19 @@ const acceptsSuppressor = (registry: Registry, model: ModelDef | undefined): boo
 /** Authored shot selections must resolve, and a gun that can mount a suppressor must author the quiet event. */
 const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry: Registry, report: Report): void => {
   const firearm = item.firearm!;
-  if (!registry.sounds.has(firearm.shotSound)) {
-    report('items', item.id, '.firearm.shotSound', `no sound event "${firearm.shotSound}"`);
+  for (const field of ['shotSound', 'dryFireSound', 'boltOpenSound', 'boltCloseSound'] as const) {
+    const sound = firearm[field];
+    if (sound !== undefined && !registry.sounds.has(sound)) {
+      report('items', item.id, `.firearm.${field}`, `no sound event "${sound}"`);
+    }
+    if (field.startsWith('bolt') && (sound !== undefined) !== (firearm.bolt === true)) {
+      report(
+        'items',
+        item.id,
+        `.firearm.${field}`,
+        'a bolt gun needs each bolt stroke sound, and only a bolt gun has one',
+      );
+    }
   }
   if (firearm.suppressedShotSound !== undefined) {
     if (!registry.sounds.has(firearm.suppressedShotSound)) {
@@ -415,6 +426,16 @@ const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry
       '.firearm.suppressedShotSound',
       'a suppressor-mountable firearm needs a suppressed shot sound',
     );
+  }
+};
+
+const checkMeleeSounds = (item: ItemDef, registry: Registry, report: Report): void => {
+  const melee = item.weapon?.melee;
+  for (const field of ['swingSound', 'hitSound', 'hitLayerSound'] as const) {
+    const sound = melee?.[field];
+    if (sound !== undefined && !registry.sounds.has(sound)) {
+      report('items', item.id, `.weapon.melee.${field}`, `no sound event "${sound}"`);
+    }
   }
 };
 
@@ -634,6 +655,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
     checkItemFirearm(item, registry, report);
+    checkMeleeSounds(item, registry, report);
     checkItemOptic(item, registry, obtainable, report);
     checkUnpacking(item, registry, report);
     checkDisassembly(item, registry, qualities, report);

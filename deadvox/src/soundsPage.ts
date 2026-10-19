@@ -1,26 +1,14 @@
 import { html, render } from 'lit-html';
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
-import soundFile from './content/base/sounds.json' with { type: 'json' };
-import blockSoundFile from './content/base/sounds-block.json' with { type: 'json' };
-import furnitureSoundFile from './content/base/sounds-furniture.json' with { type: 'json' };
-import synthSoundFile from './content/base/sounds-synth.json' with { type: 'json' };
-import uiFile from './content/base/ui.json' with { type: 'json' };
 import type { Manifest } from './core/assets.ts';
-import { buildRegistry } from './core/content.ts';
 import { CORE_CONTENT_IDS } from './core/contentIds.ts';
-import type { SoundEventId } from './core/soundEvents.ts';
+import type { SoundId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
+import { buildSoundsPageContent } from './soundsPageContent.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
 
-const source = '../content/base/sounds.json';
-const { registry, issues } = buildRegistry([
-  { source, data: soundFile },
-  { source: '../content/base/sounds-block.json', data: blockSoundFile },
-  { source: '../content/base/sounds-furniture.json', data: furnitureSoundFile },
-  { source: '../content/base/sounds-synth.json', data: synthSoundFile },
-  { source: '../content/base/ui.json', data: uiFile },
-]);
+const { registry, issues } = buildSoundsPageContent();
 // The page shares the game's style sheet, which is measured in these tokens.
 applyUiTokens(registry, document.documentElement);
 const guide = buildSoundGuide([...registry.sounds.values()], assetManifest as Manifest);
@@ -40,7 +28,7 @@ const audio = new GameAudio({
 });
 audio.updateListener([0, 0, 0], [0, 0, -1]);
 
-const playExact = (event: SoundEventId, file: string) => {
+const playExact = (event: SoundId, file: string) => {
   errorRoot.textContent = '';
   try {
     audio.unlock();
@@ -70,7 +58,7 @@ const sheet = html`
       <p class="eyebrow">DEADVOX · AUDIO REFERENCE</p>
       <h1>Listening sheet</h1>
       <p>
-        Generated from the sound content and <code>assets/manifest.json</code>. Sound-event preview buttons play
+        Generated from the <code>sounds*.json</code> content files and <code>assets/manifest.json</code>. Sound-event preview buttons play
         the exact listed file or recipe at base event gain and pitch 1, through the game's saved master/category volume settings; variant
         selection jitter and cooldown are bypassed.
       </p>

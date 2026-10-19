@@ -9,6 +9,7 @@ import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ZombieDef } from '../src/core/schema.ts';
 import type { SimEvent, Timed } from '../src/core/sim.ts';
+import type { SoundId } from '../src/core/soundEvents.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { simRate } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
@@ -30,7 +31,9 @@ const registry = baseRegistry();
 const contentNoiseEvents = new Set(
   [...registry.sounds].filter(([, sound]) => sound.noise.enabled).map(([event]) => event),
 );
-const shamblerFootstepEvents = new Set(registry.blocks.map((block) => shamblerFootstepEventForBlock(block)));
+const shamblerFootstepEvents = new Set<SoundId | undefined>(
+  registry.blocks.map((block) => shamblerFootstepEventForBlock(block)),
+);
 
 const blockBlow: ZombieDef['attack']['moves'][number] = {
   id: 'fixture-blow',

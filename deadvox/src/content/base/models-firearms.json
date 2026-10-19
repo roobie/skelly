@@ -9,11 +9,14 @@
       },
       "firearm": {
         "bolt": true,
+        "boltCloseSound": "rifle_bolt_close",
+        "boltOpenSound": "rifle_bolt_open",
         "dispersionRadians": 0.0060000000000000001,
+        "dryFireSound": "firearm_dry_click",
         "handling": {},
         "recoilKickRadians": 0.025000000000000001,
         "roundLoadSimSeconds": 1.2,
-        "shotSound": "gunshot",
+        "shotSound": "gunshot_tikka",
         "skillZeroHandling": {
           "automaticFollowup": {
             "recoilKickScale": 12,
@@ -44,6 +47,7 @@
       },
       "firearm": {
         "dispersionRadians": 0,
+        "dryFireSound": "shotgun_dry_click",
         "handling": {},
         "pump": true,
         "recoilKickRadians": 0.035000000000000003,
@@ -92,6 +96,7 @@
       },
       "firearm": {
         "dispersionRadians": 0.012,
+        "dryFireSound": "firearm_dry_click",
         "handling": {
           "magazine": {
             "insertSimSeconds": 3,
@@ -130,6 +135,7 @@
       },
       "firearm": {
         "dispersionRadians": 0.017999999999999999,
+        "dryFireSound": "firearm_dry_click",
         "handling": {
           "magazine": {
             "insertSimSeconds": 3,

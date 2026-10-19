@@ -62,7 +62,7 @@ import type { Site } from '../core/site.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
@@ -704,7 +704,7 @@ export const createSession = (options: SessionOptions) => {
   } = restoreSessionAudio(restored, soundPicker);
 
   const admitSound = (
-    event: SoundEventId,
+    event: SoundId,
     position: Vec3,
     time: number,
     {
@@ -771,12 +771,12 @@ export const createSession = (options: SessionOptions) => {
     return true;
   };
   const playWorldSound = (
-    event: SoundEventId,
+    event: SoundId,
     position: Vec3,
     time = sim.time,
     meta: SoundEmissionMeta & { body?: MobBody } = {},
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
-  const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
+  const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
   const awardInventoryPractice = (): void => {
     const training = skillActivityPractice(registry, CORE_CONTENT_IDS.inventoryManagement, 'handling');
@@ -1098,8 +1098,8 @@ export const createSession = (options: SessionOptions) => {
     onPlayerLeaveExposure: (source) => sim.leaveExposure(source),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
     onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
-    onSound: (event, position, zombie) => {
-      if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {
+    onSound: (event, position, zombie, playerMelee) => {
+      if (playerMelee) {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',
@@ -1294,7 +1294,7 @@ export const createSession = (options: SessionOptions) => {
     [...zombieStore.entries()].filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body);
 
   /** A world sound that shamblers hear when its content gives it a noise. */
-  const playNoisyWorldSound = (event: SoundEventId, position: Vec3): void => {
+  const playNoisyWorldSound = (event: SoundId, position: Vec3): void => {
     const noise = registry.sounds.get(event)?.noise;
     playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
   };

@@ -1,4 +1,5 @@
 import type { ItemDef, Registry } from '../core/content.ts';
+import { magazineFits } from '../core/magazine.ts';
 import { ammoMatchesCalibre, firearmModelForType } from './firearmHandling.ts';
 
 /** Add-ons join the debug range when the item schema defines either capability. */
@@ -11,7 +12,7 @@ interface RangeSupply {
   condition: number;
 }
 
-/** Firearms, compatible loose ammunition, and any package that unpacks to that ammunition. */
+/** Firearms, the magazines that fit them, compatible loose ammunition, and any package that unpacks to it. */
 export const testHouseRangeSupply = (registry: Registry): RangeSupply[] => {
   const items = [...registry.items.values()];
   const firearms = items.filter((item) => item.firearm !== undefined);
@@ -24,6 +25,9 @@ export const testHouseRangeSupply = (registry: Registry): RangeSupply[] => {
   const compatibleCalibres = [...calibres];
 
   for (const item of items) {
+    if (firearms.some((firearm) => magazineFits(registry, firearm.id, item.id))) {
+      stock.add(item.id);
+    }
     if (compatibleCalibres.some((calibre) => ammoMatchesCalibre(item.id, calibre, registry))) {
       stock.add(item.id);
     }

@@ -2857,6 +2857,7 @@ export const startPlay = (
     const reason = firearms.fireReason(weapon.uid);
     if (reason) {
       if (pressed) {
+        fireWeapon(weapon, sim.time);
         showRefusal(reason, sim.time);
       }
       return;

@@ -41,7 +41,7 @@ import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { type SolidBricks, testedBricks } from './solidBricks.ts';
-import type { SoundEventId } from './soundEvents.ts';
+import type { SoundId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
@@ -166,6 +166,9 @@ export interface MeleeWeapon {
   readonly headDamageMultiplier?: number | undefined;
   readonly limbDamageMultiplier?: number | undefined;
   readonly speedMultiplier?: number | undefined;
+  readonly swingSound?: SoundId | undefined;
+  readonly hitSound?: SoundId | undefined;
+  readonly hitLayerSound?: SoundId | undefined;
   readonly type?: MeleeDamageType | undefined;
 }
 
@@ -574,8 +577,9 @@ export interface ZombieSystemOptions {
   /** A whole region came off, and the game leaves it behind as an item: a limb whose health ran out, or
    * each arm and the head of a dismembered downed body (see finishDowned). */
   onSevered?: (zombie: Zombie, region: ZombieRegion) => void;
-  /** Sound-source position is in block coordinates; body is present when the shambler made the sound. */
-  onSound?: (event: SoundEventId, position: Vec3, body?: Zombie) => void;
+  /** Sound-source position is in block coordinates; body is present when the shambler made the sound or was hit.
+   * The player's own swing and hit set `playerMelee`, since content picks their events. */
+  onSound?: (event: SoundId, position: Vec3, body?: Zombie, playerMelee?: boolean) => void;
   /** A spit left the mouth. No damage is applied here; the owner of the in-flight glob takes it from this. */
   onAcidSpit?: (release: AcidSpitRelease) => void;
   onAcidPlayerHit?: (hit: ZombiePlayerHit) => void;
@@ -915,6 +919,11 @@ const meleeOutcome = (killed: boolean, incapacitated: boolean, part: string | un
     return 'incapacitated';
   }
   return part ? 'severed' : 'nothing';
+};
+
+const meleeHitSounds = (weapon: MeleeWeapon, isFist: boolean): SoundId[] => {
+  const hitSound = weapon.hitSound ?? (isFist ? 'melee_hit_fist' : 'melee_hit');
+  return weapon.hitLayerSound === undefined ? [hitSound] : [hitSound, weapon.hitLayerSound];
 };
 
 const ARM_REGION_PART: Readonly<Record<ArmRegion, (typeof ARM_PARTS)[number]>> = {
@@ -3588,8 +3597,8 @@ export class ZombieSystem {
     return reached;
   }
 
-  playPlayerMeleeSwing(origin: Vec3): void {
-    this.options.onSound?.('melee_swing', copy(origin));
+  playPlayerMeleeSwing(origin: Vec3, weapon: MeleeWeapon): void {
+    this.options.onSound?.(weapon.swingSound ?? 'melee_swing', copy(origin), undefined, true);
   }
 
   resolvePlayerMelee(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist: boolean): boolean {
@@ -3626,7 +3635,7 @@ export class ZombieSystem {
 
   /** Immediate combat-query helper retained for deterministic geometry tests; play uses PlayerCombat. */
   swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
-    this.options.onSound?.('melee_swing', copy(origin));
+    this.playPlayerMeleeSwing(origin, weapon);
     return this.resolveMeleeNow(origin, direction, weapon, isFist);
   }
 
@@ -3655,12 +3664,12 @@ export class ZombieSystem {
     const damage = damageOverride ?? meleeDamageForContact(zombie, region, weapon, damageType);
     if (!projectile) {
       this.options.onMeleeContact?.(hit.impulse);
+      for (const event of meleeHitSounds(weapon, isFist)) {
+        this.options.onSound?.(event, copy(zombie.body.pos), zombie, true);
+      }
     }
     const healthBefore = zombie.regions[region]!;
     const severedBefore = new Set(zombie.severed);
-    if (!projectile) {
-      this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos), zombie);
-    }
     this.options.onSound?.(zombie.type.sounds.hurt, copy(zombie.body.pos), zombie);
     const healthAfter = this.damageRegion(zombie, region, damage);
     if (healthAfter < healthBefore) {

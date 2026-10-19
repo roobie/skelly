@@ -4,7 +4,8 @@
       id: 'revolver_357', name: '.357 revolver', category: 'weapon',
       weight: 1130, size: [2, 3], twoHanded: false, model: 'revolver',
       firearm: {
-        shotSound: 'revolver_shot', recoilKickRadians: 0.035, dispersionRadians: 0.012,
+        shotSound: 'revolver_shot', dryFireSound: 'revolver_dry_click', triggerCocks: true,
+        recoilKickRadians: 0.035, dispersionRadians: 0.012,
         handling: {},
         skillZeroHandling: {
           singleShot: { recoilKickScale: 10, recoilRecoveryScale: 0.3, variance: 30 },

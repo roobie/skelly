@@ -62,9 +62,9 @@
     },
     {
       "id": "magazine_change",
-      "variants": ["assets/audio/shotgun-rack-forward.ogg"],
+      "variants": ["assets/audio/magazine-clipload-01.ogg", "assets/audio/magazine-clipload-02.ogg"],
       "gain": 0.45,
-      "pitchJitter": [0.85, 0.9],
+      "pitchJitter": [0.97, 1.03],
       "gainJitter": [0.95, 1.05],
       "minIntervalSimSeconds": 0,
       "category": "body",
@@ -96,9 +96,9 @@
     },
     {
       "id": "grenade_blast",
-      "variants": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"],
+      "variants": ["assets/audio/grenade-blast-01.ogg", "assets/audio/grenade-blast-02.ogg"],
       "gain": 1,
-      "pitchJitter": [0.55, 0.65],
+      "pitchJitter": [0.95, 1.05],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
       "category": "world",
@@ -388,6 +388,7 @@
       "pitchJitter": [1, 1],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
+      "voiceCap": 32,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 100 }
     },
@@ -398,16 +399,18 @@
       "pitchJitter": [1, 1],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
+      "voiceCap": 32,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 50 }
     },
     {
       "id": "gunshot_m4",
-      "variants": ["assets/audio/gunshot-m4-01.ogg"],
+      "variants": ["assets/audio/gunshot-ar15-01.ogg", "assets/audio/gunshot-ar15-02.ogg"],
       "gain": 1,
-      "pitchJitter": [1, 1],
+      "pitchJitter": [0.98, 1.02],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
+      "voiceCap": 32,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 100 }
     },
@@ -418,6 +421,7 @@
       "pitchJitter": [1, 1],
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
+      "voiceCap": 32,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 100 }
     },

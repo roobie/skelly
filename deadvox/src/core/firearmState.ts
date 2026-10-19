@@ -53,6 +53,8 @@ export interface FirearmState {
   /** Top-up must not spend magazine capacity on the chamber's extracted round. */
   retainedRoundType?: string | undefined;
   actionOpen?: boolean;
+  /** An empty pull dropped the hammer; it stays silent until the action is worked again. */
+  hammerDown?: boolean | undefined;
   /** Ejected items awaiting their simulation-clock landings. */
   landings?: FirearmLanding[] | undefined;
   pendingCase?: PendingCase | undefined;
@@ -62,8 +64,19 @@ export interface FirearmState {
 
 /** No live state is advanced or cancelled by a snapshot. */
 export const snapshotFirearm = (state: FirearmState): FirearmState => {
-  const { chamber, cylinder, roundType, retainedRoundType, tube, actionOpen, landings, pendingCase, cycle, readying } =
-    state;
+  const {
+    chamber,
+    cylinder,
+    roundType,
+    retainedRoundType,
+    tube,
+    actionOpen,
+    hammerDown,
+    landings,
+    pendingCase,
+    cycle,
+    readying,
+  } = state;
   return {
     ...(chamber === undefined ? {} : { chamber }),
     ...(cylinder === undefined ? {} : { cylinder: structuredClone(cylinder) }),
@@ -71,6 +84,7 @@ export const snapshotFirearm = (state: FirearmState): FirearmState => {
     ...(tube === undefined ? {} : { tube: [...tube] }),
     ...(retainedRoundType === undefined ? {} : { retainedRoundType }),
     ...(actionOpen === undefined ? {} : { actionOpen }),
+    ...(hammerDown === undefined ? {} : { hammerDown }),
     ...(landings === undefined ? {} : { landings: structuredClone(landings) }),
     ...(pendingCase === undefined ? {} : { pendingCase: structuredClone(pendingCase) }),
     ...(cycle === undefined || cycle.mode === 'hand' ? {} : { cycle: structuredClone(cycle) }),
@@ -165,6 +179,9 @@ const assertOpenActionState = (state: FirearmState): void => {
   }
   if (state.actionOpen !== undefined && typeof state.actionOpen !== 'boolean') {
     throw new Error('Invalid firearm action-open state');
+  }
+  if (state.hammerDown !== undefined && typeof state.hammerDown !== 'boolean') {
+    throw new Error('Invalid firearm hammer state');
   }
   if (state.actionOpen && state.chamber !== 'empty') {
     throw new Error('An open action needs an empty chamber');

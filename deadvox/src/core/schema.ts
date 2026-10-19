@@ -402,6 +402,12 @@ const WeaponSchema = strictObject({
     limbDamageMultiplier: optional(Positive),
     /** Overrides the weapon class's swing-speed multiplier. */
     speedMultiplier: optional(Positive),
+    /** Swing presentation event; absent uses the shared swing. */
+    swingSound: optional(Id),
+    /** Hit presentation event; absent uses the shared hit. */
+    hitSound: optional(Id),
+    /** Played over the hit, such as a metal ring for a metal weapon. */
+    hitLayerSound: optional(Id),
     type: picklist(MELEE_DAMAGE_KINDS),
   }),
 });
@@ -463,9 +469,16 @@ const FirearmSchema = strictObject({
   bolt: optional(vBoolean()),
   roundLoadSimSeconds: optional(PositiveSimSeconds),
   /** Shot presentation event; every firearm selects one, so a new gun needs no code edit. */
-  shotSound: picklist(SOUND_EVENT_IDS),
+  shotSound: Id,
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
-  suppressedShotSound: optional(picklist(SOUND_EVENT_IDS)),
+  suppressedShotSound: optional(Id),
+  /** Trigger pulled on an empty chamber; absent stays silent. */
+  dryFireSound: optional(Id),
+  /** The trigger pull cocks the hammer itself (double action), so every empty pull clicks; otherwise only working the action re-cocks it. */
+  triggerCocks: optional(vBoolean()),
+  /** A bolt gun's open and close strokes; each plays on its own phase, so a bolt gun needs both. */
+  boltOpenSound: optional(Id),
+  boltCloseSound: optional(Id),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
@@ -809,6 +822,8 @@ const SoundSchema = strictObject({
   minIntervalSimSeconds: SimSeconds,
   category: picklist(['world', 'body', 'ui']),
   noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
+  /** Most voices of this sound at once; a new one steals the oldest so a burst stays bounded. Absent is uncapped. */
+  voiceCap: optional(pipe(Count, minValue(1, 'must be at least 1'))),
   wall: optional(
     strictObject({
       gain: pipe(NonNegative, maxValue(1, 'must be at most 1')),

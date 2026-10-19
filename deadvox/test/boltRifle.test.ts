@@ -63,11 +63,13 @@ const fixture = (skill = 0) => {
   }
   const queue = new HandlingQueue(inventory);
   const effects: FirearmShotEffect[] = [];
+  const sounds: { event: string; time: number }[] = [];
   const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: 0.5,
     pose: () => pose,
     isSolid: (_x, y) => y < 0,
     onEjection: (effect) => effects.push(effect),
+    onSound: (event, _position, time) => sounds.push({ event, time }),
     firearmsSkillLevel: () => skill,
   });
   let now = 0;
@@ -97,7 +99,62 @@ const fixture = (skill = 0) => {
     (gun.firearm?.chamber === 'round' ? 1 : 0) +
     (gun.firearm?.retainedRoundType ? 1 : 0) +
     (gun.firearm?.landings?.filter((landing) => landing.type === rounds.type).length ?? 0);
-  return { inventory, gun, rounds, queue, mechanics, effects, step, finish, load, rack, fire, total, time: () => now };
+  return {
+    inventory,
+    gun,
+    rounds,
+    queue,
+    mechanics,
+    effects,
+    sounds,
+    step,
+    finish,
+    load,
+    rack,
+    fire,
+    total,
+    time: () => now,
+  };
+};
+
+/** The fixture's inventory as a save writes it and a load decodes it again. */
+const savedInventory = async (f: ReturnType<typeof fixture>) => {
+  const session = createSession({
+    registry,
+    world: new World(),
+    isSolid: () => false,
+    isOpaque: () => false,
+    scale: makeScale(0.5),
+    seed: 1,
+    start: 0,
+    spawn: [0, 0, 0],
+    ready: () => false,
+    controls: {
+      active: () => false,
+      intent: () => IDLE,
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => false,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: () => undefined,
+    onRead: () => undefined,
+  });
+  const source = session.snapshot({ worldId: 'bolt-fixture', characterId: 'bolt-character' });
+  const snapshot = { ...source, character: { ...source.character, inventory: f.inventory.snapshotState() } };
+  const version = {
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    simulationHash: 'a'.repeat(64),
+    generators: {},
+    contentPacks: [],
+  };
+  const bytes = await encodeSave(snapshot, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  return (await decodeSave(bytes, { version, contentLookup: () => true })).snapshot.character.inventory;
 };
 
 it('retains a spent case until the rack ejects it and feeds; a live rack lands a pickup', () => {
@@ -251,43 +308,7 @@ it('a top-up save retains the extracted round outside the magazine and cancels o
   expect(f.mechanics.load(f.rounds, f.time())).toBeUndefined();
   f.step((ejectSeconds(model.action!, 'hand') + actionOpenSeconds(model.action!)) / 2);
   expect(f.gun.firearm?.cycle?.phase).toBe('open');
-  const session = createSession({
-    registry,
-    world: new World(),
-    isSolid: () => false,
-    isOpaque: () => false,
-    scale: makeScale(0.5),
-    seed: 1,
-    start: 0,
-    spawn: [0, 0, 0],
-    ready: () => false,
-    controls: {
-      active: () => false,
-      intent: () => IDLE,
-      yaw: () => 0,
-      pitch: () => 0,
-      walking: () => false,
-      descending: () => false,
-    },
-    audio: { play: () => undefined },
-    notice: () => undefined,
-    onRead: () => undefined,
-  });
-  const source = session.snapshot({ worldId: 'bolt-fixture', characterId: 'bolt-character' });
-  const snapshot = { ...source, character: { ...source.character, inventory: f.inventory.snapshotState() } };
-  const version = {
-    schemaVersion: SAVE_SCHEMA_VERSION,
-    simulationHash: 'a'.repeat(64),
-    generators: {},
-    contentPacks: [],
-  };
-  const bytes = await encodeSave(snapshot, {
-    generation: 1,
-    version,
-    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
-  });
-  const decoded = await decodeSave(bytes, { version, contentLookup: () => true });
-  const state = decoded.snapshot.character.inventory;
+  const state = await savedInventory(f);
   const restored = Inventory.restoreState(f.inventory.registry, state);
   expect(restored.hands.right?.firearm?.actionOpen).toBe(true);
   expect(restored.hands.right?.firearm?.cycle).toBeUndefined();
@@ -300,4 +321,36 @@ it('a top-up save retains the extracted round outside the magazine and cancels o
   corrupt.hands.right!.firearm!.chamber = 'round';
   corrupt.hands.right!.firearm!.roundType = f.rounds.type;
   expect(() => Inventory.restoreState(f.inventory.registry, corrupt)).toThrow();
+});
+
+it('a fired bolt keeps its hammer down through a save', async () => {
+  const f = fixture();
+  f.load();
+  f.rack();
+  expect(f.fire()).toBe(true);
+  expect(f.gun.firearm?.hammerDown).toBe(true);
+  const restored = Inventory.restoreState(f.inventory.registry, await savedInventory(f));
+  expect(restored.hands.right?.firearm?.hammerDown).toBe(true);
+});
+
+it('opening and closing the bolt each play their own stroke; a full cycle closes once the bolt is open', () => {
+  const f = fixture();
+  const { boltOpenSound, boltCloseSound } = rifle.firearm!;
+  expect(boltOpenSound).toBeDefined();
+  expect(boltCloseSound).not.toBe(boltOpenSound);
+  const strokes = () => f.sounds.filter(({ event }) => event === boltOpenSound || event === boltCloseSound);
+  f.load();
+  expect(f.gun.firearm?.actionOpen).toBe(true);
+  expect(strokes().map(({ event }) => event)).toEqual([boltOpenSound]);
+  f.sounds.length = 0;
+  f.rack();
+  expect(strokes().map(({ event }) => event)).toEqual([boltCloseSound]);
+  expect(f.fire()).toBe(true);
+  f.sounds.length = 0;
+  const start = f.time();
+  f.rack();
+  const [open, close, ...rest] = strokes();
+  expect([open?.event, close?.event, rest]).toEqual([boltOpenSound, boltCloseSound, []]);
+  expect(open?.time).toBe(start);
+  expect(close?.time).toBeCloseTo(start + actionOpenSeconds(model.action!));
 });
