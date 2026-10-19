@@ -44,7 +44,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
-  - you're changing military progression, loot economy admission, ground supply or roll-once persistence, including debug overlays
+  - you're changing military progression, loot economy admission or loot unit planning, ground supply or roll-once persistence, including debug overlays
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
   - you're changing when a running game warns before page exit relative to its last save
@@ -528,9 +528,25 @@ layer is stock the gauntlet instance promises at its stops, because the lab must
 winnable and a roll cannot promise that; Upheaval stays procedural and promises
 none. The reward layer rewards exploring and need not suit the place; it belongs
 to the gauntlet instance, not the location's template, and needs no in-game
-reason. A promise names a fixed lot and a container anchor in that lot's building and
+reason. Promised stock still passes the economy check under its holder's loot
+context. Stock that does not suit the host building comes from a special event: a
+small authored scene, such as a dead special operations soldier, with its own loot
+context, which the instance places on another building's lot. The event is not
+linked to that building; it sits on cells the host leaves empty and is not a clue.
+The rifle lies on the soldier's body and the magazine is in a pocket, because
+`DESIGN.md`, "The item model" keeps the pocket real-sized while loot lies outside
+containers; the substation gives a military reward ahead of the lab, and the NVGs
+join the same body when the item lands. An event may author its own threat, which spawns with it
+so the scene tells its story; how those markers count against the scenario's
+population budget remains open. An authored event carries the promised reward, so
+fixed stock still passes the economy check without bending a place's theme. Stock that suits the place but not
+its context's tier is a content fix to the context instead: the crisis HQ is a
+military command post, so its tier admits military items such as a rifle, and no
+event is needed there. See `src/content/base/crisis-hq.jsonnet`, `military`.
+A promise names a fixed lot and a container anchor in that lot's building or event and
 leaves the template unchanged. Validation refuses a promise without a fixed lot or
-an anchor, and fixed container stock that fits no pocket of its furniture; the
+an anchor, an event outside its lot or over the host's blocks or furniture, and fixed
+container stock that fits no pocket of its furniture; the
 seeded build and furnishing throw rather than drop it, because a silently dropped
 promise would leave the lab unwinnable. Certified promised stock means the item is
 there and fits its container, nothing more. No check proves that the street reaches
@@ -541,9 +557,19 @@ keeps that risk in view. Each stop has its own role, and the player
 may visit them in any order, so finding the stock rewards exploring rather than
 following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
 `src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
-`composeScenario`; `src/core/placementLoot.ts`, `placementLootIssues`;
-`src/core/inventory.ts`, `furnish`; and `src/content/base/scenarios.jsonnet`,
-`composition`.
+`composeScenario` and `eventIssues`; `src/core/placementLoot.ts`,
+`placementLootIssues`; `src/core/inventory.ts`, `furnish`; and
+`src/content/base/scenarios.jsonnet`, `composition`; and
+`src/content/base/gauntlet.jsonnet`, `utilities`.
+
+A stop's rolled stock follows its place theme, not its building. Each stop takes a
+theme context, the station's carrying the Police usage and the HQ's Military, and
+tables are written per theme rather than per building, because finding what suits a
+place is the economy's job (`DESIGN.md`, "Loot"). Two stops of one theme therefore
+roll alike; a stop that should feel unique gets that from its instance layer, not
+its rolls. The d502 build round moves the stops onto theme contexts and replaces the
+per-building police tables. See `src/content/base/gauntlet-city-building-types.libsonnet`,
+`loot`.
 
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
@@ -627,15 +653,19 @@ independent of incidental loot without bypassing ordinary inventory rules. See
 `src/core/authoredLayout.ts`, `authoredLayoutIssues`; and
 `src/core/citySite.ts`, `furnitureIn`.
 
-The final composition fails closed before Play: a locally valid template cannot
-protect the route from later stamping or furniture. The certificate reads the
-same planned, stamped chunks and furniture occupancy as play, without
-materializing the whole city. Authored entrances and perimeter crossings belong to that
+Tests prove that the final composition can be finished, because a locally valid
+template cannot protect the route from later stamping or furniture. Play doesn't
+wait on a runtime proof, because proving the route at world build stalled the main
+thread before Go. The accepted risk is that a seed no test covers can be
+unfinishable; a playtest report of such a seed becomes a fixed-seed test. Default
+tests certify fixed seeds, and a seed sweep runs behind the `DEADVOX_SWEEPS` flag as
+its own CI step. The certificate reads the same planned, stamped chunks and
+furniture occupancy as play, without materializing the whole city. Authored entrances and perimeter crossings belong to that
 proof: finding a detour around a fence does not certify a blocked breach. Furniture anchored across a chunk boundary still
 belongs to an envelope that crosses that boundary. Clearance caching is private
 to this immutable initial-world proof, not a cache of live edited terrain. See
 `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`; `src/core/scenarioCertificate.ts`,
-`scenarioCertificate`; and `src/core/gauntlet.ts`, `GauntletSite`.
+`scenarioCertificate`; and `test/gauntletRoutes.test.ts`.
 
 A sewer from the HQ yard to the lab's intake storey is a second way in, and a trade
 rather than a shortcut: it skips the street run to the hatch, but the tunnel is dark,
@@ -765,18 +795,72 @@ contents from firearm and ammunition compatibility. The range layout is content,
 ### Loot
 
 Choose every world-supply item through one selector so source-specific rules cannot
-bypass admission and a later budget has one candidate-filtering boundary. Tables
+bypass admission and a loot unit's floors and caps have one candidate-filtering boundary. Tables
 own relative weights and variants, not geography; fixed progression stock uses the
 same admission without becoming optional. Source-point identity owns the random
 stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
-Placement follows a DayZ-style central economy: usage tags and tiers decide which items
-a source admits, so what a place holds matches what it is, and budgets are to bound how
-much of each type the world holds (#699). See `src/core/loot.ts`, `economyEligible`.
+Usage tags and tiers decide which items a source admits, so what a place holds matches
+what it is. See `src/core/loot.ts`, `economyEligible`.
 
-The one exception to the DayZ model is item lifetime. By default the economy places a
-place's loot once, when the place is first generated, and never restocks it. What a
+Police is its own usage, apart from Hunting, because a police armoury holds police
+stock, not a gun store's or a hunter's. The HQ vault's Military context differs from
+the station's by tag rather than by a separate table. A tag filters only the items it
+narrows; one that every common item carries filters nothing, so police gear gives up
+the every-usage default. Item tiering stays open.
+
+Medicine is rare outside medical places in every scenario: shared tables such as home
+furniture, pockets and kits weight it low, and the strong analgesics are Medical-only,
+while the common one stays findable anywhere. A medical detour is worth making only if
+the street does not already supply it. Shared tables give one knob for every scenario,
+so Upheaval's survival balance moves with the gauntlet's; whether its pace still works
+waits on a playtest. The d502 build round adds the Police usage, the narrowing and
+the Medical-only items, and retunes those tables. See
+`src/content/base/economy.libsonnet`, `authorItem`, and `src/content/base/loot.jsonnet`,
+`pills`.
+
+Loot never depends on the order in which places are visited. There is no map-wide
+running count of what has spawned, because such a count would make one police station's
+stock depend on which stations the player reached first. A central economy that counts
+the whole world and restocks toward targets serves many players on one long-running
+shared server; this game is not that, and multiplayer is far enough off that it does not
+shape this rule.
+
+The economy is instead to be planned per loot unit (`LootUnit` in code): a place with its
+own loot plan, such as a farm, a town block, an air base or a shed in the woods. The name
+joins the `Loot`-prefixed types and reads plainly in prose; "unit" alone is generic, so
+this is its one definition. A loot unit is to settle its whole plan when its first column
+generates, so planning is eager inside the loot unit and lazy across the map. The plan
+sets floors ("this farm has at least one pump shotgun") and caps ("at most one per police
+station"), and chooses which points hold them. A loot unit's spawn points come from its
+layout without generating its columns, so what bounds its size is how many points its
+plan must weigh in a short pause, not its area. See `src/core/loot.ts`, `lootPointsByColumn`.
+
+Map-wide rarity is per-point odds set in content, not a count: the odds give the
+expected total, and scarcity is statistical. Tier gradients are a function of position,
+such as distance from the spawn area, so they need no shared state. Required stock sits
+outside every cap, so story and promised stock are never squeezed out. It does count
+toward a floor for its own type: a floor promises at least that much of a type, and a
+required item of that type already keeps the promise, so the plan rolls no duplicate.
+
+Items that come together, such as a pump shotgun and shells nearby, form an ItemSet: an
+anchor and its companions. Each ItemSet names where its companions may land, because the
+right reach differs by set. Companion placement is best effort, never fail-closed: each
+companion is tried within its set's scope and skipped if it cannot land there, so the loot
+unit still generates, since a missing box of shells costs the player less than a loot unit
+that will not generate, and skipping needs the least plan logic. A skipped companion leaves
+its set incomplete with no trace in the world, so the plan's debug report lists what it
+dropped as part of the same rule; without that report an incomplete set is silent and
+cannot be tuned. Companions come as a count per anchor, not as odds, and are placed after
+caps, like required stock, with no cap check or chance roll; lack of room within the set's
+scope is the only thing that skips one. That leaves the most room to refine: a cap check or a chance roll on
+companions can be added later, for every set or per set, without undoing anything. The
+price is that until such a refinement lands, a loot unit's ammunition can exceed a cap.
+How ItemSets are authored (which items form sets and each companion's count), scenario
+multipliers on odds and the pool axis beyond police are open on #699.
+
+Loot is placed once, when its place is first generated, and never restocked. What a
 player takes stays gone, so scarcity holds, a searched place stays spent instead of
 becoming a farm, and a spent place pushes the player on to new ones. Untouched items
 never despawn either: despawning only makes sense as the other half of restocking, so
@@ -818,9 +902,9 @@ across anchors, or replaced by a smaller one, before it is ground-anchored. Colu
 throws on overflow; validated content cannot reach it. See `src/core/pileBound.ts`,
 `groundPileIssue`, and `src/core/placementLoot.ts`, `groundLootSupplyIssues`.
 
-Items carry no record of where they were born. A budget is to count items by type and
-by where they are (map, cargo, player, hoard), which needs no birthplace, and keeping one
-only stopped equal items from stacking. Debug stock is kept out of the world economy by
+Items carry no record of where they were born. Floors, caps and odds act when loot is
+placed, so no rule needs a birthplace, and keeping one only stopped equal items from
+stacking. Debug stock is kept out of the world economy by
 the scene that supplies it, not by a mark on the item. See `src/core/items.ts`,
 `stackRoom`, and `src/core/loot.ts`, `LootSpawnPoint`.
 
@@ -851,14 +935,17 @@ interior. A soft bag nests only when empty, because nesting it loaded would
 turn that extra interior into space gained by stacking bags. A hard case is no
 smaller outside than inside, so it gains no space wherever it goes: loaded, it
 may go into any container with room, furniture included, as in DayZ. Rigidity
-belongs to the item's definition, as a rigid flag on its container component,
-so saves don't change; validation must hold a rigid item's pockets within its
-footprint. Loaded nesting goes one level deep: a loaded case may sit in a bag,
-but nothing loaded sits in the case. Free nesting is plausible and realistic,
-but not worth its complexity yet, and the rule can widen to it later. No item
-is rigid until the nesting build round adds the flag, its check, the depth rule
-and the first hard case, so every loaded container still goes only into a
-floor pile; see `src/core/inventory.ts`, `Inventory.gridPlacement`.
+belongs to the definition rather than saved instance state. Free nesting is
+plausible and realistic, but not worth its complexity yet; one loaded-case level
+keeps storage manageable without excluding packed cases. Packing and filling
+must obey the same limit so move order cannot create extra storage. See
+`src/core/schema.ts`, `ItemSchema`; `src/core/inventoryScale.ts`,
+`rigidPocketScaleIssue`; and `src/core/inventory.ts`, `Inventory.gridPlacement`.
+
+The ammo can uses the ordinary cuboid item presentation and shed loot, because
+a steel box suits that shape and belongs among tools without needing a firearm
+model or military-only supply. See `src/content/base/items-other.libsonnet`,
+`ammo_can`, and `src/content/base/loot.jsonnet`, `shed_tools`.
 
 A soft bag's interior has no bound against its footprint; each bag is balanced
 by hand in content. Two soft bags of one volume, a plastic garbage bag and a
@@ -1208,6 +1295,18 @@ Painkillers use an analgesic component regardless of item category. Each dose's
 relief rises, holds and fades in game time; doses in a group share a cap, while
 other groups add relief. They mask pain only: health, wounds and consequences
 remain unchanged. Saves preserve acute pain and active doses.
+
+Codeine and morphine relieve much more than the common analgesic, but while a dose
+works it blurs vision, more for morphine, so strong relief is a trade rather than a
+free upgrade. The blur is a vignette at the edges, not a full-screen blur: the centre,
+where the player aims, stays sharp, while threats at the edges are harder to read.
+Aim itself is untouched, so the cost reads as the drug's and not as pain's own sway.
+The vignette rises and fades with the dose, its strength is a content number on the
+analgesic, and players who cannot tolerate it get a setting for it. Its
+strength needs a playtest. Whether the HUD stays sharp under it, whether a stacked
+dose can be dangerous, and whether dependence is ever modelled are later rulings. The
+d502 build round adds both drugs and the vignette. See `src/core/schema.ts`,
+`AnalgesicSchema`, and `src/core/pain.ts`, `analgesia`.
 
 The optional stats readout shows felt pain and its acute, injury and relief
 components so BR can tune the scale in play. This debug-style number belongs

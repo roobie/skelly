@@ -145,6 +145,7 @@ local pills(weight, least, parts, of) =
         item('steel_pipe', 2),
         item('glowstick', 1),
         item('weapon_sling', 1),
+        item('ammo_can', 1, condition=[0.5, 1]),
         item('nails', 3, count=[10, 40]),
         table('junk', 3),
       ],

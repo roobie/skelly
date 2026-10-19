@@ -1,6 +1,27 @@
 {
   "items": [
     {
+      "category": "bag",
+      "container": {
+        "pockets": [
+          {
+            "grid": [3, 2],
+            "handlingSimSeconds": 0.40000000000000002
+          }
+        ],
+        "rigid": true
+      },
+      "description": "A steel ammunition can with a hinged lid.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "ammo_can",
+      "name": "Ammo can",
+      "size": [3, 2],
+      "weight": 1600
+    },
+    {
       "category": "material",
       "economy": {
         "tiers": [],

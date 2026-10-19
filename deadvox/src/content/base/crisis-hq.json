@@ -63,7 +63,7 @@
       "ground": 21,
       "id": "crisis_hq",
       "lootContext": {
-        "tier": "Tier1",
+        "tier": "Tier2",
         "usage": ["Military"]
       },
       "player": {
@@ -384,7 +384,7 @@
         ]
       ],
       "lootContext": {
-        "tier": "Tier1",
+        "tier": "Tier2",
         "usage": ["Military"]
       },
       "palette": {
@@ -551,7 +551,7 @@
         ]
       ],
       "lootContext": {
-        "tier": "Tier1",
+        "tier": "Tier2",
         "usage": ["Military"]
       },
       "palette": {
@@ -587,7 +587,7 @@
         ["############################################################"]
       ],
       "lootContext": {
-        "tier": "Tier1",
+        "tier": "Tier2",
         "usage": ["Military"]
       },
       "palette": {
@@ -609,7 +609,7 @@
         ["##########################################################"]
       ],
       "lootContext": {
-        "tier": "Tier1",
+        "tier": "Tier2",
         "usage": ["Military"]
       },
       "palette": {
@@ -631,7 +631,7 @@
         ["###################LLLLLLRRRRRR#############################"]
       ],
       "lootContext": {
-        "tier": "Tier1",
+        "tier": "Tier2",
         "usage": ["Military"]
       },
       "palette": {
@@ -737,7 +737,7 @@
         ["##########", "#kkkkkkkk#", "#kkkkkkkk#", "#kkkkkkkk#", "#kkkkkkkk#", "#kkkkkkkk#", "#kkkkkkkk#", "##########"]
       ],
       "lootContext": {
-        "tier": "Tier1",
+        "tier": "Tier2",
         "usage": ["Military"]
       },
       "palette": {
@@ -788,7 +788,7 @@
         ["######", "#kkkk#", "#kkkk#", "#kkkk#", "#kkkk#", "######"]
       ],
       "lootContext": {
-        "tier": "Tier1",
+        "tier": "Tier2",
         "usage": ["Military"]
       },
       "palette": {
@@ -834,7 +834,7 @@
         ]
       ],
       "lootContext": {
-        "tier": "Tier1",
+        "tier": "Tier2",
         "usage": ["Military"]
       },
       "palette": {

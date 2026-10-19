@@ -762,7 +762,7 @@ const ItemSchema = strictObject({
   stack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
   /** Held in both hands. */
   twoHanded: optional(vBoolean()),
-  container: optional(ContainerSchema),
+  container: optional(strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()) })),
   wearable: optional(WearableSchema),
   food: optional(FoodSchema),
   treatment: optional(TreatmentSchema),
@@ -1930,6 +1930,16 @@ const ScenarioSchema = strictObject({
         fixedLoot: optional(array(FixedLootOverride)),
       }),
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
+      events: optional(
+        array(
+          strictObject({
+            template: Id,
+            lot: Id,
+            at: CellPosition,
+            fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a promised item')),
+          }),
+        ),
+      ),
       /** Core stock the instance promises in a fixed lot's building; the building's template stays unchanged. */
       stops: optional(
         array(

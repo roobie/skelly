@@ -184,6 +184,27 @@ class ObstructedSite extends CitySite {
 }
 
 describe('final composed body-route certificate', () => {
+  it('prepares furniture columns only on the first route probe into a chunk', () => {
+    const space = new ScenarioRouteSpace(siteOf(base));
+    const furniture = vi.spyOn(
+      space as unknown as { loadFurniture: (cx: number, cz: number) => void },
+      'loadFurniture',
+    );
+    const y = CHUNK * 2 + 1;
+    try {
+      space.blocked(0, y, 0);
+      expect(furniture.mock.calls.length).toBeGreaterThan(0);
+      furniture.mockClear();
+      space.blocked(1, y, 0);
+      space.blocked(1, y + 1, 0);
+      expect(furniture).not.toHaveBeenCalled();
+      space.blocked(CHUNK, y, 0);
+      expect(furniture.mock.calls.length).toBeGreaterThan(0);
+    } finally {
+      furniture.mockRestore();
+    }
+  });
+
   it('joins substituted production rooms and authored yards to the fixed campus, resources and objective', () => {
     const selected = selectedServices[0]!;
     const plan = candidatePlan(base.serviceBlock!, base.service!.turn, selected.template, substitutedRegistry);
@@ -220,7 +241,8 @@ describe('final composed body-route certificate', () => {
         obstruct(chunk, this.plan.portal!.lower);
       });
       try {
-        expect(() => new GauntletSite({ seed: 9, registry, scale, scenario: profile })).toThrow(COMPOSED_LADDER);
+        const { issues } = scenarioCertificate(new GauntletSite({ seed: 9, registry, scale, scenario: profile }));
+        expect(issues.map(([path, message]) => `${path}: ${message}`).join('\n')).toMatch(COMPOSED_LADDER);
       } finally {
         stamp.mockRestore();
       }

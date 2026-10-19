@@ -1,4 +1,4 @@
-local military = { usage: ['Military'], tier: 'Tier1' };
+local military = { usage: ['Military'], tier: 'Tier2' };
 local yard = import 'crisis-hq-yard.libsonnet';
 local vault = import 'crisis-hq-vault.libsonnet';
 local foundation = [

@@ -74,12 +74,13 @@ export class ScenarioRouteSpace {
   private load(x: number, y: number, z: number): void {
     const cell: Vec3 = [toChunk(x), toChunk(y), toChunk(z)];
     const chunkKey = key(cell);
-    if (!this.chunks.has(chunkKey)) {
-      this.chunks.add(chunkKey);
-      const chunk = generateChunk(this.terrain, cell);
-      this.site.stamp(chunk);
-      this.world.addChunk(chunk);
+    if (this.chunks.has(chunkKey)) {
+      return;
     }
+    this.chunks.add(chunkKey);
+    const chunk = generateChunk(this.terrain, cell);
+    this.site.stamp(chunk);
+    this.world.addChunk(chunk);
     // A piece anchored in the preceding column can still obstruct this column's body cells.
     for (let dx = 0; dx <= this.furnitureReach; dx++) {
       for (let dz = 0; dz <= this.furnitureReach; dz++) {

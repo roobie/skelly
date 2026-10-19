@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { pairAcross } from '../src/vehicles/authoring.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import {
@@ -346,6 +346,22 @@ describe('greedy voxel meshing', () => {
     }
     return faces.sort();
   };
+
+  it('queries only occupied voxels’ neighbours when meshing sparse solid and glass slices', () => {
+    const sparse: VoxelGrid = new Map([
+      [voxelKey(0, 0, 0), 'red'],
+      [voxelKey(40, 30, 20), GLASS],
+    ]);
+    const reads = vi.spyOn(sparse, 'get');
+    try {
+      const { solid, clear } = meshGrid(sparse, colorOf, isClear);
+      expect(solid.quads).toBeGreaterThan(0);
+      expect(clear.quads).toBeGreaterThan(0);
+      expect(reads.mock.calls.length).toBeLessThanOrEqual(FACES.length * sparse.size);
+    } finally {
+      reads.mockRestore();
+    }
+  });
 
   it('covers exactly the exposed faces, each once, in fewer quads', () => {
     const { solid, clear } = meshGrid(fixture, colorOf, isClear);
