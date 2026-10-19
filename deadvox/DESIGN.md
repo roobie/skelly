@@ -177,7 +177,7 @@ through wire does not let the player loot it, and passable foliage still hides i
 See `src/core/schema.ts`, `BlockSchema`; `src/core/collision.ts`, `worldOpaque`;
 `src/core/wireMesh.ts`, `wirePolygons`; and `src/core/interactionPick.ts`, `pickInteractionTarget`.
 
-Fence supports make ends, corners and junctions read as built structure rather than
+Fence supports make ends, isolated cells, corners and junctions read as built structure rather than
 floating wire. Derive them from neighbouring opted-in cells instead of making authors
 place a second object. Content owns pole size and straight-run spacing; anchor that
 spacing to the world, not a discovered run end or chunk origin, so loading and rebuild
