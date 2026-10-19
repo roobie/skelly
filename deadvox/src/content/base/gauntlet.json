@@ -12948,6 +12948,7 @@
           "spawn": "shambler"
         },
         "a": {
+          "fixed": true,
           "furniture": "kitchen_cupboard",
           "loot": "gauntlet_home_kitchen"
         },
@@ -13983,6 +13984,7 @@
           "furniture": "crate"
         },
         "b": {
+          "fixed": true,
           "furniture": "kitchen_cupboard"
         },
         "c": {
@@ -14232,6 +14234,7 @@
           "spawn": "shambler"
         },
         "a": {
+          "fixed": true,
           "furniture": "kitchen_cupboard",
           "loot": "gauntlet_home_kitchen"
         },
@@ -15009,6 +15012,7 @@
           "furniture": "crate"
         },
         "b": {
+          "fixed": true,
           "furniture": "kitchen_cupboard"
         },
         "c": {
@@ -15258,6 +15262,7 @@
           "spawn": "shambler"
         },
         "a": {
+          "fixed": true,
           "furniture": "kitchen_cupboard",
           "loot": "gauntlet_home_kitchen"
         },
@@ -16551,6 +16556,7 @@
           "furniture": "crate"
         },
         "b": {
+          "fixed": true,
           "furniture": "kitchen_cupboard"
         },
         "c": {
@@ -26586,6 +26592,7 @@
           "loot": "gauntlet_food_stock"
         },
         "C": {
+          "fixed": true,
           "furniture": "counter",
           "loot": "gauntlet_food_stock"
         },
@@ -26828,6 +26835,7 @@
           "loot": "gauntlet_ammunition"
         },
         "C": {
+          "fixed": true,
           "furniture": "counter",
           "loot": "gauntlet_police_gear"
         },
@@ -27070,6 +27078,7 @@
           "loot": "hardware_store_stock"
         },
         "C": {
+          "fixed": true,
           "furniture": "counter",
           "loot": "hardware_store_stock"
         },

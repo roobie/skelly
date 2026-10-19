@@ -164,7 +164,7 @@ export class AuthoredDecals {
     const positions = this.mesh.geometry.getAttribute('position');
     const normals = this.mesh.geometry.getAttribute('normal');
     for (const { anchor, start, end } of this.attachments) {
-      const entity = entities.at(...anchor);
+      const entity = entities.doorAt(...anchor);
       if (!entity) {
         for (let i = start; i < end; i++) {
           positions.setXYZ(i, 0, 0, 0);

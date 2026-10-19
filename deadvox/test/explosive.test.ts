@@ -18,6 +18,7 @@ import { World } from '../src/core/world.ts';
 import { SEVERED_ITEM, ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import type { ZombieRegions } from '../src/core/zombieRegions.ts';
 import type { Detonation } from '../src/core/zombies.ts';
+import type { MoveIntent } from '../src/game/player.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -54,7 +55,10 @@ const runtime = (
   isSolid: SolidAt = OPEN,
   restore?: Readonly<SaveSnapshot>,
   content = registry,
-  onDetonation?: (position: Vec3, radiusMetres: number) => void,
+  {
+    onDetonation,
+    intent,
+  }: { onDetonation?: (position: Vec3, radiusMetres: number) => void; intent?: () => MoveIntent } = {},
 ) =>
   createSession({
     registry: content,
@@ -67,8 +71,8 @@ const runtime = (
     spawn: [0, 0, 0],
     ready: () => true,
     controls: {
-      active: () => false,
-      intent: () => IDLE,
+      active: () => intent !== undefined,
+      intent: intent ?? (() => IDLE),
       yaw: () => 0,
       pitch: () => 0,
       walking: () => false,
@@ -122,7 +126,7 @@ const detonation = (origin: Vec3, blast: Detonation['blast'], fragmentCount = 0)
 describe('hand grenade', () => {
   it('detonates a lit grenade after release has committed it to the pile', () => {
     const detonations: Vec3[] = [];
-    const session = runtime(OPEN, undefined, registry, (position) => detonations.push(position));
+    const session = runtime(OPEN, undefined, registry, { onDetonation: (position) => detonations.push(position) });
     const grenade = session.inventory.create(GRENADE);
     expect(session.inventory.add(grenade, { kind: 'hand', side: 'right' })).toBe(true);
     expect(session.fuses.togglePin(grenade)).toBe('pulled');
@@ -195,6 +199,37 @@ describe('hand grenade', () => {
     session.sim.scheduler.advance(1);
     expect(session.inventory.itemByUid(grenade.uid)).toBeUndefined();
     expect(session.sim.body.health).toBeLessThan(health);
+  });
+
+  it('goes off with the player carrying the piece it is in, not where the piece was lifted', () => {
+    const detonations: Vec3[] = [];
+    let walking = false;
+    const session = runtime(OPEN, undefined, registry, {
+      onDetonation: (position) => detonations.push(position),
+      intent: () => (walking ? { ...IDLE, forward: 1 } : IDLE),
+    });
+    const crate = registry.furniture.get('crate')!;
+    const site: Vec3 = [2, 0, 0];
+    const piece = session.inventory.furnish({ type: crate.id, pos: site, size: crate.size, facing: 'n' })!;
+    expect(session.search(piece)).toBeUndefined();
+    session.sim.scheduler.advance(30);
+    expect(piece.searched).toBe(true);
+    const grenade = liveInHand(session);
+    expect(session.inventory.move(grenade, { kind: 'furniture', entity: piece, pocket: 0 }).ok).toBe(true);
+    expect(session.liftFurniture(piece.uid)).toBeUndefined();
+
+    walking = true;
+    session.sim.scheduler.advance(FUSE / 2);
+    walking = false;
+    session.sim.scheduler.advance(0.5);
+    const [x, , z] = session.body.pos;
+    session.sim.scheduler.advance(FUSE);
+
+    expect(session.inventory.itemByUid(grenade.uid)).toBeUndefined();
+    expect(detonations).toHaveLength(1);
+    const [at] = detonations;
+    expect(Math.hypot(x - (site[0] + 0.5), z - (site[2] + 0.5))).toBeGreaterThan(crate.size[0] * 2);
+    expect([at![0] / BLOCK, at![2] / BLOCK]).toEqual([expect.closeTo(x, 3), expect.closeTo(z, 3)]);
   });
 
   it('spares the player behind a wall from its blast and fragments', () => {

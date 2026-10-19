@@ -125,6 +125,11 @@ export class FurnitureMeshes {
     this.group.add(this.marker);
   }
 
+  /** A piece built as it would stand, for drawing it away from the world; it shares this owner's geometry and materials. */
+  pieceMesh(entity: BlockEntity, def: FurnitureDef): Group | Mesh {
+    return this.meshFor(entity, def);
+  }
+
   private meshFor(entity: BlockEntity, def: FurnitureDef): Group | Mesh {
     const material = this.material(def.color);
     if (def.id === 'workshop_lift') {

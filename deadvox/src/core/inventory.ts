@@ -13,6 +13,7 @@ import {
   skillSaturation,
 } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
@@ -88,6 +89,14 @@ export const dropSpots = (feet: Vec3): Vec3[] => [
 ];
 
 export type HandSide = 'right' | 'left';
+
+/** Something outside the inventory that can hold a hand, so the hand does nothing else meanwhile. */
+export interface HandHold {
+  /** Why a move can't take `item` out of hand `from` or into hand `to`. */
+  moveRefusal: (item: Item, from: HandSide | undefined, to: HandSide | undefined) => string | undefined;
+  /** Why both hands can't take up a piece of furniture. */
+  liftRefusal: () => string | undefined;
+}
 
 export interface Pile {
   /** Block position of the floor it lies on. */
@@ -200,12 +209,8 @@ export class Inventory {
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
   /** Where the actor stands, in blocks; the game sets it. Undefined means no side is known. */
   actorPosition: () => Vec3 | undefined = () => undefined;
-  /**
-   * Why a move can't take `item` out of hand `from` or into hand `to` because a hand holds something outside the
-   * inventory, such as a ladder; the game sets it.
-   */
-  handRefusal: (item: Item, from: HandSide | undefined, to: HandSide | undefined) => string | undefined = () =>
-    undefined;
+  /** What holds a hand from outside the inventory, such as a ladder; the game sets it. */
+  handHold: HandHold = { moveRefusal: () => undefined, liftRefusal: () => undefined };
 
   /** A deep plain-data copy of carried, worn, piled and furnished items and allocators. */
   snapshotState(): Readonly<InventoryState> {
@@ -330,7 +335,7 @@ export class Inventory {
           return inventory.piles.values();
         },
         get entities() {
-          return inventory.entities.all;
+          return inventory.entities.records;
         },
       });
     }
@@ -491,6 +496,23 @@ export class Inventory {
 
   pileAt(pos: Vec3): Pile | undefined {
     return this.piles.get(pileKey(pos));
+  }
+
+  /** Moves piled items to other piles at the given spots, as when the furniture under them is moved. */
+  shiftPiles(moves: readonly { placed: Placed; to: Vec3; at: Spot }[]): void {
+    for (const { placed } of moves) {
+      const pile = [...this.piles.values()].find((candidate) => candidate.items.includes(placed));
+      if (!pile) {
+        throw new Error(`Item ${placed.item.uid} is not piled`);
+      }
+      this.remove({ kind: 'pile', pile, placed });
+    }
+    for (const { placed, to, at } of moves) {
+      this.put(placed.item, { kind: 'pile', pos: to }, at);
+    }
+    if (moves.length > 0) {
+      this.version += 1;
+    }
   }
 
   /** The grid of a pocket, from the owner's type. */
@@ -1090,8 +1112,19 @@ export class Inventory {
     return { swap: otherItem, ...(targetSpot ? { at: targetSpot } : {}) };
   }
 
+  /** Why both hands can't take up a piece of furniture: one holds an item, a piece or something outside. */
+  liftRefusal(): string | undefined {
+    if (this.entities.carrying() || this.hands.right || this.hands.left) {
+      return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
+    }
+    return this.handHold.liftRefusal();
+  }
+
   private handMoveRefusal(item: Item, from: Location, target: Target): string | undefined {
-    return this.handRefusal(
+    if (target.kind === 'hand' && this.entities.carrying()) {
+      return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
+    }
+    return this.handHold.moveRefusal(
       item,
       from.kind === 'hand' ? from.side : undefined,
       target.kind === 'hand' ? target.side : undefined,

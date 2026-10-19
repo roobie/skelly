@@ -51,6 +51,13 @@ const TRIGGER_ENTRIES = [
       note: 'Temporary stand-in: shares the door-blocked recording.',
     },
   ],
+  [
+    'furniture_scrape',
+    {
+      trigger: 'Hold F on a crate or other small piece to lift it, or press F to set it down.',
+      note: 'Temporary stand-in: shares the door-blocked recording, pitched down.',
+    },
+  ],
   ['player_strain', { trigger: 'Press Space while grounded to jump.' }],
   [
     'player_landing_hard',

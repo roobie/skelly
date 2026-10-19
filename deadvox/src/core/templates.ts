@@ -122,6 +122,7 @@ export const templateLockIds = (registry: Registry, template: TemplateDef | MapP
 interface Piece {
   lootUsage?: LootContext['usage'];
   lock?: DoorLockDef;
+  fixed?: true;
   furniture: string;
   /** The palette's loot table, or the furniture's own. */
   loot?: string | undefined;
@@ -212,6 +213,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
         pos,
         size,
         ...(entry.lock ? { lock: entry.lock } : {}),
+        ...(entry.fixed ? { fixed: true as const } : {}),
       });
     }
   }
@@ -817,6 +819,7 @@ const composePlacement = (
 export interface PlacedPiece {
   lootUsage?: LootContext['usage'];
   lock?: DoorLockDef;
+  fixed?: true;
   furniture: string;
   loot?: string | undefined;
   facing: Facing;
@@ -834,6 +837,7 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
     return {
       furniture: piece.furniture,
       ...(piece.lock ? { lock: piece.lock } : {}),
+      ...(piece.fixed ? { fixed: true as const } : {}),
       loot: piece.loot,
       ...(piece.lootUsage === undefined ? {} : { lootUsage: piece.lootUsage }),
       facing: turnFacing(piece.facing, turn),

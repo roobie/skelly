@@ -8710,6 +8710,7 @@
       },
       "palette": {
         "n": {
+          "fixed": true,
           "furniture": "counter",
           "loot": "junk"
         }
@@ -8732,6 +8733,7 @@
       "palette": {
         "N": {
           "facing": "s",
+          "fixed": true,
           "furniture": "counter",
           "loot": "gauntlet_food_stock"
         }
@@ -9254,6 +9256,7 @@
       "palette": {
         "k": {
           "facing": "s",
+          "fixed": true,
           "furniture": "kitchen_cupboard"
         }
       },

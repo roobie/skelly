@@ -5,6 +5,23 @@
         "other": "Something's in the way",
         "player": "You're in the way"
       },
+      "furnitureMoveMessages": {
+        "blocksLadder": "It would block the ladder",
+        "coversHatch": "It would cover the hatch",
+        "fallsOnOther": "What's on top would fall on someone",
+        "fallsOnPlayer": "What's on top would fall on me",
+        "fastened": "It's fixed in place",
+        "handsFull": "My hands are full",
+        "noRoom": "There's no room for it there",
+        "nowhereToLand": "There's nowhere for what's on it to land",
+        "otherInWay": "Someone's in the way",
+        "outOfReach": "I can't reach there",
+        "playerInWay": "I'm in the way",
+        "standingOn": "I'm standing on it",
+        "tired": "I'm too tired to lift it",
+        "tooBig": "It's too big for me to lift",
+        "wornOut": "I can't hold it any longer"
+      },
       "hudScale": 1,
       "id": "core",
       "itemActionLabels": {

@@ -7,6 +7,7 @@ read_if:
   - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
+  - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
   - you're implementing gauntlet scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth or its visual approval gate
   - you author lab equipment bays, curated storeys or supported descent lids
@@ -328,6 +329,64 @@ intentional opportunities to fight from above.
   blocked by a door and need body clearance in front. See `hatchPanel` in
   `src/core/blockEntities.ts` and `throughLadders` in
   `src/core/furniturePick.ts`.
+
+### Moving furniture
+
+The player can move what blocks a way through, so a room the generator jammed
+is fixable in play rather than a dead end. Size stands in for weight and
+strength until those are modelled; smashing and taking apart with tools are
+separate actions that come later. See `src/core/furnitureMove.ts`,
+`liftFurniture` and `placeFurniture`.
+
+- **What lifts.** Pieces that are part of the building stay put. Fitted is a
+  mark on a placement, not a definition, because the same cupboard is fixed in
+  a kitchen and loose in a shed. A moved piece keeps its origin, so generation
+  that runs again over that column never puts a second copy back. See
+  `src/core/furnitureMove.ts`, `movableRefusal`, and
+  `src/core/blockEntities.ts`, `BlockEntities.addWithUid`.
+- **Hands and stamina.** Hands are already the slots that hold things, so
+  carrying occupies both of them rather than a new carry slot. Items, ladders
+  and furniture answer to one hand authority, so no combination leaves a hand
+  doing two jobs at once. See `src/core/inventory.ts`, `HandHold`, and
+  `src/core/ladders.ts`, `LadderHold`. Lifting costs stamina and carrying
+  drains it, so moving a room's worth of furniture is a choice paid for, not a
+  free reshuffle. A worn-out player puts the piece down where it fits; when
+  nothing fits the piece stays held until something does, because dropping it
+  through a wall or a body is worse than holding it a moment longer. See
+  `src/game/session.ts`, `putDownWornOut`.
+- **Noise.** Moving scrapes, and shamblers hear it like any other world sound,
+  so barricading under pressure has a price.
+- **Stacks settle once.** What loses its support falls, lowest first, so each
+  piece lands on what fell beneath it. Settling runs only when a piece is
+  lifted or put down, not every tick, because nothing else moves furniture. A
+  partly supported piece stays put, as a crate overhanging a table does. A fall
+  that finds no floor within a bounded drop is refused, because a chunk that
+  isn't loaded reads as air.
+- **Nothing falls on a body.** A lift that would drop a piece onto the player
+  or anyone else is refused, with the reason said. Hurting the player with
+  their own tidying would punish an action the game wants them to take, and
+  crushing shamblers with a stack would be a cheaper weapon than any the game
+  balances.
+- **What lies on top.** Loose items on a moved or falling piece go with it or
+  beside it, and a container's pockets go with it, because moving a container
+  is not searching it. When the items have nowhere to go the move is refused,
+  so nothing is lost or buried in a block.
+- **Where it can stand.** A piece may not cover a hatch or fill the space a
+  climber stands in front of a ladder, since either would wall off a floor. An
+  open upright door's doorway takes a piece, because barricading a door is a
+  use, not a mistake; the door then cannot close over it, and a moved piece
+  blocks shamblers like any solid. A shaped door's panel stays in its cells,
+  and an open hatch is a drop, so neither takes a piece. See `src/core/blockEntities.ts`, `inDoorway`.
+- **A carried piece carries its contents.** An explosive inside a carried
+  piece goes off at its carrier, because the piece is in their hands, not where
+  it last stood. See `src/game/session.ts`, `detonationPoint`.
+- **Seen while carried.** The player has to see what they're carrying, so the
+  piece is drawn held low in front of them, clear of the aimed cell's outline
+  so it never hides where it will go. The view reads the carry state rather
+  than a copy of it, so it cannot outlive the carry. Where it sits is content,
+  so it can be tuned by eye. See `src/render/carriedPiece.ts`, `CarriedPiece`.
+- **Refusals live in content.** Each refusal says why in a short first-person
+  line, kept in content with the other UI text so a pack can reword it.
 
 ### Generating the world in layers
 

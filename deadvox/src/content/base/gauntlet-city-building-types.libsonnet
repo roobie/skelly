@@ -174,16 +174,16 @@ local yard(block) = { role: 'trim', block: block };
     police.piece,
   ] + police.chairPieces + [
     room('gauntlet_food_aisles', residential, shopRows, shopTall, {
-      C: { furniture: 'counter', loot: 'gauntlet_food_stock' },
+      C: { furniture: 'counter', fixed: true, loot: 'gauntlet_food_stock' },
       S: stock('gauntlet_food_stock'), G: stock('gauntlet_food_stock'), A: box('gauntlet_food_stock'),
     }),
     room('gauntlet_gun_sales', hunting, shopRows, shopTall, {
-      C: { furniture: 'counter', loot: 'gauntlet_police_gear' },
+      C: { furniture: 'counter', fixed: true, loot: 'gauntlet_police_gear' },
       S: stock('gauntlet_ammunition'), G: { furniture: 'range_rack', loot: 'gauntlet_civilian_guns' },
       A: box('gauntlet_ammunition'),
     }),
     room('gauntlet_hardware_aisles', industrial, shopRows, shopTall, {
-      C: { furniture: 'counter', loot: 'hardware_store_stock' },
+      C: { furniture: 'counter', fixed: true, loot: 'hardware_store_stock' },
       S: stock('hardware_store_stock'), G: stock('hardware_store_stock'), A: box('hardware_store_stock'),
     }),
   ],

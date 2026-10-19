@@ -95,6 +95,7 @@ interface ScenarioState {
   actor?: Zombie;
   swingOrigin?: Vec3;
   doorPosition?: Vec3;
+  furniturePosition?: Vec3;
   blastPosition?: Vec3;
   meleeStarted?: boolean;
   blocking?: boolean;
@@ -131,6 +132,9 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   ): Vec3 | undefined => {
     if (sound.event.startsWith('door_')) {
       return state.doorPosition!;
+    }
+    if (sound.event === 'furniture_scrape') {
+      return state.furniturePosition!;
     }
     if (sound.event === 'melee_swing') {
       return state.swingOrigin!;
@@ -406,6 +410,49 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     );
   };
 
+  const exerciseFurnitureMove = (scenario: NoiseScenario) => {
+    const { session, world, state, played, advance } = scenario;
+    const feet = session.feet();
+    const cell: Vec3 = [Math.floor(feet[0]), Math.floor(feet[1]), Math.floor(feet[2])];
+    const floorBlock = registry.blockIds.get('stone')!;
+    for (let x = cell[0] - 8; x <= cell[0] + 8; x++) {
+      for (let z = cell[2] - 8; z <= cell[2] + 8; z++) {
+        world.setBlock(x, cell[1] - 1, z, floorBlock);
+      }
+    }
+    const crate = registry.furniture.get('crate')!;
+    const centre = (pos: Readonly<Vec3>): Vec3 => [
+      pos[0] + crate.size[0] / 2,
+      pos[1] + crate.size[1] / 2,
+      pos[2] + crate.size[2] / 2,
+    ];
+    const piece = session.entities.add({
+      type: crate.id,
+      pos: [cell[0] + 3, cell[1], cell[2]],
+      size: crate.size,
+      facing: 'n',
+    })!;
+    state.furniturePosition = centre(piece.pos);
+    const liftedAt = session.sim.time;
+    observe(scenario, 'crate lifts', session.liftFurniture(piece.uid) === undefined);
+    const { minIntervalSimSeconds } = registry.sounds.get('furniture_scrape')!;
+    while (session.sim.time - liftedAt <= minIntervalSimSeconds) {
+      advance(1);
+    }
+    const aimed: Vec3 = [cell[0] - 3, cell[1], cell[2]];
+    const spot = session.furniturePlacement(aimed);
+    if ('pos' in spot) {
+      state.furniturePosition = centre(spot.pos);
+    }
+    observe(scenario, 'crate is set down', session.placeFurniture(aimed) === undefined);
+    advance(1);
+    observe(
+      scenario,
+      'lift and place both scrape',
+      played.filter(({ sound }) => sound.event === 'furniture_scrape').length === 2,
+    );
+  };
+
   const exerciseShotgun = (scenario: NoiseScenario) => {
     const { session, events, blockSize, advance, drainEvents } = scenario;
     const gun = session.inventory.create('pump_shotgun');
@@ -621,6 +668,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   exerciseFootsteps(fixture);
   exerciseRustle(fixture);
   exerciseDoors(fixture);
+  exerciseFurnitureMove(fixture);
   exerciseShotgun(fixture);
   exerciseGrenade(fixture);
   exerciseFight(fixture);

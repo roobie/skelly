@@ -37,7 +37,7 @@
           "spawn": "shambler"
         },
         "K": {
-          "furniture": "kitchen_cupboard"
+          "furniture": "kitchen_cupboard", "fixed": true
         },
         "F": {
           "furniture": "fridge"
@@ -388,7 +388,7 @@
           "loot": "snacks"
         },
         "C": {
-          "furniture": "counter",
+          "furniture": "counter", "fixed": true,
           "loot": "snacks"
         },
         "F": {
@@ -401,7 +401,7 @@
           "furniture": "desk"
         },
         "K": {
-          "furniture": "kitchen_cupboard",
+          "furniture": "kitchen_cupboard", "fixed": true,
           "loot": "kitchen_cupboard"
         },
         "Q": {
@@ -584,7 +584,7 @@
           "loot": "snacks"
         },
         "C": {
-          "furniture": "counter",
+          "furniture": "counter", "fixed": true,
           "loot": "snacks"
         },
         "F": {

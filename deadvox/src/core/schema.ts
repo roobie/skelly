@@ -245,6 +245,24 @@ const InventoryTuningSchema = strictObject({
   throwFlightSimSeconds: Positive,
   /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
   throwArcHeightMetres: NonNegative,
+  /** Carrying furniture in both hands (`DESIGN.md`, "Moving furniture"). */
+  furnitureMove: strictObject({
+    /** The largest piece the player can lift, along each side. */
+    maxSizeMetres: Positive,
+    /** Stamina spent to lift a piece. */
+    liftStamina: NonNegative,
+    /** Stamina spent per Sim second of carrying; running out drops the piece. */
+    carryStaminaPerSimSecond: SimRate,
+    /** How the carried piece shows in first person, in view metres (x right, y up, z back from the eye). */
+    carriedView: strictObject({
+      offsetMetres: tuple([number(), number(), number()]),
+      /** The piece's longest side is drawn this long, so a big piece doesn't fill the view. */
+      sizeMetres: Positive,
+      /** How far it rises and sinks while held, and how many times a real second. */
+      bobMetres: NonNegative,
+      bobPerRealSecond: NonNegative,
+    }),
+  }),
 });
 
 const UiTuningSchema = strictObject({
@@ -259,6 +277,24 @@ const UiTuningSchema = strictObject({
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
   doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
+  /** Why a piece of furniture can't be lifted or put down, and what the player says on dropping it worn out. */
+  furnitureMoveMessages: strictObject({
+    tooBig: Name,
+    fastened: Name,
+    handsFull: Name,
+    tired: Name,
+    standingOn: Name,
+    fallsOnPlayer: Name,
+    fallsOnOther: Name,
+    nowhereToLand: Name,
+    noRoom: Name,
+    playerInWay: Name,
+    otherInWay: Name,
+    coversHatch: Name,
+    blocksLadder: Name,
+    outOfReach: Name,
+    wornOut: Name,
+  }),
   /** What the item action list calls an action whose wording does not depend on the item or wound. */
   itemActionLabels: strictObject({ stripRound: Name }),
   /** What the inventory screen calls each wear slot. */
@@ -1315,6 +1351,8 @@ const PaletteThingSchema = pipe(
     facing: optional(picklist(['n', 'e', 's', 'w'])),
     /** Initial lock state, only on a door; ids are unique within an authored site. */
     lock: optional(DoorLockSchema),
+    /** Fastened where it stands, like a fitted cupboard, so the player can't move it. */
+    fixed: optional(literal(true)),
     /** A zombie type that may stand here; the cell itself is air. */
     spawn: optional(Id),
     chance: optional(Fraction),
@@ -1329,8 +1367,10 @@ const PaletteThingSchema = pipe(
   ),
   check((e) => e.spawn !== undefined || e.window === undefined, '"window" only goes with "spawn"'),
   check(
-    (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined && e.lock === undefined),
-    '"loot", "facing" and "lock" only go with "furniture"',
+    (e) =>
+      e.furniture !== undefined ||
+      (e.loot === undefined && e.facing === undefined && e.lock === undefined && e.fixed === undefined),
+    '"loot", "facing", "lock" and "fixed" only go with "furniture"',
   ),
   check((e) => e.spawn !== undefined || e.chance === undefined, '"chance" only goes with "spawn"'),
 );

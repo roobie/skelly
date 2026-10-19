@@ -189,6 +189,7 @@
           "furniture": "bed"
         },
         "C": {
+          "fixed": true,
           "furniture": "counter"
         },
         "D": {
@@ -198,6 +199,7 @@
           "furniture": "fridge"
         },
         "K": {
+          "fixed": true,
           "furniture": "kitchen_cupboard"
         },
         "R": {
@@ -382,10 +384,12 @@
         },
         "G": {
           "facing": "w",
+          "fixed": true,
           "furniture": "counter"
         },
         "J": {
           "facing": "w",
+          "fixed": true,
           "furniture": "kitchen_cupboard"
         },
         "O": {
@@ -572,6 +576,7 @@
         "#": "brick",
         ".": "air",
         "C": {
+          "fixed": true,
           "furniture": "counter",
           "loot": "snacks"
         },
@@ -869,6 +874,7 @@
         "#": "brick",
         ".": "air",
         "C": {
+          "fixed": true,
           "furniture": "counter",
           "loot": "snacks"
         },

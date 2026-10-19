@@ -178,6 +178,7 @@ export class HeldItems {
   private drawn = '';
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
+  private readonly attached: Object3D[] = [];
   private readonly compasses = new Map<number, ReturnType<typeof createCompass>>();
   private readonly firearmParts = new Map<number, { action?: FirearmAction; parts: readonly HeldActionPart[] }>();
   private readonly cylinderRounds = new Map<number, { key: string; group: Group }>();
@@ -251,6 +252,12 @@ export class HeldItems {
     warmUp.receiveShadow = true;
     warmUp.visible = false;
     this.scene.add(warmUp);
+  }
+
+  /** Draws `object` in the hands' view, in view metres, for something held that this owner doesn't build. */
+  attach(object: Object3D): void {
+    this.attached.push(object);
+    this.view.add(object);
   }
 
   /** The hands' own scene and camera, for precompiling their shaders. */
@@ -1219,7 +1226,7 @@ export class HeldItems {
       disposeItemEmissiveMaterials(held);
     }
     this.view.clear();
-    this.view.add(this.torso, this.opticWindow);
+    this.view.add(this.torso, this.opticWindow, ...this.attached);
     this.shown.clear();
     this.firearmParts.clear();
     this.cylinderRounds.clear();

@@ -10,6 +10,7 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
+import { terrainSolid } from '../core/collision.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -34,6 +35,7 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
+import { type FurnitureMover, liftFurniture, placeFurniture, placement } from '../core/furnitureMove.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
@@ -956,7 +958,7 @@ export const createSession = (options: SessionOptions) => {
     reach: PLAYER.reach / s,
     restored: restoredPlayer?.ladder,
   });
-  inventory.handRefusal = (item, from, to) => ladderHold.moveRefusal(item, from, to);
+  inventory.handHold = ladderHold;
   const throwCharge = new ThrowCharge(inventory, ladderHold);
   // A throw held when the ladder takes its hand ends there, so it is never released from the hand on the ladder.
   const refuseThrowForLadder = (): void => {
@@ -1218,7 +1220,7 @@ export const createSession = (options: SessionOptions) => {
       use(ladderHold.refusal(offSide(character)), controls.useOff);
     }
   };
-  /** Where an explosive goes off, in blocks: its pile, its furniture, or the player carrying it. */
+  /** Where an explosive goes off, in blocks: its pile, its standing furniture, or the player carrying it or its piece. */
   const detonationPoint = (item: Item): Vec3 | undefined => {
     let location = inventory.locate(item);
     while (location?.kind === 'pocket' || location?.kind === 'slot' || location?.kind === 'work') {
@@ -1228,7 +1230,7 @@ export const createSession = (options: SessionOptions) => {
       const [x, y, z] = location.pile.pos;
       return [x + 0.5, y + 0.25, z + 0.5];
     }
-    if (location?.kind === 'furniture') {
+    if (location?.kind === 'furniture' && !location.entity.carried) {
       const [x, y, z] = location.entity.pos;
       return [x + 0.5, y + 0.5, z + 0.5];
     }
@@ -1290,6 +1292,72 @@ export const createSession = (options: SessionOptions) => {
   /** A downed body lies on the floor: the player walks over it and a door closes on it, as shamblers already do. */
   const standingZombieBodies = (): Body[] =>
     [...zombieStore.entries()].filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body);
+
+  /** A world sound that shamblers hear when its content gives it a noise. */
+  const playNoisyWorldSound = (event: SoundId, position: Vec3): void => {
+    const noise = registry.sounds.get(event)?.noise;
+    playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
+  };
+
+  // ---- moving furniture (`DESIGN.md`, "Moving furniture") ----
+
+  const moveTerrain = terrainSolid(world, registry);
+  const furnitureMover = (): FurnitureMover => ({
+    inventory,
+    terrainSolid: moveTerrain,
+    blockSize: s,
+    player: body,
+    others: standingZombieBodies(),
+    stamina: sim.needs.stamina,
+  });
+  const boxCentre = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3 => [
+    pos[0] + size[0] / 2,
+    pos[1] + size[1] / 2,
+    pos[2] + size[2] / 2,
+  ];
+  const liftPiece = (uid: number): string | undefined => {
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return 'It is no longer there';
+    }
+    const centre = boxCentre(entity.pos, entity.size);
+    const reason = liftFurniture(furnitureMover(), entity);
+    if (reason) {
+      return reason;
+    }
+    spendStamina(sim.needs, reachTuning(registry).furnitureMove.liftStamina, bodyTuning.staminaRegenDelaySimSeconds);
+    playNoisyWorldSound('furniture_scrape', centre);
+    return undefined;
+  };
+  const placePiece = (aimed: Readonly<Vec3>): string | undefined => {
+    const carried = entities.carrying();
+    if (!carried) {
+      return 'Nothing to set down';
+    }
+    const reason = placeFurniture(furnitureMover(), aimed);
+    if (!reason) {
+      playNoisyWorldSound('furniture_scrape', boxCentre(carried.pos, carried.size));
+    }
+    return reason;
+  };
+  /** Worn out, the player sets the piece down in front, or beside, wherever it first fits. */
+  const putDownWornOut = (): void => {
+    const carried = entities.carrying()!;
+    const [fx, , fz] = aimDirection(sampledInput().yaw, 0, NEUTRAL_AIM);
+    const length = Math.hypot(fx, fz) || 1;
+    const clear = body.halfWidth + Math.max(carried.size[0], carried.size[2]) / 2 + 0.5;
+    const [, y] = feet();
+    for (const turn of [0, 1, -1, 2, -2, 3, -3, 4]) {
+      const angle = (turn * Math.PI) / 4;
+      const dx = (fx * Math.cos(angle) - fz * Math.sin(angle)) / length;
+      const dz = (fx * Math.sin(angle) + fz * Math.cos(angle)) / length;
+      const aimed: Vec3 = [Math.floor(body.pos[0] + dx * clear), y, Math.floor(body.pos[2] + dz * clear)];
+      if (!placePiece(aimed)) {
+        (options.refusal ?? options.notice)(registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.wornOut);
+        return;
+      }
+    }
+  };
 
   const observeEntry = (
     run: ScenarioRun,
@@ -1458,18 +1526,30 @@ export const createSession = (options: SessionOptions) => {
     time: number,
     { intent, handling, readyGait }: ReturnType<typeof preparePlayerStep>,
   ): void => {
+    const carrying = entities.carrying() !== undefined;
     sprinting =
-      !(crouching || ladderHold.on) &&
+      !(crouching || ladderHold.on || carrying) &&
       intent.sprint &&
       (intent.forward !== 0 || intent.right !== 0) &&
       !handling &&
       !readyGait &&
       canSprint(sim.needs, sprinting, sim.body.staminaRules);
     survival.setSprinting(sprinting);
-    stepStamina(sim.needs, dt, sprinting, {
-      ...sim.body.staminaRules,
-      staminaRegenDelaySimSeconds: bodyTuning.staminaRegenDelaySimSeconds,
-    });
+    if (carrying) {
+      spendStamina(
+        sim.needs,
+        reachTuning(registry).furnitureMove.carryStaminaPerSimSecond * dt,
+        bodyTuning.staminaRegenDelaySimSeconds,
+      );
+      if (sim.needs.stamina <= 0) {
+        putDownWornOut();
+      }
+    } else {
+      stepStamina(sim.needs, dt, sprinting, {
+        ...sim.body.staminaRules,
+        staminaRegenDelaySimSeconds: bodyTuning.staminaRegenDelaySimSeconds,
+      });
+    }
     const readyFirearm = Object.values(inventory.hands).find((item) => item && registry.items.get(item.type)?.firearm);
     const readyMovementFactor =
       readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
@@ -1593,10 +1673,7 @@ export const createSession = (options: SessionOptions) => {
     inventory,
     player: () => body,
     others: standingZombieBodies,
-    playWorldSound: (event, position) => {
-      const noise = registry.sounds.get(event)?.noise;
-      playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
-    },
+    playWorldSound: playNoisyWorldSound,
     closeBlockedMessages: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.doorCloseBlockedMessages,
   });
   registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
@@ -1791,9 +1868,9 @@ export const createSession = (options: SessionOptions) => {
       if (sim.body.actionRefusal) {
         return sim.body.actionRefusal;
       }
-      ladderHold.grab(entity);
+      const refusal = ladderHold.grab(entity);
       refuseThrowForLadder();
-      return undefined;
+      return refusal;
     },
     get playerEyeHeightMetres() {
       return playerEyeHeightMetres();
@@ -1849,6 +1926,10 @@ export const createSession = (options: SessionOptions) => {
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),
     nameOf,
+    liftFurniture: liftPiece,
+    placeFurniture: placePiece,
+    /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
+    furniturePlacement: (aimed: Readonly<Vec3>) => placement(furnitureMover(), aimed),
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
       if (scenarioRun?.won) {

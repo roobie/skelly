@@ -61,6 +61,10 @@
       "output": "deadvox/src/content/base/graphics.json"
     },
     {
+      "source": "deadvox/src/content/base/inventory.jsonnet",
+      "output": "deadvox/src/content/base/inventory.json"
+    },
+    {
       "source": "deadvox/src/content/base/items-ammunition.jsonnet",
       "output": "deadvox/src/content/base/items-ammunition.json"
     },
@@ -175,6 +179,10 @@
     {
       "source": "deadvox/src/content/base/sounds-block.jsonnet",
       "output": "deadvox/src/content/base/sounds-block.json"
+    },
+    {
+      "source": "deadvox/src/content/base/sounds-furniture.jsonnet",
+      "output": "deadvox/src/content/base/sounds-furniture.json"
     },
     {
       "source": "deadvox/src/content/base/sounds-revolver.jsonnet",

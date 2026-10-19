@@ -1,7 +1,8 @@
 // Block entities (`DESIGN.md`, "Block entities"): furniture with state, such as a
 // cupboard's contents or whether a door is open. Each is anchored at its lowest
 // corner and spans a box of cells; every cell points back at it, so collision and
-// ray casts find it from any of them.
+// ray casts find it from any of them. Worldgen claims a piece by the corner it
+// spawned at, its origin, which stays claimed wherever the piece is carried.
 
 import type { FurnitureDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -15,11 +16,17 @@ export interface BlockEntity {
   readonly uid: number;
   /** Furniture id. */
   readonly type: string;
-  /** Lowest corner, in blocks. */
-  readonly pos: Vec3;
+  /** Lowest corner where worldgen spawned it, in blocks. */
+  readonly origin: Vec3;
+  /** Lowest corner, in blocks; while carried, where it was lifted from. */
+  pos: Vec3;
   /** Cells along x, y and z. */
   readonly size: Vec3;
   readonly facing: Facing;
+  /** Held in the player's hands, so it covers no cells. */
+  carried: boolean;
+  /** Fastened where it stands, so it can't be moved. */
+  readonly fixed?: true;
   /** One grid per pocket of the furniture's container. */
   pockets?: Placed[][];
   /** A container's contents show once it's been searched. */
@@ -33,9 +40,12 @@ export interface BlockEntity {
 export interface BlockEntityState {
   uid: number;
   type: string;
+  origin: Vec3;
   pos: Vec3;
   size: Vec3;
   facing: Facing;
+  carried?: true;
+  fixed?: true;
   searched: boolean;
   open: boolean;
   lock?: DoorLockDef;
@@ -51,6 +61,7 @@ export interface BlockEntitiesState {
 
 export interface EntitySpec {
   lock?: DoorLockDef;
+  fixed?: true;
   type: string;
   pos: Vec3;
   size: Vec3;
@@ -137,10 +148,16 @@ export const searchTime = (def: FurnitureDef, { search }: InventoryTuningDef): n
 
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 
+/** Whether a body's box overlaps any cell of a box of cells at a corner. */
+export const boxIntersectsBody = (pos: Readonly<Vec3>, size: Readonly<Vec3>, body: Body): boolean =>
+  [...cellsOf(size)].some(([x, y, z]) => bodyOverlapsBlock(body, [pos[0] + x, pos[1] + y, pos[2] + z]));
+
 export class BlockEntities {
   readonly registry: Registry;
-  private readonly byAnchor = new Map<string, BlockEntity>();
+  private readonly byOrigin = new Map<string, BlockEntity>();
   private readonly cells = new Map<string, BlockEntity>();
+  /** Doorway cells, kept apart so a piece can stand in an open door's cells while the door stays there. */
+  private readonly doorways = new Map<string, BlockEntity>();
   private nextUid = 1;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -149,8 +166,14 @@ export class BlockEntities {
     this.registry = registry;
   }
 
+  /** The pieces standing in the world; a carried piece is in the player's hands instead. */
   get all(): IterableIterator<BlockEntity> {
-    return this.byAnchor.values();
+    return [...this.byOrigin.values()].filter((entity) => !entity.carried).values();
+  }
+
+  /** Every piece, the carried one too, so what it holds stays owned while it travels. */
+  get records(): IterableIterator<BlockEntity> {
+    return this.byOrigin.values();
   }
 
   get next(): number {
@@ -158,18 +181,26 @@ export class BlockEntities {
   }
 
   byUid(uid: number): BlockEntity | undefined {
-    return [...this.byAnchor.values()].find((entity) => entity.uid === uid);
+    return [...this.byOrigin.values()].find((entity) => entity.uid === uid);
+  }
+
+  /** The piece in the player's hands. */
+  carrying(): BlockEntity | undefined {
+    return [...this.byOrigin.values()].find((entity) => entity.carried);
   }
 
   snapshotState(): Readonly<BlockEntitiesState> {
     return freezeSnapshot({
       nextUid: this.nextUid,
-      entities: [...this.byAnchor.values()].map((entity) => ({
+      entities: [...this.byOrigin.values()].map((entity) => ({
         uid: entity.uid,
         type: entity.type,
+        origin: [...entity.origin],
         pos: [...entity.pos],
         size: [...entity.size],
         facing: entity.facing,
+        ...(entity.carried ? { carried: true as const } : {}),
+        ...(entity.fixed ? { fixed: true as const } : {}),
         searched: entity.searched,
         open: entity.open,
         ...(entity.lock ? { lock: { ...entity.lock } } : {}),
@@ -180,13 +211,17 @@ export class BlockEntities {
 
   restoreState(state: BlockEntitiesState): void {
     const restored = BlockEntities.restoreState(this.registry, state);
-    this.byAnchor.clear();
+    this.byOrigin.clear();
     this.cells.clear();
-    for (const [anchor, entity] of restored.byAnchor) {
-      this.byAnchor.set(anchor, entity);
+    this.doorways.clear();
+    for (const [origin, entity] of restored.byOrigin) {
+      this.byOrigin.set(origin, entity);
     }
     for (const [cell, entity] of restored.cells) {
       this.cells.set(cell, entity);
+    }
+    for (const [cell, entity] of restored.doorways) {
+      this.doorways.set(cell, entity);
     }
     this.nextUid = restored.nextUid;
     this.version = restored.version;
@@ -200,18 +235,10 @@ export class BlockEntities {
         throw new Error(`Invalid or duplicate block entity id ${saved.uid}`);
       }
       ids.add(saved.uid);
-      const entity = entities.addWithUid(saved, saved.uid);
-      if (!entity) {
-        throw new Error(`Duplicate block entity anchor ${saved.pos.join(',')}`);
+      if (saved.carried && entities.carrying()) {
+        throw new Error('Only one block entity can be carried');
       }
-      entity.searched = saved.searched;
-      if (saved.open && entity.lock?.locked) {
-        throw new Error('A locked door cannot be open');
-      }
-      entity.open = saved.open;
-      if (saved.pockets) {
-        entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(registry, placed)));
-      }
+      entities.restoreEntity(saved);
     }
     const maxUid = [...ids].reduce((max, uid) => Math.max(max, uid), 0);
     if (!Number.isSafeInteger(state.nextUid) || state.nextUid <= maxUid) {
@@ -221,25 +248,45 @@ export class BlockEntities {
     return entities;
   }
 
+  private restoreEntity(saved: BlockEntityState): void {
+    const entity = this.addWithUid(saved, saved.uid, saved.origin);
+    if (!entity) {
+      throw new Error(`Duplicate block entity origin ${saved.origin.join(',')}`);
+    }
+    entity.searched = saved.searched;
+    if (saved.open && entity.lock?.locked) {
+      throw new Error('A locked door cannot be open');
+    }
+    entity.open = saved.open;
+    if (saved.pockets) {
+      entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(this.registry, placed)));
+    }
+  }
+
   defOf(entity: BlockEntity): FurnitureDef {
     return this.registry.furniture.get(entity.type)!;
   }
 
   /**
-   * Adds a piece of furniture. A spec whose anchor already has an entity is ignored
-   * and returns undefined, so a column that generates again doesn't duplicate it.
+   * Adds a piece of furniture. A spec whose origin is already claimed is ignored and
+   * returns undefined, so a column that generates again doesn't bring back a piece
+   * the player moved away.
    */
   add(spec: EntitySpec): BlockEntity | undefined {
-    const entity = this.addWithUid(spec, this.nextUid);
+    const entity = this.addWithUid(spec, this.nextUid, spec.pos);
     if (entity) {
       this.nextUid += 1;
     }
     return entity;
   }
 
-  private addWithUid(spec: EntitySpec, uid: number): BlockEntity | undefined {
-    const anchor = key(...spec.pos);
-    if (this.byAnchor.has(anchor)) {
+  private addWithUid(
+    spec: EntitySpec & { carried?: true },
+    uid: number,
+    originAt: Readonly<Vec3>,
+  ): BlockEntity | undefined {
+    const origin = key(...originAt);
+    if (this.byOrigin.has(origin)) {
       return undefined;
     }
     const def = this.registry.furniture.get(spec.type);
@@ -249,9 +296,12 @@ export class BlockEntities {
     const entity: BlockEntity = {
       uid,
       type: spec.type,
+      origin: [...originAt],
       pos: [...spec.pos],
       size: [...spec.size],
       facing: spec.facing,
+      carried: spec.carried === true,
+      ...(spec.fixed ? { fixed: true as const } : {}),
       searched: false,
       open: false,
     };
@@ -264,22 +314,90 @@ export class BlockEntities {
     if (def.container) {
       entity.pockets = def.container.pockets.map(() => []);
     }
-    this.byAnchor.set(anchor, entity);
-    const [x0, y0, z0] = spec.pos;
-    for (let y = y0; y < y0 + spec.size[1]; y++) {
-      for (let z = z0; z < z0 + spec.size[2]; z++) {
-        for (let x = x0; x < x0 + spec.size[0]; x++) {
-          this.cells.set(key(x, y, z), entity);
-        }
-      }
+    this.byOrigin.set(origin, entity);
+    if (!entity.carried) {
+      this.occupy(entity, true);
     }
     this.version += 1;
     return entity;
   }
 
-  /** The entity covering a cell. */
+  private occupy(entity: BlockEntity, filled: boolean): void {
+    const [x0, y0, z0] = entity.pos;
+    const cells = this.inDoorway(entity) ? this.doorways : this.cells;
+    for (const [x, y, z] of cellsOf(entity.size)) {
+      const cell = key(x0 + x, y0 + y, z0 + z);
+      if (filled) {
+        cells.set(cell, entity);
+      } else if (cells.get(cell) === entity) {
+        cells.delete(cell);
+      }
+    }
+  }
+
+  /**
+   * An upright door that swings out of its cells: open, they are a passage, which a piece may barricade. A shaped
+   * door's panel stays in its cells, and an open hatch is a drop, so both keep their cells to themselves.
+   */
+  private inDoorway(entity: BlockEntity): boolean {
+    const def = this.defOf(entity);
+    return def.door !== undefined && !def.door.hatch && !def.shape;
+  }
+
+  /** Whether a standing piece keeps other pieces out of its cells: everything does but a door open in its doorway. */
+  fills(entity: BlockEntity): boolean {
+    return !(entity.open && this.inDoorway(entity));
+  }
+
+  /** Takes a standing piece out of its cells into the player's hands. */
+  lift(entity: BlockEntity): void {
+    if (entity.carried || this.carrying()) {
+      throw new Error('Already carrying a block entity');
+    }
+    this.occupy(entity, false);
+    entity.carried = true;
+    this.version += 1;
+  }
+
+  /** Whether any other piece covers a cell of a box at a corner. */
+  covered(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
+    return [...cellsOf(size)].some(([x, y, z]) => {
+      const cell = key(pos[0] + x, pos[1] + y, pos[2] + z);
+      const door = this.doorways.get(cell);
+      return this.cells.has(cell) || (door !== undefined && this.fills(door));
+    });
+  }
+
+  /** Stands the carried piece with its lowest corner at a cell; callers check the world there first. */
+  place(entity: BlockEntity, pos: Readonly<Vec3>): void {
+    if (!entity.carried || this.covered(pos, entity.size)) {
+      throw new Error('Cannot place a block entity there');
+    }
+    entity.pos = [...pos];
+    entity.carried = false;
+    this.occupy(entity, true);
+    this.version += 1;
+  }
+
+  /** Moves a standing piece straight down, for a piece whose support was taken. */
+  drop(entity: BlockEntity, y: number): void {
+    this.occupy(entity, false);
+    entity.pos = [entity.pos[0], y, entity.pos[2]];
+    this.occupy(entity, true);
+    this.version += 1;
+  }
+
+  /** The entity covering a cell: a piece barricading a doorway, rather than its door. */
   at(x: number, y: number, z: number): BlockEntity | undefined {
-    return this.cells.get(key(x, y, z));
+    const cell = key(x, y, z);
+    return this.cells.get(cell) ?? this.doorways.get(cell);
+  }
+
+  /** The door in a cell, even behind a piece barricading its doorway. */
+  doorAt(x: number, y: number, z: number): BlockEntity | undefined {
+    const cell = key(x, y, z);
+    const entity = this.doorways.get(cell) ?? this.cells.get(cell);
+    return entity && this.defOf(entity).door ? entity : undefined;
   }
 
   /** Whether an entity's cell stops movement: closed doors and solid furniture do. */
@@ -295,16 +413,10 @@ export class BlockEntities {
 
   /** Whether a body's box overlaps any cell occupied by an entity. */
   bodyIntersects(entity: BlockEntity, body: Body): boolean {
-    const [x0, y0, z0] = entity.pos;
-    for (const [x, y, z] of cellsOf(entity.size)) {
-      if (bodyOverlapsBlock(body, [x0 + x, y0 + y, z0 + z])) {
-        return true;
-      }
-    }
-    return false;
+    return !entity.carried && boxIntersectsBody(entity.pos, entity.size, body);
   }
 
-  /** Close an open door only when neither the player nor any other body occupies its cells. */
+  /** Close an open door only when neither the player nor any other body or piece occupies its cells. */
   closeDoor(entity: BlockEntity, player: Body, otherBodies: Iterable<Body>): 'player' | 'other' | undefined {
     if (!(this.defOf(entity).door && entity.open)) {
       return undefined;
@@ -316,6 +428,9 @@ export class BlockEntities {
       if (this.bodyIntersects(entity, body)) {
         return 'other';
       }
+    }
+    if (this.inDoorway(entity) && this.covered(entity.pos, entity.size)) {
+      return 'other';
     }
     this.setOpen(entity, false);
     return undefined;

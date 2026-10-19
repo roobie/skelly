@@ -182,6 +182,7 @@
           "furniture": "bed"
         },
         "C": {
+          "fixed": true,
           "furniture": "counter",
           "loot": "medical_filler"
         },
