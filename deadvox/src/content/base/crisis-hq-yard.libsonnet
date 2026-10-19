@@ -1,7 +1,7 @@
 local context = { usage: ['Military'], tier: 'Tier1' };
 local fence = ['############################################################'];
 local ground = ['............................................................'];
-local front = ['###################GGGGGGGGGGGG#############################'];
+local front = ['###################LLLLLLRRRRRR#############################'];
 local shedFloor = ['##########', '#kkkkkkkk#', '#kkkkkkkk#', '#kkkkkkkk#', '#kkkkkkkk#', '#kkkkkkkk#', '#kkkkkkkk#', '##########'];
 local shedLow = ['##########', '#........#', '#.gggg...#', '#.gggg...#', '#.gggg...#', '#........#', '#........#', '####DD####'];
 local shedHigh = ['##########', '#........#', '#........#', '#........#', '#........#', '#........#', '#........#', '####DD####'];
@@ -15,16 +15,16 @@ local palette = {
   '.': 'air', '#': 'brick', k: 'concrete', '=': 'window_frame',
   D: { furniture: 'wood_door' }, O: { furniture: 'wood_door', facing: 'e' },
   g: { furniture: 'hq_generator', facing: 's' },
-  W: { furniture: 'desk', facing: 'e', loot: 'desk' }, c: { furniture: 'chair', facing: 'w' },
+  W: { furniture: 'desk', facing: 'e', loot: 'desk' },
 };
 {
   templates: [
     {
-      id: 'crisis_hq_wall', size: [60, 5, 1], lootContext: context,
-      palette: { '.': { ground: true }, '#': 'brick' }, layers: [ground, fence, fence, fence, fence],
+      id: 'crisis_hq_wall', size: [60, 6, 1], lootContext: context,
+      palette: { '.': { ground: true }, '#': 'brick' }, layers: [ground, fence, fence, fence, fence, fence],
     },
     {
-      id: 'crisis_hq_side', size: [58, 5, 1], lootContext: context,
+      id: 'crisis_hq_side', size: [58, 6, 1], lootContext: context,
       palette: { '.': { ground: true }, '#': 'brick' },
       layers: [
         ['..........................................................'],
@@ -32,12 +32,17 @@ local palette = {
         ['##########################################################'],
         ['##########################################################'],
         ['##########################################################'],
+        ['##########################################################'],
       ],
     },
     {
-      id: 'crisis_hq_front', size: [60, 5, 1], lootContext: context,
-      palette: { '.': { ground: true }, '#': 'brick', G: { furniture: 'hq_gate_leaf' } },
-      layers: [ground, front, front, front, front],
+      id: 'crisis_hq_front', size: [60, 6, 1], lootContext: context,
+      palette: {
+        '.': { ground: true }, '#': 'brick',
+        L: { furniture: 'camp_gate_leaf', facing: 'n' },
+        R: { furniture: 'camp_gate_leaf', facing: 's' },
+      },
+      layers: [ground, front, front, front, front, front],
     },
     {
       id: 'crisis_hq_generator_shed', size: [10, 8, 8], lootContext: context, palette: palette,

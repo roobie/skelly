@@ -23,14 +23,5 @@ local box(position, size) = { position: position, size: size };
         box([3.1, 1.6, 2.1], [0.25, 1.4, 0.25]),
       ],
     },
-    {
-      id: 'hq_gate_leaf', name: 'Gate', size: [6, 4, 1], color: '#657265',
-      door: { handlingSimSeconds: 1.2 },
-      shape: [
-        box([0, 0.1, 0.35], [6, 3.8, 0.3]),
-        box([0.1, 0, 0.2], [0.2, 4, 0.6]),
-        box([5.7, 0, 0.2], [0.2, 4, 0.6]),
-      ],
-    },
   ],
 }

@@ -2184,6 +2184,26 @@ describe('templates', () => {
     });
   });
 
+  it('keeps upright doors on template outer faces passable when opened', () => {
+    const exteriorDoors = [...baseRegistry.templates.values()].flatMap((definition) => {
+      const template = compileTemplate(baseRegistry, definition);
+      const [width, , depth] = template.size;
+      return template.pieces.filter((piece) => {
+        const furniture = baseRegistry.furniture.get(piece.furniture)!;
+        if (!furniture.door || furniture.door.hatch) {
+          return false;
+        }
+        const [x, , z] = piece.pos;
+        return x === 0 || z === 0 || x + piece.size[0] === width || z + piece.size[2] === depth;
+      });
+    });
+    expect(exteriorDoors.length).toBeGreaterThan(0);
+    for (const piece of exteriorDoors) {
+      // Shaped doors open a cabinet front but keep their body solid, sealing an exterior passage.
+      expect(baseRegistry.furniture.get(piece.furniture)!.shape, piece.furniture).toBeUndefined();
+    }
+  });
+
   it('leaves an open air cell beside every window-frame run', () => {
     const frameRuns = [...baseRegistry.templates.values()].flatMap((definition) => {
       const frame = Object.entries(definition.palette).find(([, value]) => value === 'window_frame')?.[0];
