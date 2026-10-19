@@ -518,16 +518,19 @@ Gauntlet stock has three layers. The economy layer is what a building's template
 rolls from its loot context and tables, so a place holds what suits it. The core
 layer is stock the gauntlet instance promises at its stops, because the lab must be
 winnable and a roll cannot promise that; Upheaval stays procedural and promises
-none. The reward layer is one find per stop that rewards exploring; it belongs to
-the instance, not the building's template, needs no in-game reason and has no rows
-yet. A promise names a fixed lot and a container anchor in that lot's building and
-leaves the template unchanged; validation and the seeded build both refuse a
-promise without a fixed lot or an anchor, because a silently dropped promise would
-leave the lab unwinnable. Each stop has its own role, and the player may visit them
-in any order, so finding the stock rewards exploring rather than following a rail.
-See `src/core/schema.ts`, `ScenarioSchema`; `src/core/scenarioComposition.ts`,
-`scenarioCompositionIssues` and `composeScenario`; and
-`src/content/base/scenarios.jsonnet`, `composition`.
+none. The reward layer rewards exploring and need not suit the place; it belongs
+to the gauntlet instance, not the location's template, and needs no in-game
+reason. A promise names a fixed lot and a container anchor in that lot's building and
+leaves the template unchanged. Validation refuses a promise without a fixed lot or
+an anchor, and fixed container stock that fits no pocket of its furniture; the
+seeded build and furnishing throw rather than drop it, because a silently dropped
+promise would leave the lab unwinnable. Each stop has its own role, and the player
+may visit them in any order, so finding the stock rewards exploring rather than
+following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
+`src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
+`composeScenario`; `src/core/placementLoot.ts`, `placementLootIssues`;
+`src/core/inventory.ts`, `furnish`; and `src/content/base/scenarios.jsonnet`,
+`composition`.
 
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
@@ -642,9 +645,7 @@ Fixed resources require an initially accessible route, rather than a key or tool
 whose acquisition depends on itself. An unlocked door is reversible; a locked
 door is not assumed open simply because its key exists somewhere. Independent
 public clue access must survive missing either lead; possession and reading
-never authorize the route. Promised core stock is not a fixed resource: it may
-stand behind a locked door whose key the same building holds, as the police
-armoury's does. These are construction guarantees, not proof of clue
+never authorize the route. These are construction guarantees, not proof of clue
 interpretation or survival balance. Those judgments remain the integrated play
 gate on #671.
 

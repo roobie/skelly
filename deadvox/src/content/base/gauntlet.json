@@ -29535,7 +29535,7 @@
           "role": "shell"
         },
         "A": {
-          "furniture": "shelf",
+          "furniture": "range_rack",
           "loot": "gauntlet_police_armoury_stock"
         },
         "B": {

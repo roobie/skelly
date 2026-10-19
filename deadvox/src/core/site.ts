@@ -16,7 +16,7 @@ import {
   lootPointStream,
   lootPointsByColumn,
   type Rolled,
-  rollLoot,
+  rollLootParts,
 } from './loot.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
@@ -40,6 +40,8 @@ export const grow = (r: Rect, by: number): Rect => ({ x0: r.x0 - by, z0: r.z0 - 
 export interface FurnitureSpawn {
   spec: EntitySpec;
   loot: Rolled[];
+  /** How many leading `loot` items are required fixed stock, which must fit. */
+  fixedCount?: number;
   /** Fixed items laid out as a visible pile on the furniture's top surface. */
   surfaceLoot?: Rolled[];
 }
@@ -205,6 +207,13 @@ export const fillFurnitureLoot = (
     const items = (channel: LootSpawnPoint['channel']) =>
       at
         .filter((point) => point.channel === channel)
-        .flatMap((point) => rollLoot(registry, point, lootPointStream(seed, point)));
-    return { ...spawn, loot: items('container'), surfaceLoot: items('surface') };
+        .map((point) => rollLootParts(registry, point, lootPointStream(seed, point)));
+    const container = items('container');
+    const fixed = container.flatMap((part) => part.fixed);
+    return {
+      ...spawn,
+      loot: [...fixed, ...container.flatMap((part) => part.rolled)],
+      ...(fixed.length > 0 ? { fixedCount: fixed.length } : {}),
+      surfaceLoot: items('surface').flatMap((part) => [...part.fixed, ...part.rolled]),
+    };
   });

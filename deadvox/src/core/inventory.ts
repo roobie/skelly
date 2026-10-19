@@ -289,21 +289,26 @@ export class Inventory {
 
   /**
    * Adds a piece of furniture with the items worldgen rolled for it, filling its
-   * pockets in order; what doesn't fit is left out. Returns undefined if it's
-   * already there.
+   * pockets in order; a rolled item that doesn't fit is left out, but the first
+   * `fixedCount` items are required stock and throw instead. Returns undefined if
+   * it's already there.
    */
   furnish(
     spec: Parameters<BlockEntities['add']>[0],
     loot: readonly Rolled[] = [],
     surfaceLoot: readonly Rolled[] = [],
+    fixedCount = 0,
   ): BlockEntity | undefined {
     const entity = this.entities.add(spec);
     if (!entity) {
       return undefined;
     }
-    for (const rolled of loot) {
+    for (const [index, rolled] of loot.entries()) {
       const item = this.createRolled(rolled);
-      (entity.pockets ?? []).some((_, pocket) => this.add(item, { kind: 'furniture', entity, pocket }));
+      const placed = (entity.pockets ?? []).some((_, pocket) => this.add(item, { kind: 'furniture', entity, pocket }));
+      if (!placed && index < fixedCount) {
+        throw new Error(`fixed item "${rolled.type}" does not fit in its furniture "${spec.type}"`);
+      }
     }
     if (surfaceLoot.length > 0) {
       const pos = furnitureSurfacePosition(entity);

@@ -101,7 +101,7 @@ describe('authored scenario composition', () => {
         site
           .furnitureIn(toChunk(anchor[0]), toChunk(anchor[2]))
           .find((spawn) => spawn.spec.pos.join(',') === anchor.join(','))!;
-      const selection = vi.spyOn(lootSelection, 'rollLoot');
+      const selection = vi.spyOn(lootSelection, 'rollLootParts');
       const before = read();
       expect(before).toBeDefined();
       const points = site.lootPointsIn(toChunk(anchor[0]), toChunk(anchor[2]));
@@ -253,8 +253,10 @@ describe('promised stop stock', () => {
         .filter((point) => point.destination.join(',') === pos.join(',') && point.supply.kind === 'fixed')
         .flatMap((point) => (point.supply.kind === 'fixed' ? point.supply.items.map(({ item }) => item) : []));
       expect(fixed).toEqual(expect.arrayContaining(items));
-      const found = [...spawn.loot, ...(spawn.surfaceLoot ?? [])].map((entry) => entry.type);
-      expect(found).toEqual(expect.arrayContaining(items));
+      const inventory = new Inventory(registry);
+      inventory.furnish(spawn.spec, spawn.loot, spawn.surfaceLoot);
+      const held = [...inventory.items()].map(({ item }) => item.type);
+      expect(held).toEqual(expect.arrayContaining(items));
     }
   });
 

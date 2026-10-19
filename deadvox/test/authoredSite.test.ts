@@ -20,6 +20,7 @@ import {
 import type { Registry } from '../src/core/content.ts';
 import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
 import { HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from '../src/core/hamlet.ts';
+import { couldFit, ItemFactory } from '../src/core/items.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
@@ -595,6 +596,21 @@ describe('authored layout acceptance', () => {
   it('rejects fixed loot on a non-container', () => {
     const nonContainer = fixedLootTemplate.pieces.find((piece) => !registry.furniture.get(piece.furniture)?.container)!;
     invalidWithSharedRegistry(withFixedLoot(nonContainer.pos, 'rag'), 'has no container');
+  });
+  it('rejects fixed container loot that fits no pocket of its furniture', () => {
+    const { pockets } = registry.furniture.get(fixedLootContainer.furniture)!.container!;
+    const factory = new ItemFactory();
+    const oversized = [...registry.items.values()].find(
+      (def) =>
+        def.economy !== undefined &&
+        !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, def.id))),
+    );
+    if (oversized?.economy === undefined) {
+      throw new Error('fixture needs an economy item larger than the container');
+    }
+    const fixed = withFixedLoot(fixedLootContainer.pos, oversized.id);
+    fixed.buildings[0]!.lootContext = { usage: oversized.economy.usage, tier: oversized.economy.tiers[0]! };
+    invalidWithSharedRegistry(fixed, 'fits no pocket');
   });
   it('admits fixed stock by building context rather than its container table', () => {
     const [military] = militaryLootItems(registry);
