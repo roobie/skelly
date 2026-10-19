@@ -48,6 +48,9 @@ const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.se
 });
 
 const lab = JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-lab.libsonnet')) as ContentFile;
+const { loop } = JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-lab-entry.libsonnet')) as {
+  loop: { from: Vec3; through: Vec3; to: Vec3; cut: { min: Vec3; size: Vec3 } };
+};
 const roomPools = new Map<string, MapAssemblyDef[]>();
 for (const room of lab.mapAssemblies!) {
   const shell = room.slots.find((slot) => slot.id === 'shell');
@@ -227,6 +230,35 @@ describe('final composed body-route certificate', () => {
     },
     GAUNTLET_SITE_MS,
   );
+
+  it('keeps an interior loop when a public room doorway is blocked with the bulkheads closed', () => {
+    const site = siteOf();
+    const point = (at: Vec3) => placedPoint(site.plan.service!, at);
+    const from = point(loop.from);
+    const through = point(loop.through);
+    const to = point(loop.to);
+    const clear = new ScenarioRouteSpace(site);
+    expect(clear.sweep(from, through)).toBe(true);
+    expect(clear.path(through, to, { steps: true })).toBeDefined();
+    const original = site.stamp.bind(site);
+    const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
+      original(chunk);
+      for (let y = 0; y < loop.cut.size[1]; y++) {
+        for (let z = 0; z < loop.cut.size[2]; z++) {
+          for (let x = 0; x < loop.cut.size[0]; x++) {
+            obstruct(chunk, point([loop.cut.min[0] + x, loop.cut.min[1] + y, loop.cut.min[2] + z]));
+          }
+        }
+      }
+    });
+    try {
+      const detour = new ScenarioRouteSpace(site);
+      expect(detour.sweep(from, through)).toBe(false);
+      expect(detour.path(from, to, { steps: true })).toBeDefined();
+    } finally {
+      stamp.mockRestore();
+    }
+  });
 
   it('rejects a missing seal keycard instead of admitting its bulkheads', () => {
     const site = siteOf();

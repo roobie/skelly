@@ -700,9 +700,8 @@ The stair is the main way down because a building's descent should read as one. 
 lidded shaft remains an alternate return route. Both join the grid below through a
 temporary landing; administration's rebuild replaces that join. Threat may drop down
 a shaft but never climb up, so deep threat cannot reach the top and depth ordering
-holds. A lid then defends only against threat above. A later round on #972 builds
-that one-way descent; this geometry round keeps threat on its level. See `src/content/base/gauntlet-lab-entry.libsonnet`,
-`stair`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
+holds. A lid then defends only against threat above. Until d508, threat stays on its
+own level. See `src/content/base/gauntlet-lab-entry.libsonnet`, `stair`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
 
 The hatch-side entrance is open. Level one's ways down need a keycard from one authored
 spot on the open side, the same spot every run. Acquisition cannot depend on the seal
@@ -718,10 +717,13 @@ level sets the look and the destination is built last. Unrebuilt grid storeys ke
 their shafts without seals or fixtures. Their shell and circulation retire with
 them; equipment, descent lids, threat and the holding cap are reused where they fit.
 The authored plan scales rooms together while equipment and doors stay human-sized.
-The content scale is provisional until level one's play review. Delegated equipment
-bays prevent furnishings from borrowing thresholds or circulation. Equipment and damage
-are cues, not a danger or balance proof. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `scale`, `plan` and `bays`, and
+The content scale is provisional until level one's play review. Rooms differ in
+height, finish and furnishing so each reads as its own space under a carried light.
+Loops run between rooms instead of along a one-sided excavation corridor that serves
+nothing; unused excavation stays solid rather than making the rooms larger and emptier.
+Delegated equipment bays prevent furnishings from borrowing thresholds or circulation.
+Those cues are not a danger or balance proof. See
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`, and
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
 
 The underground campus extends beyond the small service facade because a surface
@@ -774,12 +776,13 @@ and `src/game/session.ts`, `activateGoal`.
 
 Darkness uses world-derived sky transport and an ordinary carried light. The lab's
 fixtures are intended to light only after power is restored, so light is earned,
-not given. Entry's working and broken fixtures are inert set dressing. Its breaker belongs in
-the security post; a later round on #972 builds that interaction and its saved
-per-level power state. Later levels' switch positions are decided at their own
-reviews. The lab has no lighting category until its light round. See `src/content/base/gauntlet-lab-entry.libsonnet`, `bays`. Finished site placements expose the
-same sky eligibility contract across authored layouts, hamlets and scenario
-composition. Benchmark city plans do not opt into scenario
+not given. Entry's working and broken fixtures are inert set dressing. Its breaker
+belongs in the security post; d509 builds that interaction and its saved per-level
+power state. Later levels' switch positions are decided at their own reviews. The
+lab has no lighting category until its light round. See
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`. Finished site placements
+expose the same sky eligibility contract across authored layouts, hamlets and
+scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
 reachability, while admitted scenario templates and fixed items are world sources.
 See `src/core/site.ts`, `Site`; `src/game/engine.ts`, `createEngine`;
