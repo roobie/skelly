@@ -1,6 +1,7 @@
 local content = import 'gauntlet.jsonnet';
 local layout = import 'gauntlet-layout.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
+local yard = import 'gauntlet-lab-yard.libsonnet';
 local service = std.filter(function(t) t.id == 'gauntlet_service', content.mapAssemblies)[0];
 local ground = lab.ground;
 local hatch = lab.entry.hatch;
@@ -49,7 +50,7 @@ local ladder = lab.entry.ladder;
       settlementKind: 'city',
       blocksX: 2, blocksZ: 2,
       bounds: layout.bounds, lots: layout.lots, paving: layout.paving, fillRows: false,
-      service: { cell: [-1, -1], turn: 0 },
+      service: { cell: [-1, -1], turn: 0, routes: yard.routes },
       street: 12,
       blockX: std.max(service.size[0], service.size[2]) + 24,
       blockZ: std.max(service.size[0], service.size[2]) + 24,

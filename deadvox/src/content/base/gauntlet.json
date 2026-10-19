@@ -12128,6 +12128,582 @@
           "id": "south_east_floor",
           "size": [18, 1, 14],
           "turn": 0
+        },
+        {
+          "at": [0, 40, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_north",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "yard_north",
+          "size": [72, 6, 3],
+          "turn": 0
+        },
+        {
+          "at": [0, 40, 61],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_south",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "yard_south_gate",
+          "size": [72, 6, 3],
+          "turn": 0
+        },
+        {
+          "at": [0, 40, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "yard_west_gap",
+          "size": [3, 6, 58],
+          "turn": 1
+        },
+        {
+          "at": [69, 40, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "yard_east_gap",
+          "size": [3, 6, 58],
+          "turn": 3
+        },
+        {
+          "at": [4, 40, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_fallen_fence_panel_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "west_fallen_panel",
+          "size": [3, 2, 4],
+          "turn": 1
+        },
+        {
+          "at": [63, 40, 49],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_fallen_fence_panel_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "east_fallen_panel",
+          "size": [4, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [14, 40, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_overturned_crate_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "abandoned_crate_a",
+          "size": [2, 3, 2],
+          "turn": 0
+        },
+        {
+          "at": [54, 40, 57],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_overturned_crate_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "abandoned_crate_b",
+          "size": [2, 3, 2],
+          "turn": 0
+        },
+        {
+          "at": [20, 41, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_chair_back",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_authored_chair_side",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "yard_chair_a",
+          "size": [2, 2, 2],
+          "turn": 0
+        },
+        {
+          "at": [54, 41, 39],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_chair_back",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_authored_chair_side",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "yard_chair_b",
+          "size": [2, 2, 2],
+          "turn": 0
+        },
+        {
+          "at": [26, 41, 47],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_chair_back",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_authored_chair_side",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "yard_chair_c",
+          "size": [2, 2, 2],
+          "turn": 0
+        },
+        {
+          "at": [13, 40, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_0",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [19, 40, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_1",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [7, 40, 30],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_2",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [18, 40, 34],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_3",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [12, 40, 43],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_4",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [24, 40, 51],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_5",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [43, 40, 53],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_6",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [56, 40, 44],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_7",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [61, 40, 35],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_8",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [53, 40, 24],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_9",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [54, 40, 7],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_10",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [34, 40, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_weeds_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "weeds_11",
+          "size": [3, 2, 3],
+          "turn": 0
+        },
+        {
+          "at": [6, 40, 5],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_shrub_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shrub_0",
+          "size": [2, 4, 2],
+          "turn": 0
+        },
+        {
+          "at": [63, 40, 6],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_shrub_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shrub_1",
+          "size": [2, 4, 2],
+          "turn": 0
+        },
+        {
+          "at": [6, 40, 53],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_shrub_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shrub_2",
+          "size": [2, 4, 2],
+          "turn": 0
+        },
+        {
+          "at": [61, 40, 57],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_shrub_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shrub_3",
+          "size": [2, 4, 2],
+          "turn": 0
+        },
+        {
+          "at": [48, 40, 13],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_shrub_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shrub_4",
+          "size": [2, 4, 2],
+          "turn": 0
+        },
+        {
+          "at": [18, 40, 54],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_shrub_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shrub_5",
+          "size": [2, 4, 2],
+          "turn": 0
+        },
+        {
+          "at": [9, 40, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_creeper_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "creeper_0",
+          "size": [2, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [51, 40, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_creeper_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "creeper_1",
+          "size": [2, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [18, 40, 60],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_creeper_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "creeper_2",
+          "size": [2, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [52, 40, 60],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_yard_creeper_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "creeper_3",
+          "size": [2, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 40, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_wall_rubble_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "rubble_0",
+          "size": [3, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [56, 40, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_wall_rubble_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "rubble_1",
+          "size": [3, 3, 3],
+          "turn": 1
+        },
+        {
+          "at": [17, 40, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_wall_rubble_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "rubble_2",
+          "size": [3, 3, 3],
+          "turn": 2
+        },
+        {
+          "at": [59, 40, 53],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_wall_rubble_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "rubble_3",
+          "size": [3, 3, 3],
+          "turn": 3
         }
       ]
     },
@@ -25832,6 +26408,454 @@
       "ports": [],
       "size": [3, 7, 2],
       "style": "service_brick"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_yard_north",
+      "layers": [
+        [
+          "........................................................................",
+          "........................................................................",
+          "........................................................................"
+        ],
+        [
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "f......................................................................f",
+          "f......................................................................f"
+        ],
+        [
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "f......................................................................f",
+          "f......................................................................f"
+        ],
+        [
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "f......................................................................f",
+          "f......................................................................f"
+        ],
+        [
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "f......................................................................f",
+          "f......................................................................f"
+        ],
+        [
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "f......................................................................f",
+          "f......................................................................f"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "........................................................................",
+            "........................................................................",
+            "........................................................................"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "f": {
+          "material": "chain_link",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [72, 6, 3],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_yard_south",
+      "layers": [
+        [
+          "........................................................................",
+          "........................................................................",
+          "........................................................................"
+        ],
+        [
+          "f......................................................................f",
+          "f......................................................................f",
+          "fffffffffffffffffffffffffffffffff.....ffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "f......................................................................f",
+          "f......................................................................f",
+          "fffffffffffffffffffffffffffffffff.....ffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "f......................................................................f",
+          "f......................................................................f",
+          "fffffffffffffffffffffffffffffffff.....ffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "f......................................................................f",
+          "f......................................................................f",
+          "fffffffffffffffffffffffffffffffff.....ffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "f......................................................................f",
+          "f......................................................................f",
+          "fffffffffffffffffffffffffffffffff.....ffffffffffffffffffffffffffffffffff"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "........................................................................",
+            "........................................................................",
+            "........................................................................"
+          ],
+          [
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "f": {
+          "material": "chain_link",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [72, 6, 3],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_yard_west",
+      "layers": [
+        [
+          "..........................................................",
+          "..........................................................",
+          ".........................................................."
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffffffffff....fffffffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffffffffff....fffffffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffffffffff....fffffffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffffffffff....fffffffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffffffffff....fffffffffffffffffffffffffffffffffffffff"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "..........................................................",
+            "..........................................................",
+            ".........................................................."
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "f": {
+          "material": "chain_link",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [58, 6, 3],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_yard_east",
+      "layers": [
+        [
+          "..........................................................",
+          "..........................................................",
+          ".........................................................."
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffff....fffffffffffffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffff....fffffffffffffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffff....fffffffffffffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffff....fffffffffffffffffffffffffffffffffffffffffffff"
+        ],
+        [
+          "..........................................................",
+          "..........................................................",
+          "fffffffff....fffffffffffffffffffffffffffffffffffffffffffff"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "..........................................................",
+            "..........................................................",
+            ".........................................................."
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "f": {
+          "material": "chain_link",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [58, 6, 3],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_yard_weeds_body",
+      "layers": [["ggg", "ggg", "ggg"], ["w..", "..w", ".w."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [["...", "...", "..."], ["SRR", "RRS", "RSR"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "g": {
+          "ground": true
+        },
+        "w": {
+          "furniture": "weed_tuft"
+        }
+      },
+      "ports": [],
+      "size": [3, 2, 3],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_yard_shrub_body",
+      "layers": [["gg", "gg"], ["SS", "SS"], ["SS", "SS"], ["SS", "SS"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [["..", ".."], ["SS", "SS"], ["SS", "SS"], ["SS", "SS"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "S": {
+          "furniture": "shrub_tall"
+        },
+        "g": {
+          "ground": true
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 2],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_yard_creeper_body",
+      "layers": [["gg"], ["ii"], ["ii"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [[".."], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "g": {
+          "ground": true
+        },
+        "i": {
+          "furniture": "creeper_strip"
+        }
+      },
+      "ports": [],
+      "size": [2, 3, 1],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_yard_overturned_crate_body",
+      "layers": [["gg", "gg"], ["FF", "FF"], ["FF", "FF"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [["..", ".."], ["SS", "SS"], ["SS", "SS"]]
+      },
+      "palette": {
+        "F": {
+          "furniture": "crate_overturned"
+        },
+        "g": {
+          "ground": true
+        }
+      },
+      "ports": [],
+      "size": [2, 3, 2],
+      "style": "gauntlet_authored_masonry"
     },
     {
       "anchors": {},

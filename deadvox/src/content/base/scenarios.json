@@ -836,6 +836,23 @@
         "rows": 4,
         "service": {
           "cell": [-1, -1],
+          "routes": [
+            {
+              "id": "yard_gate",
+              "inside": [35.5, 41, 61],
+              "outside": [35.5, 41, 66]
+            },
+            {
+              "id": "yard_west_breach",
+              "inside": [3, 41, 20],
+              "outside": [-2, 41, 20]
+            },
+            {
+              "id": "yard_east_breach",
+              "inside": [69, 41, 50],
+              "outside": [74, 41, 50]
+            }
+          ],
           "turn": 0
         },
         "settlementKind": "city",

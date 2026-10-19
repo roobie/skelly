@@ -166,6 +166,24 @@ describe('final composed body-route certificate', () => {
     expect(scenarioCertificate(new CitySite(selected.seed, substitutedRegistry, scale, plan)).issues).toEqual([]);
   });
 
+  it('rejects a blocked service crossing even when its inside witness stays reachable', () => {
+    expect(scenarioCertificate(siteOf()).issues).toEqual([]);
+    const [selected] = base.grid.service?.routes ?? [];
+    expect(selected).toBeDefined();
+    const route = { ...selected!, id: 'fixture_service_breach' };
+    const plan: CityPlan = {
+      ...base,
+      grid: { ...base.grid, service: { ...base.grid.service!, routes: [route] } },
+    };
+    const inside = placedPoint(plan.service!, route.inside);
+    const outside = placedPoint(plan.service!, route.outside);
+    const obstruction = inside.map((value, axis) => (value + outside[axis]!) / 2) as Vec3;
+    const result = scenarioCertificate(new ObstructedSite(obstruction, plan));
+    const entry = placedPoint(plan.service!, plan.service!.template.access!.entrance);
+    expect(result.space.path(entry, inside, { placement: plan.service! })).toBeDefined();
+    expect(result.issues.map(([path]) => path)).toEqual(['.city.service.routes[0]']);
+  });
+
   it(
     'rejects an obstruction stamped after the service portal was locally certified',
     () => {
