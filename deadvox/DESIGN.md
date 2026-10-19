@@ -643,8 +643,8 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
 Placement follows a DayZ-style central economy: usage tags and tiers decide which items
-a source admits, so what a place holds matches what it is, and budgets are to bound how
-much of each type the world holds (#699). See `src/core/loot.ts`, `economyEligible`.
+a source admits, and budgets are to bound how much of each type the world holds (#699).
+See `src/core/loot.ts`, `economyEligible`.
 The one exception to the DayZ model is restock: by default the economy places a
 place's loot once, when the place is first generated, and never restocks it. What a
 player takes stays gone, so scarcity holds, a searched place stays spent instead of
@@ -657,11 +657,15 @@ Having rolled should be a property of the chunk column that loot arrives with, n
 a loot point or an item: a column loaded once never rolls loot again. One mark per
 column covers every point in it, including points with no furniture to anchor them,
 so nothing done to a point (moving, emptying or destroying what it filled) can make it
-roll again. Until d470 adds that mark, a piece of furniture's claimed origin keeps its
-loot from rolling again; see `src/core/blockEntities.ts`, `BlockEntities.add`.
+roll again. Furniture follows the same mark: once a column has rolled, furniture
+removed from it stays gone, because a returning piece would bring a fresh roll of its
+loot, which is a restock. Until d470 adds that mark, a piece of furniture's claimed
+origin does both jobs: it stays claimed wherever the piece is carried, so the piece is
+never added again and its loot never rolls again; see `src/core/blockEntities.ts`,
+`BlockEntities.add`.
 
-Items carry no record of where they were born. A budget counts items by type and by
-where they are (map, cargo, player, hoard), which needs no birthplace, and keeping one
+Items carry no record of where they were born. A budget is to count items by type and
+by where they are (map, cargo, player, hoard), which needs no birthplace, and keeping one
 only stopped equal items from stacking. Debug stock is kept out of the world economy by
 the scene that supplies it, not by a mark on the item. See `src/core/items.ts`,
 `stackRoom`, and `src/core/loot.ts`, `LootSpawnPoint`.
