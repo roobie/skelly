@@ -1,26 +1,15 @@
 local box(position, size) = { position: position, size: size };
+local cabinets = import 'cabinet-shapes.libsonnet';
+local weaponPaint = '#657063';
 {
   furniture: [
     {
-      id: 'hq_weapon_cabinet', name: 'Weapon cabinet', size: [3, 5, 2], color: '#657063',
+      id: 'hq_weapon_cabinet', name: 'Weapon cabinet', size: [3, 5, 2], color: weaponPaint,
       container: { pockets: [{ grid: [10, 12], handlingSimSeconds: 1.2 }] },
-      shape: [
-        box([0.05, 0.15, 0.12], [2.9, 4.8, 1.83]),
-        box([0.1, 0, 0.15], [2.8, 0.15, 1.75]) + { color: '#41483f' },
-        box([0.16, 0.3, 0.06], [1.3, 4.45, 0.12]) + { color: '#768170' },
-        box([1.54, 0.3, 0.06], [1.3, 4.45, 0.12]) + { color: '#768170' },
-        box([0.28, 4.1, 0.02], [1.05, 0.08, 0.06]) + { color: '#30382e' },
-        box([0.28, 4.3, 0.02], [1.05, 0.08, 0.06]) + { color: '#30382e' },
-        box([1.67, 4.1, 0.02], [1.05, 0.08, 0.06]) + { color: '#30382e' },
-        box([1.67, 4.3, 0.02], [1.05, 0.08, 0.06]) + { color: '#30382e' },
-        box([0.18, 0.7, 0.02], [0.12, 0.45, 0.08]) + { color: '#8a9186' },
-        box([0.18, 3.6, 0.02], [0.12, 0.45, 0.08]) + { color: '#8a9186' },
-        box([2.7, 0.7, 0.02], [0.12, 0.45, 0.08]) + { color: '#8a9186' },
-        box([2.7, 3.6, 0.02], [0.12, 0.45, 0.08]) + { color: '#8a9186' },
-        box([1.25, 2.2, 0], [0.12, 0.6, 0.12]) + { color: '#30382e' },
-        box([1.63, 2.2, 0], [0.12, 0.6, 0.12]) + { color: '#30382e' },
-        box([1.4, 1.85, 0], [0.2, 0.2, 0.12]) + { color: '#b0b2a3' },
-      ],
+      shape: cabinets.gun(self.size, {
+        shell: weaponPaint, frame: '#454f45', door: '#768170', metal: '#a1aaa0',
+        shadow: '#252e29', wear: '#929b86', badge: '#b9bba7',
+      }),
     },
     {
       id: 'hq_meeting_table', name: 'Meeting table', size: [6, 2, 3], color: '#77664c',
