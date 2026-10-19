@@ -1,4 +1,5 @@
 local lab = import 'gauntlet-lab.libsonnet';
+local yard = import 'gauntlet-lab-yard.libsonnet';
 local circulation = import 'gauntlet-lab-circulation.libsonnet';
 local rooms = import 'gauntlet-lab-rooms.libsonnet';
 local context = { usage: ['Industrial', 'Medical'], tier: 'Tier1' };
@@ -50,7 +51,7 @@ local small = function(id, size, furniture, layers, claims, facing='n') {
       layers: [['.H.', '.H.'], ['.H.', '.H.'], ['.H.', '.H.'], ['.H.', '.H.'], ['.H.', '.H.'], ['.H.', '.H.'], ['.H.', '.H.']],
       ownership: { layers: [['RSR', 'RSR'], ['RSR', 'RSR'], ['RSR', 'RSR'], ['RSR', 'RSR'], ['RSR', 'RSR'], ['RSR', 'RSR'], ['RSR', 'RSR']] }, anchors: {}, ports: [],
     },
-  ],
+  ] + yard.mapPieces,
   mapAssemblies: [{
     id: 'gauntlet_service', size: [72, 49, 64], lootContext: context,
     slots: [
@@ -72,7 +73,7 @@ local small = function(id, size, furniture, layers, claims, facing='n') {
       slot('south_west_floor', 'piece', 'gauntlet_service_room_floor', [4, 40, 42], [18, 1, 14]),
       slot('south_middle_floor', 'piece', 'gauntlet_service_room_floor', [27, 40, 42], [18, 1, 14]),
       slot('south_east_floor', 'piece', 'gauntlet_service_room_floor', [50, 40, 42], [18, 1, 14]),
-    ], joins: [], ports: [], anchors: {},
+    ] + yard.slots, joins: [], ports: [], anchors: yard.anchors,
     access: { ground: 'ground', entrance: [36, 41, 26], storeys: [{ id: 'ground', floor: 41 }], stairs: [] },
   }],
 }
