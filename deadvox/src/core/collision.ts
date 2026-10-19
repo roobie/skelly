@@ -1,6 +1,6 @@
 import type { BlockEntities } from './blockEntities.ts';
-import type { MeleeDamageKind } from './body.ts';
 import type { Registry } from './content.ts';
+import type { MeleeMotion } from './meleeMotion.ts';
 import type { SolidAt } from './raycast.ts';
 import type { World } from './world.ts';
 
@@ -39,7 +39,7 @@ export const worldSoundBlocking =
     return (definition?.soundBlocking ?? physical(x, y, z)) || entities.isSolid(x, y, z);
   };
 
-type MeleePassAttack = { kind: 'player'; damageKind: MeleeDamageKind } | { kind: 'zombie'; reachMetres: number };
+type MeleePassAttack = { motion: MeleeMotion } & ({ kind: 'player' } | { kind: 'zombie'; reachMetres: number });
 export type MeleeBlocker = (attack: MeleePassAttack) => SolidAt;
 
 export const worldMeleeBlocker =
@@ -60,7 +60,8 @@ export const worldMeleeBlocker =
     if (!(pass && blocked)) {
       return blocked;
     }
-    return attack.kind === 'player'
-      ? !pass.damageKinds.includes(attack.damageKind)
-      : attack.reachMetres < pass.minimumZombieReachMetres;
+    return (
+      !pass.motions.includes(attack.motion) ||
+      (attack.kind === 'zombie' && attack.reachMetres < pass.minimumZombieReachMetres)
+    );
   };

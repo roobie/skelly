@@ -39,7 +39,7 @@ local block(id, name, color, surface, extra={}) =
       weatherable: false,
       opaque: false,
       soundBlocking: false,
-      meleePass: { damageKinds: ['pierce'], minimumZombieReachMetres: 1 },
+      meleePass: { motions: ['thrust'], minimumZombieReachMetres: 1 },
       wireMesh: { cellsPerBlock: 4, wireFraction: 0.08 },
       fencePosts: { widthBlocks: 0.12, spacingBlocks: 6 },
     }),

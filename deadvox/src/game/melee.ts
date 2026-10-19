@@ -27,6 +27,7 @@ export const meleeWeaponFromContent = (weapon: ContentMeleeWeapon): MeleeWeapon 
     ...(weapon.hitSound === undefined ? {} : { hitSound: weapon.hitSound }),
     ...(weapon.hitLayerSound === undefined ? {} : { hitLayerSound: weapon.hitLayerSound }),
     type: weapon.type,
+    motion: weapon.motion,
   });
 
 /** The bare-handed attack from the required fists class; its absence is a content error, never a code default. */
@@ -36,6 +37,7 @@ export const unarmedMeleeWeapon = (meleeClasses: ReadonlyMap<string, MeleeClassD
     throw new Error(`Missing required melee class "${CORE_CONTENT_IDS.fistsMeleeClass}"`);
   }
   return copyMeleeWeapon({
+    motion: unarmed.motion,
     damage: unarmed.damage,
     reach: unarmed.reach,
     cooldown: unarmed.cooldownSimSeconds,

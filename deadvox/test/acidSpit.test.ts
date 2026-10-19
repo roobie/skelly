@@ -137,7 +137,7 @@ describe('acid spit', () => {
     expect(second.zombie.spitWindup).toBeGreaterThan(0);
     const [x, y, z] = second.zombie.body.pos;
     const origin: Vec3 = [x - 1, y + 1.3 / BLOCK_SIZE, z];
-    expect(hit.system.swing(origin, [1, 0, 0], { damage: 1, reach: 4, cooldown: 0 })).toBe(second.id);
+    expect(hit.system.swing(origin, [1, 0, 0], { motion: 'swing', damage: 1, reach: 4, cooldown: 0 })).toBe(second.id);
     expect(second.zombie.spitWindup).toBe(0);
     expect(second.zombie.spitWait).toBeCloseTo(SPIT.cancelPenaltyFraction * SPIT.cooldownSimSeconds, 5);
     frames(hit.system, WIND_FRAMES + 5);

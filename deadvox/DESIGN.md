@@ -51,7 +51,7 @@ read_if:
   - you're changing what the death card identifies about the played world
   - you're changing what the death-screen loot tally counts
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
-  - you're changing melee weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
+  - you're changing melee motions, weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
@@ -193,13 +193,14 @@ Firearm aiming must not offer a target behind a physical blocker; opacity still
 hides targets in foliage. See `src/core/zombies.ts`, `ZombieSystem.aimAt` and
 `ZombieSystem.firePellets`; and `src/core/itemThrow.ts`, `traceItemLanding`.
 
-Piercing melee can pass wire because defending a fence with a piercing weapon
-gives it a fight of its own and preserves weapon-class tradeoffs. Zombie grabs
-and strikes can pass when their effective reach is long enough; the same permission
-must hold when a windup starts and when contact resolves. Content selects the
-permitted damage kinds and the minimum zombie reach for each admitting block.
+Wire passes only thrusting melee: a directed strike can reach through an opening,
+while a swing or wrestle needs space the fence denies. This gives fence defence a
+fight of its own without mistaking piercing damage for a thrust. Zombie thrusts
+also need enough effective reach; both conditions must hold at windup start and
+contact. Blocks select permitted motions and the minimum zombie reach in content,
+so the rule is symmetric rather than a creature or weapon identity exception.
 See `src/core/collision.ts`, `worldMeleeBlocker`; and `src/core/zombies.ts`,
-`withinAttackReach` and `ZombieSystem.resolvePlayerMelee`.
+`ZombieSystem.reachableZombieMoves` and `ZombieSystem.resolvePlayerMelee`.
 
 Sound passes open wire because chain-link barely dampens it. Sound blocking has
 its own content property: sight is the wrong key because foliage hides without
@@ -1054,21 +1055,21 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
 ## Combat and noise
 
-- **Melee.** Weapons differ by damage type, reach, speed, and stamina cost.
-  Hits resolve against posed body regions after a wind-up; misses and blocked
-  swings still spend stamina and cooldown. Saves preserve an active swing so
-  Continue cannot skip or repeat its pending contact. Changing held items cancels
-  contact without refunding cooldown. En-garde blocks without changing movement
-  pace; blocks and landed hits train melee combat. Weapon classes have different tradeoffs: blunt weapons are
-  slower and more consistent, edged weapons sever more readily, and piercing
-  weapons are faster with greater damage variance. Class defaults and per-weapon
-  overrides in `src/content/base/items-tools.jsonnet` remain provisional tuning
-  pending BR's feel comparisons.
-  Damage spread consumes its
-  random draw even when tuned to zero, so later dismemberment rolls stay stable.
-  Zero stamina refuses a swing, and saved recovery time survives Continue. See
-  `PlayerCombat.resolveContact` in `src/core/playerCombat.ts` and
-  `ZombieSystem.applyMeleeHit` in `src/core/zombies.ts`.
+- **Melee.** Every player and zombie melee move declares a motion: thrust, swing
+  or wrestle. Motion describes how an attack reaches its target; damage kind
+  describes the injury, so a bite can wrestle and still pierce. Keeping them
+  separate prevents an injury label from granting passage through wire. Content
+  validation requires the choice rather than inferring it from an actor or item
+  identity. See `src/core/meleeMotion.ts`, `MELEE_MOTIONS`; and `src/core/schema.ts`,
+  `WeaponSchema`, `UnarmedAttackSchema` and `ZombieMovesSchema`.
+
+  Misses and obstructions still spend stamina and cooldown, so swinging has a cost
+  even without a hit. Saves retain the active move, including its motion, so Continue
+  cannot skip or repeat contact or change which obstacles it passes. Changing held
+  items cancels contact without refunding cooldown. Damage spread consumes its draw
+  even at zero variance so later dismemberment rolls stay stable. Class tuning remains
+  content-owned for feel comparisons. See `src/core/playerCombat.ts`, `PlayerCombat.resolveContact`;
+  `src/core/saveFormat.ts`, `meleeAction`; and `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`.
 
   A block always takes part of a melee blow, so holding the guard is a choice
   whose payoff the player feels on every hit; an all-or-nothing roll would read

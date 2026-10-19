@@ -261,8 +261,8 @@
       },
       "id": "chain_link",
       "meleePass": {
-        "damageKinds": ["pierce"],
-        "minimumZombieReachMetres": 1
+        "minimumZombieReachMetres": 1,
+        "motions": ["thrust"]
       },
       "name": "Chain-link fence",
       "opaque": false,

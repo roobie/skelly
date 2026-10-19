@@ -14,6 +14,7 @@ import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
 import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
+import { MELEE_MOTIONS } from './meleeMotion.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
@@ -654,6 +655,7 @@ const meleeAction = nullable(
     direction: vec3,
     hands: obj({ right: nullable(positiveInt), left: nullable(positiveInt) }),
     weapon: obj({
+      motion: enumeration(MELEE_MOTIONS),
       damage: positive,
       reach: positive,
       cooldown: positive,

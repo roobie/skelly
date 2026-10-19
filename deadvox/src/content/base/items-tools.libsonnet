@@ -5,7 +5,7 @@ local salvage = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
 local yield(item, count) = { item: item, count: count, fractions: salvage, rounding: 'floor' };
 local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes, skill: 'crafting', yields: yields };
 
-local melee(type, damage, reach, cooldownSimSeconds, stamina, impulse, wearPerHit) = {
+local melee(type, motion, damage, reach, cooldownSimSeconds, stamina, impulse, wearPerHit) = {
   melee: {
     damage: damage,
     reach: reach,
@@ -16,6 +16,7 @@ local melee(type, damage, reach, cooldownSimSeconds, stamina, impulse, wearPerHi
     contactFraction: 0.4,
     windupCapSimSeconds: 0.25,
     type: type,
+    motion: motion,
   },
 };
 
@@ -53,7 +54,7 @@ local meleeClasses = [
     headDamageMultiplier: 1,
     limbDamageMultiplier: 1,
     speedMultiplier: 1,
-    unarmed: { damage: 8, reach: 0.1, cooldownSimSeconds: 0.8, stamina: 4, impulse: 4, contactFraction: 0.4, windupCapSimSeconds: 0.25 },
+    unarmed: { motion: 'thrust', damage: 8, reach: 0.1, cooldownSimSeconds: 0.8, stamina: 4, impulse: 4, contactFraction: 0.4, windupCapSimSeconds: 0.25 },
   },
 ];
 
@@ -76,7 +77,7 @@ local items = [
     description: 'Pries open doors and crates. Also a weapon.',
     model: 'crowbar',
     tool: { qualities: { prying: 3, hammering: 1 } },
-    weapon: melee('blunt', damage=14, reach=0.6, cooldownSimSeconds=1.1, stamina=8, impulse=8, wearPerHit=0.015) + heavySwing + metalRing,
+    weapon: melee('blunt', 'swing', damage=14, reach=0.6, cooldownSimSeconds=1.1, stamina=8, impulse=8, wearPerHit=0.015) + heavySwing + metalRing,
   },
   {
     id: 'hammer',
@@ -86,7 +87,7 @@ local items = [
     size: [1, 3],
     model: 'hammer',
     tool: { qualities: { hammering: 2 } },
-    weapon: melee('blunt', damage=10, reach=0.4, cooldownSimSeconds=0.8, stamina=5, impulse=6, wearPerHit=0.012) + metalRing,
+    weapon: melee('blunt', 'swing', damage=10, reach=0.4, cooldownSimSeconds=0.8, stamina=5, impulse=6, wearPerHit=0.012) + metalRing,
   },
   {
     id: 'kitchen_knife',
@@ -96,7 +97,7 @@ local items = [
     size: [1, 3],
     model: 'kitchen_knife',
     tool: { qualities: { cutting: 2 } },
-    weapon: melee('cut', damage=8, reach=0.25, cooldownSimSeconds=0.5, stamina=3, impulse=3.5, wearPerHit=0.025) + lightSwing,
+    weapon: melee('cut', 'swing', damage=8, reach=0.25, cooldownSimSeconds=0.5, stamina=3, impulse=3.5, wearPerHit=0.025) + lightSwing,
   },
   {
     id: 'kabar',
@@ -106,7 +107,7 @@ local items = [
     size: [1, 3],
     model: 'kabar',
     tool: { qualities: { cutting: 2 } },
-    weapon: melee('cut', damage=9, reach=0.3, cooldownSimSeconds=0.55, stamina=3.5, impulse=4, wearPerHit=0.025) + lightSwing,
+    weapon: melee('cut', 'swing', damage=9, reach=0.3, cooldownSimSeconds=0.55, stamina=3.5, impulse=4, wearPerHit=0.025) + lightSwing,
   },
   {
     id: 'machete',
@@ -116,7 +117,7 @@ local items = [
     size: [1, 4],
     model: 'machete',
     tool: { qualities: { cutting: 2 } },
-    weapon: melee('cut', damage=11, reach=0.45, cooldownSimSeconds=0.75, stamina=5, impulse=4.5, wearPerHit=0.02) + lightSwing,
+    weapon: melee('cut', 'swing', damage=11, reach=0.45, cooldownSimSeconds=0.75, stamina=5, impulse=4.5, wearPerHit=0.02) + lightSwing,
   },
   {
     id: 'can_opener',
@@ -134,7 +135,7 @@ local items = [
     size: [1, 6],
     model: 'baseball_bat',
     twoHanded: true,
-    weapon: melee('blunt', damage=15, reach=0.8, cooldownSimSeconds=1.2, stamina=9, impulse=10, wearPerHit=0.01) + heavySwing,
+    weapon: melee('blunt', 'swing', damage=15, reach=0.8, cooldownSimSeconds=1.2, stamina=9, impulse=10, wearPerHit=0.01) + heavySwing,
   },
   {
     id: 'steel_pipe',
@@ -143,7 +144,7 @@ local items = [
     weight: 1800,
     size: [1, 6],
     model: 'steel_pipe',
-    weapon: melee('blunt', damage=13, reach=0.6, cooldownSimSeconds=1.2, stamina=9, impulse=8, wearPerHit=0.015) + heavySwing + metalRing,
+    weapon: melee('blunt', 'swing', damage=13, reach=0.6, cooldownSimSeconds=1.2, stamina=9, impulse=8, wearPerHit=0.015) + heavySwing + metalRing,
   },
   {
     id: 'flashlight',
