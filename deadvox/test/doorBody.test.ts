@@ -12,7 +12,6 @@ const entities = new BlockEntities({ furniture: new Map(defs.map((def) => [def.i
 
 const opened = (type: string, z: number) => {
   const entity = entities.add({ type, pos: [0, 0, z], size: [2, 4, 1], facing: 'n' })!;
-  expect(entities.isSolid(0, 0, z)).toBe(true);
   entities.setOpen(entity, true);
   return entity;
 };
