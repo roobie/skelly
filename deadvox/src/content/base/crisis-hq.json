@@ -1,0 +1,718 @@
+{
+  "layouts": [
+    {
+      "bounds": {
+        "x0": 32,
+        "x1": 96,
+        "z0": 32,
+        "z1": 96
+      },
+      "buildings": [
+        {
+          "position": [51, 21, 51],
+          "rotation": 0,
+          "template": "crisis_hq_main"
+        },
+        {
+          "position": [48, 21, 48],
+          "rotation": 0,
+          "template": "crisis_hq_wall"
+        },
+        {
+          "position": [48, 21, 48.5],
+          "rotation": 90,
+          "template": "crisis_hq_side"
+        },
+        {
+          "position": [77.5, 21, 48.5],
+          "rotation": 90,
+          "template": "crisis_hq_side"
+        },
+        {
+          "position": [48, 21, 77.5],
+          "rotation": 0,
+          "template": "crisis_hq_front"
+        },
+        {
+          "position": [71, 21, 51],
+          "rotation": 0,
+          "template": "crisis_hq_generator_shed"
+        },
+        {
+          "position": [50, 21, 73],
+          "rotation": 0,
+          "template": "crisis_hq_guard_post"
+        },
+        {
+          "position": [71.5, 21, 59],
+          "rotation": 0,
+          "template": "crisis_hq_parking"
+        },
+        {
+          "position": [71.5, 21, 66],
+          "rotation": 0,
+          "template": "crisis_hq_parking"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "crisis_hq",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Military"]
+      },
+      "player": {
+        "bearing": 0,
+        "position": [60.5, 21.5, 82]
+      },
+      "shamblers": [],
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[60.5, 82], [60.5, 64]],
+          "surface": "concrete",
+          "width": 2
+        },
+        {
+          "points": [[73, 76], [73, 59]],
+          "surface": "concrete",
+          "width": 3
+        }
+      ],
+      "woodlands": []
+    }
+  ],
+  "templates": [
+    {
+      "access": {
+        "entrance": [19, 1, 25],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "crisis_hq_main",
+      "layers": [
+        [
+          "################################",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "################################"
+        ],
+        [
+          "################################",
+          "#.............#WWW..WWW#....ff.#",
+          "#.............#WWW..WWW#.......#",
+          "#...c..c..c...#........#.......#",
+          "#.............#..c.....#...WWW.#",
+          "#...TTTTTT....#........#...WWW.#",
+          "#...TTTTTT....#........#.......#",
+          "#...TTTTTT....#........#..c....#",
+          "#.............#........#.......#",
+          "#........c....#........#.......#",
+          "#..pp.........####DD########DD##",
+          "###########DD##................#",
+          "#ff......#.....................#",
+          "#........#.............#SS..ff.#",
+          "#..WWW...O.............#.......#",
+          "#..WWW...O....##DD##DD##.......#",
+          "#........#....#...#....#.......#",
+          "#........#....#...#....O.......#",
+          "##########....#uu.#uu..O.......#",
+          "#........#bb..#uu.#uu..#.......#",
+          "#.ssss...#bb..###########DD#####",
+          "#.ssss...O....#WWW.....#....BB.#",
+          "#........O....#WWW.....#MM..BB.#",
+          "#........#....O........O....BB.#",
+          "#........#....O........O....BB.#",
+          "##################DD############"
+        ],
+        [
+          "################################",
+          "#.............#WWW..WWW#....ff.#",
+          "#.............#WWW..WWW#.......#",
+          "#...c..c..c...#........#.......#",
+          "#.............#..c.....#...WWW.#",
+          "#...TTTTTT....#........#...WWW.#",
+          "#...TTTTTT....#........#.......#",
+          "#...TTTTTT....#........#..c....#",
+          "#.............#........#.......#",
+          "#........c....#........#.......#",
+          "#..pp.........####DD########DD##",
+          "###########DD##................#",
+          "#ff......#.....................#",
+          "#........#.............#SS..ff.#",
+          "#..WWW...O.............#.......#",
+          "#..WWW...O....##DD##DD##.......#",
+          "#........#....#...#....#.......#",
+          "#........#....#...#....O.......#",
+          "##########....#uu.#uu..O.......#",
+          "#........#bb..#uu.#uu..#.......#",
+          "#.ssss...#bb..###########DD#####",
+          "#.ssss...O....#WWW.....#....BB.#",
+          "#........O....#WWW.....#MM..BB.#",
+          "#........#....O........O....BB.#",
+          "#........#....O........O....BB.#",
+          "##################DD############"
+        ],
+        [
+          "###====###===###===#===###===###",
+          "#.............#........#....ff.#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "=.............#........#.......=",
+          "=.............#........#.......=",
+          "=.............#........#.......=",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............####DD########DD##",
+          "###########DD##................#",
+          "#ff......#.....................#",
+          "#........#.............#SS..ff.#",
+          "=........O.............#.......=",
+          "=........O....##DD##DD##.......=",
+          "#........#....#...#....#.......#",
+          "#........#....#...#....O.......#",
+          "##########....#...#....O.......#",
+          "#........#....#...#....#.......#",
+          "#........#....###########DD#####",
+          "=........O....#........#.......=",
+          "=........O....#........#MM.....=",
+          "#........#....O........O.......#",
+          "#........#....O........O.......#",
+          "##====########====DD#######====#"
+        ],
+        [
+          "###....###...###...#...###...###",
+          "#.............#rr...rr.#....ff.#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "..............#........#........",
+          "..............#........#........",
+          "..............#........#........",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............####DD########DD##",
+          "###########DD##................#",
+          "#ff......#.....................#",
+          "#........#.............#SS..ff.#",
+          ".........O.............#........",
+          ".........O....##DD##DD##........",
+          "#........#....#...#....#.......#",
+          "#........#....#...#....O.......#",
+          "##########....#...#....O.......#",
+          "#........#....#...#....#.......#",
+          "#........#....###########DD#####",
+          ".........O....#........#........",
+          ".........O....#........#MM......",
+          "#........#....O........O.......#",
+          "#........#....O........O.......#",
+          "##....########....DD#######....#"
+        ],
+        [
+          "################################",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............##################",
+          "###############................#",
+          "#........#.............#########",
+          "#........#.............#.......#",
+          "#........#.............#.......#",
+          "#........#....##########.......#",
+          "#........#....#...#....#.......#",
+          "#........#....#...#....#.......#",
+          "##########....#...#....#.......#",
+          "#........#....#...#....#.......#",
+          "#........#....##################",
+          "#........#....#........#.......#",
+          "#........#....#........#.......#",
+          "#........#....#........#.......#",
+          "#........#....#........#.......#",
+          "################################"
+        ],
+        [
+          "################################",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............#........#.......#",
+          "#.............##################",
+          "###############................#",
+          "#........#.............#########",
+          "#........#.............#.......#",
+          "#........#.............#.......#",
+          "#........#....##########.......#",
+          "#........#....#...#....#.......#",
+          "#........#....#...#....#.......#",
+          "##########....#...#....#.......#",
+          "#........#....#...#....#.......#",
+          "#........#....##################",
+          "#........#....#........#.......#",
+          "#........#....#........#.......#",
+          "#........#....#........#.......#",
+          "#........#....#........#.......#",
+          "################################"
+        ],
+        [
+          "################################",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
+          "################################"
+        ],
+        [
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "................................",
+          "................................",
+          "................................",
+          "................................"
+        ],
+        [
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "................................",
+          "................................"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Military"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": "air",
+        "=": "window_frame",
+        "B": {
+          "furniture": "bed"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "M": {
+          "facing": "n",
+          "furniture": "shelf",
+          "loot": "gauntlet_medical_stock",
+          "lootUsage": ["Medical"]
+        },
+        "O": {
+          "facing": "e",
+          "furniture": "wood_door"
+        },
+        "R": "galvanized",
+        "S": {
+          "facing": "s",
+          "furniture": "shelf",
+          "loot": "gauntlet_police_gear"
+        },
+        "T": {
+          "furniture": "hq_meeting_table"
+        },
+        "W": {
+          "facing": "s",
+          "furniture": "desk",
+          "loot": "desk"
+        },
+        "b": {
+          "facing": "n",
+          "furniture": "station_washbasin"
+        },
+        "c": {
+          "facing": "s",
+          "furniture": "chair"
+        },
+        "f": {
+          "facing": "s",
+          "furniture": "police_file_cabinet"
+        },
+        "k": "concrete",
+        "p": {
+          "furniture": "chair_on_side"
+        },
+        "r": {
+          "facing": "s",
+          "furniture": "police_desk_radio"
+        },
+        "s": {
+          "facing": "s",
+          "furniture": "sofa"
+        },
+        "u": {
+          "facing": "s",
+          "furniture": "station_toilet"
+        }
+      },
+      "size": [32, 10, 26]
+    },
+    {
+      "id": "crisis_hq_wall",
+      "layers": [
+        ["............................................................"],
+        ["############################################################"],
+        ["############################################################"],
+        ["############################################################"],
+        ["############################################################"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Military"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": {
+          "ground": true
+        }
+      },
+      "size": [60, 5, 1]
+    },
+    {
+      "id": "crisis_hq_side",
+      "layers": [
+        [".........................................................."],
+        ["##########################################################"],
+        ["##########################################################"],
+        ["##########################################################"],
+        ["##########################################################"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Military"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": {
+          "ground": true
+        }
+      },
+      "size": [58, 5, 1]
+    },
+    {
+      "id": "crisis_hq_front",
+      "layers": [
+        ["............................................................"],
+        ["###################GGGGGGGGGGGG#############################"],
+        ["###################GGGGGGGGGGGG#############################"],
+        ["###################GGGGGGGGGGGG#############################"],
+        ["###################GGGGGGGGGGGG#############################"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Military"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": {
+          "ground": true
+        },
+        "G": {
+          "furniture": "hq_gate_leaf"
+        }
+      },
+      "size": [60, 5, 1]
+    },
+    {
+      "access": {
+        "entrance": [4, 1, 6],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "crisis_hq_generator_shed",
+      "layers": [
+        [
+          "##########",
+          "#kkkkkkkk#",
+          "#kkkkkkkk#",
+          "#kkkkkkkk#",
+          "#kkkkkkkk#",
+          "#kkkkkkkk#",
+          "#kkkkkkkk#",
+          "##########"
+        ],
+        [
+          "##########",
+          "#........#",
+          "#.gggg...#",
+          "#.gggg...#",
+          "#.gggg...#",
+          "#........#",
+          "#........#",
+          "####DD####"
+        ],
+        [
+          "##########",
+          "#........#",
+          "#.gggg...#",
+          "#.gggg...#",
+          "#.gggg...#",
+          "#........#",
+          "#........#",
+          "####DD####"
+        ],
+        [
+          "##########",
+          "#........#",
+          "#.gggg...#",
+          "#.gggg...#",
+          "#.gggg...#",
+          "#........#",
+          "#........#",
+          "####DD####"
+        ],
+        [
+          "##########",
+          "#........#",
+          "#........#",
+          "#........#",
+          "#........#",
+          "#........#",
+          "#........#",
+          "####DD####"
+        ],
+        [
+          "##########",
+          "#........#",
+          "#........#",
+          "#........#",
+          "#........#",
+          "#........#",
+          "#........#",
+          "##########"
+        ],
+        [
+          "##########",
+          "#........#",
+          "#........#",
+          "#........#",
+          "#........#",
+          "#........#",
+          "#........#",
+          "##########"
+        ],
+        ["##########", "#kkkkkkkk#", "#kkkkkkkk#", "#kkkkkkkk#", "#kkkkkkkk#", "#kkkkkkkk#", "#kkkkkkkk#", "##########"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Military"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": "air",
+        "=": "window_frame",
+        "D": {
+          "furniture": "wood_door"
+        },
+        "O": {
+          "facing": "e",
+          "furniture": "wood_door"
+        },
+        "W": {
+          "facing": "e",
+          "furniture": "desk",
+          "loot": "desk"
+        },
+        "c": {
+          "facing": "w",
+          "furniture": "chair"
+        },
+        "g": {
+          "facing": "s",
+          "furniture": "hq_generator"
+        },
+        "k": "concrete"
+      },
+      "size": [10, 8, 8]
+    },
+    {
+      "access": {
+        "entrance": [5, 1, 3],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "crisis_hq_guard_post",
+      "layers": [
+        ["######", "#kkkk#", "#kkkk#", "#kkkk#", "#kkkk#", "######"],
+        ["######", "#WW..#", "#WW..O", "#WW..O", "#....#", "######"],
+        ["######", "#WW..#", "#WW..O", "#WW..O", "#....#", "######"],
+        ["#==###", "#....#", "#....O", "#....O", "#....#", "#==###"],
+        ["#..###", "#....#", "#....O", "#....O", "#....#", "#..###"],
+        ["######", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["######", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["######", "#kkkk#", "#kkkk#", "#kkkk#", "#kkkk#", "######"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Military"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": "air",
+        "=": "window_frame",
+        "D": {
+          "furniture": "wood_door"
+        },
+        "O": {
+          "facing": "e",
+          "furniture": "wood_door"
+        },
+        "W": {
+          "facing": "e",
+          "furniture": "desk",
+          "loot": "desk"
+        },
+        "c": {
+          "facing": "w",
+          "furniture": "chair"
+        },
+        "g": {
+          "facing": "s",
+          "furniture": "hq_generator"
+        },
+        "k": "concrete"
+      },
+      "size": [6, 8, 6]
+    },
+    {
+      "id": "crisis_hq_parking",
+      "layers": [
+        [
+          "wwwwww",
+          "wkkkkw",
+          "wkkkkw",
+          "wkkkkw",
+          "wkkkkw",
+          "wkkkkw",
+          "wkkkkw",
+          "wkkkkw",
+          "wkkkkw",
+          "wkkkkw",
+          "wkkkkw",
+          "wwwwww"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Military"]
+      },
+      "palette": {
+        "k": "concrete",
+        "w": "plaster"
+      },
+      "size": [6, 1, 12]
+    }
+  ]
+}
