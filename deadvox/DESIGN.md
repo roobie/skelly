@@ -533,9 +533,10 @@ context. Stock that does not suit the host building comes from a special event: 
 small authored scene, such as a dead special operations soldier, with its own loot
 context, which the instance places on another building's lot. The event is not
 linked to that building; it sits on cells the host leaves empty and is not a clue.
-The soldier carries an AR-pattern rifle and one magazine until the NVGs exist, so
-the substation gives a military reward ahead of the lab; the NVGs join the same
-body when the item lands. An event may author its own threat, which spawns with it
+The rifle lies on the soldier's body and the magazine is in a pocket, because
+`DESIGN.md`, "The item model" keeps the pocket real-sized while loot lies outside
+containers; the substation gives a military reward ahead of the lab, and the NVGs
+join the same body when the item lands. An event may author its own threat, which spawns with it
 so the scene tells its story; how those markers count against the scenario's
 population budget remains open. An authored event carries the promised reward, so
 fixed stock still passes the economy check without bending a place's theme. Stock that suits the place but not

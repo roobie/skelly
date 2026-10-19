@@ -35,7 +35,7 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
         { template: 'gauntlet_public_directions', lot: 'police', at: [23, 0, 17], standing: [25, 1, 20], fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_directions', placement: 'surface' }] }] },
       ],
       // The military reward is deliberately placed here, rather than linked to the substation.
-      events: [{ template: 'gauntlet_special_ops_event', lot: 'substation', at: [16, 0, 15], fixedLoot: [{ at: [1, 1, 1], items: [{ item: 'rifle_assault', condition: 0.7, key: true }, { item: 'magazine_stanag_30', condition: 0.7 }] }] }],
+      events: [{ template: 'gauntlet_special_ops_event', lot: 'substation', at: [16, 0, 15], fixedLoot: [{ at: [1, 1, 1], items: [{ item: 'rifle_assault', placement: 'surface', condition: 0.7, key: true }, { item: 'magazine_stanag_30', condition: 0.7 }] }] }],
       // The police station's locked armoury rack.
       stops: [
         { lot: 'police', fixedLoot: [{ at: [18, 1, 5], items: [{ item: 'pump_shotgun', condition: 0.7, key: true }] }] },

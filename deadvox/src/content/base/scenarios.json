@@ -935,7 +935,8 @@
                   {
                     "condition": 0.69999999999999996,
                     "item": "rifle_assault",
-                    "key": true
+                    "key": true,
+                    "placement": "surface"
                   },
                   {
                     "condition": 0.69999999999999996,
