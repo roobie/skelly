@@ -57,6 +57,7 @@ import {
   formatVersion,
   formatWorldOptions,
   removeFixtureColumn,
+  scale,
 } from './snapshotTestSupport.ts';
 
 const INCOMPATIBLE_SAVE = /incompatible|version|identity/i;
@@ -187,6 +188,43 @@ const generatedColumnsReady = (generated: ReadonlySet<string>, x: number, z: num
   return true;
 };
 
+type FixtureWorld = ReturnType<typeof createRuntime>['world'];
+
+const groundTop = (world: FixtureWorld, x: number, z: number): number | undefined => {
+  for (let y = (scale.maxCy + 1) * CHUNK - 1; y >= scale.minCy * CHUNK; y--) {
+    if (world.getBlock(x, y, z) !== 0) {
+      return y;
+    }
+  }
+  return undefined;
+};
+
+/** The shared ground top across a rectangle of cells, or undefined when it is not level. */
+const levelTop = (world: FixtureWorld, [x0, x1]: [number, number], [z0, z1]: [number, number]) => {
+  const tops = new Set<number | undefined>();
+  for (let z = z0; z <= z1; z++) {
+    for (let x = x0; x <= x1; x++) {
+      tops.add(groundTop(world, x, z));
+    }
+  }
+  return tops.size === 1 ? [...tops][0] : undefined;
+};
+
+/** A cell inside the column with level ground for `spread` cells either side along x and `depth` cells along z. */
+const levelSite = (world: FixtureWorld, [cx, cz]: [number, number], spread: number, depth: number) => {
+  const margin = spread + 3;
+  for (let z = cz * CHUNK + margin; z < (cz + 1) * CHUNK - margin; z++) {
+    for (let x = cx * CHUNK + margin; x < (cx + 1) * CHUNK - margin; x++) {
+      const north = z - Math.floor(depth / 2);
+      const top = levelTop(world, [x - spread, x + spread], [north, north + depth - 1]);
+      if (top !== undefined) {
+        return { x, z, north, ground: top + 1 };
+      }
+    }
+  }
+  throw new Error(`Column ${cx},${cz} has no level ground for the fixture`);
+};
+
 const recordActiveSession = (
   start: Readonly<SaveSnapshot>,
   recorder: InputReplayRecorder,
@@ -201,6 +239,7 @@ const recordActiveSession = (
     commands?: readonly { tick: number; context: 'inventory' | 'play'; payload: ReplayActionPayload }[];
     frameDts?: number[];
     recordedTicks?: number;
+    forward?: number;
     useDominantAtTick?: number;
     useDominant?: (runtime: ReturnType<typeof createRuntime>) => void;
   } = {},
@@ -211,6 +250,7 @@ const recordActiveSession = (
     commands = [],
     frameDts = [1 / 90, 1 / 60, 1 / 120],
     recordedTicks = 96,
+    forward = 1,
     useDominant = () => undefined,
   } = options;
   const pendingCommands: ReplayActionPayload[] = [];
@@ -261,7 +301,7 @@ const recordActiveSession = (
     source.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureHamlet);
   }
   source.sim.paused = false;
-  source.view.intent.forward = 1;
+  source.view.intent.forward = forward;
   let sentDown = false;
   let sentUp = false;
   let nextCommand = 0;
@@ -1638,53 +1678,64 @@ describe('input replay', () => {
   });
 
   it('replays a furniture lift and put-down to the same piece, place and fingerprint', async () => {
-    const initial = createRuntime();
+    const [zombieCx, zombieCz] = fixtureZombieColumn;
+    const column: [number, number] = [zombieCx + 10, zombieCz + 10];
+    const probe = createRuntime(undefined, false, [column]);
+    const crate = probe.inventory.registry.furniture.get('crate')!;
+    const [width, , depth] = crate.size;
+    // The player stands still between the piece and its put-down spot, all on one level, so the real
+    // reach decides both moves.
+    const site = levelSite(probe.world, column, width + 1, depth);
+    const { ground, north } = site;
+    const initial = createRuntime(undefined, false, [column], { spawn: [site.x + 0.5, ground, site.z + 0.5] });
     const { inventory } = initial;
     if (
       !(
         inventory.move(inventory.hands.right!, { kind: 'worn' }).ok &&
-        inventory.move(inventory.hands.left!, { kind: 'pile', pos: initial.player.body.pos }).ok
+        inventory.move(inventory.hands.left!, { kind: 'pile', pos: [site.x, ground, site.z] }).ok
       )
     ) {
       throw new Error('Could not free the hands for the replay lift fixture');
     }
-    const crate = inventory.registry.furniture.get('crate')!;
-    const [width, height, depth] = crate.size;
-    // The fixture player falls far from loaded terrain, so the piece is put down on a second one.
-    const stand = inventory.furnish({ type: crate.id, pos: [6, 0, 6], size: crate.size, facing: 'n' });
-    const piece = inventory.furnish({ type: crate.id, pos: [12, 0, 6], size: crate.size, facing: 'n' });
-    if (!(stand && piece)) {
+    const piece = inventory.furnish({
+      type: crate.id,
+      pos: [site.x + 2, ground, north],
+      size: crate.size,
+      facing: 'n',
+    });
+    if (!piece) {
       throw new Error('Could not create the replay lift fixture');
     }
     const start = capture(initial);
-    const aimed: [number, number, number] = [6 + Math.floor(width / 2), height, 6 + Math.floor(depth / 2)];
+    const putDown: [number, number, number] = [site.x - 1 - width, ground, north];
+    const aimed: [number, number, number] = [
+      putDown[0] + Math.floor(width / 2),
+      ground,
+      putDown[2] + Math.floor(depth / 2),
+    ];
     const commands = [
       { tick: 24, context: 'play' as const, payload: { kind: 'furniture.lift' as const, entityUid: piece.uid } },
       { tick: 72, context: 'play' as const, payload: { kind: 'furniture.place' as const, pos: aimed } },
     ];
-    const reachAll = (runtime: ReturnType<typeof createRuntime>) => {
-      runtime.inventory.canReachEntity = () => true;
-      runtime.inventory.canReach = () => true;
-    };
     const recorder = new InputReplayRecorder(start);
     const source = recordActiveSession(start, recorder, {
       commands,
       recordedTicks: 120,
-      useDominantAtTick: 4,
-      useDominant: reachAll,
+      forward: 0,
+      initialColumns: [column],
     });
     const sourceEnd = capture(source);
     const placed = source.entities.byUid(piece.uid)!;
     expect(source.entities.carrying()).toBeUndefined();
     expect(placed.carried).toBe(false);
-    expect(placed.pos).toEqual([6, height, 6]);
+    expect(placed.pos).toEqual(putDown);
     expect(source.entities.at(...placed.pos)).toBe(placed);
 
     const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
     const replay = playSession(start, decoded.inputs, {
       endSimTimestamp: decoded.endSimTimestamp,
-      useDominant: reachAll,
+      initialColumns: [column],
     });
     const replayed = replay.entities.byUid(piece.uid)!;
     expect(replay.entities.carrying()).toBeUndefined();
