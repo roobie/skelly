@@ -44,7 +44,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
-  - you're changing military progression, loot economy admission or per-unit loot planning, ground supply or roll-once persistence, including debug overlays
+  - you're changing military progression, loot economy admission or loot unit planning, ground supply or roll-once persistence, including debug overlays
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
   - you're changing when a running game warns before page exit relative to its last save
@@ -757,7 +757,7 @@ contents from firearm and ammunition compatibility. The range layout is content,
 ### Loot
 
 Choose every world-supply item through one selector so source-specific rules cannot
-bypass admission and a unit's floors and caps have one candidate-filtering boundary. Tables
+bypass admission and a loot unit's floors and caps have one candidate-filtering boundary. Tables
 own relative weights and variants, not geography; fixed progression stock uses the
 same admission without becoming optional. Source-point identity owns the random
 stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
@@ -773,14 +773,15 @@ the whole world and restocks toward targets serves many players on one long-runn
 shared server; this game is not that, and multiplayer is far enough off that it does not
 shape this rule.
 
-The economy is instead to be planned per unit: a place with its own loot plan, such as a
-farm, a town block, an air base or a shed in the woods. The unit's name is open on #699.
-A unit settles its whole plan when its first column generates, so planning is eager
-inside the unit and lazy across the map. The plan sets floors ("this unit has at least
-one pump shotgun") and caps ("at most one per police station"), and chooses which points
-hold them. A unit's spawn points come from its layout without generating its columns,
-so what bounds a unit's size is how many points its plan must weigh in a short pause,
-not its area. See `src/core/loot.ts`, `lootPointsByColumn`.
+The economy is instead to be planned per loot unit (`LootUnit` in code): a place with its
+own loot plan, such as a farm, a town block, an air base or a shed in the woods. The name
+joins the `Loot`-prefixed types and reads plainly in prose; "unit" alone is generic, so
+this is its one definition. A loot unit settles its whole plan when its first column
+generates, so planning is eager inside the loot unit and lazy across the map. The plan
+sets floors ("this farm has at least one pump shotgun") and caps ("at most one per police
+station"), and chooses which points hold them. A loot unit's spawn points come from its
+layout without generating its columns, so what bounds its size is how many points its
+plan must weigh in a short pause, not its area. See `src/core/loot.ts`, `lootPointsByColumn`.
 
 Map-wide rarity is per-point odds set in content, not a count: the odds give the
 expected total, and scarcity is statistical. Tier gradients are a function of position,
@@ -790,8 +791,8 @@ outside every floor and cap, so story and promised stock are never squeezed out.
 Items that come together, such as a pump shotgun and shells nearby, form an ItemSet: an
 anchor and its companions. Each ItemSet names where its companions may land, because the
 right reach differs by set. Companion placement is best effort, never fail-closed: a
-companion that cannot land where its set allows never refuses or fails the unit's plan,
-since a missing box of shells costs the player less than a unit that will not generate.
+companion that cannot land where its set allows never refuses or fails the loot unit's plan,
+since a missing box of shells costs the player less than a loot unit that will not generate.
 What best effort does in that case, the rest of ItemSets and scenario multipliers on
 odds are open on #699.
 
