@@ -431,7 +431,7 @@ export const createPlayView = (
         deflectDuration > 0 && deflectTime > 0
           ? deflectRise * Math.sin(Math.PI * (1 - deflectTime / deflectDuration))
           : 0;
-      carriedPiece.update(dt);
+      carriedPiece.update(dt, camera.quaternion);
       held.update(camera, pose, recoil, { ...handling, lift });
       flashlight.update({ registry, lit: light, held, camera, inventory });
       lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: cameraDaylightScale });

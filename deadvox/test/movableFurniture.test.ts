@@ -1,4 +1,4 @@
-import { Box3, Vector3 } from 'three';
+import { Box3, Group, Quaternion, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -128,15 +128,16 @@ describe('movable furniture', () => {
       (entity, def) => meshes.pieceMesh(entity, def),
       reachTuning(registry).furnitureMove.carriedView,
     );
-    view.update(0);
+    const lookingNorth = new Quaternion();
+    view.update(0, lookingNorth);
     expect(view.shown).toBe(false);
 
     expect(liftFurniture(furniture, piece)).toBeUndefined();
-    view.update(0);
+    view.update(0, lookingNorth);
     expect(view.shown).toBe(true);
 
     expect(placeFurniture(furniture, moved)).toBeUndefined();
-    view.update(0);
+    view.update(0, lookingNorth);
     expect(view.shown).toBe(false);
   });
 
@@ -208,6 +209,39 @@ describe('movable furniture', () => {
 
       const placed = await roundTrip(carried);
       expect(placed.entities.byUid(piece.uid)).toMatchObject({ pos: moved, carried: false, ...turned });
+    });
+
+    it('draws the piece in hand along its stored box whichever way the player looks', () => {
+      const inventory = new Inventory(registry);
+      const oblong = [...registry.furniture.values()].find(
+        (def) =>
+          !(def.mount || def.door || def.climbable || def.vehicle || def.scenarioGoal) &&
+          def.shape !== undefined &&
+          def.size[0] !== def.size[2] &&
+          def.size.every((cells) => cells * formatWorldOptions.blockSize <= maxSizeMetres),
+      )!;
+      const piece = inventory.furnish({ type: oblong.id, pos: origin, size: oblong.size, facing: 'n' })!;
+      const meshes = new FurnitureMeshes(formatWorldOptions.blockSize);
+      const view = new CarriedPiece(
+        inventory.entities,
+        (entity, def) => meshes.pieceMesh(entity, def),
+        reachTuning(registry).furnitureMove.carriedView,
+      );
+      const lookingEast = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -Math.PI / 2);
+      const camera = new Group();
+      camera.quaternion.copy(lookingEast);
+      camera.add(view.group);
+      inventory.entities.lift(piece);
+
+      for (const turns of [0, 1]) {
+        if (turns) {
+          expect(turnCarried(inventory)).toBeUndefined();
+        }
+        view.update(0, lookingEast);
+        camera.updateMatrixWorld(true);
+        const drawn = new Box3().setFromObject(view.group).getSize(new Vector3());
+        expect(drawn.x > drawn.z).toBe(piece.size[0] > piece.size[2]);
+      }
     });
 
     it('turns but will not tip a piece marked upright', () => {

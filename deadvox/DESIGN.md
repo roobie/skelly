@@ -384,8 +384,12 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
 - **Seen while carried.** The player has to see what they're carrying, so the
   piece is drawn held low in front of them, clear of the aimed cell's outline
   so it never hides where it will go. The view reads the carry state rather
-  than a copy of it, so it cannot outlive the carry. Where it sits is content,
-  so it can be tuned by eye. See `src/render/carriedPiece.ts`, `CarriedPiece`.
+  than a copy of it, so it cannot outlive the carry. It keeps the world heading
+  it will be set down at rather than turning with the view, so whichever way
+  the player looks, the piece in hand, the outline and the placed piece agree,
+  and a turn or tip reads as the change it makes to the placement. Where it
+  sits is content, so it can be tuned by eye. See `src/render/carriedPiece.ts`,
+  `CarriedPiece`.
 - **Turning and tipping.** A carried piece turns a quarter at a time and tips
   onto its back or its side, because a piece that only fits a doorway, a
   stairwell or a gap along a wall when laid over is otherwise a dead end the
