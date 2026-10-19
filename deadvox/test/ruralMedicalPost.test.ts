@@ -1,7 +1,7 @@
-import { expect, test } from 'vitest';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate } from '../src/core/templates.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { expect, test } from 'vitest';
 
 test('keeps the rural medical post accessible through its authored entrance', () => {
   const content = buildBundledContent();
