@@ -276,31 +276,31 @@
           "........................",
           "........................",
           "........................",
-          "........................",
-          "........................",
-          "........................",
-          "........................"
+          ".................aaaaaa.",
+          "................aaaaaaa.",
+          "................aaaaaaa.",
+          "..................aaaa.."
         ],
         [
           "ffffffffffffffffffffffff",
-          "f......................f",
-          "f...RRR................f",
+          "f........iiiiii....GGGGf",
+          "f...RRR..........GGGGGGf",
+          "f........TTTTTT........f",
+          "f.ss.....TTTTTT.....hhhf",
+          "f.ss.....TTTTTT.....hhhf",
           "f........TTTTTT........f",
           "f........TTTTTT........f",
-          "f........TTTTTT........f",
-          "f........TTTTTT........f",
-          "f........TTTTTT........f",
-          "f......................f",
-          "f......................f",
+          "fGGGGG...........w..w..f",
+          "fGGGG..............w..wf",
           "fffffffffffffffffff...ff"
         ],
         [
           "ffffffffffffffffffffffff",
-          "f......................f",
+          "f........iiiiii........f",
           "f...RRR................f",
           "f........TTTTTT........f",
-          "f........TTTTTT........f",
-          "f........TTTTTT........f",
+          "f........TTTTTT.....hhhf",
+          "f........TTTTTT.....hhhf",
           "f........TTTTTT........f",
           "f........TTTTTT........f",
           "f......................f",
@@ -381,6 +381,7 @@
         ".": {
           "ground": true
         },
+        "G": "tall_grass",
         "R": {
           "facing": "s",
           "furniture": "substation_disconnector"
@@ -392,9 +393,20 @@
         "V": {
           "furniture": "gauntlet_car_wreck_0_0_intact"
         },
+        "a": "asphalt",
         "f": "chain_link",
+        "h": "hedge",
+        "i": {
+          "furniture": "creeper_strip"
+        },
         "p": {
           "furniture": "substation_pole"
+        },
+        "s": {
+          "furniture": "shrub_small"
+        },
+        "w": {
+          "furniture": "weed_tuft"
         }
       },
       "size": [24, 8, 11]
@@ -432,6 +444,7 @@
         ".": {
           "ground": true
         },
+        "G": "tall_grass",
         "R": {
           "facing": "s",
           "furniture": "substation_disconnector"
@@ -443,9 +456,20 @@
         "V": {
           "furniture": "gauntlet_car_wreck_0_0_intact"
         },
+        "a": "asphalt",
         "f": "chain_link",
+        "h": "hedge",
+        "i": {
+          "furniture": "creeper_strip"
+        },
         "p": {
           "furniture": "substation_pole"
+        },
+        "s": {
+          "furniture": "shrub_small"
+        },
+        "w": {
+          "furniture": "weed_tuft"
         }
       },
       "size": [2, 21, 2]
@@ -467,6 +491,7 @@
         ".": {
           "ground": true
         },
+        "G": "tall_grass",
         "R": {
           "facing": "s",
           "furniture": "substation_disconnector"
@@ -478,9 +503,20 @@
         "V": {
           "furniture": "gauntlet_car_wreck_0_0_intact"
         },
+        "a": "asphalt",
         "f": "chain_link",
+        "h": "hedge",
+        "i": {
+          "furniture": "creeper_strip"
+        },
         "p": {
           "furniture": "substation_pole"
+        },
+        "s": {
+          "furniture": "shrub_small"
+        },
+        "w": {
+          "furniture": "weed_tuft"
         }
       },
       "size": [4, 5, 9]

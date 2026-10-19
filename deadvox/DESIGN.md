@@ -1743,6 +1743,10 @@ play, not only decorate it.
     keeps visibility rules attached to the obstacle rather than making scenery
     appear or disappear with player input. `src/core/zombies.ts`, `seesPlayer`
     and `hearingTier`, own the stance's visibility and hearing effects.
+  - **Low growth:** tall grass is a block that is passable, rustles and hides
+    nobody; weeds, creepers and shaped shrubs are passable furniture. Only a
+    block can be sight-opaque, so a place that should hide you uses a hedge, and
+    each kind of growth takes its rules from its own content properties.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
     moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do

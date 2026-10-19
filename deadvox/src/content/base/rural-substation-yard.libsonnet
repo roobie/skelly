@@ -1,12 +1,13 @@
 local context = { usage: [], tier: 'Tier1' };
 local palette = {
-  '.': { ground: true }, f: 'chain_link',
+  '.': { ground: true }, f: 'chain_link', a: 'asphalt', G: 'tall_grass', h: 'hedge',
+  s: { furniture: 'shrub_small' }, i: { furniture: 'creeper_strip' }, w: { furniture: 'weed_tuft' },
   T: { furniture: 'substation_transformer', facing: 's' },
   R: { furniture: 'substation_disconnector', facing: 's' },
   p: { furniture: 'substation_pole' },
   V: { furniture: 'gauntlet_car_wreck_0_0_intact' },
 };
-local bare = [
+local apron = [
   '........................',
   '........................',
   '........................',
@@ -14,10 +15,10 @@ local bare = [
   '........................',
   '........................',
   '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
+  '.................aaaaaa.',
+  '................aaaaaaa.',
+  '................aaaaaaa.',
+  '..................aaaa..',
 ];
 local fenced = [
   'ffffffffffffffffffffffff',
@@ -26,6 +27,32 @@ local fenced = [
   'f........TTTTTT........f',
   'f........TTTTTT........f',
   'f........TTTTTT........f',
+  'f........TTTTTT........f',
+  'f........TTTTTT........f',
+  'f......................f',
+  'f......................f',
+  'fffffffffffffffffff...ff',
+];
+local grown = [
+  'ffffffffffffffffffffffff',
+  'f........iiiiii....GGGGf',
+  'f...RRR..........GGGGGGf',
+  'f........TTTTTT........f',
+  'f.ss.....TTTTTT.....hhhf',
+  'f.ss.....TTTTTT.....hhhf',
+  'f........TTTTTT........f',
+  'f........TTTTTT........f',
+  'fGGGGG...........w..w..f',
+  'fGGGG..............w..wf',
+  'fffffffffffffffffff...ff',
+];
+local grownUpper = [
+  'ffffffffffffffffffffffff',
+  'f........iiiiii........f',
+  'f...RRR................f',
+  'f........TTTTTT........f',
+  'f........TTTTTT.....hhhf',
+  'f........TTTTTT.....hhhf',
   'f........TTTTTT........f',
   'f........TTTTTT........f',
   'f......................f',
@@ -66,7 +93,7 @@ local clear = ['....', '....', '....', '....', '....', '....', '....', '....', '
     {
       id: 'rural_substation_yard', size: [24, 8, 11], lootContext: context,
       palette: palette,
-      layers: [bare, fenced, fenced, fenced, fenced, equipment, tall, tall],
+      layers: [apron, grown, grownUpper, fenced, fenced, equipment, tall, tall],
     },
     {
       id: 'rural_substation_pole', size: [2, 21, 2], lootContext: context,
