@@ -4,6 +4,8 @@ import { Inventory } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import type { LootContext } from '../src/core/loot.ts';
 import { groundPileIssue } from '../src/core/pileBound.ts';
+import { groundLootSupplyIssues } from '../src/core/placementLoot.ts';
+import type { CompiledTemplate } from '../src/core/templates.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 type LootDef = typeof base.loot extends Map<string, infer T> ? T : never;
@@ -76,8 +78,21 @@ describe('ground pile bound', () => {
       expect(inventory.add(inventory.create(type), { kind: 'pile', pos })).toBe(true);
     }
     const message = issue({ kind: 'fixed', items: stock });
+    expect(message).toContain('overfill');
     expect(message).toContain('does not credit stack merging');
     expect(message).toContain('Split the stock across several anchors');
     expect(issue({ kind: 'fixed', items: stock.slice(1) })).toBeUndefined();
+  });
+
+  it('reports an overfilling ground anchor through template validation', () => {
+    const anchored = (tableId: string) =>
+      groundLootSupplyIssues(registry, {
+        lootContext: context,
+        groundLoot: [{ pos: [0, 0, 0], supply: { kind: 'table', table: tableId } }],
+      } as unknown as CompiledTemplate);
+    expect(anchored('pile_fixture_few_units')).toEqual([]);
+    const issues = anchored('pile_fixture_two_blocks');
+    expect(issues.map(([path]) => path)).toEqual(['.groundLoot[0].supply']);
+    expect(issues[0]![1]).toContain('overfill');
   });
 });
