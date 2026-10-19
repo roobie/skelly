@@ -14,7 +14,7 @@
           "template": "rural_medical_post"
         },
         {
-          "position": [52, 21, 66],
+          "position": [52, 21, 59],
           "rotation": 0,
           "template": "rural_medical_grounds"
         }
@@ -34,7 +34,7 @@
       "terrain": [],
       "tracks": [
         {
-          "points": [[57, 89], [57, 65]],
+          "points": [[57, 82], [57, 59]],
           "surface": "dirt",
           "width": 2.5
         }

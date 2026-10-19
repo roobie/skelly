@@ -73,9 +73,9 @@ local yardUpper = [
     bounds: { x0: 32, z0: 32, x1: 96, z1: 96 }, ground: 21, terrain: [],
     buildings: [
       { template: 'rural_medical_post', position: [52, 21, 52], rotation: 0 },
-      { template: 'rural_medical_grounds', position: [52, 21, 66], rotation: 0 },
+      { template: 'rural_medical_grounds', position: [52, 21, 59], rotation: 0 },
     ],
     player: { position: [57, 21.5, 65], bearing: 0 }, shamblers: [], woodlands: [],
-    tracks: [{ points: [[57, 89], [57, 65]], width: 2.5, surface: 'dirt' }],
+    tracks: [{ points: [[57, 82], [57, 59]], width: 2.5, surface: 'dirt' }],
   }],
 }
