@@ -8,6 +8,7 @@
       "furnitureMoveMessages": {
         "blocksLadder": "It would block the ladder",
         "coversHatch": "It would cover the hatch",
+        "emptyHands": "I'm not carrying anything",
         "fallsOnOther": "What's on top would fall on someone",
         "fallsOnPlayer": "What's on top would fall on me",
         "fastened": "It's fixed in place",
@@ -18,6 +19,7 @@
         "outOfReach": "I can't reach there",
         "playerInWay": "I'm in the way",
         "standingOn": "I'm standing on it",
+        "staysUpright": "It has to stay upright",
         "tired": "I'm too tired to lift it",
         "tooBig": "It's too big for me to lift",
         "wornOut": "I can't hold it any longer"

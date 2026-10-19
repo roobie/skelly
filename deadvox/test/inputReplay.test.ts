@@ -142,6 +142,8 @@ const applyCommand = (
     },
     lift: (uid) => runtime.session.liftFurniture(uid),
     place: (pos) => runtime.session.placeFurniture(pos),
+    turn: () => runtime.session.turnFurniture(),
+    tip: () => runtime.session.tipFurniture(),
     clearDownedBody: (id, way) => runtime.session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftContinue: () => {

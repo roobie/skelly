@@ -10,7 +10,18 @@ import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './
 import { type Body, bodyOverlapsBlock } from './physics.ts';
 import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import { cellsOf, type Facing } from './templates.ts';
+import { cellsOf, type Facing, pieceSize } from './templates.ts';
+
+/** Which face a tipped piece lies on: its back, or its right side. */
+export type Tip = 'back' | 'side';
+
+/** A piece's own [width, height, depth] once tipped: on its back the depth stands up, on its side the width lies down. */
+export const tippedSize = ([w, h, d]: readonly [number, number, number], tip: Tip | undefined): Vec3 => {
+  if (tip === 'back') {
+    return [w, d, h];
+  }
+  return tip === 'side' ? [h, w, d] : [w, h, d];
+};
 
 export interface BlockEntity {
   readonly uid: number;
@@ -21,8 +32,10 @@ export interface BlockEntity {
   /** Lowest corner, in blocks; while carried, where it was lifted from. */
   pos: Vec3;
   /** Cells along x, y and z. */
-  readonly size: Vec3;
-  readonly facing: Facing;
+  size: Vec3;
+  facing: Facing;
+  /** Laid over onto its back or its side; upright when absent. */
+  tip?: Tip | undefined;
   /** Held in the player's hands, so it covers no cells. */
   carried: boolean;
   /** Fastened where it stands, so it can't be moved. */
@@ -44,6 +57,7 @@ export interface BlockEntityState {
   pos: Vec3;
   size: Vec3;
   facing: Facing;
+  tip?: Tip;
   carried?: true;
   fixed?: true;
   searched: boolean;
@@ -66,6 +80,7 @@ export interface EntitySpec {
   pos: Vec3;
   size: Vec3;
   facing: Facing;
+  tip?: Tip;
 }
 
 const DOOR_PANEL_THICKNESS = 0.06;
@@ -206,6 +221,7 @@ export class BlockEntities {
         pos: [...entity.pos],
         size: [...entity.size],
         facing: entity.facing,
+        ...(entity.tip ? { tip: entity.tip } : {}),
         ...(entity.carried ? { carried: true as const } : {}),
         ...(entity.fixed ? { fixed: true as const } : {}),
         searched: entity.searched,
@@ -307,6 +323,7 @@ export class BlockEntities {
       pos: [...spec.pos],
       size: [...spec.size],
       facing: spec.facing,
+      ...(spec.tip ? { tip: spec.tip } : {}),
       carried: spec.carried === true,
       ...(spec.fixed ? { fixed: true as const } : {}),
       searched: false,
@@ -363,6 +380,17 @@ export class BlockEntities {
     }
     this.occupy(entity, false);
     entity.carried = true;
+    this.version += 1;
+  }
+
+  /** Turns and tips the carried piece; its box follows, so fit and the put-down preview read the turned box. */
+  orient(entity: BlockEntity, facing: Facing, tip: Tip | undefined): void {
+    if (!entity.carried) {
+      throw new Error('Only a carried block entity can be turned');
+    }
+    entity.size = pieceSize(tippedSize(this.defOf(entity).size, tip), facing);
+    entity.facing = facing;
+    entity.tip = tip;
     this.version += 1;
   }
 

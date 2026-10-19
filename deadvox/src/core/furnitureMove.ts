@@ -2,7 +2,7 @@
 // hands and standing it down elsewhere. Each move is worked out on a shadow of the
 // cells before anything changes, so a refusal leaves the world as it was.
 
-import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
+import { type BlockEntities, type BlockEntity, boxIntersectsBody, type Tip } from './blockEntities.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, PILE_GRID, type Pile, type Spot } from './inventory.ts';
@@ -11,7 +11,7 @@ import { ladderOutward } from './ladders.ts';
 import type { Body } from './physics.ts';
 import type { SolidAt } from './raycast.ts';
 import { reachTuning } from './reach.ts';
-import { cellsOf } from './templates.ts';
+import { cellsOf, turnFacing } from './templates.ts';
 
 /** What a move is checked against. */
 export interface FurnitureMover {
@@ -376,5 +376,32 @@ export const placeFurniture = (mover: FurnitureMover, aimed: Readonly<Vec3>): st
   }
   inventory.entities.place(entity, result.pos);
   inventory.shiftPiles(moves);
+  return undefined;
+};
+
+/** Turns the carried piece a quarter clockwise, seen from above; returns why not. */
+export const turnCarried = (inventory: Inventory): string | undefined => {
+  const entity = inventory.entities.carrying();
+  if (!entity) {
+    return messagesOf(inventory).emptyHands;
+  }
+  inventory.entities.orient(entity, turnFacing(entity.facing, 1), entity.tip);
+  return undefined;
+};
+
+const TIPS: readonly (Tip | undefined)[] = [undefined, 'back', 'side'];
+
+/** Tips the carried piece onto its back, then its side, then upright again; returns why not. */
+export const tipCarried = (inventory: Inventory): string | undefined => {
+  const messages = messagesOf(inventory);
+  const { entities } = inventory;
+  const entity = entities.carrying();
+  if (!entity) {
+    return messages.emptyHands;
+  }
+  if (entities.defOf(entity).upright) {
+    return messages.staysUpright;
+  }
+  entities.orient(entity, entity.facing, TIPS[(TIPS.indexOf(entity.tip) + 1) % TIPS.length]);
   return undefined;
 };

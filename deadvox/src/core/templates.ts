@@ -31,7 +31,7 @@ export type Turn = 0 | 1 | 2 | 3;
 
 const FACINGS: readonly Facing[] = ['n', 'e', 's', 'w'];
 
-const turnFacing = (facing: Facing, turn: Turn): Facing => FACINGS[(FACINGS.indexOf(facing) + turn) % 4]!;
+export const turnFacing = (facing: Facing, turn: Turn): Facing => FACINGS[(FACINGS.indexOf(facing) + turn) % 4]!;
 
 /** A piece's cells as [x, y, z], seen from the template: east- and west-facing pieces lie along z. */
 export const pieceSize = (size: readonly [number, number, number], facing: Facing): Vec3 =>

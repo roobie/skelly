@@ -12,6 +12,8 @@ export type ReplayActionPayload =
   | { kind: 'furniture.interact'; entityUid: number }
   | { kind: 'furniture.lift'; entityUid: number }
   | { kind: 'furniture.place'; pos: [number, number, number] }
+  | { kind: 'furniture.turn' }
+  | { kind: 'furniture.tip' }
   | { kind: 'zombie.downed'; zombieId: number; way: DownedBodyWay }
   | { kind: 'inventory.search'; entityUid: number }
   | { kind: 'inventory.work'; itemUid: number; operation: WorkOperation }
@@ -121,6 +123,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'firearm.attachment.remove':
       return isAttachmentPayload(payload);
     case 'inventory.cancel-handling':
+    case 'furniture.turn':
+    case 'furniture.tip':
     case 'craft.continue':
     case 'craft.stop':
     case 'action.wait':
@@ -166,6 +170,10 @@ export interface ReplayCommandOwners {
   lift: (entityUid: number) => string | undefined;
   /** Sets the carried piece down at the aimed cell. */
   place: (pos: [number, number, number]) => string | undefined;
+  /** Turns the carried piece a quarter, seen from above. */
+  turn: () => string | undefined;
+  /** Tips the carried piece onto its next face. */
+  tip: () => string | undefined;
   clearDownedBody: (zombieId: number, way: DownedBodyWay) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
@@ -201,6 +209,10 @@ export const applyReplayActionPayload = (
       return owners.lift(payload.entityUid);
     case 'furniture.place':
       return owners.place(payload.pos);
+    case 'furniture.turn':
+      return owners.turn();
+    case 'furniture.tip':
+      return owners.tip();
     case 'zombie.downed':
       return owners.clearDownedBody(payload.zombieId, payload.way);
     case 'inventory.search':

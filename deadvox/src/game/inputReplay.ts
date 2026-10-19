@@ -9,7 +9,7 @@ import { isReplayActionPayload, type ReplayActionPayload } from './replayCommand
 import { PHYSICS_RATE } from './session.ts';
 
 // Recordings from older schemas don't resolve identically.
-export const INPUT_REPLAY_SCHEMA_VERSION = 18;
+export const INPUT_REPLAY_SCHEMA_VERSION = 19;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -40,6 +40,8 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'furniture.interact',
   'furniture.lift',
   'furniture.place',
+  'furniture.turn',
+  'furniture.tip',
   'zombie.downed',
   'inventory.search',
   'inventory.work',
@@ -66,6 +68,8 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'furniture.interact',
   'furniture.lift',
   'furniture.place',
+  'furniture.turn',
+  'furniture.tip',
   'zombie.downed',
   'inventory.search',
   'inventory.work',

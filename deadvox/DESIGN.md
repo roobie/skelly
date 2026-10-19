@@ -386,6 +386,19 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   so it never hides where it will go. The view reads the carry state rather
   than a copy of it, so it cannot outlive the carry. Where it sits is content,
   so it can be tuned by eye. See `src/render/carriedPiece.ts`, `CarriedPiece`.
+- **Turning and tipping.** A carried piece turns a quarter at a time and tips
+  onto its back or its side, because a piece that only fits a doorway, a
+  stairwell or a gap along a wall when laid over is otherwise a dead end the
+  player can see a way past. The turned box is the piece: fit, the put-down
+  outline and what it blocks all read it, and it stays turned once placed and
+  through a save, so a barricade stays as it was built. Turning in the hands
+  is free and silent, since lifting and carrying already pay in stamina and
+  noise, and a charge per turn would tax lining up a placement rather than
+  moving furniture. Contents stay in a tipped piece and it opens as usual, by
+  the same rule as what lies on top. Which pieces must stay upright is a
+  content mark, so a pack decides without code. See
+  `src/core/furnitureMove.ts`, `turnCarried` and `tipCarried`, and
+  `src/core/blockEntities.ts`, `tippedSize`.
 - **Refusals live in content.** Each refusal says why in a short first-person
   line, kept in content with the other UI text so a pack can reword it.
 

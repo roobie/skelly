@@ -1795,6 +1795,8 @@ export const startPlay = (
     interact: interactFurniture,
     lift: (uid) => session.liftFurniture(uid),
     place: (pos) => session.placeFurniture(pos),
+    turn: () => session.turnFurniture(),
+    tip: () => session.tipFurniture(),
     clearDownedBody: (id, way) => session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
     craftContinue: () => {

@@ -38,6 +38,7 @@
       "size": [2, 4, 2],
       "color": "#d8dcd8",
       "appearance": { "kind": "fridge", "surface": "painted-metal" },
+      "upright": true,
       "container": {
         "pockets": [
           {

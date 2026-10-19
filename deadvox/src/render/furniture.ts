@@ -10,7 +10,7 @@ import {
   MeshLambertMaterial,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor } from '../core/blockEntities.ts';
+import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor, type Tip } from '../core/blockEntities.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -42,6 +42,18 @@ function markerEdges(): EdgesGeometry {
   edges.setAttribute('normal', new Float32BufferAttribute(normals, 3));
   return edges;
 }
+
+/** Lays a piece built standing onto its back or its right side, so it still rests on its box's bottom centre. */
+const tipped = (mesh: Mesh, [width, height, depth]: readonly [number, number, number], tip: Tip): Group => {
+  if (tip === 'back') {
+    mesh.rotation.x = Math.PI / 2;
+    mesh.position.set(0, depth / 2, -height / 2);
+  } else {
+    mesh.rotation.z = -Math.PI / 2;
+    mesh.position.set(-height / 2, width / 2, 0);
+  }
+  return new Group().add(mesh);
+};
 
 export class FurnitureMeshes {
   readonly group = new Group();
@@ -170,7 +182,7 @@ export class FurnitureMeshes {
     return mesh;
   }
 
-  private shaped(entity: BlockEntity, def: FurnitureDef, material: MeshLambertMaterial): Mesh {
+  private shaped(entity: BlockEntity, def: FurnitureDef, material: MeshLambertMaterial): Group | Mesh {
     let geometry = this.shapeGeometries.get(def.id);
     if (!geometry) {
       const [width, , depth] = def.size;
@@ -204,10 +216,11 @@ export class FurnitureMeshes {
     const [x, y, z] = entity.pos;
     const [width, , depth] = entity.size;
     const mesh = new Mesh(geometry, material);
-    mesh.position.set((x + width / 2) * this.blockSize, y * this.blockSize, (z + depth / 2) * this.blockSize);
-    mesh.rotation.y = { n: 0, e: -Math.PI / 2, s: Math.PI, w: Math.PI / 2 }[entity.facing];
-    mesh.scale.setScalar(this.blockSize);
-    return mesh;
+    const piece = entity.tip ? tipped(mesh, def.size, entity.tip) : mesh;
+    piece.position.set((x + width / 2) * this.blockSize, y * this.blockSize, (z + depth / 2) * this.blockSize);
+    piece.rotation.y = { n: 0, e: -Math.PI / 2, s: Math.PI, w: Math.PI / 2 }[entity.facing];
+    piece.scale.setScalar(this.blockSize);
+    return piece;
   }
 
   /** A panel across the doorway, hinged at its low end along the wall, or a hatch's panel. */

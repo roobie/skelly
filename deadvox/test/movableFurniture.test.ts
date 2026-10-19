@@ -1,7 +1,14 @@
+import { Box3, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { type FurnitureMover, liftFurniture, placeFurniture } from '../src/core/furnitureMove.ts';
+import {
+  type FurnitureMover,
+  liftFurniture,
+  placeFurniture,
+  tipCarried,
+  turnCarried,
+} from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { LadderHold } from '../src/core/ladders.ts';
 import { reachTuning } from '../src/core/reach.ts';
@@ -131,6 +138,89 @@ describe('movable furniture', () => {
     expect(placeFurniture(furniture, moved)).toBeUndefined();
     view.update(0);
     expect(view.shown).toBe(false);
+  });
+
+  describe('turned or tipped', () => {
+    const { maxSizeMetres } = reachTuning(registry).furnitureMove;
+    const tall = [...registry.furniture.values()].find(
+      (def) =>
+        !(def.upright || def.mount || def.door || def.climbable || def.vehicle || def.scenarioGoal) &&
+        def.shape !== undefined &&
+        def.size[1] > def.size[0] &&
+        def.size.every((cells) => cells * formatWorldOptions.blockSize <= maxSizeMetres),
+    )!;
+    const tallSpec = { type: tall.id, pos: origin, size: tall.size, facing: 'n' as const };
+
+    it('fits under a ceiling lower than it stands only once laid on its side', () => {
+      const inventory = new Inventory(registry);
+      const [width, height] = tall.size;
+      const shelf = origin[0] + Math.max(...tall.size) + 1;
+      const furniture = {
+        ...mover(inventory),
+        terrainSolid: (x: number, y: number) => y < origin[1] || (x >= shelf && y >= origin[1] + width),
+      };
+      const piece = inventory.furnish(tallSpec)!;
+      const aimed: Vec3 = [shelf + height, origin[1], origin[2]];
+      inventory.entities.lift(piece);
+
+      expect(placeFurniture(furniture, aimed)).toBe(messages.noRoom);
+      expect(tipCarried(inventory)).toBeUndefined();
+      expect(tipCarried(inventory)).toBeUndefined();
+      expect(piece.tip).toBe('side');
+      expect(placeFurniture(furniture, aimed)).toBeUndefined();
+      expect(inventory.entities.at(...aimed)).toBe(piece);
+    });
+
+    it('draws a turned and tipped piece inside its turned box', () => {
+      const inventory = new Inventory(registry);
+      const meshes = new FurnitureMeshes(formatWorldOptions.blockSize);
+      const s = formatWorldOptions.blockSize;
+      const piece = inventory.furnish(tallSpec)!;
+      inventory.entities.lift(piece);
+      expect(turnCarried(inventory)).toBeUndefined();
+
+      for (const tip of ['back', 'side']) {
+        expect(tipCarried(inventory)).toBeUndefined();
+        expect(piece.tip).toBe(tip);
+        const drawn = new Box3().setFromObject(meshes.pieceMesh(piece, tall));
+        const low = new Vector3(...piece.pos).multiplyScalar(s).subScalar(1e-6);
+        const high = new Vector3(...piece.pos)
+          .add(new Vector3(...piece.size))
+          .multiplyScalar(s)
+          .addScalar(1e-6);
+        expect(drawn.isEmpty()).toBe(false);
+        expect(new Box3(low, high).containsBox(drawn)).toBe(true);
+      }
+    });
+
+    it('keeps its facing, tip and box in hand and once put down, through save and load', async () => {
+      const runtime = createRuntime();
+      const piece = runtime.inventory.furnish(tallSpec)!;
+      runtime.entities.lift(piece);
+      expect(turnCarried(runtime.inventory)).toBeUndefined();
+      expect(tipCarried(runtime.inventory)).toBeUndefined();
+      const turned = { facing: piece.facing, tip: piece.tip, size: [...piece.size] };
+      expect(turned.size).not.toEqual(tall.size);
+
+      const carried = await roundTrip(runtime);
+      expect(carried.entities.carrying()).toMatchObject({ uid: piece.uid, ...turned });
+      carried.entities.place(carried.entities.carrying()!, moved);
+
+      const placed = await roundTrip(carried);
+      expect(placed.entities.byUid(piece.uid)).toMatchObject({ pos: moved, carried: false, ...turned });
+    });
+
+    it('turns but will not tip a piece marked upright', () => {
+      const inventory = new Inventory(registry);
+      const upright = [...registry.furniture.values()].find((def) => def.upright)!;
+      const piece = inventory.furnish({ type: upright.id, pos: origin, size: upright.size, facing: 'n' })!;
+      inventory.entities.lift(piece);
+
+      expect(tipCarried(inventory)).toBe(messages.staysUpright);
+      expect(piece.tip).toBeUndefined();
+      expect(turnCarried(inventory)).toBeUndefined();
+      expect(piece.facing).not.toBe('n');
+    });
   });
 
   describe('in an open doorway', () => {

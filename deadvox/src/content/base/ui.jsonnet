@@ -22,6 +22,8 @@
       blocksLadder: 'It would block the ladder',
       outOfReach: "I can't reach there",
       wornOut: "I can't hold it any longer",
+      emptyHands: "I'm not carrying anything",
+      staysUpright: 'It has to stay upright',
     },
     itemActionLabels: { stripRound: 'Strip a round' },
     wearSlotLabels: {
