@@ -857,7 +857,30 @@
         },
         "settlementKind": "city",
         "street": 12,
-        "streetProps": ["gauntlet_street_cars"]
+        "streetProps": ["gauntlet_street_cars"],
+        "underground": [
+          {
+            "assembly": "gauntlet_sewer",
+            "id": "hq_sewer",
+            "mouths": [
+              {
+                "ladder": [9, 1, 57],
+                "lower": [8, 1, 56],
+                "upper": [12, 9, 58]
+              }
+            ],
+            "ports": [
+              {
+                "id": "lab_south",
+                "inside": [51, 33, 60],
+                "outside": [9, 1, 2],
+                "threshold": [51, 33, 63]
+              }
+            ],
+            "position": [-52, -30],
+            "turn": 0
+          }
+        ]
       },
       "composition": {
         "descents": [

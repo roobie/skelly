@@ -19,6 +19,13 @@ local floor8 = [full, full, full, full, full, full, full, full];
 local claims8 = [solid, solid, solid, solid, solid, solid, solid, solid];
 local south = [air, air, air, air, air, air, air, boundary];
 local southClaims = [clear, clear, clear, clear, clear, clear, clear, solid];
+// The sewer port: a gap in the south boundary, `width` cells from `x`, open for the bottom `height` air layers.
+local port = { x: 49, width: 4, height: 5 };
+local gap = function(wall, open) std.join('', [if x >= port.x && x < port.x + port.width then open else wall[x] for x in std.range(0, std.length(wall) - 1)]);
+local southPort = [air, air, air, air, air, air, air, gap(boundary, '.')];
+local southPortClaims = [clear, clear, clear, clear, clear, clear, clear, gap(solid, 'R')];
+local portLayers = [floor8] + [if y <= port.height then southPort else south for y in std.range(1, 7)];
+local portClaims = [claims8] + [if y <= port.height then southPortClaims else southClaims for y in std.range(1, 7)];
 local westFloor = ['pppp', 'pppp', 'pppp', 'pppp', 'pppp', 'pppp', 'pppp', 'pppp', 'pppp', 'pppp', 'pppp', 'pppp', 'pppp', 'pppp'];
 local westAir = ['=...', '=...', '=...', '=...', '=...', '=...', '=...', '=...', '=...', '=...', '=...', '=...', '=...', '=...'];
 local westSolid = ['SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS', 'SSSS'];
@@ -35,6 +42,7 @@ local piece = function(id, size, layers, claims) {
 };
 local slot = function(id, ref, at, size) { id: id, at: at, size: size, turn: 0, choices: [{ ref: { kind: 'piece', id: ref }, weight: 1 }] };
 {
+  port: port,
   mapPieces: [
     piece('gauntlet_lab_north', [72, 8, 4], [floor4, north, north, north, north, north, north, north], [claims4, northClaims, northClaims, northClaims, northClaims, northClaims, northClaims, northClaims]),
     piece('gauntlet_lab_cross', [72, 8, 5], [floor5, middle, middle, middle, middle, middle, middle, middle], [claims5, middleClaims, middleClaims, middleClaims, middleClaims, middleClaims, middleClaims, middleClaims]),
@@ -43,6 +51,7 @@ local slot = function(id, ref, at, size) { id: id, at: at, size: size, turn: 0, 
     piece('gauntlet_lab_west', [4, 8, 14], [westFloor, westAir, westAir, westAir, westAir, westAir, westAir, westAir], [westSolid, westClear, westClear, westClear, westClear, westClear, westClear, westClear]),
     piece('gauntlet_lab_east', [4, 8, 14], [westFloor, eastAir, eastAir, eastAir, eastAir, eastAir, eastAir, eastAir], [westSolid, eastClear, eastClear, eastClear, eastClear, eastClear, eastClear, eastClear]),
     piece('gauntlet_lab_alley', [5, 8, 14], [alleyFloor, alleyAir, alleyAir, alleyAir, alleyAir, alleyAir, alleyAir, alleyAir], [alleySolid, alleyClear, alleyClear, alleyClear, alleyClear, alleyClear, alleyClear, alleyClear]),
+    piece('gauntlet_lab_south_port', [72, 8, 8], portLayers, portClaims),
   ],
   slots: [
     slot('north', 'gauntlet_lab_north', [0, 0, 0], [72, 8, 4]),

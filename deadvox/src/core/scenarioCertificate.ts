@@ -1,12 +1,13 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { cityLotRouteIssues, perimeterRouteIssues } from './cityLots.ts';
 import type { CitySite } from './citySite.ts';
+import type { Underground } from './cityUnderground.ts';
 import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import type { ScenarioComposition } from './scenarioComposition.ts';
 import { ScenarioRouteSpace } from './scenarioRoute.ts';
 import type { StartDescent } from './scenarioStart.ts';
-import { type Placement, placedPieces } from './templates.ts';
+import { type Placement, placedPieces, placedPoint } from './templates.ts';
 
 export interface ScenarioCertificate {
   readonly issues: readonly [string, string][];
@@ -183,6 +184,50 @@ class Certificate {
     return reached;
   }
 
+  /** The sewer is a second way in, so each mouth must reach each port as surely as the hatch reaches the lab. */
+  underground(): void {
+    for (const [index, { definition, placement }] of this.site.plan.underground.entries()) {
+      const path = `.city.underground[${index}]`;
+      for (const [mouthIndex, mouth] of definition.mouths.entries()) {
+        const lower = this.mouth(placement, mouth, `${path}.mouths[${mouthIndex}]`);
+        for (const [portIndex, port] of definition.ports.entries()) {
+          this.port(placement, lower, port, `${path}.ports[${portIndex}]`);
+        }
+      }
+    }
+  }
+
+  mouth(placement: Placement, mouth: Underground['mouths'][number], path: string): Readonly<Vec3> {
+    const anchor = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === mouth.ladder.join(','));
+    const link = {
+      ladder: placedPieces(placement)[anchor]?.pos,
+      upper: placedPoint(placement, mouth.upper),
+      lower: placedPoint(placement, mouth.lower),
+    };
+    if (!this.startFeet.some((foot) => this.space.path(foot, link.upper))) {
+      this.fail(path, 'mouth needs a supported street route from the start');
+    }
+    const issue = this.climbIssue(link);
+    if (issue) {
+      this.fail(path, issue);
+    }
+    return link.lower;
+  }
+
+  port(placement: Placement, lower: Readonly<Vec3>, port: Underground['ports'][number], path: string): void {
+    const service = this.site.plan.service!;
+    const outside = placedPoint(placement, port.outside);
+    const threshold = placedPoint(service, port.threshold);
+    const inside = placedPoint(service, port.inside);
+    if (!this.space.path(lower, outside, { placement })) {
+      this.fail(path, 'tunnel needs a supported body route from the mouth to the port');
+    } else if (this.space.sweep(outside, threshold) && this.space.sweep(threshold, inside)) {
+      this.floorLink(inside, path);
+    } else {
+      this.fail(path, 'port needs a supported body crossing into the service');
+    }
+  }
+
   fixedSource(at: Readonly<Vec3>): boolean {
     return this.composition.lootSources.some(({ placement, fixedLoot }) => {
       const pieces = placedPieces(placement);
@@ -286,6 +331,7 @@ class Certificate {
     this.composition.descents.forEach((descent, index) => {
       this.ladder(descent, `.composition.descents[${index}]`);
     });
+    this.underground();
     const reached = this.reachableFloors();
     this.objective(reached);
     this.composition.resources.forEach((resource, index) => {

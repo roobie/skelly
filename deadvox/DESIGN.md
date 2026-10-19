@@ -9,7 +9,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
-  - you're implementing the authored gauntlet arrangement, scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth or its visual approval gate
+  - you're implementing the authored gauntlet arrangement, scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth, the sewer route or its visual approval gate
   - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
@@ -598,6 +598,24 @@ to this immutable initial-world proof, not a cache of live edited terrain. See
 `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`; `src/core/scenarioCertificate.ts`,
 `scenarioCertificate`; and `src/core/gauntlet.ts`, `GauntletSite`.
 
+A sewer from the HQ yard to the lab's intake storey is a second way in, and a trade
+rather than a shortcut: it skips the street run to the hatch, but the tunnel is dark,
+sparsely haunted and opens through a guard room whose containers may roll police arms
+and ammunition from the existing tables. Its mouth is visible at street level and no
+note points to it, so the sewer is found by looking. Because it is a real entrance,
+admission requires a body-clear threshold through the lab's shell into the intake
+storey's circulation, and the certificate proves the street reaches each mouth and
+each mouth reaches each port as surely as the hatch reaches the lab; an accepted
+route that play cannot cross would be worse than none. Elements list their mouths and
+ports so a later network adds entries rather than a rewrite. The plan places them in
+three dimensions and refuses one that claims a cell another placement owns: a
+corridor may pass under a building but not through it. The guard room's spare bay
+stays bare so the armoury key's container from d483 can stand there without a
+rebuild. See `src/core/cityUnderground.ts`, `placeUnderground`;
+`src/core/scenarioPortal.ts`, `undergroundPortIssues`;
+`src/content/base/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
+`src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
+
 Fixed resources require an initially accessible route, rather than a key or tool
 whose acquisition depends on itself. An unlocked door is reversible; a locked
 door is not assumed open simply because its key exists somewhere. Independent
@@ -607,9 +625,10 @@ interpretation or survival balance. Those judgments remain the integrated play
 gate on #671.
 
 Discovery observations distinguish designated public-lead reads or readable-item pickups, landmark and
-building proximity, reachable entrance hatch encounters/open state, and accepted
-travel through the entry ladder envelope. Generic furniture reads or other ladder
-travel cannot stand in for this funnel. Missing events are missing observations,
+building proximity, reachable entrance hatch encounters/open state, accepted
+travel through the entry ladder envelope, and passage through a sewer port's
+threshold, so an attempt records which way the player came in. Generic furniture
+reads or other ladder travel cannot stand in for this funnel. Missing events are missing observations,
 not proof that a player failed to interpret a note or that an entrance was broken;
 optional player descriptions and BR's play supply those judgments. Direct discovery
 remains legitimate. The attempt snapshot preserves first observations and completion
@@ -1893,7 +1912,11 @@ play, not only decorate it.
   breaches, slumped or missing segments and rubble. A passable breach is a real
   route, so each authored site names the gaps a player can cross. The gauntlet's
   containment wall shows wear without a passable gap because it must still enclose
-  the playtest area; its interior buildings and yards are not exempt. See
+  the playtest area; its interior buildings and yards are not exempt. A culvert
+  may reach a wall only as a grated outfall choked with tonnes of junk: never a
+  passage and never pryable, so it leaves the wall closed and the perimeter check
+  must keep passing with it in place.
+  The gauntlet's sewer stops short of the wall and builds none. See
   [Gauntlet](#gauntlet). New structures and reworks follow this direction;
   retrofitting existing structures is tracked
   in #396. See `src/content/base/camp.libsonnet`, `camp_wall_run`, `camp_gate`, and
