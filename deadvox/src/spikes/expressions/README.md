@@ -75,7 +75,7 @@ general implicit conversion policy for effects, named functions or comparisons.
 Serialization is a semantic boundary, not merely formatting. The loader rejects a changed tree or
 literal instead of compiling it: the package serializer can round fractional doubles and omit
 parentheses in nested comparisons. See `../../../test/celRewriteSpike.test.ts` for fidelity,
-operator-removal and mixed-signature probes. Adoption remains open; rejecting a valid authored
+operator-removal and mixed-signature probes. Adoption remains open in #313; rejecting a valid authored
 expression because it cannot survive the serializer is an authoring limitation, not safe support
 for that expression.
 
@@ -112,32 +112,34 @@ modifier system or re-entrant event emission is proved. Those contracts belong t
 
 ## Exercised, not chosen
 
-These representatives keep open choices visible rather than letting a test harness settle them.
-The alternatives below change the engine envelope or the admitted CEL environment, not CEL's
-ability to evaluate a pure expression.
+The game's mod rules are in `../../../../docs/decisions/0004-content-language.md`, "Mod rules";
+the harness settles none of them. Each item says what the spike exercised and where that differs
+from the rule. The differences change the engine envelope or the admitted CEL environment, not
+CEL's ability to evaluate a pure expression.
 
-- **Target fidelity:** rule-layer fidelity is exercised, not chosen. A close MoM port or same-kind world mod
-  requires additional engine verbs and content kinds; the actor ledger proves neither.
-- **Triggers:** engine-emitted typed events are exercised, not chosen. Timers require engine scheduling
-  and cancellation; continuous conditions require modifier hooks. CEL can consume their snapshots.
-- **Randomness:** a seeded engine draw supplied as an input, including weighted selection, is exercised,
-  not chosen. Engine-only randomness would remove the draw input; weighted-only randomness would
-  narrow the callable surface and disallow direct roll predicates.
-- **Effect vocabulary:** a fixed typed engine effect vocabulary is exercised, not chosen. Mod-defined effects or
-  engine extensions need registration and validation outside CEL before their constructors exist.
-- **Mod state:** bounded namespaced counters are exercised, not chosen. Engine-only state would remove
-  mod declarations; arbitrary records need richer schemas, size bounds and save validation. Flags,
-  enums and per-character progression are not proved by a numeric counter.
+- **Target fidelity:** rule-layer fidelity is exercised; the target stays open in #313. A close MoM
+  port or same-kind world mod requires additional engine verbs and content kinds; the actor ledger
+  proves neither.
+- **Triggers:** only engine-emitted typed events are exercised. Mod-scheduled timers, enter and exit
+  event pairs and timer-checked predicates need engine scheduling and cancellation, which the spike
+  does not prove. CEL can consume their snapshots.
+- **Randomness:** the spike supplies a seeded engine draw as an input, including weighted selection.
+  The rule differs: CEL returns random thunks that the engine resolves, so the draw input and direct
+  roll predicates go.
+- **Effect vocabulary:** a fixed typed engine effect vocabulary is exercised. Mod-defined effects
+  that expand to engine verbs need registration and validation outside CEL and are not exercised.
+- **Mod state:** bounded namespaced counters are exercised. Flags, scopes, enums and refs are not
+  proved by a numeric counter.
 - **Composition:** dependency-scoped function libraries, replacement and an optional gated interaction
-  pack are exercised, not chosen. See `celMods.ts`, `ModHarness`, and
+  pack are exercised. The optional pack goes beyond the rule, which links only hard dependencies.
+  See `celMods.ts`, `ModHarness`, and
   `../../../test/fixtures/mods/cel-reuse-spike.jsonnet`. Lexical owner scopes prevent a dependent's
   replacement from altering its library or an independent sibling; visible replacement conflicts
   are rejected rather than resolved by incidental load order. Library bodies retain their owner's
   bindings, not a caller's overrides. These rules trade global patching power for local reasoning.
   Dependency IDs can encode a library version without a solver: changing the ID requires dependent
   references to change; retaining the ID with a breaking signature produces checker diagnostics.
-  Compatible body changes still change mod identity. Independent mods would prohibit cross-references;
-  hard-only composition would remove optional gating. Rule references are engine-envelope links,
+  Compatible body changes still change mod identity. Rule references are engine-envelope links,
   not CEL calls.
 - **Local reuse:** native expression-local binding and typed collection functions are exercised, not
   chosen as a production profile. See `../../../test/celReuseSpike.test.ts`. Jsonnet helpers can
@@ -147,15 +149,15 @@ ability to evaluate a pure expression.
   chosen. See `celMods.ts`, `maths`, `compileModExpression` and `engineLibraryIdentity`. Mod namespacing
   keeps a same-name mod helper distinct; engine symbols cannot be replaced through a mod declaration.
   Changing engine helper semantics requires a library identity change for strict save/replay
-  rejection, even when mod source stays unchanged. A production engine-library vocabulary, version
-  policy and save migration policy remain open.
-- **Effect combining:** dependency order then lexical rule order, sequential effects and tick rollback are
-  exercised, not chosen. Priorities or conflict rejection change harness validation and dispatch,
-  not CEL. A later rule sees earlier state changes, including changes from a chained rule.
-- **Field patches:** field-patch policy is not exercised or chosen. Jsonnet can patch definitions before CEL
-  sees them; whole replacement or load-time patching still belongs to the content loader.
-- **UI:** UI policy is not exercised or chosen. Read-only declarations or custom panels require
-  renderer contracts; they do not follow from collection evaluation.
+  rejection, even when mod source stays unchanged. A production engine-library vocabulary and version
+  policy remain open in #313.
+- **Effect combining:** dependency order then lexical rule order, with every effect applied in turn,
+  is exercised and matches the rule. Tick rollback is the harness's own. A later rule sees earlier
+  state changes, including changes from a chained rule.
+- **Field patches:** not exercised. They belong to the content loader, not CEL; see
+  `../../../../docs/decisions/0007-typed-field-patches.md`, "Decision".
+- **UI:** not exercised; mod UI is deferred to a spike once #313 puts an expression language in
+  place.
 - **Core tuning:** a mod changes a core value as it changes any pack's value
   (`../../../../docs/decisions/0004-content-language.md`, "Runtime design"); this is not exercised.
   Overrides need engine authorization and identity; exposing more numeric inputs alone does not
