@@ -71,6 +71,7 @@ import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
   type PlayStatus,
+  playCarryText,
   playCrosshairFrame,
   playHudText,
   playInteractionText,
@@ -3111,7 +3112,7 @@ export const startPlay = (
   ): string | undefined => {
     const label = labelForAction('world.interact');
     if (carry) {
-      return 'refusal' in carry.spot ? carry.spot.refusal : `${label}: set down ${nameOf(carry.entity)}`;
+      return playCarryText('refusal' in carry.spot ? carry.spot.refusal : `${label}: set down ${nameOf(carry.entity)}`);
     }
     switch (target?.kind) {
       case 'item':

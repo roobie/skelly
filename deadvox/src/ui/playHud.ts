@@ -218,6 +218,10 @@ const doorInteractionText = ({
   return `${labelForAction('world.interact')}: ${action}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
 };
 
+/** The carried piece's set-down line with its turn and tip actions, keys read from the live bindings. */
+export const playCarryText = (setDown: string): string =>
+  `${setDown} · ${labelForAction('carry.turn')}: turn · ${labelForAction('carry.tip')}: tip`;
+
 /** Describes an already selected target; never selects/executes the interaction. */
 export const playInteractionText = ({
   door,
