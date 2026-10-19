@@ -785,9 +785,15 @@ not its area. See `src/core/loot.ts`, `lootPointsByColumn`.
 Map-wide rarity is per-point odds set in content, not a count: the odds give the
 expected total, and scarcity is statistical. Tier gradients are a function of position,
 such as distance from the spawn area, so they need no shared state. Required stock sits
-outside every floor and cap, so story and promised stock are never squeezed out. Items
-that come together, such as a pump shotgun and shells nearby, and scenario multipliers
-on odds are open on #699.
+outside every floor and cap, so story and promised stock are never squeezed out.
+
+Items that come together, such as a pump shotgun and shells nearby, form an ItemSet: an
+anchor and its companions. Each ItemSet names where its companions may land, because the
+right reach differs by set. Companion placement is best effort, never fail-closed: a
+companion that cannot land where its set allows never refuses or fails the unit's plan,
+since a missing box of shells costs the player less than a unit that will not generate.
+What best effort does in that case, the rest of ItemSets and scenario multipliers on
+odds are open on #699.
 
 Loot is placed once, when its place is first generated, and never restocked. What a
 player takes stays gone, so scarcity holds, a searched place stays spent instead of
