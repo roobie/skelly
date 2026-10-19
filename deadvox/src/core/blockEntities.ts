@@ -162,6 +162,15 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
 
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 
+/** Everything a piece's drawn look and blocking cells follow from, so a view can skip pieces that didn't change. */
+export const poseKey = (entity: BlockEntity): string =>
+  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}`;
+
+export interface BlockingBox {
+  readonly pos: Readonly<Vec3>;
+  readonly size: Readonly<Vec3>;
+}
+
 /** The offset of a cell's centre from the box's centre, in world blocks. */
 const fromCentre = (entity: BlockEntity, [x, y, z]: Readonly<Vec3>): Vec3 =>
   [x, y, z].map((at, axis) => at + 0.5 - entity.pos[axis]! - entity.size[axis]! / 2) as Vec3;
@@ -205,9 +214,15 @@ export class BlockEntities {
   /** Doorway cells, kept apart so a piece can stand in an open door's cells while the door stays there. */
   private readonly doorways = new Map<string, BlockEntity>();
   private readonly masks = new WeakMap<FurnitureDef, ReadonlySet<string>>();
+  private readonly boxes = new WeakMap<BlockEntity, { pose: string; boxes: readonly BlockingBox[] }>();
   private nextUid = 1;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
+  /**
+   * Goes up when the standing pieces' cells, poses or blocking change. Turning the carried piece, searching or a
+   * lock leaves it, so collision and sky light don't rebuild for what can't change them.
+   */
+  standing = 0;
 
   constructor(registry: Registry) {
     this.registry = registry;
@@ -273,6 +288,7 @@ export class BlockEntities {
     }
     this.nextUid = restored.nextUid;
     this.version = restored.version;
+    this.standing += 1;
   }
 
   static restoreState(registry: Registry, state: BlockEntitiesState): BlockEntities {
@@ -368,6 +384,7 @@ export class BlockEntities {
       this.occupy(entity, true);
     }
     this.version += 1;
+    this.standing += 1;
     return entity;
   }
 
@@ -406,6 +423,7 @@ export class BlockEntities {
     this.occupy(entity, false);
     entity.carried = true;
     this.version += 1;
+    this.standing += 1;
   }
 
   /** Turns and tips the carried piece; its box follows, so fit and the put-down preview read the turned box. */
@@ -421,11 +439,18 @@ export class BlockEntities {
 
   /** Whether any other piece covers a cell of a box at a corner. */
   covered(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
-    return [...cellsOf(size)].some(([x, y, z]) => {
-      const cell = key(pos[0] + x, pos[1] + y, pos[2] + z);
-      const door = this.doorways.get(cell);
-      return this.cells.has(cell) || (door !== undefined && this.fills(door));
-    });
+    return [...cellsOf(size)].some(([x, y, z]) => this.filling(pos[0] + x, pos[1] + y, pos[2] + z) !== undefined);
+  }
+
+  /** The standing piece that keeps other pieces out of a cell, if any. */
+  filling(x: number, y: number, z: number): BlockEntity | undefined {
+    const cell = key(x, y, z);
+    const piece = this.cells.get(cell);
+    if (piece !== undefined) {
+      return piece;
+    }
+    const door = this.doorways.get(cell);
+    return door !== undefined && this.fills(door) ? door : undefined;
   }
 
   /** Stands the carried piece with its lowest corner at a cell; callers check the world there first. */
@@ -437,6 +462,7 @@ export class BlockEntities {
     entity.carried = false;
     this.occupy(entity, true);
     this.version += 1;
+    this.standing += 1;
   }
 
   /** Moves a standing piece straight down, for a piece whose support was taken. */
@@ -445,6 +471,7 @@ export class BlockEntities {
     entity.pos = [entity.pos[0], y, entity.pos[2]];
     this.occupy(entity, true);
     this.version += 1;
+    this.standing += 1;
   }
 
   /** The entity covering a cell: a piece barricading a doorway, rather than its door. */
@@ -483,14 +510,25 @@ export class BlockEntities {
   }
 
   /** The world boxes an entity stops movement and light in: a vehicle's or shaped piece's only where it is drawn. */
-  blockingBoxes(entity: BlockEntity): { pos: Vec3; size: Vec3 }[] {
+  blockingBoxes(entity: BlockEntity): readonly BlockingBox[] {
+    const pose = poseKey(entity);
+    const cached = this.boxes.get(entity);
+    if (cached?.pose === pose) {
+      return cached.boxes;
+    }
+    const boxes = this.blockingBoxesOf(entity);
+    this.boxes.set(entity, { pose, boxes });
+    return boxes;
+  }
+
+  private blockingBoxesOf(entity: BlockEntity): readonly BlockingBox[] {
     if (!this.blocks(entity)) {
       return [];
     }
     const def = this.defOf(entity);
     const mask = this.mask(def);
     if (mask === undefined) {
-      return [{ pos: entity.pos, size: entity.size }];
+      return [{ pos: [...entity.pos], size: [...entity.size] }];
     }
     return [...mask].map((block) => ({
       pos: worldCell(entity, def.size, block.split(',').map(Number) as Vec3),
@@ -591,6 +629,7 @@ export class BlockEntities {
     }
     entity.open = open;
     this.version += 1;
+    this.standing += 1;
     return undefined;
   }
 

@@ -144,6 +144,25 @@ describe('movable furniture', () => {
     expect(view.shown).toBe(false);
   });
 
+  it('rebuilds only the moved piece, and nothing standing when the carried piece turns', () => {
+    const inventory = new Inventory(registry);
+    const { entities } = inventory;
+    const still = inventory.furnish({ ...spec, pos: moved })!;
+    const piece = inventory.furnish(spec)!;
+    const meshes = new FurnitureMeshes(formatWorldOptions.blockSize);
+    const meshOf = (entity: BlockEntity) => meshes.group.children[[...entities.all].indexOf(entity)];
+    meshes.sync(entities);
+    const stillMesh = meshOf(still);
+
+    expect(liftFurniture(mover(inventory), piece)).toBeUndefined();
+    meshes.sync(entities);
+    expect(meshOf(still)).toBe(stillMesh);
+
+    const { standing } = entities;
+    expect(turnCarried(inventory)).toBeUndefined();
+    expect(entities.standing).toBe(standing);
+  });
+
   describe('turned or tipped', () => {
     const { maxSizeMetres } = reachTuning(registry).furnitureMove;
     const tall = [...registry.furniture.values()].find(

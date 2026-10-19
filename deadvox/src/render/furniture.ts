@@ -12,7 +12,7 @@ import {
   Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor } from '../core/blockEntities.ts';
+import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor, poseKey } from '../core/blockEntities.ts';
 import { rotationOf } from '../core/orientation.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
@@ -61,6 +61,7 @@ export class FurnitureMeshes {
   private markedUid: string | undefined;
   private markedOpen: boolean | undefined;
   private drawn = -1;
+  private pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
 
   constructor(blockSize: number) {
     this.blockSize = blockSize;
@@ -117,16 +118,23 @@ export class FurnitureMeshes {
     this.marker.visible = true;
   }
 
-  /** Rebuilds the meshes when furniture was added, opened or closed. */
+  /** Rebuilds the meshes of pieces added, moved, turned, opened or closed, and keeps the rest. */
   sync(entities: BlockEntities): void {
-    if (entities.version === this.drawn) {
+    if (entities.standing === this.drawn) {
       return;
     }
-    this.drawn = entities.version;
+    this.drawn = entities.standing;
+    const pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
     this.group.clear();
     for (const entity of entities.all) {
-      this.group.add(castsAndReceives(this.meshFor(entity, entities.defOf(entity))));
+      const pose = poseKey(entity);
+      const kept = this.pieces.get(entity);
+      const piece =
+        kept?.pose === pose ? kept : { pose, mesh: castsAndReceives(this.meshFor(entity, entities.defOf(entity))) };
+      pieces.set(entity, piece);
+      this.group.add(piece.mesh);
     }
+    this.pieces = pieces;
     this.group.add(this.marker);
   }
 
