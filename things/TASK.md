@@ -39,8 +39,8 @@ Run from the repository root unless noted.
 - Contract with deadvox: `test/gungen-deadvox-contract.test.mjs`, which the root `ci`
   script runs with the alias loader that `ci` names.
 - Docs: `npm run check:zero-drift`.
-- Cycles: no tool reports them yet; trace imports between the modules named above until
-  the upward-import check lands, then rely on it.
+- Layers: the upward-import check in `gungen/test/engineImportBoundary.test.ts`,
+  `engineLayers`. It does not report cycles inside one layer.
 
 Before the first move, run all of these once on a clean tree so later failures are known
 to be new.
@@ -58,8 +58,7 @@ to be new.
   the anchor types live in `anchors`, and the palette and GLB export types live in
   `engine/src/export/exportTypes.ts`, `GlbExportInput`, above the engine.
 - [x] Move the files into layer folders and repoint every import, including gungen's.
-- [ ] Add the check that fails an upward import, and run it in CI. Extend
-  `gungen/test/engineImportBoundary.test.ts`, "engine import boundary", which already
-  resolves every engine import.
-- [ ] Run gungen's typecheck, unit suite and `validate`; they must pass unchanged.
+- [x] Add the check that fails an upward import, and run it in CI: it lives in
+  `gungen/test/engineImportBoundary.test.ts`, `engineLayers`, so gungen's unit suite runs it.
+- [x] Run gungen's typecheck, unit suite and `validate`; they must pass unchanged.
 - [ ] Move the viewer to its own package once the root layout in #962 is decided.

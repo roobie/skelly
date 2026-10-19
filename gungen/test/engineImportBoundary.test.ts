@@ -35,6 +35,12 @@ const resolveRelativeImport = (from: string, specifier: string): string | undefi
   return candidates.find(existsSync);
 };
 
+// Each engine folder may import only itself and the folders before it in this list.
+const engineLayers = ['foundation', 'shapes', 'assembly', 'export', 'viewer'];
+
+const layerIndex = (engineSrc: string, path: string): number =>
+  engineLayers.indexOf(relative(engineSrc, path).split(sep)[0] ?? '');
+
 const importProblem = (file: string, imported: ParsedImport, engineSrc: string): string | undefined => {
   if (imported.type === 'import-meta') {
     return undefined;
@@ -56,6 +62,9 @@ const importProblem = (file: string, imported: ParsedImport, engineSrc: string):
   }
   if (!resolveRelativeImport(file, specifier)) {
     return `${file}: unresolved relative import ${specifier}`;
+  }
+  if (layerIndex(engineSrc, target) > layerIndex(engineSrc, file)) {
+    return `${file}: imports upward into a higher layer (${specifier})`;
   }
   return undefined;
 };
@@ -134,6 +143,29 @@ describe('engine import boundary', () => {
       expect(violations[1]).toContain('imports gungen/src/gun/palette.ts');
       expect(violations[2]).toContain('import cannot be resolved statically');
       expect(findDomainIdentifierViolations([identifierCanary])).toHaveLength(7);
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('flags an import from a lower layer into a higher one but allows the reverse', async () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'engine-layer-boundary-'));
+    const fixtureEngineSrc = join(fixtureRoot, 'engine', 'src');
+    const foundationRoot = join(fixtureEngineSrc, 'foundation');
+    const shapesRoot = join(fixtureEngineSrc, 'shapes');
+    mkdirSync(foundationRoot, { recursive: true });
+    mkdirSync(shapesRoot, { recursive: true });
+
+    try {
+      const upward = join(foundationRoot, 'math.ts');
+      const downward = join(shapesRoot, 'solid.ts');
+      writeFileSync(upward, "import '../shapes/solid.ts';\n");
+      writeFileSync(downward, "import '../foundation/math.ts';\n");
+
+      expect(await findBoundaryViolations([downward], fixtureEngineSrc)).toEqual([]);
+      const violations = await findBoundaryViolations([upward], fixtureEngineSrc);
+      expect(violations).toHaveLength(1);
+      expect(violations[0]).toContain('imports upward into a higher layer');
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }

@@ -15,6 +15,8 @@ Consumers should share geometry and fit mechanisms without sharing domain policy
 
 Assemblies are graphs rather than trees because one part may need to fit against multiple neighbours, as a handguard can meet both receiver and barrel. Preserving that loop lets validation expose a closure mismatch instead of silently dropping a connection; see `src/assembly/resolve.ts`, `resolve`.
 
+Source is split into layers, each importing only itself and the ones before it: `src/foundation`, `src/shapes`, `src/assembly`, `src/export`, then `src/viewer`. A layer that needs a higher one's type is a sign the type belongs lower; the order is `gungen/test/engineImportBoundary.test.ts`, `engineLayers`.
+
 Engine's consumer-facing checks live in Gungen's test suite because exercising the shared package through its consumer verifies the boundary in use. The import and domain-neutrality guard is `gungen/test/engineImportBoundary.test.ts`, "engine import boundary".
 
 A motion may turn about a local pivot before translating so consumers can describe coupled rotation and travel without putting domain-specific action phases in the engine. See `src/assembly/schema.ts`, `PartMotion`, and `src/assembly/motion.ts`, `motionTransform`. FAL handle fold remains deferred under #648.
