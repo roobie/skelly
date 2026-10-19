@@ -5,7 +5,6 @@ import { toChunk, type Vec3 } from './coords.ts';
 import { hamletHordeSpawn, hamletZombieSpawns, ordinaryHamletSpawnWeights } from './hamlet.ts';
 import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
-import { scenarioCertificate } from './scenarioCertificate.ts';
 import type { ScenarioDef } from './schema.ts';
 import { type HordeSpawn, rectDistance, type ZombieSpawn } from './site.ts';
 import { terrainShapeOf } from './sitePalette.ts';
@@ -44,10 +43,6 @@ export class GauntletSite extends CitySite {
         scenario,
       }),
     );
-    const certificate = scenarioCertificate(this);
-    if (certificate.issues.length > 0) {
-      throw new Error(certificate.issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
-    }
     this.scenario = scenario;
     const population = gauntletPopulation(this, scenario);
     this.population = population.zombies;
