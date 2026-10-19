@@ -26,6 +26,12 @@ export interface ScenarioComposition {
   readonly retreat: Readonly<Vec3>;
   readonly resources: readonly { readonly at: Readonly<Vec3>; readonly standing: Readonly<Vec3> }[];
   readonly storeys: readonly { readonly id: string; readonly standing: Readonly<Vec3> }[];
+  readonly seals: readonly {
+    readonly doors: readonly Readonly<Vec3>[];
+    readonly key: Readonly<Vec3>;
+    readonly standing: Readonly<Vec3>;
+  }[];
+  readonly stairs: readonly { readonly upper: Readonly<Vec3>; readonly lower: Readonly<Vec3> }[];
   readonly descents: readonly {
     readonly ladder: Readonly<Vec3>;
     readonly upper: Readonly<Vec3>;
@@ -122,6 +128,23 @@ const localAnchorIssues = (registry: Registry, composition: CompositionDef, serv
     if (!composition.fixedLoot.some((source) => source.at.join(',') === resource.at.join(','))) {
       issues.push([`.composition.resources[${index}].at`, 'resource needs a fixed loot source']);
     }
+  });
+  const sealedDoors = new Set(composition.seals.flatMap((seal) => seal.doors.map((door) => door.join(','))));
+  for (const piece of service.pieces) {
+    if (piece.lock?.locked && registry.furniture.get(piece.furniture)?.door && !sealedDoors.has(piece.pos.join(','))) {
+      issues.push(['.composition.seals', 'every locked service door needs a seal-key witness']);
+    }
+  }
+  composition.seals.forEach((seal, index) => {
+    anchor(seal.key, `.composition.seals[${index}].key`);
+    anchor(seal.standing, `.composition.seals[${index}].standing`);
+    seal.doors.forEach((door, doorIndex) => {
+      anchor(door, `.composition.seals[${index}].doors[${doorIndex}]`);
+    });
+  });
+  composition.stairs.forEach((stair, index) => {
+    anchor(stair.upper, `.composition.stairs[${index}].upper`);
+    anchor(stair.lower, `.composition.stairs[${index}].lower`);
   });
   composition.descents.forEach((descent, index) => {
     for (const key of ['ladder', 'upper', 'lower'] as const) {
@@ -385,6 +408,18 @@ export const composeScenario = (
     ),
     storeys: Object.freeze(
       authored.storeys.map((storey) => Object.freeze({ id: storey.id, standing: point(storey.standing) })),
+    ),
+    seals: Object.freeze(
+      authored.seals.map((seal) =>
+        Object.freeze({
+          doors: Object.freeze(seal.doors.map(furnitureAnchor)),
+          key: point(seal.key),
+          standing: point(seal.standing),
+        }),
+      ),
+    ),
+    stairs: Object.freeze(
+      authored.stairs.map((stair) => Object.freeze({ upper: point(stair.upper), lower: point(stair.lower) })),
     ),
     descents: Object.freeze(
       authored.descents.map((descent) =>

@@ -4,7 +4,7 @@ import { worldOpaque, worldSolid } from './collision.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { raycast } from './raycast.ts';
-import { reachTuning } from './reach.ts';
+import { pileDistance, reachTuning } from './reach.ts';
 import { makeScale } from './scale.ts';
 import { sitePalette, terrainShapeOf } from './sitePalette.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
@@ -42,6 +42,7 @@ export class ScenarioRouteSpace {
   readonly site: CitySite;
   private readonly chunks = new Set<string>();
   private readonly columns = new Set<string>();
+  private readonly admittedLocks = new Set<string>();
   private readonly standingCache = new Map<string, boolean>();
   private readonly clearCache = new Map<string, boolean>();
   private readonly furnitureReach: number;
@@ -97,10 +98,21 @@ export class ScenarioRouteSpace {
     for (const spawn of this.site.furnitureIn(cx, cz)) {
       const entity = this.entities.add(spawn.spec)!;
       // Only reversible, initially unlocked doors belong to the construction route.
-      if (this.entities.defOf(entity).door && !entity.lock?.locked) {
+      if (this.entities.defOf(entity).door && (!entity.lock?.locked || this.admittedLocks.has(entity.lock.id))) {
         entity.open = true;
       }
     }
+  }
+
+  admitLock(id: string): void {
+    this.admittedLocks.add(id);
+    for (const entity of this.entities.all) {
+      if (entity.lock?.id === id) {
+        entity.open = true;
+      }
+    }
+    this.standingCache.clear();
+    this.clearCache.clear();
   }
 
   blocked(x: number, y: number, z: number): boolean {
@@ -254,6 +266,27 @@ export class ScenarioRouteSpace {
     const target = chest.map((value, axis) =>
       Math.max(entity.pos[axis]!, Math.min(value, entity.pos[axis]! + entity.size[axis]!)),
     ) as Vec3;
+    return this.visibleTarget(chest, target, reachMetres, entity);
+  }
+
+  visibleGroundReach(point: Readonly<Vec3>, target: Readonly<Vec3>): boolean {
+    const { chestHeightMetres, reachMetres } = reachTuning(this.site.registry);
+    return (
+      pileDistance([...point], [...target], HAMLET_BLOCK_SIZE) <= reachMetres &&
+      this.visibleTarget(
+        [point[0], point[1] + chestHeightMetres / HAMLET_BLOCK_SIZE, point[2]],
+        target.map((value) => value + 0.5) as Vec3,
+        Number.POSITIVE_INFINITY,
+      )
+    );
+  }
+
+  private visibleTarget(
+    chest: Readonly<Vec3>,
+    target: Readonly<Vec3>,
+    reachMetres: number,
+    entity?: BlockEntity,
+  ): boolean {
     const offset = target.map((value, axis) => value - chest[axis]!) as Vec3;
     const distance = Math.hypot(...offset);
     if (distance * HAMLET_BLOCK_SIZE > reachMetres) {
@@ -264,9 +297,9 @@ export class ScenarioRouteSpace {
     }
     const direction = offset.map((value) => value / distance) as Vec3;
     return (
-      raycast(chest, direction, distance, (x, y, z) => {
+      raycast([...chest], direction, distance, (x, y, z) => {
         this.load(x, y, z);
-        return this.entities.at(x, y, z) !== entity && this.opaque(x, y, z);
+        return (entity === undefined || this.entities.at(x, y, z) !== entity) && this.opaque(x, y, z);
       }) === undefined
     );
   }

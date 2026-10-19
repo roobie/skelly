@@ -228,6 +228,45 @@ describe('final composed body-route certificate', () => {
     GAUNTLET_SITE_MS,
   );
 
+  it('rejects a missing seal keycard instead of admitting its bulkheads', () => {
+    const site = siteOf();
+    const [seal] = site.plan.composition!.seals;
+    expect(seal).toBeDefined();
+    const original = site.lootPointsIn.bind(site);
+    vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
+      original(cx, cz).filter((point) => !point.destination.every((value, axis) => value === seal!.key[axis])),
+    );
+    expect(scenarioCertificate(site).issues.some(([path]) => path === '.composition.seals[0]')).toBe(true);
+  });
+
+  it('keeps both descents behind their bulkheads until the reachable card is admitted', () => {
+    const site = siteOf();
+    const closed = new ScenarioRouteSpace(site);
+    const entry = site.plan.portal!.lower;
+    const composition = site.plan.composition!;
+    expect(composition.seals.length).toBeGreaterThan(0);
+    for (const seal of composition.seals) {
+      expect(closed.path(entry, seal.standing)).toBeDefined();
+      for (const door of seal.doors) {
+        closed.blocked(...door);
+        const definition = closed.entities.defOf(closed.entities.at(...door)!);
+        expect(definition.door).toBeDefined();
+        expect(definition.door!.prying).toBeUndefined();
+      }
+    }
+    const [, upper] = entry;
+    const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === upper);
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(closed.path(entry, link.upper)).toBeUndefined();
+    }
+    const admitted = scenarioCertificate(site);
+    expect(admitted.issues).toEqual([]);
+    for (const link of links) {
+      expect(admitted.space.path(entry, link.upper)).toBeDefined();
+    }
+  });
+
   it('rejects a shaft-neighbor obstruction in the final furnished production lab', () => {
     const [descent] = base.composition!.descents;
     if (!descent) {
@@ -463,15 +502,12 @@ it(
 );
 
 describe('lab threat by depth', () => {
-  // The lab assembly no other lab assembly references stacks the storeys, one assembly slot per storey.
-  const referenced = new Set(
-    lab
-      .mapAssemblies!.flatMap((assembly) => assembly.slots.flatMap((slot) => slot.choices ?? []))
-      .map((choice) => choice.ref.id),
-  );
-  const storeySlots = lab
-    .mapAssemblies!.find((assembly) => !referenced.has(assembly.id))!
-    .slots.filter((slot) => slot.choices?.[0]?.ref.kind === 'assembly');
+  // Follow the scenario's authored storeys, including rebuilt levels outside the grid kit.
+  const { storeys } = profile.composition!;
+  const stack = lab.mapAssemblies!.find((assembly) =>
+    storeys.every((storey) => assembly.slots.some((slot) => slot.id === storey.id)),
+  )!;
+  const storeySlots = stack.slots.filter((slot) => storeys.some((storey) => storey.id === slot.id));
   // A threat slot's pieces carry the marker chance; its weighted choices carry the zombie type.
   const markerChance = new Map(
     lab.mapPieces!.map((piece) => [

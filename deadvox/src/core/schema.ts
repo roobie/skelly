@@ -1962,6 +1962,13 @@ const ScenarioSchema = strictObject({
         nonEmpty('needs a resource standing pose'),
       ),
       storeys: pipe(array(strictObject({ id: Id, standing: CellPosition })), minLength(1), maxLength(16)),
+      seals: optional(
+        array(
+          strictObject({ doors: pipe(array(CellPosition), nonEmpty()), key: CellPosition, standing: CellPosition }),
+        ),
+        [],
+      ),
+      stairs: optional(array(strictObject({ upper: CellPosition, lower: CellPosition })), []),
       descents: pipe(
         array(strictObject({ ladder: CellPosition, upper: CellPosition, lower: CellPosition })),
         maxLength(32),

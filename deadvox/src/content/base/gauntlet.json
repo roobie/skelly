@@ -2508,6 +2508,21 @@
       },
       "size": [1, 1],
       "weight": 5
+    },
+    {
+      "category": "tool",
+      "economy": {
+        "tiers": ["Tier1"],
+        "usage": ["Industrial"]
+      },
+      "id": "gauntlet_lab_entry_card",
+      "key": {
+        "lock": "gauntlet_lab_entry_seal"
+      },
+      "model": "folded_note",
+      "name": "Security keycard",
+      "size": [1, 1],
+      "weight": 5
     }
   ],
   "loot": [
@@ -2917,6 +2932,24 @@
         }
       ],
       "id": "gauntlet_scavenger_pockets",
+      "rolls": [1, 2]
+    },
+    {
+      "entries": [
+        {
+          "table": "gauntlet_police_ammunition",
+          "weight": 2
+        },
+        {
+          "item": "flashlight",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ],
+      "id": "gauntlet_lab_entry_margin",
       "rolls": [1, 2]
     }
   ],
@@ -4300,6 +4333,268 @@
           ],
           "id": "yard",
           "size": [18, 4, 2],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_level_entry",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ports": [],
+      "size": [72, 8, 64],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_entry_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [72, 8, 64],
+          "turn": 0
+        },
+        {
+          "at": [48, 1, 30],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_entry_bay_control_lobby",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "control_lobby",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [6, 1, 30],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_entry_bay_waiting",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "waiting",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [14, 1, 22],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_entry_bay_security_post",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "security_post",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [18, 1, 22],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_entry_bay_security_control",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "security_control",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [6, 1, 48],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_entry_bay_equipment_lockers",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "equipment_lockers",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [52, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_entry_bay_technical_corridor",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "technical_corridor",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [26, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_entry_bay_freight_lift",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "freight_lift",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [16, 1, 34],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [52, 1, 36],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [48, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 6
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "circulation": {
+          "at": [9, 1, 11],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_lab_culture_stair_join",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [18, 8, 14],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_shell_stair_join",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [18, 8, 14],
+          "turn": 0
+        },
+        {
+          "at": [2, 1, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_equipment_culture",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "north_equipment",
+          "size": [4, 5, 3],
+          "turn": 0
+        },
+        {
+          "at": [11, 1, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_equipment_bench",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_equipment",
+          "size": [4, 5, 3],
           "turn": 0
         }
       ]
@@ -6196,967 +6491,6 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_lab_storey_intake",
-      "joins": [],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Industrial", "Medical"]
-      },
-      "ports": [],
-      "size": [72, 8, 64],
-      "slots": [
-        {
-          "at": [0, 0, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_north",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north",
-          "size": [72, 8, 4],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 18],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_cross",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "cross_north",
-          "size": [72, 8, 5],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 37],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_entry_cross",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "cross_south",
-          "size": [72, 8, 5],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 56],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_south_port",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south",
-          "size": [72, 8, 8],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_west",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_north",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_west",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_middle",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_west",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_south",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [22, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_west_north",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [22, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_west_middle",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [22, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_west_south",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [45, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_east_north",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [45, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_east_middle",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [45, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_east_south",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [68, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_east",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_north",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [68, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_east",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_middle",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [68, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_east",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_south",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [4, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_intake_outgoing",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_west",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [27, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_records",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_middle",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [50, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_clinic",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_east",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [4, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_cold_store",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_west",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [27, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_workshop",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_middle",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [50, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_utilities",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_east",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [4, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_observation",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_west",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [27, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_culture",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_middle",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [50, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_security_outgoing_east",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_east",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [16, 1, 10],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 6
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "north_west_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [8, 1, 12],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_west_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [17, 1, 9],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_west_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [39, 1, 10],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 6
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "north_middle_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [31, 1, 12],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_middle_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [40, 1, 9],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_middle_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [62, 1, 10],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 6
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "north_east_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [54, 1, 12],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_east_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [63, 1, 9],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_east_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [16, 1, 29],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 6
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "middle_west_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [8, 1, 31],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_west_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [17, 1, 28],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_west_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [39, 1, 29],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 6
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "middle_middle_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [31, 1, 31],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_middle_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [40, 1, 28],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_middle_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [62, 1, 29],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 6
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "middle_east_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [54, 1, 31],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_east_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [63, 1, 28],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_east_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [16, 1, 48],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 6
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "south_west_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [8, 1, 50],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_west_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [17, 1, 47],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_west_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [39, 1, 48],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 6
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "south_middle_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [31, 1, 50],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_middle_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [40, 1, 47],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_middle_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [62, 1, 48],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 6
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "south_east_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [54, 1, 50],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_east_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [63, 1, 47],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_east_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [36, 1, 11],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_middle_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [59, 1, 11],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_east_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [13, 1, 30],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_west_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [36, 1, 30],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_middle_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [59, 1, 30],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_east_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [13, 1, 49],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_west_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [36, 1, 49],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_middle_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        }
-      ]
-    },
-    {
-      "anchors": {},
       "id": "gauntlet_lab_storey_research",
       "joins": [],
       "lootContext": {
@@ -7411,7 +6745,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_culture_incoming",
+                "id": "gauntlet_lab_culture_stair_join",
                 "kind": "assembly"
               },
               "weight": 1
@@ -7539,58 +6873,6 @@
           ],
           "id": "south_east",
           "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [16, 1, 10],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 4
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 4
-            }
-          ],
-          "id": "north_west_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [8, 1, 12],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_west_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [17, 1, 9],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_west_threat_2",
-          "size": [1, 1, 1],
           "turn": 0
         },
         {
@@ -11515,13 +10797,13 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_storey_intake",
+                "id": "gauntlet_lab_level_entry",
                 "kind": "assembly"
               },
               "weight": 1
             }
           ],
-          "id": "intake",
+          "id": "entry",
           "size": [72, 8, 64],
           "turn": 0
         },
@@ -11601,18 +10883,18 @@
           "turn": 0
         },
         {
-          "at": [11, 25, 10],
+          "at": [8, 25, 10],
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_descent_hatched",
+                "id": "gauntlet_lab_entry_stair",
                 "kind": "piece"
               },
               "weight": 1
             }
           ],
-          "id": "intake_west_descent",
-          "size": [3, 8, 2],
+          "id": "entry_stair",
+          "size": [12, 8, 2],
           "turn": 0
         },
         {
@@ -11626,7 +10908,7 @@
               "weight": 1
             }
           ],
-          "id": "intake_east_descent",
+          "id": "entry_shaft",
           "size": [3, 8, 2],
           "turn": 0
         },
@@ -11869,374 +11151,14 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_north_surface_floor",
+                "id": "gauntlet_lab_entry_cap",
                 "kind": "piece"
               },
               "weight": 1
             }
           ],
-          "id": "north_floor",
-          "size": [72, 1, 4],
-          "turn": 0
-        },
-        {
-          "at": [0, 40, 18],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_cross_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "cross_north_floor",
-          "size": [72, 1, 5],
-          "turn": 0
-        },
-        {
-          "at": [0, 40, 37],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_hatch_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "cross_south_floor",
-          "size": [72, 1, 5],
-          "turn": 0
-        },
-        {
-          "at": [0, 40, 56],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_south_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_floor",
-          "size": [72, 1, 8],
-          "turn": 0
-        },
-        {
-          "at": [0, 40, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_west_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_north_floor",
-          "size": [4, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [0, 40, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_west_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_middle_floor",
-          "size": [4, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [0, 40, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_west_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_south_floor",
-          "size": [4, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [22, 40, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_west_north_floor",
-          "size": [5, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [22, 40, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_west_middle_floor",
-          "size": [5, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [22, 40, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_west_south_floor",
-          "size": [5, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [45, 40, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_east_north_floor",
-          "size": [5, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [45, 40, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_east_middle_floor",
-          "size": [5, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [45, 40, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_east_south_floor",
-          "size": [5, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [68, 40, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_east_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_north_floor",
-          "size": [4, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [68, 40, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_east_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_middle_floor",
-          "size": [4, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [68, 40, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_east_surface_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_south_floor",
-          "size": [4, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [4, 40, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_room_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_west_floor",
-          "size": [18, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [27, 40, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_room_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_middle_floor",
-          "size": [18, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [50, 40, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_room_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_east_floor",
-          "size": [18, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [4, 40, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_room_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_west_floor",
-          "size": [18, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [27, 40, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_room_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_middle_floor",
-          "size": [18, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [50, 40, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_room_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_east_floor",
-          "size": [18, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [4, 40, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_room_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_west_floor",
-          "size": [18, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [27, 40, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_room_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_middle_floor",
-          "size": [18, 1, 14],
-          "turn": 0
-        },
-        {
-          "at": [50, 40, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_service_room_floor",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_east_floor",
-          "size": [18, 1, 14],
+          "id": "campus_cap",
+          "size": [72, 1, 64],
           "turn": 0
         },
         {
@@ -24083,6 +23005,301 @@
           "kind": "standing"
         }
       },
+      "id": "gauntlet_lab_shell_stair_join",
+      "layers": [
+        [
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp"
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "RR....RRRRRRRRRRRR",
+            "RRRR............RR",
+            "RRRR............RR",
+            "RRRRRRRRRRR....RRR",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "RR....RRRRRRRRRRRR",
+            "RRRR............RR",
+            "RRRR............RR",
+            "RRRRRRRRRRR....RRR",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "RR....RRRRRRRRRRRR",
+            "RRRR............RR",
+            "RRRR............RR",
+            "RRRRRRRRRRR....RRR",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "RR....RRRRRRRRRRRR",
+            "RRRR............RR",
+            "RRRR............RR",
+            "RRRRRRRRRRR....RRR",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "SR....RRRRRRRRRRRS",
+            "RR....RRRRRRRRRRRR",
+            "RRRR............RR",
+            "RRRR............RR",
+            "RRRRRRRRRRR....RRR",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRR....RRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRR............RR",
+            "RRRR............RR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRR............RR",
+            "RRRR............RR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [18, 8, 14],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {
+        "circulation": {
+          "at": [9, 1, 11],
+          "kind": "standing"
+        }
+      },
       "id": "gauntlet_lab_shell_incoming",
       "layers": [
         [
@@ -25778,6 +24995,1660 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_lab_entry_shell",
+      "layers": [
+        [
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppp............pppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppp............pppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppp...ppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppp...ppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        ],
+        [
+          "========================================================================",
+          "========================================================================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "========================....============....============================",
+          "========================....============....============================",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==========DDDD==========....============....============================",
+          "==========DDDD==========....============....============================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..............................................K.....................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................============....==",
+          "==..........................==........................============....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "=================================================...====================",
+          "=================================================...===================="
+        ],
+        [
+          "========================================================================",
+          "========================================================================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "========================....============....============================",
+          "========================....============....============================",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==========DDDD==========....============....============================",
+          "==========DDDD==========....============....============================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................============....==",
+          "==..........................==........................============....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "=================================================...====================",
+          "=================================================...===================="
+        ],
+        [
+          "========================================================================",
+          "========================================================================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "========================....============....============================",
+          "========================....============....============================",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==========DDDD==========....============....============================",
+          "==========DDDD==========....============....============================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................============....==",
+          "==..........................==........................============....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "=================================================...====================",
+          "=================================================...===================="
+        ],
+        [
+          "========================================================================",
+          "========================================================================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "========================....============....============================",
+          "========================....============....============================",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==========DDDD==========....============....============================",
+          "==========DDDD==========....============....============================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................============....==",
+          "==..........................==........................============....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "=================================================...====================",
+          "=================================================...===================="
+        ],
+        [
+          "========================================================================",
+          "========================================================================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "========================....============....============================",
+          "========================....============....============================",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==========DDDD==========....============....============================",
+          "==========DDDD==========....============....============================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................============....==",
+          "==..........................==........................============....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................====DDDD====....==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "=================================================...====================",
+          "=================================================...===================="
+        ],
+        [
+          "========================================================================",
+          "========================================================================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "========================....============....============================",
+          "========================....============....============================",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "========================....============....============================",
+          "========================....============....============================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................============....==",
+          "==..........................==........................============....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................============....==",
+          "==..........................==........................============....==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "========================================================================",
+          "========================================================================"
+        ],
+        [
+          "========================================================================",
+          "========================================================================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "========================....============....============================",
+          "========================....============....============================",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "==....................==..............==..............................==",
+          "========================....============....============================",
+          "========================....============....============================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==....................................................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==..........................==........................============....==",
+          "==..........................==........................============....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................==........==....==",
+          "==..........................==........................============....==",
+          "==..........................==........................============....==",
+          "==..........................==........................................==",
+          "==..........................==........................................==",
+          "==========....==================....============....====================",
+          "==========....==================....============....====================",
+          "==....................................................................==",
+          "==....................................................................==",
+          "========================================================================",
+          "========================================================================"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSS............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSS............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRR.RRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRR.RRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR.RRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR....RRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRAARRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRR....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "D": {
+          "facing": "s",
+          "furniture": "gauntlet_lab_bulkhead",
+          "lock": {
+            "id": "gauntlet_lab_entry_seal",
+            "locked": true
+          }
+        },
+        "K": {
+          "groundLoot": {
+            "items": [
+              {
+                "item": "gauntlet_lab_entry_card"
+              }
+            ],
+            "kind": "fixed"
+          }
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [72, 8, 64],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_entry_cap",
+      "layers": [
+        [
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppp...ppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppp...ppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "D": {
+          "facing": "s",
+          "furniture": "gauntlet_lab_bulkhead",
+          "lock": {
+            "id": "gauntlet_lab_entry_seal",
+            "locked": true
+          }
+        },
+        "K": {
+          "groundLoot": {
+            "items": [
+              {
+                "item": "gauntlet_lab_entry_card"
+              }
+            ],
+            "kind": "fixed"
+          }
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [72, 1, 64],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_entry_bay_control_lobby",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "F": {
+          "furniture": "gauntlet_look_console"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_entry_bay_waiting",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_entry_bay_security_post",
+      "layers": [
+        ["FF..", "....", "....", "...."],
+        ["FF..", "....", "....", "...."],
+        ["FF..", "....", "....", "...."],
+        ["FF..", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "F": {
+          "furniture": "range_rack",
+          "loot": "gauntlet_police_sidearms"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_entry_bay_security_control",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "F": {
+          "furniture": "gauntlet_look_console"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_entry_bay_equipment_lockers",
+      "layers": [
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "F": {
+          "furniture": "hq_weapon_cabinet",
+          "loot": "gauntlet_lab_entry_margin"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_entry_bay_technical_corridor",
+      "layers": [
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "F": {
+          "furniture": "gauntlet_look_pump"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_entry_bay_freight_lift",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "F": {
+          "furniture": "gauntlet_lab_dead_lift"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_entry_stair",
+      "layers": [
+        ["..pppppppppp", "..pppppppppp"],
+        ["...ppppppppp", "...ppppppppp"],
+        ["....pppppppp", "....pppppppp"],
+        [".....ppppppp", ".....ppppppp"],
+        ["......pppppp", "......pppppp"],
+        [".......ppppp", ".......ppppp"],
+        ["........pppp", "........pppp"],
+        [".........ppp", ".........ppp"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["RRSSSSSSSSSS", "RRSSSSSSSSSS"],
+          ["RRRSSSSSSSSS", "RRRSSSSSSSSS"],
+          ["RRRRSSSSSSSS", "RRRRSSSSSSSS"],
+          ["RRRRRSSSSSSS", "RRRRRSSSSSSS"],
+          ["RRRRRRSSSSSS", "RRRRRRSSSSSS"],
+          ["RRRRRRRSSSSS", "RRRRRRRSSSSS"],
+          ["RRRRRRRRSSSS", "RRRRRRRRSSSS"],
+          ["RRRRRRRRRSSS", "RRRRRRRRRSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "D": {
+          "facing": "s",
+          "furniture": "gauntlet_lab_bulkhead",
+          "lock": {
+            "id": "gauntlet_lab_entry_seal",
+            "locked": true
+          }
+        },
+        "K": {
+          "groundLoot": {
+            "items": [
+              {
+                "item": "gauntlet_lab_entry_card"
+              }
+            ],
+            "kind": "fixed"
+          }
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [12, 8, 2],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_service_scavenger",
       "layers": [["FFFF", "FFFF"]],
       "lootContext": {
@@ -25797,466 +26668,6 @@
       "ports": [],
       "size": [4, 1, 2],
       "style": "service_brick"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_lab_north_surface_floor",
-      "layers": [
-        [
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": []
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
-          ]
-        ]
-      },
-      "palette": {
-        ".": {
-          "material": "air",
-          "role": "opening"
-        },
-        "=": {
-          "material": "concrete",
-          "role": "shell"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        }
-      },
-      "ports": [],
-      "size": [72, 1, 4],
-      "style": "concrete_lab"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_lab_cross_surface_floor",
-      "layers": [
-        [
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": []
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
-          ]
-        ]
-      },
-      "palette": {
-        ".": {
-          "material": "air",
-          "role": "opening"
-        },
-        "=": {
-          "material": "concrete",
-          "role": "shell"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        }
-      },
-      "ports": [],
-      "size": [72, 1, 5],
-      "style": "concrete_lab"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_lab_south_surface_floor",
-      "layers": [
-        [
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": []
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
-          ]
-        ]
-      },
-      "palette": {
-        ".": {
-          "material": "air",
-          "role": "opening"
-        },
-        "=": {
-          "material": "concrete",
-          "role": "shell"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        }
-      },
-      "ports": [],
-      "size": [72, 1, 8],
-      "style": "concrete_lab"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_lab_west_surface_floor",
-      "layers": [
-        ["pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp"]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": []
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS"
-          ]
-        ]
-      },
-      "palette": {
-        ".": {
-          "material": "air",
-          "role": "opening"
-        },
-        "=": {
-          "material": "concrete",
-          "role": "shell"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        }
-      },
-      "ports": [],
-      "size": [4, 1, 14],
-      "style": "concrete_lab"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_lab_east_surface_floor",
-      "layers": [
-        ["pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp", "pppp"]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": []
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS",
-            "SSSS"
-          ]
-        ]
-      },
-      "palette": {
-        ".": {
-          "material": "air",
-          "role": "opening"
-        },
-        "=": {
-          "material": "concrete",
-          "role": "shell"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        }
-      },
-      "ports": [],
-      "size": [4, 1, 14],
-      "style": "concrete_lab"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_lab_alley_surface_floor",
-      "layers": [
-        [
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp",
-          "ppppp"
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": []
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS",
-            "SSSSS"
-          ]
-        ]
-      },
-      "palette": {
-        ".": {
-          "material": "air",
-          "role": "opening"
-        },
-        "=": {
-          "material": "concrete",
-          "role": "shell"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        }
-      },
-      "ports": [],
-      "size": [5, 1, 14],
-      "style": "concrete_lab"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_lab_south_port_surface_floor",
-      "layers": [
-        [
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": []
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
-          ]
-        ]
-      },
-      "palette": {
-        ".": {
-          "material": "air",
-          "role": "opening"
-        },
-        "=": {
-          "material": "concrete",
-          "role": "shell"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        }
-      },
-      "ports": [],
-      "size": [72, 1, 8],
-      "style": "concrete_lab"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_service_room_floor",
-      "layers": [
-        [
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp",
-          "pppppppppppppppppp"
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": []
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSS"
-          ]
-        ]
-      },
-      "palette": {
-        ".": {
-          "material": "air",
-          "role": "opening"
-        },
-        "=": {
-          "material": "concrete",
-          "role": "shell"
-        },
-        "F": {
-          "furniture": "gauntlet_look_bench"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        }
-      },
-      "ports": [],
-      "size": [18, 1, 14],
-      "style": "concrete_lab"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_service_hatch_floor",
-      "layers": [
-        [
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppp...ppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppp...ppppppppppppppppppppppppppp",
-          "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": []
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
-          ]
-        ]
-      },
-      "palette": {
-        ".": {
-          "material": "air",
-          "role": "opening"
-        },
-        "=": {
-          "material": "concrete",
-          "role": "shell"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        }
-      },
-      "ports": [],
-      "size": [72, 1, 5],
-      "style": "concrete_lab"
     },
     {
       "anchors": {},

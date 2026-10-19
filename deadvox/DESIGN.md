@@ -631,13 +631,13 @@ to this immutable initial-world proof, not a cache of live edited terrain. See
 `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`; `src/core/scenarioCertificate.ts`,
 `scenarioCertificate`; and `src/core/gauntlet.ts`, `GauntletSite`.
 
-A sewer from the HQ yard to the lab's intake storey is a second way in, and a trade
+A sewer from the HQ yard to the lab's entry level is a second way in, and a trade
 rather than a shortcut: it skips the street run to the hatch, but the tunnel is dark,
 sparsely haunted and opens through a guard room whose containers may roll police arms
 and ammunition from the existing tables. Its mouth is visible at street level and no
 note points to it, so the sewer is found by looking. Because it is a real entrance,
-admission requires a body-clear threshold through the lab's shell into the intake
-storey's circulation, and the certificate proves the street reaches each mouth and
+admission requires a body-clear threshold through the lab's shell into the entry
+level's circulation, and the certificate proves the street reaches each mouth and
 each mouth reaches each port as surely as the hatch reaches the lab; an accepted
 route that play cannot cross would be worse than none. Elements list their mouths and
 ports so a later network adds entries rather than a rewrite. The plan places them in
@@ -669,46 +669,43 @@ freezes them so Continue cannot rewrite the journey. See
 `src/core/scenarioDiscovery.ts`, `discoveryForPlan`; `src/core/scenarioRun.ts`,
 `ScenarioRun`; and `src/game/session.ts`, `createSession`.
 
-The lab is four levels below the surface hatch, built by d490's rounds, whose danger rises with depth, with
-the nuclear objective at the bottom. Four levels give each of the drawn plan's
-functions its own level: entry and security, administration, research and special
-research. The plan is inspiration, not a blueprint: its functions and mood guide
-each level, the layout follows the rules here, and how closely a level follows the
-drawing is decided at that level's review. A level contains several distinct
-special rooms, not one stop on a ladder shaft. Looped circulation and separated,
-offset descents make exploration and descent route choices rather than a single
-corridor followed by a continuous climb.
+The lab's target is four levels below the hatch, with the nuclear objective at the
+bottom. Each function from the drawn plan gets a level, but the drawing is inspiration,
+not a blueprint: its mood guides the rebuild and BR judges fidelity in play. Looped
+circulation and separated descents make exploration and retreat choices rather than
+one corridor and a continuous climb. Entry and security replaces the grid's top
+storey; the lower grid remains until its top-down review rounds, with one grid storey
+to retire when the final rebuild establishes the target depth. See
+`src/content/base/gauntlet-lab-entry.libsonnet`, `plan`, and
+`src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
 
-A stair is each level's main way down, because a building's descent should read as
-one. The ladder shafts stay as the alternate links between adjacent levels, so
-returning need not retrace the approach. Whether threat uses the shafts, which
-decides whether the back route is safer or only different, is open on d490-3's
-cards.
+The stair is the main way down because a building's descent should read as one. A
+lidded shaft remains an alternate return route. Both join the grid below through a
+temporary landing; administration's rebuild replaces that join. Threat may drop down
+a shaft but never climb up, so deep threat cannot reach the top and depth ordering
+holds. A lid then defends only against threat above. A later round on #972 builds
+that one-way descent; this geometry round keeps threat on its level. See `src/content/base/gauntlet-lab-entry.libsonnet`,
+`stair`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
 
-Each level's way down is sealed, as in DOOM: the first door is open, and each level
-needs a keycard found on it. The keycard lies on the level's open side, so its
-acquisition never depends on the door it opens, as the initial-access rule above
-requires. A missing keycard would block the run, so every seal's keycard must be
-proven present. Where a keycard lies and whether a crowbar can force a keycard door
-are open on d490-3's cards. See `src/content/base/locks.libsonnet` and
-`src/core/prying.ts`, `pryPlan`.
+The hatch-side entrance is open. Level one's ways down need a keycard from one authored
+spot on the open side, the same spot every run. Acquisition cannot depend on the seal
+it opens. The seals are vault or bulkhead doors, which a crowbar cannot force: only
+the card opens them. The certificate checks that the matching placed card is present,
+reachable from the hatch landing with the seals closed, and within visible pickup reach
+before admitting those locks to the descent proof. This prevents a missing or self-locked
+card from making the run a dead end. See `src/content/base/gauntlet-lab-entry.libsonnet`,
+`seal`; `src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
 
-Each level is a full rebuild, one level per review and approval round. Rounds go
-top down, so the level a player meets first sets the look and the destination is
-built last. Until the last round, each rebuilt level joins the grid storey below
-it, and a grid storey not yet rebuilt keeps its ladder shafts and has no seal or
-fixtures. The grid shell, its circulation and its slots retire as levels replace them;
-the equipment, descent lid, threat and holding-cap machinery is reused where it
-fits. The plan is scaled up so rooms keep its proportions, with doors and fixtures
-kept at human scale. The factor is a content value, provisional until level one's
-review judges it in play.
-
-Author room assignments, level placement and offset links as curated composition,
-not as partition or row-building code. Shared room shells delegate equipment bays so
-furnishing cannot borrow a threshold or connector's body space. Different equipment
-and damage distinguish laboratory work, support and containment, but those inert cues
-are not a danger or balance proof. See `src/content/base/gauntlet-lab.libsonnet`,
-`storey`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
+Each level is fully rebuilt and judged in play before the next one, so the first
+level sets the look and the destination is built last. Unrebuilt grid storeys keep
+their shafts without seals or fixtures. Their shell and circulation retire with
+them; equipment, descent lids, threat and the holding cap are reused where they fit.
+The authored plan scales rooms together while equipment and doors stay human-sized.
+The content scale is provisional until level one's play review. Delegated equipment
+bays prevent furnishings from borrowing thresholds or circulation. Equipment and damage
+are cues, not a danger or balance proof. See
+`src/content/base/gauntlet-lab-entry.libsonnet`, `scale`, `plan` and `bays`, and
+`src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
 
 The underground campus extends beyond the small service facade because a surface
 disguise must not dictate the lab's capacity. One compiled assembly owns their common
@@ -759,10 +756,11 @@ reach the terminal button. See `src/core/scenarioCertificate.ts`, `scenarioCerti
 and `src/game/session.ts`, `activateGoal`.
 
 Darkness uses world-derived sky transport and an ordinary carried light. The lab's
-fixtures are powered, and some are broken: restoring power lights the working ones,
-so light is something the player earns back, not given. Where the power node sits
-and how restoring it works are open on d490-3's cards. Until a level's light round
-builds them, the lab has no lighting category. Finished site placements expose the
+fixtures are intended to light only after power is restored, so light is earned,
+not given. Entry's working and broken fixtures are inert set dressing. Its breaker belongs in
+the security post; a later round on #972 builds that interaction and its saved
+per-level power state. Later levels' switch positions are decided at their own
+reviews. The lab has no lighting category until its light round. See `src/content/base/gauntlet-lab-entry.libsonnet`, `bays`. Finished site placements expose the
 same sky eligibility contract across authored layouts, hamlets and scenario
 composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary

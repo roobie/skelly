@@ -5,22 +5,20 @@ import { DOOR_ACTION } from '/src/game/doorAction.ts';
 export const routeDoorOpener = (engine, session) => {
   const queued = new Set();
   return () => {
-    for (const entity of engine.entities.all) {
+    const eligible = [...engine.entities.all].filter((entity) => {
       const { door } = engine.entities.defOf(entity);
-      if (
-        !door ||
-        door.hatch ||
-        entity.open ||
-        entity.lock?.locked ||
-        queued.has(entity.uid) ||
-        !session.inventory.canReachEntity(entity)
-      ) {
-        continue;
-      }
-      const opening = doorPlan(session.inventory, entity, 'open');
-      if (opening.ok) {
-        queued.add(entity.uid);
-        session.queue.enqueueAction(DOOR_ACTION, 'Open route door', opening.time, { entityUid: entity.uid });
+      return door && !door.hatch && !entity.open && session.inventory.canReachEntity(entity);
+    });
+    for (const entity of eligible) {
+      const operation = entity.lock?.locked ? 'unlock' : 'open';
+      const key = `${entity.uid}:${operation}`;
+      const plan = doorPlan(session.inventory, entity, operation);
+      if (plan.ok && !queued.has(key)) {
+        queued.add(key);
+        session.queue.enqueueAction(DOOR_ACTION, 'Open route door', plan.time, {
+          entityUid: entity.uid,
+          ...(operation === 'unlock' ? { locked: false } : {}),
+        });
       }
     }
   };

@@ -45,6 +45,8 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
       resources: [{ at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18], standing: [lab.surfaceOffset + 11, ground + 1, lab.surfaceOffset + 21] }],
       storeys: lab.anchors.storeys,
       descents: lab.anchors.descents,
+      stairs: lab.anchors.stairs,
+      seals: lab.anchors.seals,
     },
     portal: {
       hatch: hatch, ladder: ladder,

@@ -885,11 +885,6 @@
       "composition": {
         "descents": [
           {
-            "ladder": [12, 25, 10],
-            "lower": [11, 25, 11],
-            "upper": [11, 33, 11]
-          },
-          {
             "ladder": [59, 25, 48],
             "lower": [58, 25, 49],
             "upper": [58, 33, 49]
@@ -998,6 +993,19 @@
           }
         ],
         "retreat": [36, 41, 32],
+        "seals": [
+          {
+            "doors": [[10, 33, 20], [58, 33, 54]],
+            "key": [48, 33, 38],
+            "standing": [48, 33, 39]
+          }
+        ],
+        "stairs": [
+          {
+            "lower": [9, 25, 11],
+            "upper": [19, 33, 11]
+          }
+        ],
         "start": {
           "cell": [0, 0],
           "descents": [
@@ -1056,8 +1064,8 @@
         ],
         "storeys": [
           {
-            "id": "intake",
-            "standing": [35, 33, 29]
+            "id": "entry",
+            "standing": [44, 33, 36]
           },
           {
             "id": "research",

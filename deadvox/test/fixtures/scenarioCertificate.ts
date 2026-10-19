@@ -181,20 +181,22 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
   };
   load();
   until(() => session.body.onGround, 60);
-  const queuedDoors = new Set<number>();
+  const queuedDoors = new Set<string>();
   const openNearby = () => {
-    for (const entity of entities.all) {
+    const eligible = [...entities.all].filter((entity) => {
       const { door } = entities.defOf(entity);
-      if (!door || door.hatch || entity.open || entity.lock?.locked || queuedDoors.has(entity.uid)) {
-        continue;
-      }
-      if (!session.inventory.canReachEntity(entity)) {
-        continue;
-      }
-      const opening = doorPlan(session.inventory, entity, 'open');
-      if (opening.ok) {
-        queuedDoors.add(entity.uid);
-        session.queue.enqueueAction(DOOR_ACTION, 'open route door', opening.time, { entityUid: entity.uid });
+      return door && !door.hatch && !entity.open && session.inventory.canReachEntity(entity);
+    });
+    for (const entity of eligible) {
+      const operation = entity.lock?.locked ? 'unlock' : 'open';
+      const key = `${entity.uid}:${operation}`;
+      const opening = doorPlan(session.inventory, entity, operation);
+      if (opening.ok && !queuedDoors.has(key)) {
+        queuedDoors.add(key);
+        session.queue.enqueueAction(DOOR_ACTION, 'open route door', opening.time, {
+          entityUid: entity.uid,
+          ...(operation === 'unlock' ? { locked: false } : {}),
+        });
       }
     }
   };
@@ -272,6 +274,16 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
   const completed: typeof connections = [];
   let position: Readonly<Vec3> = plan.portal!.upper;
   for (const descent of connections) {
+    for (const seal of plan.composition!.seals.filter((candidate) => candidate.standing[1] === position[1])) {
+      walk(route(position, seal.standing));
+      position = seal.standing;
+      const pile = session.inventory.pileAt([...seal.key]);
+      const card = pile?.items.find(({ item }) => registry.items.get(item.type)?.key)?.item;
+      assert(card, 'seal card is a real placed item');
+      const pickup = session.queue.enqueue(card, { kind: 'hand', side: 'left' });
+      assert(pickup.ok);
+      until(() => session.inventory.hands.left === card, Math.ceil((pickup.job.duration + 1) * 60));
+    }
     const bottom = descent.ladder
       ? entities.at(...(descent.ladder as Vec3))!
       : [...entities.all].find(
