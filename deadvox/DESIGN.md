@@ -793,8 +793,12 @@ anchor and its companions. Each ItemSet names where its companions may land, bec
 right reach differs by set. Companion placement is best effort, never fail-closed: a
 companion that cannot land where its set allows never refuses or fails the loot unit's plan,
 since a missing box of shells costs the player less than a loot unit that will not generate.
-What best effort does in that case, the rest of ItemSets and scenario multipliers on
-odds are open on #699.
+Companions sit outside the loot unit's caps, like required stock, and land whenever their
+anchor does. That leaves the most room to refine: a cap check or a chance roll on
+companions can be added later, for every set or per set, without undoing anything. The
+price is that until such a refinement lands, a loot unit's ammunition can exceed a cap.
+What best effort does when a companion cannot land, the rest of ItemSets and scenario
+multipliers on odds are open on #699.
 
 Loot is placed once, when its place is first generated, and never restocked. What a
 player takes stays gone, so scarcity holds, a searched place stays spent instead of
