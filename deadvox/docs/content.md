@@ -338,7 +338,7 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   `src/content/base/gauntlet-start-rooms.libsonnet`, `slots`.
   Collapsed floors are extra risky shortcuts, not registered descents, so the start
   check never certifies an interior fall to meet the minimum.
-  Each world's route proof still starts at the roof because rolled furnishings can block
+  The route proof starts at the roof because rolled furnishings can block
   the foot of a way down. Redundant ways down prevent one obstruction from forcing a
   single exit. A way down counts even when it can injure or kill, because choosing the
   risk is part of the descent; its foot need not be kept clear. See

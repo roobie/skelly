@@ -619,15 +619,19 @@ independent of incidental loot without bypassing ordinary inventory rules. See
 `src/core/authoredLayout.ts`, `authoredLayoutIssues`; and
 `src/core/citySite.ts`, `furnitureIn`.
 
-The final composition fails closed before Play: a locally valid template cannot
-protect the route from later stamping or furniture. The certificate reads the
-same planned, stamped chunks and furniture occupancy as play, without
-materializing the whole city. Authored entrances and perimeter crossings belong to that
+Tests prove that the final composition can be finished, because a locally valid
+template cannot protect the route from later stamping or furniture. Play doesn't
+wait on a runtime proof, because proving the route at world build stalled the main
+thread before Go. The accepted risk is that a seed no test covers can be
+unfinishable; a playtest report of such a seed becomes a fixed-seed test. Default
+tests certify fixed seeds, and a seed sweep runs behind the `DEADVOX_SWEEPS` flag as
+its own CI step. The certificate reads the same planned, stamped chunks and
+furniture occupancy as play, without materializing the whole city. Authored entrances and perimeter crossings belong to that
 proof: finding a detour around a fence does not certify a blocked breach. Furniture anchored across a chunk boundary still
 belongs to an envelope that crosses that boundary. Clearance caching is private
 to this immutable initial-world proof, not a cache of live edited terrain. See
 `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`; `src/core/scenarioCertificate.ts`,
-`scenarioCertificate`; and `src/core/gauntlet.ts`, `GauntletSite`.
+`scenarioCertificate`; and `test/gauntletRoutes.test.ts`.
 
 A sewer from the HQ yard to the lab's intake storey is a second way in, and a trade
 rather than a shortcut: it skips the street run to the hatch, but the tunnel is dark,
