@@ -644,8 +644,9 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 
 By default, world loot rolls once, when its place is first generated, and is inert
 after that: nothing spawns over time. What a player takes or leaves stays that way, so
-scarcity holds, a searched place stays spent instead of becoming a farm, and the world
-is its generation plus what players did to it, so a save need record only changes.
+scarcity holds, a searched place stays spent instead of becoming a farm, and a spent
+place pushes the player on to new ones. The world is then its generation plus what
+players did to it, so a save need record only changes.
 Dynamic events (crashes, convoys and the like) bring supply under their own rules,
 outside this default.
 
