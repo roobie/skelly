@@ -16,7 +16,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
         recoilKickRadians: 0.025, dispersionRadians: 0.006,
         shotSound: 'gunshot_tikka', suppressedShotSound: 'gunshot_m4_suppressed',
-        dryFireSound: 'firearm_dry_click', chargeSound: 'rifle_bolt_cycle',
+        dryFireSound: 'firearm_dry_click', boltOpenSound: 'rifle_bolt_open', boltCloseSound: 'rifle_bolt_close',
         skillZeroHandling: {
           singleShot: { recoilKickScale: 6, recoilRecoveryScale: 0.5, variance: 20 },
           automaticFollowup: { recoilKickScale: 12, recoilRecoveryScale: 0.25, variance: 40 },
@@ -33,6 +33,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         "pump": true,
         "recoilKickRadians": 0.035,
         "shotSound": "gunshot",
+        "dryFireSound": "shotgun_dry_click",
         "skillZeroHandling": {
           "automaticFollowup": { "recoilKickScale": 20, "recoilRecoveryScale": 0.18, "variance": 60 },
           "singleShot": { "recoilKickScale": 10, "recoilRecoveryScale": 0.35, "variance": 30 }

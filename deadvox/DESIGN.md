@@ -1117,6 +1117,20 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   needed. Dry fire is a sound per gun in content, so a gun without one stays silent
   rather than borrowing another gun's click. See `src/game/firearmHandling.ts`,
   `dryFire`.
+- **One click, then silence until the action is worked.** A click is the hammer or
+  striker falling, and a fallen hammer cannot fall again until something cocks it. A
+  magazine gun's slide, a bolt or a pump's rack cocks it, so after the first empty
+  pull the trigger is dead until the player works the action; a shot from a hand-worked
+  action likewise leaves the hammer down until the next stroke. A double-action trigger
+  cocks and drops the hammer itself, so such a gun clicks on every pull. Whether a pull
+  re-cocks is a fact of the gun's mechanism, not of its kind, so content decides it per
+  gun and a new double-action gun needs no code. The fallen hammer is saved, so a load
+  cannot re-arm a dead trigger. See `src/game/firearmHandling.ts`, `dropHammer`, and
+  `src/core/schema.ts`, `triggerCocks`.
+- **Bolt strokes per phase.** Opening and closing a bolt are separate actions the
+  player can stop between, so each phase plays its own cut; one whole-cycle recording
+  would play a close the player has not made. See `src/game/firearmHandling.ts`,
+  `startHandCycle`.
 - **Melee sounds by weapon weight and material.** A knife and a bat should not sound
   alike, so a melee weapon can name its own swing, its own hit and a layer over the
   hit, such as a metal ring for a metal striker. A weapon that names none keeps the

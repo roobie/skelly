@@ -657,10 +657,24 @@ export class FirearmMechanics {
 
   /** The hammer or striker falls only on a closed action; the revolver clicks through its own cylinder rules. */
   private dryFire(item: Item, time: number): void {
-    const sound = defOf(this.inventory.registry, item.type).firearm?.dryFireSound;
     const state = item.firearm;
-    if (sound !== undefined && !state?.cylinder && !state?.actionOpen && state?.chamber !== 'round') {
-      this.onSound(sound, undefined, time);
+    if (state && !state.cylinder && !state.actionOpen && state.chamber !== 'round') {
+      this.dropHammer(item, time);
+    }
+  }
+
+  /** A down hammer stays silent until the action is worked, unless the gun's own trigger pull re-cocks it. */
+  private dropHammer(item: Item, time: number): void {
+    const firearm = defOf(this.inventory.registry, item.type).firearm!;
+    const state = item.firearm!;
+    if (state.hammerDown) {
+      return;
+    }
+    if (firearm.dryFireSound !== undefined) {
+      this.onSound(firearm.dryFireSound, undefined, time);
+    }
+    if (!firearm.triggerCocks) {
+      state.hammerDown = true;
     }
   }
 
@@ -697,7 +711,7 @@ export class FirearmMechanics {
     this.previousShotAt.set(item.uid, input.simTime);
     const chamber = cylinder.chambers[cylinder.aligned]!;
     if (chamber.state !== 'round') {
-      this.onSound('revolver_dry_click', undefined, input.simTime);
+      this.dropHammer(item, input.simTime);
       return false;
     }
     const ammo = defOf(this.inventory.registry, chamber.roundType).ammo!;
@@ -733,6 +747,10 @@ export class FirearmMechanics {
     state.chamber = 'case';
     state.roundType = undefined;
     state.pendingCase = { ...emission, seed };
+    // A hand-worked action leaves the hammer where the shot dropped it.
+    if (!defOf(this.inventory.registry, item.type).firearm!.triggerCocks) {
+      state.hammerDown = true;
+    }
     const pellets = this.isPump(item)
       ? pelletShotFromBasis({ ammo, origin: shotOrigin, basis: shotBasis, seed: input.seed, key: shotKey })
       : projectileShot(ammo, shotOrigin, [
@@ -1187,6 +1205,7 @@ export class FirearmMechanics {
     }
     const item = this.inventory.itemByUid(uid)!;
     if (item.firearm?.cylinder) {
+      item.firearm.hammerDown = undefined;
       return this.revolvers.cock(item, time);
     }
     this.startHandCycle(item, time, this.isBolt(item) && item.firearm?.actionOpen ? 'close' : undefined);
@@ -1198,6 +1217,7 @@ export class FirearmMechanics {
     const data = firearmHandlingFor(item, this.inventory.registry);
     const pump = this.isPump(item);
     const state: FirearmState = item.firearm ?? { chamber: 'empty' };
+    state.hammerDown = undefined;
     const baseDuration = actionPhaseSeconds(data.action, 'hand', phase);
     const duration = baseDuration * this.handlingFactor('rackDuration');
     state.cycle = {
@@ -1217,8 +1237,9 @@ export class FirearmMechanics {
       duration,
       { uid },
     );
-    const chargeSound = defOf(this.inventory.registry, item.type).firearm?.chargeSound;
-    this.onSound(chargeSound ?? (pump ? 'shotgun_rack_back' : 'rifle_charge'), undefined, time);
+    const firearm = defOf(this.inventory.registry, item.type).firearm!;
+    const boltSound = phase === 'close' ? firearm.boltCloseSound : firearm.boltOpenSound;
+    this.onSound(boltSound ?? (pump ? 'shotgun_rack_back' : 'rifle_charge'), undefined, time);
   }
 
   pauseTo(time: number): void {
@@ -1400,7 +1421,7 @@ export class FirearmMechanics {
     const base = actionPhaseSeconds(data.action, cycle.mode, cycle.phase);
     const timeScale = duration / base;
     cycle.elapsed = Math.max(cycle.elapsed, elapsed);
-    this.rackForwardCue(item, data, cycle, timeScale);
+    this.returnStrokeCue(item, data, cycle, timeScale);
     if (!cycle.ejected && cycle.elapsed + 1e-9 >= ejectSeconds(data.action, cycle.mode) * timeScale) {
       const reason = this.ejectChamber(item, state, data);
       if (reason) {
@@ -1424,11 +1445,23 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  private rackForwardCue(item: Item, data: FirearmHandlingData, cycle: FirearmCycleState, timeScale: number): void {
-    const returnAt = (data.action.hand.rearwardSimSeconds + data.action.hand.dwellSimSeconds) * timeScale;
-    if (this.isPump(item) && !cycle.forwardSounded && cycle.elapsed + 1e-9 >= returnAt) {
+  /** A full hand cycle's return stroke: the pump's slide forward, or a bolt's close after its open. */
+  private returnStrokeCue(item: Item, data: FirearmHandlingData, cycle: FirearmCycleState, timeScale: number): void {
+    const pump = this.isPump(item);
+    const boltCloseSound =
+      cycle.mode === 'hand' && cycle.phase === undefined
+        ? defOf(this.inventory.registry, item.type).firearm!.boltCloseSound
+        : undefined;
+    const sound = pump ? 'shotgun_rack_forward' : boltCloseSound;
+    if (sound === undefined || cycle.forwardSounded) {
+      return;
+    }
+    const returnAt =
+      (pump ? data.action.hand.rearwardSimSeconds + data.action.hand.dwellSimSeconds : actionOpenSeconds(data.action)) *
+      timeScale;
+    if (cycle.elapsed + 1e-9 >= returnAt) {
       cycle.forwardSounded = true;
-      this.onSound('shotgun_rack_forward', undefined, cycle.startedAt + returnAt);
+      this.onSound(sound, undefined, cycle.startedAt + returnAt);
     }
   }
 

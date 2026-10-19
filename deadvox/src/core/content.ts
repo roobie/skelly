@@ -401,10 +401,18 @@ const acceptsSuppressor = (registry: Registry, model: ModelDef | undefined): boo
 /** Authored shot selections must resolve, and a gun that can mount a suppressor must author the quiet event. */
 const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry: Registry, report: Report): void => {
   const firearm = item.firearm!;
-  for (const field of ['shotSound', 'dryFireSound', 'chargeSound'] as const) {
+  for (const field of ['shotSound', 'dryFireSound', 'boltOpenSound', 'boltCloseSound'] as const) {
     const sound = firearm[field];
     if (sound !== undefined && !registry.sounds.has(sound)) {
       report('items', item.id, `.firearm.${field}`, `no sound event "${sound}"`);
+    }
+    if (field.startsWith('bolt') && (sound !== undefined) !== (firearm.bolt === true)) {
+      report(
+        'items',
+        item.id,
+        `.firearm.${field}`,
+        'a bolt gun needs each bolt stroke sound, and only a bolt gun has one',
+      );
     }
   }
   if (firearm.suppressedShotSound !== undefined) {

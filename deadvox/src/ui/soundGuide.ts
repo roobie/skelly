@@ -255,8 +255,34 @@ const TRIGGER_ENTRIES = [
         '?debug=1&loadout=grenade: click the primary mouse button to pull the pin, tap T for the throwing stance, hold then release the primary mouse button to throw, and step back.',
     },
   ],
-  ['rifle_bolt_cycle', { trigger: 'Double-press R with the hunting rifle in hand to work the bolt.' }],
-  ['firearm_dry_click', { trigger: 'Pull the trigger of a magazine gun or the hunting rifle with an empty chamber.' }],
+  [
+    'rifle_bolt_open',
+    {
+      trigger:
+        'Hold R with the hunting rifle in hand and loose cartridges carried to open the bolt for loading; a double-press of R opens it first in a full cycle.',
+    },
+  ],
+  [
+    'rifle_bolt_close',
+    {
+      trigger:
+        'Release R after loading the hunting rifle to close the bolt; a double-press of R closes it after the open.',
+    },
+  ],
+  [
+    'firearm_dry_click',
+    {
+      trigger:
+        'Pull the trigger of a magazine gun or the hunting rifle with an empty chamber; it clicks once, then stays silent until the action is worked.',
+    },
+  ],
+  [
+    'shotgun_dry_click',
+    {
+      trigger:
+        'Pull the pump shotgun’s trigger with an empty chamber; it clicks once, then stays silent until it is racked.',
+    },
+  ],
   [
     'magazine_round_insert',
     {
@@ -358,8 +384,10 @@ const BR_STATUS_NOTES = new Map<SoundId, string>([
   ['revolver_eject', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
   ['revolver_case_pick', 'Equipment Clicks III fallback: the S&W 642 takes hold no case pick; awaiting BR’s listen.'],
   ['revolver_round_insert', 'Cut from the S&W 642 raw takes by waveform, not by ear; awaiting BR’s listen.'],
-  ['rifle_bolt_cycle', 'Equipment Clicks III bolt cocking, BR’s pick; awaiting BR’s listen.'],
+  ['rifle_bolt_open', 'The lift and draw of the Equipment Clicks III bolt cocking, BR’s pick; awaiting BR’s listen.'],
+  ['rifle_bolt_close', 'The push and turn of the Equipment Clicks III bolt cocking, BR’s pick; awaiting BR’s listen.'],
   ['firearm_dry_click', 'Shutter clicks cut from “DSLR Camera Sounds”, BR’s pick; awaiting BR’s listen.'],
+  ['shotgun_dry_click', 'The heavier shutter click from “DSLR Camera Sounds”, BR’s pick; awaiting BR’s listen.'],
   ['grenade_blast', 'The two blasts in florianreichelt’s “Huge Explosion”, BR’s pick; awaiting BR’s listen.'],
   ['gunshot', 'Approved; AKM variants used for the AK-pattern rifle and firearms without a dedicated shot profile.'],
   ['gunshot_pbs1_reference', 'Reserved PBS-1 suppressed AKM alternatives; not used by gameplay.'],

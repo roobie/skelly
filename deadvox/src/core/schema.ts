@@ -436,10 +436,13 @@ const FirearmSchema = strictObject({
   shotSound: Id,
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
   suppressedShotSound: optional(Id),
-  /** Trigger pulled on an empty chamber; absent stays silent. The revolver's cylinder has its own click. */
+  /** Trigger pulled on an empty chamber; absent stays silent. */
   dryFireSound: optional(Id),
-  /** Working the action by hand; absent uses the pump's rack or the shared charging handle. */
-  chargeSound: optional(Id),
+  /** The trigger pull cocks the hammer itself (double action), so every empty pull clicks; otherwise only working the action re-cocks it. */
+  triggerCocks: optional(vBoolean()),
+  /** A bolt gun's open and close strokes; each plays on its own phase, so a bolt gun needs both. */
+  boltOpenSound: optional(Id),
+  boltCloseSound: optional(Id),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */

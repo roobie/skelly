@@ -153,7 +153,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 52;
+export const SAVE_SCHEMA_VERSION = 54;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -382,6 +382,7 @@ itemSchema = obj({
       roundType: opt(str({ id: true })),
       tube: opt(arr(str({ id: true }))),
       actionOpen: opt(bool),
+      hammerDown: opt(bool),
       retainedRoundType: opt(str({ id: true })),
       landings: opt(
         arr(

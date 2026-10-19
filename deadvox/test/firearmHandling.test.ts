@@ -782,7 +782,10 @@ describe('rifle firearm handling', () => {
     const before = inventory.snapshotState();
     expect(mechanics.fireReason(rifle.uid)).toBeDefined();
     expect(mechanics.fire(shotInput(rifle, 1 + elapsed))).toBe(false);
-    expect(inventory.snapshotState()).toEqual(before);
+    // The empty pull drops only the hammer.
+    const hammerDropped = structuredClone(before);
+    hammerDropped.hands.right!.firearm!.hammerDown = true;
+    expect(inventory.snapshotState()).toEqual(hammerDropped);
   });
 
   /** The content's bolt rifle in hand with one round worked through its internal magazine into the chamber. */
@@ -818,8 +821,53 @@ describe('rifle firearm handling', () => {
       }
       settle(queue);
     }
-    return { mechanics, rifle };
+    return { queue, mechanics, rifle };
   };
+
+  /** Every firearm's trigger pull re-cocks its own hammer, as content may choose per gun. */
+  const triggerCocking = (content: Registry): Registry => ({
+    ...content,
+    items: new Map(
+      [...content.items].map(([id, item]) => [
+        id,
+        item.firearm ? { ...item, firearm: { ...item.firearm, triggerCocks: true } } : item,
+      ]),
+    ),
+  });
+
+  /** A gun fired dry, with an empty pull that returns the sounds it made and a charge that works the action. */
+  const firedDry = (arm: typeof armedBolt, content: Registry) => {
+    const sounds: SoundId[] = [];
+    const { queue, mechanics, rifle } = arm({ onSound: (event) => sounds.push(event) }, content);
+    let time = 1;
+    if (!mechanics.fire(shotInput(rifle, time))) {
+      throw new Error('the loaded gun did not fire');
+    }
+    time += 2;
+    mechanics.advanceTo(time);
+    if (rifle.firearm?.chamber === 'round') {
+      throw new Error('the gun did not run dry');
+    }
+    const pull = (): SoundId[] => {
+      sounds.length = 0;
+      time += 1;
+      if (mechanics.fire(shotInput(rifle, time))) {
+        throw new Error('an empty gun fired');
+      }
+      return [...sounds];
+    };
+    const charge = () => {
+      const refusal = mechanics.cock(rifle.uid, time);
+      if (refusal) {
+        throw new Error(refusal);
+      }
+      settle(queue);
+      time += 5;
+      mechanics.advanceTo(time);
+    };
+    return { pull, charge };
+  };
+  const magazineFed = (options: Partial<MechanicsOptions>, content: Registry) => armed(options, { content, rounds: 1 });
 
   describe('dry fire', () => {
     // Each build parses all base content, so the two variants are built once outside the cases' time limit.
@@ -830,29 +878,27 @@ describe('rifle firearm handling', () => {
       withoutDryFire = firearmsWithDryFire(false);
     });
 
-    it.each([
-      [
-        'magazine-fed rifle',
-        (options: Partial<MechanicsOptions>, content: Registry) => armed(options, { content, rounds: 1 }),
-      ],
-      ['bolt-action rifle', armedBolt],
-    ])(
-      'a %s clicks its own dry fire when the trigger falls on a run-dry chamber, and stays silent without one',
-      (_, arm) => {
-        const pullAfterLastRound = (content: Registry): SoundId[] => {
-          const sounds: SoundId[] = [];
-          const { mechanics, rifle } = arm({ onSound: (event) => sounds.push(event) }, content);
-          expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
-          mechanics.advanceTo(3);
-          expect(rifle.firearm?.chamber).not.toBe('round');
-          sounds.length = 0;
-          expect(mechanics.fire(shotInput(rifle, 3))).toBe(false);
-          return sounds;
-        };
-        expect(pullAfterLastRound(withDryFire)).toEqual([FIXTURE_DRY_FIRE]);
-        expect(pullAfterLastRound(withoutDryFire)).toEqual([]);
-      },
-    );
+    it('a run-dry magazine gun clicks its own dry fire once, then stays silent until it is charged', () => {
+      const { pull, charge } = firedDry(magazineFed, withDryFire);
+      expect(pull()).toEqual([FIXTURE_DRY_FIRE]);
+      expect(pull()).toEqual([]);
+      charge();
+      expect(pull()).toEqual([FIXTURE_DRY_FIRE]);
+      expect(firedDry(magazineFed, withoutDryFire).pull()).toEqual([]);
+    });
+
+    it('a gun whose content re-cocks on the trigger pull clicks on every empty pull', () => {
+      const { pull } = firedDry(magazineFed, triggerCocking(withDryFire));
+      expect(pull()).toEqual([FIXTURE_DRY_FIRE]);
+      expect(pull()).toEqual([FIXTURE_DRY_FIRE]);
+    });
+
+    it('a bolt-action shot leaves the hammer down, so the empty pull clicks only once the bolt is worked', () => {
+      const { pull, charge } = firedDry(armedBolt, withDryFire);
+      expect(pull()).toEqual([]);
+      charge();
+      expect(pull()).toEqual([FIXTURE_DRY_FIRE]);
+    });
   });
 
   it('uses exported charge duration in the handling queue and prevents firing during the hand action', () => {

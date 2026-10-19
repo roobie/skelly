@@ -30,7 +30,6 @@ export const SOUND_EVENT_IDS = [
   'gunshot_m4',
   'gunshot_m4_suppressed',
   'revolver_shot',
-  'revolver_dry_click',
   'revolver_crane_open',
   'revolver_crane_close',
   'revolver_eject',

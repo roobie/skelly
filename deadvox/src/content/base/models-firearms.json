@@ -9,7 +9,8 @@
       },
       "firearm": {
         "bolt": true,
-        "chargeSound": "rifle_bolt_cycle",
+        "boltCloseSound": "rifle_bolt_close",
+        "boltOpenSound": "rifle_bolt_open",
         "dispersionRadians": 0.0060000000000000001,
         "dryFireSound": "firearm_dry_click",
         "handling": {},
@@ -46,6 +47,7 @@
       },
       "firearm": {
         "dispersionRadians": 0,
+        "dryFireSound": "shotgun_dry_click",
         "handling": {},
         "pump": true,
         "recoilKickRadians": 0.035000000000000003,
