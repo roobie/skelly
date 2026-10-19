@@ -1,4 +1,5 @@
 local spawnMarker = function(type, chance) { spawn: type, chance: chance };
+local ordinaryDesk = std.filter(function(piece) piece.id == 'desk', (import 'furniture.jsonnet').furniture)[0];
 local senses = import "senses.jsonnet";
 local playerSense = [sense for sense in senses.senses if sense.id == "player"][0];
 local blockSizeMetres = 0.5; // Must match src/core/scale.ts, BLOCK_SIZE.
@@ -245,24 +246,24 @@ local campWallRunCrouchHole = campWallRun + {
     {
       "id": "footlocker",
       "name": "Footlocker",
-      "size": [2, 2, 1],
+      "size": [2, 1, 1],
       "color": "#6b756f",
       "shape": [
-        { "position": [0.04, 0.04, 0.04], "size": [1.92, 1.5, 0.92] },
-        { "position": [0.02, 1.54, 0.02], "size": [1.96, 0.06, 0.96], "color": "#3e4847" },
-        { "position": [0.02, 1.6, 0.02], "size": [1.96, 0.36, 0.96], "color": "#7d8780" },
-        { "position": [0, 0, 0], "size": [0.1, 2, 0.1], "color": "#4a5256" },
-        { "position": [1.9, 0, 0], "size": [0.1, 2, 0.1], "color": "#4a5256" },
-        { "position": [0, 0, 0.9], "size": [0.1, 2, 0.1], "color": "#4a5256" },
-        { "position": [1.9, 0, 0.9], "size": [0.1, 2, 0.1], "color": "#4a5256" },
-        { "position": [0.1, 0, 0], "size": [1.8, 0.1, 1], "color": "#4a5256" },
-        { "position": [0.1, 1.9, 0], "size": [1.8, 0.1, 1], "color": "#4a5256" },
-        { "position": [0.36, 1.3, 0], "size": [0.18, 0.42, 0.06], "color": "#b0a88b" },
-        { "position": [1.46, 1.3, 0], "size": [0.18, 0.42, 0.06], "color": "#b0a88b" },
-        { "position": [0.76, 1.12, 0], "size": [0.48, 0.18, 0.06], "color": "#3e4847" },
-        { "position": [0.8, 1.18, 0], "size": [0.4, 0.06, 0.02], "color": "#91979a" },
-        { "position": [0.36, 1.44, 0.94], "size": [0.22, 0.34, 0.06], "color": "#4a5256" },
-        { "position": [1.42, 1.44, 0.94], "size": [0.22, 0.34, 0.06], "color": "#4a5256" }
+        { "position": [0.04, 0.02, 0.04], "size": [1.92, 0.75, 0.92] },
+        { "position": [0.02, 0.77, 0.02], "size": [1.96, 0.03, 0.96], "color": "#3e4847" },
+        { "position": [0.02, 0.8, 0.02], "size": [1.96, 0.18, 0.96], "color": "#7d8780" },
+        { "position": [0, 0, 0], "size": [0.1, 1, 0.1], "color": "#4a5256" },
+        { "position": [1.9, 0, 0], "size": [0.1, 1, 0.1], "color": "#4a5256" },
+        { "position": [0, 0, 0.9], "size": [0.1, 1, 0.1], "color": "#4a5256" },
+        { "position": [1.9, 0, 0.9], "size": [0.1, 1, 0.1], "color": "#4a5256" },
+        { "position": [0.1, 0, 0], "size": [1.8, 0.05, 1], "color": "#4a5256" },
+        { "position": [0.1, 0.95, 0], "size": [1.8, 0.05, 1], "color": "#4a5256" },
+        { "position": [0.36, 0.65, 0], "size": [0.18, 0.21, 0.06], "color": "#b0a88b" },
+        { "position": [1.46, 0.65, 0], "size": [0.18, 0.21, 0.06], "color": "#b0a88b" },
+        { "position": [0.76, 0.56, 0], "size": [0.48, 0.09, 0.06], "color": "#3e4847" },
+        { "position": [0.8, 0.59, 0], "size": [0.4, 0.03, 0.02], "color": "#91979a" },
+        { "position": [0.36, 0.72, 0.94], "size": [0.22, 0.17, 0.06], "color": "#4a5256" },
+        { "position": [1.42, 0.72, 0.94], "size": [0.22, 0.17, 0.06], "color": "#4a5256" }
       ],
       "container": {
         "pockets": [
@@ -311,7 +312,8 @@ local campWallRunCrouchHole = campWallRun + {
       "id": "field_desk",
       "name": "Field desk",
       "size": [3, 2, 2],
-      "color": "#71674f",
+      "color": ordinaryDesk.color,
+      "shape": ordinaryDesk.shape,
       "container": {
         "pockets": [
           {
@@ -533,7 +535,7 @@ local campWallRunCrouchHole = campWallRun + {
           "T.....WWW......T",
           "T...OO.........T",
           "T..............T",
-          "T........FF....T",
+          "T..............T",
           "T..............T",
           "TTTTTTTTTTTTTTTT"
         ],
@@ -643,8 +645,8 @@ local campWallRunCrouchHole = campWallRun + {
           "########DD########",
           "#................#",
           "#................#",
-          "#...FF...........#",
-          "#...FF...........#",
+          "#................#",
+          "#................#",
           "#................#",
           "#................#",
           "#................#",
@@ -731,8 +733,8 @@ local campWallRunCrouchHole = campWallRun + {
           "TTTT....TTTT",
           "TTTT....TTTT",
           "TTTT....TTTT",
-          "TTTT....FFTT",
-          "TTTT....FFTT",
+          "TTTT......TT",
+          "TTTT......TT",
           "TTTT....TTTT",
           "TTTT....TTTT"
         ],
@@ -1187,7 +1189,7 @@ local campWallRunCrouchHole = campWallRun + {
           "#..............#",
           "#..............#",
           "#..............#",
-          "#FF............#",
+          "#..............#",
           "#..............#",
           "#..............#",
           "#...........QQQ#",
