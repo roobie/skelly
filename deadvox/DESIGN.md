@@ -524,7 +524,12 @@ reason. A promise names a fixed lot and a container anchor in that lot's buildin
 leaves the template unchanged. Validation refuses a promise without a fixed lot or
 an anchor, and fixed container stock that fits no pocket of its furniture; the
 seeded build and furnishing throw rather than drop it, because a silently dropped
-promise would leave the lab unwinnable. Each stop has its own role, and the player
+promise would leave the lab unwinnable. Certified promised stock means the item is
+there and fits its container, nothing more. No check proves that the street reaches
+the stop, or that the stop's door reaches the anchor, past locks or otherwise; reach is
+left to authoring and play. The stops are few and hand-placed, so review and play can
+own reach, but an edit that cuts a promised item off fails no check, and saying so
+keeps that risk in view. Each stop has its own role, and the player
 may visit them in any order, so finding the stock rewards exploring rather than
 following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
 `src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
@@ -592,8 +597,9 @@ only there. See
 
 One owned assembly supplies the service facade and underground campus, so the
 playable world and visual inspection cannot diverge into separate geometry.
-Fixed resources and promised core stock must remain available independently of
-incidental loot.
+Fixed resources and promised core stock are present whatever incidental loot rolls.
+For promised stock that is presence, not reach: a key or route between the street
+and the stock is authored and proven in play.
 Public documentary leads must be independently useful and spatially separate;
 reading one cannot authorize another. Named civic buildings keep the clues part of
 plausible places, while reserved destination landmarks keep the written directions
