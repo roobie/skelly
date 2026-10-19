@@ -179,6 +179,26 @@ it('retains CPU results across GPU eviction and reentry without a bright fallbac
   expect(fixture.sky.at([8.5, 4.5, 8.5])).toBe(0);
 });
 
+it('shares one furniture bounds scan across fields and readiness polls until standing geometry changes', () => {
+  const fixture = skyFixture([fixtureBox, { min: [40, 1, 4], max: [48, 9, 12] }]);
+  const door = fixture.entities.add({ type: 'fixture_door', pos: [8, 20, 8], size: [1, 1, 1], facing: 'n' })!;
+  const boxes = vi.spyOn(fixture.entities, 'blockingBoxes');
+  try {
+    fixture.sky.loadingReadiness([8, 4, 8]);
+    expect(boxes.mock.calls).toEqual([[door]]);
+    fixture.sky.loadingReadiness([44, 4, 8]);
+    fixture.entities.markSearched(door);
+    fixture.sky.loadingReadiness([8, 4, 8]);
+    expect(boxes.mock.calls).toEqual([[door]]);
+
+    fixture.entities.setOpen(door, true);
+    fixture.sky.loadingReadiness([8, 4, 8]);
+    expect(boxes.mock.calls).toEqual([[door], [door]]);
+  } finally {
+    boxes.mockRestore();
+  }
+});
+
 it('invalidates geometry above the field on a blocking door change, but not on search state', () => {
   const fixture = skyFixture();
   fixture.update();
