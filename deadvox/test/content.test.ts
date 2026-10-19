@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
+import { controlIssues } from '../src/cli/controlIssues.ts';
 import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { isBodyDoor } from '../src/core/blockEntities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
@@ -1104,7 +1105,7 @@ describe('content', () => {
       const data = structuredClone(file.data) as ControlRows;
       change(data.controls);
       const built = buildRegistry(base.map((entry) => (entry === file ? { source: file.source, data } : entry)));
-      return [...built.issues, ...requiredContentIssues(built.registry)].map(({ message }) => message);
+      return [...built.issues, ...controlIssues(built.registry, built.origins)].map(({ message }) => message);
     };
     const keysOf = (rows: ControlRows['controls'], id: string) => rows.find((row) => row.id === id)!.keys;
 

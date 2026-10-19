@@ -5,7 +5,6 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
-import { controlRowIssue, defaultKeySetIssues } from '../game/inputBindings.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
@@ -1263,15 +1262,6 @@ const checkSkillAndUiReferences = (registry: Registry, report: Report): void => 
   }
 };
 
-const checkControls = (registry: Registry, report: Report): void => {
-  for (const control of registry.controls.values()) {
-    const issue = controlRowIssue(control.id, control.keys);
-    if (issue) {
-      report('controls', control.id, '', issue);
-    }
-  }
-};
-
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1309,7 +1299,6 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     checkLayoutReferences(layout, registry, report);
   }
   checkScenarios(registry, report);
-  checkControls(registry, report);
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
     report(section, id, path, message);
   }
@@ -1350,12 +1339,6 @@ export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
   );
   if (registry.dayCycle === undefined) {
     issues.push({ source: 'core content', path: 'dayCycle', message: 'missing required day cycle' });
-  }
-  const defaults = new Map(
-    [...registry.controls.values()].filter((c) => !controlRowIssue(c.id, c.keys)).map((c) => [c.id, c.keys] as const),
-  );
-  for (const message of defaultKeySetIssues(defaults)) {
-    issues.push({ source: 'core content', path: 'controls', message });
   }
   return issues;
 };

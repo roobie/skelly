@@ -15,6 +15,7 @@ import { bundledModCatalogueIssues } from '../core/bundledModCatalogue.ts';
 import { buildRegistry, type ContentSource, requiredContentIssues } from '../core/content.ts';
 import { checkReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
+import { controlIssues } from './controlIssues.ts';
 
 const BASE = 'src/content/base';
 const CATALOGUE = 'src/config/bundled-mods.json';
@@ -66,7 +67,7 @@ export const validate = (
   write(`Reachable components: ${[...reachable.components].sort().join(', ')}`);
   write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
   write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
-  issues.push(...requiredContentIssues(registry));
+  issues.push(...requiredContentIssues(registry), ...controlIssues(registry, origins));
   const catalogue = read(CATALOGUE);
   if (catalogue !== undefined) {
     issues.push(...bundledModCatalogueIssues(catalogue).map((message) => ({ source: CATALOGUE, path: '', message })));
