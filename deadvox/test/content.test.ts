@@ -1095,6 +1095,53 @@ describe('content', () => {
     });
   });
 
+  describe('default keys', () => {
+    type ControlRows = { controls: { id: string; keys: { code: string; modifier?: string }[] }[] };
+    const controlsIssues = (change: (rows: ControlRows['controls']) => void): string[] => {
+      const file = base.find(({ source }) => source === 'controls.json')!;
+      const data = structuredClone(file.data) as ControlRows;
+      change(data.controls);
+      const built = buildRegistry(base.map((entry) => (entry === file ? { source: file.source, data } : entry)));
+      return [...built.issues, ...requiredContentIssues(built.registry)].map(({ message }) => message);
+    };
+    const keysOf = (rows: ControlRows['controls'], id: string) => rows.find((row) => row.id === id)!.keys;
+
+    it('accepts the base default keys', () => {
+      expect(controlsIssues(() => {})).toEqual([]);
+    });
+
+    it('reports an action left without a default key', () => {
+      expect(controlsIssues((rows) => rows.splice(rows.findIndex((row) => row.id === 'movement.jump'), 1))).toContain(
+        'action movement.jump has no default key',
+      );
+    });
+
+    it('reports a default key for an unknown action', () => {
+      expect(controlsIssues((rows) => rows.push({ id: 'movement.teleport', keys: [{ code: 'KeyZ' }] }))).toContain(
+        'unknown action movement.teleport',
+      );
+    });
+
+    it('reports an invalid key code', () => {
+      expect(controlsIssues((rows) => keysOf(rows, 'movement.jump').splice(0, 1, { code: 'NotAKey' }))).toContain(
+        'NotAKey: Unknown physical key',
+      );
+    });
+
+    it.each(['ctrl', 'meta', 'alt'])('refuses the %s modifier in a default key', (modifier) => {
+      const messages = controlsIssues((rows) => keysOf(rows, 'movement.jump').splice(0, 1, { code: 'KeyJ', modifier }));
+      expect(messages.some((message) => message.startsWith(`${modifier}+KeyJ: `))).toBe(true);
+    });
+
+    it('reports two default keys that conflict', () => {
+      const messages = controlsIssues((rows) =>
+        keysOf(rows, 'movement.back').splice(0, 1, ...keysOf(rows, 'movement.forward')),
+      );
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toMatch(/conflict/i);
+    });
+  });
+
   it('reports a missing day cycle as a load error', () => {
     expect(requiredContentIssues({ ...baseRegistry, dayCycle: undefined })).toContainEqual({
       source: 'core content',
