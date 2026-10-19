@@ -346,8 +346,34 @@ describe('keyboard registry', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     const craft = bindings.binding('craft.continue')!;
     const interruption = bindings.binding('compression.continue')!;
-    expect(craft.contexts).toEqual(['play']);
-    expect(interruption.contexts).toEqual(['interrupted']);
+    expect(craft.contexts.filter((context) => interruption.contexts.includes(context))).toEqual([]);
+  });
+  it('gives the reload and throw keys to turn and tip while carrying', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    const keyboard = new KeyboardInput(bindings);
+    let context: InputContext = 'carrying';
+    keyboard.context = () => ({ context, debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+    const press = (action: string) => {
+      const { code } = bindings.chords(action)[0]!;
+      keyboard.press(event(code));
+      keyboard.release(event(code));
+    };
+
+    press('firearm.reload');
+    press('player.throw');
+    expect(commands.filter(({ phase }) => phase === 'down').map(({ action }) => action)).toEqual([
+      'carry.turn',
+      'carry.tip',
+    ]);
+    commands.length = 0;
+    context = 'play';
+    keyboard.sync();
+    press('carry.turn');
+    press('carry.tip');
+    expect(commands.map(({ action }) => action)).not.toContain('carry.turn');
+    expect(commands.map(({ action }) => action)).not.toContain('carry.tip');
   });
   it('routes G/V/B/H to the inventory tabs in play and inventory contexts', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));

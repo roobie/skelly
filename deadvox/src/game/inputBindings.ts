@@ -12,6 +12,7 @@ export const INPUT_CONTEXTS = {
   build: true,
   noclip: true,
   play: false,
+  carrying: false,
   interrupted: false,
 } as const satisfies Record<string, boolean>;
 export type InputContext = keyof typeof INPUT_CONTEXTS;
@@ -42,7 +43,7 @@ export const bindingIsDebugOnly = (binding: Binding): boolean =>
   binding.debug === true || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context));
 export const contextsForRun = (binding: Binding, debugRun: boolean): readonly InputContext[] =>
   debugRun ? binding.contexts : binding.contexts.filter((context) => !DEBUG_ONLY_CONTEXTS.has(context));
-const world: readonly InputContext[] = ['play', 'noclip'];
+const world: readonly InputContext[] = ['play', 'carrying', 'noclip'];
 const moving: readonly InputContext[] = [...world, 'build'];
 const movingWhileReading: readonly InputContext[] = [...moving, 'reading'];
 const entered: readonly InputContext[] = [
@@ -106,9 +107,11 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('movement.right', 'Move right', movingWhileReading, ['KeyD'], 'held-state'),
   row('movement.sprint', 'Sprint', moving, ['ShiftLeft', 'ShiftRight'], 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving, ['KeyZ']),
-  row('player.crouch-toggle', 'Toggle crouch', ['play', 'build'], ['KeyC']),
+  row('player.crouch-toggle', 'Toggle crouch', ['play', 'carrying', 'build'], ['KeyC']),
   row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play'], ['KeyT']),
-  row('movement.jump', 'Jump', ['play', 'build'], ['Space'], 'held-state'),
+  row('movement.jump', 'Jump', ['play', 'carrying', 'build'], ['Space'], 'held-state'),
+  row('carry.turn', 'Turn the carried piece', ['carrying'], ['KeyR']),
+  row('carry.tip', 'Tip the carried piece over', ['carrying'], ['KeyT']),
   row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state'),
   row('noclip.descend', 'Descend while flying', ['noclip'], ['KeyC'], 'held-state'),
   row('hand.use-off', 'Use off hand', world, ['Equal']),
@@ -117,7 +120,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row(
     'firearm.reload',
     'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap does nothing',
-    world,
+    ['play', 'noclip'],
     ['KeyR'],
     'hold',
     {
@@ -137,7 +140,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
     holdMs: HUD_TOGGLE_HOLD_MS,
   }),
   row('handling.stop', 'Stop handling or a long action', [...moving, 'inventory', 'interrupted'], ['KeyX']),
-  row('craft.continue', 'Continue stopped crafting', ['play'], ['Enter']),
+  row('craft.continue', 'Continue stopped crafting', ['play', 'carrying'], ['Enter']),
   row('compression.continue', 'Continue after an interruption', ['interrupted'], ['Enter']),
   ...Array.from({ length: 5 }, (_, i) =>
     row(
@@ -207,7 +210,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugRow('debug.spawn-zombie.amalgam', 'Spawn amalgam', 'Numpad4'),
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes', 'KeyY'),
   debugRow('debug.freeze-shamblers', 'Freeze shamblers', 'KeyO'),
-  debugRow('debug.review-map-toggle', 'Review map', 'KeyM', ['play', 'noclip', 'review-map']),
+  debugRow('debug.review-map-toggle', 'Review map', 'KeyM', ['play', 'carrying', 'noclip', 'review-map']),
   debugRow('debug.freeze-game', 'Freeze game', 'Numpad5'),
   debugRow('debug.tone-cycle', 'Tone mapping', 'KeyJ'),
   debugRow('debug.exposure-decrease', 'Exposure −', 'Minus'),
@@ -1031,7 +1034,7 @@ export class KeyboardInput {
   private playingBrowserChord(event: KeyboardEvent): boolean {
     return (
       event.cancelable &&
-      this.context().context === 'play' &&
+      (this.context().context === 'play' || this.context().context === 'carrying') &&
       Boolean(document.pointerLockElement) &&
       !modifierCodes[event.code] &&
       (event.ctrlKey || event.metaKey || event.altKey) &&
