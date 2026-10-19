@@ -30,16 +30,8 @@ import {
   type Transform,
   type Vec3,
 } from '@skelly/engine/core/math.ts';
-import type {
-  ClipPlane,
-  KeepOut,
-  ParamSpec,
-  PartDef,
-  PartFamily,
-  PortDef,
-  Solid,
-  Vec2,
-} from '@skelly/engine/core/schema.ts';
+import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef } from '@skelly/engine/core/schema.ts';
+import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/core/solid.ts';
 import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';

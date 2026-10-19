@@ -3,7 +3,8 @@ import { distanceWorld, obbPolyhedron, penetrationWorld, worldSolid } from '@ske
 import { add, applyDir, applyPoint, IDENTITY, type Vec3 } from '@skelly/engine/core/math.ts';
 import { meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { BoxSolid, PartFamily, Resolved } from '@skelly/engine/core/schema.ts';
+import type { PartFamily, Resolved } from '@skelly/engine/core/schema.ts';
+import type { BoxSolid } from '@skelly/engine/core/solid.ts';
 import { expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { boltCartridge } from '../src/gun/boltCartridge.ts';

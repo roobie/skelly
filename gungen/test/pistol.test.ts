@@ -1,5 +1,5 @@
 import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
-import type { Solid } from '@skelly/engine/core/schema.ts';
+import type { Solid } from '@skelly/engine/core/solid.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';

@@ -5,7 +5,8 @@
 import { SIZE_CLASSES, type SizeClass } from '@skelly/engine/core/conventions.ts';
 import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
 import type { Vec3 } from '@skelly/engine/core/math.ts';
-import type { BoxSolid, ParamSpec, Solid, SolidDisplayHints, SolidFinish, Vec2 } from '@skelly/engine/core/schema.ts';
+import type { ParamSpec } from '@skelly/engine/core/schema.ts';
+import type { BoxSolid, Solid, SolidDisplayHints, SolidFinish, Vec2 } from '@skelly/engine/core/solid.ts';
 
 export const X: Vec3 = [1, 0, 0];
 export const NEG_X: Vec3 = [-1, 0, 0];

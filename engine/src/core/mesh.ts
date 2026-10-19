@@ -22,8 +22,8 @@ import {
 } from './geometry.ts';
 import { add, cross, dot, type ExtrusionAxis, extrusionPoint, IDENTITY, normalize, sub, type Vec3 } from './math.ts';
 import { DEFAULT_REVOLVE_FACETS, meshForRevolved } from './revolve.ts';
-import type { Box, DomainUnits, Solid, Vec2 } from './schema.ts';
 import type { ConvexPolyhedron, TriangleMesh } from './shapeTypes.ts';
+import type { Box, DomainUnits, Solid, Vec2 } from './solid.ts';
 
 // Default chamfer size: half a grid step. This keeps the edge readable while
 // preserving the part's overall shape; each solid clamps it to its geometry.

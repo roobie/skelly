@@ -3,7 +3,8 @@
 import { distanceWorld, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
 import { applyPoint, compose, extrusionPoint, IDENTITY, translation, type Vec3 } from '@skelly/engine/core/math.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, Box, Solid } from '@skelly/engine/core/schema.ts';
+import type { Assembly } from '@skelly/engine/core/schema.ts';
+import type { Box, Solid } from '@skelly/engine/core/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { AR_ACTION_LAYOUT } from '../src/gun/arLayout.ts';
 import { gunDomain } from '../src/gun/domain.ts';

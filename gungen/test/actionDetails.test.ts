@@ -1,6 +1,6 @@
 import { applyPoint, invert } from '@skelly/engine/core/math.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Box, Solid } from '@skelly/engine/core/schema.ts';
+import type { Box, Solid } from '@skelly/engine/core/solid.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';

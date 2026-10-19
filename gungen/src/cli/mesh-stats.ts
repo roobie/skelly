@@ -11,7 +11,7 @@ import { displayItems } from '@skelly/engine/core/display.ts';
 import { generate } from '@skelly/engine/core/generate.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Solid } from '@skelly/engine/core/schema.ts';
+import type { Solid } from '@skelly/engine/core/solid.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 

@@ -7,8 +7,8 @@ import {
 import { applyPoint, compose, IDENTITY, translation, type Vec3 } from '@skelly/engine/core/math.ts';
 import { meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Solid, Vec2 } from '@skelly/engine/core/schema.ts';
 import type { TriangleMesh } from '@skelly/engine/core/shapeTypes.ts';
+import type { Solid, Vec2 } from '@skelly/engine/core/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { AK_PROPORTIONS } from '../src/gun/akProportions.ts';
 import { gunDomain } from '../src/gun/domain.ts';

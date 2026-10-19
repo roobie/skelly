@@ -1,5 +1,5 @@
 import { meshForSolid } from '@skelly/engine/core/mesh.ts';
-import type { RevolvedSolid, Vec2 } from '@skelly/engine/core/schema.ts';
+import type { RevolvedSolid, Vec2 } from '@skelly/engine/core/solid.ts';
 import {
   BufferAttribute,
   BufferGeometry,

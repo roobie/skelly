@@ -4,7 +4,7 @@ import {
   validateExtrudedPolygon,
 } from '@skelly/engine/core/geometry.ts';
 import type { Vec3 } from '@skelly/engine/core/math.ts';
-import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/core/schema.ts';
+import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/core/solid.ts';
 
 export interface SectionWindow {
   readonly x: readonly [number, number];

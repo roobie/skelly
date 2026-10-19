@@ -11,8 +11,8 @@
 // inside. The outward normal of a segment with direction (da, dr) is (-dr, da).
 
 import { add, extrusionPoint, type Vec3 } from './math.ts';
-import type { RevolvedSolid, Vec2 } from './schema.ts';
 import type { ConvexPolyhedron, TriangleMesh } from './shapeTypes.ts';
+import type { RevolvedSolid, Vec2 } from './solid.ts';
 
 const DEFAULT_CREASE_DEGREES = 40;
 /**

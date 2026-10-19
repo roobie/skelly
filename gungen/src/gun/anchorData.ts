@@ -3,7 +3,8 @@
 
 import type { AnchorFrame } from '@skelly/engine/core/design.ts';
 import { add, extrusionPoint, type Vec3 } from '@skelly/engine/core/math.ts';
-import type { PartDef, RevolvedSolid, Solid } from '@skelly/engine/core/schema.ts';
+import type { PartDef } from '@skelly/engine/core/schema.ts';
+import type { RevolvedSolid, Solid } from '@skelly/engine/core/solid.ts';
 import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
 import { localEjectionPoint } from './ejection.ts';
 import { FIRING_GRIP } from './parts.ts';

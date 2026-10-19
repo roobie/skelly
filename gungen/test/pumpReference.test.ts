@@ -2,7 +2,8 @@ import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/c
 import { applyPoint, IDENTITY } from '@skelly/engine/core/math.ts';
 import { meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, ExtrudedPolygonSolid, Solid } from '@skelly/engine/core/schema.ts';
+import type { Assembly } from '@skelly/engine/core/schema.ts';
+import type { ExtrudedPolygonSolid, Solid } from '@skelly/engine/core/solid.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
 import type { Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';

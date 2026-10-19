@@ -15,8 +15,8 @@ import {
   type Vec3,
 } from './math.ts';
 import { revolvedLocalPolyhedron } from './revolve.ts';
-import type { Box, ClipPlane, ExtrudedPolygonSolid, Solid, Vec2 } from './schema.ts';
 import type { ConvexPolyhedron } from './shapeTypes.ts';
+import type { Box, ClipPlane, ExtrudedPolygonSolid, Solid, Vec2 } from './solid.ts';
 
 export interface Obb {
   readonly center: Vec3;

@@ -2,7 +2,8 @@ import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/c
 import { applyDir, applyPoint, IDENTITY, type Vec3 } from '@skelly/engine/core/math.ts';
 import { motionTransform } from '@skelly/engine/core/motion.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { BoxSolid, PartFamily } from '@skelly/engine/core/schema.ts';
+import type { PartFamily } from '@skelly/engine/core/schema.ts';
+import type { BoxSolid } from '@skelly/engine/core/solid.ts';
 import { expect, it } from 'vitest';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { sweepBoltAction } from '../src/gun/boltSweep.ts';

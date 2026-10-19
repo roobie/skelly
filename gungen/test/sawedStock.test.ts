@@ -2,7 +2,7 @@ import { generate } from '@skelly/engine/core/generate.ts';
 import { distanceWorld, validateExtrudedPolygon, worldSolid } from '@skelly/engine/core/geometry.ts';
 import { IDENTITY } from '@skelly/engine/core/math.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { ExtrudedPolygonSolid } from '@skelly/engine/core/schema.ts';
+import type { ExtrudedPolygonSolid } from '@skelly/engine/core/solid.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';

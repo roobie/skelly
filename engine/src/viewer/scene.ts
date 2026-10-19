@@ -11,7 +11,7 @@ import type { Mat3, Transform, Vec3 } from '../core/math.ts';
 import { applyDir, compose } from '../core/math.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
 import { portFrame } from '../core/resolve.ts';
-import type { Solid } from '../core/schema.ts';
+import type { Solid } from '../core/solid.ts';
 import type { Report } from '../core/validate.ts';
 
 const FAIL = 0xe5_53_4b;

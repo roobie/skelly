@@ -13,7 +13,7 @@ import {
   worldSolid,
 } from '@skelly/engine/core/geometry.ts';
 import { IDENTITY, mulMM, rotX, rotY, rotZ } from '@skelly/engine/core/math.ts';
-import type { Solid } from '@skelly/engine/core/schema.ts';
+import type { Solid } from '@skelly/engine/core/solid.ts';
 import { describe, expect, it } from 'vitest';
 
 const CONVEX_ERROR = /convex/i;

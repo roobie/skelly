@@ -17,16 +17,15 @@ typecheck and suite pass unchanged, and a check fails any import that runs upwar
 ## Layers and where each engine module falls
 
 - **Foundation:** `math`, `conventions`, `random`, and the `Issue` type from `issue`.
-- **Shapes:** the solid types now inside `schema`, plus `geometry`, `revolve`, `mesh`, `display`.
-- **Assembly:** the rest of `schema`, plus `template`, `resolve`, `rules`, `validate`,
+- **Shapes:** `solid`, `shapeTypes`, `geometry`, `revolve`, `mesh`, `display`.
+- **Assembly:** `schema`, plus `template`, `resolve`, `rules`, `validate`,
   `generate`, `parseAssembly`, `motion`, `anchors`, `design`, `designLoader`.
 - **Above the engine:** `glb` and `appearance` need a resolved assembly, so they are
   exporters; `engine/src/viewer/scene.ts` moves to the tool UI package.
 
 ## Known obstacles
 
-- `design` mixes persistence, anchors, palette and export types.
-- `schema` holds the solid types and the assembly model together, so it has to be split,
+- `design` mixes persistence, anchors, palette and export types, so it has to be split,
   not moved.
 
 ## Verifying no behavior change
@@ -52,7 +51,11 @@ to be new.
 - [x] Break the schema and resolve cycle: `engine/src/core/schema.ts`, `Resolved`, now holds
   the resolved-assembly types, because a `Rule` checks a `Resolved` and a `Resolved` holds its
   `Domain`; `resolve` imports them and `schema` imports nothing from `resolve`.
-- [ ] Split `schema` and `design` along the layers above.
+- [x] Split the solid types out of `schema`: `engine/src/core/solid.ts`, `Solid`, holds them
+  and `DomainUnits`; `schema` imports from it, never the reverse.
+- [ ] Split `design` along the layers above: persistence and suggest types stay in `design`,
+  the anchor types go to `anchors`, and the palette and GLB export types go to a new
+  `exportTypes` module above the engine.
 - [ ] Move the files into layer folders and repoint every import, including gungen's.
 - [ ] Add the check that fails an upward import, and run it in CI.
 - [ ] Run gungen's typecheck, unit suite and `validate`; they must pass unchanged.

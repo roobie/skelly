@@ -1,7 +1,8 @@
 import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
 import { partNodeName } from '@skelly/engine/core/glb.ts';
 import { applyDir, applyPoint, compose, normalize, sub, type Transform, type Vec3 } from '@skelly/engine/core/math.ts';
-import type { Resolved, Solid } from '@skelly/engine/core/schema.ts';
+import type { Resolved } from '@skelly/engine/core/schema.ts';
+import type { Solid } from '@skelly/engine/core/solid.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { toFileAxes } from './exportFrame.ts';
 

@@ -4,7 +4,7 @@ import { generate } from '@skelly/engine/core/generate.ts';
 import { validateExtrudedPolygon } from '@skelly/engine/core/geometry.ts';
 import { BEVEL, meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/engine/core/schema.ts';
+import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/engine/core/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
