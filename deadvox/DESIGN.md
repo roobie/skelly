@@ -790,15 +790,17 @@ outside every floor and cap, so story and promised stock are never squeezed out.
 
 Items that come together, such as a pump shotgun and shells nearby, form an ItemSet: an
 anchor and its companions. Each ItemSet names where its companions may land, because the
-right reach differs by set. Companion placement is best effort, never fail-closed: a
-companion that cannot land where its set allows never refuses or fails the loot unit's plan,
-since a missing box of shells costs the player less than a loot unit that will not generate.
+right reach differs by set. Companion placement is best effort, never fail-closed: each
+companion is tried within its set's scope and skipped if it cannot land there, so the loot
+unit still generates, since a missing box of shells costs the player less than a loot unit
+that will not generate, and skipping needs the least plan logic. A skipped companion leaves
+its set incomplete with no trace in the world, so the plan reports what it dropped as part
+of the same rule; without that report an incomplete set is silent and cannot be tuned.
 Companions sit outside the loot unit's caps, like required stock, and land whenever their
 anchor does. That leaves the most room to refine: a cap check or a chance roll on
 companions can be added later, for every set or per set, without undoing anything. The
 price is that until such a refinement lands, a loot unit's ammunition can exceed a cap.
-What best effort does when a companion cannot land, the rest of ItemSets and scenario
-multipliers on odds are open on #699.
+The rest of ItemSets and scenario multipliers on odds are open on #699.
 
 Loot is placed once, when its place is first generated, and never restocked. What a
 player takes stays gone, so scarcity holds, a searched place stays spent instead of
