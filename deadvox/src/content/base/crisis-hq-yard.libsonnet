@@ -56,7 +56,7 @@ local palette = {
     },
     {
       id: 'crisis_hq_parking', size: [6, 1, 12], lootContext: context,
-      palette: { k: 'asphalt', w: 'plaster' },
+      palette: { k: 'asphalt', w: 'painted_asphalt' },
       layers: [[
         'wwwwww', 'wkkkkw', 'wkkkkw', 'wkkkkw', 'wkkkkw', 'wkkkkw',
         'wkkkkw', 'wkkkkw', 'wkkkkw', 'wkkkkw', 'wkkkkw', 'wwwwww',
