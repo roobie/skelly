@@ -379,6 +379,11 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
 - **A carried piece carries its contents.** An explosive inside a carried
   piece goes off at its carrier, because the piece is in their hands, not where
   it last stood. See `src/game/session.ts`, `detonationPoint`.
+- **Seen while carried.** The player has to see what they're carrying, so the
+  piece is drawn held low in front of them, clear of the aimed cell's outline
+  so it never hides where it will go. The view reads the carry state rather
+  than a copy of it, so it cannot outlive the carry. Where it sits is content,
+  so it can be tuned by eye. See `src/render/carriedPiece.ts`, `CarriedPiece`.
 - **Refusals live in content.** Each refusal says why in a short first-person
   line, kept in content with the other UI text so a pack can reword it.
 
