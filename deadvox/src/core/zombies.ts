@@ -16,6 +16,7 @@ import {
 } from './amalgamFigure.ts';
 import { AmalgamShape } from './amalgamShape.ts';
 import type { BodyRegion, DamageKind, MeleeDamageKind } from './body.ts';
+import type { MeleeBlocker } from './collision.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { ExposureContact } from './damageExposure.ts';
@@ -545,8 +546,10 @@ export interface ZombieSystemOptions {
   store?: EntityStore<Zombie>;
   terrainFloor?: TerrainFloorAt | undefined;
   seed?: number;
-  /** Movement, attacks and hearing use the body's blockers. */
+  /** Movement and projectiles use the body's blockers. */
   isSolid: SolidAt;
+  isSoundBlocking?: SolidAt;
+  meleeBlocker?: MeleeBlocker;
   /**
    * `isSolid` as cached bricks, which an amalgam's exact shape moves against (core/solidBricks.ts). Without
    * it the bricks are read from `isSolid` on every query: right, but slower.
@@ -2286,7 +2289,8 @@ export class ZombieSystem {
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, and night-roam transitions together as one horde state machine.
   private updateHordes(dt: number, time: number, player: PlayerSense, dayPhase: DayPhase): void {
-    const { blockSize, isSolid } = this.options;
+    const { blockSize } = this.options;
+    const isSolid = this.options.isSoundBlocking ?? this.options.isSolid;
     for (const { state: horde, rng } of this.hordes.values()) {
       const center = this.hordeCenter(horde.id);
       const member = [...this.store.entries()].find(([, zombie]) => zombie.hordeId === horde.id)?.[1];
@@ -2452,7 +2456,8 @@ export class ZombieSystem {
 
   private updatePerception(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, pos, player, dayState, blockSize, isOpaque, isSolid, time, rng, perception } = scratch;
+    const { zombie, type, pos, player, dayState, blockSize, isOpaque, time, rng, perception } = scratch;
+    const soundBlocking = this.options.isSoundBlocking ?? scratch.isSolid;
     perception.zombie = type;
     perception.from = pos;
     perception.facing = zombie.facing;
@@ -2490,7 +2495,7 @@ export class ZombieSystem {
     hearing.from = pos;
     hearing.player = player;
     hearing.blockSize = blockSize;
-    hearing.isSolid = isSolid;
+    hearing.isSolid = soundBlocking;
     hearing.rng = rng;
     hearing.tuning = this.options.tuning;
     scratch.vocal = undefined;
@@ -2502,7 +2507,7 @@ export class ZombieSystem {
         noise: player.vocalNoise,
         time,
         blockSize,
-        isSolid,
+        isSolid: soundBlocking,
         rng,
         tuning: this.options.tuning,
       });
@@ -2729,7 +2734,7 @@ export class ZombieSystem {
 
   private selectTravelIntent(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, player, blockSize, isSolid, pos, obstacleDirection, dt } = scratch;
+    const { zombie, type, player, blockSize, pos, obstacleDirection, dt } = scratch;
     if (zombie.mode === 'chase') {
       scratch.target = player.pos;
     } else if (zombie.mode === 'investigate') {
@@ -2740,7 +2745,13 @@ export class ZombieSystem {
     scratch.seeking = zombie.mode === 'chase' || zombie.mode === 'investigate';
     scratch.inReach =
       zombie.mode === 'chase' &&
-      withinAttackReach({ zombie, zombiePos: pos, playerPos: scratch.target, blockSize, isSolid });
+      withinAttackReach({
+        zombie,
+        zombiePos: pos,
+        playerPos: scratch.target,
+        blockSize,
+        isSolid: this.zombieMeleeBlocker(zombie),
+      });
     const toward = unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
     scratch.direction = obstacleDirection ?? toward;
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
@@ -2988,14 +2999,27 @@ export class ZombieSystem {
     }
   }
 
+  private zombieMeleeBlocker(zombie: Zombie): SolidAt {
+    return (
+      this.options.meleeBlocker?.({ kind: 'zombie', reachMetres: zombieAttackReachMetres(zombie) }) ??
+      this.options.isSolid
+    );
+  }
+
   private resolveZombieAttack(): void {
     const scratch = this.tickScratch;
-    const { zombie, dt, player, blockSize, type, pos, isSolid } = scratch;
+    const { zombie, dt, player, blockSize, type, pos } = scratch;
     if (zombie.attackWindup > 0) {
       zombie.attackWindup = Math.max(0, zombie.attackWindup - dt);
       if (
         zombie.attackWindup <= 0 &&
-        withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
+        withinAttackReach({
+          zombie,
+          zombiePos: pos,
+          playerPos: player.pos,
+          blockSize,
+          isSolid: this.zombieMeleeBlocker(zombie),
+        })
       ) {
         const move = pickZombieMove(type.attack.moves, scratch.rng.next());
         this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
@@ -3005,7 +3029,13 @@ export class ZombieSystem {
       zombie.attackWait <= 0 &&
       zombie.spitWindup <= 0 &&
       (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie.severed)) &&
-      withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
+      withinAttackReach({
+        zombie,
+        zombiePos: pos,
+        playerPos: player.pos,
+        blockSize,
+        isSolid: this.zombieMeleeBlocker(zombie),
+      })
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
       zombie.attackWindup = type.attack.windupSimSeconds;
@@ -3464,7 +3494,12 @@ export class ZombieSystem {
 
   /** Purely queries the first visible posed region along the ray, including hits beyond melee reach. */
   aimAt(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): ZombieAim | undefined {
-    return this.targetAt({ origin, direction, weapon, isBlocked: this.options.isOpaque });
+    return this.targetAt({
+      origin,
+      direction,
+      weapon,
+      isBlocked: (x, y, z) => this.options.isSolid(x, y, z) || this.options.isOpaque(x, y, z),
+    });
   }
 
   private targetAt({
@@ -3606,7 +3641,9 @@ export class ZombieSystem {
   }
 
   private resolveMeleeNow(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
-    const aim = this.targetAt({ origin, direction, weapon, isBlocked: this.options.isSolid });
+    const isBlocked =
+      this.options.meleeBlocker?.({ kind: 'player', damageKind: weapon.type ?? 'blunt' }) ?? this.options.isSolid;
+    const aim = this.targetAt({ origin, direction, weapon, isBlocked });
     if (!aim?.inReach) {
       this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
       return undefined;

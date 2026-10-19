@@ -256,9 +256,14 @@
         "shambler": "shambler_step_stone"
       },
       "id": "chain_link",
+      "meleePass": {
+        "damageKinds": ["pierce"],
+        "minimumZombieReachMetres": 1
+      },
       "name": "Chain-link fence",
       "opaque": false,
       "solid": true,
+      "soundBlocking": false,
       "weatherable": false,
       "wireMesh": {
         "cellsPerBlock": 4,

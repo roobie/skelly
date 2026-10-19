@@ -1,7 +1,7 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
-import { worldOpaque, worldSolid } from '../core/collision.ts';
+import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { blockColors, blockId, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
@@ -41,6 +41,7 @@ export interface WorldSetup {
   /** Blocks and block entities that stop movement. */
   isSolid: (x: number, y: number, z: number) => boolean;
   isOpaque: (x: number, y: number, z: number) => boolean;
+  isSoundBlocking: (x: number, y: number, z: number) => boolean;
   streamer: Streamer;
   /** Player start in metres (feet), and the yaw that faces the hamlet or the test house. */
   spawn: { pos: Vec3; yaw: number };
@@ -334,6 +335,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     groundAt,
     isSolid,
     isOpaque: worldOpaque(world, registry, entities),
+    isSoundBlocking: worldSoundBlocking(world, registry, entities),
     streamer,
     spawn: site.spawn,
     lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? houseLootPoints.get(`${cx},${cz}`) ?? [],

@@ -149,6 +149,7 @@ describe('authored readable text', () => {
       blockSize: 0.5,
       worldSeed: 1,
       isSolid: (x) => x === 3,
+      isOpaque: () => false,
       hasModel: () => false,
     });
     expect(target).toMatchObject({ kind: 'furniture', entity: sign });

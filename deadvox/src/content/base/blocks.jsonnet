@@ -38,6 +38,8 @@ local block(id, name, color, surface, extra={}) =
     block('chain_link', 'Chain-link fence', '#89979a', 'stone', {
       weatherable: false,
       opaque: false,
+      soundBlocking: false,
+      meleePass: { damageKinds: ['pierce'], minimumZombieReachMetres: 1 },
       wireMesh: { cellsPerBlock: 4, wireFraction: 0.08 },
     }),
     block('sandbag', 'Sandbag', '#9b8d6a', 'stone', { weatherable: false }),

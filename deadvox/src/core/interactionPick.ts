@@ -8,6 +8,7 @@ import type { Item } from './items.ts';
 import { footprint } from './items.ts';
 import type { Body } from './physics.ts';
 import { PILE_BUNDLE_WIDTH, pileBundleHeight, pileLayout } from './pileLayout.ts';
+import type { SolidAt } from './raycast.ts';
 import { pileScatterPlacements } from './scatterPile.ts';
 import { PILE_DISPLAY_KIND } from './schema.ts';
 
@@ -35,6 +36,7 @@ interface RayBox {
 }
 
 interface InteractionPickOptions extends FurniturePickOptions {
+  readonly isOpaque: SolidAt;
   readonly inventory: Pick<Inventory, 'registry' | 'piles'>;
   readonly worldSeed: number;
   readonly hasModel: (id: string) => boolean;
@@ -223,7 +225,10 @@ const nearestDownedBody = (options: InteractionPickOptions, direction: Vec3): Bo
 
 /** Picks the nearest target for F, using its furniture ray and reach for loose ground items and downed bodies too. */
 export const pickInteractionTarget = (options: InteractionPickOptions): InteractionTarget | undefined => {
-  const { furniture, obstructionDistanceBlocks } = pickFurnitureAndObstruction(options);
+  const { furniture, obstructionDistanceBlocks } = pickFurnitureAndObstruction({
+    ...options,
+    isSolid: (x, y, z) => options.isSolid(x, y, z) || options.isOpaque(x, y, z),
+  });
   const magnitude = Math.hypot(...options.direction);
   if (magnitude === 0 || options.maxDistance < 0 || options.blockSize <= 0) {
     return furniture && { kind: 'furniture', ...furniture };

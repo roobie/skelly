@@ -163,6 +163,13 @@ const BlockSchema = strictObject({
   solid: vBoolean(),
   /** Blocks sight/aim/picking; ordinary blocks inherit their movement rule when omitted. */
   opaque: optional(vBoolean()),
+  soundBlocking: optional(vBoolean()),
+  meleePass: optional(
+    strictObject({
+      damageKinds: array(picklist(MELEE_DAMAGE_KINDS)),
+      minimumZombieReachMetres: Positive,
+    }),
+  ),
   /** Open wire geometry; wireFraction controls coverage, while color supplies the tint. */
   wireMesh: optional(
     strictObject({

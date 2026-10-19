@@ -10,7 +10,7 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
-import { terrainSolid } from '../core/collision.ts';
+import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -1071,6 +1071,8 @@ export const createSession = (options: SessionOptions) => {
     isSolid,
     solidBricks: solidBricksFor(options),
     isOpaque: options.isOpaque,
+    isSoundBlocking: worldSoundBlocking(world, registry, inventory.entities, isSolid),
+    meleeBlocker: worldMeleeBlocker(world, registry, inventory.entities, isSolid),
     blockSize: s,
     physics,
     // Metres per second, as PLAYER.jump is: the system divides by blockSize itself.
