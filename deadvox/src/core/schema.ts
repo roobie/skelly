@@ -2824,7 +2824,6 @@ export type MapPieceDef = InferOutput<typeof MapPieceSchema>;
 export type MapAssemblyDef = InferOutput<typeof MapAssemblySchema>;
 export type MapSiteDef = InferOutput<typeof MapSiteSchema>;
 export type MapPoolDef = InferOutput<typeof MapPoolSchema>;
-export type ControlDef = InferOutput<typeof ControlSchema>;
 export type CityBenchmarkDef = InferOutput<typeof CityBenchmarkSchema>;
 export type KitPort = InferOutput<typeof KitPortSchema>;
 export type KitAnchor = InferOutput<typeof KitAnchorSchema>;
