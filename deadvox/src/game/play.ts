@@ -702,7 +702,7 @@ export const startPlay = (
   const audio = new GameAudio({
     registry,
     blockSize: s,
-    isSolid: engine.isSolid,
+    isSolid: engine.isSoundBlocking,
     tuning: playerSenseTuning,
     report: (message) => {
       const errors = $('errors');
@@ -2375,7 +2375,8 @@ export const startPlay = (
       maxDistance: reachTuning(registry).useReachMetres / s,
       blockSize: s,
       worldSeed: config.seed,
-      isSolid: engine.isOpaque,
+      isSolid: engine.isSolid,
+      isOpaque: engine.isOpaque,
       throughLadders: session.ladderHold.on,
       hasModel: (id) => view.models.has(id),
       downedBodies: [...session.zombieStore.entries()]

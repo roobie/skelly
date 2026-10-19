@@ -73,6 +73,18 @@
       "weatherable": true
     },
     {
+      "color": "#b9bcba",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "painted_asphalt",
+      "name": "Painted asphalt",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
       "color": "#b5b3ad",
       "footsteps": {
         "player": "footstep_stone",
@@ -251,14 +263,28 @@
     },
     {
       "color": "#89979a",
+      "fencePosts": {
+        "spacingBlocks": 6,
+        "widthBlocks": 0.12
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
       },
       "id": "chain_link",
+      "meleePass": {
+        "minimumZombieReachMetres": 1,
+        "motions": ["thrust"]
+      },
       "name": "Chain-link fence",
+      "opaque": false,
       "solid": true,
-      "weatherable": false
+      "soundBlocking": false,
+      "weatherable": false,
+      "wireMesh": {
+        "cellsPerBlock": 4,
+        "wireFraction": 0.080000000000000002
+      }
     },
     {
       "color": "#9b8d6a",

@@ -1,6 +1,7 @@
 import { MELEE_DAMAGE_KINDS } from './body.ts';
 import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
 import type { Vec3 } from './coords.ts';
+import { MELEE_MOTIONS } from './meleeMotion.ts';
 import {
   type MeleeActionPose,
   type MeleeHand,
@@ -31,6 +32,7 @@ export interface BeginMeleeSwing {
 
 /** Copies only fields that belong to a saved melee weapon, excluding caller-owned metadata. */
 export const copyMeleeWeapon = (weapon: MeleeWeapon): MeleeWeapon => ({
+  motion: weapon.motion,
   damage: weapon.damage,
   reach: weapon.reach,
   cooldown: weapon.cooldown,
@@ -71,6 +73,7 @@ const contactTimeOf = (weapon: MeleeWeapon): number => {
   return meleeContactTime(weapon.cooldown, weapon.contactFraction, weapon.windupCapSimSeconds);
 };
 const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean =>
+  MELEE_MOTIONS.includes(weapon.motion) &&
   Number.isFinite(weapon.damage) &&
   weapon.damage > 0 &&
   Number.isFinite(weapon.reach) &&

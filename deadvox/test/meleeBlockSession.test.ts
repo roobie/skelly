@@ -13,6 +13,7 @@ const FLAT: SolidAt = (_x, y) => y === 0;
 const shambler = registry.zombies.get('shambler')!;
 const move: ZombieDef['attack']['moves'][number] = {
   id: 'fixture-hit',
+  motion: 'swing',
   weight: 1,
   damage: 12,
   damageKind: 'blunt',

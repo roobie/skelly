@@ -1,11 +1,13 @@
 import { Box3, BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { interactionAffordance } from '../src/core/interactionAffordance.ts';
 import { pickInteractionTarget } from '../src/core/interactionPick.ts';
 import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { PILE_DISPLAY_KIND } from '../src/core/schema.ts';
+import { World } from '../src/core/world.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { markInteractionTarget } from '../src/render/interactionMarker.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
@@ -45,10 +47,28 @@ const options = (inventory: Inventory, origin: Vec3, direction: Vec3, isSolid: S
   blockSize: 0.5,
   worldSeed: 1,
   isSolid,
+  isOpaque: () => false,
   hasModel: () => false,
 });
 
 describe('F interaction target selection', () => {
+  it('blocks furniture interaction behind solid see-through wire and passable opaque foliage', () => {
+    const world = new World();
+    const inventory = new Inventory(registry);
+    const can = inventory.furnish({ type: 'ammo_can', pos: [2, 0, 0], size: [1, 1, 1], facing: 'n' }, []);
+    expect(can).toBeDefined();
+    const pick = () =>
+      pickInteractionTarget({
+        ...options(inventory, [0.5, 0.5, 0.5], [1, 0, 0], worldSolid(world, registry, inventory.entities)),
+        isOpaque: worldOpaque(world, registry, inventory.entities),
+      });
+    expect(pick()).toMatchObject({ kind: 'furniture', entity: can });
+    for (const block of ['chain_link', 'leaves']) {
+      world.setBlock(1, 0, 0, registry.blockIds.get(block)!);
+      expect(pick(), block).toBeUndefined();
+    }
+  });
+
   it('encloses the drawn bundle and refreshes its bounds with the same selected item', () => {
     const fixture = { ...registry, items: new Map(registry.items) };
     fixture.items.set('marker_fixture', {

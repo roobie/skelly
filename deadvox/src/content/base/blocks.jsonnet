@@ -12,6 +12,9 @@ local footstepEvents = {
 local block(id, name, color, surface, extra={}) =
   { id: id, name: name, color: color, solid: true, footsteps: footstepEvents[surface] } + extra;
 
+local asphalt = block('asphalt', 'Asphalt', '#3b3d40', 'stone', { pattern: 'noise', weatherable: true });
+local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt', color: '#b9bcba' };
+
 {
   blocks: [
     block('grass', 'Grass', '#5b8c3a', 'grass', { pattern: 'noise', weatherable: false }),
@@ -19,7 +22,8 @@ local block(id, name, color, surface, extra={}) =
     block('stone', 'Stone', '#8a8d91', 'stone', { pattern: 'rough', weatherable: true }),
     block('rock', 'Natural stone', '#8a8d91', 'stone', { pattern: 'rough', weatherable: false }),
     block('sand', 'Sand', '#d6c68f', 'sand', { pattern: 'noise', weatherable: false }),
-    block('asphalt', 'Asphalt', '#3b3d40', 'stone', { pattern: 'noise', weatherable: true }),
+    asphalt,
+    paintedAsphalt,
     block('concrete', 'Concrete', '#b5b3ad', 'stone', { pattern: 'noise', weatherable: true }),
     block('planks', 'Wooden planks', '#a0763f', 'wood', { pattern: 'planks', weatherable: true }),
     block('brick', 'Brick', '#9c4f3a', 'stone', { pattern: 'brick', weatherable: true }),
@@ -35,7 +39,14 @@ local block(id, name, color, surface, extra={}) =
     block('cobblestone_mossy', 'Mossy cobblestone', '#5f6b58', 'stone', { pattern: 'cobble', weatherable: true }),
     block('dressed_stone', 'Dressed stone', '#bcab8a', 'stone', { pattern: 'dressed', weatherable: true }),
     block('hazard_yellow', 'Hazard paint', '#c9a43a', 'stone', { weatherable: false }),
-    block('chain_link', 'Chain-link fence', '#89979a', 'stone', { weatherable: false }),
+    block('chain_link', 'Chain-link fence', '#89979a', 'stone', {
+      weatherable: false,
+      opaque: false,
+      soundBlocking: false,
+      meleePass: { motions: ['thrust'], minimumZombieReachMetres: 1 },
+      wireMesh: { cellsPerBlock: 4, wireFraction: 0.08 },
+      fencePosts: { widthBlocks: 0.12, spacingBlocks: 6 },
+    }),
     block('sandbag', 'Sandbag', '#9b8d6a', 'stone', { weatherable: false }),
     block('camo_woodland', 'Weathered woodland camouflage', '#777b6a', 'stone', {
       pattern: 'camo',

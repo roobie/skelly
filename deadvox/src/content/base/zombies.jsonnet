@@ -1,6 +1,7 @@
 local figureSeeds = std.range(1, 8);
 
-{
+local meleeMotions = { clobber: 'swing', bite: 'wrestle', tentacle_strike: 'thrust' };
+local content = {
   "zombies": [
     {
       "id": "shambler",
@@ -498,7 +499,7 @@ local figureSeeds = std.range(1, 8);
         "windupSimSeconds": 1,
         "moves": [
           {
-            "id": "slam",
+            "id": "tentacle_strike",
             "weight": 1,
             "damage": 22,
             "damageKind": "blunt",
@@ -555,4 +556,11 @@ local figureSeeds = std.range(1, 8);
       }
     }
   ]
+};
+content + {
+  zombies: [zombie + {
+    attack+: {
+      moves: [move + { motion: meleeMotions[move.id] } for move in zombie.attack.moves],
+    },
+  } for zombie in content.zombies],
 }

@@ -80,6 +80,8 @@ export const SIMULATION_EXCLUSIONS = [
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
   'src/core/weather.ts',
   'src/core/mesher.ts',
+  'src/core/wireMesh.ts',
+  'src/core/fencePosts.ts',
   // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
   'src/core/meshInput.ts',
   'src/core/occlusion.ts',

@@ -3147,6 +3147,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_overgrown",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "yard",
@@ -3558,6 +3565,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_overgrown",
+                "kind": "piece"
+              },
+              "weight": 2
             }
           ],
           "id": "yard",
@@ -3751,6 +3765,13 @@
             {
               "ref": {
                 "id": "gauntlet_yard_fenced",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_overgrown",
                 "kind": "piece"
               },
               "weight": 2
@@ -4058,6 +4079,13 @@
             {
               "ref": {
                 "id": "gauntlet_yard_fenced",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_yard_overgrown",
                 "kind": "piece"
               },
               "weight": 2
@@ -18631,8 +18659,8 @@
       "anchors": {},
       "id": "gauntlet_yard_fenced",
       "layers": [
-        [".BBB........FFFF..", ".BBB.............."],
-        [".BBB........FFFF..", ".BBB.............."],
+        [".BBB........FFFF..", ".BBB........iiii.."],
+        [".BBB........FFFF..", ".BBB........iiii.."],
         ["............FFFF..", ".................."],
         ["..................", ".................."]
       ],
@@ -18642,8 +18670,8 @@
       },
       "ownership": {
         "layers": [
-          ["ASSSARRRRRRASSSSAA", "ASSSARRRRRRAAAAAAA"],
-          ["ASSSARRRRRRASSSSAA", "ASSSARRRRRRAAAAAAA"],
+          ["ASSSARRRRRRASSSSAA", "ASSSARRRRRRASSSSAA"],
+          ["ASSSARRRRRRASSSSAA", "ASSSARRRRRRASSSSAA"],
           ["AAAAARRRRRRASSSSAA", "AAAAARRRRRRAAAAAAA"],
           ["AAAAARRRRRRAAAAAAA", "AAAAARRRRRRAAAAAAA"]
         ]
@@ -18658,6 +18686,50 @@
         },
         "F": {
           "furniture": "gauntlet_yard_fence"
+        },
+        "i": {
+          "furniture": "creeper_strip"
+        }
+      },
+      "ports": [],
+      "size": [18, 4, 2],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_yard_overgrown",
+      "layers": [
+        ["GGGSS......wGSSGGG", "GGwSS......GwSSGwG"],
+        ["...SS........SS...", "...SS........SS..."],
+        ["...SS........SS...", "...SS........SS..."],
+        ["..................", ".................."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSRRRRRRSSSSSSS", "SSSSSRRRRRRSSSSSSS"],
+          ["AAASSRRRRRRAASSAAA", "AAASSRRRRRRAASSAAA"],
+          ["AAASSRRRRRRAASSAAA", "AAASSRRRRRRAASSAAA"],
+          ["AAAAARRRRRRAAAAAAA", "AAAAARRRRRRAAAAAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "G": {
+          "material": "tall_grass",
+          "role": "trim"
+        },
+        "S": {
+          "furniture": "shrub_tall"
+        },
+        "w": {
+          "furniture": "weed_tuft"
         }
       },
       "ports": [],

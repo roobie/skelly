@@ -11,6 +11,7 @@
 // with the same merge rule. It is the ambient factor only; it never touches the vertex colours.
 
 import { CHUNK, type Vec3 } from './coords.ts';
+import { deriveFencePosts, type FencePostDefs } from './fencePosts.ts';
 import { BEDROCK, PADDED, paddedIndex } from './meshInput.ts';
 import {
   boxSum,
@@ -23,6 +24,7 @@ import {
   WIDE,
   wideIndex,
 } from './occlusion.ts';
+import { type Point2, type WireMeshes, wirePolygons } from './wireMesh.ts';
 
 export interface MeshData {
   positions: Float32Array; // chunk-local, 3 per vertex
@@ -117,6 +119,7 @@ const flatAlong = (face: Face, key: number, occ: number, axis: 'u' | 'v'): boole
 
 interface Context {
   padded: Uint16Array;
+  wireMeshes: WireMeshes;
   /** Summed-volume table over the wide solidity array, or undefined when none was given (no occlusion). */
   sums: Int32Array | undefined;
   colors: Uint8Array;
@@ -138,6 +141,9 @@ interface Context {
 }
 
 export interface MeshOptions {
+  origin?: Vec3;
+  fencePosts?: FencePostDefs;
+  wireMeshes?: WireMeshes;
   patterns?: Uint8Array;
   wide?: Uint8Array;
   weatherable?: Uint8Array;
@@ -149,28 +155,32 @@ const SUMS = makeSums();
 const RANGE = new Int32Array(6);
 
 /** 1 if the padded cell holds a block that hides faces next to it, else 0. */
-const solid = (padded: Uint16Array, index: number): number => (padded[index]! === 0 ? 0 : 1);
+const solid = (ctx: Context, index: number): number => {
+  const id = ctx.padded[index]!;
+  return id === 0 || ctx.wireMeshes[id] ? 0 : 1;
+};
 
 /**
  * Mask key for one face of the block at padded index `base`, or 0 if that face is
  * hidden. Hot path: index arithmetic only, no allocation.
  */
-const faceKey = (padded: Uint16Array, face: Face, base: number): number => {
+const faceKey = (ctx: Context, face: Face, base: number): number => {
+  const { padded } = ctx;
   const id = padded[base]!;
   if (id === 0 || id === BEDROCK) {
     return 0;
   }
   const front = base + face.front;
-  if (padded[front]! !== 0) {
+  if (solid(ctx, front) || (padded[front] === id && ctx.wireMeshes[id])) {
     return 0;
   }
   let key = id << 8;
   for (let corner = 0; corner < 4; corner++) {
     const a = face.side1[corner]!;
     const b = face.side2[corner]!;
-    const s1 = solid(padded, front + a);
-    const s2 = solid(padded, front + b);
-    const level = s1 && s2 ? 0 : 3 - (s1 + s2 + solid(padded, front + a + b));
+    const s1 = solid(ctx, front + a);
+    const s2 = solid(ctx, front + b);
+    const level = s1 && s2 ? 0 : 3 - (s1 + s2 + solid(ctx, front + a + b));
     key |= level << (2 * corner);
   }
   return key;
@@ -285,7 +295,7 @@ const fillMask = (ctx: Context, face: Face, slice: number): boolean => {
   ctx.vertexLevels.fill(UNSET);
   for (let v = 0; v < CHUNK; v++) {
     for (let u = 0; u < CHUNK; u++) {
-      const key = faceKey(ctx.padded, face, start + u * du + v * dv);
+      const key = faceKey(ctx, face, start + u * du + v * dv);
       ctx.mask[u + CHUNK * v] = key;
       if (key !== 0) {
         ctx.occMask[u + CHUNK * v] = ctx.sums ? occlusionKey(ctx, face, slice, u + CHUNK * v) : OPEN_KEY;
@@ -300,16 +310,29 @@ const fillMask = (ctx: Context, face: Face, slice: number): boolean => {
 type Keys = readonly [number, number];
 
 /** Appends one quad covering [u0, u0 + w) × [v0, v0 + h) of a slice. */
-const emitQuad = (ctx: Context, face: Face, [key, occ]: Keys, [slice, u0, v0, w, h]: number[]): void => {
+const emitQuad = (
+  ctx: Context,
+  face: Face,
+  [key, occ]: Keys,
+  { rect: [slice, u0, v0, w, h], polygon, plane }: { rect: number[]; polygon?: Point2[]; plane?: number },
+): void => {
   const base = ctx.positions.length / 3;
   const id = key >> 8;
   const pos: Vec3 = [0, 0, 0];
-  pos[face.d] = slice! + (face.s > 0 ? 1 : 0);
+  pos[face.d] = plane ?? slice! + (face.s > 0 ? 1 : 0);
   const [nx, ny, nz] = face.normal;
-  for (let corner = 0; corner < 4; corner++) {
-    const [cu, cv] = face.uv[corner]!;
-    pos[face.u] = u0! + cu * w!;
-    pos[face.v] = v0! + cv * h!;
+  let points = face.uv.map(([cu, cv]): Point2 => [u0! + cu * w!, v0! + cv * h!]);
+  if (polygon) {
+    points = [...polygon];
+    if (face.s < 0) {
+      points.reverse();
+    }
+  }
+  for (let vertex = 0; vertex < points.length; vertex++) {
+    const corner = polygon ? 0 : vertex;
+    const [cu, cv] = points[vertex]!;
+    pos[face.u] = cu;
+    pos[face.v] = cv;
     const k = AO_LEVELS[aoAt(key, corner)]!;
     ctx.positions.push(pos[0], pos[1], pos[2]);
     ctx.normals.push(nx, ny, nz);
@@ -319,14 +342,23 @@ const emitQuad = (ctx: Context, face: Face, [key, occ]: Keys, [slice, u0, v0, w,
     ctx.voccs.push(occlusionByte(occAt(occ, corner)));
     weatherAt(ctx.vweather, ctx.wide, face, pos[0], pos[1], pos[2]);
   }
-  // Split along the brighter diagonal so AO interpolates without a seam; on a tie, the diagonal with the
-  // more open occlusion.
+  if (polygon) {
+    for (let i = 1; i < polygon.length - 1; i++) {
+      ctx.indices.push(base, base + i, base + i + 1);
+    }
+    return;
+  }
+  emitQuadIndices(ctx.indices, base, key, occ);
+};
+
+// Split along the brighter diagonal so AO interpolates without a seam; on a tie, the more open occlusion.
+const emitQuadIndices = (indices: number[], base: number, key: number, occ: number): void => {
   const ao = aoAt(key, 0) + aoAt(key, 2) - (aoAt(key, 1) + aoAt(key, 3));
   const wide = occAt(occ, 0) + occAt(occ, 2) - (occAt(occ, 1) + occAt(occ, 3));
   if (ao > 0 || (ao === 0 && wide >= 0)) {
-    ctx.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
   } else {
-    ctx.indices.push(base + 1, base + 2, base + 3, base + 1, base + 3, base);
+    indices.push(base + 1, base + 2, base + 3, base + 1, base + 3, base);
   }
 };
 
@@ -366,10 +398,37 @@ const mergeMask = (ctx: Context, face: Face, slice: number): void => {
       }
       const keys: Keys = [key, ctx.occMask[u0 + CHUNK * v0]!];
       const [w, h] = growRect(ctx, face, keys, [u0, v0]);
-      emitQuad(ctx, face, keys, [slice, u0, v0, w, h]);
+      const mesh = ctx.wireMeshes[key >> 8];
+      if (mesh) {
+        wirePolygons([u0, v0, w, h], mesh, (polygon) =>
+          emitQuad(ctx, face, keys, { rect: [slice, u0, v0, w, h], polygon }),
+        );
+      } else {
+        emitQuad(ctx, face, keys, { rect: [slice, u0, v0, w, h] });
+      }
       for (let v = v0; v < v0 + h; v++) {
         ctx.mask.fill(0, u0 + CHUNK * v, u0 + w + CHUNK * v);
       }
+    }
+  }
+};
+
+const emitFencePosts = (ctx: Context, definitions: FencePostDefs, origin: Vec3): void => {
+  for (const post of deriveFencePosts(ctx.padded, definitions, origin)) {
+    for (const face of FACES) {
+      if (face.d === 1 && !(face.s > 0 ? post.capTop : post.capBottom)) {
+        continue;
+      }
+      emitQuad(ctx, face, [(post.id << 8) | 255, OPEN_KEY], {
+        rect: [
+          0,
+          post.min[face.u],
+          post.min[face.v],
+          post.max[face.u] - post.min[face.u],
+          post.max[face.v] - post.min[face.v],
+        ],
+        plane: face.s > 0 ? post.max[face.d] : post.min[face.d],
+      });
     }
   }
 };
@@ -388,6 +447,7 @@ export const buildMesh = (padded: Uint16Array, colors: Uint8Array, options: Mesh
   }
   const ctx: Context = {
     padded,
+    wireMeshes: options.wireMeshes ?? [],
     sums: wide ? SUMS : undefined,
     colors,
     patterns,
@@ -412,6 +472,7 @@ export const buildMesh = (padded: Uint16Array, colors: Uint8Array, options: Mesh
       }
     }
   }
+  emitFencePosts(ctx, options.fencePosts ?? [], options.origin ?? [0, 0, 0]);
   return {
     positions: new Float32Array(ctx.positions),
     normals: new Int8Array(ctx.normals),

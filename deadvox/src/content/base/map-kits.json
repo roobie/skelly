@@ -29,6 +29,10 @@
         "roofing_slab": {
           "block": "concrete",
           "role": "interior_floor"
+        },
+        "tall_grass": {
+          "block": "tall_grass",
+          "role": "trim"
         }
       },
       "id": "concrete_townhouse"
@@ -62,6 +66,10 @@
         "roofing_slab": {
           "block": "concrete",
           "role": "interior_floor"
+        },
+        "tall_grass": {
+          "block": "tall_grass",
+          "role": "trim"
         }
       },
       "id": "brick_townhouse"
