@@ -7,6 +7,8 @@ on:
     paths:
       - 'deadvox/**'
       - 'engine/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'tools/jsonnet/**'
       - 'mobgen/src/**'
       - 'testPool.ts'
@@ -19,6 +21,8 @@ on:
     paths:
       - 'deadvox/**'
       - 'engine/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'tools/jsonnet/**'
       - 'mobgen/src/**'
       - 'testPool.ts'

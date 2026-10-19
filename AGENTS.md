@@ -118,12 +118,10 @@ Run `npm run setup` in each fresh worktree before its first push. The shared set
 root lint from misreading missing dependencies as unresolved imports and installs the
 pinned compiler required by `tools/jsonnet/compile.mjs`, `compileJsonnetSources`.
 
-The root `package.json` declares `engine`, `gungen`, `deadvox` and `mobgen` as npm
-workspaces: one install and one `package-lock.json` serve all four, and their
-dependencies are hoisted into the root `node_modules`. Add a dependency with
-`npm install <pkg> --workspace <name>`, never by hand-editing a second lockfile.
-`deadvox/tools/lit-check` stays a separate install because its analyzer pins its own
-TypeScript.
+The projects are npm workspaces (`package.json`, `workspaces`), so one lockfile keeps
+shared packages, `three` above all, on one version and one instance. Add a dependency
+with `npm install <pkg> --workspace <name>`. `deadvox/tools/lit-check` stays a separate
+install because its analyzer pins its own TypeScript.
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 

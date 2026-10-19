@@ -183,9 +183,8 @@ function bundledModListPlugin() {
 }
 
 // mobgen's pure core/mob modules (no three, no DOM — see src/render/mobActors.ts's own header comment)
-// live in the sibling project, reused here rather than duplicated. three.js itself always comes from
-// *this* project's own node_modules — mobgen/src/viewer (which imports three from mobgen's node_modules)
-// must never be reachable through this alias; see test/mobgenBoundary.test.ts.
+// live in the sibling project, reused here rather than duplicated. mobgen/src/viewer (which imports three
+// and the DOM) must never be reachable through this alias; see test/mobgenBoundary.test.ts.
 const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
 
 export default defineConfig({

@@ -1,10 +1,9 @@
 // Cheap static guard for the `@mobgen/` alias (vite.config.ts, tsconfig.json): deadvox reuses mobgen's
-// pure core/mob modules, but must never pull in three.js or the DOM through them. three.js has to come
-// from *this* project's own node_modules — see src/render/mobActors.ts's header comment.
+// pure core/mob modules, but must never pull in three.js or the DOM through them — see
+// src/render/mobActors.ts's header comment.
 //
 // Two directions can break that:
-//   1. Something here starts importing mobgen/src/viewer/** (which itself imports three, from mobgen's
-//      own node_modules — a different copy than deadvox's).
+//   1. Something here starts importing mobgen/src/viewer/** (which itself imports three and the DOM).
 //   2. mobgen/src/core/** or mobgen/src/mob/** (the directories `@mobgen/` actually points reuse) starts
 //      importing 'three' or a DOM lib/global, breaking the "pure" assumption for every consumer, not just
 //      deadvox.
