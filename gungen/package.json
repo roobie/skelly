@@ -23,7 +23,7 @@
     "mesh-stats": "node src/cli/mesh-stats.ts"
   },
   "dependencies": {
-    "@skelly/engine": "file:../engine",
+    "@skelly/engine": "*",
     "three": "^0.186.0"
   },
   "devDependencies": {
@@ -31,6 +31,7 @@
     "@types/three": "^0.186.0",
     "es-module-lexer": "^3.0.2",
     "gltf-validator": "^2.0.0-dev.3.10",
+    "playwright": "^1.63.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"

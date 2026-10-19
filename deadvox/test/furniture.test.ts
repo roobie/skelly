@@ -6,6 +6,7 @@ import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import { couldFit, ItemFactory } from '../src/core/items.ts';
 import type { Body } from '../src/core/physics.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
@@ -68,6 +69,26 @@ describe('furniture', () => {
     expect([...inv.entities.all]).toHaveLength(1);
     expect(inv.entities.at(1, 1, 0)).toBe(cupboard);
     expect(inv.entities.at(2, 0, 0)).toBeUndefined();
+  });
+
+  it('throws for required fixed stock that fits no pocket, and leaves out a rolled item', () => {
+    const cupboard: Parameters<Inventory['furnish']>[0] = {
+      type: 'kitchen_cupboard',
+      pos: [0, 0, 0],
+      size: [2, 2, 1],
+      facing: 'n',
+    };
+    const { pockets } = registry.furniture.get('kitchen_cupboard')!.container!;
+    const factory = new ItemFactory();
+    const oversized = [...registry.items.keys()].find(
+      (id) => !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, id))),
+    );
+    if (oversized === undefined) {
+      throw new Error('fixture needs an item larger than the cupboard');
+    }
+    const loot = [{ type: oversized, count: 1, condition: 1 }];
+    expect(new Inventory(registry).furnish(cupboard, loot)!.pockets!.flat()).toEqual([]);
+    expect(() => new Inventory(registry).furnish(cupboard, loot, [], 1)).toThrow('does not fit');
   });
 
   it('has to be searched before anything moves in or out', () => {

@@ -1031,10 +1031,39 @@
               "upper": [6, 41, 8]
             }
           ],
+          "fixedLoot": [
+            {
+              "at": [35, 17, 6],
+              "items": [
+                {
+                  "condition": 0.69999999999999996,
+                  "item": "revolver_357",
+                  "key": true
+                }
+              ]
+            }
+          ],
           "minimumOpenDescents": 2,
           "spawn": [22, 41, 14],
           "template": "gauntlet_start"
         },
+        "stops": [
+          {
+            "fixedLoot": [
+              {
+                "at": [18, 1, 5],
+                "items": [
+                  {
+                    "condition": 0.69999999999999996,
+                    "item": "pump_shotgun",
+                    "key": true
+                  }
+                ]
+              }
+            ],
+            "lot": "police"
+          }
+        ],
         "storeys": [
           {
             "id": "intake",

@@ -19,7 +19,7 @@ shape.colliding({
         shell: wood, frame: '#4a3729', door: '#805e40', metal: '#85867e',
         shadow: '#292922', wear: '#aa8760', badge: '#b3a17a',
       }),
-      container: { pockets: [{ grid: [4, 12], handlingSimSeconds: 1.2 }] },
+      container: { pockets: [{ grid: [5, 14], handlingSimSeconds: 1.2 }] },
     },
   ],
 })

@@ -1,5 +1,5 @@
 import type { Registry } from './content.ts';
-import { ItemFactory } from './items.ts';
+import { couldFit, ItemFactory } from './items.ts';
 import { type LootContext, lootTypeIssue } from './loot.ts';
 import { slotsReason } from './magazine.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
@@ -24,6 +24,22 @@ const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: Lo
     }
   }
   return lootTypeIssue(registry, fixed.item, context, fixed.fitted);
+};
+
+// Furnishing leaves out an item that fits no pocket, so a fixed item that can't fit even an empty one would vanish.
+const pocketFitIssue = (
+  registry: Registry,
+  fixed: FixedLootItemDef,
+  furniture: string,
+  pockets: readonly { readonly grid: readonly [number, number] }[] | undefined,
+): string | undefined => {
+  if (fixed.placement === 'surface' || !pockets) {
+    return undefined;
+  }
+  const item = new ItemFactory().create(registry, fixed.item);
+  return pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, item))
+    ? undefined
+    : `"${fixed.item}" fits no pocket of "${furniture}"`;
 };
 
 export const groundLootSupplyIssues = (
@@ -100,17 +116,16 @@ export const placementLootIssues = (
       issues.push([`${at}.at`, `no furniture anchor at ${key}`]);
       continue;
     }
-    if (
-      override.items.some((item) => item.placement !== 'surface') &&
-      !registry.furniture.get(piece.furniture)?.container
-    ) {
+    const pockets = registry.furniture.get(piece.furniture)?.container?.pockets;
+    if (override.items.some((item) => item.placement !== 'surface') && !pockets) {
       issues.push([`${at}.at`, `furniture at ${key} has no container`]);
     }
     for (const [itemIndex, fixed] of override.items.entries()) {
-      const issue = fixedItemIssue(registry, fixed, {
-        usage: override.lootUsage ?? piece.lootUsage ?? context.usage,
-        tier: context.tier,
-      });
+      const issue =
+        fixedItemIssue(registry, fixed, {
+          usage: override.lootUsage ?? piece.lootUsage ?? context.usage,
+          tier: context.tier,
+        }) ?? pocketFitIssue(registry, fixed, piece.furniture, pockets);
       if (issue !== undefined) {
         issues.push([`${at}.items[${itemIndex}].item`, issue]);
       }

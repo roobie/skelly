@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { conditionWord, fitsAt, weightOf } from '../src/core/items.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -55,7 +56,7 @@ describe('grid placement', () => {
 
   it('rotates an item to fit, and refuses one too big either way', () => {
     const { inv, hoodie, jeans } = dressed();
-    const knife = onFloor(inv, 'kitchen_knife'); // 1 × 3
+    const knife = onFloor(inv, 'kabar');
     expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual({
       ok: false,
       reason: 'Too big for it',
@@ -71,7 +72,7 @@ describe('grid placement', () => {
     const water = onFloor(inv, 'water_bottle');
     inv.move(water, { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 1, y: 1, rotated: false } });
     const grid = { size: inv.pocketGrid(backpack, 0), placed: backpack.pockets![0]! };
-    const bat = inv.create('baseball_bat'); // 1 × 6
+    const bat = inv.create('machete');
     expect(fitsAt(registry, grid, bat, { x: 1, y: 0, rotated: false })).toBe(false);
     expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: false })).toBe(true);
     expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: true })).toBe(false);
@@ -429,7 +430,7 @@ describe('registry-aware item tree restoration', () => {
     const inv = new Inventory(registry);
     expect(inv.add(inv.create('rag'), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     const state = structuredClone(inv.snapshotState());
-    state.piles[0]!.items[0] = { ...state.piles[0]!.items[0]!, x: 8 };
+    state.piles[0]!.items[0] = { ...state.piles[0]!.items[0]!, x: PILE_GRID.w };
     expect(() => Inventory.restoreState(registry, state)).toThrow('Invalid item placement');
   });
 });

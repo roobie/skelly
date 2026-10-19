@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import { dominantSide, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
+import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import type { Item } from '../src/core/items.ts';
 import { pocketGroundItem, stowTarget, toHands } from '../src/core/options.ts';
 import { encodeSave } from '../src/core/saveFormat.ts';
@@ -672,6 +673,7 @@ const createRifleReplayFixture = () => {
   const { magazine: magazineType, cartridge } = rifleAmmunition(inventory.registry, 'rifle_assault');
   const magazine = inventory.create(magazineType);
   const rifle = inventory.create('rifle_assault');
+  inventory.fitSlot(rifle, SLING_SLOT, inventory.create('weapon_sling'));
   const feet = runtime.player.body.pos;
   const stow = (item: Item): boolean => {
     const target = stowTarget(inventory, item, feet);
@@ -682,11 +684,11 @@ const createRifleReplayFixture = () => {
       inventory.move(backpack, { kind: 'worn' }).ok &&
       inventory.move(flashlight, { kind: 'pile', pos: feet }).ok &&
       stow(inventory.create(cartridge, 2)) &&
-      stow(rifle) &&
+      inventory.add(rifle, { kind: 'worn' }) &&
       inventory.add(magazine, { kind: 'hand', side: dominantSide(runtime.session.character) })
     )
   ) {
-    throw new Error('Replay fixture could not pack the rifle, its cartridges and a held magazine');
+    throw new Error('Replay fixture could not sling the rifle, pack its cartridges and hold a magazine');
   }
   return { runtime, magazine, rifle };
 };

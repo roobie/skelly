@@ -7,6 +7,8 @@ on:
     paths:
       - 'deadvox/**'
       - 'engine/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'tools/jsonnet/**'
       - 'mobgen/src/**'
       - 'testPool.ts'
@@ -19,6 +21,8 @@ on:
     paths:
       - 'deadvox/**'
       - 'engine/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'tools/jsonnet/**'
       - 'mobgen/src/**'
       - 'testPool.ts'
@@ -63,7 +67,6 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            deadvox/package-lock.json
             deadvox/tools/lit-check/package-lock.json
       - run: npm ci --prefix ..
         timeout-minutes: 3
@@ -72,8 +75,6 @@ jobs:
       - name: Browser partition manifest
         timeout-minutes: 1
         run: node ../test/browser-ci-manifest.mjs
-      - run: npm ci
-        timeout-minutes: 3
       - run: npm ci --prefix tools/lit-check
         timeout-minutes: 3
       - run: timeout 300 npm run lint:lit

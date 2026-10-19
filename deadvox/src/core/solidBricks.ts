@@ -1,7 +1,7 @@
-import type { BlockEntities } from './blockEntities.ts';
+import type { BlockEntities, BlockingBox } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import { CHUNK, type Vec3 } from './coords.ts';
+import { CHUNK } from './coords.ts';
 import type { SolidAt } from './raycast.ts';
 import type { World } from './world.ts';
 
@@ -43,7 +43,7 @@ interface ChunkBricks {
 
 /**
  * Bricks read from the world's chunks, each chunk built once per revision, with furniture laid over them.
- * The furniture layer is rebuilt when the entities' version moves.
+ * The furniture layer is rebuilt when the standing pieces change.
  */
 class WorldBricks implements SolidBricks {
   private readonly solidById: Uint8Array;
@@ -65,7 +65,7 @@ class WorldBricks implements SolidBricks {
   }
 
   get version(): number {
-    const entities = this.entities?.version ?? 0;
+    const entities = this.entities?.standing ?? 0;
     if (this.world.version !== this.seenWorld || entities !== this.seenEntities) {
       this.seenWorld = this.world.version;
       this.seenEntities = entities;
@@ -149,11 +149,11 @@ class WorldBricks implements SolidBricks {
 
   private furnitureLayer(): ReadonlyMap<number, readonly [number, number]> {
     const entities = this.entities!;
-    if (this.furnitureAt === entities.version) {
+    if (this.furnitureAt === entities.standing) {
       return this.furniture;
     }
     this.furniture.clear();
-    this.furnitureAt = entities.version;
+    this.furnitureAt = entities.standing;
     for (const entity of entities.all) {
       for (const box of entities.blockingBoxes(entity)) {
         this.addFurniture(box);
@@ -162,7 +162,7 @@ class WorldBricks implements SolidBricks {
     return this.furniture;
   }
 
-  private addFurniture({ pos, size }: { readonly pos: Vec3; readonly size: Vec3 }): void {
+  private addFurniture({ pos, size }: BlockingBox): void {
     const [x0, y0, z0] = pos;
     const [width, height, depth] = size;
     for (let y = y0; y < y0 + height; y++) {

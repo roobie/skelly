@@ -118,6 +118,11 @@ Run `npm run setup` in each fresh worktree before its first push. The shared set
 root lint from misreading missing dependencies as unresolved imports and installs the
 pinned compiler required by `tools/jsonnet/compile.mjs`, `compileJsonnetSources`.
 
+The projects are npm workspaces (`package.json`, `workspaces`), so one lockfile keeps
+shared packages, `three` above all, on one version and one instance. Add a dependency
+with `npm install <pkg> --workspace <name>`. `deadvox/tools/lit-check` stays a separate
+install because its analyzer pins its own TypeScript.
+
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 
 ## Tests

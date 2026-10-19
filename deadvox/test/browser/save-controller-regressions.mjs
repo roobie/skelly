@@ -16,7 +16,7 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
-const { createServer } = await import(pathToFileURL(`${root}/node_modules/vite/dist/node/index.js`));
+const { createServer } = await import('vite');
 const { decodeSave } = await import(pathToFileURL(`${root}/src/core/saveFormat.ts`));
 const observation = {
   name: 'save-controller-game-ready',

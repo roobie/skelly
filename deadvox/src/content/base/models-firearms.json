@@ -34,7 +34,7 @@
       "id": "rifle_hunting",
       "model": "rifle_hunting",
       "name": "Hunting rifle",
-      "size": [2, 8],
+      "size": [2, 11],
       "twoHanded": true,
       "weight": 3200
     },
@@ -69,7 +69,7 @@
       "id": "pump_shotgun",
       "model": "shotgun_pump",
       "name": "Pump shotgun",
-      "size": [2, 8],
+      "size": [2, 10],
       "twoHanded": true,
       "weight": 3000
     },
@@ -83,7 +83,7 @@
       "id": "debug_shotgun_pump",
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
-      "size": [1, 5],
+      "size": [2, 10],
       "twoHanded": true,
       "weight": 3000
     },
@@ -122,7 +122,7 @@
       "id": "rifle_assault",
       "model": "rifle_assault",
       "name": "AR-pattern rifle",
-      "size": [1, 5],
+      "size": [2, 9],
       "twoHanded": true,
       "weight": 3500
     },
@@ -160,7 +160,7 @@
       "id": "rifle_ak",
       "model": "rifle_ak",
       "name": "AK-pattern rifle",
-      "size": [1, 5],
+      "size": [2, 9],
       "twoHanded": true,
       "weight": 3500
     }

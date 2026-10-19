@@ -11,7 +11,8 @@ local policeMain = police.templates[0] + {
     U: { furniture: 'wood_door', lock: { id: 'gauntlet_police_armoury', locked: true } },
     C: { furniture: 'desk', loot: 'gauntlet_police_office_key' },
     Z: 'shop_blue',
-    A: { furniture: 'shelf', loot: 'gauntlet_police_armoury_stock' },
+    // A shelf's pocket is too short for the long guns the armoury promises and rolls.
+    A: { furniture: 'range_rack', loot: 'gauntlet_police_armoury_stock' },
   },
   layers: [
     [

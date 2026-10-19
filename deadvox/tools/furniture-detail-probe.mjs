@@ -1,5 +1,7 @@
 // biome-ignore-all lint/correctness/noNodejsModules: dev tool starts Vite and writes a screenshot
 // biome-ignore-all lint/suspicious/noConsole: CLI evidence goes to stdout
+import { createRequire } from 'node:module';
+import { dirname } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -9,9 +11,14 @@ const [out, ...extra] = process.argv.slice(2);
 if (!out || extra.length > 0) {
   throw new Error('usage: node tools/furniture-detail-probe.mjs <screenshot.png>');
 }
+// Hoisting puts three outside this project, so the page loads it by absolute path through Vite.
+const threeFile = createRequire(import.meta.url)
+  .resolve('three')
+  .replace(/three\.cjs$/, 'three.module.js');
+const threeUrl = `/@fs${threeFile}`;
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)),
-  server: { host: '127.0.0.1', port: 0, open: false },
+  server: { host: '127.0.0.1', port: 0, open: false, fs: { allow: [dirname(threeFile)] } },
 });
 let browser;
 try {
@@ -34,8 +41,8 @@ try {
     }),
   );
   await page.goto(url);
-  const cost = await page.evaluate(async () => {
-    const Three = await import(new URL('/node_modules/three/build/three.module.js', location.href).href);
+  const cost = await page.evaluate(async (threeModule) => {
+    const Three = await import(new URL(threeModule, location.href).href);
     const { buildRegistry } = await import(new URL('/src/core/content.ts', location.href).href);
     const { BlockEntities } = await import(new URL('/src/core/blockEntities.ts', location.href).href);
     const { FurnitureMeshes } = await import(new URL('/src/render/furniture.ts', location.href).href);
@@ -82,7 +89,7 @@ try {
       calls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
     };
-  });
+  }, threeUrl);
   await page.screenshot({ path: out });
   console.log(JSON.stringify({ out, cost, errors }));
   if (errors.length > 0) {

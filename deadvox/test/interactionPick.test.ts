@@ -4,7 +4,8 @@ import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { interactionAffordance } from '../src/core/interactionAffordance.ts';
 import { pickInteractionTarget } from '../src/core/interactionPick.ts';
-import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { PILE_DISPLAY_KIND } from '../src/core/schema.ts';
 import { World } from '../src/core/world.ts';
@@ -251,7 +252,7 @@ describe('F interaction target selection', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create(modelItemType!);
     expect(inventory.add(item, { kind: 'pile', pos: [0, 0, 1] })).toBe(true);
-    const ray: Vec3 = [0.1, 0.05, 0];
+    const ray: Vec3 = [0.5 / PILE_GRID.w, 0.05, 0];
     const direction: Vec3 = [0, 0, 1];
     const itemHit = pickInteractionTarget({
       ...options(inventory, ray, direction),

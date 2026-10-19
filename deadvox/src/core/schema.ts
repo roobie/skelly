@@ -257,6 +257,8 @@ const ContainerSchema = strictObject({
 
 const InventoryTuningSchema = strictObject({
   id: Id,
+  /** The real side of one inventory cell; footprints and pockets are real sizes rounded up to it (`DESIGN.md`, "The item model"). */
+  cellMetres: Positive,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
   /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
@@ -1928,8 +1930,19 @@ const ScenarioSchema = strictObject({
         spawn: CellPosition,
         minimumOpenDescents: optional(pipe(Count, minValue(1), maxValue(32)), 2),
         descents: pipe(array(StartDescentSchema), minLength(1), maxLength(32)),
+        /** Core stock the instance promises in the start building, at template-local furniture anchors. */
+        fixedLoot: optional(array(FixedLootOverride)),
       }),
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
+      /** Core stock the instance promises in a fixed lot's building; the building's template stays unchanged. */
+      stops: optional(
+        array(
+          strictObject({
+            lot: Id,
+            fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a promised item')),
+          }),
+        ),
+      ),
       leads: tuple([
         strictObject({
           template: Id,

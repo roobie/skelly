@@ -2,7 +2,7 @@ import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
-import { PILE_GRID } from '../core/inventory.ts';
+import { PILE_GRID } from '../core/inventoryScale.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import { itemFlightPoint } from '../core/itemThrow.ts';
 import { effectivePileDisplay, effectivePileItemPosition } from '../core/pileDisplay.ts';

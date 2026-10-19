@@ -5,7 +5,8 @@
 import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
-import { dropSpots, type Inventory, PILE_GRID, type Pile, type Spot } from './inventory.ts';
+import { dropSpots, type Inventory, type Pile, type Spot } from './inventory.ts';
+import { PILE_GRID } from './inventoryScale.ts';
 import { findSpot, fitsAt, type Placed } from './items.ts';
 import { ladderOutward } from './ladders.ts';
 import { turnPose } from './orientation.ts';
@@ -56,36 +57,38 @@ const topLayer = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3[] =>
 
 const messagesOf = (inventory: Inventory) => inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
 
-/** Which cells terrain and standing furniture fill, as a move would leave them. */
+/**
+ * Which cells terrain and standing furniture fill, as a move would leave them: the move's changes over the
+ * entities' own cells, so a preview each frame reads only the cells it asks about.
+ */
 class Shadow {
-  private readonly cells = new Map<string, BlockEntity>();
+  /** A cell the move fills or empties; `null` is emptied. */
+  private readonly changed = new Map<string, BlockEntity | null>();
   private readonly terrainSolid: SolidAt;
+  private readonly entities: BlockEntities;
 
   constructor(terrainSolid: SolidAt, entities: BlockEntities) {
     this.terrainSolid = terrainSolid;
-    for (const entity of entities.all) {
-      if (entities.fills(entity)) {
-        this.fill(entity, entity.pos, true);
-      }
-    }
+    this.entities = entities;
   }
 
   fill(entity: BlockEntity, pos: Readonly<Vec3>, filled: boolean): void {
     for (const cell of boxCells(pos, entity.size)) {
       if (filled) {
-        this.cells.set(key(cell), entity);
-      } else if (this.cells.get(key(cell)) === entity) {
-        this.cells.delete(key(cell));
+        this.changed.set(key(cell), entity);
+      } else if (this.occupant(cell) === entity) {
+        this.changed.set(key(cell), null);
       }
     }
   }
 
   occupant(cell: Readonly<Vec3>): BlockEntity | undefined {
-    return this.cells.get(key(cell));
+    const changed = this.changed.get(key(cell));
+    return changed === undefined ? this.entities.filling(cell[0], cell[1], cell[2]) : (changed ?? undefined);
   }
 
   occupied(cell: Readonly<Vec3>): boolean {
-    return this.terrainSolid(cell[0], cell[1], cell[2]) || this.cells.has(key(cell));
+    return this.terrainSolid(cell[0], cell[1], cell[2]) || this.occupant(cell) !== undefined;
   }
 
   free(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {

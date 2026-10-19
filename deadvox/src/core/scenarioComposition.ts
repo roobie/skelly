@@ -2,11 +2,12 @@ import { lotChoices, type PlannedLot } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type PlacementLootSource, placementLootIssues } from './placementLoot.ts';
-import { composeStart, type ScenarioStart } from './scenarioStart.ts';
-import type { ScenarioDef } from './schema.ts';
+import { composeStart, type ScenarioStart, startTemplate } from './scenarioStart.ts';
+import type { FixedLootOverrideDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth } from './settlementPools.ts';
 import {
   type CompiledTemplate,
+  compileAssembly,
   compileTemplate,
   type Placement,
   placedPieces,
@@ -33,6 +34,7 @@ export interface ScenarioComposition {
 }
 
 type CompositionDef = NonNullable<ScenarioDef['composition']>;
+type Lot = NonNullable<ScenarioDef['city']['lots']>[number];
 type Issue = [string, string];
 type ExtraKind = 'leads' | 'landmarks' | 'incidentalTemplates';
 
@@ -137,6 +139,58 @@ const localAnchorIssues = (registry: Registry, composition: CompositionDef, serv
   return issues;
 };
 
+const fixedLotTemplate = (registry: Registry, lot: Lot): CompiledTemplate | undefined => {
+  const { source } = lot;
+  if (!source || source.kind === 'pool') {
+    return undefined;
+  }
+  if (source.kind === 'assembly') {
+    const assembly = registry.mapAssemblies.get(source.id);
+    return (
+      assembly &&
+      compileAssembly(registry, assembly, {
+        seed: 0,
+        siteId: `city:lot:${lot.id}`,
+        ...(source.style ? { style: source.style } : {}),
+      })
+    );
+  }
+  const template = registry.templates.get(source.id);
+  return template && templateResolves(registry, template) ? compileTemplate(registry, template) : undefined;
+};
+
+const promisedStockIssues = (registry: Registry, scenario: ScenarioDef): Issue[] => {
+  const composition = scenario.composition!;
+  const issues: Issue[] = [];
+  const promised = (template: CompiledTemplate, fixedLoot: readonly FixedLootOverrideDef[], path: string) => {
+    issues.push(...placementLootIssues({ registry, context: template.lootContext }, template, fixedLoot, path));
+  };
+  const { start } = composition;
+  if (start.fixedLoot) {
+    promised(
+      startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`),
+      start.fixedLoot,
+      '.composition.start.fixedLoot',
+    );
+  }
+  const named = new Set<string>();
+  (composition.stops ?? []).forEach((stop, index) => {
+    const path = `.composition.stops[${index}]`;
+    if (named.has(stop.lot)) {
+      issues.push([`${path}.lot`, 'a lot takes at most one stop']);
+    }
+    named.add(stop.lot);
+    const lot = scenario.city.lots?.find(({ id }) => id === stop.lot);
+    const template = lot && fixedLotTemplate(registry, lot);
+    if (template) {
+      promised(template, stop.fixedLoot, `${path}.fixedLoot`);
+    } else {
+      issues.push([`${path}.lot`, 'a stop needs a fixed building lot']);
+    }
+  });
+  return issues;
+};
+
 export const scenarioCompositionIssues = (
   registry: Registry,
   scenario: ScenarioDef,
@@ -152,6 +206,7 @@ export const scenarioCompositionIssues = (
     composition.fixedLoot,
     '.composition.fixedLoot',
   );
+  issues.push(...promisedStockIssues(registry, scenario));
   for (const kind of ['leads', 'landmarks', 'incidentalTemplates'] as const) {
     composition[kind].forEach((ref, index) => {
       const id = typeof ref === 'string' ? ref : ref.template;
@@ -206,6 +261,8 @@ export const scenarioSources = (registry: Registry) => {
     fixedLoot: scenarios.flatMap((scenario) => [
       ...(scenario.composition?.fixedLoot ?? []),
       ...(scenario.composition?.leads.flatMap((lead) => lead.fixedLoot ?? []) ?? []),
+      ...(scenario.composition?.start.fixedLoot ?? []),
+      ...(scenario.composition?.stops?.flatMap((stop) => stop.fixedLoot) ?? []),
     ]),
   };
 };
@@ -289,6 +346,24 @@ export const composeScenario = (
     Object.freeze(source);
   }
   Object.freeze(fixedLoot);
+  // A seeded build may compile a lot differently from validation, so each promise is checked on its placed building.
+  const promised = (building: Placement, stock: readonly FixedLootOverrideDef[]): PlacementLootSource => {
+    for (const { at, items } of stock) {
+      const piece = building.template.pieces.find((candidate) => candidate.pos.join(',') === at.join(','));
+      const container = piece && registry.furniture.get(piece.furniture)?.container;
+      if (!(piece && (container || items.every((item) => item.placement === 'surface')))) {
+        throw new Error(`Promised stock at ${at.join(',')} has no anchor in ${building.template.id}`);
+      }
+    }
+    return Object.freeze({ placement: building, fixedLoot: stock });
+  };
+  const stops = (authored.stops ?? []).map((stop) => {
+    const parent = lots.find(({ definition }) => definition.id === stop.lot)?.placement;
+    if (!parent) {
+      throw new Error(`Missing stop lot "${stop.lot}"`);
+    }
+    return promised(parent, stop.fixedLoot);
+  });
   return Object.freeze({
     start: composeStart(authored.start, start),
     leads,
@@ -297,6 +372,8 @@ export const composeScenario = (
     lootSources: Object.freeze([
       Object.freeze({ placement: service, fixedLoot }),
       ...leads.map((lead, index) => Object.freeze({ placement: lead, fixedLoot: authored.leads[index]!.fixedLoot })),
+      ...(authored.start.fixedLoot ? [promised(start, authored.start.fixedLoot)] : []),
+      ...stops,
     ]),
     objective: furnitureAnchor(authored.objective),
     objectiveFace: point(authored.objectiveFace),
