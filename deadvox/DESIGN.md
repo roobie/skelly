@@ -53,7 +53,7 @@ read_if:
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee motions, weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
-  - you change what vehicles are for, or how their parts fit, come off and behave
+  - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
   - you're changing held-item throwing or its range tuning
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
   - you're choosing or changing the building-weathering look and its dilapidation direction
@@ -1764,6 +1764,15 @@ their state.
    seat, bull bar. No bolts, wire runs or plumbing as separate things.
 9. **Cheap at scale.** A street of parked cars costs little to draw, and editing works
    part by part.
+10. **What a vehicle blocks comes from its fitted parts.** Collision reads the same
+    fitting list the renderer draws, so a part removed in play changes the look and what
+    blocks through one path, and the vehicle slice builds on this rule instead of
+    replacing it. A body panel is a thin shell, so a column of cells counts as filled
+    between its lowest and highest part; a cell blocks when enough of it is filled, and
+    that fraction is content, so a pack tunes it. Placing, settling and the "nothing
+    falls on a body" check still take the piece's whole box. See
+    `src/vehicles/solid.ts`, `solidBlocks`, and `src/core/blockEntities.ts`,
+    `BlockEntities.isSolid`.
 
 **Open, deliberately (not part of the goal yet):**
 
@@ -1771,9 +1780,19 @@ their state.
   each part, ray-cast wheels with suspension, and arcade handling first. Rapier (a
   WebAssembly physics engine) is the candidate; see
   [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels) for driving over terrain that rises
-  in 0.5 m steps.
+  in 0.5 m steps. A parked vehicle keeps its cell collision.
 - **Whether vehicles are voxel-destructible.**
 - **Vehicles as an enclosure** (gas-tight, a shelter).
+- **Open doors.** A vehicle's doors block as shut. A door that opens in play needs its
+  cells to follow it; decided with the vehicle slice (#322).
+- **Rounding.** A cell blocks whole or not at all, so what a vehicle blocks can sit up
+  to a quarter-metre off its look. Half-height cells from slabs (#221) would shrink it.
+- **What may stand in a vehicle's empty cells.** Placing takes the whole box, so a crate
+  can't be put on a bonnet. Whether pieces may share a vehicle's empty cells is decided
+  with the vehicle slice (#322).
+- **Glass.** Every fitted material blocks movement, sight, sound and sky light alike.
+  Whether glass lets sight or light through, as wire does (see
+  [Block shapes](#block-shapes)), is decided with the vehicle slice (#322).
 
 ## Content and modding
 
