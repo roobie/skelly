@@ -281,7 +281,6 @@ interface Pass {
   readonly grid: VoxelGrid;
   readonly bounds: GridBounds;
   readonly colorOf: (mat: string) => Rgb;
-  readonly include: (mat: string) => boolean;
   readonly blocks: (neighbour: string | undefined) => boolean;
   readonly positions: number[];
   readonly normals: number[];
@@ -371,35 +370,35 @@ const greedyRectangles = (
   }
 };
 
+interface SliceVoxel {
+  readonly position: Vec3i;
+  readonly material: string;
+}
+
 /** The exposed faces of one slice of the sweep, as a u-by-v mask of materials. */
-const sliceMask = (pass: Pass, sweep: Sweep, w: number): Mask => {
+const sliceMask = (pass: Pass, sweep: Sweep, voxels: readonly SliceVoxel[]): Mask => {
   const { min, max } = pass.bounds;
   const du = max[sweep.u]! - min[sweep.u]! + 1;
   const dv = max[sweep.v]! - min[sweep.v]! + 1;
   const [sx, sy, sz] = sweep.step;
   const mask: Mask = new Array(du * dv);
-  const at = [0, 0, 0];
-  at[sweep.d] = w;
-  for (let j = 0; j < dv; j += 1) {
-    for (let i = 0; i < du; i += 1) {
-      at[sweep.u] = min[sweep.u]! + i;
-      at[sweep.v] = min[sweep.v]! + j;
-      const [x, y, z] = at as [number, number, number];
-      const mat = pass.grid.get(voxelKey(x, y, z));
-      if (mat !== undefined && pass.include(mat) && !pass.blocks(pass.grid.get(voxelKey(x + sx, y + sy, z + sz)))) {
-        mask[i + j * du] = mat;
-      }
+  for (const { position, material } of voxels) {
+    const [x, y, z] = position;
+    if (!pass.blocks(pass.grid.get(voxelKey(x + sx, y + sy, z + sz)))) {
+      const i = position[sweep.u]! - min[sweep.u]!;
+      const j = position[sweep.v]! - min[sweep.v]!;
+      mask[i + j * du] = material;
     }
   }
   return mask;
 };
 
-const sweepSlices = (pass: Pass, sweep: Sweep): void => {
+const sweepSlices = (pass: Pass, sweep: Sweep, slices: ReadonlyMap<number, readonly SliceVoxel[]>): void => {
   const { min, max } = pass.bounds;
   const size = [max[sweep.u]! - min[sweep.u]! + 1, max[sweep.v]! - min[sweep.v]! + 1] as const;
-  for (let w = min[sweep.d]!; w <= max[sweep.d]!; w += 1) {
+  for (const w of [...slices.keys()].sort((a, b) => a - b)) {
     const plane = w + (sweep.sign > 0 ? 1 : 0);
-    greedyRectangles(sliceMask(pass, sweep, w), size, ([i, j, width, height], mat) =>
+    greedyRectangles(sliceMask(pass, sweep, slices.get(w)!), size, ([i, j, width, height], mat) =>
       emitQuad(pass, sweep, { plane, rect: [min[sweep.u]! + i, min[sweep.v]! + j, width, height], mat }),
     );
   }
@@ -407,7 +406,7 @@ const sweepSlices = (pass: Pass, sweep: Sweep): void => {
 
 const meshPass = (
   grid: VoxelGrid,
-  include: Pass['include'],
+  include: (mat: string) => boolean,
   blocks: Pass['blocks'],
   colorOf: Pass['colorOf'],
 ): MeshBuffers => {
@@ -424,18 +423,33 @@ const meshPass = (
     grid,
     bounds: gridBounds(grid),
     colorOf,
-    include,
     blocks,
     positions: [],
     normals: [],
     colors: [],
     indices: [],
   };
+  const voxels: SliceVoxel[] = [];
+  for (const [key, material] of grid) {
+    if (include(material)) {
+      voxels.push({ position: keyVoxel(key), material });
+    }
+  }
   for (let d = 0; d < 3; d += 1) {
+    const slices = new Map<number, SliceVoxel[]>();
+    for (const voxel of voxels) {
+      const w = voxel.position[d]!;
+      let slice = slices.get(w);
+      if (!slice) {
+        slice = [];
+        slices.set(w, slice);
+      }
+      slice.push(voxel);
+    }
     for (const sign of [1, -1] as const) {
       const step: [number, number, number] = [0, 0, 0];
       step[d] = sign;
-      sweepSlices(pass, { d, u: (d + 1) % 3, v: (d + 2) % 3, sign, step });
+      sweepSlices(pass, { d, u: (d + 1) % 3, v: (d + 2) % 3, sign, step }, slices);
     }
   }
   return {
