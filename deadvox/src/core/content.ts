@@ -10,6 +10,7 @@ import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
+import { footprintScaleIssue, PILE_GRID, pileFitIssue, pocketScaleIssue, rolledFitIssue } from './inventoryScale.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
@@ -653,6 +654,7 @@ const checkItems = (registry: Registry, report: Report) => {
   const obtainable = obtainableItems(registry);
   const qualities = new Set(items.flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const hasIgniter = items.some((item) => item.igniter !== undefined);
+  const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   for (const item of items) {
     if (item.container) {
       checkContainerWidth({ section: 'items', id: item.id, container: item.container, registry, report });
@@ -667,6 +669,10 @@ const checkItems = (registry: Registry, report: Report) => {
     checkBook(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {
       report('items', item.id, '.model', `no model "${item.model}"`);
+    }
+    const scaleIssue = (cellMetres && footprintScaleIssue(registry, item, cellMetres)) ?? pileFitIssue(item, PILE_GRID);
+    if (scaleIssue) {
+      report('items', item.id, '.size', scaleIssue);
     }
   }
 };
@@ -765,9 +771,20 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
 };
 
 const checkFurniture = (registry: Registry, report: Report) => {
+  const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   for (const furniture of registry.furniture.values()) {
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
+    }
+    furniture.container?.pockets.forEach(({ grid }, index) => {
+      const issue = cellMetres && pocketScaleIssue(furniture, grid, cellMetres);
+      if (issue) {
+        report('furniture', furniture.id, `.container.pockets[${index}].grid`, issue);
+      }
+    });
+    const misfit = furniture.loot !== undefined && rolledFitIssue(registry, furniture, furniture.loot);
+    if (misfit) {
+      report('furniture', furniture.id, '.loot', misfit);
     }
     checkDoorOpenNoise(registry, furniture, report);
     checkSearchNoise(registry, furniture, report);
@@ -815,6 +832,10 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   }
   if (entry.loot !== undefined && furniture && furniture.container === undefined) {
     found.push(['.loot', 'has loot but no container to put it in']);
+  }
+  const misfit = entry.loot !== undefined && furniture?.container && rolledFitIssue(registry, furniture, entry.loot);
+  if (misfit) {
+    found.push(['.loot', misfit]);
   }
   found.push(...checkPaletteObjectRefs(registry, entry));
   return found;

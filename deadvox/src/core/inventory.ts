@@ -24,6 +24,7 @@ import {
 } from './disassembly.ts';
 import { firearmSlotIds, isLongGun, slingFitted } from './firearmFitting.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
+import { PILE_GRID } from './inventoryScale.ts';
 import {
   cellCount,
   couldFit,
@@ -75,8 +76,6 @@ export const wornSlotOf = (registry: Registry, item: Item): WearSlot | undefined
   return def.wearable?.slot ?? (isLongGun(def) ? 'shoulder' : undefined);
 };
 
-/** What one block of floor holds. */
-export const PILE_GRID: GridSize = { w: 8, h: 6 };
 export const WORK_IN_PROGRESS = 'work_in_progress';
 
 /** Ordinary dropping and craft retirement share the same bounded neighborhood. */

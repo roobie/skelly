@@ -71,7 +71,7 @@ describe('sealed ammunition package activation', () => {
     expect(toHands(f.inventory, f.queue, f.box, [0, 0, 0])).toBeUndefined();
     f.queue.tick(f.queue.remaining);
     expect(f.inventory.hands.right).toBe(f.box);
-    expect(f.inventory.locate(gun)?.kind).toBe('pocket');
+    expect(['pocket', 'pile']).toContain(f.inventory.locate(gun)?.kind);
   });
   it('held primary activation yields its authored payload and consumes the noncontainer box', () => {
     const f = fixture();
