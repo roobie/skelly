@@ -2480,21 +2480,6 @@
   ],
   "items": [
     {
-      "category": "tool",
-      "description": "A small key stamped ARMOURY.",
-      "economy": {
-        "tiers": ["Tier1"],
-        "usage": ["Hunting"]
-      },
-      "id": "gauntlet_police_armoury_key",
-      "key": {
-        "lock": "gauntlet_police_armoury"
-      },
-      "name": "Police armoury key",
-      "size": [1, 1],
-      "weight": 10
-    },
-    {
       "category": "note",
       "economy": {
         "tiers": ["Tier1"],
@@ -2544,16 +2529,6 @@
     }
   ],
   "loot": [
-    {
-      "entries": [
-        {
-          "item": "gauntlet_police_armoury_key",
-          "weight": 1
-        }
-      ],
-      "id": "gauntlet_police_office_key",
-      "rolls": [1, 1]
-    },
     {
       "entries": [
         {

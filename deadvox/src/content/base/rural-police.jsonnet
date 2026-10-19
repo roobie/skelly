@@ -57,7 +57,7 @@ local furnished = [
   '#..TTTT..O..#............#...#..VVVV.#',
   '#.....c..#..#............#...O..VVVV.#',
   '#........#..#............#...O..VVVV.#',
-  '##########..#............##DD#..VVVV.#',
+  '##########..#............##UU#..VVVV.#',
   '#...........O..WWW.......#...#..VVVV.#',
   '#.ssss......O..WWW.......#...#..VVVV.#',
   '#.ssss......#...c........#...#.......#',
@@ -89,7 +89,7 @@ local low = [
   '#..TTTT..O..#............#...#..VVVV.#',
   '#.....c..#..#............#...O..VVVV.#',
   '#........#..#............#...O..VVVV.#',
-  '##########..#............##DD#..VVVV.#',
+  '##########..#............##UU#..VVVV.#',
   '#...........O..WWW.......#...#..VVVV.#',
   '#.ssss......O..WWW.......#...#..VVVV.#',
   '#.ssss......#...c........#...#.......#',
@@ -121,7 +121,7 @@ local standing = [
   '#........O..#............#...#..VVVV.#',
   '#........#..#............#...O..VVVV.#',
   '#........#..#............#...O..VVVV.#',
-  '##########..#............##DD#..VVVV.#',
+  '##########..#............##UU#..VVVV.#',
   '#...........O..rr........#...#..VVVV.#',
   '#...........O............#...#..VVVV.#',
   '#...........#............#...#.......#',
@@ -153,7 +153,7 @@ local standingUpper = [
   '#........O..#............#...#..VVVV.#',
   '#........#..#............#...O..VVVV.#',
   '#........#..#............#...O..VVVV.#',
-  '##########..#............##DD#..VVVV.#',
+  '##########..#............##UU#..VVVV.#',
   '#...........O............#...#..VVVV.#',
   '#...........O............#...#..VVVV.#',
   '#...........#............#...#.......#',
@@ -225,6 +225,16 @@ local lintel = [
   '######################################',
 ];
 {
+  items: [{
+    id: 'gauntlet_police_armoury_key', name: 'Police armoury key', category: 'tool',
+    weight: 10, size: [1, 1], key: { lock: 'gauntlet_police_armoury' },
+    description: 'A small key stamped ARMOURY.',
+    economy: { usage: ['Hunting'], tiers: ['Tier1'] },
+  }],
+  loot: [{
+    id: 'gauntlet_police_office_key', rolls: [1, 1],
+    entries: [{ item: 'gauntlet_police_armoury_key', weight: 1 }],
+  }],
   templates: [{
     id: 'rural_police_station',
     size: [38, 8, 30],
@@ -232,6 +242,7 @@ local lintel = [
     palette: {
       '.': 'air', '#': 'brick', k: 'concrete', '=': 'window_frame', g: { ground: true },
       D: { furniture: 'wood_door' },
+      U: { furniture: 'wood_door', lock: { id: 'gauntlet_police_armoury', locked: true } },
       O: { furniture: 'wood_door', facing: 'e' },
       E: { furniture: 'station_emergency_door', facing: 'e' },
       Q: { furniture: 'gauntlet_cell_door', facing: 'e' },
