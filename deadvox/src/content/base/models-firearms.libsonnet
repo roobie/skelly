@@ -11,7 +11,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
     {
       id: 'rifle_hunting', name: 'Hunting rifle', category: 'weapon',
       description: '.308 Winchester bolt-action rifle with an internal magazine.',
-      model: 'rifle_hunting', size: [2, 8], twoHanded: true, weight: 3200,
+      model: 'rifle_hunting', size: [2, 11], twoHanded: true, weight: 3200,
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
         recoilKickRadians: 0.025, dispersionRadians: 0.006,
@@ -42,7 +42,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "id": "pump_shotgun",
       "model": "shotgun_pump",
       "name": "Pump shotgun",
-      "size": [2, 8],
+      "size": [2, 10],
       "twoHanded": true,
       "weight": 3000
     },
@@ -52,7 +52,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "id": "debug_shotgun_pump",
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
-      "size": [1, 5],
+      "size": [2, 10],
       "twoHanded": true,
       "weight": 3000
     },
@@ -73,7 +73,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "id": "rifle_assault",
       "model": "rifle_assault",
       "name": "AR-pattern rifle",
-      "size": [1, 5],
+      "size": [2, 9],
       "twoHanded": true,
       "weight": 3500
     },
@@ -93,7 +93,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "id": "rifle_ak",
       "model": "rifle_ak",
       "name": "AK-pattern rifle",
-      "size": [1, 5],
+      "size": [2, 9],
       "twoHanded": true,
       "weight": 3500
     }

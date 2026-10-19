@@ -21,6 +21,7 @@ import type { Registry } from '../src/core/content.ts';
 import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
 import { HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from '../src/core/hamlet.ts';
 import { couldFit, ItemFactory } from '../src/core/items.ts';
+import { lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
@@ -603,6 +604,7 @@ describe('authored layout acceptance', () => {
     const oversized = [...registry.items.values()].find(
       (def) =>
         def.economy !== undefined &&
+        lootTypeIssue(registry, def.id, { usage: def.economy.usage, tier: def.economy.tiers[0]! }) === undefined &&
         !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, def.id))),
     );
     if (oversized?.economy === undefined) {

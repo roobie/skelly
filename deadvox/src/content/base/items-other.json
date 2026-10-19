@@ -321,7 +321,7 @@
       },
       "id": "jerry_can",
       "name": "Jerry can",
-      "size": [3, 3],
+      "size": [4, 5],
       "weight": 2500
     },
     {
@@ -418,7 +418,7 @@
       },
       "id": "shambler_torso",
       "name": "Severed shambler torso",
-      "size": [3, 3],
+      "size": [4, 6],
       "weight": 12000
     },
     {
@@ -429,7 +429,7 @@
       },
       "id": "shambler_head",
       "name": "Severed shambler head",
-      "size": [2, 2],
+      "size": [2, 3],
       "weight": 5000
     },
     {
@@ -440,7 +440,7 @@
       },
       "id": "shambler_left_arm",
       "name": "Severed shambler left arm",
-      "size": [2, 2],
+      "size": [1, 7],
       "weight": 2500
     },
     {
@@ -451,7 +451,7 @@
       },
       "id": "shambler_right_arm",
       "name": "Severed shambler right arm",
-      "size": [2, 2],
+      "size": [1, 7],
       "weight": 2500
     },
     {
@@ -462,7 +462,7 @@
       },
       "id": "shambler_left_leg",
       "name": "Severed shambler left leg",
-      "size": [2, 3],
+      "size": [2, 9],
       "weight": 4000
     },
     {
@@ -473,7 +473,7 @@
       },
       "id": "shambler_right_leg",
       "name": "Severed shambler right leg",
-      "size": [2, 3],
+      "size": [2, 9],
       "weight": 4000
     }
   ]

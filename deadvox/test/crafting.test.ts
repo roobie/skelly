@@ -422,9 +422,10 @@ describe('pure craft planner', () => {
   it('records planning every base recipe against one indexed 200-item reach snapshot', () => {
     const benchmarkRegistry = { ...registry, items: new Map(registry.items) };
     const baseBag = registry.items.get('school_backpack')!;
+    const span = Math.max(...[...registry.items.values()].flatMap((def) => def.size));
     benchmarkRegistry.items.set(baseBag.id, {
       ...baseBag,
-      container: { pockets: [{ name: 'Benchmark', grid: [600, 8], handlingSimSeconds: simSeconds(0.5) }] },
+      container: { pockets: [{ name: 'Benchmark', grid: [200 * span, span], handlingSimSeconds: simSeconds(0.5) }] },
     });
     const inventory = new Inventory(benchmarkRegistry);
     const bag = inventory.create('school_backpack');
@@ -437,7 +438,7 @@ describe('pure craft planner', () => {
           kind: 'pocket',
           owner: bag,
           pocket: 0,
-          at: { x: entryIndex * 3, y: 0, rotated: false },
+          at: { x: entryIndex * span, y: 0, rotated: false },
         }),
       ).toBe(true);
     });
