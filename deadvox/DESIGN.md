@@ -331,45 +331,53 @@ intentional opportunities to fight from above.
 ### Moving furniture
 
 The player can move what blocks a way through, so a room the generator jammed
-is fixable in play rather than a dead end. Size is the stand-in for weight and
+is fixable in play rather than a dead end. Size stands in for weight and
 strength until those are modelled; smashing and taking apart with tools are
-separate actions that come later. See `src/core/furnitureMove.ts`.
+separate actions that come later. See `src/core/furnitureMove.ts`,
+`liftFurniture` and `placeFurniture`.
 
-- **What lifts.** A piece within the size limit in every axis lifts unless it is
-  part of the building: wall-mounted, a door or hatch, a ladder, a vehicle or a
-  scenario goal. Fitted pieces are marked on their placement, not their
-  definition, because the same cupboard is fixed in a kitchen and loose in a
-  shed. A piece keeps its origin, so generation that runs again over that column
-  never puts a second copy back.
-- **Hands and stamina.** Carrying takes both empty hands under the existing
-  two-hands rule rather than a new carry slot, so every hand refusal already
-  covers it. Lifting costs stamina and carrying drains it, so moving a room's
-  worth of furniture is a choice paid for, not a free reshuffle. A worn-out
-  player puts the piece down in front, or beside, where it fits; when nothing
-  fits the piece stays held until something does, because dropping it through
-  a wall or a body is worse than holding it a moment longer.
+- **What lifts.** Pieces that are part of the building stay put. Fitted is a
+  mark on a placement, not a definition, because the same cupboard is fixed in
+  a kitchen and loose in a shed. A moved piece keeps its origin, so generation
+  that runs again over that column never puts a second copy back. See
+  `src/core/furnitureMove.ts`, `movableRefusal`, and
+  `src/core/blockEntities.ts`, `BlockEntities.addWithUid`.
+- **Hands and stamina.** Hands are already the slots that hold things, so
+  carrying occupies both of them rather than a new carry slot. Items, ladders
+  and furniture answer to one hand authority, so no combination leaves a hand
+  doing two jobs at once. See `src/core/inventory.ts`, `HandHold`, and
+  `src/core/ladders.ts`, `LadderHold`. Lifting costs stamina and carrying
+  drains it, so moving a room's worth of furniture is a choice paid for, not a
+  free reshuffle. A worn-out player puts the piece down where it fits; when
+  nothing fits the piece stays held until something does, because dropping it
+  through a wall or a body is worse than holding it a moment longer. See
+  `src/game/session.ts`, `putDownWornOut`.
 - **Noise.** Moving scrapes, and shamblers hear it like any other world sound,
   so barricading under pressure has a price.
-- **Stacks settle once.** Pieces stack, and what loses its support falls,
-  lowest first so a stack comes down in order. Settling runs only when a piece
-  is lifted or put down, not every tick, because nothing else moves furniture.
-  A piece needs only part of its footprint supported, as a crate overhanging a
-  table stays put. A fall that finds no floor within a bounded drop is refused,
-  because a chunk that isn't loaded reads as air.
+- **Stacks settle once.** What loses its support falls, lowest first, so each
+  piece lands on what fell beneath it. Settling runs only when a piece is
+  lifted or put down, not every tick, because nothing else moves furniture. A
+  partly supported piece stays put, as a crate overhanging a table does. A fall
+  that finds no floor within a bounded drop is refused, because a chunk that
+  isn't loaded reads as air.
 - **Nothing falls on a body.** A lift that would drop a piece onto the player
   or anyone else is refused, with the reason said. Hurting the player with
   their own tidying would punish an action the game wants them to take, and
   crushing shamblers with a stack would be a cheaper weapon than any the game
   balances.
-- **What lies on top.** Loose items on a lifted or falling piece follow it down
-  to where it lands, or drop beside it, keeping their grid spot where it still
-  fits; a container's pockets go with it. Moving a container is not searching
-  it. A put-down piece shoves loose items under it aside. When the items have
-  nowhere to go the move is refused, so nothing is lost or buried in a block.
+- **What lies on top.** Loose items on a moved or falling piece go with it or
+  beside it, and a container's pockets go with it, because moving a container
+  is not searching it. When the items have nowhere to go the move is refused,
+  so nothing is lost or buried in a block.
 - **Where it can stand.** A piece may not cover a hatch or fill the space a
-  climber stands in front of a ladder, since either would wall off a floor.
-  Doorways and door swings are not protected: a moved piece blocks shamblers
-  like any solid, and barricading a door is a use, not a mistake.
+  climber stands in front of a ladder, since either would wall off a floor. An
+  open upright door's doorway takes a piece, because barricading a door is a
+  use, not a mistake; the door then cannot close over it, and a moved piece
+  blocks shamblers like any solid. A shaped door's panel stays in its cells,
+  and an open hatch is a drop, so neither takes a piece. See `src/core/blockEntities.ts`, `inDoorway`.
+- **A carried piece carries its contents.** An explosive inside a carried
+  piece goes off at its carrier, because the piece is in their hands, not where
+  it last stood. See `src/game/session.ts`, `detonationPoint`.
 - **Refusals live in content.** Each refusal says why in a short first-person
   line, kept in content with the other UI text so a pack can reword it.
 
