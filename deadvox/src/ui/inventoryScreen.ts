@@ -19,11 +19,12 @@ import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed,
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
+import { inputBindings, keyboardInput } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
+import { keyCap } from './keyCap.ts';
 
 /** One cell's rendered size in a node's document, for maths against pointer coordinates. */
 const cellPx = (node: Element): number => {
@@ -398,7 +399,7 @@ const furnitureBodyTemplate = (
     return html`<p class="inv-muted">Searching…</p>`;
   }
   if (furniture.searchLabel) {
-    return html`<button class="inv-option" type="button" @click=${() => search(furniture.uid)}><span>Search it (S)</span><span class="inv-time">${furniture.searchLabel}</span></button>`;
+    return html`<button class="inv-option" type="button" @click=${() => search(furniture.uid)}><span>Search it (${keyCap('inventory.search')})</span><span class="inv-time">${furniture.searchLabel}</span></button>`;
   }
   return furniture.grids.map(
     (pocket) => html`
@@ -440,7 +441,7 @@ const inventoryTemplate = (
     <div class="inv-needs" aria-label="Needs">${vm.needs}</div>
     <details class="inv-help">
       <summary>Controls</summary>
-      <span>${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
+      <span>${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => html`${keyCap(id)}: ${inputBindings.binding(id)!.description}`).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}: assign quickbar</span>
     </details>
   </header>
   <div
@@ -603,7 +604,7 @@ const queueTemplate = (queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>
   return html`
     <div class="inv-queue-title">
       <strong>${factDetail('Doing next', 'Handling halves movement speed and prevents sprinting.')}</strong>
-      <span class="inv-muted">${queue.busy ? `${secs(queue.remaining)} left · Cancel (${labelForAction('handling.stop')})` : 'Nothing queued'}</span>
+      <span class="inv-muted">${queue.busy ? html`${secs(queue.remaining)} left · Cancel (${keyCap('handling.stop')})` : 'Nothing queued'}</span>
     </div>
     ${rows.map(
       (row) => html`

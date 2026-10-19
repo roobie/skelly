@@ -72,6 +72,13 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
 
 const root = (): HTMLElement => document.createElement('div');
 
+/** The prompt as the player's page draws it. */
+const drawn = (prompt: Parameters<typeof renderPlayHud>[1]['prompt']): HTMLElement => {
+  const roots = { hud: root(), prompt: root(), crosshair: root() };
+  renderPlayHud(roots, { hud: '', prompt, crosshairVisible: false });
+  return roots.prompt;
+};
+
 it('shows every pain component on two adjacent lines after needs', () => {
   const status = {
     calendar: 0,
@@ -212,8 +219,9 @@ it('uses a rebound registry label for restable furniture interactions', () => {
       name: 'fixture',
       fullName: 'Fixture',
     });
-    expect(hint).toContain(labelForAction('world.interact'));
-    expect(hint).not.toContain('F:');
+    const prompt = drawn(hint);
+    expect(prompt.querySelector('.keycap')?.textContent).toBe(labelForAction('world.interact'));
+    expect(prompt.textContent).not.toContain('F:');
   } finally {
     inputBindings.reset();
   }
@@ -310,38 +318,42 @@ it('omits expired notices and the duplicated rest interruption but retains the s
     interruption: 'Hurt',
     resting: true,
   });
-  const restingPrompt = playPromptText(state, visible);
+  const restingPrompt = drawn(playPromptText(state, visible)).textContent;
   expect(restingPrompt).toContain(state.interactionHint);
   expect(restingPrompt).toContain(state.itemActionHint);
   expect(restingPrompt).not.toContain(state.interruption);
-  const interruptedPrompt = playPromptText({ ...state, resting: false }, visible);
+  const interruptedPrompt = drawn(playPromptText({ ...state, resting: false }, visible)).textContent;
   expect(interruptedPrompt).toContain(state.interactionHint);
   expect(interruptedPrompt).toContain(state.interruption);
 });
 
-it('names the live turn and tip keys in the carry hint, follows a rebind, and shows none with hints off', () => {
-  const promptFor = (interaction: boolean): string =>
-    playPromptText(
-      {
-        now: 1,
-        notice: '',
-        noticeUntil: 0,
-        interactionHint: playCarryText('fixture set down'),
-        itemActionHint: undefined,
-        interruption: undefined,
-        resting: false,
-      },
-      hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, interaction }),
+it('draws the live turn and tip keys as key caps in the carry hint, follows a rebind, and shows none with hints off', () => {
+  const promptFor = (interaction: boolean): HTMLElement =>
+    drawn(
+      playPromptText(
+        {
+          now: 1,
+          notice: '',
+          noticeUntil: 0,
+          interactionHint: playCarryText('fixture set down'),
+          itemActionHint: undefined,
+          interruption: undefined,
+          resting: false,
+        },
+        hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, interaction }),
+      ),
     );
-  const before = promptFor(true);
+  const caps = (prompt: HTMLElement): string[] =>
+    Array.from(prompt.querySelectorAll('.keycap'), (cap) => cap.textContent ?? '');
+  const before = caps(promptFor(true));
   expect(before).toContain(labelForAction('carry.turn'));
   expect(before).toContain(labelForAction('carry.tip'));
   expect(inputBindings.rebind('carry.turn', [{ code: 'KeyJ' }])).toBeUndefined();
   try {
-    const after = promptFor(true);
+    const after = caps(promptFor(true));
     expect(after).toContain(labelForAction('carry.turn'));
-    expect(after).not.toBe(before);
-    expect(promptFor(false)).toBe('');
+    expect(after).not.toEqual(before);
+    expect(promptFor(false).textContent).toBe('');
   } finally {
     inputBindings.reset();
   }
@@ -359,7 +371,7 @@ it('shows a refusal reason only when the messages option is on', () => {
     resting: false,
   });
   expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }))).toBe('');
-  expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }))).toContain(
-    reason,
-  );
+  expect(
+    drawn(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }))).textContent,
+  ).toContain(reason);
 });

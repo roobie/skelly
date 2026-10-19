@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
 import { formatClock, simSecondsPerHour } from '../src/core/clock.ts';
 import type { RestAction } from '../src/core/longAction.ts';
@@ -61,7 +63,9 @@ describe('restViewModel', () => {
     };
     const onsetVm = restViewModel(onset, true, sim, hiddenMessages);
     expect(onsetVm.percent).toBe(50);
-    expect(onsetVm.stopHint).toContain(stopKey);
+    const hint = document.createElement('div');
+    render(onsetVm.stopHint, hint);
+    expect(hint.querySelector('.keycap')?.textContent).toBe(stopKey);
     expect(onsetVm.canStop).toBe(true);
     const asleep: RestAction = { kind: 'sleep', furnitureUid: 1, rate: -30, startFatigue: 40 };
     const asleepVm = restViewModel(asleep, false, sim, hiddenMessages);

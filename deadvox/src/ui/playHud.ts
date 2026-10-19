@@ -1,14 +1,14 @@
 // Read-only play presentation. No input handlers, commands, admission or simulation writes.
 
-import { render } from 'lit-html';
+import { html, render, type TemplateResult } from 'lit-html';
 import { type Camera, Vector3 } from 'three';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Needs } from '../core/needs.ts';
 import type { PainReading } from '../core/pain.ts';
-import { labelForAction } from '../game/inputBindings.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
+import { type HintText, hintLines, keyCap } from './keyCap.ts';
 
 export interface PlayHudRoots {
   readonly hud: HTMLElement;
@@ -63,8 +63,8 @@ export const playCrosshairFrame = (
 };
 
 export interface PlayHudFrame {
-  readonly hud: string;
-  readonly prompt: string;
+  readonly hud: HintText;
+  readonly prompt: HintText;
   readonly crosshairVisible: boolean;
   readonly crosshairScreenPosition?: { readonly left: number; readonly top: number } | undefined;
 }
@@ -144,39 +144,42 @@ export const playNeedsText = ({
   ].join('\n');
 };
 
-const optionalLine = (visible: boolean, text: string): string => (visible ? text : '');
+const optionalLine = (visible: boolean, text: HintText): HintText => (visible ? text : '');
 
-export const playHudText = (state: PlayHudState, visible: Readonly<HudOptionsState>): string => {
+export const playHudText = (state: PlayHudState, visible: Readonly<HudOptionsState>): TemplateResult | '' => {
   const { calendar, speed, paused, carriedGrams, fps, seed, radiusMetres, walking, meshed, pending, looking } = state;
   const [x, y, z] = state.positionMetres.map((v) => v.toFixed(1));
   const acceleration = speed > 1.05 ? `   ×${speed.toFixed(0)}` : '';
-  return [
-    optionalLine(visible.clock, `${formatClock(calendar)}${acceleration}${paused ? '   paused' : ''}`),
-    optionalLine(visible.stats, playNeedsText(state)),
-    optionalLine(visible.stats, `carrying ${(carriedGrams / 1000).toFixed(1)} kg`),
-    optionalLine(visible.details, `${fps.toFixed(0)} fps   seed ${seed}`),
-    optionalLine(visible.details, `radius ${radiusMetres} m   ${walking ? 'walking' : 'jogging'} (Z)`),
-    optionalLine(visible.details, `pos ${x} ${y} ${z} m`),
-    optionalLine(visible.details, `chunks ${meshed} meshed, ${pending} pending`),
-    optionalLine(visible.interaction && Boolean(looking), `looking at ${looking}`),
-  ]
-    .filter((line) => line !== '')
-    .join('\n');
+  return hintLines(
+    [
+      optionalLine(visible.clock, `${formatClock(calendar)}${acceleration}${paused ? '   paused' : ''}`),
+      optionalLine(visible.stats, playNeedsText(state)),
+      optionalLine(visible.stats, `carrying ${(carriedGrams / 1000).toFixed(1)} kg`),
+      optionalLine(visible.details, `${fps.toFixed(0)} fps   seed ${seed}`),
+      optionalLine(
+        visible.details,
+        html`radius ${radiusMetres} m   ${walking ? 'walking' : 'jogging'} (${keyCap('movement.walk-toggle')})`,
+      ),
+      optionalLine(visible.details, `pos ${x} ${y} ${z} m`),
+      optionalLine(visible.details, `chunks ${meshed} meshed, ${pending} pending`),
+      optionalLine(visible.interaction && Boolean(looking), `looking at ${looking}`),
+    ].filter((line) => line !== ''),
+  );
 };
 
 export interface PlayPromptState {
   readonly now: number;
   readonly notice: string;
   readonly noticeUntil: number;
-  readonly interactionHint: string | undefined;
+  readonly interactionHint: HintText | undefined;
   readonly itemActionHint: string | undefined;
   readonly interruption: string | undefined;
   readonly resting: boolean;
 }
 
-export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOptionsState>): string => {
+export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOptionsState>): TemplateResult | '' => {
   const { now, notice, noticeUntil, interactionHint, itemActionHint, interruption, resting } = state;
-  const lines = visible.messages && now < noticeUntil ? [notice] : [];
+  const lines: HintText[] = visible.messages && now < noticeUntil ? [notice] : [];
   if (visible.interaction && interactionHint !== undefined) {
     lines.push(interactionHint);
   }
@@ -185,11 +188,9 @@ export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOpti
   }
   // Rest has its own Continue/Stop prompt; don't duplicate it in the world prompt.
   if (visible.messages && interruption !== undefined && !resting) {
-    lines.push(
-      `${interruption}.   ${labelForAction('compression.continue')}: continue   ${labelForAction('handling.stop')}: stop`,
-    );
+    lines.push(html`${interruption}.   ${keyCap('compression.continue')}: continue   ${keyCap('handling.stop')}: stop`);
   }
-  return lines.join('\n');
+  return hintLines(lines);
 };
 
 export interface InteractionHint {
@@ -213,14 +214,14 @@ const doorInteractionText = ({
   lock,
   prying,
   name,
-}: Pick<InteractionHint, 'open' | 'doorReason' | 'lock' | 'prying' | 'name'>): string => {
+}: Pick<InteractionHint, 'open' | 'doorReason' | 'lock' | 'prying' | 'name'>): TemplateResult => {
   const action = prying ? `pry the ${name} ${prying}` : `${open ? 'close' : 'open'} the ${name}`;
-  return `${labelForAction('world.interact')}: ${action}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
+  return html`${keyCap('world.interact')}: ${action}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
 };
 
 /** The carried piece's set-down line with its turn and tip actions, keys read from the live bindings. */
-export const playCarryText = (setDown: string): string =>
-  `${setDown} · ${labelForAction('carry.turn')}: turn · ${labelForAction('carry.tip')}: tip`;
+export const playCarryText = (setDown: HintText): TemplateResult =>
+  html`${setDown} · ${keyCap('carry.turn')}: turn · ${keyCap('carry.tip')}: tip`;
 
 /** Describes an already selected target; never selects/executes the interaction. */
 export const playInteractionText = ({
@@ -236,21 +237,21 @@ export const playInteractionText = ({
   searched,
   name,
   fullName,
-}: InteractionHint): string => {
+}: InteractionHint): HintText => {
   if (door) {
     return doorInteractionText({ open, doorReason, lock, prying, name });
   }
   if (climbable) {
-    return `${labelForAction('world.interact')}: climb the ${name}`;
+    return html`${keyCap('world.interact')}: climb the ${name}`;
   }
   if (readable) {
-    return `${labelForAction('world.interact')}: read the ${name}`;
+    return html`${keyCap('world.interact')}: read the ${name}`;
   }
   if (restAction) {
-    return `${labelForAction('world.interact')}: ${restAction === 'sleep' ? 'Sleep' : 'Rest'} on the ${name}`;
+    return html`${keyCap('world.interact')}: ${restAction === 'sleep' ? 'Sleep' : 'Rest'} on the ${name}`;
   }
   if (container) {
-    return `${labelForAction('world.interact')}: ${searched ? 'look in' : 'search'} the ${name}`;
+    return html`${keyCap('world.interact')}: ${searched ? 'look in' : 'search'} the ${name}`;
   }
   return fullName;
 };

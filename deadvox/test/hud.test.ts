@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -208,15 +210,15 @@ describe('handlingViewModel', () => {
     ];
 
     for (const job of jobs) {
-      const vm = handlingViewModel(timedActionHandlingPresentation(job, labelForAction('handling.stop')));
+      const vm = handlingViewModel(timedActionHandlingPresentation(job));
       expect(vm.visible).toBe(true);
       expect(vm.percent).toBe(Math.round((job.elapsed / job.duration) * 100));
-      expect(vm.cancelLabel).toContain(labelForAction('handling.stop'));
+      const root = document.createElement('div');
+      render(vm.cancelLabel, root);
+      expect(root.querySelector('.keycap')?.textContent).toBe(labelForAction('handling.stop'));
     }
     const stopped = { ...jobs[1]!, stopped: true };
-    expect(handlingViewModel(timedActionHandlingPresentation(stopped, labelForAction('handling.stop'))).visible).toBe(
-      false,
-    );
+    expect(handlingViewModel(timedActionHandlingPresentation(stopped)).visible).toBe(false);
   });
   it('has no next-job text when nothing is queued after the current one', () => {
     const inv = new Inventory(registry);

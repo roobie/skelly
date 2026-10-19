@@ -2,8 +2,8 @@ import { html, render, type TemplateResult } from 'lit-html';
 import { calendarAt, formatClock } from '../core/clock.ts';
 import type { RestAction, RestKind } from '../core/longAction.ts';
 import type { Simulation } from '../core/sim.ts';
-import { labelForAction } from '../game/inputBindings.ts';
 import { activityProgress } from './activityProgress.ts';
+import { type HintText, keyCap } from './keyCap.ts';
 
 export interface WaitViewAction {
   readonly label: 'Waiting';
@@ -14,7 +14,7 @@ export interface RestViewModel {
   readonly label: string;
   readonly clock: string;
   readonly percent: number;
-  readonly stopHint: string;
+  readonly stopHint: HintText;
   readonly canStop: boolean;
   readonly prompt: string | undefined;
 }
@@ -57,7 +57,7 @@ export const restViewModel = (
     label,
     clock: formatClock(sim.calendar),
     percent,
-    stopHint: canStop ? `Stop (${labelForAction('handling.stop')})` : '',
+    stopHint: canStop ? html`Stop (${keyCap('handling.stop')})` : '',
     canStop,
     prompt: messagesVisible ? sim.compression.interruption : undefined,
   };
@@ -71,7 +71,7 @@ const restTemplate = (vm: RestViewModel): TemplateResult => html`
     progressText: vm.clock,
     detail: html`
       ${vm.stopHint ? html`<p class="hd-muted">${vm.stopHint}</p>` : ''}
-      ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   ${labelForAction('compression.continue')}: continue${vm.canStop ? `   ${labelForAction('handling.stop')}: stop` : ''}</p>` : ''}
+      ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   ${keyCap('compression.continue')}: continue${vm.canStop ? html`   ${keyCap('handling.stop')}: stop` : ''}</p>` : ''}
     `,
   })}
 `;

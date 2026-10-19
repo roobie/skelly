@@ -2704,7 +2704,19 @@ try {
       throw new Error('Could not carry the first-look crowbar');
     }
     r.hudOptions.handling = false;
-    const hint = r.useText(door);
+    const plain = (part) => {
+      if (typeof part === 'string') {
+        return part;
+      }
+      if (Array.isArray(part)) {
+        return part.map(plain).join('');
+      }
+      if (!part?.strings) {
+        return '';
+      }
+      return part.strings.map((s, i) => s + (i < part.values.length ? plain(part.values[i]) : '')).join('');
+    };
+    const hint = plain(r.useText(door));
     r.useTarget(door);
     return { hint, job: r.session.sim.actions.job, doorUid: door.uid };
   });
