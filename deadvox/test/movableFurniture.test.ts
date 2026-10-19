@@ -77,13 +77,13 @@ describe('movable furniture', () => {
     expect(loaded.inventory.itemByUid(beans!.item.uid)).toBeDefined();
   });
 
-  it('lets a stack on a lifted piece settle in order, with what lay on top following it down', () => {
+  it('lets a stack on a lifted piece settle bottom up, whatever order it was furnished in', () => {
     const inventory = new Inventory(registry);
     const [, height] = crate.size;
     const at = (level: number): Vec3 => [origin[0], origin[1] + level * height, origin[2]];
-    const lifted = inventory.furnish(spec)!;
-    const middle = inventory.furnish({ ...spec, pos: at(1) })!;
     const top = inventory.furnish({ ...spec, pos: at(2) })!;
+    const middle = inventory.furnish({ ...spec, pos: at(1) })!;
+    const lifted = inventory.furnish(spec)!;
     expect(inventory.add(inventory.create('canned_beans'), { kind: 'pile', pos: at(3) })).toBe(true);
     const [beans] = inventory.pileAt(at(3))!.items;
 

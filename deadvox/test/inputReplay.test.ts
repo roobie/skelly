@@ -1637,6 +1637,61 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
+  it('replays a furniture lift and put-down to the same piece, place and fingerprint', async () => {
+    const initial = createRuntime();
+    const { inventory } = initial;
+    if (
+      !(
+        inventory.move(inventory.hands.right!, { kind: 'worn' }).ok &&
+        inventory.move(inventory.hands.left!, { kind: 'pile', pos: initial.player.body.pos }).ok
+      )
+    ) {
+      throw new Error('Could not free the hands for the replay lift fixture');
+    }
+    const crate = inventory.registry.furniture.get('crate')!;
+    const [width, height, depth] = crate.size;
+    // The fixture player falls far from loaded terrain, so the piece is put down on a second one.
+    const stand = inventory.furnish({ type: crate.id, pos: [6, 0, 6], size: crate.size, facing: 'n' });
+    const piece = inventory.furnish({ type: crate.id, pos: [12, 0, 6], size: crate.size, facing: 'n' });
+    if (!(stand && piece)) {
+      throw new Error('Could not create the replay lift fixture');
+    }
+    const start = capture(initial);
+    const aimed: [number, number, number] = [6 + Math.floor(width / 2), height, 6 + Math.floor(depth / 2)];
+    const commands = [
+      { tick: 24, context: 'play' as const, payload: { kind: 'furniture.lift' as const, entityUid: piece.uid } },
+      { tick: 72, context: 'play' as const, payload: { kind: 'furniture.place' as const, pos: aimed } },
+    ];
+    const reachAll = (runtime: ReturnType<typeof createRuntime>) => {
+      runtime.inventory.canReachEntity = () => true;
+      runtime.inventory.canReach = () => true;
+    };
+    const recorder = new InputReplayRecorder(start);
+    const source = recordActiveSession(start, recorder, {
+      commands,
+      recordedTicks: 120,
+      useDominantAtTick: 4,
+      useDominant: reachAll,
+    });
+    const sourceEnd = capture(source);
+    const placed = source.entities.byUid(piece.uid)!;
+    expect(source.entities.carrying()).toBeUndefined();
+    expect(placed.carried).toBe(false);
+    expect(placed.pos).toEqual([6, height, 6]);
+    expect(source.entities.at(...placed.pos)).toBe(placed);
+
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const replay = playSession(start, decoded.inputs, {
+      endSimTimestamp: decoded.endSimTimestamp,
+      useDominant: reachAll,
+    });
+    const replayed = replay.entities.byUid(piece.uid)!;
+    expect(replay.entities.carrying()).toBeUndefined();
+    expect(replayed).toMatchObject({ carried: false, pos: placed.pos });
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
   it('replays craft start, stop and continue commands to the same fingerprint', async () => {
     const { runtime, recipe } = createCraftReplayFixture();
     const start = capture(runtime);
