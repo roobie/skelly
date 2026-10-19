@@ -25,8 +25,8 @@ local furnished = [
   '#......#B......#...#',
   '#......#B......O...#',
   '#L..WWW#.......O..M#',
-  '#L..WWW#.QQQQQQ#..M#',
-  '##DD############DD##',
+  '#L..WWW#QQ...QQ#..M#',
+  '##########DD########',
 ];
 local standing = [
   '####################',
@@ -39,8 +39,8 @@ local standing = [
   '#......#B......#...#',
   '#......#B......O...#',
   '#......#.......O...#',
-  '#......#.QQQQQQ#...#',
-  '##DD#==#########DD##',
+  '#......#QQ...QQ#...#',
+  '##==#==###DD########',
 ];
 local standingUpper = [
   '####################',
@@ -53,8 +53,8 @@ local standingUpper = [
   '#......#B......#...#',
   '#......#B......O...#',
   '#......#.......O...#',
-  '#......#.QQQQQQ#...#',
-  '##DD#..#########DD##',
+  '#......#QQ...QQ#...#',
+  '##..#..###DD########',
 ];
 local heads = [
   '##..#..##..#..######',
@@ -68,7 +68,7 @@ local heads = [
   '#......#.......#...#',
   '#......#.......#...#',
   '#......#.......#...#',
-  '#########..#..######',
+  '########..##..######',
 ];
 local roof = [
   '####################',
@@ -123,7 +123,7 @@ local flue = [
     },
     layers: [foundation, furnished, furnished, standing, standingUpper, heads, roof, flue, flue],
     access: {
-      ground: 'ground', entrance: [3, 1, 10],
+      ground: 'ground', entrance: [11, 1, 10],
       storeys: [{ id: 'ground', floor: 1 }], stairs: [],
     },
   }] + yard.templates,

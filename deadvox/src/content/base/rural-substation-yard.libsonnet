@@ -45,22 +45,33 @@ local equipment = [
   '........................',
   '........................',
 ];
+local tall = [
+  '........................',
+  '........................',
+  '........................',
+  '.........TTTTTT.........',
+  '.........TTTTTT.........',
+  '.........TTTTTT.........',
+  '.........TTTTTT.........',
+  '.........TTTTTT.........',
+  '........................',
+  '........................',
+  '........................',
+];
 local post = ['pp', 'pp'];
 local bay = ['VVVV', 'VVVV', 'VVVV', 'VVVV', 'VVVV', 'VVVV', 'VVVV', 'VVVV', 'VVVV'];
 local clear = ['....', '....', '....', '....', '....', '....', '....', '....', '....'];
 {
   templates: [
     {
-      id: 'rural_substation_yard', size: [24, 6, 11], lootContext: context,
+      id: 'rural_substation_yard', size: [24, 8, 11], lootContext: context,
       palette: palette,
-      layers: [bare, fenced, fenced, fenced, fenced, equipment],
+      layers: [bare, fenced, fenced, fenced, fenced, equipment, tall, tall],
     },
     {
-      id: 'rural_substation_pole', size: [2, 15, 2], lootContext: context,
+      id: 'rural_substation_pole', size: [2, 21, 2], lootContext: context,
       palette: palette,
-      layers: [
-        ['..', '..'], post, post, post, post, post, post, post, post, post, post, post, post, post, post,
-      ],
+      layers: [['..', '..']] + [post for layer in std.range(1, 20)],
     },
     {
       id: 'rural_substation_van_spot', size: [4, 5, 9], lootContext: context,
