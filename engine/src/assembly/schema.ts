@@ -2,9 +2,9 @@
 // Everything domain-specific (which parts and mount types exist) is data
 // supplied through a Domain.
 
-import type { Issue } from './issue.ts';
-import type { ExtrusionAxis, Transform, Vec3 } from './math.ts';
-import type { Box, DomainUnits, Solid, Vec2 } from './solid.ts';
+import type { Issue } from '../foundation/issue.ts';
+import type { ExtrusionAxis, Transform, Vec3 } from '../foundation/math.ts';
+import type { Box, DomainUnits, Solid, Vec2 } from '../shapes/solid.ts';
 
 export type Gender = 'male' | 'female';
 

@@ -1,7 +1,7 @@
-import { applyPoint, invert } from '@skelly/engine/core/math.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Box, Solid } from '@skelly/engine/core/solid.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { applyPoint, invert } from '@skelly/engine/foundation/math.ts';
+import type { Box, Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

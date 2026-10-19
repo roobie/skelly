@@ -1,6 +1,8 @@
 // Feasibility checks stay separate from simulation so invalid geometry can be reported before use.
 
-import { MAIN_AXIS, TOLERANCE } from './conventions.ts';
+import { MAIN_AXIS, TOLERANCE } from '../foundation/conventions.ts';
+import type { Issue } from '../foundation/issue.ts';
+import { angleBetween, applyDir, applyPoint, cross, length, sub, type Transform } from '../foundation/math.ts';
 import {
   distanceWorld,
   lowerBoundDistanceWorld,
@@ -8,9 +10,7 @@ import {
   type WorldSolid,
   worldBox,
   worldSolid,
-} from './geometry.ts';
-import type { Issue } from './issue.ts';
-import { angleBetween, applyDir, applyPoint, cross, length, sub, type Transform } from './math.ts';
+} from '../shapes/geometry.ts';
 import { connectionMismatch } from './resolve.ts';
 import type { KeepOut, PartDef, Resolved, Rule } from './schema.ts';
 

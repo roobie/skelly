@@ -1,4 +1,4 @@
-import { connectionMismatch, resolve } from '@skelly/engine/core/resolve.ts';
+import { connectionMismatch, resolve } from '@skelly/engine/assembly/resolve.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { PUMP_REAR_SLOPE } from '../src/gun/parts.ts';

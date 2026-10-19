@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { PrefabReference } from '@skelly/engine/core/schema.ts';
+import type { PrefabReference } from '@skelly/engine/assembly/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

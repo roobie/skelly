@@ -2,17 +2,17 @@
 // core types are converted to three.js types.
 
 import type * as Three from 'three';
-import { resolveAppearance, solidColor, srgbToHex } from '../core/appearance.ts';
-import { type DisplayItem, displayItems } from '../core/display.ts';
-import type { AppearanceContext, Palette } from '../core/exportTypes.ts';
-import { type Obb, worldBox } from '../core/geometry.ts';
-import type { Issue } from '../core/issue.ts';
-import type { Mat3, Transform, Vec3 } from '../core/math.ts';
-import { applyDir, compose } from '../core/math.ts';
-import { displayBevel, meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
-import { portFrame } from '../core/resolve.ts';
-import type { Solid } from '../core/solid.ts';
-import type { Report } from '../core/validate.ts';
+import { portFrame } from '../assembly/resolve.ts';
+import type { Report } from '../assembly/validate.ts';
+import { resolveAppearance, solidColor, srgbToHex } from '../export/appearance.ts';
+import type { AppearanceContext, Palette } from '../export/exportTypes.ts';
+import type { Issue } from '../foundation/issue.ts';
+import type { Mat3, Transform, Vec3 } from '../foundation/math.ts';
+import { applyDir, compose } from '../foundation/math.ts';
+import { type DisplayItem, displayItems } from '../shapes/display.ts';
+import { type Obb, worldBox } from '../shapes/geometry.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '../shapes/mesh.ts';
+import type { Solid } from '../shapes/solid.ts';
 
 const FAIL = 0xe5_53_4b;
 const KEEP_OUT = 0x9d_7c_d8;
@@ -25,7 +25,7 @@ export interface Layers {
   readonly axes: Three.Group;
 }
 
-type MainAxis = typeof import('../core/conventions.ts').MAIN_AXIS;
+type MainAxis = typeof import('../foundation/conventions.ts').MAIN_AXIS;
 
 type ThreeRuntime = Pick<
   typeof import('three'),

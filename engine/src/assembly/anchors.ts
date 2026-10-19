@@ -1,7 +1,7 @@
 // Domain-owned declarations keep the shared core independent of consumer-specific anchor vocabularies.
 
-import type { Transform, Vec3 } from './math.ts';
-import { applyDir, applyPoint } from './math.ts';
+import type { Transform, Vec3 } from '../foundation/math.ts';
+import { applyDir, applyPoint } from '../foundation/math.ts';
 import type { PartDef, Resolved } from './schema.ts';
 
 /** Generic right-handed frame in its owner's local or resolved assembly space, in domain units. */

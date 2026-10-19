@@ -9,7 +9,18 @@
 // part. Boxes and extrusions use the same canonical Z-prism chamfer; explicit
 // X/Y extrusion axes are then mapped through right-handed coordinate cycles.
 
-import { GRID } from './conventions.ts';
+import { GRID } from '../foundation/conventions.ts';
+import {
+  add,
+  cross,
+  dot,
+  type ExtrusionAxis,
+  extrusionPoint,
+  IDENTITY,
+  normalize,
+  sub,
+  type Vec3,
+} from '../foundation/math.ts';
 import {
   boundsOfPoints,
   cleanPolygon,
@@ -20,7 +31,6 @@ import {
   polygonArea,
   worldBox,
 } from './geometry.ts';
-import { add, cross, dot, type ExtrusionAxis, extrusionPoint, IDENTITY, normalize, sub, type Vec3 } from './math.ts';
 import { DEFAULT_REVOLVE_FACETS, meshForRevolved } from './revolve.ts';
 import type { ConvexPolyhedron, TriangleMesh } from './shapeTypes.ts';
 import type { Box, DomainUnits, Solid, Vec2 } from './solid.ts';

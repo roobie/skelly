@@ -1,6 +1,6 @@
-import { GRID } from '@skelly/engine/core/conventions.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Solid } from '@skelly/engine/core/solid.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import { GRID } from '@skelly/engine/foundation/conventions.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { roundProfiles } from '../src/ammo/roundProfile.ts';

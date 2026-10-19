@@ -7,8 +7,13 @@
 //        -> one empty child node per port, named `<part>.<port>`, with the port metadata in glTF `extras`
 // Vertices are in the part's local frame times the domain's `units.metresPerUnit`; the node transform supplies the placement.
 
+import { portFrame } from '../assembly/resolve.ts';
+import type { PartDef, PartInstance, PortDef } from '../assembly/schema.ts';
+import { compose, type Mat3, type Transform, type Vec3 } from '../foundation/math.ts';
+import { type DisplayItem, displayItems } from '../shapes/display.ts';
+import { boundsOfPoints } from '../shapes/geometry.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '../shapes/mesh.ts';
 import { resolveAppearance } from './appearance.ts';
-import { type DisplayItem, displayItems } from './display.ts';
 import type {
   ExportGlb,
   ExportPortMetadata,
@@ -18,11 +23,6 @@ import type {
   PartPortId,
   SrgbColor,
 } from './exportTypes.ts';
-import { boundsOfPoints } from './geometry.ts';
-import { compose, type Mat3, type Transform, type Vec3 } from './math.ts';
-import { displayBevel, meshForSolid, meshForSolidGroup } from './mesh.ts';
-import { portFrame } from './resolve.ts';
-import type { PartDef, PartInstance, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
 /** glTF node name of a part: its id and registry key (`PartInstance.family`), e.g. `part-1:family-a`. */

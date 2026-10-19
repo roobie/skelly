@@ -16,12 +16,14 @@ typecheck and suite pass unchanged, and a check fails any import that runs upwar
 
 ## Layers and where each engine module falls
 
-- **Foundation:** `math`, `conventions`, `random`, and the `Issue` type from `issue`.
-- **Shapes:** `solid`, `shapeTypes`, `geometry`, `revolve`, `mesh`, `display`.
-- **Assembly:** `schema`, plus `template`, `resolve`, `rules`, `validate`,
+Each layer is a folder under `engine/src`, imported as `@skelly/engine/<folder>/<module>.ts`.
+
+- **`foundation`:** `math`, `conventions`, `random`, and the `Issue` type from `issue`.
+- **`shapes`:** `solid`, `shapeTypes`, `geometry`, `revolve`, `mesh`, `display`.
+- **`assembly`:** `schema`, plus `template`, `resolve`, `rules`, `validate`,
   `generate`, `parseAssembly`, `motion`, `anchors`, `design`, `designLoader`.
-- **Above the engine:** `glb` and `appearance` need a resolved assembly, so they are
-  exporters; `engine/src/viewer/scene.ts` moves to the tool UI package.
+- **`export`, above the engine:** `glb`, `appearance` and `exportTypes` need a resolved
+  assembly, so they are exporters; `engine/src/viewer/scene.ts` moves to the tool UI package.
 
 ## Known obstacles
 
@@ -45,17 +47,19 @@ to be new.
 
 ## Next, in order
 
-- [x] Break the shapes cycle: `engine/src/core/shapeTypes.ts`, `TriangleMesh`, holds the result types that
+- [x] Break the shapes cycle: `engine/src/shapes/shapeTypes.ts`, `TriangleMesh`, holds the result types that
   `geometry`, `revolve` and `mesh` shared.
-- [x] Break the schema and resolve cycle: `engine/src/core/schema.ts`, `Resolved`, now holds
+- [x] Break the schema and resolve cycle: `engine/src/assembly/schema.ts`, `Resolved`, now holds
   the resolved-assembly types, because a `Rule` checks a `Resolved` and a `Resolved` holds its
   `Domain`; `resolve` imports them and `schema` imports nothing from `resolve`.
-- [x] Split the solid types out of `schema`: `engine/src/core/solid.ts`, `BoxSolid`, holds them
+- [x] Split the solid types out of `schema`: `engine/src/shapes/solid.ts`, `BoxSolid`, holds them
   and `DomainUnits`; `schema` imports from it, never the reverse.
 - [x] Split `design` along the layers above: persistence and suggest types stay in `design`,
   the anchor types live in `anchors`, and the palette and GLB export types live in
-  `engine/src/core/exportTypes.ts`, `GlbExportInput`, above the engine.
-- [ ] Move the files into layer folders and repoint every import, including gungen's.
-- [ ] Add the check that fails an upward import, and run it in CI.
+  `engine/src/export/exportTypes.ts`, `GlbExportInput`, above the engine.
+- [x] Move the files into layer folders and repoint every import, including gungen's.
+- [ ] Add the check that fails an upward import, and run it in CI. Extend
+  `gungen/test/engineImportBoundary.test.ts`, "engine import boundary", which already
+  resolves every engine import.
 - [ ] Run gungen's typecheck, unit suite and `validate`; they must pass unchanged.
 - [ ] Move the viewer to its own package once the root layout in #962 is decided.

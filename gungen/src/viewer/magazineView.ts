@@ -1,4 +1,4 @@
-import type { Report } from '@skelly/engine/core/validate.ts';
+import type { Report } from '@skelly/engine/assembly/validate.ts';
 import { DoubleSide, Group, InstancedMesh, type Material, Matrix4, Mesh } from 'three';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import { magazineRoundColumn } from '../gun/magazineGeometry.ts';

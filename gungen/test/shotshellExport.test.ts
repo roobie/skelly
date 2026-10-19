@@ -1,4 +1,4 @@
-import { srgbToLinear } from '@skelly/engine/core/glb.ts';
+import { srgbToLinear } from '@skelly/engine/export/glb.ts';
 import validator from 'gltf-validator';
 import { Box3, Raycaster, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';

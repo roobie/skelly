@@ -1,4 +1,4 @@
-import type { Issue } from './issue.ts';
+import type { Issue } from '../foundation/issue.ts';
 import { resolve } from './resolve.ts';
 import { CORE_RULES } from './rules.ts';
 import type { Assembly, Domain, Resolved } from './schema.ts';

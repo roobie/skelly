@@ -2,7 +2,7 @@
 // never checks feasibility. That's the validator's job, so the two stay
 // independent so generation can be measured against validity.
 
-import { chance, pick, type Rng, seededRng } from './random.ts';
+import { chance, pick, type Rng, seededRng } from '../foundation/random.ts';
 import { resolve } from './resolve.ts';
 import type { Assembly, Connection, Domain, PartInstance } from './schema.ts';
 import type {

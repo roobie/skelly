@@ -1,7 +1,7 @@
 // Solid shapes in a part's local frame, and the units they are measured in. Nothing here knows about
 // parts, ports or assemblies, so geometry, revolve and mesh can build on it alone.
 
-import type { ExtrusionAxis, Vec3 } from './math.ts';
+import type { ExtrusionAxis, Vec3 } from '../foundation/math.ts';
 
 /** Axis-aligned box in its part's local frame. */
 export interface Box {

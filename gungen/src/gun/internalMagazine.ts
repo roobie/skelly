@@ -1,4 +1,4 @@
-import type { Resolved } from '@skelly/engine/core/schema.ts';
+import type { Resolved } from '@skelly/engine/assembly/schema.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { layoutColumn } from '../ammo/magazineColumn.ts';
 import { boltWellProfile } from './boltCartridge.ts';

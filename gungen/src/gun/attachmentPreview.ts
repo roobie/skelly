@@ -1,5 +1,5 @@
-import type { Assembly, Domain } from '@skelly/engine/core/schema.ts';
-import { type Report, validate } from '@skelly/engine/core/validate.ts';
+import type { Assembly, Domain } from '@skelly/engine/assembly/schema.ts';
+import { type Report, validate } from '@skelly/engine/assembly/validate.ts';
 import { attachmentCompatibility } from './attachmentCompatibility.ts';
 import { ATTACHMENT_IDS, attachmentInstanceForId, attachmentSlots } from './attachments.ts';
 import { gunDomain } from './domain.ts';

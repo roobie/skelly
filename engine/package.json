@@ -11,7 +11,10 @@
     "typescript": "^7.0.2"
   },
   "exports": {
-    "./core/*": "./src/core/*",
+    "./foundation/*": "./src/foundation/*",
+    "./shapes/*": "./src/shapes/*",
+    "./assembly/*": "./src/assembly/*",
+    "./export/*": "./src/export/*",
     "./viewer/scene": "./src/viewer/scene.ts"
   },
   "peerDependencies": {

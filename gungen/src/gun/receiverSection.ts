@@ -1,10 +1,10 @@
+import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import {
   clipPolygon,
   clippedExtrudedPolygonPolyhedron,
   validateExtrudedPolygon,
-} from '@skelly/engine/core/geometry.ts';
-import type { Vec3 } from '@skelly/engine/core/math.ts';
-import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/core/solid.ts';
+} from '@skelly/engine/shapes/geometry.ts';
+import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 
 export interface SectionWindow {
   readonly x: readonly [number, number];

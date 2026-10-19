@@ -1,18 +1,18 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { generate } from '@skelly/engine/core/generate.ts';
+import { generate } from '@skelly/engine/assembly/generate.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { PartDef } from '@skelly/engine/assembly/schema.ts';
+import type { Template } from '@skelly/engine/assembly/template.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { applyPoint, IDENTITY, invert, type Transform } from '@skelly/engine/foundation/math.ts';
 import {
   distanceWorld,
   localSolidBounds,
   obbPolyhedron,
   penetrationWorld,
   worldSolid,
-} from '@skelly/engine/core/geometry.ts';
-import { applyPoint, IDENTITY, invert, type Transform } from '@skelly/engine/core/math.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { PartDef } from '@skelly/engine/core/schema.ts';
-import type { Template } from '@skelly/engine/core/template.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+} from '@skelly/engine/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';

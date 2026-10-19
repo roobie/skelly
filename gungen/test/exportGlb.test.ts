@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { displayItems as selectDisplayItems } from '@skelly/engine/core/display.ts';
-import type { GlbAssetIdentity, Palette } from '@skelly/engine/core/exportTypes.ts';
-import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '@skelly/engine/core/geometry.ts';
-import { exportGlb, partNodeName, srgbToLinear } from '@skelly/engine/core/glb.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import type { GlbAssetIdentity, Palette } from '@skelly/engine/export/exportTypes.ts';
+import { exportGlb, partNodeName, srgbToLinear } from '@skelly/engine/export/glb.ts';
 import {
   applyPoint,
   IDENTITY,
@@ -15,10 +15,10 @@ import {
   rotZ,
   sub,
   type Vec3,
-} from '@skelly/engine/core/math.ts';
-import { meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly } from '@skelly/engine/core/schema.ts';
+} from '@skelly/engine/foundation/math.ts';
+import { displayItems as selectDisplayItems } from '@skelly/engine/shapes/display.ts';
+import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import { meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';

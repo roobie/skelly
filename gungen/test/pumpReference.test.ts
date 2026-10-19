@@ -1,10 +1,10 @@
-import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
-import { applyPoint, IDENTITY } from '@skelly/engine/core/math.ts';
-import { meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly } from '@skelly/engine/core/schema.ts';
-import type { ExtrudedPolygonSolid, Solid } from '@skelly/engine/core/solid.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { applyPoint, IDENTITY } from '@skelly/engine/foundation/math.ts';
+import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import { meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
+import type { ExtrudedPolygonSolid, Solid } from '@skelly/engine/shapes/solid.ts';
 import type { Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';

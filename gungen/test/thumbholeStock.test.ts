@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { generate } from '@skelly/engine/core/generate.ts';
-import { applyPoint, type Transform, type Vec3 } from '@skelly/engine/core/math.ts';
-import type { Assembly } from '@skelly/engine/core/schema.ts';
-import type { Solid } from '@skelly/engine/core/solid.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { generate } from '@skelly/engine/assembly/generate.ts';
+import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { applyPoint, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';

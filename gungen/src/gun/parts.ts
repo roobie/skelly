@@ -19,8 +19,8 @@
 //   lug        barrel ↔ tube magazine front (closes a loop, like clamp)
 //   forend     tube magazine ↔ sliding forend
 
-import { GRID, SIZE_CLASSES, type SizeClass } from '@skelly/engine/core/conventions.ts';
-import { boxFromMinMax, localSolidBounds } from '@skelly/engine/core/geometry.ts';
+import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef } from '@skelly/engine/assembly/schema.ts';
+import { GRID, SIZE_CLASSES, type SizeClass } from '@skelly/engine/foundation/conventions.ts';
 import {
   applyDir,
   applyPoint,
@@ -29,9 +29,9 @@ import {
   invert,
   type Transform,
   type Vec3,
-} from '@skelly/engine/core/math.ts';
-import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef } from '@skelly/engine/core/schema.ts';
-import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/core/solid.ts';
+} from '@skelly/engine/foundation/math.ts';
+import { boxFromMinMax, localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';

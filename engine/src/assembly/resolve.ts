@@ -1,7 +1,6 @@
 // Loop-closing connections are checked rather than solved because the engine does not solve constraints.
 
-import { validateExtrudedPolygon } from './geometry.ts';
-import type { Issue } from './issue.ts';
+import type { Issue } from '../foundation/issue.ts';
 import {
   add,
   applyDir,
@@ -18,8 +17,9 @@ import {
   scale,
   sub,
   type Transform,
-} from './math.ts';
-import { revolvedProfileError } from './revolve.ts';
+} from '../foundation/math.ts';
+import { validateExtrudedPolygon } from '../shapes/geometry.ts';
+import { revolvedProfileError } from '../shapes/revolve.ts';
 import type {
   Assembly,
   Domain,

@@ -1,11 +1,7 @@
-import { MAIN_AXIS, TOLERANCE } from '@skelly/engine/core/conventions.ts';
-import {
-  distanceWorld,
-  localSolidBounds,
-  penetrationWorld,
-  validateExtrudedPolygon,
-  worldSolid,
-} from '@skelly/engine/core/geometry.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { MAIN_AXIS, TOLERANCE } from '@skelly/engine/foundation/conventions.ts';
 import {
   angleBetween,
   applyDir,
@@ -17,11 +13,15 @@ import {
   type Transform,
   translation,
   type Vec3,
-} from '@skelly/engine/core/math.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { PartDef, PartFamily } from '@skelly/engine/core/schema.ts';
-import type { Solid } from '@skelly/engine/core/solid.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+} from '@skelly/engine/foundation/math.ts';
+import {
+  distanceWorld,
+  localSolidBounds,
+  penetrationWorld,
+  validateExtrudedPolygon,
+  worldSolid,
+} from '@skelly/engine/shapes/geometry.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import {
   SHROUD_HALF_HEIGHT,

@@ -4,8 +4,8 @@ import {
   type PartAnchorDeclaration,
   type ResolvedAnchors,
   resolveAnchors,
-} from '@skelly/engine/core/anchors.ts';
-import type { Resolved } from '@skelly/engine/core/schema.ts';
+} from '@skelly/engine/assembly/anchors.ts';
+import type { Resolved } from '@skelly/engine/assembly/schema.ts';
 
 /** Gun-domain names; core treats these as caller-supplied strings. */
 export type GunAnchorName = 'hold' | 'support' | 'muzzle' | 'ejection' | 'magwell' | 'loading_port';

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { DesignLoadResult } from '@skelly/engine/core/design.ts';
-import { loadDesign } from '@skelly/engine/core/designLoader.ts';
+import type { DesignLoadResult } from '@skelly/engine/assembly/design.ts';
+import { loadDesign } from '@skelly/engine/assembly/designLoader.ts';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';

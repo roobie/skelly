@@ -1,6 +1,6 @@
-import { boxFromMinMax, clippedExtrudedPolygonPolyhedron, polyhedronVolume } from '@skelly/engine/core/geometry.ts';
-import type { PartDef, PortDef } from '@skelly/engine/core/schema.ts';
-import type { Box, Solid, Vec2 } from '@skelly/engine/core/solid.ts';
+import type { PartDef, PortDef } from '@skelly/engine/assembly/schema.ts';
+import { boxFromMinMax, clippedExtrudedPolygonPolyhedron, polyhedronVolume } from '@skelly/engine/shapes/geometry.ts';
+import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { type SectionPocket, subtractAxialPockets, subtractConvexSection } from './receiverSection.ts';
 import { roundedTriggerGuardSolids } from './roundedTriggerGuard.ts';
 import { SPORTER_PROPORTIONS as P } from './sporterProportions.ts';

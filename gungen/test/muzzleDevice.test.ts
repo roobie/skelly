@@ -1,7 +1,7 @@
-import { boundsOfPoints, obbPolyhedron, worldSolid } from '@skelly/engine/core/geometry.ts';
-import { applyPoint, type Vec3 } from '@skelly/engine/core/math.ts';
-import type { Resolved } from '@skelly/engine/core/schema.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import type { Resolved } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { boundsOfPoints, obbPolyhedron, worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';

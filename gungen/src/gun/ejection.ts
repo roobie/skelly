@@ -1,5 +1,5 @@
-import { applyPoint, type Vec3 } from '@skelly/engine/core/math.ts';
-import type { PartDef, Resolved } from '@skelly/engine/core/schema.ts';
+import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import { applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
 
 /** The case leaves at the near/right-hand face of the authored ejection keep-out. */
 export const localEjectionPoint = (part: PartDef): Vec3 | undefined => {

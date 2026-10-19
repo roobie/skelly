@@ -10,7 +10,7 @@
 // back down to the axis. A hollow part goes out along the outside, across the mouth, and back along the
 // inside. The outward normal of a segment with direction (da, dr) is (-dr, da).
 
-import { add, extrusionPoint, type Vec3 } from './math.ts';
+import { add, extrusionPoint, type Vec3 } from '../foundation/math.ts';
 import type { ConvexPolyhedron, TriangleMesh } from './shapeTypes.ts';
 import type { RevolvedSolid, Vec2 } from './solid.ts';
 

@@ -1,5 +1,5 @@
-import { clipPolygon } from '@skelly/engine/core/geometry.ts';
-import type { Box, Solid, Vec2 } from '@skelly/engine/core/solid.ts';
+import { clipPolygon } from '@skelly/engine/shapes/geometry.ts';
+import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 
 /** A faceted rounded loop, partitioned into the same four logical walls as a box guard. */
 export const roundedTriggerGuardSolids = (

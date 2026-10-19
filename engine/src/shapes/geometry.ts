@@ -13,7 +13,7 @@ import {
   sub,
   type Transform,
   type Vec3,
-} from './math.ts';
+} from '../foundation/math.ts';
 import { revolvedLocalPolyhedron } from './revolve.ts';
 import type { ConvexPolyhedron } from './shapeTypes.ts';
 import type { Box, ClipPlane, ExtrudedPolygonSolid, Solid, Vec2 } from './solid.ts';

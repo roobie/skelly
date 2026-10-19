@@ -1,14 +1,14 @@
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly, PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
 import type {
   AppearanceContext,
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
-} from '@skelly/engine/core/exportTypes.ts';
-import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
-import { partNodeName } from '@skelly/engine/core/glb.ts';
-import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/core/math.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, PartDef, Resolved } from '@skelly/engine/core/schema.ts';
+} from '@skelly/engine/export/exportTypes.ts';
+import { partNodeName } from '@skelly/engine/export/glb.ts';
+import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { resolveGunAction } from './actionDescription.ts';

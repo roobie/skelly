@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { applyPoint } from '@skelly/engine/core/math.ts';
-import { motionTransform } from '@skelly/engine/core/motion.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { motionTransform } from '@skelly/engine/assembly/motion.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { applyPoint } from '@skelly/engine/foundation/math.ts';
 import { type Mesh, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';

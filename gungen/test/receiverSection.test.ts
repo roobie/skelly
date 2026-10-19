@@ -1,14 +1,14 @@
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import { applyPoint, compose, IDENTITY, translation, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import {
   localSolidBounds,
   penetrationWorld,
   validateExtrudedPolygon,
   worldSolid,
-} from '@skelly/engine/core/geometry.ts';
-import { applyPoint, compose, IDENTITY, translation, type Vec3 } from '@skelly/engine/core/math.ts';
-import { meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { TriangleMesh } from '@skelly/engine/core/shapeTypes.ts';
-import type { Solid, Vec2 } from '@skelly/engine/core/solid.ts';
+} from '@skelly/engine/shapes/geometry.ts';
+import { meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
+import type { TriangleMesh } from '@skelly/engine/shapes/shapeTypes.ts';
+import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { AK_PROPORTIONS } from '../src/gun/akProportions.ts';
 import { gunDomain } from '../src/gun/domain.ts';

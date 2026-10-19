@@ -1,5 +1,5 @@
-import type { ParamReference, Template } from '@skelly/engine/core/template.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import type { ParamReference, Template } from '@skelly/engine/assembly/template.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

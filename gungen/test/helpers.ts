@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseAssemblyOrThrow } from '@skelly/engine/core/parseAssembly.ts';
-import type { Assembly } from '@skelly/engine/core/schema.ts';
-import type { TriangleMesh } from '@skelly/engine/core/shapeTypes.ts';
+import { parseAssemblyOrThrow } from '@skelly/engine/assembly/parseAssembly.ts';
+import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import type { TriangleMesh } from '@skelly/engine/shapes/shapeTypes.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 
 const FIXTURES = join(import.meta.dirname, '..', 'fixtures');

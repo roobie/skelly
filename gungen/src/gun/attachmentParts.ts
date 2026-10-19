@@ -1,7 +1,7 @@
-import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
-import type { Vec3 } from '@skelly/engine/core/math.ts';
-import type { PartDef, PartFamily } from '@skelly/engine/core/schema.ts';
-import type { Solid } from '@skelly/engine/core/solid.ts';
+import type { PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
+import type { Vec3 } from '@skelly/engine/foundation/math.ts';
+import { boxFromMinMax } from '@skelly/engine/shapes/geometry.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import type { MuzzleBore } from './mounts.ts';
 
 const X: Vec3 = [1, 0, 0];
