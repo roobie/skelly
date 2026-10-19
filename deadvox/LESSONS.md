@@ -5,6 +5,7 @@ read_if:
   - you're changing new-world startup, gesture-gated pointer capture or browser launch probes
   - you're changing save-worker timeout policy or interpreting its request diagnostics
   - you're sizing browser-stage budgets after adding pixel captures
+  - you're changing sparse vehicle meshing or investigating startup CPU cost
   - you've solved a hard problem and need to preserve its reason
 ---
 
@@ -57,6 +58,10 @@ Bound lock acquisition separately from worker I/O. Cancel only a queued lock req
 An unanswered worker request keeps its deadline. Only a clearly late deadline callback grants one short dispatch grace: a stalled main thread can run a due timer before an already queued healthy reply. A matching reply cancels the active timer, including that grace; an on-time timeout fails immediately. The grace cannot repeat even if its callback is also delayed, so a silent worker is still terminated. See `src/game/saveStorage.ts`, `SaveStorage.request` and `SAVE_REPLY_GRACE_REAL_MS`.
 
 The timeout error and console warning identify the unanswered request's phase, selected backend and elapsed time, along with the initial timer's lateness and available binary-payload size. An unselected backend or unmeasured payload size remains unknown, not a zero-cost observation. These details distinguish main-thread dispatch delay from ordinary deadline expiry and locate the operation to investigate; they do not prove a backend hang or that an unacknowledged commit never reached disk. Payload size is not the entire cloned-message size, and timeout diagnostics are not worker-execution timings.
+
+## Sparse vehicle meshing
+
+Empty space in a sparse vehicle grid contributes no faces. Repeatedly probing a model's entire bounding volume for each face direction and transparency pass makes empty gaps part of startup cost. Neighbour queries should follow occupied voxels instead; the exposed-face and material rules must remain unchanged. See `src/vehicles/voxels.ts`, `meshPass`, and `test/vehicleParts.test.ts`, "queries only occupied voxels’ neighbours when meshing sparse solid and glass slices".
 
 ## GPU resource ownership
 
