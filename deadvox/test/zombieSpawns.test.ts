@@ -4,10 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
+import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
+import { footprint } from '../src/core/templates.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import type { ZombieSystem } from '../src/core/zombies.ts';
+import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const BASE = 'src/content/base';
 const files = readdirSync(BASE)
@@ -85,6 +88,46 @@ describe('authored zombie spawn persistence', () => {
       }
     }
   });
+
+  it(
+    'keeps the secret house’s sealed acid zombie through generation and a save round-trip',
+    () => {
+      const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
+      const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
+      const [house, ...others] = city.plan.placements.filter(
+        ({ template }) => template.id === 'gauntlet_city_cellar_secret',
+      );
+      expect(others).toEqual([]);
+      const [x0, y0, z0] = house!.origin;
+      const [width, depth] = footprint(house!);
+      const grade = y0 + house!.template.access!.entrance[1];
+      const columns = new Map<string, [number, number]>();
+      for (let x = x0; x < x0 + width; x++) {
+        for (let z = z0; z < z0 + depth; z++) {
+          columns.set(`${toChunk(x)},${toChunk(z)}`, [toChunk(x), toChunk(z)]);
+        }
+      }
+      const sealed = ({ type, pos: [x, y, z] }: Spawned) =>
+        type === 'acid_zombie' && x >= x0 && x < x0 + width && z >= z0 && z < z0 + depth && y < grade;
+      const loadAll = (spawner: ZombieSpawner, spawned: Spawned[]) => {
+        for (const [cx, cz] of columns.values()) {
+          spawner.onColumn({ cx, cz, site: city, registry, zombies: zombieSystemFor(spawned) });
+        }
+      };
+      const beforeSave = new ZombieSpawner();
+      const saved: Spawned[] = [];
+      loadAll(beforeSave, saved);
+      expect(saved.filter(sealed)).toHaveLength(1);
+      const ledger = JSON.parse(JSON.stringify(beforeSave.snapshotState())) as readonly string[];
+      const afterLoad = new ZombieSpawner();
+      afterLoad.restoreState(ledger);
+      const restored = [...saved];
+      loadAll(afterLoad, restored);
+      expect(restored.filter(sealed)).toEqual(saved.filter(sealed));
+      expect(afterLoad.snapshotState()).toEqual(ledger);
+    },
+    GAUNTLET_SITE_MS,
+  );
 
   it('restores every authored camp amalgam without duplicating or losing it', () => {
     const { locations, everyMarkerHasSpawn } = campAmalgams();

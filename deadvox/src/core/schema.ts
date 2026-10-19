@@ -1439,6 +1439,8 @@ const PaletteThingSchema = pipe(
     lock: optional(DoorLockSchema),
     /** Fastened where it stands, like a fitted cupboard, so the player can't move it. */
     fixed: optional(literal(true)),
+    /** Stock every copy of this piece always holds, beside its table's roll. */
+    items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
     /** A zombie type that may stand here; the cell itself is air. */
     spawn: optional(Id),
     chance: optional(Fraction),
@@ -1455,8 +1457,12 @@ const PaletteThingSchema = pipe(
   check(
     (e) =>
       e.furniture !== undefined ||
-      (e.loot === undefined && e.facing === undefined && e.lock === undefined && e.fixed === undefined),
-    '"loot", "facing", "lock" and "fixed" only go with "furniture"',
+      (e.loot === undefined &&
+        e.facing === undefined &&
+        e.lock === undefined &&
+        e.fixed === undefined &&
+        e.items === undefined),
+    '"loot", "facing", "lock", "fixed" and "items" only go with "furniture"',
   ),
   check((e) => e.spawn !== undefined || e.chance === undefined, '"chance" only goes with "spawn"'),
 );

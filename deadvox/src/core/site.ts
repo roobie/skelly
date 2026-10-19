@@ -108,7 +108,7 @@ export const lootSourcesOf = (
   const furniture = placement.template.pieces.flatMap((piece, i) => {
     const world = placed[i]!;
     const override = fixedLoot.find((entry) => entry.at.join(',') === piece.pos.join(','));
-    const items = override?.items ?? [];
+    const items = [...(piece.items ?? []), ...(override?.items ?? [])];
     const container = items.filter((item) => item.placement !== 'surface');
     const surface = items.filter((item) => item.placement === 'surface');
     const usage = override?.lootUsage ?? piece.lootUsage;

@@ -476,8 +476,10 @@ describe('content-owned city building types', () => {
       for (const template of buildings) {
         const evidence = buildingLootEvidence(registry, template);
         expect(evidence.standing).toBeGreaterThan(0);
-        expect(evidence.sources.length, template.id).toBeGreaterThan(0);
-        for (const source of evidence.sources) {
+        // Fixed stock is an incidental bonus that validation checks; only table loot is the building's promise.
+        const rolled = evidence.sources.filter(({ stocked }) => !stocked);
+        expect(rolled.length, template.id).toBeGreaterThan(0);
+        for (const source of rolled) {
           expect(source.accessible, source.label).toBe(true);
           expect(source.items.length, source.label).toBeGreaterThan(0);
           expect(source.issues, source.label).toEqual([]);

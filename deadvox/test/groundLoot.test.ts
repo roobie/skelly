@@ -17,6 +17,7 @@ import { baseRegistry } from './baseRegistry.ts';
 
 const base = baseRegistry();
 const seed = 7;
+const PIECES_PATH = /^.*\.pieces/;
 const floor = { id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' };
 const fixtureData = (): ContentFile => ({
   blocks: [floor],
@@ -266,6 +267,32 @@ describe('ground loot', () => {
     data.templates![0]!.layers[2]![2] = '..#.....';
     const { issues } = buildRegistry([{ source: 'wall-fixture', data }]);
     expect(issues.map(({ path }) => path)).toEqual(['templates[0].groundLoot[0]']);
+  });
+
+  it('turns palette furniture stock into a required source and rejects stock it cannot hold or admit', () => {
+    const stocked = (item: string, furniture = 'fixture_container') => {
+      const data = fixtureData();
+      data.furniture!.push({ id: 'fixture_board', name: 'Fixture board', size: [1, 1, 1], color: '#808080' });
+      data.templates![0]!.palette.C = { furniture, items: [{ item }] };
+      return data;
+    };
+    const parsed = buildRegistry([{ source: 'stock-fixture', data: stocked('fixture_allowed') }]);
+    expect(parsed.issues).toEqual([]);
+    const placement: Placement = {
+      template: compileTemplate(parsed.registry, parsed.registry.templates.get('fixture_ground')!),
+      origin: [0, 0, 0],
+      turn: 0,
+    };
+    const stock = lootSourcesOf(parsed.registry, 'fixture_site', placement).filter(
+      (source) => source.supply.kind === 'fixed',
+    );
+    expect(stock.map(({ channel, required, supply }) => [channel, required, supply])).toEqual([
+      ['container', true, expect.objectContaining({ items: [{ item: 'fixture_allowed' }] })],
+    ]);
+    const paths = (data: ContentFile) =>
+      buildRegistry([{ source: 'stock-fixture', data }]).issues.map(({ path }) => path.replace(PIECES_PATH, ''));
+    expect(paths(stocked('fixture_wrong_usage'))).toEqual(['[0].items[0].item']);
+    expect(paths(stocked('fixture_allowed', 'fixture_board'))).toEqual(['[0].items']);
   });
 
   it('keeps anchors out of reserved circulation and route poses', () => {

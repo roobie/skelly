@@ -90,6 +90,16 @@
             "kind": "assembly"
           },
           "weight": 1
+        },
+        {
+          "atLeast": 1,
+          "atMost": 1,
+          "ref": {
+            "id": "gauntlet_city_cellar_secret",
+            "kind": "assembly",
+            "style": "brick_townhouse"
+          },
+          "weight": 1
         }
       ],
       "id": "gauntlet_city"

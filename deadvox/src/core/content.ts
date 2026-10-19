@@ -13,6 +13,7 @@ import { visibleGridName } from './inventoryGridName.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
+import { pieceItemIssues } from './placementLoot.ts';
 import { handlingRangeIssues } from './rangeLayout.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
@@ -947,6 +948,9 @@ const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: R
     report('templates', template.id, path, message);
   }
   for (const [path, message] of templateGroundLootIssues(registry, compiled)) {
+    report('templates', template.id, path, message);
+  }
+  for (const [path, message] of pieceItemIssues(registry, compiled)) {
     report('templates', template.id, path, message);
   }
   for (const [path, message] of templateSpawnClearanceIssues(registry, compiled)) {

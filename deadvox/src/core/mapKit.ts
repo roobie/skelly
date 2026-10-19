@@ -1,5 +1,6 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { pieceItemIssues } from './placementLoot.ts';
 import type { KitAnchor, KitPort, MapAssemblyDef, MapSiteDef } from './schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { ownershipCell } from './templateOwnership.ts';
@@ -155,6 +156,7 @@ const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [str
   ...portIssues(registry, template),
   ...templateDoorIssues(registry, template),
   ...templateGroundLootIssues(registry, template),
+  ...pieceItemIssues(registry, template),
   ...templateSpawnClearanceIssues(registry, template),
 ];
 
