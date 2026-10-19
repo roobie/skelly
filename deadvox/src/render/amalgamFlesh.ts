@@ -14,8 +14,8 @@ import { castsAndReceives } from './shadowFlags.ts';
 // without its carved voxels, so each hole shows from every side with flesh-coloured walls, and the chunk a
 // hit knocks out, flying off as render-only debris. Neither touches the simulation.
 
-/** Same conversion mobgen's own viewer/scene.ts uses (not importable — that file pulls in three from
- * mobgen's own node_modules) — palette-index colour bytes to per-vertex RGB. */
+/** Same conversion mobgen's own viewer/scene.ts uses (not importable — that file pulls in three and
+ * the DOM) — palette-index colour bytes to per-vertex RGB. */
 const SHADE_FACTORS = [0.72, 0.88, 1.04, 1.2] as const;
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 const vertexColorsFrom = (
