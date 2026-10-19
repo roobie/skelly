@@ -143,6 +143,8 @@ export interface HeldHandlingFrame {
   readonly grab?: { readonly progress: number };
   /** The frame's real seconds, used only to raise and lower a magazine being loaded. */
   readonly dt?: number;
+  /** Metres the arms and held item are raised, to show a blow deflected. */
+  readonly lift?: number;
 }
 
 export class HeldItems {
@@ -442,7 +444,7 @@ export class HeldItems {
       handling.throwing?.chargeProgress ?? 0,
     );
     transform.offset = transform.offset.map((value, axis) => value + throwOffset[axis]!) as Vec3;
-    transform.offset[1] += 0.012 * strength;
+    transform.offset[1] += 0.012 * strength + Math.max(0, handling.lift ?? 0);
     transform.offset[2] += 0.025 * strength;
     this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
     this.poseRotation.multiply(this.recoilRotation);

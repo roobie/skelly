@@ -142,7 +142,6 @@ import { startingLoadout } from './loadout.ts';
 import {
   meleeWeaponFromContent,
   resolvePlayerMeleeWeapon,
-  shouldBlockFromEnGarde,
   shouldEnterMeleeReady,
   startPlayerMelee,
   unarmedMeleeWeapon,
@@ -946,6 +945,7 @@ export const startPlay = (
     },
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
     onDetonation: (at, radiusMetres) => view.blastFlashes.spawn(at, radiusMetres),
+    onBlock: (jolt) => view.block(jolt),
     onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
@@ -2878,17 +2878,14 @@ export const startPlay = (
     return true;
   };
 
-  const shouldPlayerBlock = (): boolean => {
-    const action = selectPrimaryAction(inventory);
-    const enGarde = shouldEnterMeleeReady({
+  const shouldPlayerBlock = (): boolean =>
+    shouldEnterMeleeReady({
       rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
-      meleeWeaponHeld: action.kind === 'melee',
+      meleeWeaponHeld: selectPrimaryAction(inventory).kind === 'melee',
       handsEmpty: !(inventory.hands.right || inventory.hands.left),
       debugBuild: debugTools?.buildOn ?? false,
       inputLocked: compression.locksInput,
     });
-    return shouldBlockFromEnGarde(enGarde, keyboardInput.held('movement.back'));
-  };
 
   const activateIgniter = (item: Item, hand: HandSide): void => {
     const target = ignitionTargetForHand(inventory, hand);

@@ -52,8 +52,6 @@ export const shouldEnterMeleeReady = (input: {
 }): boolean =>
   input.rightMouseHeld && (input.meleeWeaponHeld || input.handsEmpty) && !input.debugBuild && !input.inputLocked;
 
-export const shouldBlockFromEnGarde = (enGarde: boolean, backingOff: boolean): boolean => enGarde && backingOff;
-
 /** Applies content class defaults and per-weapon overrides once, before the action is saved. */
 export const resolveMeleeWeapon = (weapon: MeleeWeapon, defaults: MeleeClassDef): MeleeWeapon => {
   const speedMultiplier = weapon.speedMultiplier ?? defaults.speedMultiplier;

@@ -47,7 +47,7 @@ The optional stats readout is a tuning surface for viewing felt pain and its com
 
 ## Combat and feedback
 
-Combat readiness is a stance, not a HUD mode. Firearms fire only while ready and not sprinting; an unready click does nothing and produces no refusal sound. Melee attacks require en-garde, and blocking also requires backing off. Firearms Combat affects duck-walking; Melee Combat affects blocking. Hand activation follows actor roles without remapping physical slots. See `src/game/play.ts`, `fireHeldItem`; `src/game/melee.ts`, `shouldBlockFromEnGarde`; `src/game/inputBindings.ts`, `BindingRegistry`; and `src/game/primaryAction.ts`, `selectPrimaryAction`, for which held item owns the click.
+Combat readiness is a stance, not a HUD mode. Firearms fire only while ready and not sprinting; an unready click does nothing and produces no refusal sound. Melee attacks require en-garde, and en-garde alone blocks, so guarding needs no extra key. Firearms Combat affects duck-walking; Melee Combat affects blocking. Hand activation follows actor roles without remapping physical slots. See `src/game/play.ts`, `fireHeldItem` and `shouldPlayerBlock`; `src/game/inputBindings.ts`, `BindingRegistry`; and `src/game/primaryAction.ts`, `selectPrimaryAction`, for which held item owns the click.
 
 Bleeding feedback names each region's tier when messages are enabled. A content tier marked for warning gets a warning; a quiet tier stays quiet. Refusal text follows the messages option, while the character's refusal sound remains available. Treatment progress belongs to the handling HUD; recipe reading progress belongs on the open page because it provides an endpoint even when HUD options are off.
 

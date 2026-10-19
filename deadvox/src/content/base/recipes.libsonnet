@@ -61,15 +61,26 @@
       "name": "Melee Combat (MC)",
       "training": {
         "activities": {
-          "block": { "practice": 1, "tier": 5 },
+          "block": { "practice": 0.2, "tier": 5 },
           "hit": { "practice": 1, "tier": 5 }
         }
       },
       "combat": {
         "melee": {
-          "blockChanceMinimum": 0.12,
-          "blockChanceRange": 0.7,
-          "blockChanceHalfLifeLevels": 4
+          "blockChanceMinimum": 0.05,
+          "blockChanceRange": 0.45,
+          "blockChanceHalfLifeLevels": 4,
+          "mitigationMinimum": 0.3,
+          "mitigationRange": 0.55,
+          "mitigationHalfLifeLevels": 3,
+          "staminaPerAbsorbedPoint": 2,
+          "staminaCostFloor": 0.35,
+          "staminaCostHalfLifeLevels": 3,
+          "joltPerAbsorbedPoint": 0.08,
+          "joltRealSeconds": 0.08,
+          "deflectRiseMetres": 0.14,
+          "deflectRiseFloor": 0.6,
+          "deflectRealSeconds": 0.35
         }
       }
     }

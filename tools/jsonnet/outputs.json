@@ -177,6 +177,10 @@
       "output": "deadvox/src/content/base/senses.json"
     },
     {
+      "source": "deadvox/src/content/base/sounds-block.jsonnet",
+      "output": "deadvox/src/content/base/sounds-block.json"
+    },
+    {
       "source": "deadvox/src/content/base/sounds-furniture.jsonnet",
       "output": "deadvox/src/content/base/sounds-furniture.json"
     },

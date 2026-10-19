@@ -43,7 +43,7 @@ import { defOf, type Item } from '../core/items.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, rollLoot } from '../core/loot.ts';
-import { blocksAttack } from '../core/meleeCombat.ts';
+import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
@@ -259,7 +259,7 @@ interface SessionControls {
   heldDominantUse?: (time: number, pressed: boolean, held: boolean) => void;
   /** Right mouse requests firearm readiness; input gates this while a menu or lock owns the pointer. */
   readyHeld?: () => boolean;
-  /** True only for S held while the player is in the melee en-garde stance. */
+  /** True only while the player is in the melee en-garde stance. */
   blocking?: () => boolean;
   /** True only while an automatic firearm is selected and its trigger is held. */
   automaticFireHeld?: () => boolean;
@@ -334,6 +334,8 @@ export interface SessionOptions {
   onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
+  /** Presentation-only: a melee block absorbed damage. */
+  onBlock?: (jolt: BlockJolt, full: boolean) => void;
   onAcidImpact?: (position: Vec3, type: Zombie['type']) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
@@ -780,6 +782,31 @@ export const createSession = (options: SessionOptions) => {
     const training = skillActivityPractice(registry, CORE_CONTENT_IDS.inventoryManagement, 'handling');
     character.awardPractice(CORE_CONTENT_IDS.inventoryManagement, training.practice, training.tier);
   };
+  /** What of a melee blow gets past the en-garde guard; acid never comes through here. */
+  const blockedDamage = (damage: number, attacker: EntityId): number => {
+    if (!controls.blocking?.() || meleeCombatTuning === undefined) {
+      return damage;
+    }
+    const block = meleeBlock(
+      {
+        level: character.skills.melee_combat ?? SKILL_LEVEL_MIN,
+        damage,
+        roll: sim.rng(`block:${attacker}:${sim.time}`).next(),
+        stamina: sim.needs.stamina,
+        windedBelow: sim.body.staminaRules.windedBelow,
+      },
+      meleeCombatTuning,
+    );
+    if (block.absorbed <= 0) {
+      return damage;
+    }
+    spendStamina(sim.needs, block.staminaCost, bodyTuning.staminaRegenDelaySimSeconds);
+    const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'block');
+    character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice * block.absorbed, training.tier);
+    playPlayerSound(block.full ? 'player_block_full' : 'player_block_partial');
+    options.onBlock?.(blockJolt(block.absorbed, meleeCombatTuning), block.full);
+    return damage - block.absorbed;
+  };
   const queue = new HandlingQueue(
     inventory,
     (move) =>
@@ -1053,22 +1080,13 @@ export const createSession = (options: SessionOptions) => {
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
     hurtPlayer: (amount, hitRegions, attacker, kind) => {
-      if (
-        controls.blocking?.() &&
-        meleeCombatTuning !== undefined &&
-        blocksAttack(
-          character.skills.melee_combat ?? SKILL_LEVEL_MIN,
-          sim.rng(`block:${attacker}:${sim.time}`).next(),
-          meleeCombatTuning,
-        )
-      ) {
-        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'block');
-        character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
+      const source = zombieStore.get(attacker);
+      const damage = blockedDamage(source ? modified('attack.damage', amount, source) : amount, attacker);
+      if (damage <= 0) {
         return;
       }
-      const source = zombieStore.get(attacker);
       applyZombiePlayerHit(sim, {
-        damage: source ? modified('attack.damage', amount, source) : amount,
+        damage,
         sourceName: source?.type.name ?? 'zombie',
         regionRoll: sim.rng(`player-hit-region:${attacker}:${sim.time}`).next(),
         hitRegions,
