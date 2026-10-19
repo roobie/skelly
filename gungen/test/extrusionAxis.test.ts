@@ -7,10 +7,11 @@ import {
 } from '@skelly/engine/core/geometry.ts';
 import { exportGlb, partNodeName } from '@skelly/engine/core/glb.ts';
 import { applyDir, type ExtrusionAxis, mulMM, rotX, rotY, rotZ } from '@skelly/engine/core/math.ts';
-import { meshForSolid, type TriangleMesh } from '@skelly/engine/core/mesh.ts';
+import { meshForSolid } from '@skelly/engine/core/mesh.ts';
 import { type Resolved, resolve } from '@skelly/engine/core/resolve.ts';
 import { connectionContact, keepOut as keepOutRule } from '@skelly/engine/core/rules.ts';
 import type { Domain, ExtrudedPolygonSolid, KeepOut, PartDef } from '@skelly/engine/core/schema.ts';
+import type { TriangleMesh } from '@skelly/engine/core/shapeTypes.ts';
 import { validate } from '@skelly/engine/core/validate.ts';
 import validator from 'gltf-validator';
 import { Mesh } from 'three';

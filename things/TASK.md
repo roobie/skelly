@@ -25,8 +25,6 @@ typecheck and suite pass unchanged, and a check fails any import that runs upwar
 
 ## Known obstacles
 
-- `geometry`, `revolve` and `mesh` import each other, so they form a cycle that must be
-  broken before they can sit in one layer.
 - `schema` and `resolve` import each other's types, and `design` mixes persistence,
   anchors, palette and export types.
 - `schema` holds the solid types and the assembly model together, so it has to be split,
@@ -50,7 +48,9 @@ to be new.
 
 ## Next, in order
 
-- [ ] Break the shapes cycle and the schema and resolve cycle without changing behavior.
+- [x] Break the shapes cycle: `engine/src/core/shapeTypes.ts` holds the result types that
+  `geometry`, `revolve` and `mesh` shared.
+- [ ] Break the schema and resolve cycle without changing behavior.
 - [ ] Split `schema` and `design` along the layers above.
 - [ ] Move the files into layer folders and repoint every import, including gungen's.
 - [ ] Add the check that fails an upward import, and run it in CI.

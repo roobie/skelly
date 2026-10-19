@@ -12,7 +12,6 @@
 import { GRID } from './conventions.ts';
 import {
   boundsOfPoints,
-  type ConvexPolyhedron,
   cleanPolygon,
   clipPolygon as clipPolygonByPlane,
   clippedExtrudedPolygonPolyhedron,
@@ -24,13 +23,7 @@ import {
 import { add, cross, dot, type ExtrusionAxis, extrusionPoint, IDENTITY, normalize, sub, type Vec3 } from './math.ts';
 import { DEFAULT_REVOLVE_FACETS, meshForRevolved } from './revolve.ts';
 import type { Box, DomainUnits, Solid, Vec2 } from './schema.ts';
-
-export interface TriangleMesh {
-  readonly positions: Float32Array;
-  readonly normals: Float32Array;
-  readonly indices: Uint32Array;
-  readonly triangleCount: number;
-}
+import type { ConvexPolyhedron, TriangleMesh } from './shapeTypes.ts';
 
 // Default chamfer size: half a grid step. This keeps the edge readable while
 // preserving the part's overall shape; each solid clamps it to its geometry.
