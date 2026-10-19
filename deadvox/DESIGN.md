@@ -247,6 +247,14 @@ sleeping take game time under compression. Work and rest have different
 content-tuned rates: a player should be able to sleep through most of a night,
 while work remains legible. Prying stays at real-time pace.
 
+Search time rises in a straight line with a container's pocket cells, from a minimum
+to a maximum, and stops rising at about wardrobe size, so a small box is quick and
+tall furniture takes the full time. One content number sets where it stops, which
+keeps the rule cheap to tune. Its known limit is that a later container larger than
+that point searches no slower than a wardrobe; adding one is the trigger to revisit
+the rule. See `src/core/blockEntities.ts`, `searchTime`, and `src/core/schema.ts`,
+`InventoryTuningSchema`.
+
 Bound each compressed simulation step so one frame does not become arbitrarily
 expensive. If the world is busy, fast-forward may slow rather than exceed the
 frame budget. After an action stops, compression ramps down within a bounded
