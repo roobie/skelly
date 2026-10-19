@@ -73,6 +73,18 @@
       "weatherable": true
     },
     {
+      "color": "#b9bcba",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "painted_asphalt",
+      "name": "Painted asphalt",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
       "color": "#b5b3ad",
       "footsteps": {
         "player": "footstep_stone",

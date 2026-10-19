@@ -6,6 +6,7 @@
 import {
   array,
   check,
+  exactOptional,
   finite,
   type InferOutput,
   integer,
@@ -1790,6 +1791,16 @@ const CityBenchmarkSchema = strictObject({
   ...CityBlockGeometry,
   reachMetres: PositiveMetres,
 });
+// Action ids are code-owned and dotted, so `Id` does not fit; `controlRowIssue` checks them against the actions.
+const ControlSchema = strictObject({
+  id: pipe(string(), minLength(1)),
+  keys: array(
+    strictObject({
+      code: pipe(string(), minLength(1)),
+      modifier: exactOptional(picklist(['shift', 'alt', 'ctrl', 'meta'])),
+    }),
+  ),
+});
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -2785,6 +2796,7 @@ const SECTION_DESCRIPTOR = {
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
   scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
   cityBenchmarks: { schema: optional(array(CityBenchmarkSchema)), label: 'city benchmarks', order: 30 },
+  controls: { schema: optional(array(ControlSchema)), label: 'default keys', order: 31 },
   graphics: { schema: optional(array(GraphicsTuningSchema)), label: 'graphics tuning', order: 22 },
   mapStyles: { schema: optional(array(MapStyleSchema)), label: 'map styles', order: 23 },
   mapPieces: { schema: optional(array(MapPieceSchema)), label: 'map pieces', order: 24 },
