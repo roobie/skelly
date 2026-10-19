@@ -191,10 +191,8 @@ local campWallRunCrouchHole = campWallRun + {
       ],
       "container": {
         "pockets": [
-          {
-            "grid": [10, 5],
-            "handlingSimSeconds": 1.2
-          }
+          { "name": "Left bay", "grid": [10, 14], "handlingSimSeconds": 1.2 },
+          { "name": "Right bay", "grid": [10, 14], "handlingSimSeconds": 1.2 }
         ]
       },
       "loot": "military_armoury"
@@ -222,7 +220,7 @@ local campWallRunCrouchHole = campWallRun + {
       "container": {
         "pockets": [
           {
-            "grid": [10, 6],
+            "grid": [9, 9],
             "handlingSimSeconds": 1.2
           }
         ]
@@ -237,7 +235,7 @@ local campWallRunCrouchHole = campWallRun + {
       "container": {
         "pockets": [
           {
-            "grid": [4, 2],
+            "grid": [3, 2],
             "handlingSimSeconds": 0.8
           }
         ]
@@ -268,7 +266,7 @@ local campWallRunCrouchHole = campWallRun + {
       "container": {
         "pockets": [
           {
-            "grid": [6, 4],
+            "grid": [9, 4],
             "handlingSimSeconds": 1
           }
         ]
@@ -304,7 +302,7 @@ local campWallRunCrouchHole = campWallRun + {
       "color": "#59656a",
       "shape": [{ "position": [0, 0, 0], "size": [3, 2, 2] }],
       "container": {
-        "pockets": [{ "grid": [4, 3], "handlingSimSeconds": 1.2 }]
+        "pockets": [{ "grid": [4, 4], "handlingSimSeconds": 1.2 }]
       },
       "door": { "handlingSimSeconds": 0.6 }
     },

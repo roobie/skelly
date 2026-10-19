@@ -1,6 +1,7 @@
 {
   "inventory": [
     {
+      "cellMetres": 0.10000000000000001,
       "chestHeightMetres": 1,
       "containerMaxWidthCells": 10,
       "furnitureMove": {
@@ -17,7 +18,7 @@
       "id": "player",
       "reachMetres": 2,
       "search": {
-        "cellsForMax": 48,
+        "cellsForMax": 160,
         "maxSimSeconds": 3,
         "minSimSeconds": 1
       },

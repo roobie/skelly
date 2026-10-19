@@ -21,8 +21,14 @@
       "container": {
         "pockets": [
           {
-            "grid": [10, 5],
-            "handlingSimSeconds": 1.2
+            "grid": [10, 14],
+            "handlingSimSeconds": 1.2,
+            "name": "Left bay"
+          },
+          {
+            "grid": [10, 14],
+            "handlingSimSeconds": 1.2,
+            "name": "Right bay"
           }
         ]
       },
@@ -100,7 +106,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [10, 6],
+            "grid": [9, 9],
             "handlingSimSeconds": 1.2
           }
         ]
@@ -182,7 +188,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [4, 2],
+            "grid": [3, 2],
             "handlingSimSeconds": 0.80000000000000004
           }
         ]
@@ -196,7 +202,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [6, 4],
+            "grid": [9, 4],
             "handlingSimSeconds": 1
           }
         ]
@@ -351,7 +357,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [4, 3],
+            "grid": [4, 4],
             "handlingSimSeconds": 1.2
           }
         ]

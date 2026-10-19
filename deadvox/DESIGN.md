@@ -247,6 +247,14 @@ sleeping take game time under compression. Work and rest have different
 content-tuned rates: a player should be able to sleep through most of a night,
 while work remains legible. Prying stays at real-time pace.
 
+Search time rises in a straight line with a container's pocket cells, from a minimum
+to a maximum, and stops rising at about wardrobe size, so a small box is quick and
+tall furniture takes the full time. One content number sets where it stops, which
+keeps the rule cheap to tune. Its known limit is that a later container larger than
+that point searches no slower than a wardrobe; adding one is the trigger to revisit
+the rule. See `src/core/blockEntities.ts`, `searchTime`, and `src/core/schema.ts`,
+`InventoryTuningSchema`.
+
 Bound each compressed simulation step so one frame does not become arbitrarily
 expensive. If the world is busy, fast-forward may slow rather than exceed the
 frame budget. After an action stops, compression ramps down within a bounded
@@ -809,9 +817,38 @@ own behavior; the game must not branch on item IDs, including when drawing an
 item. See `ItemSchema` in `src/core/schema.ts` and `itemLook` in
 `src/render/itemLook.ts`.
 
-Inventory space is a grid of rotatable item footprints and pockets. Pockets may
-restrict their contents; liquids remain measured within their container. Only
-empty containers can nest. Pockets have no weight limit, but total carried
+Inventory space is a grid of rotatable item footprints and pockets. One cell is
+a real length, named once in content (the `inventory` tuning's `cellMetres`),
+and every footprint is its item's real size rounded up to whole cells, so a
+rifle's footprint reads against a shotgun's as the guns do. Furniture
+containers and pockets use the same unit at their real inside size: loot also
+lies outside containers, so a small container precludes nothing, and an item
+that fits no pocket of the furniture rolling it is a content error. Validation
+holds content to this; see `src/core/inventoryScale.ts`. Pockets may
+restrict their contents; liquids remain measured within their container.
+
+A soft container such as a bag isn't rigid, so packed empty it is plausibly
+smaller than what it holds when used: its footprint may be smaller than its
+interior. A soft bag nests only when empty, because nesting it loaded would
+turn that extra interior into space gained by stacking bags. A hard case is no
+smaller outside than inside, so it gains no space wherever it goes: loaded, it
+may go into any container with room, furniture included, as in DayZ. Rigidity
+belongs to the item's definition, as a rigid flag on its container component,
+so saves don't change; validation must hold a rigid item's pockets within its
+footprint. Loaded nesting goes one level deep: a loaded case may sit in a bag,
+but nothing loaded sits in the case. Free nesting is plausible and realistic,
+but not worth its complexity yet, and the rule can widen to it later. No item
+is rigid until the nesting build round adds the flag, its check, the depth rule
+and the first hard case, so every loaded container still goes only into a
+floor pile; see `src/core/inventory.ts`, `Inventory.gridPlacement`.
+
+A soft bag's interior has no bound against its footprint; each bag is balanced
+by hand in content. Two soft bags of one volume, a plastic garbage bag and a
+rucksack, differ greatly in packed size and in worth, so no formula fits them.
+Nothing then stops a bag from holding any amount, so content review owns that
+balance; stacking can't multiply it while only empty soft bags nest.
+
+Pockets have no weight limit, but total carried
 weight slows movement and costs stamina. Condition is readable as a word, with
 exact values available on inspection.
 
