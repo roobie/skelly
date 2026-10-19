@@ -823,14 +823,17 @@ restrict their contents; liquids remain measured within their container.
 
 A soft container such as a bag isn't rigid, so packed empty it is plausibly
 smaller than what it holds when used: its footprint may be smaller than its
-interior. A hard case must be as large outside as inside. A hard case keeps its
-contents when packed, so a loaded case may go into a worn backpack; DayZ works
-like this and is the model to follow. Any other loaded container goes only into
+interior. A soft bag nests only when empty, because nesting it loaded would
+turn that extra interior into space gained by stacking bags. A hard case is no
+smaller outside than inside, so it gains no space wherever it goes: loaded, it
+may go into any container with room, furniture included, as in DayZ. Rigidity
+belongs to the item's definition, as a rigid flag on its container component,
+so saves don't change; validation must hold a rigid item's pockets within its
+footprint. No item is rigid until the nesting build round adds the flag, its
+check and the first hard case, so every loaded container still goes only into
 a floor pile; see `src/core/inventory.ts`, `Inventory.gridPlacement`. Open on
-d494-8's cards: whether a loaded soft bag may nest, whether the backpack must be
-worn, how deep nesting goes, whether a soft bag's interior is bounded by its
-footprint, and how content marks a container soft or hard. Until content can
-mark a hard case, no item is one.
+d494-8's cards: how deep loaded nesting goes, and whether a soft bag's interior
+is bounded by its footprint.
 
 Pockets have no weight limit, but total carried
 weight slows movement and costs stamina. Condition is readable as a word, with
