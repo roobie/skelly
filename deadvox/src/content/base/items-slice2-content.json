@@ -652,7 +652,7 @@
         }
       ],
       "salvageTimeGameMinutes": 5,
-      "size": [1, 3],
+      "size": [2, 6],
       "tool": {
         "qualities": {
           "sawing": 1

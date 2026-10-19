@@ -247,6 +247,14 @@ sleeping take game time under compression. Work and rest have different
 content-tuned rates: a player should be able to sleep through most of a night,
 while work remains legible. Prying stays at real-time pace.
 
+Search time rises in a straight line with a container's pocket cells, from a minimum
+to a maximum, and stops rising at about wardrobe size, so a small box is quick and
+tall furniture takes the full time. One content number sets where it stops, which
+keeps the rule cheap to tune. Its known limit is that a later container larger than
+that point searches no slower than a wardrobe; adding one is the trigger to revisit
+the rule. See `src/core/blockEntities.ts`, `searchTime`, and `src/core/schema.ts`,
+`InventoryTuningSchema`.
+
 Bound each compressed simulation step so one frame does not become arbitrarily
 expensive. If the world is busy, fast-forward may slow rather than exceed the
 frame budget. After an action stops, compression ramps down within a bounded
@@ -537,6 +545,15 @@ following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
 `src/core/inventory.ts`, `furnish`; and `src/content/base/scenarios.jsonnet`,
 `composition`.
 
+A stop's rolled stock follows its place theme, not its building. Each stop takes a
+theme context, the station's carrying the Police usage and the HQ's Military, and
+tables are written per theme rather than per building, because finding what suits a
+place is the economy's job (`DESIGN.md`, "Loot"). Two stops of one theme therefore
+roll alike; a stop that should feel unique gets that from its instance layer, not
+its rolls. The d502 build round moves the stops onto theme contexts and replaces the
+per-building police tables. See `src/content/base/gauntlet-city-building-types.libsonnet`,
+`loot`.
+
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
 player commits to it. See `src/content/base/gauntlet-service.libsonnet`,
@@ -797,6 +814,22 @@ Placement follows a DayZ-style central economy: usage tags and tiers decide whic
 a source admits, so what a place holds matches what it is, and budgets are to bound how
 much of each type the world holds (#699). See `src/core/loot.ts`, `economyEligible`.
 
+Police is its own usage, apart from Hunting, because a police armoury holds police
+stock, not a gun store's or a hunter's. The HQ vault's Military context differs from
+the station's by tag rather than by a separate table. A tag filters only the items it
+narrows; one that every common item carries filters nothing, so police gear gives up
+the every-usage default. The pool axis beyond police (#699) and item tiering stay open.
+
+Medicine is rare outside medical places in every scenario: shared tables such as home
+furniture, pockets and kits weight it low, and the strong analgesics are Medical-only,
+while the common one stays findable anywhere. A medical detour is worth making only if
+the street does not already supply it. Shared tables give one knob for every scenario,
+so Upheaval's survival balance moves with the gauntlet's; whether its pace still works
+waits on a playtest. The d502 build round adds the Police usage, the narrowing and
+the Medical-only items, and retunes those tables. See
+`src/content/base/economy.libsonnet`, `authorItem`, and `src/content/base/loot.jsonnet`,
+`pills`.
+
 The one exception to the DayZ model is item lifetime. By default the economy places a
 place's loot once, when the place is first generated, and never restocks it. What a
 player takes stays gone, so scarcity holds, a searched place stays spent instead of
@@ -839,9 +872,41 @@ own behavior; the game must not branch on item IDs, including when drawing an
 item. See `ItemSchema` in `src/core/schema.ts` and `itemLook` in
 `src/render/itemLook.ts`.
 
-Inventory space is a grid of rotatable item footprints and pockets. Pockets may
-restrict their contents; liquids remain measured within their container. Only
-empty containers can nest. Pockets have no weight limit, but total carried
+Inventory space is a grid of rotatable item footprints and pockets. One cell is
+a real length, named once in content (the `inventory` tuning's `cellMetres`),
+and every footprint is its item's real size rounded up to whole cells, so a
+rifle's footprint reads against a shotgun's as the guns do. Furniture
+containers and pockets use the same unit at their real inside size: loot also
+lies outside containers, so a small container precludes nothing, and an item
+that fits no pocket of the furniture rolling it is a content error. Validation
+holds content to this; see `src/core/inventoryScale.ts`. Pockets may
+restrict their contents; liquids remain measured within their container.
+
+A soft container such as a bag isn't rigid, so packed empty it is plausibly
+smaller than what it holds when used: its footprint may be smaller than its
+interior. A soft bag nests only when empty, because nesting it loaded would
+turn that extra interior into space gained by stacking bags. A hard case is no
+smaller outside than inside, so it gains no space wherever it goes: loaded, it
+may go into any container with room, furniture included, as in DayZ. Rigidity
+belongs to the definition rather than saved instance state. Free nesting is
+plausible and realistic, but not worth its complexity yet; one loaded-case level
+keeps storage manageable without excluding packed cases. Packing and filling
+must obey the same limit so move order cannot create extra storage. See
+`src/core/schema.ts`, `ItemSchema`; `src/core/inventoryScale.ts`,
+`rigidPocketScaleIssue`; and `src/core/inventory.ts`, `Inventory.gridPlacement`.
+
+The ammo can uses the ordinary cuboid item presentation and shed loot, because
+a steel box suits that shape and belongs among tools without needing a firearm
+model or military-only supply. See `src/content/base/items-other.libsonnet`,
+`ammo_can`, and `src/content/base/loot.jsonnet`, `shed_tools`.
+
+A soft bag's interior has no bound against its footprint; each bag is balanced
+by hand in content. Two soft bags of one volume, a plastic garbage bag and a
+rucksack, differ greatly in packed size and in worth, so no formula fits them.
+Nothing then stops a bag from holding any amount, so content review owns that
+balance; stacking can't multiply it while only empty soft bags nest.
+
+Pockets have no weight limit, but total carried
 weight slows movement and costs stamina. Condition is readable as a word, with
 exact values available on inspection.
 
@@ -1183,6 +1248,18 @@ Painkillers use an analgesic component regardless of item category. Each dose's
 relief rises, holds and fades in game time; doses in a group share a cap, while
 other groups add relief. They mask pain only: health, wounds and consequences
 remain unchanged. Saves preserve acute pain and active doses.
+
+Codeine and morphine relieve much more than the common analgesic, but while a dose
+works it blurs vision, more for morphine, so strong relief is a trade rather than a
+free upgrade. The blur is a vignette at the edges, not a full-screen blur: the centre,
+where the player aims, stays sharp, while threats at the edges are harder to read.
+Aim itself is untouched, so the cost reads as the drug's and not as pain's own sway.
+The vignette rises and fades with the dose, its strength is a content number on the
+analgesic, and players who cannot tolerate it get a setting for it. Its
+strength needs a playtest. Whether the HUD stays sharp under it, whether a stacked
+dose can be dangerous, and whether dependence is ever modelled are later rulings. The
+d502 build round adds both drugs and the vignette. See `src/core/schema.ts`,
+`AnalgesicSchema`, and `src/core/pain.ts`, `analgesia`.
 
 The optional stats readout shows felt pain and its acute, injury and relief
 components so BR can tune the scale in play. This debug-style number belongs

@@ -10,7 +10,7 @@ shape.colliding({
       "container": {
         "pockets": [
           {
-            "grid": [6, 4],
+            "grid": [8, 6],
             "handlingSimSeconds": 1.0
           }
         ]
@@ -26,7 +26,7 @@ shape.colliding({
       "container": {
         "pockets": [
           {
-            "grid": [6, 3],
+            "grid": [8, 5],
             "handlingSimSeconds": 1.0
           }
         ]
@@ -43,7 +43,7 @@ shape.colliding({
       "container": {
         "pockets": [
           {
-            "grid": [5, 6],
+            "grid": [5, 14],
             "handlingSimSeconds": 1.0
           }
         ]
@@ -59,7 +59,7 @@ shape.colliding({
       "container": {
         "pockets": [
           {
-            "grid": [6, 8],
+            "grid": [9, 18],
             "handlingSimSeconds": 1.2
           }
         ]
@@ -121,7 +121,7 @@ shape.colliding({
       "container": {
         "pockets": [
           {
-            "grid": [10, 12],
+            "grid": [10, 18],
             "handlingSimSeconds": 1.0
           }
         ]
@@ -145,7 +145,7 @@ shape.colliding({
       "container": {
         "pockets": [
           {
-            "grid": [6, 4],
+            "grid": [9, 18],
             "handlingSimSeconds": 0.8
           }
         ]
@@ -202,7 +202,7 @@ shape.colliding({
       "container": {
         "pockets": [
           {
-            "grid": [6, 5],
+            "grid": [10, 10],
             "handlingSimSeconds": 1.2
           }
         ]

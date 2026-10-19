@@ -49,7 +49,7 @@ const content = [
         {
           id: 'scroll_rack',
           name: 'Scroll rack',
-          size: [1, 1, 1],
+          size: [1, 2, 1],
           color: '#494b4e',
           container: { pockets: [{ name: 'Rack', grid: RACK_GRID, handlingSimSeconds: 0.1 }] },
         },
@@ -229,7 +229,7 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
   addCapRack() {
     const width = registry.inventory.get('player')?.containerMaxWidthCells;
     if (width === undefined) throw Error('content width cap is missing');
-    const rack = inventory.entities.add({ type: 'scroll_rack', pos: [0, 0, 0], size: [1, 1, 1], facing: 'n' });
+    const rack = inventory.entities.add({ type: 'scroll_rack', pos: [0, 0, 0], size: [1, 2, 1], facing: 'n' });
     if (!rack) throw Error('cap-width rack fixture failed');
     rack.searched = true;
     capToken = inventory.create('scroll_token');
@@ -1065,7 +1065,9 @@ try {
   await page.mouse.move(press.x, press.y);
   await page.mouse.down();
   await page.mouse.move(pointer.x, pointer.y, { steps: 8 });
-  const ghost = await page.locator('#inventory-drag-root .inv-ghost').boundingBox();
+  const ghost = await page
+    .locator('#inventory-drag-root .inv-ghost')
+    .evaluate((node) => node.getBoundingClientRect().toJSON());
   await page.mouse.up();
   assert.ok(
     ghost && Math.abs(ghost.x - (pointer.x - grab.x)) <= 0.5 && Math.abs(ghost.y - (pointer.y - grab.y)) <= 0.5,

@@ -59,7 +59,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [8, 6],
+            "grid": [9, 14],
             "handlingSimSeconds": 1.2
           }
         ]
@@ -365,7 +365,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [6, 5],
+            "grid": [10, 10],
             "handlingSimSeconds": 1.2
           }
         ]

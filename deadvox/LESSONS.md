@@ -24,6 +24,8 @@ Request pointer capture before constructing a new world: synchronous setup can o
 
 Persistence probes must wait for controller entry before touching the bound session: accepting a launch gesture does not mean construction or checkpoint binding has finished. See `src/ui/saveController.ts`, `isEntered`, and `test/browser/save-storage.mjs`, `testTitleAndAutosave`.
 
+Furniture occlusion depends on standing geometry, not container search state. Repeating shape transforms for every lighting field multiplies startup work by both furniture and field count without adding information. See `src/render/skylight.ts`, `refreshEntities`, and `test/skylightFields.test.ts`, "shares one furniture bounds scan across fields and readiness polls until standing geometry changes".
+
 Local pixel fixtures should load only the terrain needed by their observation. A nearby dropped-light check does not earn the cost of a distant view ring; full-ring readiness makes that unrelated work part of startup. Keep the pixel oracle and completed-readiness boundary intact rather than lengthening the wait. See `test/browser/primary-action-pixel.mjs`, `measureGlowstickFloor`.
 
 Reference-source overlays keep a presentation frame's producer and consumer at one revision while retaining the branch's core owners. A mismatched frame contract can stop the startup frame loop before meshing delivers results; the loading owner consumes the error, so an empty browser-error list does not rule it out. See `test/browser/sky-main-arrival.mjs`, `mainSourceOverlays`.

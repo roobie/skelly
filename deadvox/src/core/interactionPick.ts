@@ -3,7 +3,7 @@ import type { Vec3 } from './coords.ts';
 import type { EntityId } from './entities.ts';
 import { type FurniturePickOptions, pickFurnitureAndObstruction } from './furniturePick.ts';
 import type { Inventory, Pile } from './inventory.ts';
-import { PILE_GRID } from './inventory.ts';
+import { PILE_GRID } from './inventoryScale.ts';
 import type { Item } from './items.ts';
 import { footprint } from './items.ts';
 import type { Body } from './physics.ts';

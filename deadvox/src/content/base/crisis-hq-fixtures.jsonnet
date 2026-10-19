@@ -6,7 +6,7 @@ shape.colliding({
   furniture: [
     {
       id: 'hq_weapon_cabinet', name: 'Weapon cabinet', size: [3, 5, 2], color: weaponPaint,
-      container: { pockets: [{ grid: [10, 12], handlingSimSeconds: 1.2 }] },
+      container: { pockets: [{ grid: [10, 14], handlingSimSeconds: 1.2 }] },
       shape: cabinets.gun(self.size, {
         shell: weaponPaint, frame: '#454f45', door: '#768170', metal: '#a1aaa0',
         shadow: '#252e29', wear: '#929b86', badge: '#b9bba7',

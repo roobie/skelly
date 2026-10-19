@@ -136,8 +136,8 @@ const equipPump = (inventory: Inventory, backpack: Item): void => {
 };
 
 /**
- * The chosen rifle in hand with a full magazine fitted and an empty chamber, to charge first; the other rifle,
- * a spare full magazine to change to, and a box of the held rifle's cartridges for loading packed.
+ * The chosen rifle in hand with a full magazine fitted and an empty chamber, to charge first; a spare full magazine
+ * to change to and a box of the held rifle's cartridges for loading packed.
  */
 const equipRifles = (inventory: Inventory, backpack: Item, choice: 'ar' | 'ak'): void => {
   const rifles = { ar: 'rifle_assault', ak: 'rifle_ak' } as const;
@@ -154,7 +154,7 @@ const equipRifles = (inventory: Inventory, backpack: Item, choice: 'ar' | 'ak'):
   const rifle = inventory.create(rifles[choice]);
   inventory.fitSlot(rifle, 'magazine', full());
   const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
-  const packed = [inventory.create(rifles[choice === 'ar' ? 'ak' : 'ar']), full(), inventory.create(box)];
+  const packed = [full(), inventory.create(box)];
   if (
     !(
       inventory.add(rifle, { kind: 'hand', side: dominantSide(inventory.character) }) &&
