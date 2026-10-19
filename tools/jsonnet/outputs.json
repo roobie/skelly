@@ -165,6 +165,14 @@
       "output": "deadvox/src/content/base/rural-police.json"
     },
     {
+      "source": "deadvox/src/content/base/rural-substation-fixtures.jsonnet",
+      "output": "deadvox/src/content/base/rural-substation-fixtures.json"
+    },
+    {
+      "source": "deadvox/src/content/base/rural-substation.jsonnet",
+      "output": "deadvox/src/content/base/rural-substation.json"
+    },
+    {
       "source": "deadvox/src/content/base/saves.jsonnet",
       "output": "deadvox/src/content/base/saves.json"
     },
