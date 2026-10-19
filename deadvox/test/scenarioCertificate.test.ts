@@ -2,6 +2,7 @@ import { deepStrictEqual } from 'node:assert/strict';
 import { describe, expect, it, vi } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import type { Chunk } from '../src/core/chunk.ts';
+import { perimeterRouteIssues } from '../src/core/cityLots.ts';
 import { buildCityPlan, type CityPlan, cityGridOf, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
@@ -190,7 +191,6 @@ describe('final composed body-route certificate', () => {
   });
 
   it('rejects a blocked service crossing even when its inside witness stays reachable', () => {
-    expect(scenarioCertificate(siteOf()).issues).toEqual([]);
     const [selected] = base.grid.service?.routes ?? [];
     expect(selected).toBeDefined();
     const route = { ...selected!, id: 'fixture_service_breach' };
@@ -200,9 +200,13 @@ describe('final composed body-route certificate', () => {
     };
     const inside = placedPoint(plan.service!, route.inside);
     const outside = placedPoint(plan.service!, route.outside);
+    const entry = placedPoint(plan.service!, plan.service!.template.access!.entrance);
+    // The full certificate is costly, so the unobstructed baseline checks only the crossing, from the entrance itself.
+    const crossing = { placement: plan.service!, routes: [route] };
+    const clear = new ScenarioRouteSpace(siteOf(plan));
+    expect(perimeterRouteIssues(crossing, clear, [entry], '.city.service')).toEqual([]);
     const obstruction = inside.map((value, axis) => (value + outside[axis]!) / 2) as Vec3;
     const result = scenarioCertificate(new ObstructedSite(obstruction, plan));
-    const entry = placedPoint(plan.service!, plan.service!.template.access!.entrance);
     expect(result.space.path(entry, inside, { placement: plan.service! })).toBeDefined();
     expect(result.issues.map(([path]) => path)).toEqual(['.city.service.routes[0]']);
   });
