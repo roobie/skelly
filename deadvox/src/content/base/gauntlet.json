@@ -27740,7 +27740,7 @@
           "loot": "gauntlet_police_armoury_stock"
         },
         "B": {
-          "facing": "e",
+          "facing": "w",
           "furniture": "bed"
         },
         "C": {
@@ -28601,10 +28601,10 @@
           "#........#bb..#uu.#uu..#.......#",
           "#.ssss...#bb..###########DD#####",
           "#.ssss...O....#WWW.....#....BB.#",
-          "#........O....#WWW.....#MM..BB.#",
+          "#........O....#WWW.....#....BB.#",
           "#........#....O........O....BB.#",
-          "#........#....O........O....BB.#",
-          "##################DD############"
+          "#........#....O........O..MMBB.#",
+          "###########VV#####DD############"
         ],
         [
           "################################",
@@ -28629,94 +28629,94 @@
           "#........#bb..#uu.#uu..#.......#",
           "#.ssss...#bb..###########DD#####",
           "#.ssss...O....#WWW.....#....BB.#",
-          "#........O....#WWW.....#MM..BB.#",
+          "#........O....#WWW.....#....BB.#",
           "#........#....O........O....BB.#",
-          "#........#....O........O....BB.#",
-          "##################DD############"
+          "#........#....O........O..MMBB.#",
+          "###########VV#####DD############"
         ],
         [
-          "###====###===###===#===###===###",
-          "#.............#........#....ff.#",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
-          "=.............#........#.......=",
-          "=.............#........#.......=",
-          "=.............#........#.......=",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
-          "#.............####DD########DD##",
-          "###########DD##................#",
-          "#ff......#.....................#",
-          "#........#.............#SS..ff.#",
-          "=........O.............#.......=",
-          "=........O....##DD##DD##.......=",
-          "#........#....#...#....#.......#",
-          "#........#....#...#....O.......#",
-          "##########....#...#....O.......#",
-          "#........#....#...#....#.......#",
-          "#........#....###########DD#####",
-          "=........O....#........#.......=",
-          "=........O....#........#MM.....=",
-          "#........#....O........O.......#",
-          "#........#....O........O.......#",
-          "##====########====DD#######====#"
-        ],
-        [
-          "###....###...###...#...###...###",
+          "###===###===###===##===##===####",
           "#.............#rr...rr.#....ff.#",
           "#.............#........#.......#",
+          "=.............#........#.......=",
+          "=.............#........#.......=",
+          "=.............#........#.......=",
           "#.............#........#.......#",
-          "..............#........#........",
-          "..............#........#........",
-          "..............#........#........",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
+          "=.............#........#.......#",
+          "=.............#........#.......#",
+          "=.............#........#.......#",
           "#.............####DD########DD##",
           "###########DD##................#",
           "#ff......#.....................#",
           "#........#.............#SS..ff.#",
-          ".........O.............#........",
-          ".........O....##DD##DD##........",
-          "#........#....#...#....#.......#",
+          "=........O.............#.......#",
+          "=........O....##DD##DD##.......#",
+          "=........#....#...#....#.......#",
           "#........#....#...#....O.......#",
           "##########....#...#....O.......#",
           "#........#....#...#....#.......#",
           "#........#....###########DD#####",
-          ".........O....#........#........",
-          ".........O....#........#MM......",
-          "#........#....O........O.......#",
-          "#........#....O........O.......#",
-          "##....########....DD#######....#"
+          "=........O....#........#.......#",
+          "=........O....#........#.......#",
+          "=........#....O........O.......#",
+          "#........#....O........O..MM...#",
+          "###########VV##==#DD############"
         ],
         [
-          "################################",
+          "###...###...###...##...##...####",
+          "#.............#........#....ff.#",
+          "#.............#........#.......#",
+          "..............#........#........",
+          "..............#........#........",
+          "..............#........#........",
+          "#.............#........#.......#",
+          "..............#........#.......#",
+          "..............#........#.......#",
+          "..............#........#.......#",
+          "#.............####DD########DD##",
+          "###########DD##................#",
+          "#ff......#.....................#",
+          "#........#.............#SS..ff.#",
+          ".........O.............#.......#",
+          ".........O....##DD##DD##.......#",
+          ".........#....#...#....#.......#",
+          "#........#....#...#....O.......#",
+          "##########....#...#....O.......#",
+          "#........#....#...#....#.......#",
+          "#........#....###########DD#####",
+          ".........O....#........#.......#",
+          ".........O....#........#.......=",
+          ".........#....O........O.......=",
+          "#........#....O........O..MM...#",
+          "###########VV##..#DD######====##"
+        ],
+        [
+          "###...###...###...##...##...####",
           "#.............#........#.......#",
           "#.............#........#.......#",
+          "..............#........#........",
+          "..............#........#........",
+          "..............#........#........",
           "#.............#........#.......#",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
+          "..............#........#.......#",
+          "..............#........#.......#",
+          "..............#........#.......#",
           "#.............##################",
           "###############................#",
           "#........#.............#########",
           "#........#.............#.......#",
-          "#........#.............#.......#",
-          "#........#....##########.......#",
-          "#........#....#...#....#.......#",
+          ".........#.............#.......#",
+          ".........#....##########.......#",
+          ".........#....#...#....#.......#",
           "#........#....#...#....#.......#",
           "##########....#...#....#.......#",
           "#........#....#...#....#.......#",
           "#........#....##################",
+          ".........#....#........#.......#",
+          ".........#....#........#........",
+          ".........#....#........#........",
           "#........#....#........#.......#",
-          "#........#....#........#.......#",
-          "#........#....#........#.......#",
-          "#........#....#........#.......#",
-          "################################"
+          "###############..#########....##"
         ],
         [
           "################################",
@@ -28888,9 +28888,9 @@
             "SRRRRRRRRSSSRRSSSRSSSRRSRRRRRRRS",
             "SRSSSSRRRSSSRRSSSSSSSSSSSSSSSSSS",
             "SRSSSSRRRSRRRRSSSSRRRRRSRRRRSSRS",
-            "SRRRRRRRRSRRRRSSSSRRRRRSSSRRSSRS",
+            "SRRRRRRRRSRRRRSSSSRRRRRSRRRRSSRS",
             "SRRRRRRRRSRRRRSRRRRRRRRSRRRRSSRS",
-            "SRRRRRRRRSRRRRSRRRRRRRRSRRRRSSRS",
+            "SRRRRRRRRSRRRRSRRRRRRRRSRRSSSSRS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
           ],
           [
@@ -28916,14 +28916,14 @@
             "SRRRRRRRRSSSRRSSSRSSSRRSRRRRRRRS",
             "SRSSSSRRRSSSRRSSSSSSSSSSSSSSSSSS",
             "SRSSSSRRRSRRRRSSSSRRRRRSRRRRSSRS",
-            "SRRRRRRRRSRRRRSSSSRRRRRSSSRRSSRS",
+            "SRRRRRRRRSRRRRSSSSRRRRRSRRRRSSRS",
             "SRRRRRRRRSRRRRSRRRRRRRRSRRRRSSRS",
-            "SRRRRRRRRSRRRRSRRRRRRRRSRRRRSSRS",
+            "SRRRRRRRRSRRRRSRRRRRRRRSRRSSSSRS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
           ],
           [
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRSSRS",
+            "SRRRRRRRRRRRRRSSSRRRSSRSRRRRSSRS",
             "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
             "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
             "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
@@ -28944,66 +28944,66 @@
             "SRRRRRRRRSRRRRSRRRSRRRRSRRRRRRRS",
             "SRRRRRRRRSRRRRSSSSSSSSSSSSSSSSSS",
             "SRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRSRRRRSRRRRRRRRSSSRRRRRS",
             "SRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
             "SRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
+            "SRRRRRRRRSRRRRSRRRRRRRRSRRSSRRRS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
           ],
           [
-            "SSSRRRRSSSRRRSSSRRRSRRRSSSRRRSSS",
-            "SRRRRRRRRRRRRRSSSRRRSSRSRRRRSSRS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
+            "SSSRRRSSSRRRSSSRRRSSRRRSSRRRSSSS",
+            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRSSRS",
             "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
             "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRR",
             "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRR",
             "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRR",
             "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
             "SRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRS",
             "SSSRRRRRRSRRRRRRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRSRRRRRRRRRRRRRSSSRRSSRS",
-            "RRRRRRRRRSRRRRRRRRRRRRRSRRRRRRRR",
-            "RRRRRRRRRSRRRRSSSSSSSSSSRRRRRRRR",
-            "SRRRRRRRRSRRRRSRRRSRRRRSRRRRRRRS",
+            "RRRRRRRRRSRRRRRRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRSRRRRSSSSSSSSSSRRRRRRRS",
+            "RRRRRRRRRSRRRRSRRRSRRRRSRRRRRRRS",
             "SRRRRRRRRSRRRRSRRRSRRRRSRRRRRRRS",
             "SSSSSSSSSSRRRRSRRRSRRRRSRRRRRRRS",
             "SRRRRRRRRSRRRRSRRRSRRRRSRRRRRRRS",
             "SRRRRRRRRSRRRRSSSSSSSSSSSSSSSSSS",
-            "RRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRR",
-            "RRRRRRRRRSRRRRSRRRRRRRRSSSRRRRRR",
-            "SRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
-            "SSRRRRSSSSSSSSRRRRSSSSSSSSSRRRRS"
+            "RRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
+            "SRRRRRRRRSRRRRSRRRRRRRRSRRSSRRRS",
+            "SSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSS"
           ],
           [
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSRRRSSSRRRSSSRRRSSRRRSSRRRSSSS",
             "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
             "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRR",
+            "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRR",
+            "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRR",
             "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRRRRRRSRRRRRRRRSRRRRRRRS",
             "SRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRSRRRRRRRRRRRRRSSSSSSSSS",
             "SRRRRRRRRSRRRRRRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRSRRRRRRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRSRRRRSSSSSSSSSSRRRRRRRS",
-            "SRRRRRRRRSRRRRSRRRSRRRRSRRRRRRRS",
+            "RRRRRRRRRSRRRRRRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRSRRRRSSSSSSSSSSRRRRRRRS",
+            "RRRRRRRRRSRRRRSRRRSRRRRSRRRRRRRS",
             "SRRRRRRRRSRRRRSRRRSRRRRSRRRRRRRS",
             "SSSSSSSSSSRRRRSRRRSRRRRSRRRRRRRS",
             "SRRRRRRRRSRRRRSRRRSRRRRSRRRRRRRS",
             "SRRRRRRRRSRRRRSSSSSSSSSSSSSSSSSS",
+            "RRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
+            "RRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRR",
+            "RRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRR",
             "SRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
-            "SRRRRRRRRSRRRRSRRRRRRRRSRRRRRRRS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+            "SSSSSSSSSSSSSSSRRSSSSSSSSSRRRRSS"
           ],
           [
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -29121,7 +29121,7 @@
       },
       "palette": {
         "#": {
-          "material": "brick",
+          "material": "concrete",
           "role": "shell"
         },
         ".": {
@@ -29159,6 +29159,9 @@
         },
         "T": {
           "furniture": "hq_meeting_table"
+        },
+        "V": {
+          "furniture": "container_door"
         },
         "W": {
           "facing": "s",
@@ -30049,7 +30052,7 @@
       },
       "palette": {
         "#": {
-          "material": "brick",
+          "material": "concrete",
           "role": "shell"
         },
         ".": {
@@ -30087,7 +30090,7 @@
       },
       "palette": {
         "#": {
-          "material": "brick",
+          "material": "concrete",
           "role": "shell"
         },
         ".": {
@@ -30125,7 +30128,7 @@
       },
       "palette": {
         "#": {
-          "material": "brick",
+          "material": "concrete",
           "role": "shell"
         },
         ".": {
@@ -30163,7 +30166,7 @@
       },
       "palette": {
         "#": {
-          "material": "brick",
+          "material": "concrete",
           "role": "shell"
         },
         ".": {
@@ -30348,7 +30351,7 @@
       },
       "palette": {
         "#": {
-          "material": "brick",
+          "material": "concrete",
           "role": "shell"
         },
         ".": {
@@ -30415,7 +30418,7 @@
       },
       "palette": {
         "#": {
-          "material": "brick",
+          "material": "concrete",
           "role": "shell"
         },
         ".": {
@@ -30494,11 +30497,11 @@
       },
       "palette": {
         "k": {
-          "material": "concrete",
+          "material": "asphalt",
           "role": "shell"
         },
         "w": {
-          "material": "plaster",
+          "material": "painted_asphalt",
           "role": "shell"
         }
       },
@@ -31392,6 +31395,10 @@
           "block": "air",
           "role": "opening"
         },
+        "asphalt": {
+          "block": "asphalt",
+          "role": "shell"
+        },
         "brick": {
           "block": "brick",
           "role": "shell"
@@ -31416,8 +31423,8 @@
           "block": "air",
           "role": "opening"
         },
-        "plaster": {
-          "block": "plaster",
+        "painted_asphalt": {
+          "block": "painted_asphalt",
           "role": "shell"
         },
         "roof": {

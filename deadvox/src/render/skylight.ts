@@ -34,6 +34,7 @@ import {
 import { type SkyResult, sampleSky } from '../core/skyTransport.ts';
 import type { World } from '../core/world.ts';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
+import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';
 
 const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
 const RESIDENT_FIELDS = 4;
@@ -527,11 +528,22 @@ export class Skylight {
       shader.uniforms.uSkyGridOrigin = this.index.origin;
       shader.uniforms.uSkyGridSize = this.index.size;
       shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vSkyWorld;\nvarying vec3 vSkyNormal;')
+        .replace(
+          '#include <common>',
+          `#include <common>
+varying vec3 vSkyWorld;
+varying vec3 vSkyNormal;
+#ifdef SKY_ANCHOR
+attribute vec3 ${SKY_ANCHOR_ATTRIBUTE};
+#endif`,
+        )
         .replace(
           '#include <worldpos_vertex>',
           `#include <worldpos_vertex>
 vec4 skyPosition = vec4(transformed, 1.0);
+#ifdef SKY_ANCHOR
+skyPosition = vec4(${SKY_ANCHOR_ATTRIBUTE}, 1.0);
+#endif
 vec3 skyNormal = objectNormal;
 #ifdef USE_INSTANCING
 skyPosition = instanceMatrix * skyPosition;

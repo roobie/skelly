@@ -1332,7 +1332,11 @@ Dark interiors make carried light useful without an authored indoor flag.
 For authored sites and hamlets, live opaque blocks and blocking furniture determine
 diffuse sky transport; placement geometry only bounds discovery. Roofs, openings
 and doors therefore change the estimate through geometry, not template categories.
-See `src/core/skyTransport.ts`, `buildSkyResult`, and `src/render/skylight.ts`, `Skylight`.
+Blocking furniture counts as its whole envelope, so a shaped piece whose faces sit
+back from that envelope would read its own blocked cells and render black. Its
+surfaces sample the sky from the envelope face along their normal instead.
+See `src/core/skyTransport.ts`, `buildSkyResult`, `src/render/skylight.ts`, `Skylight`,
+and `src/render/skyAnchor.ts`, `addSkyAnchors`.
 
 Mesh-first admission protects the first visible geometry without making it wait for
 lighting readiness. A copied sky request may wait outside the pool capacity;

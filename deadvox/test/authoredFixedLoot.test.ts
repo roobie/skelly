@@ -1563,14 +1563,17 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('keeps the approaches and full opening sweeps of workshop doors clear', () => {
-    const workshopIds = new Set(['workshop_hall', 'workshop_office', 'workshop_parts_store']);
-    const site = new AuthoredSite(73, result.registry, scale, layout);
-    const placements = site.placements.filter((placement) => workshopIds.has(placement.template.id));
+  it.each([
+    { name: 'workshop', source: layout, templateIds: ['workshop_hall', 'workshop_office', 'workshop_parts_store'] },
+    { name: 'HQ', source: result.registry.layouts.get('crisis_hq')!, templateIds: undefined },
+  ])('keeps the approaches and full opening sweeps of $name doors clear', ({ source, templateIds }) => {
+    const selected = templateIds && new Set(templateIds);
+    const site = new AuthoredSite(73, result.registry, scale, source);
+    const placements = site.placements.filter((placement) => !selected || selected.has(placement.template.id));
     let checkedDoors = 0;
 
-    for (const [index, building] of layout.buildings.entries()) {
-      if (!workshopIds.has(building.template)) {
+    for (const [index, building] of source.buildings.entries()) {
+      if (selected && !selected.has(building.template)) {
         continue;
       }
       const placement = site.placements[index]!;
@@ -1583,6 +1586,25 @@ describe('authored fixed loot', () => {
       }
     }
     expect(checkedDoors).toBeGreaterThan(0);
+  });
+
+  it('rests HQ freestanding fixtures on floors or solid furniture tops', () => {
+    const source = result.registry.layouts.get('crisis_hq')!;
+    const site = new AuthoredSite(73, result.registry, scale, source);
+    const placements = site.placements.filter(({ template }) => template.access);
+    const pieces = placements
+      .flatMap(placedPieces)
+      .filter((piece) => result.registry.furniture.get(piece.furniture)!.mount !== 'wall');
+    expect(pieces.length).toBeGreaterThan(0);
+    for (const piece of pieces) {
+      const [x, y, z] = piece.pos;
+      for (let dx = 0; dx < piece.size[0]; dx++) {
+        for (let dz = 0; dz < piece.size[2]; dz++) {
+          const support: DoorCell = [x + dx, y - 1, z + dz];
+          expect(solidInPlacements(placements, support), `${piece.furniture} support at ${support}`).toBe(true);
+        }
+      }
+    }
   });
 
   it('keeps every workshop opening connected to standing space', () => {

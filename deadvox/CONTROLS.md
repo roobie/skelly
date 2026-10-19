@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change player or debug input bindings or their labels
+  - you change player or debug input bindings, their default keys or their labels
   - you change input ownership, browser-native behavior or pointer actions
   - you change stances, firearm handling, throwing, treatment or long-action controls
   - you change how the HUD toggle or quickbar gestures work
@@ -24,6 +24,8 @@ Physical key positions define bindings; labels follow the browser's keyboard lay
 The wheel is not a keyboard chord. Menus keep their scroll ownership so aiming cannot steal a pane's input. Variable-optic ADS takes precedence over wielded-item action selection during play; fixed optics and non-ADS play leave that route alone. See `src/game/play.ts`, `startPlay`; `src/game/opticZoom.ts`, `OpticZoom.wheel`; and `src/ui/menuPointer.ts`, `mountMenuPointer`.
 
 Bindings are origin-local browser-profile preferences, not saved-character or account state. Stored rows are untrusted and invalid entries are dropped rather than becoming controls. See `src/game/inputBindings.ts`, `BindingRegistry`.
+
+Default keys are content, and only the base pack's: the game reads them from the base file alone, so validation refuses a `controls` row from any other pack rather than let a mod's keys pass and be ignored. Mods, packs and a gamepad layout setting defaults is left open until d472, which the first mod needing to change a default key or the gamepad layout table triggers. Actions, contexts, gestures and gates stay in code, so replay, which records only command ids and contexts, stays stable. A player's stored rebind overrides the default by action id. Changing a default therefore moves the key for every player who has not rebound that action. Validation also refuses an action with no default key, an unknown action id, an invalid key code, a Ctrl, Cmd/Meta or Alt modifier, and a default-key conflict, which it finds with `bindingConflict` itself. The checks run in the validate CLI, not in `src/core`, because actions are game code and the simulation graph must not import them. See `src/content/base/controls.jsonnet`, `src/cli/controlIssues.ts`, `controlIssues`, `src/game/inputBindings.ts` and `defaultKeySetIssues`.
 
 ## Settled controls
 

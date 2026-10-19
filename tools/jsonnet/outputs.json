@@ -37,6 +37,10 @@
       "output": "deadvox/src/content/base/compression.json"
     },
     {
+      "source": "deadvox/src/content/base/controls.jsonnet",
+      "output": "deadvox/src/content/base/controls.json"
+    },
+    {
       "source": "deadvox/src/content/base/crisis-hq-fixtures.jsonnet",
       "output": "deadvox/src/content/base/crisis-hq-fixtures.json"
     },
