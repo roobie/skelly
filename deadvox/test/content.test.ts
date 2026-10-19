@@ -1096,7 +1096,9 @@ describe('content', () => {
   });
 
   describe('default keys', () => {
-    type ControlRows = { controls: { id: string; keys: { code: string; modifier?: string }[] }[] };
+    interface ControlRows {
+      controls: { id: string; keys: { code: string; modifier?: string }[] }[];
+    }
     const controlsIssues = (change: (rows: ControlRows['controls']) => void): string[] => {
       const file = base.find(({ source }) => source === 'controls.json')!;
       const data = structuredClone(file.data) as ControlRows;
@@ -1107,13 +1109,18 @@ describe('content', () => {
     const keysOf = (rows: ControlRows['controls'], id: string) => rows.find((row) => row.id === id)!.keys;
 
     it('accepts the base default keys', () => {
-      expect(controlsIssues(() => {})).toEqual([]);
+      expect(controlsIssues((rows) => rows.length)).toEqual([]);
     });
 
     it('reports an action left without a default key', () => {
-      expect(controlsIssues((rows) => rows.splice(rows.findIndex((row) => row.id === 'movement.jump'), 1))).toContain(
-        'action movement.jump has no default key',
-      );
+      expect(
+        controlsIssues((rows) =>
+          rows.splice(
+            rows.findIndex((row) => row.id === 'movement.jump'),
+            1,
+          ),
+        ),
+      ).toContain('action movement.jump has no default key');
     });
 
     it('reports a default key for an unknown action', () => {
@@ -1138,7 +1145,7 @@ describe('content', () => {
         keysOf(rows, 'movement.back').splice(0, 1, ...keysOf(rows, 'movement.forward')),
       );
       expect(messages).toHaveLength(1);
-      expect(messages[0]).toMatch(/conflict/i);
+      expect(messages[0]?.toLowerCase()).toContain('conflict');
     });
   });
 

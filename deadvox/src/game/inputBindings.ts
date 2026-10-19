@@ -60,6 +60,7 @@ const all: readonly InputContext[] = ['title', ...entered];
 const HUD_TOGGLE_HOLD_MS = 1000;
 /** An action as code owns it: gestures, contexts and gates. Default keys are content, see `defaultKeySetIssues`. */
 type Action = Omit<Binding, 'defaults'>;
+// biome-ignore lint/complexity/useMaxParams: compact declarations keep gesture metadata in one catalogue.
 const row = (
   id: string,
   description: string,
@@ -203,7 +204,9 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.grade-increase', 'Grade +'),
   debugRow('debug.skip-long', 'Skip to preceding hour tomorrow'),
   debugRow('debug.skip-hour', 'Skip one hour'),
-  ...Array.from({ length: 9 }, (_, i) => debugRow(`debug.build-slot.${i + 1}`, `Select build slot ${i + 1}`, ['build'])),
+  ...Array.from({ length: 9 }, (_, i) =>
+    debugRow(`debug.build-slot.${i + 1}`, `Select build slot ${i + 1}`, ['build']),
+  ),
 ];
 const withDefaults = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] =>
   INPUT_ACTIONS.map((action) => ({ ...action, defaults: defaults.get(action.id) ?? [] }));
