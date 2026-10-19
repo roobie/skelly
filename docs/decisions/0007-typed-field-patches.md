@@ -48,8 +48,8 @@ because only marked fields can have more than one author.
 **Conflicts.** A mod may override another mod's value or object only if it depends on
 that mod, directly or transitively, and declares the override. Setting a scalar,
 replacing a list and replacing a whole definition are overrides. Two mods with no
-dependency path between them must not override the same value or object: the load fails
-closed with a conflict message naming the target, both mods and the fix. List additions
+dependency path between them must not override the same value or object: the load must
+fail closed with a conflict message naming the target, both mods and the fix. List additions
 are not overrides: they commute, so two mods adding to one list both keep their
 additions, in pack order, and never conflict. Load order alone never decides, because the
 order in which a player enables mods says nothing about which one meant to win. A
@@ -70,8 +70,12 @@ so one rule covers every place where two mods claim one thing.
 
 ## Not decided
 
-When the merge step is built. Whole-entry mods keep working when it lands, and nothing
-needs migrating before v1.0 beta.
+Which item builds the merge step and its conflict check. Admitting an override needs the
+pack dependencies of #637 round 1; see `deadvox/docs/pack-split.md`, "Round split". Until
+the check lands, `deadvox/src/core/content.ts`, `merge` lets any later pack replace an
+entry whole, so "Conflicts" binds mod authors without the loader enforcing it. Once it
+lands, a whole-entry mod that replaces another pack's entry loads only if it depends on
+that pack and declares the override. Nothing needs migrating before v1.0 beta.
 
 ## Consequences
 
