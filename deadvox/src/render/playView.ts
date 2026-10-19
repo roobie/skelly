@@ -15,6 +15,7 @@ import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
+import { reachTuning } from '../core/reach.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
@@ -27,6 +28,7 @@ import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { AcidEffects } from './acidEffects.ts';
 import { BlastFlashes } from './blastFlashes.ts';
+import { CarriedPiece } from './carriedPiece.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
@@ -201,6 +203,12 @@ export const createPlayView = (
   };
   page.addEventListener('pagehide', dispose);
   const furniture = new FurnitureMeshes(s);
+  const carriedPiece = new CarriedPiece(
+    inventory.entities,
+    (entity, def) => furniture.pieceMesh(entity, def),
+    reachTuning(registry).furnitureMove.carriedView,
+  );
+  held.attach(carriedPiece.group);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const flashlight = new Flashlight(
     scene,
@@ -392,6 +400,7 @@ export const createPlayView = (
     ) => {
       meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
       const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
+      carriedPiece.update(dt);
       held.update(camera, pose, recoil, handling);
       flashlight.update({ registry, lit: light, held, camera, inventory });
       lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: cameraDaylightScale });

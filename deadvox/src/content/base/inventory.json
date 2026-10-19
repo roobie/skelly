@@ -4,6 +4,12 @@
       "chestHeightMetres": 1,
       "containerMaxWidthCells": 10,
       "furnitureMove": {
+        "carriedView": {
+          "bobMetres": 0.014999999999999999,
+          "bobPerSecond": 0.5,
+          "offsetMetres": [0, -0.5, -0.90000000000000002],
+          "sizeMetres": 0.45000000000000001
+        },
         "carryStaminaPerSimSecond": 4,
         "liftStamina": 15,
         "maxSizeMetres": 1

@@ -253,6 +253,15 @@ const InventoryTuningSchema = strictObject({
     liftStamina: NonNegative,
     /** Stamina spent per Sim second of carrying; running out drops the piece. */
     carryStaminaPerSimSecond: SimRate,
+    /** How the carried piece shows in first person, in view metres (x right, y up, z back from the eye). */
+    carriedView: strictObject({
+      offsetMetres: tuple([number(), number(), number()]),
+      /** The piece's longest side is drawn this long, so a big piece doesn't fill the view. */
+      sizeMetres: Positive,
+      /** How far it rises and sinks while held, and how many times a real second. */
+      bobMetres: NonNegative,
+      bobPerSecond: NonNegative,
+    }),
   }),
 });
 

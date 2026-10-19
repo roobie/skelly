@@ -4,7 +4,10 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { type FurnitureMover, liftFurniture, placeFurniture } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { LadderHold } from '../src/core/ladders.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
+import { CarriedPiece } from '../src/render/carriedPiece.ts';
+import { FurnitureMeshes } from '../src/render/furniture.ts';
 import {
   capture,
   contentLookup,
@@ -106,6 +109,28 @@ describe('movable furniture', () => {
     expect(inventory.move(tool, { kind: 'pile', pos: moved }).ok).toBe(true);
     expect(liftFurniture(mover(inventory), piece)).toBeUndefined();
     expect(inventory.plan(tool, { kind: 'hand', side: 'right' })).toEqual({ ok: false, reason: messages.handsFull });
+  });
+
+  it('shows the carried piece in view from lift until it is set down', () => {
+    const inventory = new Inventory(registry);
+    const furniture = mover(inventory);
+    const piece = inventory.furnish(spec)!;
+    const meshes = new FurnitureMeshes(formatWorldOptions.blockSize);
+    const view = new CarriedPiece(
+      inventory.entities,
+      (entity, def) => meshes.pieceMesh(entity, def),
+      reachTuning(registry).furnitureMove.carriedView,
+    );
+    view.update(0);
+    expect(view.shown).toBe(false);
+
+    expect(liftFurniture(furniture, piece)).toBeUndefined();
+    view.update(0);
+    expect(view.shown).toBe(true);
+
+    expect(placeFurniture(furniture, moved)).toBeUndefined();
+    view.update(0);
+    expect(view.shown).toBe(false);
   });
 
   describe('in an open doorway', () => {
