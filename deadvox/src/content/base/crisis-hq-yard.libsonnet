@@ -12,7 +12,7 @@ local guardHigh = ['#==###', '#....#', '#....O', '#....O', '#....#', '#==###'];
 local guardOpen = ['#..###', '#....#', '#....O', '#....O', '#....#', '#..###'];
 local guardHeads = ['######', '#....#', '#....#', '#....#', '#....#', '######'];
 local palette = {
-  '.': 'air', '#': 'brick', k: 'concrete', '=': 'window_frame',
+  '.': 'air', '#': 'concrete', k: 'concrete', '=': 'window_frame',
   D: { furniture: 'wood_door' }, O: { furniture: 'wood_door', facing: 'e' },
   g: { furniture: 'hq_generator', facing: 's' },
   W: { furniture: 'desk', facing: 'e', loot: 'desk' },
@@ -21,11 +21,11 @@ local palette = {
   templates: [
     {
       id: 'crisis_hq_wall', size: [60, 6, 1], lootContext: context,
-      palette: { '.': { ground: true }, '#': 'brick' }, layers: [ground, fence, fence, fence, fence, fence],
+      palette: { '.': { ground: true }, '#': 'concrete' }, layers: [ground, fence, fence, fence, fence, fence],
     },
     {
       id: 'crisis_hq_side', size: [58, 6, 1], lootContext: context,
-      palette: { '.': { ground: true }, '#': 'brick' },
+      palette: { '.': { ground: true }, '#': 'concrete' },
       layers: [
         ['..........................................................'],
         ['##########################################################'],
@@ -38,7 +38,7 @@ local palette = {
     {
       id: 'crisis_hq_front', size: [60, 6, 1], lootContext: context,
       palette: {
-        '.': { ground: true }, '#': 'brick',
+        '.': { ground: true }, '#': 'concrete',
         L: { furniture: 'camp_gate_leaf', facing: 'n' },
         R: { furniture: 'camp_gate_leaf', facing: 's' },
       },
@@ -56,7 +56,7 @@ local palette = {
     },
     {
       id: 'crisis_hq_parking', size: [6, 1, 12], lootContext: context,
-      palette: { k: 'concrete', w: 'plaster' },
+      palette: { k: 'asphalt', w: 'painted_asphalt' },
       layers: [[
         'wwwwww', 'wkkkkw', 'wkkkkw', 'wkkkkw', 'wkkkkw', 'wkkkkw',
         'wkkkkw', 'wkkkkw', 'wkkkkw', 'wkkkkw', 'wkkkkw', 'wwwwww',
