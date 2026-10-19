@@ -834,8 +834,13 @@ but nothing loaded sits in the case. Free nesting is plausible and realistic,
 but not worth its complexity yet, and the rule can widen to it later. No item
 is rigid until the nesting build round adds the flag, its check, the depth rule
 and the first hard case, so every loaded container still goes only into a
-floor pile; see `src/core/inventory.ts`, `Inventory.gridPlacement`. Open on a
-d494-8 card: whether a soft bag's interior is bounded by its footprint.
+floor pile; see `src/core/inventory.ts`, `Inventory.gridPlacement`.
+
+A soft bag's interior has no bound against its footprint; each bag is balanced
+by hand in content. Two soft bags of one volume, a plastic garbage bag and a
+rucksack, differ greatly in packed size and in worth, so no formula fits them.
+Nothing then stops a bag from holding any amount, so content review owns that
+balance; stacking can't multiply it while only empty soft bags nest.
 
 Pockets have no weight limit, but total carried
 weight slows movement and costs stamina. Condition is readable as a word, with
