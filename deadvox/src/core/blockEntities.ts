@@ -7,21 +7,11 @@
 import type { FurnitureDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
+import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
 import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import { cellsOf, type Facing, pieceSize } from './templates.ts';
-
-/** Which face a tipped piece lies on: its back, or its right side. */
-export type Tip = 'back' | 'side';
-
-/** A piece's own [width, height, depth] once tipped: on its back the depth stands up, on its side the width lies down. */
-const tippedSize = ([w, h, d]: readonly [number, number, number], tip: Tip | undefined): Vec3 => {
-  if (tip === 'back') {
-    return [w, d, h];
-  }
-  return tip === 'side' ? [h, w, d] : [w, h, d];
-};
+import { cellsOf, type Facing } from './templates.ts';
 
 export interface BlockEntity {
   readonly uid: number;
@@ -34,7 +24,7 @@ export interface BlockEntity {
   /** Cells along x, y and z. */
   size: Vec3;
   facing: Facing;
-  /** Laid over onto its back or its side; upright when absent. */
+  /** The face it lies on; on its bottom when absent. */
   tip?: Tip | undefined;
   /** Held in the player's hands, so it covers no cells. */
   carried: boolean;
@@ -384,13 +374,13 @@ export class BlockEntities {
   }
 
   /** Turns and tips the carried piece; its box follows, so fit and the put-down preview read the turned box. */
-  orient(entity: BlockEntity, facing: Facing, tip: Tip | undefined): void {
+  orient(entity: BlockEntity, pose: Pose): void {
     if (!entity.carried) {
       throw new Error('Only a carried block entity can be turned');
     }
-    entity.size = pieceSize(tippedSize(this.defOf(entity).size, tip), facing);
-    entity.facing = facing;
-    entity.tip = tip;
+    entity.size = rotatedSize(this.defOf(entity).size, rotationOf(pose));
+    entity.facing = pose.facing;
+    entity.tip = pose.tip;
     this.version += 1;
   }
 

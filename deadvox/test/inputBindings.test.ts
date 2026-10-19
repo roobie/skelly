@@ -348,7 +348,7 @@ describe('keyboard registry', () => {
     const interruption = bindings.binding('compression.continue')!;
     expect(craft.contexts.filter((context) => interruption.contexts.includes(context))).toEqual([]);
   });
-  it('gives the reload and throw keys to turn and tip while carrying', () => {
+  it('gives the reload and throw keys to tip and turn while carrying', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     const keyboard = new KeyboardInput(bindings);
     let context: InputContext = 'carrying';
@@ -364,8 +364,8 @@ describe('keyboard registry', () => {
     press('firearm.reload');
     press('player.throw');
     expect(commands.filter(({ phase }) => phase === 'down').map(({ action }) => action)).toEqual([
-      'carry.turn',
       'carry.tip',
+      'carry.turn',
     ]);
     commands.length = 0;
     context = 'play';

@@ -390,19 +390,24 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   and a turn or tip reads as the change it makes to the placement. Where it
   sits is content, so it can be tuned by eye. See `src/render/carriedPiece.ts`,
   `CarriedPiece`.
-- **Turning and tipping.** A carried piece turns a quarter at a time and tips
-  onto its back or its side, because a piece that only fits a doorway, a
-  stairwell or a gap along a wall when laid over is otherwise a dead end the
-  player can see a way past. The turned box is the piece: fit, the put-down
+- **Turning and tipping.** A carried piece turns a quarter at a time, because
+  a piece that only fits a doorway, a stairwell or a gap along a wall when
+  laid over is otherwise a dead end the player can see a way past. One key
+  tips it about the world's east–west axis and the other turns it about the
+  vertical. The axes belong to the world, not the piece, so a press gives the
+  same pose wherever the player stands, and two keys reach every pose a box
+  can take, any face down. The turned box is the piece: fit, the put-down
   outline and what it blocks all read it, and it stays turned once placed and
   through a save, so a barricade stays as it was built. Turning in the hands
   is free and silent, since lifting and carrying already pay in stamina and
   noise, and a charge per turn would tax lining up a placement rather than
-  moving furniture. Contents stay in a tipped piece and it opens as usual, by
-  the same rule as what lies on top. Which pieces must stay upright is a
-  content mark, so a pack decides without code. See
-  `src/core/furnitureMove.ts`, `turnCarried` and `tipCarried`, and
-  `src/core/blockEntities.ts`, `tippedSize`.
+  moving furniture. For the same reason the carry shows no aid for what the
+  next press will do: a press costs nothing, and the piece in hand and the
+  outline show its result at once. Contents stay in a tipped piece and it
+  opens as usual, by the same rule as what lies on top. A piece marked
+  upright only turns about the vertical; the mark is content, so a pack
+  decides without code. See `src/core/furnitureMove.ts`, `turnCarried` and
+  `tipCarried`, and `src/core/orientation.ts`, `turnPose`.
 - **Refusals live in content.** Each refusal says why in a short first-person
   line, kept in content with the other UI text so a pack can reword it.
 

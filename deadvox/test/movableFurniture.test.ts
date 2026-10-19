@@ -1,16 +1,19 @@
-import { Box3, Group, Quaternion, Vector3 } from 'three';
+import { Box3, Group, type Mesh, Quaternion, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import type { BlockEntity } from '../src/core/blockEntities.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import {
   type FurnitureMover,
   liftFurniture,
   placeFurniture,
+  placement,
   tipCarried,
   turnCarried,
 } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { LadderHold } from '../src/core/ladders.ts';
+import { type Pose, rotatedSize, rotationOf, turnPose } from '../src/core/orientation.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
@@ -152,7 +155,21 @@ describe('movable furniture', () => {
     )!;
     const tallSpec = { type: tall.id, pos: origin, size: tall.size, facing: 'n' as const };
 
-    it('fits under a ceiling lower than it stands only once laid on its side', () => {
+    it('tips about the world x axis and turns about the world vertical from any pose, so press order matters', () => {
+      const size: Vec3 = [1, 2, 3];
+      const box = (pose: Pose) => rotatedSize(size, rotationOf(pose));
+      for (const facing of ['n', 'e', 's', 'w'] as const) {
+        for (const tip of [undefined, 'back', 'front', 'left', 'right', 'top'] as const) {
+          const [x, y, z] = box({ facing, tip });
+          expect(box(turnPose({ facing, tip }, 'x'))).toEqual([x, z, y]);
+          expect(box(turnPose({ facing, tip }, 'y'))).toEqual([z, y, x]);
+        }
+      }
+      const upright: Pose = { facing: 'n' };
+      expect(box(turnPose(turnPose(upright, 'x'), 'y'))).not.toEqual(box(turnPose(turnPose(upright, 'y'), 'x')));
+    });
+
+    it('fits under a ceiling lower than it stands only once laid down', () => {
       const inventory = new Inventory(registry);
       const [width, height] = tall.size;
       const shelf = origin[0] + Math.max(...tall.size) + 1;
@@ -165,33 +182,51 @@ describe('movable furniture', () => {
       inventory.entities.lift(piece);
 
       expect(placeFurniture(furniture, aimed)).toBe(messages.noRoom);
+      expect(turnCarried(inventory)).toBeUndefined();
       expect(tipCarried(inventory)).toBeUndefined();
-      expect(tipCarried(inventory)).toBeUndefined();
-      expect(piece.tip).toBe('side');
+      expect(piece.size[1]).toBe(width);
       expect(placeFurniture(furniture, aimed)).toBeUndefined();
       expect(inventory.entities.at(...aimed)).toBe(piece);
     });
 
-    it('draws a turned and tipped piece inside its turned box', () => {
-      const inventory = new Inventory(registry);
-      const meshes = new FurnitureMeshes(formatWorldOptions.blockSize);
+    it('draws, places and occupies the same box in hand and once set down, in every tip and facing', () => {
       const s = formatWorldOptions.blockSize;
-      const piece = inventory.furnish(tallSpec)!;
-      inventory.entities.lift(piece);
-      expect(turnCarried(inventory)).toBeUndefined();
-
-      for (const tip of ['back', 'side']) {
-        expect(tipCarried(inventory)).toBeUndefined();
-        expect(piece.tip).toBe(tip);
-        const drawn = new Box3().setFromObject(meshes.pieceMesh(piece, tall));
-        const low = new Vector3(...piece.pos).multiplyScalar(s).subScalar(1e-6);
-        const high = new Vector3(...piece.pos)
-          .add(new Vector3(...piece.size))
-          .multiplyScalar(s)
-          .addScalar(1e-6);
+      const meshes = new FurnitureMeshes(s);
+      const drawnInBox = (piece: BlockEntity) => {
+        const mesh = meshes.pieceMesh(piece, tall) as Mesh;
+        const drawn = new Box3().setFromObject(mesh);
+        const own = mesh.geometry.boundingBox!.getSize(new Vector3()).toArray();
+        const low = new Vector3(...piece.pos).multiplyScalar(s);
+        const high = new Vector3(...piece.size).multiplyScalar(s).add(low);
         expect(drawn.isEmpty()).toBe(false);
-        expect(new Box3(low, high).containsBox(drawn)).toBe(true);
-      }
+        expect(new Box3(low, high).expandByScalar(1e-6).containsBox(drawn)).toBe(true);
+        const turned = rotatedSize(own, rotationOf(piece));
+        for (const [axis, length] of drawn.getSize(new Vector3()).toArray().entries()) {
+          expect(length).toBeCloseTo(turned[axis]! * s);
+        }
+      };
+
+      const presses = ['', 'x', 'xx', 'xxx', 'yx', 'yyyx'];
+      const poses = presses.map((sequence, i) => {
+        const inventory = new Inventory(registry);
+        const furniture = mover(inventory);
+        const piece = inventory.furnish(tallSpec)!;
+        expect(liftFurniture(furniture, piece)).toBeUndefined();
+        for (const press of `${sequence}${'y'.repeat(i % 4)}`) {
+          expect((press === 'x' ? tipCarried : turnCarried)(inventory)).toBeUndefined();
+        }
+        drawnInBox(piece);
+
+        const outlined = placement(furniture, moved);
+        expect(placeFurniture(furniture, moved)).toBeUndefined();
+        expect(outlined).toEqual({ pos: piece.pos });
+        const far = piece.pos.map((at, axis) => at + piece.size[axis]! - 1) as Vec3;
+        expect(inventory.entities.at(...far)).toBe(piece);
+        drawnInBox(piece);
+        return { facing: piece.facing, tip: piece.tip };
+      });
+      expect(new Set(poses.map(({ tip }) => tip)).size).toBe(6);
+      expect(new Set(poses.map(({ facing }) => facing)).size).toBe(4);
     });
 
     it('keeps its facing, tip and box in hand and once put down, through save and load', async () => {
@@ -201,6 +236,7 @@ describe('movable furniture', () => {
       expect(turnCarried(runtime.inventory)).toBeUndefined();
       expect(tipCarried(runtime.inventory)).toBeUndefined();
       const turned = { facing: piece.facing, tip: piece.tip, size: [...piece.size] };
+      expect(turned.tip).toBeDefined();
       expect(turned.size).not.toEqual(tall.size);
 
       const carried = await roundTrip(runtime);

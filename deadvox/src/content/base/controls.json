@@ -95,7 +95,7 @@
       "id": "carry.tip",
       "keys": [
         {
-          "code": "KeyT"
+          "code": "KeyR"
         }
       ]
     },
@@ -103,7 +103,7 @@
       "id": "carry.turn",
       "keys": [
         {
-          "code": "KeyR"
+          "code": "KeyT"
         }
       ]
     },

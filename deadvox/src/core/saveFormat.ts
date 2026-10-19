@@ -482,7 +482,7 @@ const blockEntitySchema = obj({
   pos: tuple(safeInt, safeInt, safeInt),
   size: tuple(positiveInt, positiveInt, positiveInt),
   facing: enumeration(['n', 'e', 's', 'w']),
-  tip: opt(enumeration(['back', 'side'])),
+  tip: opt(enumeration(['back', 'front', 'left', 'right', 'top'])),
   carried: opt(enumeration([true])),
   fixed: opt(enumeration([true])),
   searched: bool,
