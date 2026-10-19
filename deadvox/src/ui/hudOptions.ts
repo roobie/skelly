@@ -1,5 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
-import { labelForAction } from '../game/inputBindings.ts';
+import { type HintText, keyCap } from './keyCap.ts';
 
 export const HUD_OPTION_KEYS = [
   'stats',
@@ -80,7 +80,7 @@ const LABELS: Record<HudOptionKey, string> = {
 
 const optionTemplate = (
   key: HudSettingKey,
-  label: string,
+  label: HintText,
   state: HudSettings,
   change: (key: HudSettingKey, value: boolean) => void,
 ): TemplateResult => html`
@@ -93,7 +93,7 @@ const optionsTemplate = (
 ): TemplateResult => html`
   <section class="hud-options">
     <h2>HUD</h2>
-    ${optionTemplate('shown', `Show the HUD (hold ${labelForAction('hud.toggle')} in play)`, state, change)}
+    ${optionTemplate('shown', html`Show the HUD (hold ${keyCap('hud.toggle')} in play)`, state, change)}
     ${HUD_OPTION_KEYS.map((key) => optionTemplate(key, LABELS[key], state, change))}
   </section>
 `;

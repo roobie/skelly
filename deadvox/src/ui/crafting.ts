@@ -1,11 +1,11 @@
 // Lit view of completed projections. Commands and preferences arrive as explicit callbacks.
 import { html, nothing, render } from 'lit-html';
 import { repeat } from 'lit-html/directives/repeat.js';
-import { labelForAction } from '../game/inputBindings.ts';
 import { activityProgress } from './activityProgress.ts';
 import { comboBox } from './comboBox.ts';
 import type { CraftRow, CraftStatus } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
+import { keyCap } from './keyCap.ts';
 
 const REPAIR_PREFIX = /^Repair: /;
 
@@ -70,7 +70,7 @@ export const renderCraftStatus = (
           controls: html`
             ${
               status.stopped
-                ? html`<button type="button" @click=${actions.continue}>Continue (${labelForAction('craft.continue')})</button>`
+                ? html`<button type="button" @click=${actions.continue}>Continue (${keyCap('craft.continue')})</button>`
                 : nothing
             }
             <button type="button" @click=${actions.stop}>Stop (X)</button>

@@ -6,6 +6,7 @@ import { cellCount, defOf, type Item } from '../core/items.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { Quickbar } from '../game/quickbar.ts';
 import { activityProgress } from './activityProgress.ts';
+import { type HintText, keyCap } from './keyCap.ts';
 
 /** Where a quickbar item is on the person, and how long it takes to get it in hand. */
 const whereText = (inv: Inventory, item: Item, at: Location | undefined): string => {
@@ -103,7 +104,7 @@ export interface HandlingViewModel {
   readonly simSecondsLabel: string;
   readonly percent: number;
   readonly next: string;
-  readonly cancelLabel: string;
+  readonly cancelLabel: HintText;
   readonly movementLabel: string;
   readonly minimumPercent?: number;
 }
@@ -118,7 +119,7 @@ export interface HandlingPresentationSource {
   readonly jobs: readonly { readonly label: string; readonly duration: number; readonly elapsed: number }[];
   readonly longAction?: TimedActionPresentation;
   readonly throwCharge?: ThrowChargePresentation;
-  readonly cancelLabel?: string;
+  readonly cancelLabel?: HintText;
   readonly movementLabel?: string;
 }
 
@@ -128,13 +129,10 @@ export type TimedActionPresentation = HandlingPresentationSource['jobs'][number]
   readonly stopped: boolean;
 };
 
-export const timedActionHandlingPresentation = (
-  action: TimedActionPresentation,
-  stopLabel: string,
-): HandlingPresentationSource => ({
+export const timedActionHandlingPresentation = (action: TimedActionPresentation): HandlingPresentationSource => ({
   jobs: [],
   ...(action.stopped ? {} : { longAction: action }),
-  cancelLabel: action.stopped ? '' : `Pause (${stopLabel})`,
+  cancelLabel: action.stopped ? '' : html`Pause (${keyCap('handling.stop')})`,
   movementLabel: '',
 });
 

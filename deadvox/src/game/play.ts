@@ -66,6 +66,7 @@ import {
   writeHudOptions,
 } from '../ui/hudOptions.ts';
 import { InventoryScreen, type ScreenHooks } from '../ui/inventoryScreen.ts';
+import { type HintText, hintHtml as html, keyCap } from '../ui/keyCap.ts';
 import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
@@ -119,7 +120,6 @@ import {
   type InputContext,
   inventoryTabForAction,
   keyboardInput,
-  labelForAction,
   shouldCancelInputForViewerFocus,
 } from './inputBindings.ts';
 import {
@@ -546,8 +546,7 @@ const handlingPresentationFor = ({
   if (throwCharge) {
     return { jobs: [], throwCharge };
   }
-  const stopLabel = labelForAction('handling.stop');
-  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? `Cancel (${stopLabel})` };
+  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? html`Cancel (${keyCap('handling.stop')})` };
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
@@ -559,7 +558,7 @@ const handlingPresentationFor = ({
     elapsed: elapsedForPresentation(job, simSeconds, clockRatio, compressionActive),
     stopped: job.stopped,
   };
-  return timedActionHandlingPresentation(action, stopLabel);
+  return timedActionHandlingPresentation(action);
 };
 
 const createPlayRefusalPresenter = (
@@ -2433,20 +2432,20 @@ export const startPlay = (
     return `with ${tools} — ${plan.reason}`;
   };
 
-  const downedBodyHint = (id: EntityId): string => {
+  const downedBodyHint = (id: EntityId): HintText => {
     const finish = session.downedBodyPlan(id, 'finish-off');
     if (!finish.ok) {
       return finish.reason;
     }
     const dismember = session.downedBodyPlan(id, 'dismember');
     const reason = dismember.ok ? '' : ` — ${dismember.reason.toLowerCase()}`;
-    return `${labelForAction('world.interact')}: ${finish.label.toLowerCase()} · ${labelForAction('world.interact')} (hold): dismember${reason}`;
+    return html`${keyCap('world.interact')}: ${finish.label.toLowerCase()} · ${keyCap('world.interact')} (hold): dismember${reason}`;
   };
 
   /** Describes the displayed action for the selected target. */
-  const useText = (entity: BlockEntity): string => {
+  const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
-      return `${labelForAction('world.interact')}: activate ${nameOf(entity)}`;
+      return html`${keyCap('world.interact')}: activate ${nameOf(entity)}`;
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -3109,16 +3108,18 @@ export const startPlay = (
   const interactionHintFor = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
-  ): string | undefined => {
-    const label = labelForAction('world.interact');
+  ): HintText | undefined => {
+    const key = keyCap('world.interact');
     if (carry) {
-      return playCarryText('refusal' in carry.spot ? carry.spot.refusal : `${label}: set down ${nameOf(carry.entity)}`);
+      return playCarryText(
+        'refusal' in carry.spot ? carry.spot.refusal : html`${key}: set down ${nameOf(carry.entity)}`,
+      );
     }
     switch (target?.kind) {
       case 'item':
-        return `${label}: pocket ${inventory.name(target.item)} · ${label} (hold): wield`;
+        return html`${key}: pocket ${inventory.name(target.item)} · ${key} (hold): wield`;
       case 'furniture':
-        return liftable(target.entity) ? `${useText(target.entity)} · ${label} (hold): lift` : useText(target.entity);
+        return liftable(target.entity) ? html`${useText(target.entity)} · ${key} (hold): lift` : useText(target.entity);
       case 'body':
         return downedBodyHint(target.id);
       default:
@@ -3130,7 +3131,7 @@ export const startPlay = (
     visible: Readonly<HudOptionsState>,
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
-  ): string => {
+  ) => {
     const interactionHint = interactionHintFor(target, carry);
     return playPromptText(
       {
