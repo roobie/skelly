@@ -37,6 +37,14 @@
       "output": "deadvox/src/content/base/compression.json"
     },
     {
+      "source": "deadvox/src/content/base/crisis-hq-fixtures.jsonnet",
+      "output": "deadvox/src/content/base/crisis-hq-fixtures.json"
+    },
+    {
+      "source": "deadvox/src/content/base/crisis-hq.jsonnet",
+      "output": "deadvox/src/content/base/crisis-hq.json"
+    },
+    {
       "source": "deadvox/src/content/base/furniture-playtest.jsonnet",
       "output": "deadvox/src/content/base/furniture-playtest.json"
     },
@@ -157,12 +165,28 @@
       "output": "deadvox/src/content/base/recipes.json"
     },
     {
+      "source": "deadvox/src/content/base/rural-medical-fixtures.jsonnet",
+      "output": "deadvox/src/content/base/rural-medical-fixtures.json"
+    },
+    {
+      "source": "deadvox/src/content/base/rural-medical.jsonnet",
+      "output": "deadvox/src/content/base/rural-medical.json"
+    },
+    {
       "source": "deadvox/src/content/base/rural-police-fixtures.jsonnet",
       "output": "deadvox/src/content/base/rural-police-fixtures.json"
     },
     {
       "source": "deadvox/src/content/base/rural-police.jsonnet",
       "output": "deadvox/src/content/base/rural-police.json"
+    },
+    {
+      "source": "deadvox/src/content/base/rural-substation-fixtures.jsonnet",
+      "output": "deadvox/src/content/base/rural-substation-fixtures.json"
+    },
+    {
+      "source": "deadvox/src/content/base/rural-substation.jsonnet",
+      "output": "deadvox/src/content/base/rural-substation.json"
     },
     {
       "source": "deadvox/src/content/base/saves.jsonnet",
