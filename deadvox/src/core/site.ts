@@ -19,7 +19,7 @@ import {
   rollLoot,
 } from './loot.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
-import { type Placement, placedPieces } from './templates.ts';
+import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
 import type { Surface } from './worldgen.ts';
 
 /** A rectangle of block columns. */
@@ -103,7 +103,7 @@ export const lootSourcesOf = (
   const context = placement.lootContext ?? placement.template.lootContext;
   const building = JSON.stringify([placement.origin, placement.turn]);
   const placed = placedPieces(placement);
-  return placement.template.pieces.flatMap((piece, i) => {
+  const furniture = placement.template.pieces.flatMap((piece, i) => {
     const world = placed[i]!;
     const override = fixedLoot.find((entry) => entry.at.join(',') === piece.pos.join(','));
     const items = override?.items ?? [];
@@ -139,6 +139,21 @@ export const lootSourcesOf = (
     }
     return sources;
   });
+  const ground = placedGroundLoot(placement).map(
+    (point, i): LootPointSource => ({
+      site,
+      building,
+      anchor: placement.template.groundLoot![i]!.pos,
+      channel: 'ground',
+      position: point.pos,
+      destination: point.pos,
+      context,
+      ...(point.lootUsage === undefined ? {} : { usage: point.lootUsage }),
+      supply: point.supply,
+      required: point.supply.kind === 'fixed',
+    }),
+  );
+  return [...furniture, ...ground];
 };
 
 export const lootPointsOf = (

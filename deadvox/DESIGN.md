@@ -44,7 +44,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
-  - you're changing military progression or loot economy admission
+  - you're changing military progression, loot economy admission, ground supply, roll-once persistence or its debug-overlay scope
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
   - you're changing when a running game warns before page exit relative to its last save
@@ -693,16 +693,21 @@ its generation plus what players did to it, so a save need record only changes.
 Dynamic events (crashes, convoys and the like) bring supply under their own rules,
 outside this default.
 
-Having rolled should be a property of the chunk column that loot arrives with, not of
-a loot point or an item: a column loaded once never rolls loot again. One mark per
-column covers every point in it, including points with no furniture to anchor them,
-so nothing done to a point (moving, emptying or destroying what it filled) can make it
-roll again. Furniture follows the same mark: once a column has rolled, furniture
-removed from it stays gone, because a returning piece would bring a fresh roll of its
-loot, which is a restock. Until d470 adds that mark, a piece of furniture's claimed
-origin does both jobs: it stays claimed wherever the piece is carried, so the piece is
-never added again and its loot never rolls again; see `src/core/blockEntities.ts`,
-`BlockEntities.add`.
+For site-generated world supply, roll-once ownership belongs to the column rather
+than individual points or surviving furniture: emptying or moving supply must not
+turn a spent place back into fresh generation. Furniture and loose supply share that
+barrier so changing a point cannot invite another roll. Once a column has rolled,
+furniture removed from it is not re-added, because a returning piece would bring a
+fresh roll of its loot, which is a restock. See `src/game/session.ts`, `onColumn`, and
+`src/core/saveState.ts`, `SaveSnapshot`. The debug test-house overlay is outside this
+column-mark guarantee; see `src/game/play.ts`, `applyColumnLoad`, and
+`src/core/blockEntities.ts`, `BlockEntities.add`.
+
+Loose supply needs supported standing space and visible reach, not furniture, so it
+uses the same physical reach rule as piles the player puts down. Reserved circulation,
+gateways and route poses stay free because finding loot must not compromise a certified
+crossing. See `src/core/templateSpatial.ts`, `templateGroundLootIssues`, and
+`src/core/reach.ts`, `pileInReach`.
 
 Items carry no record of where they were born. A budget is to count items by type and
 by where they are (map, cargo, player, hoard), which needs no birthplace, and keeping one

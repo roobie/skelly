@@ -18,6 +18,7 @@ import {
   nonEmpty,
   nullable,
   number,
+  omit,
   optional,
   picklist,
   pipe,
@@ -1366,10 +1367,33 @@ const SpawnWindowSchema = pipe(
   ),
 );
 
-/** A palette entry that isn't a plain block: furniture or a spawn point. */
+const FixedLootItem = strictObject({
+  item: Id,
+  count: optional(pipe(Count, minValue(1))),
+  condition: optional(Fraction),
+  /** Observation only: playtest metrics record when the player first loots or reads this item. */
+  key: optional(vBoolean()),
+  /** Surface items begin as visible world piles on their furniture's top; other items fill its container. */
+  placement: optional(picklist(['surface', 'container'], 'placement must be surface or container')),
+  /** Item types fitted at spawn, by slot id: a found gun that comes with its sling. */
+  fitted: optional(record(Id, Id)),
+});
+const GroundLootSupplySchema = union([
+  strictObject({ kind: literal('empty') }),
+  strictObject({ kind: literal('table'), table: Id }),
+  strictObject({
+    kind: literal('fixed'),
+    items: pipe(array(omit(FixedLootItem, ['placement'])), nonEmpty()),
+    table: optional(Id),
+  }),
+]);
+export type GroundLootSupply = InferOutput<typeof GroundLootSupplySchema>;
+
+/** A palette entry that isn't a plain block. */
 const PaletteThingSchema = pipe(
   strictObject({
     furniture: optional(Id),
+    groundLoot: optional(GroundLootSupplySchema),
     /** Overrides the furniture's own loot table. */
     loot: optional(Id),
     lootUsage: optional(UsageSchema),
@@ -1387,8 +1411,8 @@ const PaletteThingSchema = pipe(
     ground: optional(literal(true)),
   }),
   check(
-    (e) => [e.furniture, e.spawn, e.ground].filter((part) => part !== undefined).length === 1,
-    'needs exactly one of "furniture", "spawn" or "ground"',
+    (e) => [e.furniture, e.spawn, e.ground, e.groundLoot].filter((part) => part !== undefined).length === 1,
+    'needs exactly one of "furniture", "spawn", "ground" or "groundLoot"',
   ),
   check((e) => e.spawn !== undefined || e.window === undefined, '"window" only goes with "spawn"'),
   check(
@@ -1681,17 +1705,6 @@ const TerrainPrimitive = union([
     rise: PositiveMetres,
   }),
 ]);
-const FixedLootItem = strictObject({
-  item: Id,
-  count: optional(pipe(Count, minValue(1))),
-  condition: optional(Fraction),
-  /** Observation only: playtest metrics record when the player first loots or reads this item. */
-  key: optional(vBoolean()),
-  /** Surface items begin as visible world piles on their furniture's top; other items fill its container. */
-  placement: optional(picklist(['surface', 'container'], 'placement must be surface or container')),
-  /** Item types fitted at spawn, by slot id: a found gun that comes with its sling. */
-  fitted: optional(record(Id, Id)),
-});
 const FixedLootOverride = strictObject({
   lootUsage: optional(UsageSchema),
   /** Template-local furniture anchor in half-metre block cells. */

@@ -25,6 +25,7 @@ export interface SaveSnapshot {
     diffs: WorldDiffs;
     zombies: ZombieSystemState;
     spawned: readonly string[];
+    rolledColumns: readonly string[];
   };
   character: {
     id: string;
@@ -69,6 +70,7 @@ export interface SnapshotSessionInput {
   zombies: ZombieSystem;
   playerCombat: PlayerCombat;
   spawner: ZombieSpawner;
+  rolledColumns: ReadonlySet<string>;
   handling: HandlingQueue;
   vocalNoiseId: number;
   vocalNoise?: VocalNoise | undefined;
@@ -95,6 +97,7 @@ export const snapshotSession = ({
   zombies,
   playerCombat,
   spawner,
+  rolledColumns,
   handling,
   vocalNoiseId,
   vocalNoise,
@@ -116,6 +119,7 @@ export const snapshotSession = ({
       diffs: world.snapshotDiffs(blockContentId) as WorldDiffs,
       zombies: zombies.snapshotState() as ZombieSystemState,
       spawned: [...spawner.snapshotState()],
+      rolledColumns: [...rolledColumns],
     },
     character: {
       id: characterId,

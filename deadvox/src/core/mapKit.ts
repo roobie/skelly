@@ -7,6 +7,7 @@ import {
   templateBodySpace,
   templateClimbCertificate,
   templateDoorIssues,
+  templateGroundLootIssues,
   templateSpawnClearanceIssues,
   templateStandingRoute,
   templateStoreyIssues,
@@ -153,6 +154,7 @@ const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [str
   ...anchorIssues(registry, template),
   ...portIssues(registry, template),
   ...templateDoorIssues(registry, template),
+  ...templateGroundLootIssues(registry, template),
   ...templateSpawnClearanceIssues(registry, template),
 ];
 

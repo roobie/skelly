@@ -63,7 +63,9 @@ export interface ReachSnapshot {
 export const pileDistance = (position: Vec3, pile: Vec3, blockSize: number): number =>
   Math.hypot(pile[0] + 0.5 - position[0], pile[1] - position[1], pile[2] + 0.5 - position[2]) * blockSize;
 
-const chestOf = (player: ReachPlayer): Vec3 => [
+type ReachGeometry = Pick<ReachPlayer, 'inventory' | 'position' | 'blockSize' | 'obstacles'>;
+
+const chestOf = (player: ReachGeometry): Vec3 => [
   player.position[0],
   player.position[1] + reachTuning(player.inventory.registry).chestHeightMetres / player.blockSize,
   player.position[2],
@@ -94,7 +96,12 @@ export const bodyDistance = (player: ReachPlayer, body: BodyBox): number => {
 const FACE_GAP_BLOCKS = 1e-3;
 
 /** The furniture being reached never blocks its own line. */
-const clearLine = (player: ReachPlayer, obstacles: ReachObstacles, [low, high]: Box, target?: BlockEntity): boolean => {
+const clearLine = (
+  player: ReachGeometry,
+  obstacles: ReachObstacles,
+  [low, high]: Box,
+  target?: BlockEntity,
+): boolean => {
   const { entities } = player.inventory;
   const chest = chestOf(player);
   const blocked = (x: number, y: number, z: number): boolean => {
@@ -129,14 +136,14 @@ const clearLine = (player: ReachPlayer, obstacles: ReachObstacles, [low, high]: 
   return faceTargets.length === 0 || faceTargets.some(reaches);
 };
 
-const lineInReach = (player: ReachPlayer, box: Box, target?: BlockEntity): boolean =>
+const lineInReach = (player: ReachGeometry, box: Box, target?: BlockEntity): boolean =>
   player.obstacles === undefined || clearLine(player, player.obstacles, box, target);
 
 const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
   furnitureDistance(player, entity) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, [entity.pos, entity.pos.map((value, axis) => value + entity.size[axis]!) as Vec3], entity);
 
-const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
+export const pileInReach = (player: ReachGeometry, position: Vec3): boolean =>
   pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, [position, position.map((value) => value + 1) as Vec3]);
 

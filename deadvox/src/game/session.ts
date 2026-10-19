@@ -42,7 +42,7 @@ import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
-import { corpseLootPoint, rollLoot } from '../core/loot.ts';
+import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
@@ -588,6 +588,7 @@ export const createSession = (options: SessionOptions) => {
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const physics = physicsFor(scale);
   const restored = options.restore;
+  const rolledColumns = new Set(restored?.world.rolledColumns);
 
   const restoredPlayer = restored ? restorePlayer(restored.character.player) : undefined;
   const senseTuning = playerSenseTuning(registry);
@@ -622,6 +623,21 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
+  const generateColumnSupply = (cx: number, cz: number, site: Site): void => {
+    for (const { spec, loot, surfaceLoot } of site.furnitureIn(cx, cz)) {
+      inventory.furnish(spec, loot, surfaceLoot);
+    }
+    for (const point of site.lootPointsIn(cx, cz)) {
+      if (point.channel !== 'ground') {
+        continue;
+      }
+      for (const rolled of rollLoot(registry, point, lootPointStream(seed, point))) {
+        if (!inventory.add(inventory.createRolled(rolled), { kind: 'pile', pos: point.destination })) {
+          throw new Error(`ground item "${rolled.type}" does not fit in its pile`);
+        }
+      }
+    }
+  };
   const fuses = new Fuses(
     registry,
     Array.from(inventory.items(), ({ item }) => item),
@@ -1879,12 +1895,16 @@ export const createSession = (options: SessionOptions) => {
     },
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, site: Site | undefined) => {
-      for (const { spec, loot, surfaceLoot } of site?.furnitureIn(cx, cz) ?? []) {
-        inventory.furnish(spec, loot, surfaceLoot);
+      if (!site) {
+        return;
       }
-      if (site) {
-        spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem });
+      const key = `${cx},${cz}`;
+      if (!rolledColumns.has(key)) {
+        generateColumnSupply(cx, cz, site);
+        // Empty columns also stay rolled: absence of furniture or a surviving pile is not fresh supply.
+        rolledColumns.add(key);
       }
+      spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem });
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),
     /** Queues a search of a container, unless one is queued or done. */
@@ -1986,6 +2006,7 @@ export const createSession = (options: SessionOptions) => {
         zombies: zombieSystem,
         playerCombat,
         spawner,
+        rolledColumns,
         handling: queue,
         vocalNoiseId: playerAudio.vocalNoiseId,
         vocalNoise: playerAudio.vocalNoise,
