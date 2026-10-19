@@ -6,7 +6,7 @@ read_if:
   - you add code that reads a content row by a fixed id
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
-  - you're authoring or changing authored sites, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
+  - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you're authoring or changing exterior door openings, or townhouse aftermath scenes (`deadvox/docs/aftermath.md`)
   - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author decals or scenario outbreak age
@@ -280,15 +280,15 @@ The stress-test benchmark owns an independent named pool because the hamlet rost
 
 Pools and eligibility remain static content so they can become inputs to an expression selector without competing with it. There is no separate selector language here. Additive mod admission waits for the typed merge mechanism in `docs/decisions/0007-typed-field-patches.md`, "Decision"; collection ownership does not imply that list additions are already implemented.
 
-Special buildings must be deliberately designed and curated as plausible places, not generic rooms with different loot. Room function, furnishings, circulation and supplies must agree: a police station needs public reception, working desks, holding cells and a small secured armoury. The gauntlet requires exactly one police station. Its structure should read as a municipal masonry building, not a timber house; wooden furniture and door leaves do not imply wooden partitions or ceilings. See `src/content/base/gauntlet-city-police.libsonnet`, `piece`; `src/content/base/gauntlet-city-building-types.libsonnet`, `mapAssemblies`; and `src/content/base/scenarios.jsonnet`, `mapPools`.
+Special buildings must be deliberately designed and curated as plausible places, not generic rooms with different loot. Real plans keep room function, furnishings, circulation and supplies coherent. The gauntlet's rural police station follows that principle: a working civic place rather than a house shell relabelled by its loot. Exactly one station preserves scarcity without maintaining competing designs. Masonry makes the civic building read correctly; wooden furnishings and door leaves do not imply timber partitions or ceilings. See `src/content/base/rural-police.jsonnet`, `templates`; `src/content/base/gauntlet-authored-sites.libsonnet`, `policeMain` and `compound`; and `src/content/base/gauntlet-layout.libsonnet`, `lots`.
 
-Loose furniture in abandoned buildings should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-city-police.libsonnet`, `chairSlots`.
+Loose furniture in abandoned buildings should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-authored-sites.libsonnet`, `furnished`.
+
+Authored lots separate the arrangement from the building draw: a designed street and yard should not move when a seed changes its houses. Empty reservations protect intentional open ground, and pool guarantees must fit the actual lot footprints rather than borrowing capacity from another row. Fixed service placement keeps a designed destination on its intended approach. A validation pass shares immutable leaf compilation so a compound's nested assemblies do not repeatedly pay for the same authored geometry; a later admission must still see registry edits. See `src/core/mapKit.ts`, `mapKitIssues`. Off-rhythm paving belongs to the same plan as stamping, so the walked alleys cannot disagree with the arrangement. See `src/core/cityLots.ts`, `placeCityLots` and `cityLotIssues`; `src/core/cityPlan.ts`, `buildCityPlan`; and `src/core/citySite.ts`, `surface`.
 
 Keep geometry, collection and consumer independently overridable so a prevalence edit need not restate a building or a scenario. See `src/content/base/scenarios.jsonnet`, `mapPools`, and `src/core/content.ts`, `buildRegistry`.
 
-Supply shops supplement the houses, while police stations and gun shops remain scarce. Their civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. Medical tents provide treatment supplies rather than a guaranteed full kit. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-city-building-types.libsonnet`, `src/content/base/gauntlet-city-medical.libsonnet`, and `src/core/loot.ts`, `lootTypeIssue`.
-
-The edge ring follows the same admission and selection policy as the street grid, but its guarantees must fit its own slots rather than borrowing grid capacity. It needs a perimeter to back onto. Population uses authored markers because a ring building has no street frontage to group by. See `src/core/cityPlan.ts`, `cityPoolIssues` and `fillRing`, and `src/core/gauntlet.ts`, `GauntletSite`.
+Supply shops supplement the houses, while police and gun supplies remain scarce. Civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. The medical post provides treatment supplies rather than a guaranteed full kit. Shared police loot remains available to the start rooms as well as the station, so replacing the building cannot silently remove the opening supplies. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-city-building-types.libsonnet`, `loot`; `src/content/base/gauntlet-medical.libsonnet`, `loot`; and `src/core/loot.ts`, `lootTypeIssue`.
 
 Every shop shows a street cue that no house carries, and no two shop types share one, so a player walking the street can tell a shop from a house, and one kind of shop from another, before entering. The cue is built from blocks that only shop fronts use, on the street face and in the yard in front of it. A cue prop must never narrow what a standing player or shambler can walk: the yard cells in front of a door keep full standing headroom, so a prop that hangs over the yard goes above the standing body, not at head height. The rule is data-only, with no code special cases per shop type. See `src/content/base/gauntlet-city-building-types.libsonnet`, `shell`, and `test/cityKitPlan.test.ts`, "gauntlet shop fronts".
 
@@ -297,17 +297,13 @@ Every shop shows a street cue that no house carries, and no two shop types share
 The perimeter must stay closed across streets as well as blocks, because a street gap
 would become an escape. Its dressing must face inward without opening a way through;
 notice text follows
-`INTERFACE.md`, "Text". Reachable roofs must not turn the wall into a step, so clearance
-covers the start building as well as pool buildings, including rooftop fittings. The
-start uses its actual distance to the wall, with or without a ring. Jump clearance
-follows player physics rather than a separate content limit;
-a slower jump can peak at the wall even when a sprint would reach its apex beyond it.
-Lower buildings or more separation preserve containment without changing the wall's look.
-See `src/core/cityPlan.ts`, `clearanceIssues`, `perimeterGaps` and `perimeterIssues`;
-`src/game/player.ts`, `PLAYER` and `sprintJumpRise`; and
-`src/content/base/gauntlet-city-perimeter.libsonnet`.
-
-The wall needs only a few plinths.
+`INTERFACE.md`, "Text". Wear and rubble make the enclosure belong to the abandoned place,
+but passable breaches belong to the interior sites, not the containment wall. Bounds
+hold the designed points of interest and filler housing rather than reserving a band
+of city for later expansion. Ordinary physics owns jumping; no out-top prediction is
+an admission condition. See `src/core/cityPlan.ts`, `cityPerimeter`, `perimeterGaps`
+and `perimeterIssues`; `src/content/base/gauntlet-layout.libsonnet`, `bounds`; and
+`src/content/base/gauntlet-city-perimeter.libsonnet`, `templates`.
 
 ## Scenarios
 
@@ -340,33 +336,32 @@ state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts
   `src/content/base/gauntlet-start-rooms.libsonnet`, `slots`.
   Collapsed floors are extra risky shortcuts, not registered descents, so the start
   check never certifies an interior fall to meet the minimum.
-  Each world's route proof still starts at the roof because the seeded city can block
+  Each world's route proof still starts at the roof because rolled furnishings can block
   the foot of a way down. Redundant ways down prevent one obstruction from forcing a
   single exit. A way down counts even when it can injure or kill, because choosing the
-  risk is part of the descent; its foot need not be kept clear. The roof needs the same
-  wall-clearance proof as other city buildings so it cannot become a jump over the
-  perimeter, with or without a ring. See `src/core/scenarioStart.ts`,
-  `scenarioStartIssues`; `src/core/cityPlan.ts`, `buildCityPlan` and `clearanceIssues`; and
+  risk is part of the descent; its foot need not be kept clear. See
+  `src/core/scenarioStart.ts`, `scenarioStartIssues`; `src/core/cityPlan.ts`,
+  `buildCityPlan`; and
   `src/core/scenarioCertificate.ts`, `scenarioCertificate`.
 - **Street approach.** The street a kind's proof enters its site from is an authored
   anchor, not derived from the site, so a scenario can approach from another side and
   stay the same kind. Under a rooftop start the anchor need not sit at the foot of a way
   down.
-- **Leads and landmarks.** They are lists in the row, not a fixed number, because how
-  many clues and landmarks a scenario has is design.
-- **Placement.** Leads and landmarks are placed by seeded rules in the row, not by fixed
-  positions. Clues then vary between runs, as the world does, and a rule survives a change
-  to the city plan that would strand a fixed position. Code resolves the rules and proves
-  them, because a seed that yields no valid placement would otherwise only show when a game
-  starts.
+- **Placement.** Clues belong in named buildings and landmarks belong to the designed
+  approach, so their meaning agrees with the arrangement the player sees from the roof.
+  Local standing poses make readable access part of admission rather than an assumption
+  about empty street corners. Code proves the composed route because authored placement
+  alone cannot protect it from furnishings or later stamping. See
+  `src/core/scenarioComposition.ts`, `composeScenario`, and
+  `src/core/scenarioCertificate.ts`, `scenarioCertificate`.
 - **Goal text.** The words the goal shows when it refuses live in a shared core-pack text
   table (#456), not on the scenario row. Player-facing wording belongs to the mod, and the
   same line copied to every place that shows it is debt. For that reason the refusals the
   goal shares with other actions move to the table in the same #393 step as the goal's
   own, rather than waiting for #456's wider sweep and leaving a second copy behind.
 
-The remaining gauntlet sweep under #393 covers lead and landmark authoring, street
-approach, lead redundancy and goal refusal text; those boundaries still need content
+The remaining gauntlet sweep under #393 covers street approach, lead redundancy and
+goal refusal text; those boundaries still need content
 ownership so a mod can express the scenario without a code edit.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose

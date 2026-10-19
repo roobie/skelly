@@ -26,20 +26,21 @@ Isolate city route alternatives so content additions do not accumulate into one 
 
 For production chunk-order checks, native deep equality avoids matcher traversal dominating generation and stamping without weakening full-data comparisons. A workload-scaled deadline avoids coupling content growth to a fixed allowance. See `test/scenarioCertificate.test.ts`, `stampProbeCells`.
 
-Skyline and perimeter-clearance admission need the compiler's grounded envelopes, not
-fully expanded voxel maps: seeded choices cannot exceed their declared envelope. The
-clearance proof and actual placement share an origin calculation so grounding cannot
-drift between them. Routes sharing a roof origin also share one static flood rather
-than repeating the same search for each exit. These avoid multiplying validation work
-by content size without caching mutable registries. See `src/core/templates.ts`,
-`templateEnvelope`; `src/core/cityPlan.ts`, `serviceOrigin` and `clearanceIssues`;
-`src/core/scenarioStart.ts`, `skylineIssues`; and `src/core/templateSpatial.ts`,
-`templateWalkingRoutes`.
+Skyline admission needs the compiler's grounded envelopes, not fully expanded voxel
+maps: selected choices cannot exceed their declared envelope. Quota admission likewise
+needs fitting references, not another compilation of every building in the city. Routes
+sharing a roof origin share one static flood rather than repeating the same search for
+each exit. These avoid multiplying validation work by content size without caching
+mutable registries. See `src/core/templates.ts`, `templateEnvelope`;
+`src/core/cityLots.ts`, `cityLotQuotaIssues`; `src/core/scenarioStart.ts`,
+`skylineIssues`; and `src/core/templateSpatial.ts`, `templateWalkingRoutes`.
 
 Start-only admission and obstruction cases must not repeatedly certify unrelated lab
-routes. Keep full-composition coverage at the integration boundary, including start
-relocation: valid exits alone cannot prove public leads remain reachable from a moved
-start. Focused obstruction cases use the same start-proof owner. A shared read-only
+routes. Keep full-composition coverage at the integration boundary: valid exits alone
+cannot prove the designed civic buildings and public leads remain reachable. The fixed
+authored plan makes a service-cell and turn sweep irrelevant; room substitution still
+protects composition against furnishing alternatives. Focused obstruction cases use the
+same start-proof owner. A shared read-only
 compiled plan is safe only
 when each obstruction probe owns fresh route-space and entity state; a clear probe
 must not reuse an obstructed probe's memoized geometry. See `test/scenarioStart.test.ts`,

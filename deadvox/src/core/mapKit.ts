@@ -260,8 +260,11 @@ export const mapKitIssues = (registry: Registry): MapKitIssue[] => {
       issues.push({ section, id, path: '', message: error instanceof Error ? error.message : String(error) });
     }
   };
+  const pieceCache = new Map<string, CompiledTemplate>();
   for (const piece of registry.mapPieces.values()) {
-    check('mapPieces', piece.id, () => compileMapPiece(registry, piece));
+    check('mapPieces', piece.id, () =>
+      compileMapPiece(registry, piece, { seed: 0, siteId: `validation:${piece.id}`, pieceCache }),
+    );
   }
   for (const assembly of registry.mapAssemblies.values()) {
     const slotIssues = slotSourceIssues(registry, assembly);
@@ -270,7 +273,7 @@ export const mapKitIssues = (registry: Registry): MapKitIssue[] => {
       continue;
     }
     check('mapAssemblies', assembly.id, () =>
-      compileAssembly(registry, assembly, { seed: 0, siteId: `validation:${assembly.id}` }),
+      compileAssembly(registry, assembly, { seed: 0, siteId: `validation:${assembly.id}`, pieceCache }),
     );
   }
   for (const site of registry.mapSites.values()) {

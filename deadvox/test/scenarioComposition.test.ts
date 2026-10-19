@@ -9,7 +9,7 @@ import * as lootSelection from '../src/core/loot.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { discoveryForPlan } from '../src/core/scenarioDiscovery.ts';
-import { compileTemplate, type Placement, placedPieces } from '../src/core/templates.ts';
+import { compileTemplate, placedPieces } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -214,7 +214,7 @@ describe('authored scenario composition', () => {
   });
 });
 
-it('plans incidental utilities in addition to the reserved campus', () => {
+it('stamps every occupied authored lot and leaves intentional open lots unstamped', () => {
   const { registry } = BUNDLED_CONTENT;
   const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
   expect(profile).toBeDefined();
@@ -227,9 +227,14 @@ it('plans incidental utilities in addition to the reserved campus', () => {
     scenario: profile,
   });
   const site = new CitySite(9, registry, scale, plan);
-  expect(
-    site.placements.some((placement: Placement) =>
-      profile.composition!.incidentalTemplates.includes(placement.template.id),
-    ),
-  ).toBe(true);
+  expect(plan.lots!.length).toBeGreaterThan(0);
+  expect(plan.lots!.some(({ definition }) => !definition.source)).toBe(true);
+  for (const { definition, placement } of plan.lots!) {
+    if (definition.source) {
+      expect(placement).toBeDefined();
+      expect(site.placements).toContain(placement);
+    } else {
+      expect(placement).toBeUndefined();
+    }
+  }
 });

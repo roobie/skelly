@@ -237,14 +237,19 @@ describe('one finished city plan', () => {
       GAUNTLET_SITE_MS,
     );
 
-    // Each case builds the whole city and certifies it again, though only the population differs. Zero and two cover
-    // "none" and "distinct streets"; a 1-horde case adds nothing, since a count slip shows at 0 or 2 too.
+    // Zero and two distinguish omitted spawns from distinct configured areas without a redundant one-horde case.
     const hordeCases = [0, 2];
     it(
-      'places exactly the horde count the scenario asks for, on different streets',
+      'places exactly the horde count the scenario asks for in distinct authored areas',
       () => {
         for (const hordes of hordeCases) {
-          const placed = populationOf({ hordes }).hordes;
+          const area = bundled.population.hordeAreas![0]!;
+          const midpoint = (area.x0 + area.x1) / 2;
+          const hordeAreas = [
+            { ...area, x1: midpoint },
+            { ...area, x0: midpoint },
+          ];
+          const placed = populationOf({ hordes, hordeAreas }).hordes;
           expect(placed).toHaveLength(hordes);
           expect(new Set(placed.map(({ id }) => id)).size).toBe(hordes);
         }
@@ -272,7 +277,7 @@ describe('one finished city plan', () => {
     );
 
     it(
-      'rejects more hordes than the city has street groups',
+      'rejects more hordes than the city has spawn areas',
       () => {
         expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
       },
@@ -468,26 +473,6 @@ describe('one finished city plan', () => {
     expect(cut.length).toBeLessThan(plan.structures.length);
     expect(perimeterGaps(cut, plan.bounds, floor, height).join('\n')).toContain('north side is open');
   });
-
-  it.each([
-    { wall: 3, setback: 6, reports: true },
-    { wall: 4, setback: 6, reports: true },
-    { wall: 4, setback: 3, reports: true },
-    { wall: 6, setback: 6, reports: false },
-  ])(
-    'checks a roof jump against a wall $wall blocks high at ring setback $setback (reports: $reports)',
-    ({ wall, setback, reports }) => {
-      const scenario = fixtureScenario();
-      scenario.city = {
-        ...scenario.city,
-        perimeter: { block: 'fixture_solid', height: wall, thickness: 2 },
-        ring: { pool: 'fixture_pool', setback },
-      };
-      const { registry: admitted } = buildRegistry(fixtureScenarioSources(fixtureScenario()));
-      const paths = scenarioPlanIssues(admitted, scenario).map(([path]) => path);
-      expect(paths.includes('.city.ring.setback')).toBe(reports);
-    },
-  );
 
   it('fails validation when the edge ring names a pool that does not exist', () => {
     const scenario = fixtureScenario();

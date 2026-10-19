@@ -2,7 +2,8 @@ local look = import 'gauntlet-look.jsonnet';
 local city = import 'gauntlet-city.libsonnet';
 local kits = import 'gauntlet-city-kits.libsonnet';
 local types = import 'gauntlet-city-building-types.libsonnet';
-local tents = import 'gauntlet-city-medical.libsonnet';
+local authored = import 'gauntlet-authored-sites.libsonnet';
+local medical = import 'gauntlet-medical.libsonnet';
 local perimeter = import 'gauntlet-city-perimeter.libsonnet';
 local rooms = import 'gauntlet-lab-rooms.libsonnet';
 local descents = import 'gauntlet-lab-descents.libsonnet';
@@ -99,15 +100,15 @@ local utilities = [
 {
   items: types.items + publicNotes,
   mapPools: kits.mapPools + city.mapPools,
-  blocks: tents.blocks + types.blocks,
-  loot: types.loot + tents.loot + kits.loot,
+  blocks: types.blocks,
+  loot: types.loot + medical.loot + kits.loot + authored.loot,
   mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
     air: { role: 'opening', block: 'air' }, concrete: { role: 'interior_floor', block: 'concrete' },
     brick: { role: 'shell', block: 'brick' }, galvanized: { role: 'shell', block: 'galvanized' },
-  } }] + types.mapStyles + tents.mapStyles,
-  mapPieces: kits.mapPieces + rooms.mapPieces + descents.mapPieces + lab.mapPieces + service.mapPieces + types.mapPieces + tents.mapPieces,
-  mapAssemblies: kits.mapAssemblies + lab.mapAssemblies + service.mapAssemblies + types.mapAssemblies + tents.mapAssemblies,
-  furniture: city.furniture + kits.furniture + types.furniture + [
+  } }] + types.mapStyles + authored.mapStyles,
+  mapPieces: kits.mapPieces + rooms.mapPieces + descents.mapPieces + lab.mapPieces + service.mapPieces + types.mapPieces + authored.mapPieces,
+  mapAssemblies: kits.mapAssemblies + lab.mapAssemblies + service.mapAssemblies + types.mapAssemblies + authored.mapAssemblies,
+  furniture: city.furniture + kits.furniture + types.furniture + authored.furniture + [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
     },

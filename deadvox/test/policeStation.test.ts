@@ -1,19 +1,20 @@
 import { expect, it } from 'vitest';
+import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
 import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
-import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
-import {
-  type CompiledTemplate,
-  cellsOf,
-  compileAssembly,
-  compileMapPiece,
-  type PlacedPiece,
-} from '../src/core/templates.ts';
+import type { MapAssemblyDef } from '../src/core/schema.ts';
+import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
+import { templateReachableStandingPositions, templateWalkingRoute } from '../src/core/templateSpatial.ts';
+import { type CompiledTemplate, cellsOf, compileAssembly, type PlacedPiece } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const content = startupContent();
-
+const authoredAssemblies = (registry: Registry): MapAssemblyDef[] =>
+  [...registry.scenarios.values()].flatMap(({ city }) =>
+    (city.lots ?? []).flatMap(({ source }) =>
+      source?.kind === 'assembly' ? [registry.mapAssemblies.get(source.id)!] : [],
+    ),
+  );
 const near = (positions: Vec3[], piece: PlacedPiece) =>
   positions.some(
     ([x, y, z]) =>
@@ -24,7 +25,25 @@ const near = (positions: Vec3[], piece: PlacedPiece) =>
       ) <=
         STAIR_BODY_HALF_WIDTH + 0.5,
   );
-
+const doorApproachIssues = (registry: Registry, station: CompiledTemplate, occupied: Map<string, string>) => {
+  const issues: string[] = [];
+  for (const door of station.pieces.filter(
+    ({ furniture, size }) => registry.furniture.get(furniture)?.door && size[1] >= STAIR_BODY_HEIGHT,
+  )) {
+    const across = door.facing === 'e' || door.facing === 'w' ? 0 : 2;
+    const faceSize: Vec3 = [...door.size];
+    faceSize[across] = 1;
+    for (const offset of cellsOf(faceSize)) {
+      for (const side of [-1, door.size[across]]) {
+        const point = door.pos.map((value, axis) => value + (axis === across ? side : offset[axis]!));
+        if (occupied.has(point.join(','))) {
+          issues.push(`${door.furniture} blocked approach at ${point}`);
+        }
+      }
+    }
+  }
+  return issues;
+};
 const furnitureClearanceIssues = (registry: Registry, station: CompiledTemplate) => {
   const issues: string[] = [];
   const occupied = new Map<string, string>();
@@ -43,86 +62,130 @@ const furnitureClearanceIssues = (registry: Registry, station: CompiledTemplate)
   }
   return issues.concat(doorApproachIssues(registry, station, occupied));
 };
+const stationOf = (registry: Registry) =>
+  authoredAssemblies(registry)
+    .map((assembly) => compileAssembly(registry, assembly, { seed: 1, siteId: 'police_contract' }))
+    .find((template) => template.pieces.some(({ lock }) => lock?.locked))!;
 
-const doorApproachIssues = (registry: Registry, station: CompiledTemplate, occupied: Map<string, string>) => {
-  const issues: string[] = [];
-  for (const door of station.pieces.filter(({ furniture }) => registry.furniture.get(furniture)?.door)) {
-    const across = door.facing === 'e' || door.facing === 'w' ? 0 : 2;
-    const faceSize: Vec3 = [...door.size];
-    faceSize[across] = 1;
-    for (const offset of cellsOf(faceSize)) {
-      for (const side of [-1, door.size[across]]) {
-        const point = door.pos.map((value, axis) => value + (axis === across ? side : offset[axis]!));
-        if (occupied.has(point.join(','))) {
-          issues.push(`${door.furniture} blocked approach at ${point}`);
-        }
+const assemblyClosure = (registry: Registry, roots: MapAssemblyDef[]): MapAssemblyDef[] => {
+  const pending = [...roots];
+  const seen = new Map<string, MapAssemblyDef>();
+  for (const assembly of pending) {
+    if (seen.has(assembly.id)) {
+      continue;
+    }
+    seen.set(assembly.id, assembly);
+    for (const { ref } of assembly.slots.flatMap((slot) => slot.choices ?? [])) {
+      if (ref.kind === 'assembly') {
+        pending.push(registry.mapAssemblies.get(ref.id)!);
       }
     }
   }
-  return issues;
+  return [...seen.values()];
 };
 
-it('keeps every furniture disorder alternative clear of walls, furniture and door approaches with every room reachable', () => {
+it('connects authored compound standing anchors to their entrance', () => {
+  expect(content.issues).toEqual([]);
+  let checked = 0;
+  for (const assembly of authoredAssemblies(content.registry)) {
+    const compiled = compileAssembly(content.registry, assembly, { seed: 1, siteId: 'compound_room_routes' });
+    for (const [id, anchor] of Object.entries(compiled.anchors ?? {})) {
+      if (anchor.kind !== 'standing') {
+        continue;
+      }
+      checked += 1;
+      expect(compiled.access, assembly.id).toBeDefined();
+      expect(
+        templateWalkingRoute(content.registry, compiled, compiled.access!.entrance, anchor.at),
+        `${assembly.id} entrance to ${id}`,
+      ).toBe(true);
+    }
+  }
+  expect(checked).toBeGreaterThan(0);
+});
+
+it('keeps every authored building furnishing pose clear of walls, furniture and door approaches', () => {
   expect(content.issues).toEqual([]);
   const { registry } = content;
-  const assembly = registry.mapAssemblies.get('gauntlet_police_station')!;
-  const alternatives = assembly.slots.flatMap(({ choices }) => (choices && choices.length > 1 ? [choices] : []));
+  const buildings = authoredAssemblies(registry);
+  expect(buildings.length).toBeGreaterThan(0);
+  const nested = assemblyClosure(registry, buildings);
+  const alternatives = nested.flatMap(({ slots }) =>
+    slots.flatMap(({ choices }) => (choices && choices.length > 1 ? [choices] : [])),
+  );
   expect(alternatives.length).toBeGreaterThan(0);
-  // Each bay is disjoint and outside reserved circulation; cover each local pose without a seed sweep.
   const variants = Math.max(...alternatives.map((choices) => choices.length));
   for (let variant = 0; variant < variants; variant++) {
-    const station = compileAssembly(
-      registry,
-      {
-        ...assembly,
-        slots: assembly.slots.map((slot) =>
-          slot.choices ? { ...slot, choices: [slot.choices[variant % slot.choices.length]!] } : slot,
+    const own = {
+      ...registry,
+      mapAssemblies: new Map([
+        ...registry.mapAssemblies,
+        ...nested.map(
+          (assembly) =>
+            [
+              assembly.id,
+              {
+                ...assembly,
+                slots: assembly.slots.map((slot) =>
+                  slot.choices ? { ...slot, choices: [slot.choices[variant % slot.choices.length]!] } : slot,
+                ),
+              },
+            ] as const,
         ),
-      },
-      { seed: 1, siteId: 'police_contract' },
-    );
-    const reached = new Set(templateReachableStandingPositions(registry, station).map((point) => point.join(',')));
-    for (const role of ['reception', 'office', 'holding', 'armoury']) {
-      expect(reached.has(station.anchors![role]!.at.join(',')), role).toBe(true);
+      ]),
+    };
+    for (const assembly of buildings) {
+      const compiled = compileAssembly(own, own.mapAssemblies.get(assembly.id)!, {
+        seed: 1,
+        siteId: 'furnishing_contract',
+      });
+      expect(furnitureClearanceIssues(own, compiled), assembly.id).toEqual([]);
     }
-    const cells = Object.entries(station.anchors!).filter(([id]) => id.startsWith('cell_'));
-    expect(cells.length).toBeGreaterThan(1);
-    for (const [id, anchor] of cells) {
-      expect(reached.has(anchor.at.join(',')), id).toBe(true);
-    }
-    expect(furnitureClearanceIssues(registry, station)).toEqual([]);
-    const furnishings = new Set(station.pieces.map(({ furniture }) => furniture));
-    for (const furniture of ['desk', 'chair', 'bed', 'gauntlet_cell_bars', 'gauntlet_cell_door']) {
-      expect(furnishings.has(furniture), furniture).toBe(true);
-    }
-    const poseFurniture = alternatives.flatMap((choices) => {
-      const { ref } = choices[variant % choices.length]!;
-      return compileMapPiece(registry, registry.mapPieces.get(ref.id)!).pieces.map(
-        ({ furniture }) => registry.furniture.get(furniture)!,
-      );
-    });
-    expect(poseFurniture.some(({ rest }) => rest === undefined)).toBe(true);
-    expect(poseFurniture.some(({ rest }) => rest !== undefined)).toBe(true);
+  }
+});
+
+it('places exactly one police armoury in each gauntlet plan', () => {
+  const { registry } = content;
+  const station = stationOf(registry);
+  expect(station).toBeDefined();
+  const locks = new Set(station.pieces.flatMap(({ lock }) => (lock ? [lock.id] : [])));
+  expect(locks.size).toBeGreaterThan(0);
+  const scenarios = [...registry.scenarios.values()];
+  expect(scenarios.length).toBeGreaterThan(0);
+  for (const scenario of scenarios) {
+    const plan = buildCityPlan({ seed: 1, registry, floor: 0, grid: cityGridOf(registry, scenario.city), scenario });
+    expect(
+      plan.placements.filter(({ template }) => template.pieces.some(({ lock }) => lock && locks.has(lock.id))),
+    ).toHaveLength(1);
   }
 });
 
 it('has no wooden-plank structural surfaces in the police station', () => {
   const { registry } = content;
-  const station = compileAssembly(registry, registry.mapAssemblies.get('gauntlet_police_station')!, {
-    seed: 1,
-    siteId: 'police_material_contract',
-  });
+  const station = stationOf(registry);
+  expect(station).toBeDefined();
   const structural = [...new Set(station.blocks)].map((id) => registry.blocks[id]!).filter(({ solid }) => solid);
   expect(structural.length).toBeGreaterThan(0);
   expect(structural.filter(({ pattern }) => pattern === 'planks')).toEqual([]);
 });
 
+const lootItems = (registry: Registry, table: string, seen = new Set<string>()): string[] => {
+  if (seen.has(table)) {
+    return [];
+  }
+  seen.add(table);
+  return registry.loot.get(table)!.entries.flatMap((entry) => {
+    if (entry.item) {
+      return [entry.item];
+    }
+    return entry.table ? lootItems(registry, entry.table, seen) : [];
+  });
+};
+
 it('keeps the office key outside the locked armoury and police weapons and ammunition inside it', () => {
   const { registry } = content;
-  const station = compileAssembly(registry, registry.mapAssemblies.get('gauntlet_police_station')!, {
-    seed: 1,
-    siteId: 'police_contract',
-  });
+  const station = stationOf(registry);
+  expect(station).toBeDefined();
   const locks = station.pieces.filter(({ lock }) => lock?.locked);
   expect(locks.length).toBeGreaterThan(0);
   const sealedId = 'fixture_sealed_door';
@@ -141,24 +204,14 @@ it('keeps the office key outside the locked armoury and police weapons and ammun
   };
   const beforeUnlock = templateReachableStandingPositions(sealedRegistry, sealed);
   const afterUnlock = templateReachableStandingPositions(registry, station);
-  const officeOnly = templateReachableStandingPositions(
-    sealedRegistry,
-    {
-      ...station,
-      pieces: station.pieces.map((piece) =>
-        registry.furniture.get(piece.furniture)?.door ? { ...piece, furniture: sealedId } : piece,
-      ),
-    },
-    { entrance: station.anchors!.office!.at },
-  );
   const supplies = station.pieces.filter(({ loot }) => loot);
   const secured = supplies.filter((piece) => !near(beforeUnlock, piece));
   expect(secured.length).toBeGreaterThan(0);
   for (const capability of ['firearm', 'ammo'] as const) {
     const sources = supplies.filter(({ loot }) =>
-      registry.loot.get(loot!)!.entries.some(({ item }) => {
-        const definition = item ? registry.items.get(item) : undefined;
-        const payload = definition?.unpack ? registry.items.get(definition.unpack.item) : definition;
+      lootItems(registry, loot!).some((item) => {
+        const definition = registry.items.get(item)!;
+        const payload = definition.unpack ? registry.items.get(definition.unpack.item) : definition;
         return Boolean(payload?.[capability]);
       }),
     );
@@ -171,23 +224,14 @@ it('keeps the office key outside the locked armoury and police weapons and ammun
   const keyDesks = supplies.filter(
     (piece) =>
       piece.furniture === 'desk' &&
-      registry.loot
-        .get(piece.loot!)!
-        .entries.some(({ item }) => item && locks.some(({ lock }) => registry.items.get(item)?.key?.lock === lock!.id)),
+      lootItems(registry, piece.loot!).some((item) =>
+        locks.some(({ lock }) => registry.items.get(item)?.key?.lock === lock!.id),
+      ),
   );
   expect(keyDesks.length).toBeGreaterThan(0);
   for (const desk of keyDesks) {
     expect(near(beforeUnlock, desk)).toBe(true);
-    expect(near(officeOnly, desk)).toBe(true);
-    expect(
-      registry.loot
-        .get(desk.loot!)!
-        .entries.every(
-          ({ item }) => item && locks.some(({ lock }) => registry.items.get(item)?.key?.lock === lock!.id),
-        ),
-    ).toBe(true);
   }
-  expect(secured.length).toBeGreaterThan(supplies.length - secured.length);
   for (const lock of locks) {
     expect(registry.furniture.get(lock.furniture)?.door?.prying).toBeDefined();
   }

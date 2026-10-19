@@ -91,62 +91,39 @@ it('keeps every start-storey container reachable from the roof through supported
 });
 
 it(
-  'honours the authored start cell and refuses a cell outside the street grid',
+  'refuses start reservations that overlap authored lots or leave the street grid',
   () => {
     const own = structuredClone(profile);
     const cell = plan.candidates[0]!;
     own.composition!.start.cell = [...cell];
     expect(scenarioStartIssues(registry, own)).toEqual([]);
-    const moved = buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own });
-    expect(moved.composition!.start.placement.origin).not.toEqual(start.placement.origin);
-    expect(moved.candidates).not.toContainEqual(cell);
-    expect(scenarioCertificate(new CitySite(9, registry, scale, moved)).issues).toEqual([]);
+    expect(() => buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own })).toThrow(
+      'overlaps reserved building',
+    );
     own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
     expect(scenarioStartIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
   },
   GAUNTLET_SITE_MS,
 );
 
-// Each ring case validates the whole scenario twice, which costs less than a site's build.
-const roofRings = [profile.city.ring, undefined];
-it(
-  'refuses a start roof that can clear the wall, with or without a ring',
-  () => {
+it('refuses a start overtopped by a fixed or pooled authored building', () => {
+  for (const pooled of [false, true]) {
     const own = structuredClone(profile);
-    const template = structuredClone(registry.mapAssemblies.get(own.composition!.start.template)!);
-    template.id = 'fixture_tall_start';
-    template.size[1] = 1000;
-    const fixtures = { ...registry, mapAssemblies: new Map(registry.mapAssemblies).set(template.id, template) };
-    own.composition!.start.template = template.id;
-    own.composition!.start.cell = [-own.city.blocksX, -own.city.blocksZ];
-    for (const ring of roofRings) {
-      own.city.ring = ring;
-      own.composition!.start.cell = [-own.city.blocksX, -own.city.blocksZ];
-      expect(scenarioPlanIssues(fixtures, own).some(([path]) => path === '.composition.start.template')).toBe(true);
-      template.size[1] = registry.mapAssemblies.get(profile.composition!.start.template)!.size[1];
-      own.composition!.start.cell = [...profile.composition!.start.cell];
-      expect(scenarioPlanIssues(fixtures, own).filter(([path]) => path.startsWith('.composition.start'))).toEqual([]);
-      template.size[1] = 1000;
-    }
-  },
-  roofRings.length * GAUNTLET_SITE_MS,
-);
-
-it('refuses a start overtopped by a building in either city pool', () => {
-  for (const ring of [false, true]) {
-    const own = structuredClone(profile);
-    const poolId = ring ? own.city.ring!.pool : own.city.pool;
-    const pool = structuredClone(registry.mapPools.get(poolId)!);
+    const pool = structuredClone(registry.mapPools.get(own.city.pool)!);
     const { ref: buildingRef } = pool.choices.find(({ ref }) => ref.kind === 'assembly')!;
     const building = structuredClone(registry.mapAssemblies.get(buildingRef.id)!);
     building.id = 'fixture_overtopping_building';
     pool.id = 'fixture_skyline';
     pool.choices = [{ ref: { kind: 'assembly', id: building.id }, weight: 1 }];
-    if (ring) {
-      own.city.ring!.pool = pool.id;
-    } else {
-      own.city.pool = pool.id;
-    }
+    own.city.lots = [
+      {
+        id: 'fixture_skyline_lot',
+        position: [0, 0],
+        size: [18, 16],
+        turn: 0,
+        source: pooled ? { kind: 'pool', id: pool.id } : { kind: 'assembly', id: building.id },
+      },
+    ];
     const fixtures = {
       ...registry,
       mapAssemblies: new Map(registry.mapAssemblies).set(building.id, building),
@@ -236,23 +213,7 @@ it('roots public leads at reached roof exits even when the old street spawn is s
     { min: [x - 1, y, z - 2], max: [x + 1, y + 5, z - 1], block },
     { min: [x - 1, y, z + 1], max: [x + 1, y + 5, z + 2], block },
   ].map((wall) => ({ ...wall, min: wall.min as Vec3, max: wall.max as Vec3 }));
-  const oldLead = plan.composition!.leads[0]!;
-  const movedLead = {
-    ...oldLead,
-    origin: [oldLead.origin[0], oldLead.origin[1], oldLead.origin[2] + grid.street * 2] as Vec3,
-  };
-  const ownPlan = {
-    ...plan,
-    placements: plan.placements.map((placement) => (placement === oldLead ? movedLead : placement)),
-    composition: {
-      ...plan.composition!,
-      leads: plan.composition!.leads.map((placement) => (placement === oldLead ? movedLead : placement)),
-      lootSources: plan.composition!.lootSources.map((source) =>
-        source.placement === oldLead ? { ...source, placement: movedLead } : source,
-      ),
-    },
-  };
-  const result = scenarioCertificate(new ObstructedStartSite(walls, ownPlan));
+  const result = scenarioCertificate(new ObstructedStartSite(walls, plan));
   expect(result.space.standing([x, y, z])).toBe(true);
   expect(result.space.path([x, y, z], start.descents[0]!.lower)).toBeUndefined();
   expect(result.issues).toEqual([]);

@@ -177,11 +177,21 @@ export class ScenarioRouteSpace {
     }
     const service = options.placement ?? this.site.plan.service!;
     const [width, depth] = footprint(service);
+    const authoredSurface =
+      !options.placement && from[1] === this.site.plan.floor + 1 && (this.site.plan.lots?.length ?? 0) > 0;
+    const bounds = authoredSurface
+      ? this.site.bounds
+      : {
+          x0: Math.min(from[0], to[0], service.origin[0] - 2),
+          x1: Math.max(from[0], to[0], service.origin[0] + width + 2),
+          z0: Math.min(from[2], to[2], service.origin[2] - 2),
+          z1: Math.max(from[2], to[2], service.origin[2] + depth + 2),
+        };
     const within = ([x, y, z]: Vec3) =>
-      x >= Math.min(from[0], to[0], service.origin[0] - 2) &&
-      x <= Math.max(from[0], to[0], service.origin[0] + width + 2) &&
-      z >= Math.min(from[2], to[2], service.origin[2] - 2) &&
-      z <= Math.max(from[2], to[2], service.origin[2] + depth + 2) &&
+      x >= bounds.x0 &&
+      x <= bounds.x1 &&
+      z >= bounds.z0 &&
+      z <= bounds.z1 &&
       (!options.steps || (y >= Math.min(from[1], to[1]) && y <= Math.max(from[1], to[1])));
     return this.search(from, to, within, options.steps ?? false);
   }
