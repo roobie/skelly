@@ -1421,6 +1421,9 @@ export const createSession = (options: SessionOptions) => {
     if (nearDiscoveryBox(body.pos, discovery.building, 2 / s)) {
       scenarioRun.discover('buildingArrival', sim.calendar);
     }
+    if (discovery.ports.some((box) => nearDiscoveryBox(body.pos, box, 0))) {
+      scenarioRun.discover('sewerTravel', sim.calendar);
+    }
     observeEntry(scenarioRun, discovery, climbing, before);
   };
 

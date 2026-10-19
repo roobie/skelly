@@ -84,6 +84,7 @@ const fixture = (
       landmarks: [],
       building: { min: [7, 1, 5], max: [10, 5, 9] },
       entrance: { min: [7, 1, 5], max: [10, 5, 9] },
+      ports: [],
     },
     world,
     entities,

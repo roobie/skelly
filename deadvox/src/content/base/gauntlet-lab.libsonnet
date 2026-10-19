@@ -6,9 +6,11 @@ local context = { usage: ['Industrial', 'Medical'], tier: 'Tier1' };
 local slot = function(id, kind, ref, at, size) { id: id, at: at, size: size, turn: 0, choices: [{ ref: { kind: kind, id: ref }, weight: 1 }] };
 local room = function(id, shell, first, second) equipment.room('gauntlet_lab_' + id, 'gauntlet_lab_shell' + shell, first, second);
 local placedRoom = function(id, ref, at) slot(id, 'assembly', 'gauntlet_lab_' + ref, at, [18, 8, 14]);
+// The entry storey takes the hatch's ladder through its south cross corridor and the sewer port through its south wall.
+local entrySlots = { cross_south: 'gauntlet_lab_entry_cross', south: 'gauntlet_lab_south_port' };
 local storey = function(id, rooms, entry=false) {
   id: 'gauntlet_lab_storey_' + id, size: [72, 8, 64], lootContext: context,
-  slots: (if entry then [if s.id == 'cross_south' then s + { choices: [{ ref: { kind: 'piece', id: 'gauntlet_lab_entry_cross' }, weight: 1 }] } else s for s in circulation.slots] else circulation.slots) + rooms + threat.slots(id, rooms),
+  slots: (if entry then [if std.objectHas(entrySlots, s.id) then s + { choices: [{ ref: { kind: 'piece', id: entrySlots[s.id] }, weight: 1 }] } else s for s in circulation.slots] else circulation.slots) + rooms + threat.slots(id, rooms),
   joins: [], ports: [], anchors: {},
 };
 local cabinetShape = [
@@ -18,6 +20,7 @@ local cabinetShape = [
 {
   width: 72, depth: 64, ground: 40, surfaceOffset: 24,
   entry: { hatch: [42, 40, 39], ladder: [43, 33, 39] },
+  port: circulation.port,
   anchors: {
     storeys: [
       { id: 'intake', standing: [35, 33, 29] }, { id: 'research', standing: [35, 25, 29] },

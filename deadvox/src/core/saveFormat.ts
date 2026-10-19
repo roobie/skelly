@@ -729,6 +729,7 @@ const scenarioRun = nullable(
       hatchEncounter: nullable(finite),
       hatchOpened: nullable(finite),
       entranceTravel: nullable(finite),
+      sewerTravel: nullable(finite),
     }),
   }),
 );

@@ -116,6 +116,43 @@ const landingConnected = (
   });
 };
 
+const onEdge = (template: CompiledTemplate, [x, , z]: Vec3): boolean => {
+  const [sx, , sz] = template.size;
+  const [cx, cz] = [Math.floor(x), Math.floor(z)];
+  return cx === 0 || cz === 0 || cx === sx - 1 || cz === sz - 1;
+};
+
+/** Each underground port must open through the service shell into circulation the portal's lower landing reaches. */
+export const undergroundPortIssues = (
+  registry: Registry,
+  scenario: ScenarioDef,
+  template: CompiledTemplate,
+): [string, string][] => {
+  const issues: [string, string][] = [];
+  const space = templateBodySpace(registry, template);
+  const { lower } = scenario.portal;
+  for (const [index, element] of (scenario.city.underground ?? []).entries()) {
+    for (const [portIndex, { threshold, inside }] of element.ports.entries()) {
+      const path = `.city.underground[${index}].ports[${portIndex}]`;
+      if (!(onEdge(template, threshold) && space.standing(threshold) && sweep(inside, threshold, space.standing))) {
+        issues.push([path, 'port needs a body-clear threshold through the service shell']);
+        continue;
+      }
+      const reached = templateReachableStandingPositions(registry, template, {
+        entrance: lower,
+        within: (position) => position[1] === lower[1],
+      });
+      if (
+        inside[1] !== lower[1] ||
+        !reached.some((position) => position.every((value, axis) => value === inside[axis]))
+      ) {
+        issues.push([path, "port must open into the portal storey's circulation"]);
+      }
+    }
+  }
+  return issues;
+};
+
 export const scenarioPortalIssues = (
   registry: Registry,
   scenario: ScenarioDef,
