@@ -5,7 +5,7 @@ import type { Registry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Rolled } from '../src/core/loot.ts';
-import { magazineFits, magazineWellCalibre } from '../src/core/magazine.ts';
+import { magazineFits, magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { HandlingRange } from '../src/core/range.ts';
 import { furnitureDistance, reachTuning } from '../src/core/reach.ts';
@@ -16,7 +16,7 @@ import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHand
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../src/game/testHouse.ts';
-import { isTestHouseRangeStockItem } from '../src/game/testHouseRange.ts';
+import { isTestHouseRangeStockItem, testHouseRangeSupply } from '../src/game/testHouseRange.ts';
 import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { content as BUNDLED_CONTENT, makeConfig } from './fixtures/startupContent.ts';
@@ -47,6 +47,39 @@ const withRangeStockFixtures = (): { registry: Registry; firearm: string; ammo: 
   items.set(ammo, { ...sourceAmmo, id: ammo, ammo: { ...sourceAmmo.ammo, calibre } });
   items.set(box, { ...sourceBox, id: box, unpack: { ...sourceBox.unpack, item: ammo } });
   return { registry: { ...base, items, models }, firearm, ammo, box };
+};
+
+const withMagazineFixtures = (): { registry: Registry; firearm: string; fitting: string; nonFitting: string } => {
+  const base = BUNDLED_CONTENT.registry;
+  const items = new Map(base.items);
+  const models = new Map(base.models);
+  const sourceFirearm = [...items.values()].find(({ id }) => magazineWellCalibre(base, id));
+  const sourceMagazine = [...items.values()].find(({ id }) => magazineSpec(base, id));
+  const firearmModel = sourceFirearm?.model === undefined ? undefined : models.get(sourceFirearm.model);
+  const magazineModel = sourceMagazine?.model === undefined ? undefined : models.get(sourceMagazine.model);
+  if (!(sourceFirearm && sourceMagazine && firearmModel && magazineModel)) {
+    throw new Error('magazine fixture needs a magazine-fed firearm and a magazine');
+  }
+
+  const calibre = 'range-test-magazine-calibre';
+  const firearm = 'range_test_magazine_firearm';
+  const fitting = 'range_test_fitting_magazine';
+  const nonFitting = 'range_test_non_fitting_magazine';
+  models.set('range_test_magazine_firearm_model', {
+    ...firearmModel,
+    id: 'range_test_magazine_firearm_model',
+    calibre,
+  });
+  models.set('range_test_fitting_model', { ...magazineModel, id: 'range_test_fitting_model', calibre });
+  models.set('range_test_non_fitting_model', {
+    ...magazineModel,
+    id: 'range_test_non_fitting_model',
+    calibre: 'range-test-unused-calibre',
+  });
+  items.set(firearm, { ...sourceFirearm, id: firearm, model: 'range_test_magazine_firearm_model' });
+  items.set(fitting, { ...sourceMagazine, id: fitting, model: 'range_test_fitting_model' });
+  items.set(nonFitting, { ...sourceMagazine, id: nonFitting, model: 'range_test_non_fitting_model' });
+  return { registry: { ...base, items, models }, firearm, fitting, nonFitting };
 };
 
 const stockedTypes = (registry: Registry, stock: readonly Rolled[]): Set<string> => {
@@ -338,21 +371,15 @@ describe('the debug test-house range', () => {
     }
   });
 
-  it('stocks a fitting magazine for every magazine-fed firearm, so each one can be loaded at the range', () => {
-    const config = makeConfig(13, 64);
-    config.site = 'testHouse';
-    config.debug = true;
-    const { registry } = BUNDLED_CONTENT;
-    const site = buildDebugTestHouseSite(config, registry, testHouseScene(config, registry)) as DebugTestHouseSite;
-    const stock = rangeFurnitureFor(site).find(({ spec }) => spec.type === 'range_rack')!.loot;
-    const stored = [...stockedTypes(registry, stock)];
-    const magazineFed = [...registry.items.values()].filter(({ id }) => magazineWellCalibre(registry, id));
-    expect(magazineFed).not.toHaveLength(0);
-    for (const firearm of magazineFed) {
-      expect(
-        stored.some((type) => magazineFits(registry, firearm.id, type)),
-        firearm.id,
-      ).toBe(true);
-    }
+  it('stocks the magazines that fit a stocked firearm and leaves out those that fit none', () => {
+    const { registry, firearm, fitting, nonFitting } = withMagazineFixtures();
+    expect(magazineFits(registry, firearm, fitting)).toBe(true);
+    expect([...registry.items.keys()].some((id) => magazineFits(registry, id, nonFitting))).toBe(false);
+    expect(isTestHouseRangeStockItem(registry.items.get(fitting)!)).toBe(false);
+
+    const supplied = new Set(testHouseRangeSupply(registry).map(({ item }) => item));
+    expect(supplied.has(firearm)).toBe(true);
+    expect(supplied.has(fitting)).toBe(true);
+    expect(supplied.has(nonFitting)).toBe(false);
   });
 });
