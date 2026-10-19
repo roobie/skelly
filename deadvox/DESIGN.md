@@ -44,7 +44,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
-  - you're changing military progression, loot economy admission, ground supply or roll-once persistence, including debug overlays
+  - you're changing military progression, loot economy admission or per-unit loot planning, ground supply or roll-once persistence, including debug overlays
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
   - you're changing when a running game warns before page exit relative to its last save
@@ -757,18 +757,39 @@ contents from firearm and ammunition compatibility. The range layout is content,
 ### Loot
 
 Choose every world-supply item through one selector so source-specific rules cannot
-bypass admission and a later budget has one candidate-filtering boundary. Tables
+bypass admission and a unit's floors and caps have one candidate-filtering boundary. Tables
 own relative weights and variants, not geography; fixed progression stock uses the
 same admission without becoming optional. Source-point identity owns the random
 stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
-Placement follows a DayZ-style central economy: usage tags and tiers decide which items
-a source admits, so what a place holds matches what it is, and budgets are to bound how
-much of each type the world holds (#699). See `src/core/loot.ts`, `economyEligible`.
+Usage tags and tiers decide which items a source admits, so what a place holds matches
+what it is. See `src/core/loot.ts`, `economyEligible`.
 
-The one exception to the DayZ model is item lifetime. By default the economy places a
-place's loot once, when the place is first generated, and never restocks it. What a
+Loot never depends on the order in which places are visited. There is no map-wide
+running count of what has spawned, because such a count would make one police station's
+stock depend on which stations the player reached first. A central economy that counts
+the whole world and restocks toward targets serves many players on one long-running
+shared server; this game is not that, and multiplayer is far enough off that it does not
+shape this rule.
+
+The economy is instead to be planned per unit: a place with its own loot plan, such as a
+farm, a town block, an air base or a shed in the woods. The unit's name is open on #699.
+A unit settles its whole plan when its first column generates, so planning is eager
+inside the unit and lazy across the map. The plan sets floors ("this unit has at least
+one pump shotgun") and caps ("at most one per police station"), and chooses which points
+hold them. A unit's spawn points come from its layout without generating its columns,
+so what bounds a unit's size is how many points its plan must weigh in a short pause,
+not its area. See `src/core/loot.ts`, `lootPointsByColumn`.
+
+Map-wide rarity is per-point odds set in content, not a count: the odds give the
+expected total, and scarcity is statistical. Tier gradients are a function of position,
+such as distance from the spawn area, so they need no shared state. Required stock sits
+outside every floor and cap, so story and promised stock are never squeezed out. Items
+that come together, such as a pump shotgun and shells nearby, and scenario multipliers
+on odds are open on #699.
+
+Loot is placed once, when its place is first generated, and never restocked. What a
 player takes stays gone, so scarcity holds, a searched place stays spent instead of
 becoming a farm, and a spent place pushes the player on to new ones. Untouched items
 never despawn either: despawning only makes sense as the other half of restocking, so
@@ -792,9 +813,9 @@ gateways and route poses stay free because finding loot must not compromise a ce
 crossing. See `src/core/templateSpatial.ts`, `templateGroundLootIssues`, and
 `src/core/reach.ts`, `pileInReach`.
 
-Items carry no record of where they were born. A budget is to count items by type and
-by where they are (map, cargo, player, hoard), which needs no birthplace, and keeping one
-only stopped equal items from stacking. Debug stock is kept out of the world economy by
+Items carry no record of where they were born. Floors, caps and odds act when loot is
+placed, so no rule needs a birthplace, and keeping one only stopped equal items from
+stacking. Debug stock is kept out of the world economy by
 the scene that supplies it, not by a mark on the item. See `src/core/items.ts`,
 `stackRoom`, and `src/core/loot.ts`, `LootSpawnPoint`.
 
