@@ -819,7 +819,9 @@ plan must weigh in a short pause, not its area. See `src/core/loot.ts`, `lootPoi
 Map-wide rarity is per-point odds set in content, not a count: the odds give the
 expected total, and scarcity is statistical. Tier gradients are a function of position,
 such as distance from the spawn area, so they need no shared state. Required stock sits
-outside every cap, so story and promised stock are never squeezed out.
+outside every cap, so story and promised stock are never squeezed out. It does count
+toward a floor for its own type: a floor promises at least that much of a type, and a
+required item of that type already keeps the promise, so the plan rolls no duplicate.
 
 Items that come together, such as a pump shotgun and shells nearby, form an ItemSet: an
 anchor and its companions. Each ItemSet names where its companions may land, because the
