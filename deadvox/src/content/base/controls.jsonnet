@@ -1,4 +1,4 @@
-// Default keys per action id (`CONTROLS.md`, "Default keys"). Actions, contexts, gestures and gates
+// Default keys per action id (`CONTROLS.md`, "Ownership"). Actions, contexts, gestures and gates
 // stay in code so replay stays stable; a player's stored rebind overrides these by action id.
 local key(code) = { code: code };
 local shifted(code) = { code: code, modifier: 'shift' };
