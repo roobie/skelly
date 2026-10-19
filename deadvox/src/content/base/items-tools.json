@@ -516,7 +516,7 @@
         "cooldownSimSeconds": 0.80000000000000004,
         "damage": 8,
         "impulse": 4,
-        "motion": "thrust",
+        "motion": "swing",
         "reach": 0.10000000000000001,
         "stamina": 4,
         "windupCapSimSeconds": 0.25
