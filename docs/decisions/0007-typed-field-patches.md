@@ -50,14 +50,13 @@ that mod, directly or transitively, and declares the override. Setting a scalar,
 replacing a list and replacing a whole definition are overrides. Two mods with no
 dependency path between them must not override the same value or object: the load must
 fail closed with a conflict message naming the target, both mods and the fix, a check d476
-builds. List additions
-are not overrides: they commute, so two mods adding to one list both keep their
-additions, in pack order, and never conflict. Load order alone never decides, because the
-order in which a player enables mods says nothing about which one meant to win. A
-dependency does: the depending mod was written against the other, so its override is a
-choice made with the other's value in view, and it always loads after it. This is the
-rule for competing skill providers in `deadvox/docs/pack-split.md`, "Skill providers",
-so one rule covers every place where two mods claim one thing.
+builds. List additions are not overrides: they commute, so two mods adding to one list
+both keep their additions, in pack order, and never conflict. Load order alone never
+decides, because the order in which a player enables mods says nothing about which one
+meant to win. The dependency makes an override deliberate: the overriding mod names what
+it takes over and always loads after the owner. This is the rule for competing skill
+providers in `deadvox/docs/pack-split.md`, "Skill providers", so one rule covers every
+place where two mods claim one thing.
 
 ## Rejected
 
@@ -75,9 +74,9 @@ Which item builds the merge step for field patches. The conflict check is d476's
 admitting an override needs the pack dependencies of #637 round 1; see
 `deadvox/docs/pack-split.md`, "Round split". Until d476 lands,
 `deadvox/src/core/content.ts`, `merge` lets any later pack replace an entry whole, so
-"Conflicts" binds mod authors without the loader enforcing it. Once it
-lands, a whole-entry mod that replaces another pack's entry loads only if it depends on
-that pack and declares the override. Nothing needs migrating before v1.0 beta.
+"Conflicts" binds mod authors without the loader enforcing it. Once d476 lands, a
+whole-entry mod that replaces another pack's entry loads only if it depends on that pack
+and declares the override. Nothing needs migrating before v1.0 beta.
 
 ## Consequences
 
