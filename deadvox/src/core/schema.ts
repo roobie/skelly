@@ -2151,6 +2151,7 @@ const SkillSchema = pipe(
             joltPerAbsorbedPoint: NonNegative,
             joltRealSeconds: NonNegative,
             deflectRiseMetres: NonNegative,
+            deflectRiseFloor: Fraction,
             deflectRealSeconds: NonNegative,
           }),
         ),

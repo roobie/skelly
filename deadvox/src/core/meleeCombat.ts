@@ -14,6 +14,8 @@ export interface MeleeCombatTuning {
   readonly joltRealSeconds: number;
   /** How far the arms rise, in metres, on a block that absorbs enough to reach full jolt strength. */
   readonly deflectRiseMetres: number;
+  /** Share of that rise any block that absorbs something shows, so an ordinary block still reads on screen. */
+  readonly deflectRiseFloor: number;
   readonly deflectRealSeconds: number;
 }
 
@@ -104,7 +106,10 @@ export const blockJolt = (absorbed: number, tuning: MeleeCombatTuning): BlockJol
   return {
     strength,
     realSeconds: tuning.joltRealSeconds,
-    rise: strength * tuning.deflectRiseMetres,
+    rise:
+      strength > 0
+        ? tuning.deflectRiseMetres * (tuning.deflectRiseFloor + (1 - tuning.deflectRiseFloor) * strength)
+        : 0,
     riseRealSeconds: tuning.deflectRealSeconds,
   };
 };

@@ -15,6 +15,7 @@ const tuning: MeleeCombatTuning = {
   joltPerAbsorbedPoint: 0.1,
   joltRealSeconds: 0.08,
   deflectRiseMetres: 0.04,
+  deflectRiseFloor: 0.5,
   deflectRealSeconds: 0.25,
 };
 const WINDED_BELOW = 10;
@@ -66,5 +67,12 @@ describe('melee combat blocking', () => {
   it('jolts harder for a bigger absorbed blow, never past full strength', () => {
     expect(blockJolt(4, tuning).strength).toBeGreaterThan(blockJolt(2, tuning).strength);
     expect(blockJolt(1e6, tuning).strength).toBe(1);
+  });
+
+  it('lifts the arms by at least the floor share of the full rise for any block that absorbs something', () => {
+    const light = blockJolt(0.01, tuning);
+    expect(light.rise).toBeGreaterThanOrEqual(tuning.deflectRiseMetres * tuning.deflectRiseFloor);
+    expect(blockJolt(1e6, tuning).rise).toBeCloseTo(tuning.deflectRiseMetres);
+    expect(blockJolt(0, tuning).rise).toBe(0);
   });
 });
