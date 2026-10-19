@@ -3,8 +3,8 @@
 
 import type * as Three from 'three';
 import { resolveAppearance, solidColor, srgbToHex } from '../core/appearance.ts';
-import type { AppearanceContext, Palette } from '../core/design.ts';
 import { type DisplayItem, displayItems } from '../core/display.ts';
+import type { AppearanceContext, Palette } from '../core/exportTypes.ts';
 import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';

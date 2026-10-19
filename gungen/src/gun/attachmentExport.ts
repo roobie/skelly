@@ -1,4 +1,4 @@
-import type { GlbAssetIdentity, GlbExportError } from '@skelly/engine/core/design.ts';
+import type { GlbAssetIdentity, GlbExportError } from '@skelly/engine/core/exportTypes.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, PartAppearance, PartFamily } from '@skelly/engine/core/schema.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';

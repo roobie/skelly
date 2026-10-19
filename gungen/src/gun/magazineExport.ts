@@ -3,7 +3,7 @@ import type {
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
-} from '@skelly/engine/core/design.ts';
+} from '@skelly/engine/core/exportTypes.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, PartInstance } from '@skelly/engine/core/schema.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';

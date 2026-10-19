@@ -1,5 +1,5 @@
 import { type ResolvedAppearance, resolveAppearance as resolveCoreAppearance } from '@skelly/engine/core/appearance.ts';
-import type { Palette, SrgbColor } from '@skelly/engine/core/design.ts';
+import type { Palette, SrgbColor } from '@skelly/engine/core/exportTypes.ts';
 import {
   ANTI_MATERIEL_FAMILY_COLORS,
   ANTI_MATERIEL_FINISH,

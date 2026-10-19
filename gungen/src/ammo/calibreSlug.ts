@@ -1,4 +1,4 @@
-import type { GlbAssetIdentity } from '@skelly/engine/core/design.ts';
+import type { GlbAssetIdentity } from '@skelly/engine/core/exportTypes.ts';
 
 /**
  * Convert a source cartridge id to the restricted deadvox model/file slug.

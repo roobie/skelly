@@ -1,23 +1,25 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { AnchorFrame } from '@skelly/engine/core/anchors.ts';
 import type {
-  AnchorFrame,
   Design,
   DesignIssue,
   DesignLoadResult,
   DesignLocks,
   EffectiveSuggestionLocks,
+  NonEmptyReadonlyArray,
+  Suggest,
+  SuggestionResult,
+} from '@skelly/engine/core/design.ts';
+import type {
   ExportGlb,
   ExportPortMetadata,
   GlbExportInput,
   GlbExportResult,
-  NonEmptyReadonlyArray,
   Palette,
   SrgbColor,
-  Suggest,
-  SuggestionResult,
-} from '@skelly/engine/core/design.ts';
+} from '@skelly/engine/core/exportTypes.ts';
 import type { Domain, PartInstance, Resolved } from '@skelly/engine/core/schema.ts';
 import type { Template } from '@skelly/engine/core/template.ts';
 import { LanguageVariant, SyntaxKind } from 'typescript/unstable/ast';

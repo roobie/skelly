@@ -1,4 +1,4 @@
-import type { GlbAssetIdentity, Palette } from '@skelly/engine/core/design.ts';
+import type { GlbAssetIdentity, Palette } from '@skelly/engine/core/exportTypes.ts';
 import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
 import { exportGlb } from '@skelly/engine/core/glb.ts';
 import { type ExtrusionAxis, extrusionPoint, IDENTITY } from '@skelly/engine/core/math.ts';

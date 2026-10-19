@@ -8,6 +8,7 @@
 // Vertices are in the part's local frame times the domain's `units.metresPerUnit`; the node transform supplies the placement.
 
 import { resolveAppearance } from './appearance.ts';
+import { type DisplayItem, displayItems } from './display.ts';
 import type {
   ExportGlb,
   ExportPortMetadata,
@@ -16,8 +17,7 @@ import type {
   Palette,
   PartPortId,
   SrgbColor,
-} from './design.ts';
-import { type DisplayItem, displayItems } from './display.ts';
+} from './exportTypes.ts';
 import { boundsOfPoints } from './geometry.ts';
 import { compose, type Mat3, type Transform, type Vec3 } from './math.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from './mesh.ts';

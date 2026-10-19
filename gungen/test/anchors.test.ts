@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { resolveAnchors } from '@skelly/engine/core/anchors.ts';
-import type { AnchorFrame } from '@skelly/engine/core/design.ts';
+import { type AnchorFrame, resolveAnchors } from '@skelly/engine/core/anchors.ts';
 import { applyDir, applyPoint, cross, dot, length, type Vec3 } from '@skelly/engine/core/math.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, PartDef, Resolved } from '@skelly/engine/core/schema.ts';

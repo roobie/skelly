@@ -1,4 +1,4 @@
-import type { AppearanceContext, GlbAssetIdentity } from '@skelly/engine/core/design.ts';
+import type { AppearanceContext, GlbAssetIdentity } from '@skelly/engine/core/exportTypes.ts';
 import { parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
 import type { Assembly } from '@skelly/engine/core/schema.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';

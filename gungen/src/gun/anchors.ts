@@ -1,5 +1,10 @@
-import { resolveAnchors } from '@skelly/engine/core/anchors.ts';
-import type { AnchorFrame, NamedAnchors, PartAnchorDeclaration, ResolvedAnchors } from '@skelly/engine/core/design.ts';
+import {
+  type AnchorFrame,
+  type NamedAnchors,
+  type PartAnchorDeclaration,
+  type ResolvedAnchors,
+  resolveAnchors,
+} from '@skelly/engine/core/anchors.ts';
 import type { Resolved } from '@skelly/engine/core/schema.ts';
 
 /** Gun-domain names; core treats these as caller-supplied strings. */

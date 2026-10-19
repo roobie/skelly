@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { GlbAssetIdentity, Palette } from '@skelly/engine/core/design.ts';
 import { displayItems as selectDisplayItems } from '@skelly/engine/core/display.ts';
+import type { GlbAssetIdentity, Palette } from '@skelly/engine/core/exportTypes.ts';
 import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '@skelly/engine/core/geometry.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '@skelly/engine/core/glb.ts';
 import {

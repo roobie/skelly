@@ -1,7 +1,7 @@
 // Frames derive from built geometry, following parameter changes without duplicating builder constants.
 // Declarations are keyed by registry key; a grip's frame follows its own leaned axes after placement.
 
-import type { AnchorFrame } from '@skelly/engine/core/design.ts';
+import type { AnchorFrame } from '@skelly/engine/core/anchors.ts';
 import { add, extrusionPoint, type Vec3 } from '@skelly/engine/core/math.ts';
 import type { PartDef } from '@skelly/engine/core/schema.ts';
 import type { RevolvedSolid, Solid } from '@skelly/engine/core/solid.ts';

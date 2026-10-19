@@ -1,4 +1,4 @@
-import type { AppearanceContext, GlbAssetIdentity, GlbExportError, Palette } from '@skelly/engine/core/design.ts';
+import type { AppearanceContext, GlbAssetIdentity, GlbExportError, Palette } from '@skelly/engine/core/exportTypes.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/core/schema.ts';
 import type { RevolvedSolid, Solid } from '@skelly/engine/core/solid.ts';

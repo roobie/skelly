@@ -1,4 +1,4 @@
-import type { GlbExportInput, GlbExportResult } from '@skelly/engine/core/design.ts';
+import type { GlbExportInput, GlbExportResult } from '@skelly/engine/core/exportTypes.ts';
 import { exportGlb } from '@skelly/engine/core/glb.ts';
 
 const GUN_GENERATOR = 'skelly gungen glb export';

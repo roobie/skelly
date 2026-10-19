@@ -25,8 +25,7 @@ typecheck and suite pass unchanged, and a check fails any import that runs upwar
 
 ## Known obstacles
 
-- `design` mixes persistence, anchors, palette and export types, so it has to be split,
-  not moved.
+- Files that mix layers must be split before they move; none remain after the `design` split.
 
 ## Verifying no behavior change
 
@@ -53,9 +52,9 @@ to be new.
   `Domain`; `resolve` imports them and `schema` imports nothing from `resolve`.
 - [x] Split the solid types out of `schema`: `engine/src/core/solid.ts`, `BoxSolid`, holds them
   and `DomainUnits`; `schema` imports from it, never the reverse.
-- [ ] Split `design` along the layers above: persistence and suggest types stay in `design`,
-  the anchor types go to `anchors`, and the palette and GLB export types go to a new
-  `exportTypes` module above the engine.
+- [x] Split `design` along the layers above: persistence and suggest types stay in `design`,
+  the anchor types live in `anchors`, and the palette and GLB export types live in
+  `engine/src/core/exportTypes.ts`, `GlbExportInput`, above the engine.
 - [ ] Move the files into layer folders and repoint every import, including gungen's.
 - [ ] Add the check that fails an upward import, and run it in CI.
 - [ ] Run gungen's typecheck, unit suite and `validate`; they must pass unchanged.
