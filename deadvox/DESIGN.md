@@ -584,10 +584,12 @@ in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `src/core/ladders.ts`, `ladderOutward`.
 
 Lab threat grows with depth so descending feels like going deeper into a failing
-facility, not repeating one room. Each storey authors weighted marker rows, and each
-room kind sets how many of its marker cells are live; breach and quarantine rooms are
-densest. Crawlers and runners appear only below the containment storey. The rows are
-slot choices, so a mod retunes a storey by overriding data. The amalgam body is taller
+facility, not repeating one room. Each level, or grid storey until its rebuild,
+authors weighted marker rows, so threat
+follows depth and not a level's function, and each room kind sets how many of its
+marker cells are live; breach and quarantine rooms are densest. The faster types
+appear only deep down. The rows are slot choices, so a mod retunes a level by
+overriding data. The amalgam body is taller
 than a storey, so the bottom storey holds it in a double-height chamber: the room piece
 is one storey, and a cap piece in the storey above owns the slab and air over it, with
 solid wall and cap around so nothing walks over the opening. The amalgam row appears
@@ -667,14 +669,41 @@ freezes them so Continue cannot rewrite the journey. See
 `src/core/scenarioDiscovery.ts`, `discoveryForPlan`; `src/core/scenarioRun.ts`,
 `ScenarioRun`; and `src/game/session.ts`, `createSession`.
 
-The lab is a multi-storey subterranean complex whose danger rises with depth,
-with the nuclear objective at the bottom. A storey contains several distinct
+The lab is four levels below the surface hatch, built by d490's rounds, whose danger rises with depth, with
+the nuclear objective at the bottom. Four levels give each of the drawn plan's
+functions its own level: entry and security, administration, research and special
+research. The plan is inspiration, not a blueprint: its functions and mood guide
+each level, the layout follows the rules here, and how closely a level follows the
+drawing is decided at that level's review. A level contains several distinct
 special rooms, not one stop on a ladder shaft. Looped circulation and separated,
 offset descents make exploration and descent route choices rather than a single
-corridor followed by a continuous climb. Adjacent storeys share alternate links
-so returning need not retrace the approach.
+corridor followed by a continuous climb.
 
-Author room assignments, storey placement and offset links as curated composition,
+A stair is each level's main way down, because a building's descent should read as
+one. The ladder shafts stay as the alternate links between adjacent levels, so
+returning need not retrace the approach. Whether threat uses the shafts, which
+decides whether the back route is safer or only different, is open on d490-3's
+cards.
+
+Each level's way down is sealed, as in DOOM: the first door is open, and each level
+needs a keycard found on it. The keycard lies on the level's open side, so its
+acquisition never depends on the door it opens, as the initial-access rule above
+requires. A missing keycard would block the run, so every seal's keycard must be
+proven present. Where a keycard lies and whether a crowbar can force a keycard door
+are open on d490-3's cards. See `src/content/base/locks.libsonnet` and
+`src/core/prying.ts`, `pryPlan`.
+
+Each level is a full rebuild, one level per review and approval round. Rounds go
+top down, so the level a player meets first sets the look and the destination is
+built last. Until the last round, each rebuilt level joins the grid storey below
+it, and a grid storey not yet rebuilt keeps its ladder shafts and has no seal or
+fixtures. The grid shell, its circulation and its slots retire as levels replace them;
+the equipment, descent lid, threat and holding-cap machinery is reused where it
+fits. The plan is scaled up so rooms keep its proportions, with doors and fixtures
+kept at human scale. The factor is a content value, provisional until level one's
+review judges it in play.
+
+Author room assignments, level placement and offset links as curated composition,
 not as partition or row-building code. Shared room shells delegate equipment bays so
 furnishing cannot borrow a threshold or connector's body space. Different equipment
 and damage distinguish laboratory work, support and containment, but those inert cues
@@ -729,10 +758,13 @@ Readable furniture does not confer objective authority; the live interaction mus
 reach the terminal button. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`,
 and `src/game/session.ts`, `activateGoal`.
 
-Darkness uses world-derived sky transport and an ordinary carried light, not
-invented powered lab fixtures. Finished site placements expose the same sky
-eligibility contract across authored layouts, hamlets and scenario composition;
-there is no lab lighting category. Benchmark city plans do not opt into scenario
+Darkness uses world-derived sky transport and an ordinary carried light. The lab's
+fixtures are powered, and some are broken: restoring power lights the working ones,
+so light is something the player earns back, not given. Where the power node sits
+and how restoring it works are open on d490-3's cards. Until a level's light round
+builds them, the lab has no lighting category. Finished site placements expose the
+same sky eligibility contract across authored layouts, hamlets and scenario
+composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
 reachability, while admitted scenario templates and fixed items are world sources.
 See `src/core/site.ts`, `Site`; `src/game/engine.ts`, `createEngine`;
