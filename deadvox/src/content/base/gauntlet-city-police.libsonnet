@@ -82,7 +82,7 @@ local panel = {
       O: { furniture: 'wood_door', facing: 'e' },
       L: { furniture: 'wood_door', facing: 'e', lock: { id: 'gauntlet_police_armoury', locked: true } },
       R: { furniture: 'desk', facing: 'e', loot: 'desk' },
-      C: { furniture: 'desk', loot: 'gauntlet_police_office_key' },
+      C: { furniture: 'desk', facing: 's', loot: 'gauntlet_police_office_key' },
       B: { furniture: 'gauntlet_cell_bars' },
       E: { furniture: 'gauntlet_cell_door' },
       b: { furniture: 'bed' },

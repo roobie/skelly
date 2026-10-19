@@ -2,7 +2,7 @@ import type { EntityId } from '../core/entities.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import { bodyDistance, type ReachPlayer, reachTuning } from '../core/reach.ts';
+import { bodyInReach, type ReachPlayer } from '../core/reach.ts';
 import type { Zombie, ZombieSystem } from '../core/zombies.ts';
 
 const DOWNED_BODY_ACTION = 'zombie.downed';
@@ -30,7 +30,7 @@ export const downedBodyPlan = (player: ReachPlayer, zombie: Zombie | undefined, 
   if (!(zombie && downed)) {
     return { ok: false, reason: "It isn't lying there any more" };
   }
-  if (bodyDistance(player, zombie.body) > reachTuning(player.inventory.registry).reachMetres) {
+  if (!bodyInReach(player, zombie.body)) {
     return { ok: false, reason: 'Too far away' };
   }
   const name = zombie.type.name.toLowerCase();

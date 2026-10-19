@@ -2,11 +2,15 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
 import { options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
-import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
+import { bindReach, type ReachPlayer, type ReachSnapshot } from '../src/core/reach.ts';
+import type { FurnitureDef } from '../src/core/schema.ts';
+import type { Zombie } from '../src/core/zombies.ts';
+import { downedBodyPlan } from '../src/game/downedBody.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
@@ -117,6 +121,100 @@ it('nearest furniture cell is reachable without revealing unsearched nested cont
   expect(entry.handlingTime).toBeGreaterThan(0);
   expect(t.view().workstations).toEqual([]);
 });
+
+const furnitureOf = (kind: (definition: FurnitureDef) => unknown) => [...registry.furniture.values()].find(kind)!;
+
+/** Puts one reach target in cell `pos`; its check lists every way the player reaches it now. */
+const reachTargets = {
+  container: (inventory, pos) => {
+    const type = furnitureOf((definition) => definition.container).id;
+    const entity = inventory.entities.add({ type, pos, size: [1, 1, 1], facing: 'n' })!;
+    return (_player, view) => [inventory.canReachEntity(entity), view().furniture.includes(entity)];
+  },
+  // A hatch has no pockets, so it is never listed as loot; admission is its whole reach.
+  hatch: (inventory, pos) => {
+    const type = furnitureOf((definition) => definition.door?.hatch).id;
+    const entity = inventory.entities.add({ type, pos, size: [1, 1, 1], facing: 'n' })!;
+    return () => [inventory.canReachEntity(entity)];
+  },
+  pile: (inventory, pos) => {
+    const item = inventory.create('canned_beans');
+    if (!inventory.add(item, { kind: 'pile', pos })) {
+      throw new Error('Fixture pile did not fit');
+    }
+    return (_player, view) => [inventory.canReach(pos), view().entries.some((entry) => entry.item === item)];
+  },
+  body: (_inventory, pos) => {
+    const zombie = {
+      incapacitated: true,
+      type: [...registry.zombies.values()].find((definition) => definition.downed)!,
+      body: { pos: [pos[0] + 0.5, pos[1], pos[2] + 0.5], halfWidth: 0.4, height: 0.5 },
+    } as Zombie;
+    return (player) => [downedBodyPlan(player, zombie, 'finish-off').ok];
+  },
+} satisfies Record<
+  string,
+  (inventory: Inventory, pos: Vec3) => (player: ReachPlayer, view: () => ReachSnapshot) => boolean[]
+>;
+
+it.each(['container', 'pile', 'body'] as const)(
+  'a solid wall between chest and %s puts it out of reach until the wall is gone',
+  (target) => {
+    const inventory = new Inventory(registry);
+    let wall = true;
+    const obstacles = {
+      isSolid: (x: number) => wall && x === 1,
+      version: 0,
+    };
+    const reached = reachTargets[target](inventory, [2, 0, 0]);
+    const player: ReachPlayer = { inventory, position: [0.5, 0, 0.5], blockSize: 0.5, clock: BASE_CLOCK, obstacles };
+    const view = bindReach(player);
+    expect(reached(player, view)).not.toContain(true);
+    wall = false;
+    obstacles.version += 1;
+    expect(reached(player, view)).not.toContain(false);
+  },
+);
+
+it.each([
+  {
+    surround: 'a container flush in a wall row, from beside the wall',
+    target: 'container',
+    pos: [2, 0, 0],
+    isSolid: (x: number, _y: number, z: number) => z === 0 && (x === 1 || x === 3),
+    position: [4.5, 0, -0.5],
+  },
+  {
+    surround: 'a hatch flush in the floor, from beside it',
+    target: 'hatch',
+    pos: [0, -1, 0],
+    isSolid: (_x: number, y: number) => y === -1,
+    position: [3.5, 0, 0.5],
+  },
+  {
+    surround: 'a pile in a doorway, from beside the wall',
+    target: 'pile',
+    pos: [2, 0, 0],
+    isSolid: (x: number, y: number, z: number) => y === -1 || (z === 0 && (x === 1 || x === 3)),
+    position: [4.5, 0, -0.5],
+  },
+  {
+    surround: 'a body on the floor, from beside it',
+    target: 'body',
+    pos: [0, 0, 0],
+    isSolid: (_x: number, y: number) => y === -1,
+    position: [3.5, 0, 0.5],
+  },
+] satisfies { surround: string; target: keyof typeof reachTargets; pos: Vec3; isSolid: unknown; position: Vec3 }[])(
+  'reaches $surround through the face the chest sees',
+  ({ target, pos, isSolid, position }) => {
+    const inventory = new Inventory(registry);
+    const reached = reachTargets[target](inventory, [...pos]);
+    const obstacles = { isSolid, version: 0 };
+    const player: ReachPlayer = { inventory, position: [...position], blockSize: 0.5, clock: BASE_CLOCK, obstacles };
+    expect(reached(player, bindReach(player))).not.toContain(false);
+  },
+);
 
 it('lists workstation components only when their furniture box is within two metres', () => {
   const fixtureFurniture = new Map(registry.furniture);

@@ -5,6 +5,10 @@
       "output": "deadvox/src/config/browser-mods.json"
     },
     {
+      "source": "deadvox/src/config/bundled-mods.jsonnet",
+      "output": "deadvox/src/config/bundled-mods.json"
+    },
+    {
       "source": "deadvox/src/config/perf-baseline.jsonnet",
       "output": "deadvox/src/config/perf-baseline.json"
     },
@@ -181,6 +185,10 @@
       "output": "deadvox/src/content/base/sounds-revolver.json"
     },
     {
+      "source": "deadvox/src/content/base/sounds-synth.jsonnet",
+      "output": "deadvox/src/content/base/sounds-synth.json"
+    },
+    {
       "source": "deadvox/src/content/base/templates-cabins.jsonnet",
       "output": "deadvox/src/content/base/templates-cabins.json"
     },
@@ -255,6 +263,10 @@
     {
       "source": "gungen/designs/hunting-rifle.jsonnet",
       "output": "gungen/designs/hunting-rifle.json"
+    },
+    {
+      "source": "mobgen/src/mob/acidTemplate.jsonnet",
+      "output": "mobgen/src/mob/acidTemplate.json"
     },
     {
       "source": "mobgen/src/mob/materialTemplates.jsonnet",

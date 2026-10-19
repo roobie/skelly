@@ -41,6 +41,7 @@ read_if:
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
   - you're changing military progression or loot economy admission
   - you're changing firearm case ejection, landing, or save presentation
@@ -429,6 +430,13 @@ movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`
 `src/core/citySite.ts`, `CitySite`; and `src/content/base/gauntlet-city.libsonnet`,
 `templates`.
 
+The start tower guarantees a melee weapon and revolver ammunition instead of
+rolling for them, because the player who spawns on the roof can meet a fight
+before reaching the city and a roll that came up empty would leave them
+unarmed. It guarantees a backpack the same way, so the player can carry what
+the tower and the first streets offer before the descent instead of leaving it
+behind. See `src/content/base/gauntlet-start-rooms.libsonnet`, `loot`.
+
 Marker-only population omits the ordinary settlement's wanderers and horde, making
 empty marker sets silently remove street pressure. A scenario therefore scales the
 ordinary settlement policy by building groups, not by the reserved campus's empty
@@ -723,6 +731,12 @@ by shape as well as color, and rotation is available. The layout must work on
 small zoomed screens without letting an oversized container dominate nearby
 storage.
 
+Everything lootable, from furniture to ground piles and downed bodies, is within
+reach only along a clear line from the chest. A solid block or a closed door in
+the way stops the arm; other furniture does not. Reach is a physical arm, so a
+wall that stops the player's body also stops looting, while a table in front of a
+shelf does not. See `src/core/reach.ts`, `clearLine`.
+
 Show a name, stack count, condition, and pocket handling time at a glance;
 inspection exposes exact weight, condition, qualities, and times. Grid labels
 avoid ellipses and early word breaks because they spend cell space that could
@@ -781,9 +795,22 @@ item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
   its page, the author, the licence linked to its text, and what we changed. It
   opens from the start and pause card, and it's how we give the credit CC BY
   asks for.
+- **Synthesised sounds.** A sound variant can be a jfxr preset in content
+  instead of a recording. jfxr's editor is the design tool for BR and modders,
+  and the jfxr library renders what the editor plays, so a preset pasted from
+  the editor sounds the same in game and needs neither an asset file nor a
+  credit. The game renders a preset once and plays it like a recording, so
+  every playback rule applies to both, and any sound can move between the two.
+  A preset is one voice, so it suits simple sounds such as knocks, hums and
+  engine tones. Compound sounds, such as a gunshot's crack, boom and tail
+  together, lose fidelity, so they stay recordings, as do voices. Validation
+  rejects a preset that jfxr would silently clamp or ignore, so content plays
+  what it says. If the library ever falls short, the fallback is a fork, which
+  becomes our own code. The renderer is `src/core/soundSynth.ts`,
+  `renderSoundRecipe`.
 - Keep the curated `/sounds.html` sheet with sound-event variants and status.
   A change that adds, replaces, or re-levels a sound updates the sheet in the
-  same change.
+  same change. The sheet marks a synthesised variant as such.
 
 ## Crafting
 
@@ -1070,6 +1097,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   Readied-gait sway and look lag follow firearms skill, while dispersion and recoil remain separate. An unskilled character's readied sway is large with any firearm because they've never handled one; at skill 10, the character hardly sways. Each firearm's skill-zero values set the relative steadiness between guns. Automatic follow-ups sway at least as much as single shots, so sway does not drop during burst fire. Sharing `src/core/footsteps.ts`, `FootstepClock`, keeps the stride-synced path aligned with gait, and content owns the shape and skill endpoints. See `src/core/aim.ts`, `frameFromState`, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`.
 
   Mean-reverting Brownian drift avoids unbounded sway; smoothing keeps fixed-tick noise from reading as frame-level twitch. The shared walking lune remains separate, firearms skill continues to scale sway, and content owns the noise tuning. Saving the running state lets Continue and replay segments preserve the exact path, avoiding a motion discontinuity. The vertical/horizontal lune ratio remains independently tunable without changing the drift. See `src/core/aim.ts`, `advanceOrnsteinUhlenbeckAxis` and `AimController.snapshotState`, `src/core/saveState.ts`, `snapshotSession`, `src/game/inputReplay.ts`, `encodeInputReplay`, `src/game/config.ts`, `configFromUrl`, and `src/content/base/recipes.json`, `firearms_combat`.
+
+  **Holding breath** lets the player steady a readied firearm for a moment, so a careful shot through an optic is earned by timing rather than by waiting out the drift. It damps the wobble drift only; recoil and dispersion keep their owners, because breath steadies the body, not the gun. Held breath and whatever limits it change where shots go, so they are simulation state: saved with aim state and restored by input replay (`CONTROLS.md`, "Replay boundary"). The sprint key, held while the firearm is ready, holds breath: the ready stance already refuses sprint, so the key is free there and needs no new binding. It works in any ADS, through irons or an optic, standing or crouched, but not while moving, because a moving body can't be held still. Each second held spends stamina, since holding breath is effort and one shared resource keeps the rules simple. The winded line gates both ends: a hold can't start while winded, and a hold in progress gives out when stamina drops to that line. One threshold keeps the hold simple and adds no tunable. Giving out leaves sway worse than normal for a recovery period, and no new hold starts until that ends, so pressing the hold too long costs the next shot. Firearms skill strengthens the hold and pain weakens it, on top of their effect on the wobble itself, because steadying breath is part of handling the gun. The player hears it and nothing else shows it: an inhale when the hold starts, quiet while held, an exhale when it ends, a strained gasp when it gives out, and the stamina heartbeat carries on. These are presentation only, not noise events, so a shambler never hears a breath. Its stamina cost, recovery length, recovery sway penalty, steadying factor and the skill and pain terms are content (`PILLARS.md`, "Content forward compatibility"). See `src/core/aim.ts`, `AimController.advance`, and `src/game/session.ts`, `advanceSessionAim`.
 
   Ready stance gates firearm fire; sprinting prohibits it. Duck-walk speed is
   owned by firearms combat, and melee combat owns block success. A held, completed

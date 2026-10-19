@@ -19,6 +19,7 @@ import { generate, generateValid, type Realized, realize, realizeLod } from '../
 import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
 import type { Genome, Template } from '../core/template.ts';
+import { acidTemplate } from '../mob/acidTemplate.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
 import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
@@ -45,9 +46,8 @@ import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
-// The viewer shows the dog shambler even though it is not in TEMPLATES (so Deadvox does not spawn it
-// yet); amalgamTemplate.ts stays Deadvox-reachable and does not import it.
-const TEMPLATES: readonly Template[] = [...VIEWER_TEMPLATES, dogTemplate];
+// Comparison-only bodies are explicit viewer opt-ins rather than consumer entries.
+const TEMPLATES: readonly Template[] = [...VIEWER_TEMPLATES, dogTemplate, acidTemplate];
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
@@ -323,12 +323,17 @@ const renderPanel = (realizeMs: number): void => {
       return li;
     }),
   );
-  const headJaw = Object.entries(report.stats.perBoneVoxels)
-    .filter(([bone]) => bone === 'head' || bone === 'jaw' || bone.endsWith('.head') || bone.endsWith('.jaw'))
-    .reduce((sum, [, count]) => sum + count, 0);
+  const groupRows: (readonly [string, string])[] = Object.entries(template.budgets.groups).map(([name, group]) => {
+    const amount = Object.entries(report.stats.perBoneVoxels)
+      .filter(([id]) =>
+        group.bones.some((pattern) => (pattern.endsWith('*') ? id.startsWith(pattern.slice(0, -1)) : id === pattern)),
+      )
+      .reduce((sum, [, count]) => sum + count, 0);
+    return [`${name} voxels`, String(amount)];
+  });
   const rows: readonly (readonly [string, string])[] = [
     ['Voxels', String(report.stats.voxels)],
-    ['Head+jaw voxels', String(headJaw)],
+    ...groupRows,
     ['Validation profile', realized.profile],
     ['Triangles', String(report.stats.triangles)],
     ['Draw objects', String(realized.meshes.size)],
@@ -376,7 +381,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   }
   const actor = buildActor(realized, genome.voxelSize);
   scene.add(actor.root);
-  const staticOnly = template.bodyPlan === 'amalgam';
+  const staticOnly = template.bodyPlan === 'amalgam' || template.bodyPlan === 'acid';
   let loaded: Loaded = {
     genome,
     template,
@@ -387,10 +392,13 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   };
   if (staticOnly) {
     actor.applyPose({ root: [0, 0, 0], rotations: {} });
-    const manifest = amalgamManifest(realized.body, realized.voxels);
-    severPart.replaceChildren(
-      ...manifest.parts.filter((part) => part.severable).map((part) => new Option(part.rootBone, part.rootBone)),
-    );
+    const parts =
+      template.bodyPlan === 'amalgam'
+        ? amalgamManifest(realized.body, realized.voxels)
+            .parts.filter((part) => part.severable)
+            .map((part) => part.rootBone)
+        : realized.body.bones.filter((bone) => bone.disposition === 'sever').map((bone) => bone.id);
+    severPart.replaceChildren(...parts.map((id) => new Option(id, id)));
   } else {
     const extents = footRestExtents(realized.body.bones, realized.voxels);
     const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
@@ -715,7 +723,7 @@ const applyDogFrame = (loaded: Loaded, dt: number): void => {
 };
 
 const applyLiveFrame = (loaded: Loaded, dt: number): void => {
-  if (loaded.template.bodyPlan === 'amalgam') {
+  if (loaded.template.bodyPlan === 'amalgam' || loaded.template.bodyPlan === 'acid') {
     return;
   }
   if (loaded.template.bodyPlan === 'crawler') {

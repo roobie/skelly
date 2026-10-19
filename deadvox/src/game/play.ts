@@ -36,6 +36,7 @@ import { discoveryForPlan } from '../core/scenarioDiscovery.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
+import { soundVariantKey } from '../core/soundSynth.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { sightedFirearmModel } from '../render/firearmSight.ts';
@@ -568,7 +569,11 @@ const createPlayRefusalPresenter = (
 ) => {
   const event = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.refusalSound;
   const nope = registry.sounds.get(event)!;
-  return createRefusalPresenter(showNotice, () => audio.preview(event, nope.variants[0]!), nope.minIntervalSimSeconds);
+  return createRefusalPresenter(
+    showNotice,
+    () => audio.preview(event, soundVariantKey(event, nope.variants[0]!)),
+    nope.minIntervalSimSeconds,
+  );
 };
 
 export interface StartPlayOptions {

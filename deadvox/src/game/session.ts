@@ -663,6 +663,12 @@ export const createSession = (options: SessionOptions) => {
     get clock() {
       return sim.clock;
     },
+    obstacles: {
+      isSolid,
+      get version() {
+        return world.version;
+      },
+    },
   };
   const reach = bindReach(reachPlayer);
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);

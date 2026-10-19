@@ -11,11 +11,13 @@ import { basename, dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
+import { bundledModCatalogueIssues } from '../core/bundledModCatalogue.ts';
 import { buildRegistry, type ContentSource, requiredContentIssues } from '../core/content.ts';
 import { checkReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 
 const BASE = 'src/content/base';
+const CATALOGUE = 'src/config/bundled-mods.json';
 
 /** Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. */
 export const validate = (
@@ -65,6 +67,10 @@ export const validate = (
   write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
   write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
   issues.push(...requiredContentIssues(registry));
+  const catalogue = read(CATALOGUE);
+  if (catalogue !== undefined) {
+    issues.push(...bundledModCatalogueIssues(catalogue).map((message) => ({ source: CATALOGUE, path: '', message })));
+  }
   let assets = 0;
   for (const source of manifests) {
     const data = read(source);

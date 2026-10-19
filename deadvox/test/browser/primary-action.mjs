@@ -2684,7 +2684,10 @@ try {
     const r = globalThis.primaryActionTest;
     r.session.sim.actions.cancel();
     const definition = r.inventory.registry.furniture.get('wood_door');
-    const pos = r.feet();
+    // Just past the body, not on the feet: a closed door built around the player walls in
+    // their own cell, so a later drop at the feet would reach through it.
+    const { pos: bodyPos, halfWidth } = r.session.body;
+    const pos = [...r.feet().slice(0, 2), Math.floor(bodyPos[2] + halfWidth) + 1];
     const door = r.inventory.furnish({
       type: definition.id,
       pos,

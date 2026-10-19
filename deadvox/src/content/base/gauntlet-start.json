@@ -11,6 +11,41 @@
       "size": [6, 1, 2]
     }
   ],
+  "loot": [
+    {
+      "entries": [
+        {
+          "condition": [0.59999999999999998, 1],
+          "item": "school_backpack",
+          "weight": 1
+        }
+      ],
+      "id": "gauntlet_start_backpack",
+      "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "condition": [0.59999999999999998, 1],
+          "item": "crowbar",
+          "weight": 1
+        }
+      ],
+      "id": "gauntlet_start_melee",
+      "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "count": [6, 12],
+          "item": "cartridge_357_h_magnum",
+          "weight": 1
+        }
+      ],
+      "id": "gauntlet_start_revolver_ammunition",
+      "rolls": [1, 1]
+    }
+  ],
   "mapAssemblies": [
     {
       "access": {
@@ -2796,11 +2831,11 @@
           "turn": 0
         },
         {
-          "at": [13, 9, 24],
+          "at": [7, 9, 24],
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_start_shelf",
+                "id": "gauntlet_start_pack_wardrobe",
                 "kind": "piece"
               },
               "weight": 1
@@ -2811,7 +2846,7 @@
           "turn": 2
         },
         {
-          "at": [15, 9, 24],
+          "at": [13, 9, 24],
           "choices": [
             {
               "ref": {
@@ -2826,6 +2861,21 @@
           "turn": 2
         },
         {
+          "at": [15, 9, 24],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_shelf",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "furn_9_22",
+          "size": [2, 4, 1],
+          "turn": 2
+        },
+        {
           "at": [16, 9, 15],
           "choices": [
             {
@@ -2836,7 +2886,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_9_22",
+          "id": "furn_9_23",
           "size": [2, 1, 4],
           "turn": 0
         },
@@ -2856,6 +2906,21 @@
           "turn": 0
         },
         {
+          "at": [35, 17, 6],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_revolver_crate",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "furn_17_1",
+          "size": [2, 2, 2],
+          "turn": 0
+        },
+        {
           "at": [22, 17, 3],
           "choices": [
             {
@@ -2866,7 +2931,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_1",
+          "id": "furn_17_2",
           "size": [2, 4, 1],
           "turn": 0
         },
@@ -2881,7 +2946,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_2",
+          "id": "furn_17_3",
           "size": [2, 4, 1],
           "turn": 0
         },
@@ -2896,7 +2961,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_3",
+          "id": "furn_17_4",
           "size": [2, 4, 1],
           "turn": 0
         },
@@ -2911,7 +2976,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_4",
+          "id": "furn_17_5",
           "size": [4, 2, 2],
           "turn": 0
         },
@@ -2926,7 +2991,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_5",
+          "id": "furn_17_6",
           "size": [2, 2, 2],
           "turn": 0
         },
@@ -2941,7 +3006,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_6",
+          "id": "furn_17_7",
           "size": [4, 1, 2],
           "turn": 0
         },
@@ -2956,7 +3021,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_7",
+          "id": "furn_17_8",
           "size": [1, 7, 1],
           "turn": 0
         },
@@ -2971,7 +3036,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_8",
+          "id": "furn_17_9",
           "size": [2, 1, 4],
           "turn": 0
         },
@@ -2986,7 +3051,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_9",
+          "id": "furn_17_10",
           "size": [2, 1, 4],
           "turn": 0
         },
@@ -3001,7 +3066,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_10",
+          "id": "furn_17_11",
           "size": [2, 1, 4],
           "turn": 0
         },
@@ -3016,7 +3081,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_11",
+          "id": "furn_17_12",
           "size": [2, 4, 1],
           "turn": 2
         },
@@ -3031,7 +3096,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_12",
+          "id": "furn_17_13",
           "size": [2, 4, 1],
           "turn": 2
         },
@@ -3046,7 +3111,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_13",
+          "id": "furn_17_14",
           "size": [1, 7, 1],
           "turn": 0
         },
@@ -3061,7 +3126,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_14",
+          "id": "furn_17_15",
           "size": [3, 2, 2],
           "turn": 0
         },
@@ -3076,7 +3141,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_15",
+          "id": "furn_17_16",
           "size": [3, 2, 2],
           "turn": 0
         },
@@ -3091,7 +3156,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_16",
+          "id": "furn_17_17",
           "size": [3, 2, 2],
           "turn": 0
         },
@@ -3106,7 +3171,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_17",
+          "id": "furn_17_18",
           "size": [3, 2, 2],
           "turn": 0
         },
@@ -3121,7 +3186,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_18",
+          "id": "furn_17_19",
           "size": [2, 1, 1],
           "turn": 1
         },
@@ -3136,7 +3201,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_19",
+          "id": "furn_17_20",
           "size": [1, 1, 2],
           "turn": 0
         },
@@ -3151,7 +3216,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_20",
+          "id": "furn_17_21",
           "size": [1, 1, 2],
           "turn": 0
         },
@@ -3166,7 +3231,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_21",
+          "id": "furn_17_22",
           "size": [1, 1, 2],
           "turn": 0
         },
@@ -3181,7 +3246,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_22",
+          "id": "furn_17_23",
           "size": [2, 4, 1],
           "turn": 2
         },
@@ -3196,7 +3261,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_23",
+          "id": "furn_17_24",
           "size": [2, 4, 1],
           "turn": 2
         },
@@ -3211,7 +3276,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_17_24",
+          "id": "furn_17_25",
           "size": [1, 7, 1],
           "turn": 0
         },
@@ -3696,6 +3761,21 @@
           "turn": 0
         },
         {
+          "at": [12, 33, 13],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_tool_crate",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "furn_33_13",
+          "size": [2, 2, 2],
+          "turn": 0
+        },
+        {
           "at": [8, 33, 19],
           "choices": [
             {
@@ -3706,7 +3786,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_33_13",
+          "id": "furn_33_14",
           "size": [4, 1, 3],
           "turn": 0
         },
@@ -3721,7 +3801,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_33_14",
+          "id": "furn_33_15",
           "size": [2, 2, 2],
           "turn": 0
         },
@@ -3736,7 +3816,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_33_15",
+          "id": "furn_33_16",
           "size": [2, 4, 1],
           "turn": 2
         },
@@ -3751,7 +3831,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_33_16",
+          "id": "furn_33_17",
           "size": [1, 7, 1],
           "turn": 0
         },
@@ -8790,6 +8870,48 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_start_tool_crate",
+      "layers": [["KK", "KK"], ["KK", "KK"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS", "SS"], ["SS", "SS"]]
+      },
+      "palette": {
+        "K": {
+          "furniture": "crate",
+          "loot": "gauntlet_start_melee"
+        }
+      },
+      "ports": [],
+      "size": [2, 2, 2],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_revolver_crate",
+      "layers": [["QQ", "QQ"], ["QQ", "QQ"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS", "SS"], ["SS", "SS"]]
+      },
+      "palette": {
+        "Q": {
+          "furniture": "crate",
+          "loot": "gauntlet_start_revolver_ammunition"
+        }
+      },
+      "ports": [],
+      "size": [2, 2, 2],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_start_burst_crate",
       "layers": [["XX", "XX"], ["XX", "XX"]],
       "lootContext": {
@@ -9092,6 +9214,28 @@
         "w": {
           "facing": "s",
           "furniture": "wardrobe"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_pack_wardrobe",
+      "layers": [["PP"], ["PP"], ["PP"], ["PP"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "P": {
+          "facing": "s",
+          "furniture": "wardrobe",
+          "loot": "gauntlet_start_backpack"
         }
       },
       "ports": [],
@@ -9792,34 +9936,8 @@
             "..................RRRR..RRRR..R.",
             "................RRRRRRRRRRRRRRR.",
             "................RRRRRRRRR.RRRRR.",
-            "................RRRRRRRRRRRRRRR.",
-            "................RRRRR....RRRRRR.",
-            "................RRRRR....RRRRRR.",
-            "................RRRRRRRRRRRRRRR.",
-            "................R....RRRRRRR..R.",
-            "................R....RRRRRRR..R.",
-            ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".RRRRRRRRRRRRRR.................",
-            ".R...RR...RRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RR...RRRRR.RRRRRRRRRRRRR.R.",
-            ".RR..RRR.RRRRRR.RR..R..RRRRRRRR.",
-            ".RRRRRRR.RRR.RR.RR..R..RRRRRRRR.",
-            ".RRRRRRRRRRRRRR.RR..R..RRRRRRRR.",
-            ".R...RR...RRRRR.RR..R..RRRRRRRR.",
-            ".R...RR...RRRRR.RRRRRRRRRRR..RR.",
-            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
-            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
-            ".RRRRRRRRRRRRRR.RRRRRRRRRRR..RR.",
-            ".RRRRR....RRRRR.RRRRRRR..RRRR...",
-            "................................"
-          ],
-          [
-            "................................",
-            "..................RRRR..RRRR..R.",
-            "................RRRRRRRRRRRRRRR.",
-            "................RRRRRRRRR.RRRRR.",
-            "................RRRRRRRRRRRRRRR.",
-            "................RRRRR....RRRRRR.",
+            "................RRRRRRRRRRRRR...",
+            "................RRRRR....RRRR...",
             "................RRRRR....RRRRRR.",
             "................RRRRRRRRRRRRRRR.",
             "................R....RRRRRRR..R.",
@@ -9844,34 +9962,8 @@
             "..................RRRR..RRRR..R.",
             "................RRRRRRRRRRRRRRR.",
             "................RRRRRRRRR.RRRRR.",
-            "................RRRRRRRRRRRRRRR.",
-            "................RRRRR....RRRRRR.",
-            "................RRRRR....RRRRRR.",
-            "................RRRRRRRRRRRRRRR.",
-            "................R....RRRRRRR..R.",
-            "................R....RRRRRRR..R.",
-            ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".RRRRRRRRRRRRRR.................",
-            ".R...RR...RRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RR...RRRRR.RRRRRRRRRRRRR.R.",
-            ".RR..RRR.RRRRRR.RR..R..RRRRRRRR.",
-            ".RRRRRRR.RRR.RR.RR..R..RRRRRRRR.",
-            ".RRRRRRRRRRRRRR.RR..R..RRRRRRRR.",
-            ".R...RR...RRRRR.RR..R..RRRRRRRR.",
-            ".R...RR...RRRRR.RRRRRRRRRRR..RR.",
-            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
-            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
-            ".RRRRRRRRRRRRRR.RRRRRRRRRRR..RR.",
-            ".RRRRR....RRRRR.RRRRRRR..RRRR...",
-            "................................"
-          ],
-          [
-            "................................",
-            "..................RRRR..RRRR..R.",
-            "................RRRRRRRRRRRRRRR.",
-            "................RRRRRRRRR.RRRRR.",
-            "................RRRRRRRRRRRRRRR.",
-            "................RRRRR....RRRRRR.",
+            "................RRRRRRRRRRRRR...",
+            "................RRRRR....RRRR...",
             "................RRRRR....RRRRRR.",
             "................RRRRRRRRRRRRRRR.",
             "................R....RRRRRRR..R.",
@@ -9896,34 +9988,8 @@
             "..................RRRR..RRRR..R.",
             "................RRRRRRRRRRRRRRR.",
             "................RRRRRRRRR.RRRRR.",
-            "................RRRRRRRRRRRRRRR.",
-            "................RRRRR....RRRRRR.",
-            "................RRRRR....RRRRRR.",
-            "................RRRRRRRRRRRRRRR.",
-            "................R....RRRRRRR..R.",
-            "................R....RRRRRRR..R.",
-            ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".RRRRRRRRRRRRRR.................",
-            ".R...RR...RRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RR...RRRRR.RRRRRRRRRRRRR.R.",
-            ".RR..RRR.RRRRRR.RR..R..RRRRRRRR.",
-            ".RRRRRRR.RRR.RR.RR..R..RRRRRRRR.",
-            ".RRRRRRRRRRRRRR.RR..R..RRRRRRRR.",
-            ".R...RR...RRRRR.RR..R..RRRRRRRR.",
-            ".R...RR...RRRRR.RRRRRRRRRRR..RR.",
-            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
-            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
-            ".RRRRRRRRRRRRRR.RRRRRRRRRRR..RR.",
-            ".RRRRR....RRRRR.RRRRRRR..RRRR...",
-            "................................"
-          ],
-          [
-            "................................",
-            "..................RRRR..RRRR..R.",
-            "................RRRRRRRRRRRRRRR.",
-            "................RRRRRRRRR.RRRRR.",
-            "................RRRRRRRRRRRRRRR.",
-            "................RRRRR....RRRRRR.",
+            "................RRRRRRRRRRRRR...",
+            "................RRRRR....RRRR...",
             "................RRRRR....RRRRRR.",
             "................RRRRRRRRRRRRRRR.",
             "................R....RRRRRRR..R.",
@@ -9948,8 +10014,86 @@
             "..................RRRR..RRRR..R.",
             "................RRRRRRRRRRRRRRR.",
             "................RRRRRRRRR.RRRRR.",
-            "................RRRRRRRRRRRRRRR.",
+            "................RRRRRRRRRRRRR...",
+            "................RRRRR....RRRR...",
             "................RRRRR....RRRRRR.",
+            "................RRRRRRRRRRRRRRR.",
+            "................R....RRRRRRR..R.",
+            "................R....RRRRRRR..R.",
+            ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".RRRRRRRRRRRRRR.................",
+            ".R...RR...RRRRR.RRRRRRRRRRRRRRR.",
+            ".R...RR...RRRRR.RRRRRRRRRRRRR.R.",
+            ".RR..RRR.RRRRRR.RR..R..RRRRRRRR.",
+            ".RRRRRRR.RRR.RR.RR..R..RRRRRRRR.",
+            ".RRRRRRRRRRRRRR.RR..R..RRRRRRRR.",
+            ".R...RR...RRRRR.RR..R..RRRRRRRR.",
+            ".R...RR...RRRRR.RRRRRRRRRRR..RR.",
+            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
+            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
+            ".RRRRRRRRRRRRRR.RRRRRRRRRRR..RR.",
+            ".RRRRR....RRRRR.RRRRRRR..RRRR...",
+            "................................"
+          ],
+          [
+            "................................",
+            "..................RRRR..RRRR..R.",
+            "................RRRRRRRRRRRRRRR.",
+            "................RRRRRRRRR.RRRRR.",
+            "................RRRRRRRRRRRRR...",
+            "................RRRRR....RRRR...",
+            "................RRRRR....RRRRRR.",
+            "................RRRRRRRRRRRRRRR.",
+            "................R....RRRRRRR..R.",
+            "................R....RRRRRRR..R.",
+            ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".RRRRRRRRRRRRRR.................",
+            ".R...RR...RRRRR.RRRRRRRRRRRRRRR.",
+            ".R...RR...RRRRR.RRRRRRRRRRRRR.R.",
+            ".RR..RRR.RRRRRR.RR..R..RRRRRRRR.",
+            ".RRRRRRR.RRR.RR.RR..R..RRRRRRRR.",
+            ".RRRRRRRRRRRRRR.RR..R..RRRRRRRR.",
+            ".R...RR...RRRRR.RR..R..RRRRRRRR.",
+            ".R...RR...RRRRR.RRRRRRRRRRR..RR.",
+            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
+            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
+            ".RRRRRRRRRRRRRR.RRRRRRRRRRR..RR.",
+            ".RRRRR....RRRRR.RRRRRRR..RRRR...",
+            "................................"
+          ],
+          [
+            "................................",
+            "..................RRRR..RRRR..R.",
+            "................RRRRRRRRRRRRRRR.",
+            "................RRRRRRRRR.RRRRR.",
+            "................RRRRRRRRRRRRR...",
+            "................RRRRR....RRRR...",
+            "................RRRRR....RRRRRR.",
+            "................RRRRRRRRRRRRRRR.",
+            "................R....RRRRRRR..R.",
+            "................R....RRRRRRR..R.",
+            ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".RRRRRRRRRRRRRR.................",
+            ".R...RR...RRRRR.RRRRRRRRRRRRRRR.",
+            ".R...RR...RRRRR.RRRRRRRRRRRRR.R.",
+            ".RR..RRR.RRRRRR.RR..R..RRRRRRRR.",
+            ".RRRRRRR.RRR.RR.RR..R..RRRRRRRR.",
+            ".RRRRRRRRRRRRRR.RR..R..RRRRRRRR.",
+            ".R...RR...RRRRR.RR..R..RRRRRRRR.",
+            ".R...RR...RRRRR.RRRRRRRRRRR..RR.",
+            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
+            ".RR.RRRR.RRRRRR.RRRRRRRRRRR..RR.",
+            ".RRRRRRRRRRRRRR.RRRRRRRRRRR..RR.",
+            ".RRRRR....RRRRR.RRRRRRR..RRRR...",
+            "................................"
+          ],
+          [
+            "................................",
+            "..................RRRR..RRRR..R.",
+            "................RRRRRRRRRRRRRRR.",
+            "................RRRRRRRRR.RRRRR.",
+            "................RRRRRRRRRRRRR...",
+            "................RRRRR....RRRR...",
             "................RRRRR....RRRRRR.",
             "................RRRRRRRRRRRRRRR.",
             "................R....RRRRRRR..R.",
@@ -10573,8 +10717,8 @@
             "................RRRRRRRRRR....R.",
             "..................RRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RRRRRRRRRR.................",
-            ".R...RRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".R...R..RRRRRRR.................",
+            ".R...R..RRRRRRR.RRRRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRR...",
@@ -10599,8 +10743,8 @@
             "................RRRRRRRRRR....R.",
             "..................RRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RRRRRRRRRR.................",
-            ".R...RRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".R...R..RRRRRRR.................",
+            ".R...R..RRRRRRR.RRRRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRR...",
@@ -10625,8 +10769,8 @@
             "................RRRRRRRRRR....R.",
             "..................RRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RRRRRRRRRR.................",
-            ".R...RRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".R...R..RRRRRRR.................",
+            ".R...R..RRRRRRR.RRRRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRR...",
@@ -10651,8 +10795,8 @@
             "................RRRRRRRRRR....R.",
             "..................RRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RRRRRRRRRR.................",
-            ".R...RRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".R...R..RRRRRRR.................",
+            ".R...R..RRRRRRR.RRRRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRR...",
@@ -10677,8 +10821,8 @@
             "................RRRRRRRRRR....R.",
             "..................RRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RRRRRRRRRR.................",
-            ".R...RRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".R...R..RRRRRRR.................",
+            ".R...R..RRRRRRR.RRRRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRR...",
@@ -10703,8 +10847,8 @@
             "................RRRRRRRRRR....R.",
             "..................RRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RRRRRRRRRR.................",
-            ".R...RRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".R...R..RRRRRRR.................",
+            ".R...R..RRRRRRR.RRRRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRR...",
@@ -10729,8 +10873,8 @@
             "................RRRRRRRRRR....R.",
             "..................RRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRRRR.",
-            ".R...RRRRRRRRRR.................",
-            ".R...RRRRRRRRRR.RRRRRRRRRRRRRRR.",
+            ".R...R..RRRRRRR.................",
+            ".R...R..RRRRRRR.RRRRRRRRRRRRRRR.",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.R....RRRRRRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRRRRRRR...",
@@ -10971,7 +11115,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -10997,7 +11141,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11023,7 +11167,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11049,7 +11193,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11075,7 +11219,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11101,7 +11245,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11127,7 +11271,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ]
         ]

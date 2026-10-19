@@ -1,0 +1,393 @@
+{
+  "bodyMassKg": 105,
+  "bodyPlan": "acid",
+  "budgets": {
+    "groups": {
+      "drool": {
+        "bones": ["drool.*"],
+        "max": 194,
+        "min": 4
+      },
+      "head": {
+        "bones": ["skull", "maw"],
+        "max": 1130,
+        "min": 0,
+        "minFraction": 0.10000000000000001
+      },
+      "sac": {
+        "bones": ["sac.*"],
+        "max": 1846,
+        "min": 0,
+        "minFraction": 0.059999999999999998
+      }
+    },
+    "totalTriangles": {
+      "max": 11521,
+      "min": 5149
+    },
+    "totalVoxels": {
+      "max": 7373,
+      "min": 2443
+    }
+  },
+  "description": "Forward-set cube head, exposed acid sac and asymmetric stooped rig.",
+  "geometry": {
+    "ankleHeight": 0.14000000000000001,
+    "armAbduct": 8,
+    "armPitchMax": 25,
+    "armPitchMin": 15,
+    "armRadius": [0.040000000000000001, 0.032000000000000001],
+    "bellyHunch": 0.40000000000000002,
+    "bellyLength": 0.33000000000000002,
+    "browDepth": 0.10000000000000001,
+    "browHeight": 0.10000000000000001,
+    "browWidth": 0.90000000000000002,
+    "chestLength": 0.45000000000000001,
+    "clawClearanceVoxels": 2,
+    "clawCurl": 20,
+    "clawLength": 0.29999999999999999,
+    "clawRadius": 0.012,
+    "coarseDroolRatio": 2,
+    "crustBandHeight": 0.040000000000000001,
+    "crustCrackThreshold": 0.29999999999999999,
+    "crustGrowVoxels": 0.5,
+    "crustNoiseThreshold": 0.5,
+    "crustStart": 0.14999999999999999,
+    "deltoid": [0.17999999999999999, 0.059999999999999998, 0.14000000000000001, 0.055],
+    "droolClearanceHeight": 0.14999999999999999,
+    "droolLinkMax": 0.080000000000000002,
+    "droolRadius": [0.014999999999999999, 0.01],
+    "dropRadius": 2,
+    "elbowRadius": 0.032000000000000001,
+    "eyeDepth": 0.070000000000000007,
+    "eyeHeight": 0.62,
+    "eyeOffset": 0.20999999999999999,
+    "eyeRadius": 0.085000000000000006,
+    "fingerCurl": 30,
+    "fingerFanSpan": 0.12,
+    "fingerLength": 0.45000000000000001,
+    "fingerRadius": 0.014,
+    "footBall": 0.69999999999999996,
+    "footHalfWidth": 0.074999999999999997,
+    "footLen": 0.16,
+    "foreLength": 0.37,
+    "foreMuscle": [0.28000000000000003, 0.050000000000000003, 0.28000000000000003, 0.034000000000000002],
+    "foreRadius": [0.032000000000000001, 0.024],
+    "gut": [0.40000000000000002, 0.070000000000000007],
+    "gutBlend": 0.050000000000000003,
+    "gutForward": 0.20000000000000001,
+    "handCurl": 10,
+    "handHalf": [0.059999999999999998, 0.035000000000000003, 0.02],
+    "handLength": 0.23000000000000001,
+    "handRound": 0.40000000000000002,
+    "headOffset": 0.34999999999999998,
+    "hemNoiseThreshold": 0.5,
+    "hemNoiseVoxels": 2,
+    "hingeBelowCentre": 0.34999999999999998,
+    "hingeFromBack": 0.29999999999999999,
+    "hipsLength": 0.22,
+    "humpAlong": 0.59999999999999998,
+    "humpBack": 0.59999999999999998,
+    "humpBlend": 0.059999999999999998,
+    "humpDepth": {
+      "floor": 0.050000000000000003,
+      "hunchSpan": 35,
+      "hunchStart": 15,
+      "slope": 0.0050000000000000001
+    },
+    "humpT": 0.55000000000000004,
+    "humpWidth": 0.40000000000000002,
+    "jawDepth": 0.65000000000000002,
+    "jawHeight": 0.25,
+    "jawWidth": 0.80000000000000004,
+    "jointScale": [0.59999999999999998, 0.40000000000000002],
+    "limpPitchCap": 35,
+    "limpSolveStep": 0.10000000000000001,
+    "midriff": [0.40000000000000002, 0.070000000000000007],
+    "minThinVoxels": 0.80000000000000004,
+    "mottleRadius": [0.040000000000000001, 0.089999999999999997],
+    "mouthDepth": 0.45000000000000001,
+    "mouthHeight": 0.25,
+    "mouthLevel": 0.28999999999999998,
+    "mouthRimVoxels": 1.2,
+    "mouthWidth": 0.59999999999999998,
+    "muscleBlend": 0.040000000000000001,
+    "neckBaseBlend": 0.059999999999999998,
+    "neckBaseRadius": 0.070000000000000007,
+    "neckPitch": 25,
+    "neckRadius": [0.055, 0.044999999999999998],
+    "olecranonRadius": 0.021999999999999999,
+    "patchNoiseVoxels": 3,
+    "patchThreshold": 0.5,
+    "pelvis": [0.41999999999999998, 0.074999999999999997],
+    "ribcage": [0.46999999999999997, 0.074999999999999997],
+    "ribcageT": 0.5,
+    "rounding": 0.25,
+    "sacOutset": 0.55000000000000004,
+    "sacRadii": [0.75, 0.55000000000000004, 0.12],
+    "sacRimInset": 0.5,
+    "sacRimNoise": 0.55000000000000004,
+    "sacRimVoxels": 1.5,
+    "scatterT": [0.20000000000000001, 0.80000000000000004],
+    "shinBackBend": 0.80000000000000004,
+    "shinLength": 0.42999999999999999,
+    "shinRadius": [0.048000000000000001, 0.040000000000000001],
+    "shoulderDropScale": 0.059999999999999998,
+    "shoulderOffset": [0, 0, 0.0050000000000000001],
+    "shoulderRadius": [0.055, 0.050000000000000003],
+    "thighLength": 0.46999999999999997,
+    "thighRadius": [0.065000000000000002, 0.050000000000000003],
+    "toeCutDepthVoxels": 1,
+    "toeCutWidth": 0.0060000000000000001,
+    "toeCuts": 3,
+    "toeHeight": 0.050000000000000003,
+    "toeLength": 0.29999999999999999,
+    "trouserGrowVoxels": 1,
+    "trunkAlong": 0.69999999999999996,
+    "upperArmLength": 0.40000000000000002,
+    "upperMuscle": [0.45000000000000001, 0.048000000000000001, 0.29999999999999999, 0.050000000000000003],
+    "waist": [0.35999999999999999, 0.065000000000000002],
+    "woundRimVoxels": 1.5,
+    "wristRadius": 0.024
+  },
+  "limits": {
+    "arm": [[-60, 120], [-20, 90], [-60, 60]],
+    "belly": [[-15, 25], [-10, 10], [-15, 15]],
+    "chest": [[-20, 30], [-15, 15], [-25, 25]],
+    "drool": [[-45, 45], [-45, 45], [0, 0]],
+    "foot": [[-35, 40], [-20, 20], [0, 0]],
+    "fore": [[0, 130], [0, 0], [-70, 70]],
+    "hand": [[-60, 70], [-25, 25], [0, 0]],
+    "hips": [[0, 0], [0, 0], [0, 0]],
+    "maw": [[0, 35], [0, 0], [0, 0]],
+    "neck": [[-30, 30], [-20, 20], [-35, 35]],
+    "sac": [[0, 0], [0, 0], [0, 0]],
+    "shin": [[0, 110], [0, 0], [0, 0]],
+    "shoulder": [[-10, 20], [-15, 15], [0, 0]],
+    "skull": [[-25, 30], [-15, 15], [-40, 40]],
+    "thigh": [[-30, 100], [-20, 45], [-30, 30]],
+    "toe": [[-40, 20], [0, 0], [0, 0]]
+  },
+  "materials": {
+    "acid": {
+      "color": [0.56100000000000005, 0.89000000000000001, 0.22700000000000001],
+      "emissive": 1
+    },
+    "bone": {
+      "color": [0.81999999999999995, 0.78000000000000003, 0.60999999999999999],
+      "emissive": 0
+    },
+    "claw": {
+      "color": [0.23899999999999999, 0.21199999999999999, 0.16500000000000001],
+      "emissive": 0
+    },
+    "crust": {
+      "color": [0.41999999999999998, 0.28999999999999998, 0.17999999999999999],
+      "emissive": 0
+    },
+    "gore": {
+      "color": [0.34000000000000002, 0.065000000000000002, 0.044999999999999998],
+      "emissive": 0
+    },
+    "mottle": {
+      "color": [0.35699999999999998, 0.28999999999999998, 0.20000000000000001],
+      "emissive": 0
+    },
+    "mouth": {
+      "color": [0.16500000000000001, 0.114, 0.085999999999999993],
+      "emissive": 0
+    },
+    "skin": {
+      "color": [0.66300000000000003, 0.70599999999999996, 0.47799999999999998],
+      "emissive": 0
+    },
+    "trousers": {
+      "color": [0.184, 0.30599999999999999, 0.29799999999999999],
+      "emissive": 0
+    }
+  },
+  "name": "acid",
+  "organic": {
+    "armPeak": [0.10000000000000001, 0.59999999999999998],
+    "forePeak": [0.10000000000000001, 0.5],
+    "maximumJointDifferenceVoxels": 2,
+    "maximumSectionFill": 0.84999999999999998,
+    "measureDivisor": 4,
+    "minimumBackBulge": 0.029999999999999999,
+    "minimumPalmExtraVoxels": 2,
+    "minimumSectionAspect": 1.2,
+    "minimumTaperVoxels": 2,
+    "profileToleranceVoxels": 1
+  },
+  "params": {
+    "armAsym": {
+      "max": 0.12,
+      "min": -0.12
+    },
+    "armFrac": {
+      "max": 0.56000000000000005,
+      "min": 0.44
+    },
+    "belly": {
+      "max": 1.3999999999999999,
+      "min": 0.90000000000000002
+    },
+    "breadth": {
+      "max": 1.3,
+      "min": 1.1000000000000001
+    },
+    "clawCount.L": {
+      "choices": [2, 3, 4]
+    },
+    "clawCount.R": {
+      "choices": [2, 3, 4]
+    },
+    "clawLen": {
+      "max": 1.3999999999999999,
+      "min": 0.69999999999999996
+    },
+    "cloakSide": {
+      "choices": [0, 1]
+    },
+    "droolLen": {
+      "max": 0.90000000000000002,
+      "min": 0.34999999999999998
+    },
+    "droolStrands": {
+      "choices": [1, 2]
+    },
+    "elbowBend": {
+      "max": 40,
+      "min": 10
+    },
+    "eyeState": {
+      "choices": [0, 1, 2, 3]
+    },
+    "eyeSwell": {
+      "max": 1.7,
+      "min": 1.3
+    },
+    "girth": {
+      "max": 1.05,
+      "min": 0.80000000000000004
+    },
+    "handScale.L": {
+      "max": 1.1499999999999999,
+      "min": 0.90000000000000002
+    },
+    "handScale.R": {
+      "max": 1.1499999999999999,
+      "min": 0.90000000000000002
+    },
+    "headD": {
+      "max": 1.1499999999999999,
+      "min": 0.94999999999999996
+    },
+    "headFrac": {
+      "max": 0.20999999999999999,
+      "min": 0.20000000000000001
+    },
+    "headFwd": {
+      "max": 1,
+      "min": 0.59999999999999998
+    },
+    "headH": {
+      "max": 1.1499999999999999,
+      "min": 0.94999999999999996
+    },
+    "headPitch": {
+      "max": 10,
+      "min": -10
+    },
+    "headRoll": {
+      "max": 15,
+      "min": -15
+    },
+    "headRound": {
+      "max": 0.25,
+      "min": 0.14999999999999999
+    },
+    "headW": {
+      "max": 1.1499999999999999,
+      "min": 0.88
+    },
+    "hem.L": {
+      "max": 1,
+      "min": 0.25
+    },
+    "hem.R": {
+      "max": 1,
+      "min": 0.25
+    },
+    "hipFrac": {
+      "max": 0.75,
+      "min": 0.55000000000000004
+    },
+    "hunch": {
+      "max": 50,
+      "min": 15
+    },
+    "jawGape": {
+      "max": 25,
+      "min": 15
+    },
+    "kneeBend": {
+      "max": 35,
+      "min": 8
+    },
+    "lean": {
+      "max": 18,
+      "min": 0
+    },
+    "legFrac": {
+      "max": 0.5,
+      "min": 0.41999999999999998
+    },
+    "limp": {
+      "choices": [0, 1, 2]
+    },
+    "limpExtra": {
+      "max": 25,
+      "min": 10
+    },
+    "mottleCount": {
+      "max": 12,
+      "min": 4
+    },
+    "neckFrac": {
+      "max": 0.059999999999999998,
+      "min": 0.029999999999999999
+    },
+    "sacSize": {
+      "max": 0.94999999999999996,
+      "min": 0.75
+    },
+    "shoulderDrop": {
+      "max": 1,
+      "min": -1
+    },
+    "shoulderFrac": {
+      "max": 0.29999999999999999,
+      "min": 0.22500000000000001
+    },
+    "skinTint": {
+      "max": 1,
+      "min": 0
+    },
+    "twist": {
+      "max": 15,
+      "min": -15
+    }
+  },
+  "sizeReference": "shambler",
+  "skinB": [0.56100000000000005, 0.61199999999999999, 0.44700000000000001],
+  "status": "comparison-only",
+  "supportBones": ["foot.L", "foot.R", "toe.L", "toe.R"],
+  "sweep": {
+    "count": 216,
+    "lowerQuantile": 0.02,
+    "maximumIoU": 0.90000000000000002,
+    "sheetCount": 16,
+    "upperQuantile": 0.97999999999999998
+  }
+}

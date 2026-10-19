@@ -1,6 +1,7 @@
 ---
 read_if:
   - you build any round of the acid zombie's integration
+  - you change the acid body's standing-height fitting or shape measurements
   - you change mobgen's material, budget or carve contracts while the acid zombie lands
   - you add a non-humanoid mob that Deadvox must hit, sever, pose or light
   - you build the cross-mob far level of detail for per-bone meshes
@@ -8,11 +9,11 @@ read_if:
 
 # Acid zombie integration plan
 
-The ground-up acid zombie from the m8 study is approved. The study built it in a standalone
-copy of mobgen's core, so nothing of it is in skelly yet. This plan says how it lands and
-why in that order. What the model must show stays in `deadvox/docs/acid-zombie.md`, "Model",
-and its behaviour, including acid immunity and the leg-burning puddle, stays in that doc's
-other sections.
+The acid zombie uses a ground-up body because its hunched silhouette and exposed sac
+define its identity independently of humanoid variations. Body facts stay separate from
+game effects so each boundary can be validated before gameplay consumes it. What the
+model must show stays in `deadvox/docs/acid-zombie.md`, "Model", and its behaviour,
+including acid immunity and the leg-burning puddle, stays in that doc's other sections.
 
 ## Body rules the plan starts from
 
@@ -25,9 +26,11 @@ These are settled, and every round below builds on them:
   it.
 - **The wind-up brightens only the sac.** The eyes keep a fixed glow, so the sac alone
   carries the telegraph.
-- **Shambler height, brute-like breadth,** at the shambler's voxel size. It shares the
-  brute's bulk but not its height, so the two read apart by height and not by bulk alone.
-  Any size variation widens or narrows the build and never changes the height.
+- **Shambler height, brute-like breadth.** Drawing height like a shambler keeps an acid
+  zombie in the shambler's height band while keeping the approved body's posture and
+  proportion variety. Skeletal tips count as standing support because forced marrow can
+  stand above the flesh. Sharing the brute's bulk but not its height keeps the two readable
+  apart. See `src/mob/acidTemplate.ts`, `acidTemplate`, and `src/mob/acid.ts`, `buildAcid`.
 - **One sac and no growths.** Being built from the ground up already sets it apart from
   shamblers, so it needs no further variation.
 - **Its own heavier gait and look-at profile,** not the shambler's.
@@ -101,46 +104,43 @@ consequence, not a defect.
 
 ## Where the acid body lives
 
-- **The plan** goes in a new acid module beside `src/mob/dog.ts` and `src/mob/crawler.ts`,
-  because a body plan is construction logic, which stays in TypeScript under
-  `PROJECT.md`, "Design boundaries".
-- **The template** is a plain data template beside `src/mob/dogTemplate.ts`. It holds every
-  proportion, the shape tunables the study kept in its template data, the material table,
-  mass and the parameter ranges.
-- **Content and logic split.** Content is what an author tunes to change the look without
-  changing what the body is. Logic is what makes it an acid body: which bones exist and how
-  they chain, the burst and sever dispositions, the drool strand stopping at the sac surface,
-  and the measurement rules. That split keeps a later tier of the acid line a data change
-  (`deadvox/docs/acid-zombie.md`, "Ability, not type").
-- **The measurement module** `rasterizeFeatures` re-rasters at quarter-voxel resolution. It
-  belongs in `src/core/voxelize.ts`, not the acid module, because any later body may need
-  shape measurement independent of game voxel size.
-- **Readiness.** The template enters as `comparison-only`
-  (`PROJECT.md`, "Template readiness") until Deadvox can hit, sever and pose it. Readiness then flips in the round
-  that makes Deadvox consume it, so the tag never claims more than the game supports.
+Construction stays in TypeScript because anatomy is logic rather than authored tuning
+(`PROJECT.md`, "Design boundaries"). See `src/mob/acid.ts`, `buildAcid`.
+
+**Content and logic split.** Authors tune appearance without changing what makes the body
+an acid zombie. Keeping that tuning in `src/mob/acidTemplate.jsonnet` lets a later tier
+remain a data change (`deadvox/docs/acid-zombie.md`, "Ability, not type"). See
+`src/mob/acidTemplate.ts`, `acidTemplate`.
+
+**Measurement.** Shape measurement must be independent of game voxel size and forced
+skeletal connectivity. Otherwise repair can disguise a flesh discontinuity. See
+`src/core/voxelize.ts`, `rasterizeFeatures`, and `src/mob/acidMeasurements.ts`, `fleshInFrame`.
+
+**Readiness.** The body remains `comparison-only` until Deadvox can hit, sever and pose it,
+so the tag never claims more than the game supports (`PROJECT.md`, "Template readiness").
+See `src/mob/acidTemplate.ts`, `acidTemplate`, and `test/acidTemplate.test.ts`.
 
 ### The study's gates become tests
 
-`AGENTS.md`, "Tests" forbids seeded outputs and tuning numbers, so each gate becomes a
-property checked on fixtures. The probe tests run on small hand-built shapes whose answer is
-known by construction:
+Known-shape fixtures protect measurement without freezing a generated body
+(`AGENTS.md`, "Tests"). The shared-frame joint rule needs mutation proof because a wrong
+axis sign can silently preserve apparently continuous flesh. See
+`test/acidMeasurements.test.ts` and `src/mob/acidMeasurements.ts`, `jointSections`.
 
-- **Shape probes** (chest and belly fill, chest aspect, back profile, joint slabs, arm
-  taper): a long, low ellipsoid passes the back probe, while a two-voxel box stack and a flat
-  back each fail it. A three-voxel joint width fails the joint-slab probe. The shared-frame
-  joint rule gets one mutation proof, because it is an invariant about frames that a wrong
-  sign passes silently.
-- **Identity floors** are asserted as properties over a small covering array of genomes:
-  the head, sac and drool budgets hold, and validation reports no issues.
-- **Measured cost ranges and the IoU spread** are distributions, so they go behind
-  mobgen's sweep flag (`test/sweeps.ts`, `runSweeps`, which the `test:sweeps` script in
-  `mobgen/package.json` sets), not the default run.
-- **Material round-trip, carve inset, noise gating, scoped carves and undeclared-material
-  rejection** come from the study's core tests and land with the core round, because they
-  protect core contracts every mob uses.
+Covering-array properties protect identity and standing height without an exhaustive
+product of anatomical choices; see `test/acid.test.ts`. Cost ranges and silhouette spread
+are distributions rather than individual actor contracts, so they belong behind the sweep
+flag; see `test/acidSweeps.test.ts` and `test/sweeps.ts`, `runSweeps`. The material and carve
+fixtures protect shared core contracts rather than an acid-specific appearance; see
+`test/materials.test.ts`.
 
-Thresholds that are tuning (fill limits, slope bound in voxels, floor shares) live in the
-template or plan constants, never in test literals. Those that can drift go in
+The refitted body needs broad palms to remain distinct from wrists at game resolution,
+and a fuller neck base to keep its lengthened back from ending in a ledge. Breadth
+variation must remain visible after coarse sampling rather than collapsing into matching
+outlines. These are shape changes, not reasons to relax measurement gates; see
+`src/mob/acidTemplate.jsonnet`, `geometry` and `params`.
+
+Tuning stays in content rather than test literals. Its release-freeze triggers belong in
 `docs/deferred-assertions.md`.
 
 ## What Deadvox needs
@@ -181,10 +181,8 @@ humanoid lookup would find nothing.
   it renders is in "Glow render path" below. The wind-up brightening is per-actor state
   that touches only the sac's material, so it rides the crowd data texture beside the
   severed mask rather than being baked into the mesh. The eyes have no per-actor channel.
-- **Scale.** The study measured at its own voxel size; the acid body ships at the
-  shambler's. Its height and breadth come from the template's proportions, so a later tier
-  changes its build by data, and no uniform scale applies because one would change the
-  height.
+- **Scale.** Refitting proportions rather than uniformly scaling the finished figure
+  preserves breadth independently of standing height. See `src/mob/acid.ts`, `buildAcid`.
 
 ### Glow render path
 
@@ -233,13 +231,14 @@ before it lands.
    plan-owned hooks; see `src/mob/budgets.ts`, `heightHeadBudgets`. Core fixture coverage is in
    `test/materials.test.ts` and `test/budgetHooks.test.ts`. Keep existing validation and
    Deadvox model-load checks passing without budget or fixture loosening when extending these
-   contracts. The feature-only measurement rasterizer belongs to the body round below.
-2. **Acid body plan and template** (hard coder). Add the plan, template and
-   measurement module as `comparison-only`, with the probe fixtures, identity properties and
-   gated sweeps, plus a viewer entry. Its parameter ranges vary breadth, never height.
-   Done when: the viewer shows the approved body; a property over the covering array holds
-   the body's height to the shambler's while its breadth varies; the default run asserts no
-   seeded output; and `consumableTemplate` refuses it.
+   contracts. Shape probes exclude forced marrow and ownership repair because either would disguise
+   flesh discontinuities; see `src/core/voxelize.ts`, `rasterizeFeatures`.
+2. **Acid body plan and template.** Keep body construction separate from tuning so height
+   refitting does not erase the approved anatomy's variety. See `src/mob/acid.ts`, `buildAcid`,
+   and `src/mob/acidTemplate.ts`, `acidTemplate`. Keep distribution gates out of the fast
+   default run; see `test/acid.test.ts`, `test/acidMeasurements.test.ts` and
+   `test/acidSweeps.test.ts`. Readiness must remain separate from viewer availability; see
+   `src/viewer/main.ts` and `test/acidTemplate.test.ts`.
 3. **Acid poses, gait and gaze** (hard coder). Add the idle, walk, attack and wind-up,
    hit-reaction and death poses, the look-at profile, and the mouth anchor. Done when: the
    viewer plays each pose within joint limits with feet on the ground, and a gaze test turns
