@@ -683,15 +683,17 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
 Placement follows a DayZ-style central economy: usage tags and tiers decide which items
-a source admits, and budgets are to bound how much of each type the world holds (#699).
-See `src/core/loot.ts`, `economyEligible`.
-The one exception to the DayZ model is restock: by default the economy places a
+a source admits, so what a place holds matches what it is, and budgets are to bound how
+much of each type the world holds (#699). See `src/core/loot.ts`, `economyEligible`.
+
+The one exception to the DayZ model is item lifetime. By default the economy places a
 place's loot once, when the place is first generated, and never restocks it. What a
 player takes stays gone, so scarcity holds, a searched place stays spent instead of
-becoming a farm, and a spent place pushes the player on to new ones. The world is then
-its generation plus what players did to it, so a save need record only changes.
-Dynamic events (crashes, convoys and the like) bring supply under their own rules,
-outside this default.
+becoming a farm, and a spent place pushes the player on to new ones. Untouched items
+never despawn either: despawning only makes sense as the other half of restocking, so
+the two come together or not at all. The world is then its generation plus what
+players did to it, so a save need record only changes. Dynamic events (crashes,
+convoys and the like) bring supply under their own rules, outside this default.
 
 For site-generated world supply, roll-once ownership belongs to the column rather
 than individual points or surviving furniture: emptying or moving supply must not
