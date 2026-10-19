@@ -60,5 +60,8 @@ local alley(block, start=0) = { x0: block[0] + start, z0: block[1] + 44, x1: blo
   ] + [
     { x0: 0, z0: -108, x1: 12, z1: 120 }, { x0: -216, z0: 0, x1: 120, z1: 12 },
     { x0: -22, z0: -50, x1: 0, z1: -42 },
+    { x0: -10, z0: 55, x1: 2, z1: 63 },
+    { x0: -14, z0: 30, x1: -6, z1: 63 },
+    { x0: -44, z0: 30, x1: -10, z1: 38 },
   ] + [alley(block) for block in fullBlocks] + [alley([-204, 12], 34)],
 }

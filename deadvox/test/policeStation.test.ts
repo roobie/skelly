@@ -4,7 +4,7 @@ import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { MapAssemblyDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
-import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
+import { templateReachableStandingPositions, templateWalkingRoute } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, cellsOf, compileAssembly, type PlacedPiece } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
 
@@ -83,6 +83,26 @@ const assemblyClosure = (registry: Registry, roots: MapAssemblyDef[]): MapAssemb
   }
   return [...seen.values()];
 };
+
+it('connects authored compound standing anchors to their entrance', () => {
+  expect(content.issues).toEqual([]);
+  let checked = 0;
+  for (const assembly of authoredAssemblies(content.registry)) {
+    const compiled = compileAssembly(content.registry, assembly, { seed: 1, siteId: 'compound_room_routes' });
+    for (const [id, anchor] of Object.entries(compiled.anchors ?? {})) {
+      if (anchor.kind !== 'standing') {
+        continue;
+      }
+      checked += 1;
+      expect(compiled.access, assembly.id).toBeDefined();
+      expect(
+        templateWalkingRoute(content.registry, compiled, compiled.access!.entrance, anchor.at),
+        `${assembly.id} entrance to ${id}`,
+      ).toBe(true);
+    }
+  }
+  expect(checked).toBeGreaterThan(0);
+});
 
 it('keeps every authored building furnishing pose clear of walls, furniture and door approaches', () => {
   expect(content.issues).toEqual([]);

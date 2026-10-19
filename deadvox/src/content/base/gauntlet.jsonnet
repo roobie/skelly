@@ -108,7 +108,7 @@ local utilities = [
   } }] + types.mapStyles + authored.mapStyles,
   mapPieces: kits.mapPieces + rooms.mapPieces + descents.mapPieces + lab.mapPieces + service.mapPieces + types.mapPieces + authored.mapPieces,
   mapAssemblies: kits.mapAssemblies + lab.mapAssemblies + service.mapAssemblies + types.mapAssemblies + authored.mapAssemblies,
-  furniture: city.furniture + kits.furniture + types.furniture + [
+  furniture: city.furniture + kits.furniture + types.furniture + authored.furniture + [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
     },

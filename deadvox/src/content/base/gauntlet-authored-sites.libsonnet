@@ -1,4 +1,5 @@
 local kit = import 'authored-site-kit.libsonnet';
+local dressing = import 'gauntlet-authored-dressing.libsonnet';
 local disorder = import 'aftermath.libsonnet';
 local police = import 'rural-police.jsonnet';
 local medical = import 'rural-medical.jsonnet';
@@ -35,7 +36,12 @@ local medicalMain = medical.templates[0] + {
   ],
 };
 local subMain = substation.templates[0];
-local hqMain = hq.templates[0] + { access+: { entrance: [19, 1, 23] } };
+local hqMain = find(hq.templates, 'crisis_hq_main') + { access+: { entrance: [19, 1, 23] } };
+local hqVault = find(hq.templates, 'crisis_hq_vault');
+local hqDemo = find(hq.layouts, 'crisis_hq');
+local hqPlaced(id) = std.filter(function(b) b.template == id, hqDemo.buildings)[0];
+local hqAt = [6, 0, 6];
+local vaultAt = [hqAt[axis] + (hqPlaced(hqVault.id).position[axis] - hqPlaced(hqMain.id).position[axis]) / 0.5 for axis in std.range(0, 2)];
 local policeBays = [[3, 1, 13], [13, 1, 14], [18, 1, 14], [6, 1, 22], [16, 1, 27]];
 local medicalBays = [[1, 1, 4], [1, 1, 6]];
 local subBays = [[4, 1, 3]];
@@ -100,7 +106,8 @@ local hqShed = find(hq.templates, 'crisis_hq_generator_shed');
 local hqGuard = find(hq.templates, 'crisis_hq_guard_post');
 local hqParking = find(hq.templates, 'crisis_hq_parking');
 local shellTemplates = [policeLeft, policeRight, policeFront, policeBack, subYard, subPole, subVan,
-                        medicalGrounds, medicalFront, medicalEast, medicalWest, hqBack, hqLeft, hqRight, hqFront, hqShed, hqGuard, hqParking];
+                        medicalGrounds, medicalFront, medicalEast, medicalWest, hqBack, hqLeft, hqRight, hqFront, hqShed, hqGuard, hqParking,
+                        hqVault, dressing.panel, dressing.rubble];
 local allTemplates = [policeMain, medicalMain, subMain, hqMain] + shellTemplates;
 local blockIds = std.set([t.palette[key] for t in allTemplates for key in std.objectFields(t.palette) if std.type(t.palette[key]) == 'string']);
 local compound(id, size, context, slots, entrance) = {
@@ -109,6 +116,7 @@ local compound(id, size, context, slots, entrance) = {
   access: { ground: 'ground', entrance: entrance, storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
 };
 {
+  furniture: dressing.furniture,
   mapStyles: [{ id: kit.style, bindings: {
     [block]: { role: if block == 'air' then 'opening' else 'shell', block: block } for block in blockIds
   } + { opening: { role: 'opening', block: 'air' } } }],
@@ -119,6 +127,7 @@ local compound(id, size, context, slots, entrance) = {
       furnishedSlot(policeMain, [8, 0, 4], 2),
       kit.slot('front_fence', policeFront, [0, 0, 0]), kit.slot('back_fence', policeBack, [0, 0, 42]),
       kit.slot('east_fence', policeLeft, [0, 0, 1], 1), kit.slot('west_fence', policeRight, [53, 0, 1], 1),
+      kit.slot('p1_fallen_panel', dressing.panel, [3, 0, 24], 1),
     ], [36, 1, 6]),
     compound('gauntlet_rural_medical', [21, 8, 38], medicalMain.lootContext, [
       furnishedSlot(medicalMain, [0, 0, 0]), kit.slot('grounds', medicalGrounds, [0, 0, 14]),
@@ -130,11 +139,14 @@ local compound(id, size, context, slots, entrance) = {
       kit.slot('pole', subPole, [0, 0, 19]), kit.slot('van', subVan, [30, 0, 15]),
     ], [4 + subMain.access.entrance[0], subMain.access.entrance[1], subMain.access.entrance[2]]),
     compound('gauntlet_crisis_hq', [60, 10, 60], hqMain.lootContext, [
-      furnishedSlot(hqMain, [6, 0, 6]), kit.slot('back_wall', hqBack, [0, 0, 0]),
+      furnishedSlot(hqMain, hqAt), kit.slot('vault', hqVault, vaultAt), kit.slot('back_wall', hqBack, [0, 0, 0]),
       kit.slot('left_wall', hqLeft, [0, 0, 1], 1), kit.slot('right_wall', hqRight, [59, 0, 1], 1),
       kit.slot('front_wall', hqFront, [0, 0, 59]), kit.slot('shed', hqShed, [46, 0, 6]),
       kit.slot('guard', hqGuard, [4, 0, 50]), kit.slot('parking_a', hqParking, [47, 0, 22]), kit.slot('parking_b', hqParking, [47, 0, 36]),
-    ], [25, 1, 29]),
+      kit.slot('h1_rubble_left', dressing.rubble, [37, 0, 1]), kit.slot('h1_rubble_right', dressing.rubble, [44, 0, 1], 2),
+    ], [25, 1, 29]) + { anchors: {
+      vault_inside: { kind: 'standing', at: [vaultAt[axis] + hqVault.access.entrance[axis] for axis in std.range(0, 2)] },
+    } },
   ],
   loot: [{ id: 'gauntlet_police_armoury_stock', rolls: [2, 3], entries: [
     { table: 'gauntlet_police_sidearms', weight: 1 }, { table: 'gauntlet_police_ammunition', weight: 2 },

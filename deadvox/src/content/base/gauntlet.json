@@ -2186,6 +2186,30 @@
       "size": [2, 4, 1]
     },
     {
+      "color": "#89979a",
+      "id": "gauntlet_fallen_fence_panel",
+      "name": "Fallen fence panel",
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [0.40000000000000002, 0.40000000000000002, 3]
+        },
+        {
+          "position": [3.6000000000000001, 0, 0],
+          "size": [0.40000000000000002, 0.40000000000000002, 3]
+        },
+        {
+          "position": [0.40000000000000002, 0.050000000000000003, 0.69999999999999996],
+          "size": [3.2000000000000002, 0.29999999999999999, 0.40000000000000002]
+        },
+        {
+          "position": [0.40000000000000002, 0.050000000000000003, 2],
+          "size": [3.2000000000000002, 0.29999999999999999, 0.40000000000000002]
+        }
+      ],
+      "size": [4, 1, 3]
+    },
+    {
       "color": "#c94b3d",
       "id": "gauntlet_button",
       "name": "Nuclear objective button",
@@ -13057,6 +13081,21 @@
           "id": "west_fence",
           "size": [1, 4, 41],
           "turn": 1
+        },
+        {
+          "at": [3, 0, 24],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_fallen_fence_panel_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "p1_fallen_panel",
+          "size": [3, 2, 4],
+          "turn": 1
         }
       ]
     },
@@ -13261,7 +13300,12 @@
           }
         ]
       },
-      "anchors": {},
+      "anchors": {
+        "vault_inside": {
+          "at": [18, 1, 33],
+          "kind": "standing"
+        }
+      },
       "eligibility": {
         "settlementKinds": ["city"]
       },
@@ -13287,6 +13331,21 @@
           ],
           "id": "building",
           "size": [32, 10, 26],
+          "turn": 0
+        },
+        {
+          "at": [6, 0, 32],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_crisis_hq_vault_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "vault",
+          "size": [15, 8, 8],
           "turn": 0
         },
         {
@@ -13408,6 +13467,36 @@
           "id": "parking_b",
           "size": [6, 1, 12],
           "turn": 0
+        },
+        {
+          "at": [37, 0, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_wall_rubble_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "h1_rubble_left",
+          "size": [3, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [44, 0, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_authored_wall_rubble_body",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "h1_rubble_right",
+          "size": [3, 3, 3],
+          "turn": 2
         }
       ]
     }
@@ -30507,6 +30596,263 @@
       },
       "ports": [],
       "size": [6, 1, 12],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_crisis_hq_vault_body",
+      "layers": [
+        [
+          "###############",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "###############"
+        ],
+        [
+          "#.....VV......#",
+          "#AA...........#",
+          "#AA...........#",
+          "#AA...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "###############"
+        ],
+        [
+          "#.....VV......#",
+          "#AA...........#",
+          "#AA...........#",
+          "#AA...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "###############"
+        ],
+        [
+          "#.....VV......#",
+          "#AA...........#",
+          "#AA...........#",
+          "#AA...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "###############"
+        ],
+        [
+          "#.....VV......#",
+          "#AA...........#",
+          "#AA...........#",
+          "#AA...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "###############"
+        ],
+        [
+          "#.............#",
+          "#AA...........#",
+          "#AA...........#",
+          "#AA...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "#CC...........#",
+          "###############"
+        ],
+        [
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "###############"
+        ],
+        [
+          "###############",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkk#",
+          "###############"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Military"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRSSRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRSSRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRSSRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRSSRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSS"
+          ],
+          [
+            "SRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "A": {
+          "facing": "e",
+          "furniture": "hq_weapon_cabinet",
+          "loot": "gauntlet_police_sidearms"
+        },
+        "C": {
+          "facing": "e",
+          "furniture": "hq_weapon_cabinet",
+          "loot": "gauntlet_police_sidearms"
+        },
+        "V": {
+          "facing": "s",
+          "furniture": "wardrobe",
+          "loot": "gauntlet_police_gear"
+        },
+        "k": {
+          "material": "concrete",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [15, 8, 8],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_authored_fallen_fence_panel_body",
+      "layers": [["....", "....", "...."], ["FFFF", "FFFF", "FFFF"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["....", "....", "...."], ["SSSS", "SSSS", "SSSS"]]
+      },
+      "palette": {
+        ".": {
+          "ground": true
+        },
+        "F": {
+          "furniture": "gauntlet_fallen_fence_panel"
+        }
+      },
+      "ports": [],
+      "size": [4, 2, 3],
+      "style": "gauntlet_authored_masonry"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_authored_wall_rubble_body",
+      "layers": [["ggg", "ggg", "ggg"], [".RR", "RRR", "R.."], ["..R", "...", "..."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["...", "...", "..."], ["RSS", "SSS", "SRR"], ["RRS", "RRR", "RRR"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "R": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "g": {
+          "ground": true
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 3],
       "style": "gauntlet_authored_masonry"
     },
     {
