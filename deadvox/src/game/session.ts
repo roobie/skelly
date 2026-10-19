@@ -58,7 +58,7 @@ import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import { Simulation } from '../core/sim.ts';
-import type { Site } from '../core/site.ts';
+import type { ColumnSource } from '../core/site.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
@@ -623,7 +623,7 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
-  const generateColumnSupply = (cx: number, cz: number, site: Site): void => {
+  const generateColumnSupply = (cx: number, cz: number, site: ColumnSource): void => {
     for (const { spec, loot, surfaceLoot } of site.furnitureIn(cx, cz)) {
       inventory.furnish(spec, loot, surfaceLoot);
     }
@@ -1894,10 +1894,7 @@ export const createSession = (options: SessionOptions) => {
       return playerEyeHeightMetres();
     },
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
-    onColumn: (cx: number, cz: number, site: Site | undefined) => {
-      if (!site) {
-        return;
-      }
+    onColumn: (cx: number, cz: number, site: ColumnSource) => {
       const key = `${cx},${cz}`;
       if (!rolledColumns.has(key)) {
         generateColumnSupply(cx, cz, site);

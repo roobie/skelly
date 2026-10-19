@@ -87,6 +87,8 @@ export interface Site {
   hordesIn?: ((cx: number, cz: number) => HordeSpawn[]) | undefined;
 }
 
+export type ColumnSource = Pick<Site, 'furnitureIn' | 'lootPointsIn' | 'zombiesIn' | 'hordesIn'>;
+
 const pointSupply = (table: string | undefined, items: readonly FixedLootItemDef[]): LootPointSource['supply'] => {
   if (items.length > 0) {
     return { kind: 'fixed', items, ...(table === undefined ? {} : { table }) };
