@@ -1,18 +1,18 @@
 // Builds three.js objects from a validation report. This is the only place
 // core types are converted to three.js types.
 
+import { portFrame } from '@skelly/engine/assembly/resolve.ts';
+import type { Report } from '@skelly/engine/assembly/validate.ts';
+import { resolveAppearance, solidColor, srgbToHex } from '@skelly/engine/export/appearance.ts';
+import type { AppearanceContext, Palette } from '@skelly/engine/export/exportTypes.ts';
+import type { Issue } from '@skelly/engine/foundation/issue.ts';
+import type { Mat3, Transform, Vec3 } from '@skelly/engine/foundation/math.ts';
+import { applyDir, compose } from '@skelly/engine/foundation/math.ts';
+import { type DisplayItem, displayItems } from '@skelly/engine/shapes/display.ts';
+import { type Obb, worldBox } from '@skelly/engine/shapes/geometry.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import type * as Three from 'three';
-import { portFrame } from '../assembly/resolve.ts';
-import type { Report } from '../assembly/validate.ts';
-import { resolveAppearance, solidColor, srgbToHex } from '../export/appearance.ts';
-import type { AppearanceContext, Palette } from '../export/exportTypes.ts';
-import type { Issue } from '../foundation/issue.ts';
-import type { Mat3, Transform, Vec3 } from '../foundation/math.ts';
-import { applyDir, compose } from '../foundation/math.ts';
-import { type DisplayItem, displayItems } from '../shapes/display.ts';
-import { type Obb, worldBox } from '../shapes/geometry.ts';
-import { displayBevel, meshForSolid, meshForSolidGroup } from '../shapes/mesh.ts';
-import type { Solid } from '../shapes/solid.ts';
 
 const FAIL = 0xe5_53_4b;
 const KEEP_OUT = 0x9d_7c_d8;
@@ -25,7 +25,7 @@ export interface Layers {
   readonly axes: Three.Group;
 }
 
-type MainAxis = typeof import('../foundation/conventions.ts').MAIN_AXIS;
+type MainAxis = typeof import('@skelly/engine/foundation/conventions.ts').MAIN_AXIS;
 
 type ThreeRuntime = Pick<
   typeof import('three'),

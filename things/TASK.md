@@ -23,7 +23,7 @@ Each layer is a folder under `engine/src`, imported as `@skelly/engine/<folder>/
 - **`assembly`:** `schema`, plus `template`, `resolve`, `rules`, `validate`,
   `generate`, `parseAssembly`, `motion`, `anchors`, `design`, `designLoader`.
 - **`export`, above the engine:** `glb`, `appearance` and `exportTypes` need a resolved
-  assembly, so they are exporters; `engine/src/viewer/scene.ts` moves to the tool UI package.
+  assembly, so they are exporters; the three.js scene is `packages/tool-ui/src/scene.ts`, `buildLayers`, above the engine.
 
 ## Known obstacles
 
@@ -61,7 +61,7 @@ to be new.
 - [x] Add the check that fails an upward import, and run it in CI: it lives in
   `gungen/test/engineImportBoundary.test.ts`, `engineLayers`, so gungen's unit suite runs it.
 - [x] Run gungen's typecheck, unit suite and `validate`; they must pass unchanged.
-- [ ] Move the viewer to `packages/tool-ui`, the first package under the top-level
+- [x] Move the viewer to `packages/tool-ui`, the first package under the top-level
   `packages/` directory. Adding a package takes four edits, because each names the projects
   one by one: the root `package.json` `workspaces` list, a `knip.jsonc` workspace entry,
   `tools/zero-drift-check.mjs`, `SUBPROJECTS` (so its docs resolve path cues from their own

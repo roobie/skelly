@@ -7,6 +7,7 @@ on:
     paths:
       - 'deadvox/**'
       - 'engine/**'
+      - 'packages/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'
@@ -21,6 +22,7 @@ on:
     paths:
       - 'deadvox/**'
       - 'engine/**'
+      - 'packages/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'

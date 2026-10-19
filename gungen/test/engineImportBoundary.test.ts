@@ -36,7 +36,7 @@ const resolveRelativeImport = (from: string, specifier: string): string | undefi
 };
 
 // Each engine folder may import only itself and the folders before it in this list.
-const engineLayers = ['foundation', 'shapes', 'assembly', 'export', 'viewer'];
+const engineLayers = ['foundation', 'shapes', 'assembly', 'export'];
 
 const layerIndex = (engineSrc: string, path: string): number =>
   engineLayers.indexOf(relative(engineSrc, path).split(sep)[0] ?? '');
@@ -51,6 +51,9 @@ const importProblem = (file: string, imported: ParsedImport, engineSrc: string):
   }
   if (specifier === 'gungen' || specifier.startsWith('gungen/')) {
     return `${file}: imports ${specifier}`;
+  }
+  if (specifier.startsWith('@skelly/tool-ui/')) {
+    return `${file}: imports ${specifier}, a package above the engine`;
   }
   if (!specifier.startsWith('.')) {
     return undefined;
@@ -161,8 +164,11 @@ describe('engine import boundary', () => {
       const downward = join(shapesRoot, 'solid.ts');
       writeFileSync(upward, "import '../shapes/solid.ts';\n");
       writeFileSync(downward, "import '../foundation/math.ts';\n");
+      const aboveEngine = join(shapesRoot, 'scene.ts');
+      writeFileSync(aboveEngine, "import '@skelly/tool-ui/scene';\n");
 
       expect(await findBoundaryViolations([downward], fixtureEngineSrc)).toEqual([]);
+      expect(await findBoundaryViolations([aboveEngine], fixtureEngineSrc)).toHaveLength(1);
       const violations = await findBoundaryViolations([upward], fixtureEngineSrc);
       expect(violations).toHaveLength(1);
       expect(violations[0]).toContain('imports upward into a higher layer');

@@ -64,7 +64,8 @@ Settled:
 - The model schema is one neutral schema owned by `thing-core`; domain packs extend it.
 - The directory structure is fixed before any new feature work.
 - New packages live in the top-level `packages/` directory, each a workspace of the root
-  package. The four existing projects stay where they are.
+  package. The four existing projects stay where they are until the repo is quieter, with few
+  open PRs; then they move under `packages/` too, in a repo-wide move on its own branch.
 - At pre-pre-alpha no old format is kept alive; only deadvox validating and loading every
   export is owed.
 - Work is tracked in this file, `TASK.md` and GitHub issues, with no work-item prefix until

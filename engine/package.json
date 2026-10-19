@@ -7,17 +7,12 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/three": "^0.186.0",
     "typescript": "^7.0.2"
   },
   "exports": {
     "./foundation/*": "./src/foundation/*",
     "./shapes/*": "./src/shapes/*",
     "./assembly/*": "./src/assembly/*",
-    "./export/*": "./src/export/*",
-    "./viewer/scene": "./src/viewer/scene.ts"
-  },
-  "peerDependencies": {
-    "three": "^0.186.0"
+    "./export/*": "./src/export/*"
   }
 }
