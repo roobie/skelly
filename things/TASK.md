@@ -48,7 +48,7 @@ to be new.
 
 ## Next, in order
 
-- [x] Break the shapes cycle: `engine/src/core/shapeTypes.ts` holds the result types that
+- [x] Break the shapes cycle: `engine/src/core/shapeTypes.ts`, `TriangleMesh`, holds the result types that
   `geometry`, `revolve` and `mesh` shared.
 - [ ] Break the schema and resolve cycle without changing behavior.
 - [ ] Split `schema` and `design` along the layers above.
