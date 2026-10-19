@@ -1,0 +1,457 @@
+{
+  "layouts": [
+    {
+      "bounds": {
+        "x0": 32,
+        "x1": 96,
+        "z0": 32,
+        "z1": 96
+      },
+      "buildings": [
+        {
+          "position": [50, 21, 50],
+          "rotation": 0,
+          "template": "rural_substation"
+        },
+        {
+          "position": [50, 21, 57.5],
+          "rotation": 0,
+          "template": "rural_substation_yard"
+        },
+        {
+          "position": [48, 21, 59.5],
+          "rotation": 0,
+          "template": "rural_substation_pole"
+        },
+        {
+          "position": [63, 21, 57.5],
+          "rotation": 0,
+          "template": "rural_substation_van_spot"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "rural_substation_demo",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "player": {
+        "bearing": 0,
+        "position": [55.5, 21.5, 70]
+      },
+      "shamblers": [],
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[34, 67], [94, 67]],
+          "surface": "dirt",
+          "width": 4
+        }
+      ],
+      "woodlands": []
+    }
+  ],
+  "templates": [
+    {
+      "access": {
+        "entrance": [3, 1, 10],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "rural_substation",
+      "layers": [
+        [
+          "####################",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "####################"
+        ],
+        [
+          "####################",
+          "#PPPPPP#KKKKKK.#a..#",
+          "#.....l#KKKKKK.#a..#",
+          "#.....l#.......#b..#",
+          "#c.....#.......#b..#",
+          "#WWW...O......N#s..#",
+          "#WWW...O......N#s..#",
+          "#......#B......#...#",
+          "#......#B......O...#",
+          "#L..WWW#.......O..M#",
+          "#L..WWW#.QQQQQQ#..M#",
+          "##DD############DD##"
+        ],
+        [
+          "####################",
+          "#PPPPPP#KKKKKK.#a..#",
+          "#.....l#KKKKKK.#a..#",
+          "#.....l#.......#b..#",
+          "#c.....#.......#b..#",
+          "#WWW...O......N#s..#",
+          "#WWW...O......N#s..#",
+          "#......#B......#...#",
+          "#......#B......O...#",
+          "#L..WWW#.......O..M#",
+          "#L..WWW#.QQQQQQ#..M#",
+          "##DD############DD##"
+        ],
+        [
+          "###===####===#######",
+          "#PPPPPP#KKKKKK.#a..#",
+          "#.....l#KKKKKK.#a..#",
+          "#.....l#.......#b..#",
+          "#......#.......#b..#",
+          "#......O......N#s..#",
+          "#......O......N#s..#",
+          "#......#B......#...#",
+          "#......#B......O...#",
+          "#......#.......O...#",
+          "#......#.QQQQQQ#...#",
+          "##DD===#########DD##"
+        ],
+        [
+          "###...####...#######",
+          "#PPPPPP#KKKKKK.#a..#",
+          "#.....l#KKKKKK.#a..#",
+          "#.....l#.......#b..#",
+          "#......#.......#b..#",
+          "#......O......N#s..#",
+          "#......O......N#s..#",
+          "#......#B......#...#",
+          "#......#B......O...#",
+          "#......#.......O...#",
+          "#......#.QQQQQQ#...#",
+          "##DD...#########DD##"
+        ],
+        [
+          "####################",
+          "#......#.......#...#",
+          "#......#.......#...#",
+          "#......#.......#...#",
+          "#......#.......#...#",
+          "#......#.......#...#",
+          "#......#.......#...#",
+          "#......#.......#...#",
+          "#......#.......#...#",
+          "#......#.......#...#",
+          "#......#.......#...#",
+          "####################"
+        ],
+        [
+          "####################",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "#kkkkkkkkkkkkkkkkkk#",
+          "####################"
+        ],
+        [
+          "....................",
+          "....................",
+          "....................",
+          "...................#",
+          "....................",
+          "....................",
+          "....................",
+          "....................",
+          "....................",
+          "....................",
+          "....................",
+          "...................."
+        ],
+        [
+          "....................",
+          "....................",
+          "....................",
+          "...................#",
+          "....................",
+          "....................",
+          "....................",
+          "....................",
+          "....................",
+          "....................",
+          "....................",
+          "...................."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": "air",
+        "=": "window_frame",
+        "B": {
+          "facing": "e",
+          "furniture": "substation_panel"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "K": {
+          "facing": "s",
+          "furniture": "substation_switchgear"
+        },
+        "L": {
+          "facing": "e",
+          "furniture": "station_washbasin"
+        },
+        "M": {
+          "facing": "w",
+          "furniture": "station_washbasin"
+        },
+        "N": {
+          "facing": "w",
+          "furniture": "substation_panel"
+        },
+        "O": {
+          "facing": "e",
+          "furniture": "wood_door"
+        },
+        "P": {
+          "facing": "s",
+          "furniture": "substation_panel"
+        },
+        "Q": {
+          "furniture": "substation_panel"
+        },
+        "W": {
+          "furniture": "desk",
+          "loot": "desk"
+        },
+        "a": {
+          "facing": "e",
+          "furniture": "shelf",
+          "loot": "garage_stock"
+        },
+        "b": {
+          "facing": "e",
+          "furniture": "shelf",
+          "loot": "building_tools"
+        },
+        "c": {
+          "furniture": "chair"
+        },
+        "k": "concrete",
+        "l": {
+          "facing": "w",
+          "furniture": "shelf"
+        },
+        "s": {
+          "facing": "e",
+          "furniture": "shelf"
+        }
+      },
+      "size": [20, 9, 12]
+    },
+    {
+      "id": "rural_substation_yard",
+      "layers": [
+        [
+          "........................",
+          "........................",
+          "........................",
+          "........................",
+          "........................",
+          "........................",
+          "........................",
+          "........................",
+          "........................",
+          "........................",
+          "........................"
+        ],
+        [
+          "ffffffffffffffffffffffff",
+          "f......................f",
+          "f...RRR................f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f......................f",
+          "f......................f",
+          "fffffffffffffffffff...ff"
+        ],
+        [
+          "ffffffffffffffffffffffff",
+          "f......................f",
+          "f...RRR................f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f......................f",
+          "f......................f",
+          "fffffffffffffffffff...ff"
+        ],
+        [
+          "ffffffffffffffffffffffff",
+          "f......................f",
+          "f...RRR................f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f......................f",
+          "f......................f",
+          "fffffffffffffffffff...ff"
+        ],
+        [
+          "ffffffffffffffffffffffff",
+          "f......................f",
+          "f...RRR................f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
+          "f......................f",
+          "f......................f",
+          "fffffffffffffffffff...ff"
+        ],
+        [
+          "........................",
+          "........................",
+          "....RRR.................",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          ".........TTTTTT.........",
+          "........................",
+          "........................",
+          "........................"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": {
+          "ground": true
+        },
+        "R": {
+          "facing": "s",
+          "furniture": "substation_disconnector"
+        },
+        "T": {
+          "facing": "s",
+          "furniture": "substation_transformer"
+        },
+        "V": {
+          "furniture": "gauntlet_car_wreck_0_0_intact"
+        },
+        "f": "chain_link",
+        "p": {
+          "furniture": "substation_pole"
+        }
+      },
+      "size": [24, 6, 11]
+    },
+    {
+      "id": "rural_substation_pole",
+      "layers": [
+        ["..", ".."],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"],
+        ["pp", "pp"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": {
+          "ground": true
+        },
+        "R": {
+          "facing": "s",
+          "furniture": "substation_disconnector"
+        },
+        "T": {
+          "facing": "s",
+          "furniture": "substation_transformer"
+        },
+        "V": {
+          "furniture": "gauntlet_car_wreck_0_0_intact"
+        },
+        "f": "chain_link",
+        "p": {
+          "furniture": "substation_pole"
+        }
+      },
+      "size": [2, 15, 2]
+    },
+    {
+      "id": "rural_substation_van_spot",
+      "layers": [
+        ["....", "....", "....", "....", "....", "....", "....", "....", "...."],
+        ["VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV"],
+        ["VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV"],
+        ["VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV"],
+        ["VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV", "VVVV"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        ".": {
+          "ground": true
+        },
+        "R": {
+          "facing": "s",
+          "furniture": "substation_disconnector"
+        },
+        "T": {
+          "facing": "s",
+          "furniture": "substation_transformer"
+        },
+        "V": {
+          "furniture": "gauntlet_car_wreck_0_0_intact"
+        },
+        "f": "chain_link",
+        "p": {
+          "furniture": "substation_pole"
+        }
+      },
+      "size": [4, 5, 9]
+    }
+  ]
+}
