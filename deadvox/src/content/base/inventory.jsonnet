@@ -17,7 +17,7 @@
           offsetMetres: [0, -0.5, -0.9],
           sizeMetres: 0.45,
           bobMetres: 0.015,
-          bobPerSecond: 0.5,
+          bobPerRealSecond: 0.5,
         },
       },
     },

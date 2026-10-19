@@ -50,6 +50,12 @@ export const TEMPORAL_FIELDS = [
     unit: 'PerSecond',
     dimension: 'rate',
   },
+  {
+    path: 'inventory[].furnitureMove.carriedView.bobPerRealSecond',
+    clock: 'Real',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
   { path: 'items.food.consumeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.analgesic.takeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.light.power.swapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

@@ -18,7 +18,7 @@ export class CarriedPiece {
   private readonly centre = new Vector3();
   private readonly size = new Vector3();
   private drawn = '';
-  private seconds = 0;
+  private bobRealSeconds = 0;
 
   constructor(
     entities: BlockEntities,
@@ -43,7 +43,7 @@ export class CarriedPiece {
     if (key !== this.drawn) {
       this.drawn = key;
       this.group.clear();
-      this.seconds = 0;
+      this.bobRealSeconds = 0;
       if (carried) {
         this.group.add(this.fitted(carried));
       }
@@ -51,9 +51,9 @@ export class CarriedPiece {
     if (!carried) {
       return;
     }
-    this.seconds += dt;
-    const { offsetMetres, bobMetres, bobPerSecond } = this.tuning;
-    const bob = bobMetres * Math.sin(this.seconds * bobPerSecond * 2 * Math.PI);
+    this.bobRealSeconds += dt;
+    const { offsetMetres, bobMetres, bobPerRealSecond } = this.tuning;
+    const bob = bobMetres * Math.sin(this.bobRealSeconds * bobPerRealSecond * 2 * Math.PI);
     this.group.position.set(offsetMetres[0], offsetMetres[1] + bob, offsetMetres[2]);
   }
 

@@ -260,7 +260,7 @@ const InventoryTuningSchema = strictObject({
       sizeMetres: Positive,
       /** How far it rises and sinks while held, and how many times a real second. */
       bobMetres: NonNegative,
-      bobPerSecond: NonNegative,
+      bobPerRealSecond: NonNegative,
     }),
   }),
 });
