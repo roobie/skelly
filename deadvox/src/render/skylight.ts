@@ -24,12 +24,12 @@ import {
   type CapturedSky,
   captureSky,
   containsSky,
+  furnitureBounds,
   growSky,
   overlapsSky,
   SKY_SHELL,
   type SkySnapshot,
   skyDependencyBounds,
-  skyFurniture,
 } from '../core/skySnapshot.ts';
 import { type SkyResult, sampleSky } from '../core/skyTransport.ts';
 import type { World } from '../core/world.ts';
@@ -219,12 +219,13 @@ export class Skylight {
   }
   private refreshEntities(): void {
     const { entities } = this.context;
-    if (this.entityVersion === entities.version) {
+    if (this.entityVersion === entities.standing) {
       return;
     }
-    this.entityVersion = entities.version;
+    this.entityVersion = entities.standing;
+    const furniture = furnitureBounds(entities);
     for (const field of this.fields) {
-      const key = JSON.stringify(skyFurniture(entities, field.dependency));
+      const key = JSON.stringify(furniture.filter((box) => overlapsSky(field.dependency, box)));
       if (key !== field.entityKey) {
         field.entityKey = key;
         this.invalidate(field);

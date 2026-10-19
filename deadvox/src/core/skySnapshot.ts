@@ -39,14 +39,16 @@ export interface CapturedSky {
   input: SkySnapshot;
   current: () => boolean;
 }
-export const skyFurniture = (entities: BlockEntities, bounds: SkyBounds): SkyBounds[] =>
+/** Every standing piece's light-blocking boxes. */
+export const furnitureBounds = (entities: BlockEntities): SkyBounds[] =>
   [...entities.all]
     .flatMap((entity) => entities.blockingBoxes(entity))
     .map(({ pos, size }) => ({
       min: [...pos] as Vec3,
       max: pos.map((value, axis) => value + size[axis]!) as Vec3,
-    }))
-    .filter((box) => overlapsSky(bounds, box));
+    }));
+const skyFurniture = (entities: BlockEntities, bounds: SkyBounds): SkyBounds[] =>
+  furnitureBounds(entities).filter((box) => overlapsSky(bounds, box));
 
 /** Each continuation copies at most one chunk; transfers never own live chunk storage. */
 export function* captureSky(
