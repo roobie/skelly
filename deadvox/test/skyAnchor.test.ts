@@ -34,7 +34,10 @@ const entity: BlockEntity = {
   open: false,
 };
 
-/** Open sky everywhere except the cells the piece occupies, as the sky transport leaves it. */
+/**
+ * Open sky everywhere except the piece's whole envelope: darker than the transport leaves a shaped piece, which blocks
+ * light only where it is drawn, so the receiver passes however its drawn blocks fall.
+ */
 const skyAroundPiece = (): SkyVolume => {
   const size: Vec3 = [12, 12, 12];
   const [sx, sy, sz] = size;

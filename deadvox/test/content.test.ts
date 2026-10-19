@@ -790,6 +790,7 @@ describe('content', () => {
         size: [1, 2, 1],
         color: '#123456',
         shape: [{ position: [0.5, 0.5, 0.25], size: [0.75, 0.5, 0.5] }],
+        solidFill: 0.01,
       },
       {
         id: 'fixture_furniture_y',
@@ -797,6 +798,7 @@ describe('content', () => {
         size: [1, 2, 1],
         color: '#123456',
         shape: [{ position: [0.25, 1.5, 0.25], size: [0.5, 0.75, 0.5] }],
+        solidFill: 0.01,
       },
       {
         id: 'fixture_furniture_z',
@@ -804,6 +806,7 @@ describe('content', () => {
         size: [1, 2, 1],
         color: '#123456',
         shape: [{ position: [0.25, 0.5, 0.5], size: [0.5, 0.5, 0.75] }],
+        solidFill: 0.01,
       },
     ];
     const issues = validateContent({ source: 'outside-furniture-shape.json', data: { furniture } });

@@ -16,16 +16,31 @@ const base = baseRegistry();
 const intact = [...base.furniture.values()].find((def) => def.vehicle?.removed.length === 0)!;
 const wheel = BLUEPRINTS[intact.vehicle!.blueprint]!.fittings.find(({ motion }) => motion === 'spin')!.id;
 
-const fixtures: ContentFile = {
-  furniture: ['fixture_car', 'fixture_car_wheel_off'].map((id, at) => ({
-    id,
-    name: 'Car',
-    size: [...intact.size] as Vec3,
-    color: '#5b605c',
-    vehicle: { ...intact.vehicle!, removed: at === 0 ? [] : [wheel] },
-  })),
+// A loading frame on three thin legs under a roof, open beneath the roof wide and tall enough for a player. The
+// missing fourth leg leaves it no mirror symmetry.
+const post = (x: number, z: number) => ({ position: [x, 0, z] as Vec3, size: [0.25, 4.5, 0.25] as Vec3 });
+const frame = {
+  id: 'fixture_frame',
+  name: 'Frame',
+  size: [5, 5, 3] as Vec3,
+  color: '#5b605c',
+  shape: [post(0, 0), post(4.75, 0), post(4.75, 2.75), { position: [0, 4.5, 0] as Vec3, size: [5, 0.5, 3] as Vec3 }],
+  solidFill: 0.01,
 };
-const { registry } = buildRegistry([{ source: 'fixture-cars.json', data: fixtures }]);
+
+const fixtures: ContentFile = {
+  furniture: [
+    ...['fixture_car', 'fixture_car_wheel_off'].map((id, at) => ({
+      id,
+      name: 'Car',
+      size: [...intact.size] as Vec3,
+      color: '#5b605c',
+      vehicle: { ...intact.vehicle!, removed: at === 0 ? [] : [wheel] },
+    })),
+    frame,
+  ],
+};
+const { registry, issues } = buildRegistry([{ source: 'fixture-cars.json', data: fixtures }]);
 
 const place = (entities: BlockEntities, type: string, pose: Pose): BlockEntity =>
   entities.add({
@@ -133,9 +148,10 @@ it('clears the cells of a removed fitting and nothing else', () => {
   expect(less.size).toBeLessThan(whole.size);
 });
 
-it('turns and tips the solid cells with the piece', () => {
-  const upright = placedOffsets('fixture_car_wheel_off', { facing: 'n' }).solid;
-  // With one wheel off the piece has no mirror symmetry, so no axis can be read the wrong way round unseen.
+it.each(['fixture_car_wheel_off', frame.id])('turns and tips the solid cells of %s with the piece', (type) => {
+  expect(issues).toEqual([]);
+  const upright = placedOffsets(type, { facing: 'n' }).solid;
+  // Neither fixture has mirror symmetry, so no axis can be read the wrong way round unseen.
   for (const axis of [0, 1, 2]) {
     const mirrored = [...upright].map((key) =>
       key
@@ -146,8 +162,48 @@ it('turns and tips the solid cells with the piece', () => {
     expect(mirrored.every((cell) => upright.has(cell))).toBe(false);
   }
   for (const pose of poses) {
-    const { solid, boxes } = placedOffsets('fixture_car_wheel_off', pose);
+    const { solid, boxes } = placedOffsets(type, pose);
     expect({ pose, solid: [...solid].sort() }).toEqual({ pose, solid: [...turned(upright, pose)].sort() });
     expect([...boxes].sort()).toEqual([...solid].sort());
   }
+});
+
+const walk = (entities: BlockEntities, from: Vec3, yaw: number) => {
+  const solid = (x: number, y: number, z: number) => y < 0 || entities.isSolid(x, y, z);
+  const physics = physicsFor(half);
+  const body = createPlayerBody(half, ...from);
+  for (let step = 0; step < 240; step++) {
+    steer(body, half, yaw, { forward: 1, right: 0, jump: false, sprint: false, walk: false });
+    stepBody(body, 1 / 60, solid, physics);
+  }
+  return body;
+};
+
+it('lets a player walk between the legs of a shaped piece and stops them at a leg', () => {
+  const entities = new BlockEntities(registry);
+  const placed = entities.add({ type: frame.id, pos: [0, 0, 0], size: [...frame.size], facing: 'n' })!;
+  const [width, , depth] = placed.size;
+  // Yaw π walks toward +z, under the roof between the legs; yaw -π/2 walks toward +x, into the first leg.
+  const through = walk(entities, [width / 2, 0, -3], Math.PI);
+  expect(through.pos[2] - through.halfWidth).toBeGreaterThan(placed.pos[2] + depth);
+  const into = walk(entities, [-4, 0, 0.5], -Math.PI / 2);
+  expect(into.pos[0] + into.halfWidth).toBeLessThanOrEqual(placed.pos[0]);
+});
+
+it('lets a pick between the legs of a shaped piece miss it and a pick at its roof hit it', () => {
+  const entities = new BlockEntities(registry);
+  const placed = entities.add({ type: frame.id, pos: [0, 0, 0], size: [...frame.size], facing: 'n' })!;
+  const [width, height, depth] = placed.size;
+  // A level ray along the piece's depth, in its box the whole way.
+  const pick = (y: number) =>
+    pickFurniture({
+      entities,
+      origin: [width / 2, y, -2],
+      direction: [0, 0, 1],
+      maxDistance: depth + 4,
+      blockSize: half.blockSize,
+      isSolid: (x, at, z) => entities.isSolid(x, at, z),
+    });
+  expect(pick(1.5)).toBeUndefined();
+  expect(pick(height - 0.5)).toBe(placed);
 });

@@ -11,6 +11,7 @@ import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
 import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
+import { shapeBlocks } from './shapeSolid.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
 
@@ -185,6 +186,14 @@ const worldCell = (entity: BlockEntity, size: Readonly<Vec3>, block: Readonly<Ve
   ) as Vec3;
 };
 
+/** The piece's own blocks that its drawn look fills, or undefined when the whole box blocks. */
+const drawnBlocks = (def: FurnitureDef): readonly Readonly<Vec3>[] | undefined => {
+  if (def.vehicle !== undefined) {
+    return solidBlocks(def.vehicle, def.size);
+  }
+  return def.shape !== undefined && def.solidFill !== undefined ? shapeBlocks(def.shape, def.solidFill) : undefined;
+};
+
 /** Whether a body's box overlaps any cell of a box of cells at a corner. */
 export const boxIntersectsBody = (pos: Readonly<Vec3>, size: Readonly<Vec3>, body: Body): boolean =>
   [...cellsOf(size)].some(([x, y, z]) => bodyOverlapsBlock(body, [pos[0] + x, pos[1] + y, pos[2] + z]));
@@ -195,7 +204,7 @@ export class BlockEntities {
   private readonly cells = new Map<string, BlockEntity>();
   /** Doorway cells, kept apart so a piece can stand in an open door's cells while the door stays there. */
   private readonly doorways = new Map<string, BlockEntity>();
-  private readonly vehicleMasks = new WeakMap<FurnitureDef, ReadonlySet<string>>();
+  private readonly masks = new WeakMap<FurnitureDef, ReadonlySet<string>>();
   private nextUid = 1;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -462,24 +471,24 @@ export class BlockEntities {
     return entity !== undefined && this.blocks(entity) && this.hasPartAt(x, y, z);
   }
 
-  /** Whether the entity covering a cell has a part there: a vehicle's only where its parts are. */
+  /** Whether the entity covering a cell has a part there: a vehicle's or shaped piece's only where it is drawn. */
   hasPartAt(x: number, y: number, z: number): boolean {
     const entity = this.at(x, y, z);
     if (entity === undefined) {
       return false;
     }
     const def = this.defOf(entity);
-    const mask = this.vehicleMask(def);
+    const mask = this.mask(def);
     return mask === undefined || mask.has(ownBlock(entity, def.size, [x, y, z]).join(','));
   }
 
-  /** The world boxes an entity stops movement and light in: a vehicle's only where its parts are. */
+  /** The world boxes an entity stops movement and light in: a vehicle's or shaped piece's only where it is drawn. */
   blockingBoxes(entity: BlockEntity): { pos: Vec3; size: Vec3 }[] {
     if (!this.blocks(entity)) {
       return [];
     }
     const def = this.defOf(entity);
-    const mask = this.vehicleMask(def);
+    const mask = this.mask(def);
     if (mask === undefined) {
       return [{ pos: entity.pos, size: entity.size }];
     }
@@ -489,14 +498,15 @@ export class BlockEntities {
     }));
   }
 
-  private vehicleMask(def: FurnitureDef): ReadonlySet<string> | undefined {
-    if (def.vehicle === undefined) {
-      return undefined;
-    }
-    let mask = this.vehicleMasks.get(def);
+  private mask(def: FurnitureDef): ReadonlySet<string> | undefined {
+    let mask = this.masks.get(def);
     if (mask === undefined) {
-      mask = new Set(solidBlocks(def.vehicle, def.size).map((block) => block.join(',')));
-      this.vehicleMasks.set(def, mask);
+      const blocks = drawnBlocks(def);
+      if (blocks === undefined) {
+        return undefined;
+      }
+      mask = new Set(blocks.map((block) => block.join(',')));
+      this.masks.set(def, mask);
     }
     return mask;
   }

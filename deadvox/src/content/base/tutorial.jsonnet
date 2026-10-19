@@ -1,10 +1,11 @@
+local shape = import 'furniture-shape.libsonnet';
 local rows = import 'tools/jsonnet/lib/rows.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local supplyPaint = '#8d986d';
 local lootContext = { usage: ['Residential'], tier: 'Tier1' };
 local wall = ['WWWWWWWWWWWW', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'WWWWWDDWWWWW'];
 local cabinetWall = wall[:2] + ['WKK........W'] + wall[3:];
-{
+shape.colliding({
   furniture: [{
     id: 'tutorial_cabinet',
     name: 'Supply cabinet',
@@ -52,4 +53,4 @@ local cabinetWall = wall[:2] + ['WKK........W'] + wall[3:];
     tracks: [{ points: [[0, 12], [0, 1], [-8, 1], [-8, -12]], width: 3, surface: 'dirt' }],
     beats: [{ id: 'tutorial_exit', area: { x0: -10, z0: -15, x1: -6, z1: -11 } }],
   }],
-}
+})

@@ -1,3 +1,4 @@
+local shape = import 'furniture-shape.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local vehicles = import 'vehicles.libsonnet';
 local plaque(id, name, color, readable) = {
@@ -10,7 +11,7 @@ local plaque(id, name, color, readable) = {
   shape: [{ position: [0, 0, 0.875], size: [1, 1, 0.125] }],
   readable: readable,
 };
-{
+shape.colliding({
   furniture: [
     plaque('clinic_sign', 'Clinic direction sign', '#99794c', {
       title: 'Hand-painted sign',
@@ -122,4 +123,4 @@ local plaque(id, name, color, readable) = {
       text: 'The clinic is south, past the hamlet. The military camp lies beyond it.',
     }),
   ],
-}
+})

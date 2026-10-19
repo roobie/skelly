@@ -104,6 +104,7 @@ describe('furniture detail', () => {
                 { position: [0, 0, 0], size: [1, 0.5, 1], color: '#ff0000' },
                 { position: [1, 0, 1], size: [1, 0.5, 1] },
               ],
+              solidFill: 0.01,
             },
           ],
         },

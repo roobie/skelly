@@ -57,6 +57,7 @@ import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
+import { shapeBlocks } from './shapeSolid.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { jfxrPresetIssues } from './soundSynth.ts';
 import {
@@ -1272,8 +1273,13 @@ const FurnitureSchema = pipe(
         surface: picklist(['wood', 'painted-metal', 'plastic']),
       }),
     ),
-    /** Render-only boxes in cell coordinates; gameplay continues to use the furniture cells. */
+    /** Boxes in cell coordinates that the piece is drawn as. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
+    /**
+     * A solid shaped piece that isn't a door stops movement and light only in the blocks its `shape` fills to at least
+     * this fraction, so a player can walk where it looks open.
+     */
+    solidFill: optional(Fraction),
     /**
      * Rendered as this vehicle: a blueprint without the `removed` fittings, in `body` paint, `dirt` grimy (0 clean to
      * 1 filthy). Its blocks stop movement and light where its parts fill at least `solidFill` of them, so a low
@@ -1313,7 +1319,18 @@ const FurnitureSchema = pipe(
       shape.every(
         ({ position: [x, y, z], size: [w, h, d] }) => x + w <= size[0] && y + h <= size[1] && z + d <= size[2],
       ),
-    'shape boxes must stay within furniture size',
+    (issue) => `shape boxes of "${(issue.input as { id: string }).id}" must stay within furniture size`,
+  ),
+  check(
+    ({ shape, solid, door, solidFill }) =>
+      (solidFill !== undefined) === (shape !== undefined && solid !== false && door === undefined),
+    'solidFill belongs on exactly the solid shaped pieces that are not doors',
+  ),
+  // Its blocks stay within its size because its boxes do (checked above), so only emptiness is left to refuse.
+  check(
+    ({ shape, solidFill }) =>
+      shape === undefined || solidFill === undefined || shapeBlocks(shape, solidFill).length > 0,
+    (issue) => `shaped piece "${(issue.input as { id: string }).id}" must block somewhere`,
   ),
   check(
     ({ size, vehicle }) => {
