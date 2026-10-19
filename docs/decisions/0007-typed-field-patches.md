@@ -29,7 +29,7 @@ changes, not the one cheapest to build first.
 A mod may change fields of another pack's definition through typed patch operations that
 the loader checks when the pack is admitted. The schema marks which fields accept which
 operations; a field it does not mark accepts none. Whole-definition replacement stays
-available for a mod that means to replace an entry.
+available for a mod that means to replace an entry, under the same conflict rule.
 
 **Checked at load.** A patch whose target id, field or operation does not exist, or whose
 field does not accept that operation, is a load error naming the mod, the target and the
@@ -45,13 +45,18 @@ record.
 **Schema marking.** Marking bounds what a mod can break and what validation must explain,
 because only marked fields can have more than one author.
 
-**Conflicts.** List additions commute: two mods adding to one list both keep their
-additions, in pack order, and never conflict. A scalar set, or a list replaced, by two
-mods fails closed with a conflict message naming the field, both mods and the fix, unless
-the later mod declares that it overrides the earlier one and depends on it, directly or
-transitively. Load order alone never decides. This is the rule for competing skill
-providers in `deadvox/docs/pack-split.md`, "Skill providers", so one rule covers every
-place where two mods claim one thing.
+**Conflicts.** A mod may override another mod's value or object only if it depends on
+that mod, directly or transitively, and declares the override. Setting a scalar,
+replacing a list and replacing a whole definition are overrides. Two mods with no
+dependency path between them must not override the same value or object: the load fails
+closed with a conflict message naming the target, both mods and the fix. List additions
+are not overrides: they commute, so two mods adding to one list both keep their
+additions, in pack order, and never conflict. Load order alone never decides, because the
+order in which a player enables mods says nothing about which one meant to win. A
+dependency does: the depending mod was written against the other, so its override is a
+choice made with the other's value in view, and it always loads after it. This is the
+rule for competing skill providers in `deadvox/docs/pack-split.md`, "Skill providers",
+so one rule covers every place where two mods claim one thing.
 
 ## Rejected
 
