@@ -3,14 +3,13 @@ local pocket = { pockets: [{ grid: [6, 5], handlingSimSeconds: 1.2 }] };
 {
   furniture: [
     {
-      id: 'medical_folding_screen', name: 'Folding screen', size: [1, 1, 1], color: '#d8d2bd',
-      shape: [box([0.1, 0, 0.1], [0.8, 0.9, 0.1]), box([0.1, 0, 0.45], [0.8, 0.9, 0.1])],
+      id: 'medical_folding_screen', name: 'Folding screen', size: [1, 2, 1], color: '#d8d2bd',
+      shape: [box([0.1, 0, 0.1], [0.8, 1.8, 0.1]), box([0.1, 0, 0.45], [0.8, 1.8, 0.1])],
     },
     {
-      id: 'medical_examination_couch', name: 'Examination couch', size: [1, 1, 1], color: '#71828a',
-      shape: [box([0.1, 0.35, 0.1], [0.8, 0.2, 0.8]), box([0.15, 0, 0.15], [0.12, 0.35, 0.12]), box([0.73, 0, 0.15], [0.12, 0.35, 0.12])],
+      id: 'medical_examination_couch', name: 'Examination couch', size: [2, 1, 4], color: '#71828a',
+      shape: [box([0.1, 0.35, 0.2], [1.8, 0.2, 3.6]), box([0.15, 0, 0.25], [0.12, 0.35, 0.12]), box([1.73, 0, 0.25], [0.12, 0.35, 0.12]), box([0.15, 0, 3.63], [0.12, 0.35, 0.12]), box([1.73, 0, 3.63], [0.12, 0.35, 0.12])],
     },
-    { id: 'medical_service_door', name: 'Service door', size: [1, 4, 1], color: '#82908b', door: { handlingSimSeconds: 0.6 } },
     {
       id: 'medical_steam_sterilizer', name: 'Steam sterilizer', size: [1, 2, 1], color: '#7f8987',
       shape: [box([0.1, 0, 0.1], [0.8, 1.4, 0.8]), box([0.2, 1.4, 0.2], [0.6, 0.2, 0.6])],
