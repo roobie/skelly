@@ -5,6 +5,7 @@ import type { Registry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Rolled } from '../src/core/loot.ts';
+import { magazineFits, magazineWellCalibre } from '../src/core/magazine.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { HandlingRange } from '../src/core/range.ts';
 import { furnitureDistance, reachTuning } from '../src/core/reach.ts';
@@ -334,6 +335,24 @@ describe('the debug test-house range', () => {
     const firearms = [...registry.items.values()].filter((item) => item.firearm);
     for (const firearm of firearms) {
       expect(stocked.has(firearm.id), firearm.id).toBe(true);
+    }
+  });
+
+  it('stocks a fitting magazine for every magazine-fed firearm, so each one can be loaded at the range', () => {
+    const config = makeConfig(13, 64);
+    config.site = 'testHouse';
+    config.debug = true;
+    const { registry } = BUNDLED_CONTENT;
+    const site = buildDebugTestHouseSite(config, registry, testHouseScene(config, registry)) as DebugTestHouseSite;
+    const stock = rangeFurnitureFor(site).find(({ spec }) => spec.type === 'range_rack')!.loot;
+    const stored = [...stockedTypes(registry, stock)];
+    const magazineFed = [...registry.items.values()].filter(({ id }) => magazineWellCalibre(registry, id));
+    expect(magazineFed).not.toHaveLength(0);
+    for (const firearm of magazineFed) {
+      expect(
+        stored.some((type) => magazineFits(registry, firearm.id, type)),
+        firearm.id,
+      ).toBe(true);
     }
   });
 });
