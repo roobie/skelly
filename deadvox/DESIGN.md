@@ -1748,6 +1748,11 @@ play, not only decorate it.
     still hide you. Overgrowth that should hide you without stopping you is
     therefore the hedge block; grass, weeds, creepers and shaped shrubs take
     their rules from their own content properties.
+  - **Placement:** authored sites default to light growth, weeds and a few
+    shrubs, which keeps them legible and their paths clear; heavier growth is
+    left for sites that should feel abandoned. Whether hiding growth stands near
+    a gate is each site's own content choice, because no project-wide rule
+    exists yet.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
     moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do

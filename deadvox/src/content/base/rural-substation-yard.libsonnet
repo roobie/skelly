@@ -1,6 +1,6 @@
 local context = { usage: [], tier: 'Tier1' };
 local palette = {
-  '.': { ground: true }, f: 'chain_link', a: 'asphalt', G: 'tall_grass', h: 'hedge',
+  '.': { ground: true }, f: 'chain_link', a: 'asphalt',
   s: { furniture: 'shrub_small' }, i: { furniture: 'creeper_strip' }, w: { furniture: 'weed_tuft' },
   T: { furniture: 'substation_transformer', facing: 's' },
   R: { furniture: 'substation_disconnector', facing: 's' },
@@ -35,15 +35,15 @@ local fenced = [
 ];
 local grown = [
   'ffffffffffffffffffffffff',
-  'f........iiiiii....GGGGf',
-  'f...RRR..........GGGGGGf',
+  'f........iiiiii........f',
+  'f...RRR................f',
   'f........TTTTTT........f',
-  'f.ss.....TTTTTT.....hhhf',
-  'f.ss.....TTTTTT.....hhhf',
+  'f.ss.....TTTTTT........f',
+  'f.ss.....TTTTTT........f',
   'f........TTTTTT........f',
   'f........TTTTTT........f',
-  'fGGGGG...........w..w..f',
-  'fGGGG..............w..wf',
+  'f................w..w..f',
+  'f..................w..wf',
   'fffffffffffffffffff...ff',
 ];
 local grownUpper = [
@@ -51,8 +51,8 @@ local grownUpper = [
   'f........iiiiii........f',
   'f...RRR................f',
   'f........TTTTTT........f',
-  'f........TTTTTT.....hhhf',
-  'f........TTTTTT.....hhhf',
+  'f........TTTTTT........f',
+  'f........TTTTTT........f',
   'f........TTTTTT........f',
   'f........TTTTTT........f',
   'f......................f',

@@ -58,8 +58,8 @@ local yardGround = [
 local yardFurniture = [
   '.....................', '.....................', '.....................', '.....................',
   '.....................', '.....................', '.....................', '..ii.............ii..',
-  'GGGSS.............GGG', 'GGGSS..........ss....', 'GG.............ss....', 'GG.................GG',
-  'G...................G', '.....................', '.......w.....w.......', '.....................',
+  '...SS................', '...SS..........ss....', '...............ss....', '.....................',
+  '.....................', '.....................', '.......w.....w.......', '.....................',
   '.......w.............', '.....................', '.............w.......', '.....................',
   '.BBBB............NN..', '.BBBB............NN..', '.w.....w.....w.......', '.....................',
 ];
@@ -97,7 +97,7 @@ local yardTop = [
       id: 'rural_medical_grounds', size: [21, 4, 24], lootContext: medical,
       palette: {
         '.': 'air', g: { ground: true }, r: 'dirt', d: 'dirt', B: { furniture: 'medical_bike_rack' }, N: { furniture: 'medical_bin_enclosure' },
-        G: 'tall_grass', S: { furniture: 'shrub_tall' }, s: { furniture: 'shrub_small' }, i: { furniture: 'creeper_strip' }, w: { furniture: 'weed_tuft' },
+        S: { furniture: 'shrub_tall' }, s: { furniture: 'shrub_small' }, i: { furniture: 'creeper_strip' }, w: { furniture: 'weed_tuft' },
       },
       layers: [yardGround, yardFurniture, yardUpper, yardTop],
     },

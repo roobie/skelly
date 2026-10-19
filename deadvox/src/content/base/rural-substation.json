@@ -283,15 +283,15 @@
         ],
         [
           "ffffffffffffffffffffffff",
-          "f........iiiiii....GGGGf",
-          "f...RRR..........GGGGGGf",
+          "f........iiiiii........f",
+          "f...RRR................f",
           "f........TTTTTT........f",
-          "f.ss.....TTTTTT.....hhhf",
-          "f.ss.....TTTTTT.....hhhf",
+          "f.ss.....TTTTTT........f",
+          "f.ss.....TTTTTT........f",
           "f........TTTTTT........f",
           "f........TTTTTT........f",
-          "fGGGGG...........w..w..f",
-          "fGGGG..............w..wf",
+          "f................w..w..f",
+          "f..................w..wf",
           "fffffffffffffffffff...ff"
         ],
         [
@@ -299,8 +299,8 @@
           "f........iiiiii........f",
           "f...RRR................f",
           "f........TTTTTT........f",
-          "f........TTTTTT.....hhhf",
-          "f........TTTTTT.....hhhf",
+          "f........TTTTTT........f",
+          "f........TTTTTT........f",
           "f........TTTTTT........f",
           "f........TTTTTT........f",
           "f......................f",
@@ -381,7 +381,6 @@
         ".": {
           "ground": true
         },
-        "G": "tall_grass",
         "R": {
           "facing": "s",
           "furniture": "substation_disconnector"
@@ -395,7 +394,6 @@
         },
         "a": "asphalt",
         "f": "chain_link",
-        "h": "hedge",
         "i": {
           "furniture": "creeper_strip"
         },
@@ -444,7 +442,6 @@
         ".": {
           "ground": true
         },
-        "G": "tall_grass",
         "R": {
           "facing": "s",
           "furniture": "substation_disconnector"
@@ -458,7 +455,6 @@
         },
         "a": "asphalt",
         "f": "chain_link",
-        "h": "hedge",
         "i": {
           "furniture": "creeper_strip"
         },
@@ -491,7 +487,6 @@
         ".": {
           "ground": true
         },
-        "G": "tall_grass",
         "R": {
           "facing": "s",
           "furniture": "substation_disconnector"
@@ -505,7 +500,6 @@
         },
         "a": "asphalt",
         "f": "chain_link",
-        "h": "hedge",
         "i": {
           "furniture": "creeper_strip"
         },
