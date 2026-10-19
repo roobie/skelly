@@ -342,7 +342,7 @@
           "loot": "gauntlet_police_ammunition"
         },
         "B": {
-          "facing": "e",
+          "facing": "w",
           "furniture": "bed"
         },
         "D": {

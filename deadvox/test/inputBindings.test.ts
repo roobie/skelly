@@ -375,6 +375,19 @@ describe('keyboard registry', () => {
     expect(commands.map(({ action }) => action)).not.toContain('carry.turn');
     expect(commands.map(({ action }) => action)).not.toContain('carry.tip');
   });
+  it('takes default keys from content and lets a stored rebind win by action id', () => {
+    const fromContent = new BindingRegistry(INPUT_BINDINGS, storage()).chords('world.interact');
+    expect(fromContent.length).toBeGreaterThan(0);
+    const chosen = { code: 'Digit9' };
+    expect(fromContent).not.toContainEqual(chosen);
+    const stored = storage();
+    stored.setItem('deadvox.input-bindings', JSON.stringify({ 'world.interact': [chosen] }));
+    const rebound = new BindingRegistry(INPUT_BINDINGS, stored);
+    expect(rebound.chords('world.interact')).toEqual([chosen]);
+    expect(rebound.chords('movement.forward')).toEqual(
+      new BindingRegistry(INPUT_BINDINGS, storage()).chords('movement.forward'),
+    );
+  });
   it('routes G/V/B/H to the inventory tabs in play and inventory contexts', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
     let context: InputContext = 'play';

@@ -219,6 +219,7 @@
           "loot": "medical_filler"
         },
         "M": {
+          "facing": "s",
           "furniture": "medical_cabinet",
           "loot": "medical_filler"
         },

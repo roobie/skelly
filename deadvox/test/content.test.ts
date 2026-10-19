@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
+import { controlIssues } from '../src/cli/controlIssues.ts';
 import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { isBodyDoor } from '../src/core/blockEntities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
@@ -1092,6 +1093,77 @@ describe('content', () => {
       source: 'core content',
       path: 'meleeClasses',
       message: `missing required content "${CORE_CONTENT_IDS.fistsMeleeClass}"`,
+    });
+  });
+
+  describe('default keys', () => {
+    interface ControlRows {
+      controls: { id: string; keys: { code: string; modifier?: string }[] }[];
+    }
+    const controlsIssues = (change: (rows: ControlRows['controls']) => void): string[] => {
+      const file = base.find(({ source }) => source === 'controls.json')!;
+      const data = structuredClone(file.data) as ControlRows;
+      change(data.controls);
+      const built = buildRegistry(base.map((entry) => (entry === file ? { source: file.source, data } : entry)));
+      const baseSources = new Set(base.map(({ source }) => source));
+      return [...built.issues, ...controlIssues(built.registry, built.origins, baseSources)].map(
+        ({ message }) => message,
+      );
+    };
+
+    it('accepts the base default keys', () => {
+      expect(controlsIssues((rows) => rows.length)).toEqual([]);
+    });
+
+    it('refuses a controls row from a mod, since the game reads default keys from the base pack only', () => {
+      const modRow = { id: 'mod.action', keys: [{ code: 'KeyJ' }] };
+      const built = buildRegistry([...base, { source: 'mods/foo/controls.json', data: { controls: [modRow] } }]);
+      const refused = controlIssues(built.registry, built.origins, new Set(base.map(({ source }) => source)));
+      expect(refused.map(({ source }) => source)).toEqual(['mods/foo/controls.json']);
+      expect(refused[0]?.message).toContain("mods can't yet");
+    });
+
+    it('reports an action left without a default key', () => {
+      let removed = '';
+      const messages = controlsIssues((rows) => {
+        removed = rows.splice(0, 1)[0]!.id;
+      });
+      expect(messages).toContain(`action ${removed} has no default key`);
+    });
+
+    it('reports an action whose row has no keys once, as an action without a default key', () => {
+      let emptied = '';
+      const messages = controlsIssues((rows) => {
+        emptied = rows[0]!.id;
+        rows[0]!.keys = [];
+      });
+      expect(messages).toEqual([`action ${emptied} has no default key`]);
+    });
+
+    it('reports a default key for an unknown action', () => {
+      expect(controlsIssues((rows) => rows.push({ id: 'movement.teleport', keys: [{ code: 'KeyZ' }] }))).toContain(
+        'unknown action movement.teleport',
+      );
+    });
+
+    it('reports an invalid key code', () => {
+      expect(controlsIssues((rows) => rows[0]!.keys.splice(0, 1, { code: 'NotAKey' }))).toContain(
+        'NotAKey: Unknown physical key',
+      );
+    });
+
+    it.each(['ctrl', 'meta', 'alt'])('refuses the %s modifier in a default key', (modifier) => {
+      const messages = controlsIssues((rows) => rows[0]!.keys.splice(0, 1, { code: 'KeyJ', modifier }));
+      expect(messages.some((message) => message.startsWith(`${modifier}+KeyJ: `))).toBe(true);
+    });
+
+    it('reports default keys that conflict', () => {
+      const messages = controlsIssues((rows) => {
+        for (const row of rows) {
+          row.keys = [{ code: 'KeyJ' }];
+        }
+      });
+      expect(messages.some((message) => message.toLowerCase().includes('conflict'))).toBe(true);
     });
   });
 

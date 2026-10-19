@@ -27,6 +27,26 @@ local plaque(id, name, color, readable) = {
       name: 'Medical supply cabinet',
       size: [2, 3, 1],
       color: '#a8ada4',
+      // The front faces -Z, so every front detail sits in the first 0.06 of depth and stays inside the cells.
+      shape: [
+        { position: [0.04, 0, 0.04], size: [1.92, 0.18, 0.92], color: '#565d59' },
+        { position: [0.04, 0.18, 0.06], size: [1.92, 2.62, 0.88], color: '#c4cac3' },
+        { position: [0, 2.8, 0], size: [2, 0.2, 1], color: '#aab0a9' },
+        // Glass-fronted upper doors over solid lower doors, split by a dark seam.
+        { position: [0.14, 1.3, 0.03], size: [0.8, 1, 0.03], color: '#8ea4a6' },
+        { position: [1.06, 1.3, 0.03], size: [0.8, 1, 0.03], color: '#8ea4a6' },
+        { position: [0.14, 0.28, 0.03], size: [0.8, 0.92, 0.03], color: '#d6dbd4' },
+        { position: [1.06, 0.28, 0.03], size: [0.8, 0.92, 0.03], color: '#d6dbd4' },
+        { position: [0.94, 0.28, 0.03], size: [0.12, 2.02, 0.03], color: '#454b48' },
+        { position: [0.84, 1.55, 0], size: [0.04, 0.4, 0.03], color: '#363c3a' },
+        { position: [1.12, 1.55, 0], size: [0.04, 0.4, 0.03], color: '#363c3a' },
+        { position: [0.84, 0.55, 0], size: [0.04, 0.4, 0.03], color: '#363c3a' },
+        { position: [1.12, 0.55, 0], size: [0.04, 0.4, 0.03], color: '#363c3a' },
+        // A red cross on a white plate above the doors marks it as medical.
+        { position: [0.74, 2.33, 0.015], size: [0.52, 0.44, 0.045], color: '#e8ebe6' },
+        { position: [0.935, 2.38, 0], size: [0.13, 0.34, 0.015], color: '#b3302c' },
+        { position: [0.83, 2.48, 0], size: [0.34, 0.14, 0.015], color: '#b3302c' },
+      ],
       container: { pockets: [{ grid: [8, 6], handlingSimSeconds: 1.2 }] },
     },
     { id: 'sample_rack', name: 'Specimen rack', size: [2, 3, 1], color: '#7c8581' },

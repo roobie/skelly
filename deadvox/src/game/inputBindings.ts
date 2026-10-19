@@ -1,6 +1,8 @@
 // biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
 // biome-ignore-all lint/style/noExcessiveClassesPerFile: preferences and their single DOM resolver share the enforced keyboard boundary.
 
+import controlsFile from '../content/base/controls.json' with { type: 'json' };
+
 export const INPUT_CONTEXTS = {
   title: false,
   menu: false,
@@ -57,37 +59,29 @@ const entered: readonly InputContext[] = [
 ];
 const all: readonly InputContext[] = ['title', ...entered];
 const HUD_TOGGLE_HOLD_MS = 1000;
-// biome-ignore lint/complexity/useMaxParams: compact declarations keep alternative keys and gesture metadata in one catalogue.
+/** An action as code owns it: gestures, contexts and gates. Default keys are content, see `defaultKeySetIssues`. */
+type Action = Omit<Binding, 'defaults'>;
+// biome-ignore lint/complexity/useMaxParams: compact declarations keep gesture metadata in one catalogue.
 const row = (
   id: string,
   description: string,
   contexts: readonly InputContext[],
-  codes: readonly string[],
   kind: PressKind = 'press',
-  extra: Partial<Binding> = {},
-): Binding => ({
+  extra: Partial<Action> = {},
+): Action => ({
   id,
   description,
   contexts,
   commands: [{ id, kind }],
-  defaults: codes.map((code) => ({ code })),
   ...extra,
 });
-const debugRow = (
-  id: string,
-  description: string,
-  code: string,
-  contexts: readonly InputContext[] = entered,
-): Binding => row(id, description, contexts, [code], 'press', { debug: true, gate: 'debug.gate' });
-const debugModifiedRow = (id: string, description: string, code: string, modifier: Modifier): Binding => ({
-  ...debugRow(id, description, code),
-  defaults: [{ code, modifier }],
-});
+const debugRow = (id: string, description: string, contexts: readonly InputContext[] = entered): Action =>
+  row(id, description, contexts, 'press', { debug: true, gate: 'debug.gate' });
 const INVENTORY_TAB_BINDINGS = [
-  { action: 'ui.inventory-tab-items', description: 'Open / select Items tab', tab: 'items', code: 'KeyG' },
-  { action: 'ui.inventory-tab-skills', description: 'Open / select Skills tab', tab: 'skills', code: 'KeyV' },
-  { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting', code: 'KeyB' },
-  { action: 'ui.inventory-tab-actions', description: 'Open / select Actions tab', tab: 'actions', code: 'KeyH' },
+  { action: 'ui.inventory-tab-items', description: 'Open / select Items tab', tab: 'items' },
+  { action: 'ui.inventory-tab-skills', description: 'Open / select Skills tab', tab: 'skills' },
+  { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting' },
+  { action: 'ui.inventory-tab-actions', description: 'Open / select Actions tab', tab: 'actions' },
 ] as const;
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   'ui.inventory-toggle',
@@ -96,32 +90,29 @@ const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
 export const inventoryTabForAction = (action: string) =>
   INVENTORY_TAB_BINDINGS.find((binding) => binding.action === action)?.tab;
 
-export const INPUT_BINDINGS: readonly Binding[] = [
-  row('stance.ready', 'Hold to ready a firearm or enter en-garde', world, ['Mouse2'], 'held-state', {
-    device: 'pointer',
-  }),
-  row('aim.ads-toggle', 'Toggle sights while firearm is ready', world, ['Mouse1'], 'press', { device: 'pointer' }),
-  row('movement.forward', 'Move forward', movingWhileReading, ['KeyW'], 'held-state'),
-  row('movement.back', 'Move backward', movingWhileReading, ['KeyS'], 'held-state'),
-  row('movement.left', 'Move left', movingWhileReading, ['KeyA'], 'held-state'),
-  row('movement.right', 'Move right', movingWhileReading, ['KeyD'], 'held-state'),
-  row('movement.sprint', 'Sprint', moving, ['ShiftLeft', 'ShiftRight'], 'held-state'),
-  row('movement.walk-toggle', 'Walk / jog', moving, ['KeyZ']),
-  row('player.crouch-toggle', 'Toggle crouch', ['play', 'carrying', 'build'], ['KeyC']),
-  row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play'], ['KeyT']),
-  row('movement.jump', 'Jump', ['play', 'carrying', 'build'], ['Space'], 'held-state'),
-  row('carry.turn', 'Turn the carried piece', ['carrying'], ['KeyR']),
-  row('carry.tip', 'Tip the carried piece over', ['carrying'], ['KeyT']),
-  row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state'),
-  row('noclip.descend', 'Descend while flying', ['noclip'], ['KeyC'], 'held-state'),
-  row('hand.use-off', 'Use off hand', world, ['Equal']),
-  row('light.worn-toggle', 'Hold to switch worn lights on or off', world, ['KeyL'], 'hold'),
-  row('world.interact', 'Tap to interact or pocket a ground item; hold to wield it or lift furniture', world, ['KeyF']),
+const INPUT_ACTIONS: readonly Action[] = [
+  row('stance.ready', 'Hold to ready a firearm or enter en-garde', world, 'held-state', { device: 'pointer' }),
+  row('aim.ads-toggle', 'Toggle sights while firearm is ready', world, 'press', { device: 'pointer' }),
+  row('movement.forward', 'Move forward', movingWhileReading, 'held-state'),
+  row('movement.back', 'Move backward', movingWhileReading, 'held-state'),
+  row('movement.left', 'Move left', movingWhileReading, 'held-state'),
+  row('movement.right', 'Move right', movingWhileReading, 'held-state'),
+  row('movement.sprint', 'Sprint', moving, 'held-state'),
+  row('movement.walk-toggle', 'Walk / jog', moving),
+  row('player.crouch-toggle', 'Toggle crouch', ['play', 'carrying', 'build']),
+  row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play']),
+  row('movement.jump', 'Jump', ['play', 'carrying', 'build'], 'held-state'),
+  row('carry.tip', 'Tip the carried piece over', ['carrying']),
+  row('carry.turn', 'Turn the carried piece', ['carrying']),
+  row('noclip.ascend', 'Ascend while flying', ['noclip'], 'held-state'),
+  row('noclip.descend', 'Descend while flying', ['noclip'], 'held-state'),
+  row('hand.use-off', 'Use off hand', world),
+  row('light.worn-toggle', 'Hold to switch worn lights on or off', world, 'hold'),
+  row('world.interact', 'Tap to interact or pocket a ground item; hold to wield it or lift furniture', world),
   row(
     'firearm.reload',
     'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap does nothing',
     ['play', 'noclip'],
-    ['KeyR'],
     'hold',
     {
       commands: [
@@ -131,115 +122,104 @@ export const INPUT_BINDINGS: readonly Binding[] = [
       ],
     },
   ),
-  row('ui.inventory-toggle', 'Open / close inventory', [...moving, 'inventory'], ['Tab']),
-  ...INVENTORY_TAB_BINDINGS.map(({ action, description, code }) =>
-    row(action, description, [...moving, 'inventory'], [code]),
-  ),
-  row('ui.main-menu-toggle', 'Main menu', entered, ['F9'], 'press', { text: true }),
-  row('hud.toggle', 'Hold to hide or show the HUD', entered, ['Backquote'], 'hold', {
-    holdMs: HUD_TOGGLE_HOLD_MS,
-  }),
-  row('handling.stop', 'Stop handling or a long action', [...moving, 'inventory', 'interrupted'], ['KeyX']),
-  row('craft.continue', 'Continue stopped crafting', ['play', 'carrying'], ['Enter']),
-  row('compression.continue', 'Continue after an interruption', ['interrupted'], ['Enter']),
+  row('ui.inventory-toggle', 'Open / close inventory', [...moving, 'inventory']),
+  ...INVENTORY_TAB_BINDINGS.map(({ action, description }) => row(action, description, [...moving, 'inventory'])),
+  row('ui.main-menu-toggle', 'Main menu', entered, 'press', { text: true }),
+  row('hud.toggle', 'Hold to hide or show the HUD', entered, 'hold', { holdMs: HUD_TOGGLE_HOLD_MS }),
+  row('handling.stop', 'Stop handling or a long action', [...moving, 'inventory', 'interrupted']),
+  row('craft.continue', 'Continue stopped crafting', ['play', 'carrying']),
+  row('compression.continue', 'Continue after an interruption', ['interrupted']),
   ...Array.from({ length: 5 }, (_, i) =>
-    row(
-      `quickbar.use.${i + 1}`,
-      `Quickbar ${i + 1}: tap to take or put away; hold to use`,
-      world,
-      [`Digit${i + 1}`],
-      'hold',
-    ),
+    row(`quickbar.use.${i + 1}`, `Quickbar ${i + 1}: tap to take or put away; hold to use`, world, 'hold'),
   ),
-  ...Array.from({ length: 5 }, (_, i) =>
-    row(`quickbar.assign.${i + 1}`, `Assign quickbar ${i + 1}`, ['inventory'], [`Digit${i + 1}`]),
-  ),
-  row('inventory.previous', 'Select previous item', ['inventory'], ['ArrowUp', 'ArrowLeft'], 'press', { repeat: true }),
-  row('inventory.next', 'Select next item', ['inventory'], ['ArrowDown', 'ArrowRight'], 'press', { repeat: true }),
-  row('inventory.search', 'Search next container', ['inventory'], ['KeyS']),
-  row('inventory.hands', 'Wield selected item', ['inventory'], ['KeyW']),
-  row('inventory.wear', 'Wear or remove', ['inventory'], ['KeyY']),
-  row('inventory.drop', 'Drop selected item', ['inventory'], ['KeyD']),
-  row('inventory.rotate', 'Rotate selected or dragged item', ['inventory'], ['KeyR']),
-  row('inventory.best-pocket', 'Move to best pocket', ['inventory'], ['Enter']),
-  row('inventory.take-all-like', 'Take all like selected item', ['inventory'], ['KeyA']),
-  row(
-    'inventory.quick-action-gate',
-    'Hold and click an item for its quick action',
-    ['inventory'],
-    ['KeyT'],
-    'held-state',
-    { plainKey: true },
-  ),
-  row('reading.close', 'Put away reading', ['reading'], ['Tab']),
-  row('reading.line-up', 'Read previous line', ['reading'], ['ArrowUp'], 'press', { repeat: true }),
-  row('reading.line-down', 'Read next line', ['reading'], ['ArrowDown'], 'press', { repeat: true }),
-  row('reading.page-up', 'Read previous page', ['reading'], ['PageUp'], 'press', { repeat: true }),
-  row('reading.page-down', 'Read next page', ['reading'], ['PageDown', 'Space'], 'press', { repeat: true }),
-  row('reading.first', 'Read from beginning', ['reading'], ['Home'], 'press', { repeat: true }),
-  row('reading.last', 'Read to end', ['reading'], ['End'], 'press', { repeat: true }),
-  row('spawn.previous', 'Select previous spawn item', ['spawn'], ['ArrowUp'], 'press', { repeat: true, text: true }),
-  row('spawn.next', 'Select next spawn item', ['spawn'], ['ArrowDown'], 'press', { repeat: true, text: true }),
-  row('spawn.dismiss', 'Close spawn menu', ['spawn'], ['Tab'], 'press', { text: true }),
-  row('spawn.confirm', 'Spawn selected item', ['spawn'], ['Enter'], 'press', { debug: true, text: true }),
-  row('debug.gate', 'Hold for debug commands', [...all, 'review-map'], ['F2'], 'held-state', {
-    debug: true,
-    text: true,
+  ...Array.from({ length: 5 }, (_, i) => row(`quickbar.assign.${i + 1}`, `Assign quickbar ${i + 1}`, ['inventory'])),
+  row('inventory.previous', 'Select previous item', ['inventory'], 'press', { repeat: true }),
+  row('inventory.next', 'Select next item', ['inventory'], 'press', { repeat: true }),
+  row('inventory.search', 'Search next container', ['inventory']),
+  row('inventory.hands', 'Wield selected item', ['inventory']),
+  row('inventory.wear', 'Wear or remove', ['inventory']),
+  row('inventory.drop', 'Drop selected item', ['inventory']),
+  row('inventory.rotate', 'Rotate selected or dragged item', ['inventory']),
+  row('inventory.best-pocket', 'Move to best pocket', ['inventory']),
+  row('inventory.take-all-like', 'Take all like selected item', ['inventory']),
+  row('inventory.quick-action-gate', 'Hold and click an item for its quick action', ['inventory'], 'held-state', {
+    plainKey: true,
   }),
-  debugRow('debug.panel-toggle', 'Debug panel', 'Backquote', all),
-  debugModifiedRow('debug.input-replay-export', 'Export input replay', 'Backquote', 'shift'),
-  debugModifiedRow('debug.input-replay-import', 'Import input replay', 'KeyI', 'shift'),
-  debugRow('debug.performance-toggle', 'Performance overlay', 'F4', all),
-  debugRow('debug.interaction-ray-toggle', 'Interaction ray', 'KeyU', all),
-  debugRow('debug.build-toggle', 'Build tools', 'KeyB'),
-  debugRow('debug.impact-laser', 'Impact laser', 'KeyC'),
-  debugRow('debug.spawn-menu-toggle', 'Spawn item menu', 'KeyG'),
-  debugRow('debug.god-toggle', 'God mode', 'KeyH'),
-  debugRow('debug.noclip-toggle', 'Noclip', 'KeyP'),
-  debugRow('debug.spectator-camera-toggle', 'Spectator camera', 'F6'),
-  debugRow('debug.third-person-toggle', 'Third-person avatar view', 'Numpad0'),
-  debugRow('debug.perception-labels-toggle', 'Perception labels', 'F7'),
-  debugRow('debug.spawn-unaware-shambler', 'Spawn unaware shambler', 'Numpad3'),
-  debugRow('debug.test-noise', 'Test noise', 'F8'),
-  debugRow('debug.compression-test', 'Compression test', 'KeyT'),
-  debugRow('debug.interruption-test', 'Emit interruption', 'KeyN'),
-  debugRow('debug.hurt', 'Take damage', 'KeyK'),
-  debugRow('debug.spawn-shamblers', 'Spawn shamblers', 'KeyV'),
-  debugRow('debug.spawn-zombie.runner', 'Spawn runner', 'Numpad1'),
-  debugRow('debug.spawn-zombie.crawler', 'Spawn crawler', 'Numpad2'),
-  debugRow('debug.spawn-zombie.amalgam', 'Spawn amalgam', 'Numpad4'),
-  debugRow('debug.melee-aim-toggle', 'Melee aim boxes', 'KeyY'),
-  debugRow('debug.freeze-shamblers', 'Freeze shamblers', 'KeyO'),
-  debugRow('debug.review-map-toggle', 'Review map', 'KeyM', ['play', 'carrying', 'noclip', 'review-map']),
-  debugRow('debug.freeze-game', 'Freeze game', 'Numpad5'),
-  debugRow('debug.tone-cycle', 'Tone mapping', 'KeyJ'),
-  debugRow('debug.exposure-decrease', 'Exposure −', 'Minus'),
-  debugRow('debug.exposure-increase', 'Exposure +', 'Equal'),
-  debugRow('debug.linear-colours-toggle', 'sRGB block colours', 'KeyI'),
-  debugRow('debug.patterns-toggle', 'Surface patterns', 'Semicolon'),
-  debugRow('debug.ambient-occlusion-toggle', 'Wide ambient occlusion', 'KeyA'),
-  debugRow('debug.post-toggle', 'Mood post-processing', 'KeyF'),
-  debugRow('debug.bloom-toggle', 'Bloom', 'Quote'),
-  debugRow('debug.bloom-clip-decrease', 'Bloom clip −', 'Delete'),
-  debugRow('debug.bloom-clip-increase', 'Bloom clip +', 'Insert'),
-  debugRow('debug.torch-decrease', 'Flashlight strength −', 'NumpadSubtract'),
-  debugRow('debug.torch-increase', 'Flashlight strength +', 'NumpadAdd'),
-  debugRow('debug.film-toggle', 'Film', 'Backslash'),
-  debugRow('debug.sun-shadow-toggle', 'Sun shadows', 'Digit0'),
-  debugRow('debug.torch-shadow-toggle', 'Flashlight shadows', 'Home'),
-  debugRow('debug.shadow-distance-cycle', 'Sun shadow distance', 'PageUp'),
-  debugRow('debug.crack-check-toggle', 'Crack check', 'End'),
-  debugRow('debug.hot-pixel-check-toggle', 'Hot pixel check', 'PageDown'),
-  debugRow('debug.fog-decrease', 'Fogginess −', 'KeyL'),
-  debugRow('debug.fog-increase', 'Fogginess +', 'Slash'),
-  debugRow('debug.grade-decrease', 'Grade −', 'BracketLeft'),
-  debugRow('debug.grade-increase', 'Grade +', 'BracketRight'),
-  debugRow('debug.skip-long', 'Skip to preceding hour tomorrow', 'Comma'),
-  debugRow('debug.skip-hour', 'Skip one hour', 'Period'),
+  row('reading.close', 'Put away reading', ['reading']),
+  row('reading.line-up', 'Read previous line', ['reading'], 'press', { repeat: true }),
+  row('reading.line-down', 'Read next line', ['reading'], 'press', { repeat: true }),
+  row('reading.page-up', 'Read previous page', ['reading'], 'press', { repeat: true }),
+  row('reading.page-down', 'Read next page', ['reading'], 'press', { repeat: true }),
+  row('reading.first', 'Read from beginning', ['reading'], 'press', { repeat: true }),
+  row('reading.last', 'Read to end', ['reading'], 'press', { repeat: true }),
+  row('spawn.previous', 'Select previous spawn item', ['spawn'], 'press', { repeat: true, text: true }),
+  row('spawn.next', 'Select next spawn item', ['spawn'], 'press', { repeat: true, text: true }),
+  row('spawn.dismiss', 'Close spawn menu', ['spawn'], 'press', { text: true }),
+  row('spawn.confirm', 'Spawn selected item', ['spawn'], 'press', { debug: true, text: true }),
+  row('debug.gate', 'Hold for debug commands', [...all, 'review-map'], 'held-state', { debug: true, text: true }),
+  debugRow('debug.panel-toggle', 'Debug panel', all),
+  debugRow('debug.input-replay-export', 'Export input replay'),
+  debugRow('debug.input-replay-import', 'Import input replay'),
+  debugRow('debug.performance-toggle', 'Performance overlay', all),
+  debugRow('debug.interaction-ray-toggle', 'Interaction ray', all),
+  debugRow('debug.build-toggle', 'Build tools'),
+  debugRow('debug.impact-laser', 'Impact laser'),
+  debugRow('debug.spawn-menu-toggle', 'Spawn item menu'),
+  debugRow('debug.god-toggle', 'God mode'),
+  debugRow('debug.noclip-toggle', 'Noclip'),
+  debugRow('debug.spectator-camera-toggle', 'Spectator camera'),
+  debugRow('debug.third-person-toggle', 'Third-person avatar view'),
+  debugRow('debug.perception-labels-toggle', 'Perception labels'),
+  debugRow('debug.spawn-unaware-shambler', 'Spawn unaware shambler'),
+  debugRow('debug.test-noise', 'Test noise'),
+  debugRow('debug.compression-test', 'Compression test'),
+  debugRow('debug.interruption-test', 'Emit interruption'),
+  debugRow('debug.hurt', 'Take damage'),
+  debugRow('debug.spawn-shamblers', 'Spawn shamblers'),
+  debugRow('debug.spawn-zombie.runner', 'Spawn runner'),
+  debugRow('debug.spawn-zombie.crawler', 'Spawn crawler'),
+  debugRow('debug.spawn-zombie.amalgam', 'Spawn amalgam'),
+  debugRow('debug.melee-aim-toggle', 'Melee aim boxes'),
+  debugRow('debug.freeze-shamblers', 'Freeze shamblers'),
+  debugRow('debug.review-map-toggle', 'Review map', ['play', 'carrying', 'noclip', 'review-map']),
+  debugRow('debug.freeze-game', 'Freeze game'),
+  debugRow('debug.tone-cycle', 'Tone mapping'),
+  debugRow('debug.exposure-decrease', 'Exposure −'),
+  debugRow('debug.exposure-increase', 'Exposure +'),
+  debugRow('debug.linear-colours-toggle', 'sRGB block colours'),
+  debugRow('debug.patterns-toggle', 'Surface patterns'),
+  debugRow('debug.ambient-occlusion-toggle', 'Wide ambient occlusion'),
+  debugRow('debug.post-toggle', 'Mood post-processing'),
+  debugRow('debug.bloom-toggle', 'Bloom'),
+  debugRow('debug.bloom-clip-decrease', 'Bloom clip −'),
+  debugRow('debug.bloom-clip-increase', 'Bloom clip +'),
+  debugRow('debug.torch-decrease', 'Flashlight strength −'),
+  debugRow('debug.torch-increase', 'Flashlight strength +'),
+  debugRow('debug.film-toggle', 'Film'),
+  debugRow('debug.sun-shadow-toggle', 'Sun shadows'),
+  debugRow('debug.torch-shadow-toggle', 'Flashlight shadows'),
+  debugRow('debug.shadow-distance-cycle', 'Sun shadow distance'),
+  debugRow('debug.crack-check-toggle', 'Crack check'),
+  debugRow('debug.hot-pixel-check-toggle', 'Hot pixel check'),
+  debugRow('debug.fog-decrease', 'Fogginess −'),
+  debugRow('debug.fog-increase', 'Fogginess +'),
+  debugRow('debug.grade-decrease', 'Grade −'),
+  debugRow('debug.grade-increase', 'Grade +'),
+  debugRow('debug.skip-long', 'Skip to preceding hour tomorrow'),
+  debugRow('debug.skip-hour', 'Skip one hour'),
   ...Array.from({ length: 9 }, (_, i) =>
-    debugRow(`debug.build-slot.${i + 1}`, `Select build slot ${i + 1}`, `Digit${i + 1}`, ['build']),
+    debugRow(`debug.build-slot.${i + 1}`, `Select build slot ${i + 1}`, ['build']),
   ),
 ];
+const withDefaults = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] =>
+  INPUT_ACTIONS.map((action) => ({ ...action, defaults: defaults.get(action.id) ?? [] }));
+const BASE_DEFAULT_KEYS: BindingMap = new Map(
+  (controlsFile as { controls: readonly { id: string; keys: readonly Chord[] }[] }).controls.map(({ id, keys }) => [
+    id,
+    keys,
+  ]),
+);
+export const INPUT_BINDINGS: readonly Binding[] = withDefaults(BASE_DEFAULT_KEYS);
 export const POINTER_ACTIONS = [
   {
     id: 'hand.use-dominant',
@@ -417,6 +397,27 @@ export const bindingConflict = (
     }
   }
   return undefined;
+};
+const ACTION_IDS: ReadonlySet<string> = new Set(INPUT_ACTIONS.map(({ id }) => id));
+export const controlRowIssue = (id: string, keys: readonly Chord[]): string | undefined => {
+  if (!ACTION_IDS.has(id)) {
+    return `unknown action ${id}`;
+  }
+  for (const chord of keys) {
+    const issue = chordIssue(chord);
+    if (issue) {
+      return `${chord.modifier ? `${chord.modifier}+` : ''}${chord.code}: ${issue}`;
+    }
+  }
+  return undefined;
+};
+/** Issues of a whole default-key set: actions left without a key, and key conflicts through `bindingConflict`. */
+export const defaultKeySetIssues = (defaults: BindingMap): string[] => {
+  const issues = INPUT_ACTIONS.filter(({ id }) => !defaults.get(id)?.length).map(
+    ({ id }) => `action ${id} has no default key`,
+  );
+  const conflict = bindingConflict(withDefaults(defaults), new Map());
+  return conflict ? [...issues, conflict] : issues;
 };
 const STORAGE_KEY = 'deadvox.input-bindings';
 interface PreferenceStorage {

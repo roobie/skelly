@@ -15,6 +15,7 @@ import type { FurnitureDef } from '../core/schema.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
+import { addSkyAnchors } from './skyAnchor.ts';
 import { vehicleModel, workshopLift } from './workshopVehicle.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
@@ -59,6 +60,7 @@ export class FurnitureMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly materials = new Map<string, MeshLambertMaterial>();
+  private readonly anchoredMaterials = new Map<MeshLambertMaterial, MeshLambertMaterial>();
   private readonly shapeGeometries = new Map<string, BufferGeometry>();
   private readonly blockSize: number;
   private readonly marker = new LineSegments(
@@ -172,6 +174,20 @@ export class FurnitureMeshes {
     return material;
   }
 
+  /** `material` for shaped geometry, which carries sky anchors (see `addSkyAnchors`). */
+  private anchored(material: MeshLambertMaterial): MeshLambertMaterial {
+    let result = this.anchoredMaterials.get(material);
+    if (!result) {
+      result = withHeightFog(
+        new MeshLambertMaterial({ color: material.color, vertexColors: material.vertexColors }),
+        'furniture',
+      );
+      result.defines = { SKY_ANCHOR: '' };
+      this.anchoredMaterials.set(material, result);
+    }
+    return result;
+  }
+
   private box(entity: BlockEntity, material: MeshLambertMaterial): Mesh {
     const s = this.blockSize;
     const [x, y, z] = entity.pos;
@@ -208,6 +224,7 @@ export class FurnitureMeshes {
       if (!geometry) {
         throw new Error(`could not merge furniture shape "${def.id}"`);
       }
+      addSkyAnchors(geometry, def.size);
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
       this.shapeGeometries.set(def.id, geometry);
@@ -215,7 +232,7 @@ export class FurnitureMeshes {
 
     const [x, y, z] = entity.pos;
     const [width, , depth] = entity.size;
-    const mesh = new Mesh(geometry, material);
+    const mesh = new Mesh(geometry, this.anchored(material));
     const piece = entity.tip ? tipped(mesh, def.size, entity.tip) : mesh;
     piece.position.set((x + width / 2) * this.blockSize, y * this.blockSize, (z + depth / 2) * this.blockSize);
     piece.rotation.y = { n: 0, e: -Math.PI / 2, s: Math.PI, w: Math.PI / 2 }[entity.facing];
