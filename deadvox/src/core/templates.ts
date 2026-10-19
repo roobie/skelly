@@ -14,6 +14,7 @@ import { pickWeighted, Rng } from './random.ts';
 import type {
   DecalDef,
   DoorLockDef,
+  GroundLootSupply,
   KitAnchor,
   KitPort,
   KitRef,
@@ -131,6 +132,12 @@ interface Piece {
   size: Vec3;
 }
 
+export interface GroundLootMarker {
+  readonly pos: Vec3;
+  readonly supply: GroundLootSupply;
+  readonly lootUsage?: LootContext['usage'];
+}
+
 export interface SpawnMarker extends SpawnTimeWindowField {
   zombie: string;
   chance: number;
@@ -161,6 +168,7 @@ export interface CompiledTemplate {
   readonly ports?: readonly KitPort[];
   readonly pieces: readonly Piece[];
   readonly spawns: readonly SpawnMarker[];
+  readonly groundLoot?: readonly GroundLootMarker[];
   readonly decals?: readonly DecalDef[];
   readonly access?: TemplateAccess;
   /** The support layer of the declared ground floor, relative to the lowest template layer. */
@@ -181,8 +189,19 @@ export const templateResolves = (registry: Registry, template: TemplateDef): boo
 const compileMarkers = (registry: Registry, template: TemplateDef) => {
   const pieces: Piece[] = [];
   const spawns: SpawnMarker[] = [];
+  const groundLoot: GroundLootMarker[] = [];
   for (const [char, entry] of Object.entries(template.palette)) {
     if (typeof entry === 'string') {
+      continue;
+    }
+    if (entry.groundLoot !== undefined) {
+      for (const pos of markedCells(template, char)) {
+        groundLoot.push({
+          pos,
+          supply: entry.groundLoot,
+          ...(entry.lootUsage === undefined ? {} : { lootUsage: entry.lootUsage }),
+        });
+      }
       continue;
     }
     if (entry.spawn !== undefined) {
@@ -217,7 +236,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
       });
     }
   }
-  return { pieces, spawns };
+  return { pieces, spawns, groundLoot };
 };
 
 const checkDecalDoors = (registry: Registry, template: TemplateDef, pieces: readonly Piece[]): void => {
@@ -251,7 +270,7 @@ export const compileTemplate = (
 ): CompiledTemplate => {
   const [sx, sy, sz] = template.size;
   const blocks = new Uint16Array(sx * sy * sz);
-  const { pieces, spawns } = compileMarkers(registry, template);
+  const { pieces, spawns, groundLoot } = compileMarkers(registry, template);
   checkDecalDoors(registry, template, pieces);
   const ground = new Uint8Array(blocks.length);
   for (const [x, y, z] of cellsOf(template.size)) {
@@ -275,6 +294,7 @@ export const compileTemplate = (
     ...compileOwnership(template, blocks, pieces, source),
     pieces,
     spawns,
+    groundLoot,
     ...(template.decals ? { decals: template.decals } : {}),
     ...(template.access ? { access: template.access } : {}),
   };
@@ -748,6 +768,7 @@ export const compileAssembly = (
     ...composeAssemblyVoxels(assembly, resolved, context),
     pieces: resolved.flatMap(({ placement }) => placedPieces(placement)),
     spawns: resolved.flatMap(({ placement }) => placedSpawns(placement)),
+    groundLoot: resolved.flatMap(({ placement }) => placedGroundLoot(placement)),
     decals: resolved.flatMap(({ placement }) => placedDecals(placement)),
     ...(assembly.access ? { access: assembly.access } : {}),
   };
@@ -869,6 +890,12 @@ export const placedDecals = (placement: Placement): DecalDef[] =>
       ((Number(decal.normal === 'down') - Number(decal.normal === 'up')) * placement.turn * Math.PI) / 2,
   }));
 
+export const placedGroundLoot = ({ template, origin, turn }: Placement): GroundLootMarker[] =>
+  (template.groundLoot ?? []).map((point) => {
+    const [x, z] = turned(template.size, turn, point.pos[0], point.pos[2]);
+    return { ...point, pos: [origin[0] + x, origin[1] + point.pos[1], origin[2] + z] };
+  });
+
 export const placedSpawns = ({ template, origin, turn }: Placement): SpawnMarker[] =>
   template.spawns.map((spawn) => {
     const [x, z] = turned(template.size, turn, spawn.pos[0], spawn.pos[2]);
@@ -895,9 +922,16 @@ export const stackTemplate = (template: CompiledTemplate, storeys: number): Comp
   blocks.set(template.blocks.subarray(0, layer), 0);
   const pieces: Piece[] = [];
   const spawns: SpawnMarker[] = [];
+  const groundLoot: GroundLootMarker[] = [];
   for (let k = 0; k < storeys; k++) {
     blocks.set(template.blocks.subarray(layer), layer * (1 + k * perStorey));
     pieces.push(...template.pieces.map((p) => ({ ...p, pos: [p.pos[0], p.pos[1] + k * perStorey, p.pos[2]] as Vec3 })));
+    groundLoot.push(
+      ...(template.groundLoot ?? []).map((point) => ({
+        ...point,
+        pos: [point.pos[0], point.pos[1] + k * perStorey, point.pos[2]] as Vec3,
+      })),
+    );
     spawns.push(
       ...template.spawns.map((spawn) => ({
         ...spawn,
@@ -919,5 +953,6 @@ export const stackTemplate = (template: CompiledTemplate, storeys: number): Comp
     blocks,
     pieces,
     spawns,
+    groundLoot,
   };
 };

@@ -34,12 +34,12 @@ export const militaryOnlyEconomy = (economy: ItemEconomy): boolean =>
 
 type LootSupply =
   | { readonly kind: 'table'; readonly table: string }
-  | { readonly kind: 'fixed'; readonly items: readonly FixedLootItemDef[]; readonly table?: string }
+  | { readonly kind: 'fixed'; readonly items: readonly FixedLootItemDef[]; readonly table?: string | undefined }
   | { readonly kind: 'empty' };
 
 export interface LootSpawnPoint {
   readonly id: string;
-  readonly channel: 'container' | 'surface' | 'corpse';
+  readonly channel: 'container' | 'surface' | 'corpse' | 'ground';
   readonly position: Vec3;
   readonly destination: Vec3;
   readonly context: LootContext;

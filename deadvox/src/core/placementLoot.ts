@@ -26,13 +26,41 @@ const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: Lo
   return lootTypeIssue(registry, fixed.item, context, fixed.fitted);
 };
 
+export const groundLootSupplyIssues = (
+  registry: Registry,
+  compiled: CompiledTemplate,
+  context: LootContext = compiled.lootContext,
+): [string, string][] => {
+  const issues: [string, string][] = [];
+  for (const [index, point] of (compiled.groundLoot ?? []).entries()) {
+    const path = `.groundLoot[${index}].supply`;
+    const { supply } = point;
+    if ('table' in supply && supply.table !== undefined && !registry.loot.has(supply.table)) {
+      issues.push([`${path}.table`, `no loot table "${supply.table}"`]);
+    }
+    if (supply.kind !== 'fixed') {
+      continue;
+    }
+    for (const [itemIndex, fixed] of supply.items.entries()) {
+      const issue = fixedItemIssue(registry, fixed, {
+        usage: point.lootUsage ?? context.usage,
+        tier: context.tier,
+      });
+      if (issue !== undefined) {
+        issues.push([`${path}.items[${itemIndex}].item`, issue]);
+      }
+    }
+  }
+  return issues;
+};
+
 export const placementLootIssues = (
   { registry, context }: { registry: Registry; context: LootContext },
   compiled: CompiledTemplate,
   overrides: readonly FixedLootOverrideDef[],
   path: string,
 ): [string, string][] => {
-  const issues: [string, string][] = [];
+  const issues = groundLootSupplyIssues(registry, compiled, context);
   const anchors = new Set<string>();
   for (const [index, override] of overrides.entries()) {
     const key = override.at.join(',');

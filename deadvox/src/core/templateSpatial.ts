@@ -4,6 +4,9 @@ import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import { Inventory } from './inventory.ts';
+import { groundLootSupplyIssues } from './placementLoot.ts';
+import { pileInReach, reachTuning } from './reach.ts';
 import type { StairDef } from './schema.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
@@ -497,6 +500,83 @@ export const templateReachableStandingPositions = (
   return [
     ...new TemplateSpace(registry, template).reached(options?.entrance ?? template.access.entrance, options?.within),
   ].map((position) => position.split(',').map(Number) as Vec3);
+};
+
+export const templateGroundLootReservations = (template: CompiledTemplate, poses: readonly Vec3[]): SpatialIssue[] => {
+  const reserved = new Set(poses.flatMap((pose) => [...bodyCells(pose)].map(key)));
+  return (template.groundLoot ?? []).flatMap((point, index): SpatialIssue[] =>
+    reserved.has(key(point.pos)) ? [[`.groundLoot[${index}]`, 'ground loot overlaps a reserved route pose']] : [],
+  );
+};
+
+export const templateGroundLootIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {
+  if (!template.groundLoot?.length) {
+    return [];
+  }
+  const space = new TemplateSpace(registry, template);
+  const inventory = new Inventory(registry);
+  const issues = groundLootSupplyIssues(registry, template);
+  if (!reachTuning(registry)) {
+    return [...issues, ['.groundLoot', 'ground loot needs player inventory reach tuning']];
+  }
+  const poses = Object.values(template.anchors ?? {})
+    .filter((anchor) => anchor.kind === 'standing')
+    .map((anchor) => anchor.at);
+  poses.push(...(template.ports ?? []).map((port) => port.standing));
+  if (template.access) {
+    poses.push(template.access.entrance, ...template.access.stairs.flatMap((stair) => [stair.lower, stair.upper]));
+  }
+  issues.push(...templateGroundLootReservations(template, poses));
+  const [sx, sy, sz] = template.size;
+  template.groundLoot.forEach((point, index) => {
+    const path = `.groundLoot[${index}]`;
+    const [x, y, z] = point.pos;
+    const feet: Vec3 = [x + 0.5, y, z + 0.5];
+    const support = x + sx * (z + sz * (y - 1));
+    if (
+      !point.pos.every(Number.isInteger) ||
+      x < 0 ||
+      x >= sx ||
+      y < 1 ||
+      y >= sy ||
+      z < 0 ||
+      z >= sz ||
+      !registry.blocks[template.blocks[support]!]?.solid ||
+      !space.standing(feet) ||
+      !pileInReach(
+        {
+          inventory,
+          position: feet,
+          blockSize: HAMLET_BLOCK_SIZE,
+          obstacles: {
+            isSolid: (bx, by, bz) => space.occupied(bx, by, bz, true),
+            version: 0,
+          },
+        },
+        point.pos,
+      )
+    ) {
+      issues.push([path, 'ground loot needs a solid floor, standing body clearance and visible reach']);
+    }
+    const cell = x + sx * (z + sz * y);
+    const inPort = template.ports?.some(({ clearance: { min, size } }) =>
+      point.pos.every((value, axis) => value >= min[axis]! && value < min[axis]! + size[axis]!),
+    );
+    const inDoor = template.pieces.some(
+      (piece) =>
+        registry.furniture.get(piece.furniture)?.door &&
+        x + 1 > piece.pos[0] - BODY_HALF_WIDTH &&
+        x < piece.pos[0] + piece.size[0] + BODY_HALF_WIDTH &&
+        y + 1 > piece.pos[1] &&
+        y < piece.pos[1] + piece.size[1] &&
+        z + 1 > piece.pos[2] - BODY_HALF_WIDTH &&
+        z < piece.pos[2] + piece.size[2] + BODY_HALF_WIDTH,
+    );
+    if (template.reserved?.[cell] || inPort || inDoor) {
+      issues.push([path, 'ground loot must keep out of reserved circulation, gateways and door approaches']);
+    }
+  });
+  return issues;
 };
 
 export const templateStoreyIssues = (template: CompiledTemplate): SpatialIssue[] => {

@@ -125,6 +125,7 @@ interface WirePayload {
     };
     blockEntitiesNextUid: number;
     spawned: string[];
+    rolledColumns: string[];
   };
   character: {
     id: string;
@@ -761,6 +762,7 @@ const wirePayloadSchema = obj({
     }),
     blockEntitiesNextUid: positiveInt,
     spawned: arr(str({ nonEmpty: true })),
+    rolledColumns: arr(str({ nonEmpty: true })),
   }),
   character: obj({
     id: str({ nonEmpty: true }),
@@ -1128,6 +1130,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
       spawned: [...snapshot.world.spawned],
+      rolledColumns: [...snapshot.world.rolledColumns],
     },
     character: {
       id: snapshot.character.id,
@@ -1191,6 +1194,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
       diffs: { chunks: ordered(chunks).map(({ chunk }) => chunk) },
       zombies: { ...wire.world.zombieSystem, zombies: ordered(zombies).map(({ order: _order, ...entry }) => entry) },
       spawned: [...wire.world.spawned],
+      rolledColumns: [...wire.world.rolledColumns],
     },
     character: {
       ...wire.character,
@@ -1355,6 +1359,15 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   checkOrder(zombieOrders, 'zombie');
   checkOrder(entityOrders, 'block entity');
   checkOrder(pileOrders, 'pile');
+  if (
+    new Set(wire.world.rolledColumns).size !== wire.world.rolledColumns.length ||
+    wire.world.rolledColumns.some((key) => {
+      const parts = key.split(',').map(Number);
+      return parts.length !== 2 || parts.some((part) => !Number.isSafeInteger(part)) || parts.join(',') !== key;
+    })
+  ) {
+    throw new Error('Invalid rolled column keys');
+  }
   if (new Set(wire.world.spawned).size !== wire.world.spawned.length) {
     throw new Error('Duplicate zombie spawn key');
   }
@@ -1622,6 +1635,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
           acidPuddles: arr(acidPuddle),
         }),
         spawned: arr(str({ nonEmpty: true })),
+        rolledColumns: arr(str({ nonEmpty: true })),
       }),
       character: obj({
         id: str({ nonEmpty: true }),
