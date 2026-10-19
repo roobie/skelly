@@ -829,11 +829,13 @@ smaller outside than inside, so it gains no space wherever it goes: loaded, it
 may go into any container with room, furniture included, as in DayZ. Rigidity
 belongs to the item's definition, as a rigid flag on its container component,
 so saves don't change; validation must hold a rigid item's pockets within its
-footprint. No item is rigid until the nesting build round adds the flag, its
-check and the first hard case, so every loaded container still goes only into
-a floor pile; see `src/core/inventory.ts`, `Inventory.gridPlacement`. Open on
-d494-8's cards: how deep loaded nesting goes, and whether a soft bag's interior
-is bounded by its footprint.
+footprint. Loaded nesting goes one level deep: a loaded case may sit in a bag,
+but nothing loaded sits in the case. Free nesting is plausible and realistic,
+but not worth its complexity yet, and the rule can widen to it later. No item
+is rigid until the nesting build round adds the flag, its check, the depth rule
+and the first hard case, so every loaded container still goes only into a
+floor pile; see `src/core/inventory.ts`, `Inventory.gridPlacement`. Open on a
+d494-8 card: whether a soft bag's interior is bounded by its footprint.
 
 Pockets have no weight limit, but total carried
 weight slows movement and costs stamina. Condition is readable as a word, with
