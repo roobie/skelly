@@ -16,7 +16,7 @@ import { cellsOf, type Facing, pieceSize } from './templates.ts';
 export type Tip = 'back' | 'side';
 
 /** A piece's own [width, height, depth] once tipped: on its back the depth stands up, on its side the width lies down. */
-export const tippedSize = ([w, h, d]: readonly [number, number, number], tip: Tip | undefined): Vec3 => {
+const tippedSize = ([w, h, d]: readonly [number, number, number], tip: Tip | undefined): Vec3 => {
   if (tip === 'back') {
     return [w, d, h];
   }
