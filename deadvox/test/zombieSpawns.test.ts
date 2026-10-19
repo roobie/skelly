@@ -90,7 +90,7 @@ describe('authored zombie spawn persistence', () => {
   });
 
   it(
-    'keeps the secret house’s sealed acid zombie through generation and a save round-trip',
+    'keeps the secret house’s sealed brute shambler through generation and a save round-trip',
     () => {
       const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
       const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
@@ -108,7 +108,7 @@ describe('authored zombie spawn persistence', () => {
         }
       }
       const sealed = ({ type, pos: [x, y, z] }: Spawned) =>
-        type === 'acid_zombie' && x >= x0 && x < x0 + width && z >= z0 && z < z0 + depth && y < grade;
+        type === 'brute_shambler' && x >= x0 && x < x0 + width && z >= z0 && z < z0 + depth && y < grade;
       const loadAll = (spawner: ZombieSpawner, spawned: Spawned[]) => {
         for (const [cx, cz] of columns.values()) {
           spawner.onColumn({ cx, cz, site: city, registry, zombies: zombieSystemFor(spawned) });

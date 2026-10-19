@@ -2044,7 +2044,7 @@ export type ZombieRegions = Record<string, number>;
 
 const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
 
-const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'amalgam']);
+const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'brute', 'amalgam']);
 
 const ZOMBIE_ABILITIES = [
   'grab',
