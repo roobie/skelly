@@ -50,6 +50,14 @@ function contentLookView(source) {
   return rewritten;
 }
 
+// Keep the branch's physical-and-visual reach contract without replacing its core picker with main's.
+export function adaptMainInteractionPick(source) {
+  return source.replace(
+    'worldSeed: config.seed,\n      isSolid: engine.isOpaque,',
+    'worldSeed: config.seed,\n      isSolid: engine.isSolid,\n      isOpaque: engine.isOpaque,',
+  );
+}
+
 export function mainOverlayPath(root, id) {
   const [path] = id.split('?');
   const prefix = `${resolve(root)}/src/`;
@@ -133,6 +141,9 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
               '  return {\n    ...worldSetup,',
               '  globalThis.mainArrival.engineReadyRealMs=performance.now();\n  return {\n    ...worldSetup,',
             );
+          }
+          if (relative === 'game/play.ts') {
+            source = adaptMainInteractionPick(source);
           }
           if (relative === 'game/streamer.ts') {
             source = source.replace(

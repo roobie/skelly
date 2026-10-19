@@ -22,7 +22,10 @@ export class Shell {
   private readonly border: number;
   private readonly solidOnly: boolean;
 
-  constructor(border: number, solidOnly: boolean) {
+  private readonly occluders: Uint8Array | undefined;
+
+  constructor(border: number, solidOnly: boolean, occluders?: Uint8Array) {
+    this.occluders = occluders;
     this.border = border;
     this.solidOnly = solidOnly;
     this.side = CHUNK + 2 * border;
@@ -69,10 +72,11 @@ export class Shell {
     [dst, length]: [number, number],
   ): void {
     if (!raw) {
-      this.out.fill(this.solidOnly ? 1 : uniform, dst, dst + length);
+      this.out.fill(this.solidOnly ? (this.occluders?.[uniform] ?? Number(uniform !== 0)) : uniform, dst, dst + length);
     } else if (this.solidOnly) {
       for (let i = 0; i < length; i++) {
-        this.out[dst + i] = raw[src + i]! === 0 ? 0 : 1;
+        const id = raw[src + i]!;
+        this.out[dst + i] = this.occluders?.[id] ?? Number(id !== 0);
       }
     } else {
       (this.out as Uint16Array).set(raw.subarray(src, src + length), dst);

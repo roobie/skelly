@@ -6,11 +6,13 @@
 
 import type { Chunk } from '../core/chunk.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
+import type { FencePostDefs } from '../core/fencePosts.ts';
 import { extractPadded, extractWide } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
 import type { BlockBox } from '../core/structure.ts';
+import type { WireMeshes } from '../core/wireMesh.ts';
 import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
@@ -39,6 +41,8 @@ export interface StreamerOptions {
   patterns: Uint8Array;
   /** Content-owned render-weathering flag per block id. */
   weatherable: Uint8Array;
+  wireMeshes?: WireMeshes;
+  fencePosts?: FencePostDefs;
   scale: Scale;
   /** Stamped into every column as it generates. */
   structures: readonly BlockBox[];
@@ -63,6 +67,7 @@ export interface StreamerStats {
 
 export class Streamer {
   private readonly opts: StreamerOptions;
+  private readonly occluders: Uint8Array | undefined;
   private readonly generated = new Set<string>(); // column keys "cx,cz"
   private readonly dirty = new Set<string>(); // chunks needing a (re)mesh
   private readonly versions = new Map<string, number>();
@@ -127,6 +132,9 @@ export class Streamer {
 
   constructor(opts: StreamerOptions) {
     this.opts = opts;
+    this.occluders = opts.wireMeshes
+      ? Uint8Array.from({ length: opts.colors.length / 3 }, (_, id) => Number(id !== 0 && !opts.wireMeshes?.[id]))
+      : undefined;
     // Leave a physical core for the main thread: hardwareConcurrency counts hyperthreads.
     const count = Math.max(1, Math.min(3, Math.floor((navigator.hardwareConcurrency || 2) / 2) - 1));
     for (let i = 0; i < count; i++) {
@@ -138,7 +146,14 @@ export class Streamer {
       worker.onmessageerror = () => {
         this.failure = 'World mesh worker reply could not be decoded';
       };
-      this.send(worker, { type: 'init', colors: opts.colors, patterns: opts.patterns, weatherable: opts.weatherable });
+      this.send(worker, {
+        type: 'init',
+        colors: opts.colors,
+        patterns: opts.patterns,
+        weatherable: opts.weatherable,
+        wireMeshes: opts.wireMeshes ?? [],
+        fencePosts: opts.fencePosts ?? [],
+      });
       this.workers.push(worker);
     }
     this.maxInFlight = count * 2;
@@ -405,13 +420,13 @@ export class Streamer {
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {
     this.dirty.delete(key);
     const { world, scale, meshes } = this.opts;
-    if (isEnclosed(world, [cx, cy, cz], scale.minCy)) {
+    if (isEnclosed(world, [cx, cy, cz], scale.minCy, this.occluders)) {
       meshes.remove(key); // nothing visible; skip the worker entirely
       return;
     }
     this.inFlight.add(key);
     const padded = extractPadded(world, [cx, cy, cz], scale.minCy);
-    const wide = extractWide(world, [cx, cy, cz], scale.minCy);
+    const wide = extractWide(world, [cx, cy, cz], scale.minCy, this.occluders);
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
     this.send(worker, {

@@ -5,7 +5,7 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
-  - you're changing world block shapes or slab geometry
+  - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
@@ -51,7 +51,7 @@ read_if:
   - you're changing what the death card identifies about the played world
   - you're changing what the death-screen loot tally counts
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
-  - you're changing melee weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
+  - you're changing melee motions, weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
@@ -167,6 +167,46 @@ body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
 ### Block shapes
+
+A wire fence must keep bodies out without hiding what is on the other side.
+Movement solidity and sight opacity are independent content choices; wire coverage
+and tint belong to content too, so another fence needs no identity-based engine rule.
+Open wire geometry leaves holes in rendered shadows rather than casting a wall's
+shadow. Interaction requires both physical and visual access: seeing a container
+through wire does not let the player loot it, and passable foliage still hides it.
+See `src/core/schema.ts`, `BlockSchema`; `src/core/collision.ts`, `worldOpaque`;
+`src/core/wireMesh.ts`, `wirePolygons`; and `src/core/interactionPick.ts`, `pickInteractionTarget`.
+
+Fence supports make ends, isolated cells, corners and junctions read as built structure rather than
+floating wire. Derive them from neighbouring opted-in cells instead of making authors
+place a second object. Content owns pole size and straight-run spacing; anchor that
+spacing to the world, not a discovered run end or chunk origin, so loading and rebuild
+order cannot move it. Meshing waits for neighbouring live columns before treating an
+edge as an end. Poles stay inside the fence's occupied cells and do not introduce a
+separate gameplay obstacle or change the wire's passage rules. See `src/core/fencePosts.ts`,
+`deriveFencePosts`; and `src/game/streamer.ts`, `Streamer.neighboursGenerated`.
+
+Shots and thrown items stop at wire to keep physical collision simple. Size-based
+passage, where small objects fit through openings and large ones stop, is the
+expected direction rather than a promise that visible holes already simulate size.
+Firearm aiming must not offer a target behind a physical blocker; opacity still
+hides targets in foliage. See `src/core/zombies.ts`, `ZombieSystem.aimAt` and
+`ZombieSystem.firePellets`; and `src/core/itemThrow.ts`, `traceItemLanding`.
+
+Wire passes only thrusting melee: a directed strike can reach through an opening,
+while a swing or wrestle needs space the fence denies. This gives fence defence a
+fight of its own without mistaking piercing damage for a thrust. Zombie thrusts
+also need enough effective reach; both conditions must hold at windup start and
+contact. Blocks select permitted motions and the minimum zombie reach in content,
+so the rule is symmetric rather than a creature or weapon identity exception.
+See `src/core/collision.ts`, `worldMeleeBlocker`; and `src/core/zombies.ts`,
+`ZombieSystem.reachableZombieMoves` and `ZombieSystem.resolvePlayerMelee`.
+
+Sound passes open wire because chain-link barely dampens it. Sound blocking has
+its own content property: sight is the wrong key because foliage hides without
+muffling. Furniture still owns whether its closed state blocks sound.
+See `src/core/collision.ts`, `worldSoundBlocking`; `src/core/zombies.ts`,
+`ZombieSystem.updatePerception`; and `src/game/audio.ts`, `GameAudio`.
 
 The partial-block set remains under discussion in #221; do not implement it
 before playtest 1. Its purposes, in priority order, are roof silhouettes,
@@ -1015,21 +1055,21 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
 ## Combat and noise
 
-- **Melee.** Weapons differ by damage type, reach, speed, and stamina cost.
-  Hits resolve against posed body regions after a wind-up; misses and blocked
-  swings still spend stamina and cooldown. Saves preserve an active swing so
-  Continue cannot skip or repeat its pending contact. Changing held items cancels
-  contact without refunding cooldown. En-garde blocks without changing movement
-  pace; blocks and landed hits train melee combat. Weapon classes have different tradeoffs: blunt weapons are
-  slower and more consistent, edged weapons sever more readily, and piercing
-  weapons are faster with greater damage variance. Class defaults and per-weapon
-  overrides in `src/content/base/items-tools.jsonnet` remain provisional tuning
-  pending BR's feel comparisons.
-  Damage spread consumes its
-  random draw even when tuned to zero, so later dismemberment rolls stay stable.
-  Zero stamina refuses a swing, and saved recovery time survives Continue. See
-  `PlayerCombat.resolveContact` in `src/core/playerCombat.ts` and
-  `ZombieSystem.applyMeleeHit` in `src/core/zombies.ts`.
+- **Melee.** Every player and zombie melee move declares a motion: thrust, swing
+  or wrestle. Motion describes how an attack reaches its target; damage kind
+  describes the injury, so a bite can wrestle and still pierce. Keeping them
+  separate prevents an injury label from granting passage through wire. Content
+  validation requires the choice rather than inferring it from an actor or item
+  identity. See `src/core/meleeMotion.ts`, `MELEE_MOTIONS`; and `src/core/schema.ts`,
+  `WeaponSchema`, `UnarmedAttackSchema` and `ZombieMovesSchema`.
+
+  Misses and obstructions still spend stamina and cooldown, so swinging has a cost
+  even without a hit. Saves retain the active move, including its motion, so Continue
+  cannot skip or repeat contact or change which obstacles it passes. Changing held
+  items cancels contact without refunding cooldown. Damage spread consumes its draw
+  even at zero variance so later dismemberment rolls stay stable. Class tuning remains
+  content-owned for feel comparisons. See `src/core/playerCombat.ts`, `PlayerCombat.resolveContact`;
+  `src/core/saveFormat.ts`, `meleeAction`; and `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`.
 
   A block always takes part of a melee blow, so holding the guard is a choice
   whose payoff the player feels on every hit; an all-or-nothing roll would read

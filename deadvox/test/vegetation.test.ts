@@ -206,7 +206,14 @@ describe('passable but opaque vegetation', () => {
     )!;
     const origin: [number, number, number] = [center[0], center[1], 0.5];
     const direction: [number, number, number] = [0, 0, 1];
-    const weapon = { damage: 1, reach: 6, cooldown: 0.8, contactFraction: 0.4, windupCapSimSeconds: 0.25 };
+    const weapon = {
+      motion: 'swing' as const,
+      damage: 1,
+      reach: 6,
+      cooldown: 0.8,
+      contactFraction: 0.4,
+      windupCapSimSeconds: 0.25,
+    };
     expect(system.aimAt(origin, direction, weapon)).toBeUndefined();
     expect(
       playerCombat.beginMeleeSwing({

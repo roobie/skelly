@@ -2117,6 +2117,7 @@ describe('content references', () => {
               moves: [
                 {
                   id: 'swipe',
+                  motion: 'swing',
                   weight: 1,
                   damage: 5,
                   damageKind: 'blunt',
