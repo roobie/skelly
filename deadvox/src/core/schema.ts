@@ -159,10 +159,17 @@ const BlockSchema = strictObject({
   id: Id,
   name: Name,
   color: Color,
-  /** Blocks movement. Non-solid blocks still render as cubes for now. */
+  /** Blocks movement independently of sight and render geometry. */
   solid: vBoolean(),
   /** Blocks sight/aim/picking; ordinary blocks inherit their movement rule when omitted. */
   opaque: optional(vBoolean()),
+  /** Open wire geometry; wireFraction controls coverage, while color supplies the tint. */
+  wireMesh: optional(
+    strictObject({
+      cellsPerBlock: pipe(number(), integer(), minValue(1), maxValue(16)),
+      wireFraction: pipe(number(), minValue(0.01), maxValue(0.5)),
+    }),
+  ),
   /** Content-owned brushing events: gentle movement and fast movement. */
   rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
   /**

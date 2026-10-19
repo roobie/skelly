@@ -5,7 +5,7 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
-  - you're changing world block shapes or slab geometry
+  - you're changing world block shapes, wire fences, sight opacity or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
@@ -167,6 +167,13 @@ body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
 ### Block shapes
+
+A wire fence must keep bodies out without hiding what is on the other side.
+Movement solidity and sight opacity are independent content choices; wire coverage
+and tint belong to content too, so another fence needs no identity-based engine rule.
+Open wire geometry leaves holes in rendered shadows rather than casting a wall's
+shadow. See `src/core/schema.ts`, `BlockSchema`; `src/core/collision.ts`,
+`worldOpaque`; and `src/core/wireMesh.ts`, `wirePolygons`.
 
 The partial-block set remains under discussion in #221; do not implement it
 before playtest 1. Its purposes, in priority order, are roof silhouettes,

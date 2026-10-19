@@ -46,8 +46,13 @@ export const extractPadded = (world: World, coords: Vec3, bottomCy = Number.NEGA
  * them: missing chunks are air (so ground that has not been generated never darkens anything) and
  * everything below `bottomCy` is solid (the world's floor).
  */
-export const extractWide = (world: World, coords: Vec3, bottomCy = Number.NEGATIVE_INFINITY): Uint8Array => {
-  const shell = new Shell(OCCLUSION_RADIUS, true);
+export const extractWide = (
+  world: World,
+  coords: Vec3,
+  bottomCy = Number.NEGATIVE_INFINITY,
+  occluders?: Uint8Array,
+): Uint8Array => {
+  const shell = new Shell(OCCLUSION_RADIUS, true, occluders);
   shell.fill(world, coords);
   const out = shell.out as Uint8Array;
   if (coords[1] - 1 < bottomCy) {

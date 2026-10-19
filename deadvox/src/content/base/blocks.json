@@ -257,8 +257,13 @@
       },
       "id": "chain_link",
       "name": "Chain-link fence",
+      "opaque": false,
       "solid": true,
-      "weatherable": false
+      "weatherable": false,
+      "wireMesh": {
+        "cellsPerBlock": 4,
+        "wireFraction": 0.080000000000000002
+      }
     },
     {
       "color": "#9b8d6a",
