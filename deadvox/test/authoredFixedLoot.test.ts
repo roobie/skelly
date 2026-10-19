@@ -1640,7 +1640,8 @@ describe('authored fixed loot', () => {
     const cars = template.pieces.filter(({ furniture }) => furniture === 'workshop_stripped_car');
     expect(lifts.length).toBeGreaterThan(0);
     expect(cars.length).toBeGreaterThan(0);
-    const carLook = result.registry.furniture.get('workshop_stripped_car')!.vehicle!;
+    const carDef = result.registry.furniture.get('workshop_stripped_car')!;
+    const carLook = carDef.vehicle!;
     const workshopCarInstance = vehicleInstanceOf(carLook);
     const lowestSolidVoxelY = Math.min(
       ...workshopCarInstance.fittings.flatMap((fitting) =>
@@ -1661,7 +1662,7 @@ describe('authored fixed loot', () => {
         searched: false,
         open: false,
       } satisfies BlockEntity;
-      const carBottom = vehicleModel(renderEntity, carLook).position.y + lowestSolidVoxelY * VOXEL;
+      const carBottom = vehicleModel(renderEntity, carLook, carDef.size[1]).position.y + lowestSolidVoxelY * VOXEL;
       const supportingLift = lifts.find((lift) => {
         const overlapsX = car.pos[0] < lift.pos[0] + lift.size[0] && lift.pos[0] < car.pos[0] + car.size[0];
         const overlapsZ = car.pos[2] < lift.pos[2] + lift.size[2] && lift.pos[2] < car.pos[2] + car.size[2];

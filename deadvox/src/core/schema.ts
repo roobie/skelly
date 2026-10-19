@@ -35,6 +35,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
+import { solidBlocks } from '../vehicles/solid.ts';
 import { hasSegment } from './authoredTerrain.mjs';
 import {
   BODY_REGIONS,
@@ -1273,7 +1274,11 @@ const FurnitureSchema = pipe(
     ),
     /** Render-only boxes in cell coordinates; gameplay continues to use the furniture cells. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
-    /** Rendered as this vehicle: a blueprint without the `removed` fittings, in `body` paint, `dirt` grimy (0 clean to 1 filthy). */
+    /**
+     * Rendered as this vehicle: a blueprint without the `removed` fittings, in `body` paint, `dirt` grimy (0 clean to
+     * 1 filthy). Its blocks stop movement and light where its parts fill at least `solidFill` of them, so a low
+     * bonnet can be climbed while the cabin still blocks.
+     */
     vehicle: optional(
       pipe(
         strictObject({
@@ -1281,6 +1286,7 @@ const FurnitureSchema = pipe(
           body: Color,
           dirt: Fraction,
           removed: array(string()),
+          solidFill: Fraction,
         }),
         check(({ blueprint }) => BLUEPRINTS[blueprint] !== undefined, 'unknown vehicle blueprint'),
         check(
@@ -1308,6 +1314,16 @@ const FurnitureSchema = pipe(
         ({ position: [x, y, z], size: [w, h, d] }) => x + w <= size[0] && y + h <= size[1] && z + d <= size[2],
       ),
     'shape boxes must stay within furniture size',
+  ),
+  check(
+    ({ size, vehicle }) => {
+      if (vehicle === undefined || BLUEPRINTS[vehicle.blueprint] === undefined) {
+        return true;
+      }
+      const blocks = solidBlocks(vehicle, size);
+      return blocks.length > 0 && blocks.every((block) => block.every((at, axis) => at >= 0 && at < size[axis]!));
+    },
+    (issue) => `vehicle piece "${(issue.input as { id: string }).id}" must block somewhere, and only within its size`,
   ),
   check(
     ({ appearance, container, shape, door, readable }) =>

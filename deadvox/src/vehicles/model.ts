@@ -20,7 +20,7 @@ import {
 } from './voxels.ts';
 
 /** The part lattice: four cells per world block, the 4×4 addressing from the darker_yet spike. */
-const CELLS_PER_BLOCK = 4;
+export const CELLS_PER_BLOCK = 4;
 export const VOXELS_PER_CELL = 4;
 export const PART_CELL = BLOCK_SIZE / CELLS_PER_BLOCK;
 export const VOXEL = PART_CELL / VOXELS_PER_CELL;

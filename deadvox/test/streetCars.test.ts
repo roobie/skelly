@@ -9,6 +9,7 @@ import type { ContentFile } from '../src/core/schema.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { footprint } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
+import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const { registry, issues } = startupContent();
@@ -24,6 +25,14 @@ const streetCars = (seed: number) => {
 const mod = (value: number, period: number) => ((value % period) + period) % period;
 
 const look = (templateId: string) => registry.furniture.get(templateId)!.vehicle!;
+
+const fixtureCar = { blueprint: 'rover', body: '#112233', dirt: 0.5, removed: [] as string[], solidFill: 0.4 };
+const checkCar = (override: Partial<typeof fixtureCar>, size: [number, number, number] = [4, 4, 9]) => {
+  const data: ContentFile = {
+    furniture: [{ id: 'fixture_car', name: 'Car', size, color: '#5b605c', vehicle: { ...fixtureCar, ...override } }],
+  };
+  return buildRegistry([{ source: 'fixture-car.json', data }]).issues;
+};
 
 it('street car procedural variants', () => {
   expect(issues).toEqual([]);
@@ -95,15 +104,15 @@ it('keeps the street surface under every placed item standing on a street cell',
 });
 
 it('rejects a vehicle look naming an unknown blueprint or part', () => {
-  const vehicle = { blueprint: 'rover', body: '#112233', dirt: 0.5, removed: [] as string[] };
-  const withVehicle = (override: Partial<typeof vehicle>): ContentFile => ({
-    furniture: [
-      { id: 'fixture_car', name: 'Car', size: [4, 4, 9], color: '#5b605c', vehicle: { ...vehicle, ...override } },
-    ],
-  });
-  const check = (data: ContentFile) => buildRegistry([{ source: 'fixture-car.json', data }]).issues;
-  expect(check(withVehicle({}))).toEqual([]);
-  expect(check(withVehicle({ removed: ['no-such-part'] })).length).toBeGreaterThan(0);
-  expect(check(withVehicle({ blueprint: 'no_such_vehicle' })).length).toBeGreaterThan(0);
-  expect(check(withVehicle({ dirt: 1.5 })).length).toBeGreaterThan(0);
+  expect(checkCar({})).toEqual([]);
+  expect(checkCar({ removed: ['no-such-part'] }).length).toBeGreaterThan(0);
+  expect(checkCar({ blueprint: 'no_such_vehicle' }).length).toBeGreaterThan(0);
+  expect(checkCar({ dirt: 1.5 }).length).toBeGreaterThan(0);
+});
+
+it('refuses a vehicle piece whose body is empty or spills out of its size, naming the piece', () => {
+  const everyFitting = BLUEPRINTS.rover!.fittings.map(({ id }) => id);
+  for (const refused of [checkCar({ removed: everyFitting }), checkCar({}, [4, 4, 4])]) {
+    expect(refused.some(({ message }) => message.includes('"fixture_car"'))).toBe(true);
+  }
 });

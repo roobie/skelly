@@ -4,6 +4,7 @@
 // ray casts find it from any of them. Worldgen claims a piece by the corner it
 // spawned at, its origin, which stays claimed wherever the piece is carried.
 
+import { solidBlocks } from '../vehicles/solid.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
@@ -160,6 +161,30 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
 
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 
+/** The offset of a cell's centre from the box's centre, in world blocks. */
+const fromCentre = (entity: BlockEntity, [x, y, z]: Readonly<Vec3>): Vec3 =>
+  [x, y, z].map((at, axis) => at + 0.5 - entity.pos[axis]! - entity.size[axis]! / 2) as Vec3;
+
+/** The piece's own block, counted from its left, bottom and front, that a world cell lies in. */
+const ownBlock = (entity: BlockEntity, size: Readonly<Vec3>, cell: Readonly<Vec3>): Vec3 => {
+  const offset = fromCentre(entity, cell);
+  return rotationOf(entity).map(
+    (axis, own) => axis.reduce((sum, value, world) => sum + value * offset[world]!, 0) + size[own]! / 2 - 0.5,
+  ) as Vec3;
+};
+
+/** The world cell a piece's own block lies in. */
+const worldCell = (entity: BlockEntity, size: Readonly<Vec3>, block: Readonly<Vec3>): Vec3 => {
+  const rotation = rotationOf(entity);
+  return [0, 1, 2].map(
+    (world) =>
+      entity.pos[world]! +
+      entity.size[world]! / 2 -
+      0.5 +
+      rotation.reduce((sum, axis, own) => sum + axis[world]! * (block[own]! + 0.5 - size[own]! / 2), 0),
+  ) as Vec3;
+};
+
 /** Whether a body's box overlaps any cell of a box of cells at a corner. */
 export const boxIntersectsBody = (pos: Readonly<Vec3>, size: Readonly<Vec3>, body: Body): boolean =>
   [...cellsOf(size)].some(([x, y, z]) => bodyOverlapsBlock(body, [pos[0] + x, pos[1] + y, pos[2] + z]));
@@ -170,6 +195,7 @@ export class BlockEntities {
   private readonly cells = new Map<string, BlockEntity>();
   /** Doorway cells, kept apart so a piece can stand in an open door's cells while the door stays there. */
   private readonly doorways = new Map<string, BlockEntity>();
+  private readonly vehicleMasks = new WeakMap<FurnitureDef, ReadonlySet<string>>();
   private nextUid = 1;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -433,7 +459,40 @@ export class BlockEntities {
 
   isSolid(x: number, y: number, z: number): boolean {
     const entity = this.at(x, y, z);
-    return entity !== undefined && this.blocks(entity);
+    if (entity === undefined || !this.blocks(entity)) {
+      return false;
+    }
+    const def = this.defOf(entity);
+    const mask = this.vehicleMask(def);
+    return mask === undefined || mask.has(ownBlock(entity, def.size, [x, y, z]).join(','));
+  }
+
+  /** The world boxes an entity stops movement and light in: a vehicle's only where its parts are. */
+  blockingBoxes(entity: BlockEntity): { pos: Vec3; size: Vec3 }[] {
+    if (!this.blocks(entity)) {
+      return [];
+    }
+    const def = this.defOf(entity);
+    const mask = this.vehicleMask(def);
+    if (mask === undefined) {
+      return [{ pos: entity.pos, size: entity.size }];
+    }
+    return [...mask].map((block) => ({
+      pos: worldCell(entity, def.size, block.split(',').map(Number) as Vec3),
+      size: [1, 1, 1],
+    }));
+  }
+
+  private vehicleMask(def: FurnitureDef): ReadonlySet<string> | undefined {
+    if (def.vehicle === undefined) {
+      return undefined;
+    }
+    let mask = this.vehicleMasks.get(def);
+    if (mask === undefined) {
+      mask = new Set(solidBlocks(def.vehicle, def.size).map((block) => block.join(',')));
+      this.vehicleMasks.set(def, mask);
+    }
+    return mask;
   }
 
   /** Whether a body's box overlaps any cell occupied by an entity. */

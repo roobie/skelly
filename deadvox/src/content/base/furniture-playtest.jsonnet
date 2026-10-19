@@ -1,4 +1,5 @@
 local cabinets = import 'cabinet-shapes.libsonnet';
+local vehicles = import 'vehicles.libsonnet';
 local plaque(id, name, color, readable) = {
   id: id,
   name: name,
@@ -64,7 +65,7 @@ local plaque(id, name, color, readable) = {
       name: 'Stripped car',
       size: [4, 4, 9],
       color: '#5b605c',
-      vehicle: {
+      vehicle: vehicles {
         blueprint: 'rover',
         body: '#b3a07c',
         dirt: 0,

@@ -155,8 +155,8 @@ class WorldBricks implements SolidBricks {
     this.furniture.clear();
     this.furnitureAt = entities.version;
     for (const entity of entities.all) {
-      if (entities.blocks(entity)) {
-        this.addFurniture(entity);
+      for (const box of entities.blockingBoxes(entity)) {
+        this.addFurniture(box);
       }
     }
     return this.furniture;
