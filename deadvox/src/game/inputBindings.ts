@@ -400,9 +400,6 @@ export const controlRowIssue = (id: string, keys: readonly Chord[]): string | un
   if (!ACTION_IDS.has(id)) {
     return `unknown action ${id}`;
   }
-  if (keys.length === 0) {
-    return 'no default keys';
-  }
   for (const chord of keys) {
     const issue = chordIssue(chord);
     if (issue) {

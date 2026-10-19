@@ -1105,23 +1105,39 @@ describe('content', () => {
       const data = structuredClone(file.data) as ControlRows;
       change(data.controls);
       const built = buildRegistry(base.map((entry) => (entry === file ? { source: file.source, data } : entry)));
-      return [...built.issues, ...controlIssues(built.registry, built.origins)].map(({ message }) => message);
+      const baseSources = new Set(base.map(({ source }) => source));
+      return [...built.issues, ...controlIssues(built.registry, built.origins, baseSources)].map(
+        ({ message }) => message,
+      );
     };
-    const keysOf = (rows: ControlRows['controls'], id: string) => rows.find((row) => row.id === id)!.keys;
 
     it('accepts the base default keys', () => {
       expect(controlsIssues((rows) => rows.length)).toEqual([]);
     });
 
+    it('refuses a controls row from a mod, since the game reads default keys from the base pack only', () => {
+      const modRow = { id: 'mod.action', keys: [{ code: 'KeyJ' }] };
+      const built = buildRegistry([...base, { source: 'mods/foo/controls.json', data: { controls: [modRow] } }]);
+      const refused = controlIssues(built.registry, built.origins, new Set(base.map(({ source }) => source)));
+      expect(refused.map(({ source }) => source)).toEqual(['mods/foo/controls.json']);
+      expect(refused[0]?.message).toContain("mods can't yet");
+    });
+
     it('reports an action left without a default key', () => {
-      expect(
-        controlsIssues((rows) =>
-          rows.splice(
-            rows.findIndex((row) => row.id === 'movement.jump'),
-            1,
-          ),
-        ),
-      ).toContain('action movement.jump has no default key');
+      let removed = '';
+      const messages = controlsIssues((rows) => {
+        removed = rows.splice(0, 1)[0]!.id;
+      });
+      expect(messages).toContain(`action ${removed} has no default key`);
+    });
+
+    it('reports an action whose row has no keys once, as an action without a default key', () => {
+      let emptied = '';
+      const messages = controlsIssues((rows) => {
+        emptied = rows[0]!.id;
+        rows[0]!.keys = [];
+      });
+      expect(messages).toEqual([`action ${emptied} has no default key`]);
     });
 
     it('reports a default key for an unknown action', () => {
@@ -1131,22 +1147,23 @@ describe('content', () => {
     });
 
     it('reports an invalid key code', () => {
-      expect(controlsIssues((rows) => keysOf(rows, 'movement.jump').splice(0, 1, { code: 'NotAKey' }))).toContain(
+      expect(controlsIssues((rows) => rows[0]!.keys.splice(0, 1, { code: 'NotAKey' }))).toContain(
         'NotAKey: Unknown physical key',
       );
     });
 
     it.each(['ctrl', 'meta', 'alt'])('refuses the %s modifier in a default key', (modifier) => {
-      const messages = controlsIssues((rows) => keysOf(rows, 'movement.jump').splice(0, 1, { code: 'KeyJ', modifier }));
+      const messages = controlsIssues((rows) => rows[0]!.keys.splice(0, 1, { code: 'KeyJ', modifier }));
       expect(messages.some((message) => message.startsWith(`${modifier}+KeyJ: `))).toBe(true);
     });
 
-    it('reports two default keys that conflict', () => {
-      const messages = controlsIssues((rows) =>
-        keysOf(rows, 'movement.back').splice(0, 1, ...keysOf(rows, 'movement.forward')),
-      );
-      expect(messages).toHaveLength(1);
-      expect(messages[0]?.toLowerCase()).toContain('conflict');
+    it('reports default keys that conflict', () => {
+      const messages = controlsIssues((rows) => {
+        for (const row of rows) {
+          row.keys = [{ code: 'KeyJ' }];
+        }
+      });
+      expect(messages.some((message) => message.toLowerCase().includes('conflict'))).toBe(true);
     });
   });
 

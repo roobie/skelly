@@ -67,7 +67,7 @@ export const validate = (
   write(`Reachable components: ${[...reachable.components].sort().join(', ')}`);
   write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
   write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
-  issues.push(...requiredContentIssues(registry), ...controlIssues(registry, origins));
+  issues.push(...requiredContentIssues(registry), ...controlIssues(registry, origins, new Set(base)));
   const catalogue = read(CATALOGUE);
   if (catalogue !== undefined) {
     issues.push(...bundledModCatalogueIssues(catalogue).map((message) => ({ source: CATALOGUE, path: '', message })));
