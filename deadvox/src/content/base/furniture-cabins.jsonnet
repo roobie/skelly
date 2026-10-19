@@ -1,6 +1,7 @@
+local shape = import 'furniture-shape.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local wood = '#6e5037';
-{
+shape.colliding({
   furniture: [
     {
       id: 'dad_front_door',
@@ -21,4 +22,4 @@ local wood = '#6e5037';
       container: { pockets: [{ grid: [4, 12], handlingSimSeconds: 1.2 }] },
     },
   ],
-}
+})

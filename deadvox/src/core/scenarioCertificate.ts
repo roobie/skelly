@@ -1,5 +1,5 @@
 import type { BlockEntity } from './blockEntities.ts';
-import { cityLotRouteIssues } from './cityLots.ts';
+import { cityLotRouteIssues, perimeterRouteIssues } from './cityLots.ts';
 import type { CitySite } from './citySite.ts';
 import type { Underground } from './cityUnderground.ts';
 import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
@@ -314,6 +314,17 @@ class Certificate {
   run(): ScenarioCertificate {
     this.start();
     this.issues.push(...cityLotRouteIssues(this.site.plan.lots ?? [], this.space, this.startFeet));
+    const serviceRoutes = this.site.plan.grid.service?.routes;
+    if (serviceRoutes) {
+      this.issues.push(
+        ...perimeterRouteIssues(
+          { placement: this.site.plan.service!, routes: serviceRoutes },
+          this.space,
+          this.startFeet,
+          '.city.service',
+        ),
+      );
+    }
     this.street();
     this.floors();
     this.ladder(this.site.plan.portal!, '.portal');

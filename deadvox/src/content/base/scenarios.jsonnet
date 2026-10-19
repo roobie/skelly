@@ -1,6 +1,7 @@
 local content = import 'gauntlet.jsonnet';
 local layout = import 'gauntlet-layout.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
+local yard = import 'gauntlet-lab-yard.libsonnet';
 local service = std.filter(function(t) t.id == 'gauntlet_service', content.mapAssemblies)[0];
 local ground = lab.ground;
 local hatch = lab.entry.hatch;
@@ -64,7 +65,7 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
         mouths: [sewer.mouth],
         ports: [{ id: 'lab_south', outside: sewer.outside, threshold: threshold, inside: [threshold[0], intake, threshold[2] - 3] }],
       }],
-      service: { cell: serviceCell, turn: 0 },
+      service: { cell: serviceCell, turn: 0, routes: yard.routes },
       street: street,
       blockX: block,
       blockZ: block,

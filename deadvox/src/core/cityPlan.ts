@@ -17,6 +17,7 @@ import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
 import type { CityBenchmarkDef, MapPoolDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
 import type { Rect } from './site.ts';
+import { freezeSnapshot } from './snapshotData.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { BlockBox } from './structure.ts';
 import {
@@ -858,6 +859,7 @@ const freezeGrid = (grid: CityGrid): Readonly<CityGrid> =>
   Object.freeze({
     ...grid,
     templates: freezeChoices(grid.templates),
+    ...(grid.service ? { service: freezeSnapshot(structuredClone(grid.service)) } : {}),
     ...(grid.perimeter
       ? {
           perimeter: Object.freeze({

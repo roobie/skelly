@@ -1,6 +1,7 @@
+local shape = import 'furniture-shape.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local metal = '#707b7e';
-{
+shape.colliding({
   furniture: lab.furniture + [
     {
       id: 'gauntlet_look_exhaust',
@@ -88,4 +89,4 @@ local metal = '#707b7e';
     },
   ],
 
-}
+})

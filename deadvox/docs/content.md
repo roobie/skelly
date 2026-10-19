@@ -7,7 +7,7 @@ read_if:
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
-  - you're authoring or changing exterior door openings, or townhouse aftermath scenes (`deadvox/docs/aftermath.md`)
+  - you're authoring or changing exterior door openings, lab-yard perimeters and dressing, or townhouse aftermath scenes (`deadvox/docs/aftermath.md`)
   - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author decals or scenario outbreak age
   - you author a scenario, its start-building rooms or ways down, or move scenario rules from code into content
@@ -282,7 +282,9 @@ Pools and eligibility remain static content so they can become inputs to an expr
 
 Special buildings must be deliberately designed and curated as plausible places, not generic rooms with different loot. Real plans keep room function, furnishings, circulation and supplies coherent. The gauntlet's rural police station follows that principle: a working civic place rather than a house shell relabelled by its loot. Exactly one station preserves scarcity without maintaining competing designs. Masonry makes the civic building read correctly; wooden furnishings and door leaves do not imply timber partitions or ceilings. See `src/content/base/rural-police.jsonnet`, `templates`; `src/content/base/gauntlet-authored-sites.libsonnet`, `policeMain` and `compound`; and `src/content/base/gauntlet-layout.libsonnet`, `lots`.
 
-Loose furniture in abandoned buildings should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-authored-sites.libsonnet`, `furnished`.
+Loose furniture in abandoned buildings and yards should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-authored-sites.libsonnet`, `furnished`.
+
+The lab's surface enclosure follows the underground footprint rather than just the service building, so the slab reads as one abandoned compound. Keep the apron and named perimeter crossings usable so fencing does not obscure the way down or turn the yard into a trap. Lot and service-yard openings share the same reach-and-sweep certificate so an alternate entrance cannot hide a blocked crossing. See `src/content/base/gauntlet-lab-yard.libsonnet`, `slots` and `routes`, and `src/core/cityLots.ts`, `perimeterRouteIssues`.
 
 Authored lots separate the arrangement from the building draw: a designed street and yard should not move when a seed changes its houses. Empty reservations protect intentional open ground, and pool guarantees must fit the actual lot footprints rather than borrowing capacity from another row. Fixed service placement keeps a designed destination on its intended approach. A validation pass shares immutable leaf compilation so a compound's nested assemblies do not repeatedly pay for the same authored geometry; a later admission must still see registry edits. See `src/core/mapKit.ts`, `mapKitIssues`. Off-rhythm paving belongs to the same plan as stamping, so the walked alleys cannot disagree with the arrangement. See `src/core/cityLots.ts`, `placeCityLots` and `cityLotIssues`; `src/core/cityPlan.ts`, `buildCityPlan`; and `src/core/citySite.ts`, `surface`.
 
@@ -400,7 +402,7 @@ Debug descriptions are fixture-scoped so showcase stock cannot define production
 
 ## Furniture visual shapes
 
-Visual furniture detail must not change occupied cells or expose hidden contents. Collision, rest, search, and line of sight keep their existing authorities, so a visual refinement cannot change gameplay.
+Procedural `appearance` detail must not change occupied cells or expose hidden contents, so refining how a fixture reads cannot change gameplay. A `shape` is the exception: it is both what is drawn and what blocks (see "Furniture solidity" below).
 
 Wall mounting is an explicit content contract because text alone cannot distinguish a hung plaque from a freestanding board. Reject unsupported mount kinds and missing hosts rather than rendering an apparently attached object in empty space. Keep plaque dimensions and board legs in content shapes instead of renderer guesses. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/content.ts`, `checkPaletteThing`; and `src/content/base/furniture-playtest.jsonnet`, `plaque`.
 
@@ -425,6 +427,15 @@ Use `deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
 
 ## Furniture solidity
+
+A solid shaped piece blocks by its drawn shape, not its whole box: render and collision share one source, so a player can go where a piece looks open, between a loading frame's legs or under its roof, and is stopped where it looks solid. A block counts as solid when the shape fills enough of it; that fraction is content, set once in `src/content/base/furniture-shape.libsonnet`, `solidFill`, so a pack tunes it in one place. Movement, sky light, solid bricks, picking and the crosshair read these blocks, as for vehicles (`DESIGN.md`, "Vehicles"), so nothing is picked that could not be bumped into. Placing, settling, covering and the "nothing falls on a body" check still take the whole box. A load check refuses a piece whose shape blocks nothing and names it. See `src/core/shapeSolid.ts`, `shapeBlocks`, and `src/core/blockEntities.ts`, `BlockEntities.hasPartAt`.
+
+Pieces without a drawn shape, or with one that does not block, keep the whole box: doors and hatches (an open door's blocks would have to follow its swing), procedural `appearance` pieces and plain boxes (the box is the look), and non-solid shaped pieces, which still pick by the whole box.
+
+Open:
+
+- **Rounding.** A block blocks whole or not at all, so a chair's legs block their whole block and a thin rail above the threshold blocks a full block. Half-height cells (#221) would shrink it.
+- **What may stand in a piece's open blocks.** Placing takes the whole box, so nothing can be set under a table or on a frame's open floor; decided with movable furniture (#758).
 
 A corpse that is a loot container is non-solid, because a body the player must path around only gets in the way. Walkers, zombies included, cross its cells, and sight and aim pass through it as through any non-solid furniture. It stays pickable and searchable because picking ignores solidity. Its `shape` stays low, because a full one-block box would hide dropped items, thrown items, spent cases and acid puddles settling on the floor inside it. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/furniturePick.ts`, `firstPickCell`; and `test/furniture.test.ts`, "lets a body walk through a non-solid container yet keeps it pickable".
 
