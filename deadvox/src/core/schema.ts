@@ -760,7 +760,7 @@ const ItemSchema = strictObject({
   stack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
   /** Held in both hands. */
   twoHanded: optional(vBoolean()),
-  container: optional(ContainerSchema),
+  container: optional(strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()) })),
   wearable: optional(WearableSchema),
   food: optional(FoodSchema),
   treatment: optional(TreatmentSchema),

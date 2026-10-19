@@ -10,7 +10,14 @@ import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
-import { footprintScaleIssue, PILE_GRID, pileFitIssue, pocketScaleIssue, rolledFitIssue } from './inventoryScale.ts';
+import {
+  footprintScaleIssue,
+  PILE_GRID,
+  pileFitIssue,
+  pocketScaleIssue,
+  rigidPocketScaleIssue,
+  rolledFitIssue,
+} from './inventoryScale.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
@@ -658,6 +665,10 @@ const checkItems = (registry: Registry, report: Report) => {
   for (const item of items) {
     if (item.container) {
       checkContainerWidth({ section: 'items', id: item.id, container: item.container, registry, report });
+      const issue = rigidPocketScaleIssue(item);
+      if (issue) {
+        report('items', item.id, '.container.pockets', issue);
+      }
     }
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);

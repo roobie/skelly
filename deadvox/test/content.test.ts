@@ -1448,6 +1448,43 @@ describe('content references', () => {
     expect(buildRegistry([{ source: 'container-width-exception.json', data: exception }]).issues).toEqual([]);
   });
 
+  it('bounds rigid pocket dimensions and total area, but leaves soft bags unbounded', () => {
+    const item = (id: string, grids: number[][], rigid?: boolean) => ({
+      id,
+      name: id,
+      category: 'tool',
+      weight: 1,
+      size: [2, 3],
+      container: { rigid, pockets: grids.map((grid) => ({ grid, handlingSimSeconds: 1 })) },
+    });
+    const items = [
+      item('fixture_rotated', [[3, 2]], true),
+      item('fixture_long', [[4, 1]], true),
+      item(
+        'fixture_sum',
+        [
+          [2, 2],
+          [2, 2],
+        ],
+        true,
+      ),
+      item('fixture_soft', [[4, 4]]),
+      item('fixture_soft_explicit', [[4, 4]], false),
+      item(
+        'fixture_divided',
+        [
+          [2, 2],
+          [1, 2],
+        ],
+        true,
+      ),
+    ];
+    expect(buildRegistry([{ source: 'rigid.json', data: { items } }]).issues).toEqual([
+      expect.objectContaining({ path: 'items[1].container.pockets' }),
+      expect.objectContaining({ path: 'items[2].container.pockets' }),
+    ]);
+  });
+
   it('refuses furniture whose loot table rolls a long gun that fits none of its pockets', () => {
     const gun = { id: 'fixture_long_gun', name: 'Long gun', category: 'weapon', weight: 1, size: [2, 9] };
     const locker = (grid: [number, number]) => ({
