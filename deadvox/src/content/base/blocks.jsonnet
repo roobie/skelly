@@ -41,6 +41,7 @@ local block(id, name, color, surface, extra={}) =
       soundBlocking: false,
       meleePass: { damageKinds: ['pierce'], minimumZombieReachMetres: 1 },
       wireMesh: { cellsPerBlock: 4, wireFraction: 0.08 },
+      fencePosts: { widthBlocks: 0.12, spacingBlocks: 6 },
     }),
     block('sandbag', 'Sandbag', '#9b8d6a', 'stone', { weatherable: false }),
     block('camo_woodland', 'Weathered woodland camouflage', '#777b6a', 'stone', {

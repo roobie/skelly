@@ -251,6 +251,10 @@
     },
     {
       "color": "#89979a",
+      "fencePosts": {
+        "spacingBlocks": 6,
+        "widthBlocks": 0.12
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"

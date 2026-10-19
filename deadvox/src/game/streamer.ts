@@ -6,6 +6,7 @@
 
 import type { Chunk } from '../core/chunk.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
+import type { FencePostDefs } from '../core/fencePosts.ts';
 import { extractPadded, extractWide } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
@@ -41,6 +42,7 @@ export interface StreamerOptions {
   /** Content-owned render-weathering flag per block id. */
   weatherable: Uint8Array;
   wireMeshes?: WireMeshes;
+  fencePosts?: FencePostDefs;
   scale: Scale;
   /** Stamped into every column as it generates. */
   structures: readonly BlockBox[];
@@ -150,6 +152,7 @@ export class Streamer {
         patterns: opts.patterns,
         weatherable: opts.weatherable,
         wireMeshes: opts.wireMeshes ?? [],
+        fencePosts: opts.fencePosts ?? [],
       });
       this.workers.push(worker);
     }

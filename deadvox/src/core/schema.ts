@@ -170,6 +170,13 @@ const BlockSchema = strictObject({
       minimumZombieReachMetres: Positive,
     }),
   ),
+  /** Poles stay inside the occupied cell, so they need no separate collision rule. */
+  fencePosts: optional(
+    strictObject({
+      widthBlocks: pipe(Positive, maxValue(1)),
+      spacingBlocks: pipe(number(), integer(), minValue(1)),
+    }),
+  ),
   /** Open wire geometry; wireFraction controls coverage, while color supplies the tint. */
   wireMesh: optional(
     strictObject({

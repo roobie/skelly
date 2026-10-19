@@ -81,6 +81,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/weather.ts',
   'src/core/mesher.ts',
   'src/core/wireMesh.ts',
+  'src/core/fencePosts.ts',
   // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
   'src/core/meshInput.ts',
   'src/core/occlusion.ts',

@@ -314,6 +314,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     shape,
     colors: blockColors(registry),
     wireMeshes: registry.blocks.map((block) => block.wireMesh),
+    fencePosts: registry.blocks.map((block) => block.fencePosts),
     patterns: blockPatterns(registry),
     weatherable: blockWeatherability(registry),
     scale,

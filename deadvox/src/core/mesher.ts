@@ -11,6 +11,7 @@
 // with the same merge rule. It is the ambient factor only; it never touches the vertex colours.
 
 import { CHUNK, type Vec3 } from './coords.ts';
+import { deriveFencePosts, type FencePostDefs } from './fencePosts.ts';
 import { BEDROCK, PADDED, paddedIndex } from './meshInput.ts';
 import {
   boxSum,
@@ -140,6 +141,8 @@ interface Context {
 }
 
 export interface MeshOptions {
+  origin?: Vec3;
+  fencePosts?: FencePostDefs;
   wireMeshes?: WireMeshes;
   patterns?: Uint8Array;
   wide?: Uint8Array;
@@ -311,12 +314,12 @@ const emitQuad = (
   ctx: Context,
   face: Face,
   [key, occ]: Keys,
-  { rect: [slice, u0, v0, w, h], polygon }: { rect: number[]; polygon?: Point2[] },
+  { rect: [slice, u0, v0, w, h], polygon, plane }: { rect: number[]; polygon?: Point2[]; plane?: number },
 ): void => {
   const base = ctx.positions.length / 3;
   const id = key >> 8;
   const pos: Vec3 = [0, 0, 0];
-  pos[face.d] = slice! + (face.s > 0 ? 1 : 0);
+  pos[face.d] = plane ?? slice! + (face.s > 0 ? 1 : 0);
   const [nx, ny, nz] = face.normal;
   let points = face.uv.map(([cu, cv]): Point2 => [u0! + cu * w!, v0! + cv * h!]);
   if (polygon) {
@@ -410,6 +413,26 @@ const mergeMask = (ctx: Context, face: Face, slice: number): void => {
   }
 };
 
+const emitFencePosts = (ctx: Context, definitions: FencePostDefs, origin: Vec3): void => {
+  for (const post of deriveFencePosts(ctx.padded, definitions, origin)) {
+    for (const face of FACES) {
+      if (face.d === 1 && !(face.s > 0 ? post.capTop : post.capBottom)) {
+        continue;
+      }
+      emitQuad(ctx, face, [(post.id << 8) | 255, OPEN_KEY], {
+        rect: [
+          0,
+          post.min[face.u],
+          post.min[face.v],
+          post.max[face.u] - post.min[face.u],
+          post.max[face.v] - post.min[face.v],
+        ],
+        plane: face.s > 0 ? post.max[face.d] : post.min[face.d],
+      });
+    }
+  }
+};
+
 /**
  * Builds a mesh for one chunk.
  * @param padded block ids for the chunk plus a 1-block border (see extractPadded)
@@ -449,6 +472,7 @@ export const buildMesh = (padded: Uint16Array, colors: Uint8Array, options: Mesh
       }
     }
   }
+  emitFencePosts(ctx, options.fencePosts ?? [], options.origin ?? [0, 0, 0]);
   return {
     positions: new Float32Array(ctx.positions),
     normals: new Int8Array(ctx.normals),

@@ -5,7 +5,7 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
-  - you're changing world block shapes, wire fences, sight opacity, reach through obstacles, sound blocking or slab geometry
+  - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
@@ -176,6 +176,15 @@ shadow. Interaction requires both physical and visual access: seeing a container
 through wire does not let the player loot it, and passable foliage still hides it.
 See `src/core/schema.ts`, `BlockSchema`; `src/core/collision.ts`, `worldOpaque`;
 `src/core/wireMesh.ts`, `wirePolygons`; and `src/core/interactionPick.ts`, `pickInteractionTarget`.
+
+Fence supports make ends, corners and junctions read as built structure rather than
+floating wire. Derive them from neighbouring opted-in cells instead of making authors
+place a second object. Content owns pole size and straight-run spacing; anchor that
+spacing to the world, not a discovered run end or chunk origin, so loading and rebuild
+order cannot move it. Meshing waits for neighbouring live columns before treating an
+edge as an end. Poles stay inside the fence's occupied cells and do not introduce a
+separate gameplay obstacle or change the wire's passage rules. See `src/core/fencePosts.ts`,
+`deriveFencePosts`; and `src/game/streamer.ts`, `Streamer.neighboursGenerated`.
 
 Shots and thrown items stop at wire to keep physical collision simple. Size-based
 passage, where small objects fit through openings and large ones stop, is the
