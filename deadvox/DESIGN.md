@@ -1180,11 +1180,16 @@ other groups add relief. They mask pain only: health, wounds and consequences
 remain unchanged. Saves preserve acute pain and active doses.
 
 Codeine and morphine relieve much more than the common analgesic, but while a dose
-works it also slows aim or blurs vision, more for morphine, so strong relief is a
-trade rather than a free upgrade. The cost's strength is a content number on the
-analgesic. Whether a stacked dose can be dangerous, and whether dependence is ever
-modelled, are later rulings. The d502 build round adds both drugs and the cost. See
-`src/core/schema.ts`, `AnalgesicSchema`, and `src/core/pain.ts`, `analgesia`.
+works it blurs vision, more for morphine, so strong relief is a trade rather than a
+free upgrade. The blur is a vignette at the edges, not a full-screen blur: the centre,
+where the player aims, stays sharp, while threats at the edges are harder to read.
+Aim itself is untouched, so the cost reads as the drug's and not as pain's own sway.
+The vignette rises and fades with the dose, its strength is a content number on the
+analgesic, and players who cannot tolerate it get a setting for it. Its
+strength needs a playtest. Whether the HUD stays sharp under it, whether a stacked
+dose can be dangerous, and whether dependence is ever modelled are later rulings. The
+d502 build round adds both drugs and the vignette. See `src/core/schema.ts`,
+`AnalgesicSchema`, and `src/core/pain.ts`, `analgesia`.
 
 The optional stats readout shows felt pain and its acute, injury and relief
 components so BR can tune the scale in play. This debug-style number belongs
