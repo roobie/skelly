@@ -26218,6 +26218,7 @@
           "furniture": "gauntlet_cell_bars"
         },
         "C": {
+          "facing": "s",
           "furniture": "desk",
           "loot": "gauntlet_police_office_key"
         },

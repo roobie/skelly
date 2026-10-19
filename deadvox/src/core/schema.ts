@@ -2157,6 +2157,17 @@ const SkillSchema = pipe(
             blockChanceMinimum: Fraction,
             blockChanceRange: Fraction,
             blockChanceHalfLifeLevels: Positive,
+            mitigationMinimum: Fraction,
+            mitigationRange: Fraction,
+            mitigationHalfLifeLevels: Positive,
+            staminaPerAbsorbedPoint: Positive,
+            staminaCostFloor: Fraction,
+            staminaCostHalfLifeLevels: Positive,
+            joltPerAbsorbedPoint: NonNegative,
+            joltRealSeconds: NonNegative,
+            deflectRiseMetres: NonNegative,
+            deflectRiseFloor: Fraction,
+            deflectRealSeconds: NonNegative,
           }),
         ),
       }),
@@ -2182,7 +2193,9 @@ const SkillSchema = pipe(
     return (
       complete &&
       (!firearm || firearm.readyMovementMinimum + firearm.readyMovementRange <= 1) &&
-      (!melee || melee.blockChanceMinimum + melee.blockChanceRange <= 1)
+      (!melee ||
+        (melee.blockChanceMinimum + melee.blockChanceRange <= 1 &&
+          melee.mitigationMinimum + melee.mitigationRange <= 1))
     );
   }, 'missing required skill tuning or effect range exceeds one'),
   check(

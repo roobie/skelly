@@ -206,7 +206,7 @@ describe('acid glob', () => {
     const { condition } = jacket;
     const practice = { ...h.session.character.practice };
     h.release();
-    const block = vi.spyOn(meleeCombat, 'blocksAttack');
+    const block = vi.spyOn(meleeCombat, 'meleeBlock');
     h.land();
     expect(block).not.toHaveBeenCalled();
     block.mockRestore();

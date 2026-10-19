@@ -8,6 +8,8 @@ export const SOUND_EVENT_IDS = [
   'player_hurt_heavy',
   'player_strain',
   'player_landing_hard',
+  'player_block_full',
+  'player_block_partial',
   'footstep_grass',
   'footstep_mud',
   'footstep_sand',

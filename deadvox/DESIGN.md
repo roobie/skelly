@@ -41,6 +41,7 @@ read_if:
   - you're choosing or changing weapon sounds (shots, handling, dry fire, melee swings and hits)
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
   - you're changing military progression or loot economy admission
   - you're changing firearm case ejection, landing, or save presentation
@@ -677,6 +678,12 @@ by shape as well as color, and rotation is available. The layout must work on
 small zoomed screens without letting an oversized container dominate nearby
 storage.
 
+Everything lootable, from furniture to ground piles and downed bodies, is within
+reach only along a clear line from the chest. A solid block or a closed door in
+the way stops the arm; other furniture does not. Reach is a physical arm, so a
+wall that stops the player's body also stops looting, while a table in front of a
+shelf does not. See `src/core/reach.ts`, `clearLine`.
+
 Show a name, stack count, condition, and pocket handling time at a glance;
 inspection exposes exact weight, condition, qualities, and times. Grid labels
 avoid ellipses and early word breaks because they spend cell space that could
@@ -952,9 +959,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   Hits resolve against posed body regions after a wind-up; misses and blocked
   swings still spend stamina and cooldown. Saves preserve an active swing so
   Continue cannot skip or repeat its pending contact. Changing held items cancels
-  contact without refunding cooldown. En-garde lets the player attempt a skill-
-  based block without changing movement pace; successful blocks and landed hits
-  train melee combat. Weapon classes have different tradeoffs: blunt weapons are
+  contact without refunding cooldown. En-garde blocks without changing movement
+  pace; blocks and landed hits train melee combat. Weapon classes have different tradeoffs: blunt weapons are
   slower and more consistent, edged weapons sever more readily, and piercing
   weapons are faster with greater damage variance. Class defaults and per-weapon
   overrides in `src/content/base/items-tools.jsonnet` remain provisional tuning
@@ -964,6 +970,27 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   Zero stamina refuses a swing, and saved recovery time survives Continue. See
   `PlayerCombat.resolveContact` in `src/core/playerCombat.ts` and
   `ZombieSystem.applyMeleeHit` in `src/core/zombies.ts`.
+
+  A block always takes part of a melee blow, so holding the guard is a choice
+  whose payoff the player feels on every hit; an all-or-nothing roll would read
+  as luck. A skill roll can still turn it into a full block, so a skilled
+  fighter has a clean parry to hope for. Skill raises the share absorbed and
+  lowers the stamina paid per point, because practice should make defence both
+  stronger and cheaper. Stamina is the price because swings and sprinting spend
+  it too, so a guard cannot be held for free and a long fight wears the player
+  down; a winded guard absorbs nothing, leaving an exhausted player open rather
+  than half-protected. What gets past keeps the blow's region and damage kind,
+  so wounds stay consistent with the strike. Acid spit is never blocked: a
+  weapon cannot parry a spray. Training scales with the damage absorbed, so
+  heavy blows teach more than scrapes and trivial hits cannot farm practice.
+  Skill alone decides how well a guard blocks; the held item plays no part, so
+  empty hands block like a weapon. A block is loud contact that the dead hear, so fighting draws more of
+  them; full and partial blocks sound different so the player can tell the
+  outcome by ear. A block also needs a visible cue, not only feel and sound, so
+  the player can see the hit was deflected. Content owns every block number. See
+  `src/core/meleeCombat.ts`, `meleeBlock` and `blockJolt`;
+  `src/render/playView.ts`, `createPlayView`; `src/game/session.ts`,
+  `blockedDamage`; and `src/content/base/recipes.libsonnet`, `melee_combat`.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammunition and magazines are items; a magazine holds its
   cartridges and fits a rifle's magazine slot (see "Magazines" and "Rifles" below). The
@@ -1038,8 +1065,10 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
   Mean-reverting Brownian drift avoids unbounded sway; smoothing keeps fixed-tick noise from reading as frame-level twitch. The shared walking lune remains separate, firearms skill continues to scale sway, and content owns the noise tuning. Saving the running state lets Continue and replay segments preserve the exact path, avoiding a motion discontinuity. The vertical/horizontal lune ratio remains independently tunable without changing the drift. See `src/core/aim.ts`, `advanceOrnsteinUhlenbeckAxis` and `AimController.snapshotState`, `src/core/saveState.ts`, `snapshotSession`, `src/game/inputReplay.ts`, `encodeInputReplay`, `src/game/config.ts`, `configFromUrl`, and `src/content/base/recipes.json`, `firearms_combat`.
 
+  **Holding breath** lets the player steady a readied firearm for a moment, so a careful shot through an optic is earned by timing rather than by waiting out the drift. It damps the wobble drift only; recoil and dispersion keep their owners, because breath steadies the body, not the gun. Held breath and whatever limits it change where shots go, so they are simulation state: saved with aim state and restored by input replay (`CONTROLS.md`, "Replay boundary"). The sprint key, held while the firearm is ready, holds breath: the ready stance already refuses sprint, so the key is free there and needs no new binding. It works in any ADS, through irons or an optic, standing or crouched, but not while moving, because a moving body can't be held still. Each second held spends stamina, since holding breath is effort and one shared resource keeps the rules simple. The winded line gates both ends: a hold can't start while winded, and a hold in progress gives out when stamina drops to that line. One threshold keeps the hold simple and adds no tunable. Giving out leaves sway worse than normal for a recovery period, and no new hold starts until that ends, so pressing the hold too long costs the next shot. Firearms skill strengthens the hold and pain weakens it, on top of their effect on the wobble itself, because steadying breath is part of handling the gun. The player hears it and nothing else shows it: an inhale when the hold starts, quiet while held, an exhale when it ends, a strained gasp when it gives out, and the stamina heartbeat carries on. These are presentation only, not noise events, so a shambler never hears a breath. Its stamina cost, recovery length, recovery sway penalty, steadying factor and the skill and pain terms are content (`PILLARS.md`, "Content forward compatibility"). See `src/core/aim.ts`, `AimController.advance`, and `src/game/session.ts`, `advanceSessionAim`.
+
   Ready stance gates firearm fire; sprinting prohibits it. Duck-walk speed is
-  owned by firearms combat, and melee combat owns block success. A held, completed
+  owned by firearms combat, and melee combat owns blocking. A held, completed
   ready stance remains active through firearm rack/load handling; raising still
   takes skill-scaled simulation time. Racking, loading, magazine changes, and
   charging train firearms handling, while a magazine change and charge preserve

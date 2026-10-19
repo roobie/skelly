@@ -386,9 +386,10 @@
       "files": [
         "assets/audio/footstep-mud-02.ogg",
         "assets/audio/footstep-mud-03.ogg",
-        "assets/audio/footstep-mud-04.ogg"
+        "assets/audio/footstep-mud-04.ogg",
+        "assets/audio/player-block-full-01.ogg"
       ],
-      "changes": "Selected three wet-footstep variations (sfx100v2_footstep_wet_01–03.ogg); converted from stereo 48 kHz Vorbis to mono 48 kHz Opus in Ogg containers without loudness normalization; unused source effects excluded"
+      "changes": "Selected three wet-footstep variations (sfx100v2_footstep_wet_01–03.ogg); converted from stereo 48 kHz Vorbis to mono 48 kHz Opus in Ogg containers without loudness normalization; sfx100v2_misc_36.ogg kept byte-identical as received and renamed player-block-full-01.ogg; unused source effects excluded"
     },
     {
       "title": "Jump Landing Sound",
