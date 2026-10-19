@@ -5,9 +5,8 @@
 //
 // mobgen's pure core/mob modules (bones, IK, gait, the crowd bone-matrix packing) are reused directly via
 // the `@mobgen/` alias (vite.config.ts, tsconfig.json) — no npm dependency, just a sibling-project source
-// import. three.js itself is `import`ed here from *this* project's own node_modules, never mobgen's (mobgen
-// only reaches three from mobgen/src/viewer, which this file — and everything under @mobgen/ — must never
-// import; see test/mobgenBoundary.test.ts). The draw strategy mirrors mobgen's own stress-page 'crowd'
+// import. three.js itself is `import`ed here directly; mobgen only reaches three from mobgen/src/viewer,
+// which this file — and everything under @mobgen/ — must never import; see test/mobgenBoundary.test.ts. The draw strategy mirrors mobgen's own stress-page 'crowd'
 // mode (mobgen/src/viewer/stressActors.ts's buildCrowdRender): one shared bone-matrix DataTexture for
 // every zombie (one GPU upload/frame, not one per zombie) and one InstancedMesh per body variant, each
 // vertex fetching its own bone's matrix with a single texelFetch — see mobgen/src/mob/crowd.ts for the

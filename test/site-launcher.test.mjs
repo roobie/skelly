@@ -417,9 +417,9 @@ describe('site launcher playtest entry', () => {
         join(root, '.gitignore'),
         '/deadvox/dist-playtest/\n/deadvox/dist/\nnode_modules/\n/tools/jsonnet/bin/\n',
       );
-      writeFileSync(join(root, 'deadvox/package-lock.json'), JSON.stringify({ lockfileVersion: 3 }));
-      mkdirSync(join(root, 'deadvox/node_modules/fixture-dep'), { recursive: true });
-      writeFileSync(join(root, 'deadvox/node_modules/fixture-dep/index.js'), '// fixture dependency');
+      writeFileSync(join(root, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3 }));
+      mkdirSync(join(root, 'node_modules/fixture-dep'), { recursive: true });
+      writeFileSync(join(root, 'node_modules/fixture-dep/index.js'), '// fixture dependency');
       mkdirSync(join(root, 'tools/jsonnet/bin'), { recursive: true });
       writeFileSync(join(root, 'tools/jsonnet/runtime.json'), JSON.stringify({ version: 'fixture' }));
       writeFileSync(join(root, 'tools/jsonnet/bin/fixture'), 'compiler fixture');
@@ -431,7 +431,8 @@ describe('site launcher playtest entry', () => {
         join(root, 'deadvox/build.mjs'),
         [
           "import { mkdirSync, copyFileSync, realpathSync } from 'node:fs';",
-          "if (!realpathSync('node_modules/fixture-dep').startsWith(process.cwd() + '/node_modules/')) throw new Error('Dependency escaped checkout');",
+          "import { dirname } from 'node:path';",
+          "if (!realpathSync('../node_modules/fixture-dep').startsWith(dirname(process.cwd()) + '/node_modules/')) throw new Error('Dependency escaped checkout');",
           "mkdirSync('dist'); copyFileSync('index.html', 'dist/index.html');",
         ].join('\n'),
       );

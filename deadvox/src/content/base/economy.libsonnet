@@ -22,7 +22,7 @@ local commonItems = [
   'canned_beans', 'canned_soup', 'crackers', 'apple', 'chocolate_bar', 'soda_can', 'water_bottle', 'juice_carton',
   'aa_battery', 'bandage', 'antiseptic', 'antibiotics', 'painkillers', 'rag', 'duct_tape', 'nails', 'scrap_metal',
   'field_manual', 'camp_craft_book', 'home_repair_book', 'workshop_notes', 'paperback', 'portable_radio', 'jerry_can',
-  'shell_12_gauge_00_buck', 'shotshell_box', 'dad_cabin_key', 'baseball_cap', 'evacuation_note', 'hunter_logbook',
+  'ammo_can', 'shell_12_gauge_00_buck', 'shotshell_box', 'dad_cabin_key', 'baseball_cap', 'evacuation_note', 'hunter_logbook',
   'pharmacy_key', 'medical_research_log', 'lamp_oil', 'glass_shards', 'electrical_tape', 'fastener_pack',
   'wood_offcut', 'rubber_strip', 'circuit_board', 'glass_lens', 'small_spring', 'cloth_strip', 'sewing_thread',
   'fuse', 'nylon_cord', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp',

@@ -383,6 +383,11 @@
           "weight": 1
         },
         {
+          "condition": [0.5, 1],
+          "item": "ammo_can",
+          "weight": 1
+        },
+        {
           "count": [10, 40],
           "item": "nails",
           "weight": 3

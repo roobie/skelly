@@ -4,7 +4,8 @@
 
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { PILE_GRID, type Pile } from './inventory.ts';
+import type { Pile } from './inventory.ts';
+import { PILE_GRID } from './inventoryScale.ts';
 import { defOf, footprint, type Placed } from './items.ts';
 
 interface PiledModel {

@@ -24,6 +24,7 @@ import {
 } from './disassembly.ts';
 import { firearmSlotIds, isLongGun, slingFitted } from './firearmFitting.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
+import { PILE_GRID } from './inventoryScale.ts';
 import {
   cellCount,
   couldFit,
@@ -75,8 +76,6 @@ export const wornSlotOf = (registry: Registry, item: Item): WearSlot | undefined
   return def.wearable?.slot ?? (isLongGun(def) ? 'shoulder' : undefined);
 };
 
-/** What one block of floor holds. */
-export const PILE_GRID: GridSize = { w: 8, h: 6 };
 export const WORK_IN_PROGRESS = 'work_in_progress';
 
 /** Ordinary dropping and craft retirement share the same bounded neighborhood. */
@@ -1215,10 +1214,7 @@ export class Inventory {
     spot: Spot,
     projected?: { item: Item; spot: Spot },
   ): boolean {
-    if (
-      (target.kind === 'pocket' && target.owner === item) ||
-      (target.kind !== 'pile' && (item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0)))
-    ) {
+    if ((target.kind === 'pocket' && target.owner === item) || this.nestingRefusal(item, target)) {
       return false;
     }
     const displaced = this.itemAtTarget(target, item);
@@ -1370,6 +1366,43 @@ export class Inventory {
     }
   }
 
+  private nestingRefusal(
+    item: Item,
+    target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
+  ): string | undefined {
+    const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
+    if (target.kind !== 'pile' && hasNestedContents && !defOf(this.registry, item.type).container?.rigid) {
+      return "I can't pack a loaded soft bag inside another container";
+    }
+    if (target.kind !== 'pocket') {
+      return undefined;
+    }
+    if (hasNestedContents && defOf(this.registry, target.owner.type).container?.rigid) {
+      return "I can't put a loaded container inside a hard case";
+    }
+    return this.filledContainerRefusal(target.owner);
+  }
+
+  // Filling an already packed container must obey the same rule as packing it after filling.
+  private filledContainerRefusal(container: Item): string | undefined {
+    let owner = container;
+    let location = this.locate(owner);
+    while (location?.kind === 'pocket' || location?.kind === 'furniture') {
+      if (!defOf(this.registry, owner.type).container?.rigid) {
+        return "I can't pack a loaded soft bag inside another container";
+      }
+      if (location.kind === 'furniture') {
+        break;
+      }
+      if (defOf(this.registry, location.owner.type).container?.rigid) {
+        return "I can't put a loaded container inside a hard case";
+      }
+      ({ owner } = location);
+      location = this.locate(owner);
+    }
+    return undefined;
+  }
+
   private gridPlacement(
     item: Item,
     count: number,
@@ -1377,9 +1410,9 @@ export class Inventory {
     target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
   ): Plan {
     const { at } = target;
-    const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
-    if (target.kind !== 'pile' && hasNestedContents) {
-      return refuse('Only empty bags go inside other containers');
+    const nesting = this.nestingRefusal(item, target);
+    if (nesting) {
+      return refuse(nesting);
     }
     if (!couldFit(this.registry, grid.size, item)) {
       return refuse('Too big for it');

@@ -2105,7 +2105,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [6, 4],
+            "grid": [9, 18],
             "handlingSimSeconds": 0.80000000000000004
           }
         ]
@@ -2155,7 +2155,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [6, 4],
+            "grid": [9, 18],
             "handlingSimSeconds": 0.80000000000000004
           }
         ]
@@ -2209,7 +2209,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [6, 8],
+            "grid": [9, 18],
             "handlingSimSeconds": 1.2
           }
         ]
@@ -2228,7 +2228,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [6, 8],
+            "grid": [9, 18],
             "handlingSimSeconds": 1.2
           }
         ]

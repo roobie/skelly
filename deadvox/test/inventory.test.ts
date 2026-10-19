@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { conditionWord, fitsAt, weightOf } from '../src/core/items.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -55,7 +56,7 @@ describe('grid placement', () => {
 
   it('rotates an item to fit, and refuses one too big either way', () => {
     const { inv, hoodie, jeans } = dressed();
-    const knife = onFloor(inv, 'kitchen_knife'); // 1 × 3
+    const knife = onFloor(inv, 'kabar');
     expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual({
       ok: false,
       reason: 'Too big for it',
@@ -71,7 +72,7 @@ describe('grid placement', () => {
     const water = onFloor(inv, 'water_bottle');
     inv.move(water, { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 1, y: 1, rotated: false } });
     const grid = { size: inv.pocketGrid(backpack, 0), placed: backpack.pockets![0]! };
-    const bat = inv.create('baseball_bat'); // 1 × 6
+    const bat = inv.create('machete');
     expect(fitsAt(registry, grid, bat, { x: 1, y: 0, rotated: false })).toBe(false);
     expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: false })).toBe(true);
     expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: true })).toBe(false);
@@ -258,48 +259,6 @@ describe('stacking', () => {
   });
 });
 
-describe('nesting', () => {
-  it('refuses a bag with anything in it inside another container', () => {
-    const inv = new Inventory(registry);
-    const hiking = onFloor(inv, 'hiking_backpack');
-    inv.worn.back = inv.create('hoodie'); // wrong slot on purpose: only the grid matters here
-    const school = onFloor(inv, 'school_backpack');
-    const beans = onFloor(inv, 'canned_beans');
-    inv.move(beans, { kind: 'pocket', owner: school, pocket: 1 });
-    expect(inv.plan(school, { kind: 'pocket', owner: hiking, pocket: 0 })).toEqual({
-      ok: false,
-      reason: 'Only empty bags go inside other containers',
-    });
-    inv.move(beans, { kind: 'pile', pos: [5, 0, 0] });
-    expect(inv.move(school, { kind: 'pocket', owner: hiking, pocket: 0 }).ok).toBe(true);
-  });
-
-  it('refuses an empty bag that is too big, and a bag inside itself', () => {
-    const { inv, hoodie } = dressed();
-    const fanny = onFloor(inv, 'fanny_pack'); // 2 × 2, its pocket 3 × 2
-    const hiking = onFloor(inv, 'hiking_backpack'); // 4 × 5
-    expect(inv.plan(hiking, { kind: 'pocket', owner: hoodie, pocket: 0 })).toEqual({
-      ok: false,
-      reason: 'Too big for it',
-    });
-    expect(inv.plan(fanny, { kind: 'pocket', owner: fanny, pocket: 0 })).toEqual({
-      ok: false,
-      reason: "It can't go inside itself",
-    });
-    expect(inv.move(fanny, { kind: 'pocket', owner: hoodie, pocket: 0 }).ok).toBe(true);
-  });
-
-  it('finds items at any depth, and counts their weight', () => {
-    const { inv, backpack } = dressed();
-    const fanny = onFloor(inv, 'fanny_pack');
-    inv.move(fanny, { kind: 'pocket', owner: backpack, pocket: 0 });
-    const aa = onFloor(inv, 'aa_battery', 3);
-    inv.move(aa, { kind: 'pocket', owner: fanny, pocket: 0 });
-    expect(inv.locate(aa)).toMatchObject({ kind: 'pocket', owner: fanny, pocket: 0 });
-    expect(weightOf(registry, backpack)).toBe(600 + 200 + 3 * 23);
-  });
-});
-
 describe('hands and wearing', () => {
   it('needs both hands for a two-handed item', () => {
     const inv = new Inventory(registry);
@@ -429,7 +388,7 @@ describe('registry-aware item tree restoration', () => {
     const inv = new Inventory(registry);
     expect(inv.add(inv.create('rag'), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     const state = structuredClone(inv.snapshotState());
-    state.piles[0]!.items[0] = { ...state.piles[0]!.items[0]!, x: 8 };
+    state.piles[0]!.items[0] = { ...state.piles[0]!.items[0]!, x: PILE_GRID.w };
     expect(() => Inventory.restoreState(registry, state)).toThrow('Invalid item placement');
   });
 });

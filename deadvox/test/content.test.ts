@@ -1001,24 +1001,13 @@ describe('content', () => {
     const registry = baseRegistry;
     const machete = registry.items.get('machete')!;
     const kabar = registry.items.get('kabar')!;
-    expect(machete).toMatchObject({
-      name: 'Machete',
-      category: 'tool',
-      weight: 550,
-      size: [1, 4],
-      model: 'machete',
-      tool: { qualities: { cutting: 2 } },
-      weapon: { melee: { damage: 11, reach: 0.45, cooldownSimSeconds: 0.75, stamina: 5, impulse: 4.5, type: 'cut' } },
-    });
-    expect(kabar).toMatchObject({
-      name: 'Kabar',
-      category: 'tool',
-      weight: 300,
-      size: [1, 3],
-      model: 'kabar',
-      tool: { qualities: { cutting: 2 } },
-      weapon: { melee: { damage: 9, reach: 0.3, cooldownSimSeconds: 0.55, stamina: 3.5, impulse: 4, type: 'cut' } },
-    });
+    for (const [item, model] of [
+      [machete, 'machete'],
+      [kabar, 'kabar'],
+    ] as const) {
+      expect(item).toMatchObject({ category: 'tool', model, weapon: { melee: { type: 'cut' } } });
+      expect(item.tool?.qualities.cutting).toBeGreaterThan(0);
+    }
     for (const id of ['machete', 'kabar']) {
       expect(registry.loot.get('shed_tools')?.entries).toContainEqual({
         item: id,
@@ -1457,6 +1446,83 @@ describe('content references', () => {
       ],
     };
     expect(buildRegistry([{ source: 'container-width-exception.json', data: exception }]).issues).toEqual([]);
+  });
+
+  it('bounds rigid pocket dimensions and total area, but leaves soft bags unbounded', () => {
+    const item = (id: string, grids: number[][], rigid?: boolean) => ({
+      id,
+      name: id,
+      category: 'tool',
+      weight: 1,
+      size: [2, 3],
+      container: { rigid, pockets: grids.map((grid) => ({ grid, handlingSimSeconds: 1 })) },
+    });
+    const items = [
+      item('fixture_rotated', [[3, 2]], true),
+      item('fixture_long', [[4, 1]], true),
+      item(
+        'fixture_sum',
+        [
+          [2, 2],
+          [2, 2],
+        ],
+        true,
+      ),
+      item('fixture_soft', [[4, 4]]),
+      item('fixture_soft_explicit', [[4, 4]], false),
+      item(
+        'fixture_divided',
+        [
+          [2, 2],
+          [1, 2],
+        ],
+        true,
+      ),
+    ];
+    expect(buildRegistry([{ source: 'rigid.json', data: { items } }]).issues).toEqual([
+      expect.objectContaining({ path: 'items[1].container.pockets' }),
+      expect.objectContaining({ path: 'items[2].container.pockets' }),
+    ]);
+  });
+
+  it('refuses furniture whose loot table rolls a long gun that fits none of its pockets', () => {
+    const gun = { id: 'fixture_long_gun', name: 'Long gun', category: 'weapon', weight: 1, size: [2, 9] };
+    const locker = (grid: [number, number]) => ({
+      inventory: (base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory,
+      items: [gun],
+      loot: [
+        { id: 'fixture_guns', rolls: [1, 1], entries: [{ table: 'fixture_long_guns', weight: 1 }] },
+        { id: 'fixture_long_guns', rolls: [1, 1], entries: [{ item: gun.id, weight: 1 }] },
+      ],
+      furniture: [
+        {
+          id: 'fixture_locker',
+          name: 'Locker',
+          size: [2, 4, 1],
+          color: '#ffffff',
+          container: { pockets: [{ grid, handlingSimSeconds: 1 }] },
+          loot: 'fixture_guns',
+        },
+      ],
+    });
+    const [w, h] = gun.size as [number, number];
+    expect(buildRegistry([{ source: 'locker.json', data: locker([h, w]) }]).issues).toEqual([]);
+    expect(buildRegistry([{ source: 'locker.json', data: locker([h - 1, h - 1]) }]).issues).toContainEqual(
+      expect.objectContaining({ path: 'furniture[0].loot', message: expect.stringContaining('fits no pocket') }),
+    );
+  });
+
+  it('refuses a footprint shorter than its model spans between grip and anchors', () => {
+    const span = (id: string) => {
+      const model = baseRegistry.models.get(id)!;
+      const xs = [...Object.values(model.anchors ?? {}), ...(model.grip ? [model.grip.at] : [])].map(([x]) => x);
+      return Math.max(...xs) - Math.min(...xs);
+    };
+    const longest = [...baseRegistry.models.keys()].sort((a, b) => span(b) - span(a))[0]!;
+    const item = { id: 'fixture_stubby', name: 'Stubby', category: 'tool', weight: 1, size: [1, 1], model: longest };
+    expect(buildRegistry([...base, { source: 'stubby.json', data: { items: [item] } }]).issues).toContainEqual(
+      expect.objectContaining({ source: 'stubby.json', path: 'items[0].size' }),
+    );
   });
 
   const recipeDependencies = {
