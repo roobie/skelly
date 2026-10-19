@@ -545,6 +545,15 @@ following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
 `src/core/inventory.ts`, `furnish`; and `src/content/base/scenarios.jsonnet`,
 `composition`.
 
+A stop's rolled stock follows its place theme, not its building. Each stop takes a
+theme context, the station's carrying the Police usage and the HQ's Military, and
+tables are written per theme rather than per building, because finding what suits a
+place is the economy's job (`DESIGN.md`, "Loot"). Two stops of one theme therefore
+roll alike; a stop that should feel unique gets that from its instance layer, not
+its rolls. The d502 build round moves the stops onto theme contexts and replaces the
+per-building police tables. See `src/content/base/gauntlet-city-building-types.libsonnet`,
+`loot`.
+
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
 player commits to it. See `src/content/base/gauntlet-service.libsonnet`,
@@ -774,6 +783,22 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 Placement follows a DayZ-style central economy: usage tags and tiers decide which items
 a source admits, so what a place holds matches what it is, and budgets are to bound how
 much of each type the world holds (#699). See `src/core/loot.ts`, `economyEligible`.
+
+Police is its own usage, apart from Hunting, because a police armoury holds police
+stock, not a gun store's or a hunter's. The HQ vault's Military context differs from
+the station's by tag rather than by a separate table. A tag filters only the items it
+narrows; one that every common item carries filters nothing, so police gear gives up
+the every-usage default. The pool axis beyond police (#699) and item tiering stay open.
+
+Medicine is rare outside medical places in every scenario: shared tables such as home
+furniture, pockets and kits weight it low, and the strong analgesics are Medical-only,
+while the common one stays findable anywhere. A medical detour is worth making only if
+the street does not already supply it. Shared tables give one knob for every scenario,
+so Upheaval's survival balance moves with the gauntlet's; whether its pace still works
+waits on a playtest. The d502 build round adds the Police usage, the narrowing and
+the Medical-only items, and retunes those tables. See
+`src/content/base/economy.libsonnet`, `authorItem`, and `src/content/base/loot.jsonnet`,
+`pills`.
 
 The one exception to the DayZ model is item lifetime. By default the economy places a
 place's loot once, when the place is first generated, and never restocks it. What a
@@ -1190,6 +1215,18 @@ Painkillers use an analgesic component regardless of item category. Each dose's
 relief rises, holds and fades in game time; doses in a group share a cap, while
 other groups add relief. They mask pain only: health, wounds and consequences
 remain unchanged. Saves preserve acute pain and active doses.
+
+Codeine and morphine relieve much more than the common analgesic, but while a dose
+works it blurs vision, more for morphine, so strong relief is a trade rather than a
+free upgrade. The blur is a vignette at the edges, not a full-screen blur: the centre,
+where the player aims, stays sharp, while threats at the edges are harder to read.
+Aim itself is untouched, so the cost reads as the drug's and not as pain's own sway.
+The vignette rises and fades with the dose, its strength is a content number on the
+analgesic, and players who cannot tolerate it get a setting for it. Its
+strength needs a playtest. Whether the HUD stays sharp under it, whether a stacked
+dose can be dangerous, and whether dependence is ever modelled are later rulings. The
+d502 build round adds both drugs and the vignette. See `src/core/schema.ts`,
+`AnalgesicSchema`, and `src/core/pain.ts`, `analgesia`.
 
 The optional stats readout shows felt pain and its acute, injury and relief
 components so BR can tune the scale in play. This debug-style number belongs
