@@ -54,7 +54,7 @@ local meleeClasses = [
     headDamageMultiplier: 1,
     limbDamageMultiplier: 1,
     speedMultiplier: 1,
-    unarmed: { motion: 'thrust', damage: 8, reach: 0.1, cooldownSimSeconds: 0.8, stamina: 4, impulse: 4, contactFraction: 0.4, windupCapSimSeconds: 0.25 },
+    unarmed: { motion: 'swing', damage: 8, reach: 0.1, cooldownSimSeconds: 0.8, stamina: 4, impulse: 4, contactFraction: 0.4, windupCapSimSeconds: 0.25 },
   },
 ];
 

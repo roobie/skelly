@@ -14,6 +14,7 @@ import { type MeleeWeapon, PLAYER_CHEST_METRES, ZombieSystem, zombieAttackReachM
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const fixture = (reachMetres = 2.1, moves?: ZombieDef['attack']['moves']) => {
@@ -88,6 +89,12 @@ it('allows a player thrust through wire but rejects swing and wrestle regardless
     };
     expect(system.swing(origin, direction, weapon)).toBe(motion === 'thrust' ? id : undefined);
   }
+});
+
+it("a player's punch does not pass wire", () => {
+  const { system, origin, direction } = fixture();
+  const punch: MeleeWeapon = { ...FISTS_MELEE, reach: 3 };
+  expect(system.swing(origin, direction, punch)).toBeUndefined();
 });
 
 it('keeps shots and their aim display blocked by wire even when thrusting melee can pass', () => {
