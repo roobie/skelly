@@ -80,11 +80,11 @@ export class ScenarioRouteSpace {
       const chunk = generateChunk(this.terrain, cell);
       this.site.stamp(chunk);
       this.world.addChunk(chunk);
-    }
-    // A piece anchored in the preceding column can still obstruct this column's body cells.
-    for (let dx = 0; dx <= this.furnitureReach; dx++) {
-      for (let dz = 0; dz <= this.furnitureReach; dz++) {
-        this.loadFurniture(cell[0] - dx, cell[2] - dz);
+      // The initial world is fixed: load boundary-crossing furniture once per chunk, not per voxel query.
+      for (let dx = 0; dx <= this.furnitureReach; dx++) {
+        for (let dz = 0; dz <= this.furnitureReach; dz++) {
+          this.loadFurniture(cell[0] - dx, cell[2] - dz);
+        }
       }
     }
   }
