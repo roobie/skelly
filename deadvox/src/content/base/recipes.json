@@ -444,8 +444,19 @@
       "combat": {
         "melee": {
           "blockChanceHalfLifeLevels": 4,
-          "blockChanceMinimum": 0.12,
-          "blockChanceRange": 0.69999999999999996
+          "blockChanceMinimum": 0.050000000000000003,
+          "blockChanceRange": 0.45000000000000001,
+          "deflectRealSeconds": 0.34999999999999998,
+          "deflectRiseFloor": 0.59999999999999998,
+          "deflectRiseMetres": 0.14000000000000001,
+          "joltPerAbsorbedPoint": 0.080000000000000002,
+          "joltRealSeconds": 0.080000000000000002,
+          "mitigationHalfLifeLevels": 3,
+          "mitigationMinimum": 0.29999999999999999,
+          "mitigationRange": 0.55000000000000004,
+          "staminaCostFloor": 0.34999999999999998,
+          "staminaCostHalfLifeLevels": 3,
+          "staminaPerAbsorbedPoint": 2
         }
       },
       "id": "melee_combat",
@@ -453,7 +464,7 @@
       "training": {
         "activities": {
           "block": {
-            "practice": 1,
+            "practice": 0.20000000000000001,
             "tier": 5
           },
           "hit": {

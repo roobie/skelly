@@ -1,6 +1,7 @@
 import { html, render } from 'lit-html';
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
 import soundFile from './content/base/sounds.json' with { type: 'json' };
+import blockSoundFile from './content/base/sounds-block.json' with { type: 'json' };
 import synthSoundFile from './content/base/sounds-synth.json' with { type: 'json' };
 import uiFile from './content/base/ui.json' with { type: 'json' };
 import type { Manifest } from './core/assets.ts';
@@ -14,6 +15,7 @@ import { applyUiTokens } from './ui/uiTokens.ts';
 const source = '../content/base/sounds.json';
 const { registry, issues } = buildRegistry([
   { source, data: soundFile },
+  { source: '../content/base/sounds-block.json', data: blockSoundFile },
   { source: '../content/base/sounds-synth.json', data: synthSoundFile },
   { source: '../content/base/ui.json', data: uiFile },
 ]);

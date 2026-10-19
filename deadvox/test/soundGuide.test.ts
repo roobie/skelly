@@ -16,7 +16,7 @@ import {
 } from '../src/ui/soundGuide.ts';
 
 // The files the listening sheet loads.
-const sounds = ['sounds.json', 'sounds-synth.json'].flatMap(
+const sounds = ['sounds.json', 'sounds-block.json', 'sounds-synth.json'].flatMap(
   (file) => JSON.parse(readFileSync(join('src/content/base', file), 'utf8')).sounds as SoundDef[],
 );
 const manifest = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as Manifest;

@@ -61,6 +61,20 @@ const TRIGGER_ENTRIES = [
     },
   ],
   [
+    'player_block_full',
+    {
+      trigger: 'Hold the right mouse button in en-garde with a melee weapon or fists, and fully block a zombie hit.',
+      note: 'Placeholder: the melee-hit recordings, pitched up.',
+    },
+  ],
+  [
+    'player_block_partial',
+    {
+      trigger: 'Hold the right mouse button in en-garde, and take a zombie hit the block only partly absorbs.',
+      note: 'Placeholder: the fist-hit recording, pitched down.',
+    },
+  ],
+  [
     'shambler_idle',
     {
       trigger: 'Wait within hearing range while a shambler idles or strolls; it occasionally groans.',
@@ -295,6 +309,8 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
     'player_landing_hard',
     'Placeholder: BR approved the current generic jump/landing recording (2026-10-02); a hard-landing-specific sound remains future work.',
   ],
+  ['player_block_full', 'Approved by BR as the blocking-succeeded sound.'],
+  ['player_block_partial', 'Placeholder awaiting BR review: a first example of the block sound.'],
   ['footstep_grass', 'Approved by BR (2026-10-02).'],
   [
     'footstep_mud',

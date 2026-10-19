@@ -5,6 +5,8 @@ export const SOUND_EVENT_IDS = [
   'player_hurt_heavy',
   'player_strain',
   'player_landing_hard',
+  'player_block_full',
+  'player_block_partial',
   'breath_inhale',
   'breath_exhale',
   'breath_gasp',
