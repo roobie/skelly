@@ -347,7 +347,7 @@
       "name": "Hand saw",
       "category": "tool",
       "weight": 650,
-      "size": [1, 3],
+      "size": [2, 6],
       "model": "hand_saw",
       "tool": { "qualities": { "sawing": 1 } },
       "salvageTimeGameMinutes": 5,

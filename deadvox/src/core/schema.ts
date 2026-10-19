@@ -257,6 +257,8 @@ const ContainerSchema = strictObject({
 
 const InventoryTuningSchema = strictObject({
   id: Id,
+  /** The real side of one inventory cell; footprints and pockets are real sizes rounded up to it (`DESIGN.md`, "The item model"). */
+  cellMetres: Positive,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
   /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */

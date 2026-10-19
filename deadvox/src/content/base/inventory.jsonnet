@@ -2,11 +2,12 @@
   inventory: [
     {
       id: 'player',
+      cellMetres: 0.1,
       containerMaxWidthCells: 10,
       reachMetres: 2,
       chestHeightMetres: 1,
       useReachMetres: 2,
-      search: { minSimSeconds: 1, maxSimSeconds: 3, cellsForMax: 48 },
+      search: { minSimSeconds: 1, maxSimSeconds: 3, cellsForMax: 160 },
       throwFlightSimSeconds: 0.75,
       throwArcHeightMetres: 1.1,
       furnitureMove: {

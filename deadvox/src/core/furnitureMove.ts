@@ -5,7 +5,8 @@
 import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
-import { dropSpots, type Inventory, PILE_GRID, type Pile, type Spot } from './inventory.ts';
+import { dropSpots, type Inventory, type Pile, type Spot } from './inventory.ts';
+import { PILE_GRID } from './inventoryScale.ts';
 import { findSpot, fitsAt, type Placed } from './items.ts';
 import { ladderOutward } from './ladders.ts';
 import { turnPose } from './orientation.ts';

@@ -803,7 +803,14 @@ own behavior; the game must not branch on item IDs, including when drawing an
 item. See `ItemSchema` in `src/core/schema.ts` and `itemLook` in
 `src/render/itemLook.ts`.
 
-Inventory space is a grid of rotatable item footprints and pockets. Pockets may
+Inventory space is a grid of rotatable item footprints and pockets. One cell is
+a real length, named once in content (the `inventory` tuning's `cellMetres`),
+and every footprint is its item's real size rounded up to whole cells, so a
+rifle's footprint reads against a shotgun's as the guns do. Furniture
+containers and pockets use the same unit at their real inside size: loot also
+lies outside containers, so a small container precludes nothing, and an item
+that fits no pocket of the furniture rolling it is a content error. Validation
+holds content to this; see `src/core/inventoryScale.ts`. Pockets may
 restrict their contents; liquids remain measured within their container. Only
 empty containers can nest. Pockets have no weight limit, but total carried
 weight slows movement and costs stamina. Condition is readable as a word, with
