@@ -47,16 +47,20 @@ because only marked fields can have more than one author.
 
 **Conflicts.** A mod may override another mod's value or object only if it depends on
 that mod, directly or transitively, and declares the override. Setting a scalar,
-replacing a list and replacing a whole definition are overrides. Two mods with no
-dependency path between them must not override the same value or object: the load must
-fail closed with a conflict message naming the target, both mods and the fix, a check d476
-builds. List additions are not overrides: they commute, so two mods adding to one list
-both keep their additions, in pack order, and never conflict. Load order alone never
-decides, because the order in which a player enables mods says nothing about which one
-meant to win. The dependency makes an override deliberate: the overriding mod names what
-it takes over and always loads after the owner. This is the rule for competing skill
-providers in `deadvox/docs/pack-split.md`, "Skill providers", so one rule covers every
-place where two mods claim one thing.
+replacing a list and replacing a whole definition are overrides. List additions are not:
+they commute, so two mods adding to one list both keep their additions, in pack order,
+and never conflict. The load fails closed, with a message naming the target, the mods and
+the fix, a check d476 builds, in two cases: two mods with no dependency path between them
+override the same value or object, or a mod overrides a dependency without declaring it.
+
+Load order alone never decides, because the order in which a player enables mods says
+nothing about which one meant to win. The dependency decides instead: the overriding mod
+always loads after the owner. This is the rule for competing skill providers in
+`deadvox/docs/pack-split.md`, "Skill providers", so one rule covers every place where two
+mods claim one thing. The declaration is needed as well, because a dependency alone lets a
+mod overwrite its owner's value by accident with nothing to flag it. Declaring each
+override makes it deliberate and checkable at load, and failing closed stops a silent
+change from reaching play.
 
 ## Rejected
 
