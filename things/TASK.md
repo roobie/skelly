@@ -51,7 +51,7 @@ to be new.
 - [x] Break the schema and resolve cycle: `engine/src/core/schema.ts`, `Resolved`, now holds
   the resolved-assembly types, because a `Rule` checks a `Resolved` and a `Resolved` holds its
   `Domain`; `resolve` imports them and `schema` imports nothing from `resolve`.
-- [x] Split the solid types out of `schema`: `engine/src/core/solid.ts`, `Solid`, holds them
+- [x] Split the solid types out of `schema`: `engine/src/core/solid.ts`, `BoxSolid`, holds them
   and `DomainUnits`; `schema` imports from it, never the reverse.
 - [ ] Split `design` along the layers above: persistence and suggest types stay in `design`,
   the anchor types go to `anchors`, and the palette and GLB export types go to a new
