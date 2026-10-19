@@ -807,13 +807,16 @@ needs more than one pile's worth uses several anchors. The check packs every rea
 roll with the runtime's first-fit placement and credits the source's admission rules, so
 an entry the source cannot select does not count. It does not credit stack merging: each
 stack is placed as its own stack, so a large fixed stock of one stackable that play would
-merge into one stack (more one-cell items than the pile has cells) is refused, and the author splits it
-across anchors. Crediting merging made the exact check too costly to decide the shipped
-tables, while a packer without it decides them within the cap and refused nothing the
-exact check proved fit. A supply the packer cannot decide within the inventory tuning's
-state cap is reported as unproven, never accepted. Column load still throws on overflow;
-validated content cannot reach it. See `src/core/pileBound.ts`, `groundPileIssue`, and
-`src/core/placementLoot.ts`, `groundLootSupplyIssues`.
+merge into one stack (more one-cell items than the pile has cells) is refused, and the author
+splits it across anchors. Crediting merging made the exact check too costly to decide the
+shipped tables, while a packer without it decides most of them and refused nothing the exact
+check proved fit. A supply the packer cannot decide within the inventory tuning's state cap
+is reported as unproven, never accepted. The cap stays where content sets it: a higher cap
+costs several times more per supply on big tables and still leaves some of them unproven or
+overflowing, so splitting is needed either way. A table the check cannot prove fits is split
+across anchors, or replaced by a smaller one, before it is ground-anchored. Column load still
+throws on overflow; validated content cannot reach it. See `src/core/pileBound.ts`,
+`groundPileIssue`, and `src/core/placementLoot.ts`, `groundLootSupplyIssues`.
 
 Items carry no record of where they were born. A budget is to count items by type and
 by where they are (map, cargo, player, hoard), which needs no birthplace, and keeping one
