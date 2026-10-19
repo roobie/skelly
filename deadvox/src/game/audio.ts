@@ -1,10 +1,11 @@
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { SolidAt } from '../core/raycast.ts';
-import type { SenseDef, SoundDef } from '../core/schema.ts';
+import type { SenseDef, SoundDef, SoundRecipe } from '../core/schema.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
+import { renderSoundRecipe, soundRecipeFor, soundVariantKey } from '../core/soundSynth.ts';
 import { HEARTBEAT_FILES, type HeartbeatTarget, heartbeatForStamina } from './audioPresentation.ts';
 
 const SETTINGS_KEY = 'deadvox.audio.settings';
@@ -224,16 +225,14 @@ export class GameAudio {
     if (!sound) {
       return;
     }
-    const origin = this.registry.soundOrigins.get(event);
-    const packPath = origin?.source.slice(0, origin.source.lastIndexOf('/'));
-    const url = packPath ? PACK_FILES[`${packPath}/${pick.file}`] : undefined;
-    if (!url) {
+    const variant = this.variantSource(event, sound, pick.file);
+    if (!variant) {
       this.report(`sound file "${pick.file}" is not bundled for "${event}"`);
       return;
     }
     const { context, nodes } = this;
     if (context && nodes && context.state === 'running') {
-      this.loadBuffer(context, pick.file, url).then((buffer) => {
+      this.variantBuffer(context, pick.file, variant).then((buffer) => {
         if (!buffer || this.context !== context || context.state !== 'running') {
           return;
         }
@@ -253,23 +252,21 @@ export class GameAudio {
     }
   }
 
-  /** Plays one exact manifest variant at the event's base gain, with no picker jitter or cooldown. */
+  /** Plays one exact variant, keyed by `soundVariantKey`, at the event's base gain, with no picker jitter or cooldown. */
   preview(event: SoundEventId, file: string): boolean {
     const sound = this.registry.sounds.get(event);
-    if (!sound?.variants.includes(file)) {
+    if (!sound?.variants.some((listed) => soundVariantKey(sound.id, listed) === file)) {
       return false;
     }
-    const origin = this.registry.soundOrigins.get(event);
-    const packPath = origin?.source.slice(0, origin.source.lastIndexOf('/'));
-    const url = packPath ? PACK_FILES[`${packPath}/${file}`] : undefined;
+    const variant = this.variantSource(event, sound, file);
     const { context, nodes } = this;
-    if (!(url && context && nodes)) {
+    if (!(variant && context && nodes)) {
       this.report(`sound file "${file}" is not bundled for "${event}"`);
       return false;
     }
     const pick = { file, gain: sound.gain, pitch: 1 };
     const positionMetres = [...this.listenerPosition] as Vec3;
-    this.loadBuffer(context, file, url).then(async (buffer) => {
+    this.variantBuffer(context, file, variant).then(async (buffer) => {
       if (!buffer || this.context !== context) {
         return;
       }
@@ -458,6 +455,40 @@ export class GameAudio {
       gain.disconnect();
     };
     source.start(when);
+  }
+
+  /** A variant's recipe, or its bundled file's URL; undefined when the pack lacks the file. */
+  private variantSource(event: SoundEventId, sound: SoundDef, file: string): SoundRecipe | string | undefined {
+    const recipe = soundRecipeFor(sound, file);
+    if (recipe) {
+      return recipe;
+    }
+    const origin = this.registry.soundOrigins.get(event);
+    const packPath = origin?.source.slice(0, origin.source.lastIndexOf('/'));
+    return packPath ? PACK_FILES[`${packPath}/${file}`] : undefined;
+  }
+
+  private variantBuffer(
+    context: AudioContext,
+    file: string,
+    variant: SoundRecipe | string,
+  ): Promise<AudioBuffer | null> {
+    if (typeof variant === 'string') {
+      return this.loadBuffer(context, file, variant);
+    }
+    let buffer = this.buffers.get(file);
+    if (!buffer) {
+      try {
+        const { samples, sampleRate } = renderSoundRecipe(variant);
+        buffer = context.createBuffer(1, samples.length, sampleRate);
+        buffer.copyToChannel(samples, 0);
+      } catch (error) {
+        this.report(`sound recipe "${file}" did not render: ${String(error)}`);
+        return Promise.resolve(null);
+      }
+      this.buffers.set(file, buffer);
+    }
+    return Promise.resolve(buffer);
   }
 
   private loadBuffer(context: AudioContext, file: string, url: string): Promise<AudioBuffer | null> {

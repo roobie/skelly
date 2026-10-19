@@ -5,6 +5,7 @@ import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
 import type { Manifest } from '../src/core/assets.ts';
 import type { SoundDef } from '../src/core/content.ts';
+import { soundVariantKey } from '../src/core/soundSynth.ts';
 import { HEARTBEAT_FILES } from '../src/game/audioPresentation.ts';
 import {
   buildHeartbeatSoundGuide,
@@ -14,8 +15,9 @@ import {
   SOUND_TRIGGER_GUIDE,
 } from '../src/ui/soundGuide.ts';
 
-const sounds = ['sounds.json', 'sounds-block.json'].flatMap(
-  (file) => JSON.parse(readFileSync(`src/content/base/${file}`, 'utf8')).sounds as SoundDef[],
+// The files the listening sheet loads.
+const sounds = ['sounds.json', 'sounds-block.json', 'sounds-synth.json'].flatMap(
+  (file) => JSON.parse(readFileSync(join('src/content/base', file), 'utf8')).sounds as SoundDef[],
 );
 const manifest = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as Manifest;
 const heartbeatFixtureManifest = {
@@ -40,7 +42,9 @@ describe('audio listening guide', () => {
     const guide = buildSoundGuide(sounds, manifest);
     expect(guide.map(({ id }) => id)).toEqual(Object.keys(SOUND_TRIGGER_GUIDE));
     expect(eventFilePairs(guide)).toEqual(
-      sounds.flatMap((sound) => sound.variants.map((file) => `${sound.id}\0${file}`)).sort(),
+      sounds
+        .flatMap((sound) => sound.variants.map((variant) => `${sound.id}\0${soundVariantKey(sound.id, variant)}`))
+        .sort(),
     );
   });
 
@@ -164,11 +168,14 @@ describe('audio listening guide', () => {
     expect(shotEvents.has('gunshot_pbs1_reference')).toBe(false);
   });
 
-  it('credits every listed variant from its manifest source', () => {
-    const guide = buildSoundGuide(sounds, manifest);
+  it('credits every recorded variant from its manifest source and no recipe', () => {
+    const variants = buildSoundGuide(sounds, manifest).flatMap((entry) => entry.variants);
+    const recipes = variants.filter((variant) => variant.synthesised);
+    expect(recipes.length).toBeGreaterThan(0);
+    expect(manifest.sources.some((source) => recipes.some((recipe) => source.files.includes(recipe.file)))).toBe(false);
     expect(
-      guide
-        .flatMap((entry) => entry.variants)
+      variants
+        .filter((variant) => !variant.synthesised)
         .every((variant) =>
           manifest.sources.some(
             (source) =>

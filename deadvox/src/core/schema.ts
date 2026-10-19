@@ -28,6 +28,7 @@ import {
   transform,
   tuple,
   union,
+  unknown,
   variant,
   boolean as vBoolean,
 } from 'valibot';
@@ -53,6 +54,7 @@ import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
+import { jfxrPresetIssues } from './soundSynth.ts';
 import {
   gameHours,
   gameMinutes,
@@ -735,11 +737,35 @@ const SoundMultipliers = pipe(
   check(([min, max]) => min <= max, 'minimum must not exceed maximum'),
 );
 
+/** A jfxr preset as the jfxr editor saves it, named so picks and the sound sheet can tell it apart. */
+const SoundRecipeSchema = strictObject({
+  recipe: Id,
+  jfxr: pipe(
+    record(string(), unknown()),
+    rawCheck(({ dataset, addIssue }) => {
+      if (dataset.typed) {
+        for (const message of jfxrPresetIssues(dataset.value)) {
+          addIssue({ message });
+        }
+      }
+    }),
+  ),
+});
+
 const SoundSchema = strictObject({
   id: Id,
   variants: pipe(
-    array(pipe(string(), regex(/^assets\/audio\/[a-z0-9_.-]+\.ogg$/, 'expected an Ogg file under assets/audio/'))),
+    array(
+      union([
+        pipe(string(), regex(/^assets\/audio\/[a-z0-9_.-]+\.ogg$/, 'expected an Ogg file under assets/audio/')),
+        SoundRecipeSchema,
+      ]),
+    ),
     nonEmpty('needs at least one variant'),
+    check((variants) => {
+      const names = variants.flatMap((v) => (typeof v === 'string' ? [] : [v.recipe]));
+      return new Set(names).size === names.length;
+    }, 'recipe names must be unique within a sound'),
   ),
   gain: pipe(Positive, maxValue(1, 'must be at most 1')),
   pitchJitter: SoundMultipliers,
@@ -2745,6 +2771,7 @@ export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
+export type SoundRecipe = InferOutput<typeof SoundRecipeSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;

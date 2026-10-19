@@ -72,6 +72,12 @@ it is selected, never written out as a second set of numbers, so it follows base
 That derivation is the seam player mods lack: they replace whole rows and cannot scale a
 base value. See `src/game/bundledMods.ts`, `selectBundledMods`.
 
+The game and the site launcher must offer the same mods, and the launcher is a static page
+that cannot import game modules, so the list is one schema-checked content file rather than
+two copies. The launcher is a developer entry point, so a missing or invalid list only hides
+its control instead of breaking it. See `src/core/bundledModCatalogue.ts`,
+`bundledModCatalogue`, and `site/launcher.js`, `loadBundledMods`.
+
 Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Damage, movement
 speed (wander and chase), detection and health each have one factor, `BEGINNER_FACTORS`.
 Detection covers sight, night sight, the hearing multiplier (footsteps and noise alike) and
@@ -407,6 +413,8 @@ A heap of mixed materials is one shape with a colour per box, not several pieces
 Container appearance belongs to its definition rather than an ID switch or a guess from dimensions: similarly sized furniture can serve different purposes. Keep procedural detail inside the cell envelope so handles do not promise reach outside the pickable fixture. Definition-owned appearance also keeps empty and unsearched containers visually indistinguishable. See `src/core/schema.ts`, `FurnitureSchema`; `src/render/furnitureDetail.ts`, `furnitureDetail`; and `src/render/furniture.ts`, `FurnitureMeshes`.
 
 A vehicle shown as furniture names its blueprint, body colour, dirt level and absent parts in the definition's `vehicle`, not in an ID switch; unknown values fail validation with no fallback. The gauntlet's street wrecks are procedural variants because identical cars made the streets read as one repeated prop. Colours, dirt levels and stripped-part sets are lists in one content source, crossed there into one definition and template per combination, and `streetProps` names a map pool of those templates so each placement draws from the world seed. Enumerating the product keeps a car's look in its definition, so the renderer and saves carry no per-placement state. A map pool has no size cap, so a new axis or value is a content edit; a kit slot pool compiles every choice, so cross axes into a street prop pool, not a slot pool. One strip set strips nothing, so some street cars are intact, because an intact car is kept as one variant of the street-car pool. See `src/core/schema.ts`, `FurnitureSchema` and `MapPoolSchema`; `src/content/base/gauntlet-city.libsonnet`; `src/core/cityPlan.ts`, `streetPropChoices`; `src/render/workshopVehicle.ts`, `vehicleModel`; and `test/streetCars.test.ts`, "street car procedural variants".
+
+A piece with a front is placed with its `facing` pointing into the room or toward its open side, never at the wall it stands against: a front pressed to a wall hides the detail that tells the player what the fixture is and reads as a placement mistake. An omitted `facing` means north, so a piece against a north wall must say so. Props with no front (crates, fences, shrubs) need no facing.
 
 Merge detail into the fixture's existing draw object and cache geometry between state changes. Shared vertex-coloured Lambert shading preserves the scene's lighting and fog without texture assets, material groups, or another rendering pass. This favours recognizable silhouettes and panel relief over fine surface realism while frame cost is a concern (#680). See `src/render/furniture.ts`, `FurnitureMeshes`.
 

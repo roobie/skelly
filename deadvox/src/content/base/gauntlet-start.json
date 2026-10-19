@@ -16,6 +16,17 @@
       "entries": [
         {
           "condition": [0.59999999999999998, 1],
+          "item": "school_backpack",
+          "weight": 1
+        }
+      ],
+      "id": "gauntlet_start_backpack",
+      "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "condition": [0.59999999999999998, 1],
           "item": "crowbar",
           "weight": 1
         }
@@ -2820,11 +2831,11 @@
           "turn": 0
         },
         {
-          "at": [13, 9, 24],
+          "at": [7, 9, 24],
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_start_shelf",
+                "id": "gauntlet_start_pack_wardrobe",
                 "kind": "piece"
               },
               "weight": 1
@@ -2835,7 +2846,7 @@
           "turn": 2
         },
         {
-          "at": [15, 9, 24],
+          "at": [13, 9, 24],
           "choices": [
             {
               "ref": {
@@ -2850,6 +2861,21 @@
           "turn": 2
         },
         {
+          "at": [15, 9, 24],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_shelf",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "furn_9_22",
+          "size": [2, 4, 1],
+          "turn": 2
+        },
+        {
           "at": [16, 9, 15],
           "choices": [
             {
@@ -2860,7 +2886,7 @@
               "weight": 1
             }
           ],
-          "id": "furn_9_22",
+          "id": "furn_9_23",
           "size": [2, 1, 4],
           "turn": 0
         },
@@ -9194,6 +9220,28 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_start_pack_wardrobe",
+      "layers": [["PP"], ["PP"], ["PP"], ["PP"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "P": {
+          "facing": "s",
+          "furniture": "wardrobe",
+          "loot": "gauntlet_start_backpack"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_start_cupboard",
       "layers": [["kk"], ["kk"]],
       "lootContext": {
@@ -11064,7 +11112,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11090,7 +11138,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11116,7 +11164,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11142,7 +11190,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11168,7 +11216,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11194,7 +11242,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ],
           [
@@ -11220,7 +11268,7 @@
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRRR...",
             ".RRRRRRRRRRRRRR.RRRRRRRR.RRR.RR.",
-            ".RRRRRR....RRRR.R..RR..R.RRRR...",
+            "...RRRR....RRRR.R..RR..R.RRRR...",
             "................................"
           ]
         ]

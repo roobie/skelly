@@ -7,6 +7,9 @@ export const SOUND_EVENT_IDS = [
   'player_landing_hard',
   'player_block_full',
   'player_block_partial',
+  'breath_inhale',
+  'breath_exhale',
+  'breath_gasp',
   'footstep_grass',
   'footstep_mud',
   'footstep_sand',
@@ -69,6 +72,7 @@ export const SOUND_EVENT_IDS = [
   'door_close',
   'door_blocked_close',
   'lock_pry',
+  'door_knock_jfxr',
 ] as const;
 
 export type SoundEventId = (typeof SOUND_EVENT_IDS)[number];
