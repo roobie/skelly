@@ -1,4 +1,6 @@
 // Loot tables: what furniture, bodies and stores hold. Entry weights are relative within their table.
+// Bandages and infection treatment stay rare outside medical tables, so wounds cost something to treat; the common
+// analgesic stays common.
 
 local pillPack = (import 'items-other.jsonnet').pillPack;
 
@@ -156,9 +158,9 @@ local pills(weight, least, parts, of) =
       entries: [
         item('lighter', 1),
         item('aa_battery', 1, count=[1, 2]),
-        item('bandage', 1),
-        item('antiseptic', 1),
-        item('antibiotics', 1),
+        item('bandage', 0.5),
+        item('antiseptic', 0.5),
+        item('antibiotics', 0.5),
         item('chocolate_bar', 1),
         nothing(6),
       ],
@@ -172,8 +174,8 @@ local pills(weight, least, parts, of) =
       id: 'soldier_kit',
       rolls: [1, 2],
       entries: [
-        item('bandage', 3),
-        item('antiseptic', 1),
+        item('bandage', 1.5),
+        item('antiseptic', 0.5),
         pills(1, 4, 1, 2),
         item('flashlight', 1),
         item('screwdriver', 1),
@@ -270,6 +272,8 @@ local pills(weight, least, parts, of) =
       entries: [
         item('bandage', 4, count=[1, 2]),
         pills(2, 6, 2, 3),
+        item('codeine', 0.5, count=[2, 8]),
+        item('morphine', 0.25),
         item('rag', 1),
         nothing(3),
       ],

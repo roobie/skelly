@@ -65,7 +65,7 @@ local rooms = {
     tokens: ['p', 'P', '2', '3', '|'], wall: 'P', floor: 'p', band: '$',
     finish: { floor: 'hazard', wall: 'plaster', base: 'metal' }, ceilingDrop: 1, floorRise: 1, openings: [],
     dressing: [
-      { id: 'security_arms', at: [7, 11], kit: 'arms', fixture: null, loot: 'gauntlet_police_sidearms' },
+      { id: 'security_arms', at: [7, 11], kit: 'arms', fixture: null, loot: 'armoury_arms' },
       { id: 'security_control', at: [9, 11], kit: 'console', fixture: 'working' },
     ],
   },
@@ -253,6 +253,6 @@ assert std.all([std.length(row) == std.length(plan[0]) for row in plan]) : 'entr
     joins: [], ports: [], anchors: {},
   }],
   loot: [{ id: 'gauntlet_lab_entry_margin', rolls: [1, 2], entries: [
-    { table: 'gauntlet_police_ammunition', weight: 2 }, { item: 'flashlight', weight: 1 }, { nothing: true, weight: 2 },
+    { table: 'armoury_ammunition', weight: 2 }, { item: 'flashlight', weight: 1 }, { nothing: true, weight: 2 },
   ] }],
 }

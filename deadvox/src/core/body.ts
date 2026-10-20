@@ -6,6 +6,7 @@ import {
   ageDoses,
   analgesia,
   doseLasts,
+  drugVignette,
   fadeAcute,
   type PainReading,
   type PainState,
@@ -219,6 +220,11 @@ export class Body implements ModifierActor {
       tier: painTier(ratio, pain.tiers),
       effects: painEffects(ratio, pain),
     };
+  }
+
+  /** The drug vignette from active doses, 0 to 1; it touches neither pain nor its effects. */
+  get drugVignette(): number {
+    return drugVignette(this.state.pain.doses, this.analgesics);
   }
 
   /** Pain the injuries themselves keep up: region damage, bleeding and infection. It is derived, never stored. */

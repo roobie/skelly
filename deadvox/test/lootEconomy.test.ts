@@ -1,7 +1,7 @@
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { placementOf } from '../src/core/authoredPlacement.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import {
   economyEligible,
   ItemEconomySchema,
@@ -16,8 +16,47 @@ import {
 } from '../src/core/loot.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 const context: LootContext = { usage: ['Medical'], tier: 'Tier2' };
+const TIERS: readonly LootContext['tier'][] = ['Tier1', 'Tier2', 'Tier3'];
+
+/**
+ * Every loot context a loaded source can roll under: each `lootContext`, and each `lootUsage` override paired with
+ * every tier, so an override is checked whatever tier its owner sets.
+ */
+const loadedSourceContexts = (registry: Registry): LootContext[] => {
+  const found = new Map<string, LootContext>();
+  const add = (sourceContext: LootContext): void => {
+    found.set(JSON.stringify(sourceContext), sourceContext);
+  };
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+    } else if (typeof value === 'object' && value !== null) {
+      const record = value as Record<string, unknown>;
+      if (record.lootContext !== undefined) {
+        add(record.lootContext as LootContext);
+      }
+      if (Array.isArray(record.lootUsage)) {
+        for (const tier of TIERS) {
+          add({ usage: record.lootUsage as LootContext['usage'], tier });
+        }
+      }
+      Object.values(record).forEach(walk);
+    }
+  };
+  for (const section of [
+    registry.templates,
+    registry.mapPieces,
+    registry.mapAssemblies,
+    registry.layouts,
+    registry.scenarios,
+  ]) {
+    walk([...section.values()]);
+  }
+  return [...found.values()];
+};
 const source = (building: string, height: number): LootPointSource => ({
   site: 'fixture-site',
   building,
@@ -61,6 +100,45 @@ describe('loot economy descriptions', () => {
       expect(safeParse(ItemEconomySchema, economy).success).toBe(false);
     }
     expect(safeParse(LootContextSchema, { usage: ['Medical'] }).success).toBe(false);
+  });
+
+  it('admits no Military-only item under Police and no Police-only item under Hunting, in the loaded content', () => {
+    const items = [...baseRegistry().items.values()].filter((item) => item.economy !== undefined);
+    const admits = (usage: LootContext['usage'][number], tier: LootContext['tier']): string[] =>
+      items.filter((item) => economyEligible(item.economy!, { usage: [usage], tier })).map(({ id }) => id);
+    // Stock a usage admits that common places (and, for Military, hunting places) do not.
+    const onlyIn = (usage: LootContext['usage'][number], tier: LootContext['tier'], common: string[]): string[] =>
+      admits(usage, tier).filter((id) => !common.includes(id));
+    const military = TIERS.flatMap((tier) =>
+      onlyIn('Military', tier, [...admits('Residential', tier), ...admits('Hunting', tier)]).map((id) => ({
+        id,
+        tier,
+      })),
+    );
+    const police = TIERS.flatMap((tier) =>
+      onlyIn('Police', tier, admits('Residential', tier)).map((id) => ({ id, tier })),
+    );
+    expect(military.length).toBeGreaterThan(0);
+    expect(police.length).toBeGreaterThan(0);
+    expect(military.filter(({ id, tier }) => admits('Police', tier).includes(id))).toEqual([]);
+    expect(police.filter(({ id, tier }) => admits('Hunting', tier).includes(id))).toEqual([]);
+  });
+
+  it('admits a vignette analgesic only in source contexts that include Medical, across every loaded source', () => {
+    const registry = baseRegistry();
+    const strong = [...registry.items.values()].filter((item) => item.analgesic?.vignette !== undefined);
+    expect(strong.length).toBeGreaterThan(0);
+    const contexts = loadedSourceContexts(registry);
+    const admitted = strong.flatMap((item) =>
+      contexts
+        .filter((sourceContext) => economyEligible(item.economy!, sourceContext))
+        .map((sourceContext) => ({
+          item: item.id,
+          usage: sourceContext.usage,
+        })),
+    );
+    expect(admitted.length).toBeGreaterThan(0);
+    expect(admitted.filter(({ usage }) => !usage.includes('Medical'))).toEqual([]);
   });
 
   it('does not classify multi-usage supplies as military-only', () => {

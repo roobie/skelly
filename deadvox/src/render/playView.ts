@@ -62,6 +62,8 @@ export interface PlayCameraFrame {
   readonly thirdPerson?: boolean;
   readonly thirdPersonOrbit?: { readonly yaw: number; readonly pitch: number };
   readonly sightImpaired: boolean;
+  /** The drug vignette from active doses, 0 to 1, before the player's setting; none when absent. */
+  readonly drugVignette?: number;
   /** Felt pain's tier, for the pain cue; undefined below the first. */
   readonly painTier?: BodyTuningDef['pain']['tiers'][number] | undefined;
 }
@@ -415,6 +417,7 @@ export const createPlayView = (
         updateFirstPersonCamera({ target, stepOffset: offset, spectator, yaw, pitch });
       }
       damage.style.opacity = String(Math.max(feedback.vignetteOpacity, sightImpaired ? 0.2 : 0));
+      engine.mood?.setDrugVignette(spectator ? 0 : (frame.drugVignette ?? 0));
     },
     updateHeld: (
       dt: number,
