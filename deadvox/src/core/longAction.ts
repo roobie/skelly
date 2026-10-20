@@ -468,7 +468,11 @@ export class LongActions {
   beginForcing(
     entityUid: number,
     toolUid: number,
-    { method, duration, strikeInterval }: { method: string; duration: number; strikeInterval: number },
+    {
+      method,
+      durationSimSeconds: duration,
+      strikeIntervalSimSeconds: strikeInterval,
+    }: { method: string; durationSimSeconds: number; strikeIntervalSimSeconds: number },
   ): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
     if (actionRefusal) {

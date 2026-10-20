@@ -1852,8 +1852,8 @@ export const createSession = (options: SessionOptions) => {
       return plan.ok
         ? sim.actions.beginForcing(entity.uid, plan.tool.uid, {
             method: plan.method,
-            duration: plan.time,
-            strikeInterval: plan.strikeInterval,
+            durationSimSeconds: plan.time,
+            strikeIntervalSimSeconds: plan.strikeInterval,
           })
         : plan.reason;
     },

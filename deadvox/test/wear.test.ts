@@ -185,7 +185,9 @@ describe('item wear', () => {
       },
       finish: () => undefined,
     };
-    expect(sim.actions.beginForcing(1, 2, { method: 'fixture', duration: 10, strikeInterval: 1 })).toBeUndefined();
+    expect(
+      sim.actions.beginForcing(1, 2, { method: 'fixture', durationSimSeconds: 10, strikeIntervalSimSeconds: 1 }),
+    ).toBeUndefined();
     sim.expose(puddle);
     expect(sim.actions.resume()).toBe(tuning.exposureRefusal);
 

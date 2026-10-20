@@ -165,7 +165,9 @@ describe('damage exposure', () => {
       },
       finish: () => undefined,
     };
-    expect(sim.actions.beginForcing(1, 2, { method: 'fixture', duration: 10, strikeInterval: 1 })).toBeUndefined();
+    expect(
+      sim.actions.beginForcing(1, 2, { method: 'fixture', durationSimSeconds: 10, strikeIntervalSimSeconds: 1 }),
+    ).toBeUndefined();
     sim.expose({ id: 'pool', rate: 1, cause: 'fixture burn', region: 'leftLeg', kind: 'acid' });
     expect(sim.actions.job?.stopped).toBe(true);
     expect(sim.actions.resume()).toBeDefined();
