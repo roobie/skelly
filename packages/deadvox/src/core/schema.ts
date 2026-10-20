@@ -3,6 +3,7 @@
 // furniture, zombie types, models) are checked after all files are merged (content.ts).
 // Units: grams, millilitres, metres and seconds; inventory space is in cells.
 
+import { ModelPointSchema, modelSchema } from '@skelly/thing-core/schema';
 import {
   array,
   check,
@@ -847,7 +848,7 @@ const ItemSchema = strictObject({
 // ---- models ----
 
 /** [x, y, z] in the model file's metres. */
-const Point = tuple([number(), number(), number()]);
+const Point = ModelPointSchema;
 
 /**
  * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
@@ -1156,12 +1157,7 @@ const attachmentRangesDoNotOverlap = (
 };
 
 const ModelSchema = pipe(
-  strictObject({
-    id: Id,
-    /** The `.glb` file, as a path within the pack. */
-    file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
-    /** Material to light from the item's light component while this model is drawn. */
-    emissiveMaterial: optional(Name),
+  modelSchema({
     /** Cartridge-data id (not a display designation); punctuation is normalized only in model slugs. */
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
@@ -1169,17 +1165,6 @@ const ModelSchema = pipe(
     /** Integral magazine, loaded singly through anchors.loading_port; no box round-pose column. */
     internalMagazine: optional(strictObject({ capacity: MagazineCapacity })),
     rounds: optional(array(MagazineRoundSchema)),
-    /**
-     * Where the hand holds it, and how it's turned there (degrees about x, y and z, in
-     * that order). Held, the model's +x points forward and +y up.
-     */
-    grip: optional(strictObject({ at: Point, turn: optional(Point) })),
-    /** Held with its long axis aimed forward or upright, grip at the origin. */
-    hold: optional(picklist(['forward', 'upright'])),
-    /** Degrees to roll around the model's long +x axis before applying the hold pose. */
-    roll: optional(pipe(number(), minValue(-180), maxValue(180))),
-    /** Named points used by presentation that are not represented by replaceable item slots. */
-    anchors: optional(record(Id, Point)),
     /** Replaceable model parts and the gun-side mount frames for later fitting. */
     attachments: optional(array(FittedAttachmentSchema)),
     attachmentSlots: optional(array(AttachmentSlotSchema)),

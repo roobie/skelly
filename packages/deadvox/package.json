@@ -40,6 +40,7 @@
     "bench:shamblers": "node --experimental-strip-types --import ./tools/register-mobgen-alias.mjs src/bench/shamblers-cpu.mjs"
   },
   "dependencies": {
+    "@skelly/thing-core": "*",
     "jfxr": "0.13.0",
     "lit-html": "^3.3.3",
     "three": "^0.186.0",

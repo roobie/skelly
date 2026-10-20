@@ -72,6 +72,9 @@
     "packages/engine": {
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
+    "packages/thing-core": {
+      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
+    },
     "packages/tool-ui": {
       "project": ["src/**/*.{js,mjs,ts,tsx}!"]
     },

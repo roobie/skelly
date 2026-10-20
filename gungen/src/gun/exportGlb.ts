@@ -9,6 +9,7 @@ import type {
 import { partNodeName } from '@skelly/engine/export/glb.ts';
 import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import type { NeutralModel } from '@skelly/thing-core/schema';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { resolveGunAction } from './actionDescription.ts';
@@ -73,11 +74,7 @@ interface GunActionMetadata {
   readonly roundsPerSimMinute?: number;
 }
 
-export interface DeadvoxModelEntry {
-  readonly id: string;
-  readonly file: DeadvoxModelFile;
-  readonly grip?: { readonly at: Vec3; readonly turn: Vec3 };
-  readonly anchors?: Readonly<Record<string, Vec3>>;
+export interface DeadvoxModelEntry extends NeutralModel {
   /** The model-derived eye point and sight axis used to align the player view. */
   readonly sight?: {
     readonly kind: 'iron' | 'optic';
