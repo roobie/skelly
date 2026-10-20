@@ -4,7 +4,7 @@ import { loadPlaytestText } from '../../../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../../../site/playtestLanguage.js';
 
 // Bumped by each published patch; see `docs/playtest-run.md`, "Frozen round publication".
-const PATCH = 3;
+const PATCH = 4;
 const language = applyPlaytestLanguage(navigator.languages, location.search);
 const text = await loadPlaytestText(fetch, new URL('../../../site/playtest.json', import.meta.url), language);
 

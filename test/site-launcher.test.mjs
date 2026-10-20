@@ -16,6 +16,7 @@ const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const selectLanguage = (languages, search) => applyPlaytestLanguage(languages, search);
 const page = read('site/launcher.js');
 const round1Page = read('deadvox/playtests/round1/round1.js');
+const round2Page = read('deadvox/playtests/round2/round2.js');
 const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAY_LINK_PATTERN = /<a[^>]*class="playtest-action"[^>]*>/;
@@ -217,9 +218,11 @@ describe('playtest language and catalog', () => {
     const englishKeys = Object.keys(catalog.en).sort();
     assert.ok(englishKeys.length > 0, 'the English playtest catalog has strings');
     assert.deepEqual(englishKeys, Object.keys(catalog.sv).sort());
-    for (const match of round1Page.matchAll(/\btext\.(\w+)/g)) {
-      for (const language of ['en', 'sv']) {
-        assert.ok(catalog[language][match[1]]?.trim(), `${language} provides the rendered ${match[1]} string`);
+    for (const roundPage of [round1Page, round2Page]) {
+      for (const match of roundPage.matchAll(/\btext\.(\w+)/g)) {
+        for (const language of ['en', 'sv']) {
+          assert.ok(catalog[language][match[1]]?.trim(), `${language} provides the rendered ${match[1]} string`);
+        }
       }
     }
   });
@@ -386,6 +389,11 @@ describe('site launchers track the games’ URL parameters', () => {
 });
 
 describe('site launcher playtest entry', () => {
+  it('keeps the Round 1 play link and routes Round 2 to the gauntlet', () => {
+    assert.equal(playtestRound(1).playQuery, 'site=playtest');
+    assert.equal(playtestRound(2).playQuery, 'site=gauntlet');
+  });
+
   it('keeps the Round 1 link in a separate links card', () => {
     assert.doesNotMatch(page, UMBRELLA_PLAYTEST_MARKUP_PATTERN);
     const linksCard = page.match(LINKS_CARD_PATTERN);
@@ -512,6 +520,11 @@ describe('site launcher playtest entry', () => {
       }
       assert.ok(localReferences > 0, 'the check exercised local resources');
       assert.match(readFileSync(join(output, 'robots.txt'), 'utf8'), ROBOTS_DISALLOW_PATTERN);
+
+      const round2 = publishPlaytest({ round: 2, gameSha, dryRun: true, root });
+      const round2Script = readFileSync(join(round2.output, 'round2.js'), 'utf8');
+      const round2Href = round2Script.match(PLAY_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
+      assert.equal(round2Href, `${playtestRound(2).playPath}?${playtestRound(2).playQuery}`);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
