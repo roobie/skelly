@@ -82,5 +82,5 @@ local familyHex = {
     fallbackFinishMaterial: 'brass',
   },
   cartridgeFinish: { case: 'brass', bullet: 'copper', primer: 'brass', closure: 'paperboard-brown' },
-  hullMaterials: { red: 'polyethylene-red', green: 'polyethylene-green', blue: 'polyethylene-blue', black: 'polyethylene-black', white: 'polyethylene-white', yellow: 'polyethylene-yellow' },
+  hullMaterials: { red: 'plastic-red', green: 'plastic-green', blue: 'plastic-blue', black: 'plastic-black', white: 'plastic-white', yellow: 'plastic-yellow' },
 }

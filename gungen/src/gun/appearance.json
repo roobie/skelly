@@ -340,12 +340,12 @@
     }
   },
   "hullMaterials": {
-    "black": "polyethylene-black",
-    "blue": "polyethylene-blue",
-    "green": "polyethylene-green",
-    "red": "polyethylene-red",
-    "white": "polyethylene-white",
-    "yellow": "polyethylene-yellow"
+    "black": "plastic-black",
+    "blue": "plastic-blue",
+    "green": "plastic-green",
+    "red": "plastic-red",
+    "white": "plastic-white",
+    "yellow": "plastic-yellow"
   },
   "massFill": {
     "ak-muzzle-device": 1,
