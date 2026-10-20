@@ -93,13 +93,32 @@ export function mainOverlayPath(root, id) {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
+/** Repository directory where `revision`'s root workspace list places the package named `name`. */
+export function workspaceDirectory(git, revision, name) {
+  const show = (path) => JSON.parse(git(['show', `${revision}:${path}`]));
+  const manifests = show('package.json').workspaces.map((workspace) => `${workspace}/package.json`);
+  const present = new Set(git(['ls-tree', '--name-only', revision, '--', ...manifests]).split('\n'));
+  const manifest = manifests.find((path) => present.has(path) && show(path).name === name);
+  if (manifest === undefined) {
+    throw new Error(`No workspace package named ${name} at ${revision}`);
+  }
+  return manifest.slice(0, -'/package.json'.length);
+}
+
+const treeSources = (git, revision, source) =>
+  new Set(
+    git(['ls-tree', '-r', '--name-only', revision, '--', source])
+      .split('\n')
+      .map((path) => path.slice(source.length + 1)),
+  );
+
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
   if (eventPath && ref === 'origin/main') {
     throw new Error('GitHub event has neither a pull-request base nor a branch ref');
   }
-  const repository = resolve(root, '../..');
+  const repository = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8' }).trim();
   const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8' }).trim();
   let base;
   if (eventPath) {
@@ -108,41 +127,31 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   } else {
     base = git(['rev-parse', ref]);
   }
-  const basePaths = new Set(git(['ls-tree', '-r', '--name-only', base, '--', 'packages/deadvox/src']).split('\n'));
-  const branchPaths = new Set(git(['ls-tree', '-r', '--name-only', 'HEAD', '--', 'packages/deadvox/src']).split('\n'));
+  // The base may place the package elsewhere, so each tree is read where its own revision puts it.
+  const { name } = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
+  const basePackage = workspaceDirectory(git, base, name);
+  const baseSource = `${basePackage}/src`;
+  const basePaths = treeSources(git, base, baseSource);
+  const branchPaths = treeSources(git, 'HEAD', `${workspaceDirectory(git, 'HEAD', name)}/src`);
+  const showBase = (relative) => git(['show', `${base}:${baseSource}/${relative}`]);
   for (const path of mainSourceOverlays) {
-    if (!basePaths.has(`packages/deadvox/src/${path}`)) {
-      throw new Error(
-        `Main source overlay missing at ${base}: packages/deadvox/src/${path}; update mainSourceOverlays`,
-      );
+    if (!basePaths.has(path)) {
+      throw new Error(`Main source overlay missing at ${base}: ${baseSource}/${path}; update mainSourceOverlays`);
     }
   }
-  const overlays = new Map(
-    mainSourceOverlays.map((path) => [path, git(['show', `${base}:packages/deadvox/src/${path}`])]),
-  );
+  const overlays = new Map(mainSourceOverlays.map((path) => [path, showBase(path)]));
   // A main startup source may import a file the branch deleted; serve that file from the base
   // too, so the overlay never fails to resolve a module main still owns.
-  const baseOnlyOverlay = (relative) =>
-    relative !== null &&
-    basePaths.has(`packages/deadvox/src/${relative}`) &&
-    !branchPaths.has(`packages/deadvox/src/${relative}`);
+  const baseOnlyOverlay = (relative) => relative !== null && basePaths.has(relative) && !branchPaths.has(relative);
   // A main source may import an export the branch removed from a module both keep. That module stays the
   // branch's core owner: a shim re-exports it and adds only the removed names, from main's copy of the module.
   const exportShims = new Map();
   const removedFor = async (relative) => {
     if (!exportShims.has(relative)) {
-      const both =
-        SCRIPT_MODULE.test(relative) &&
-        basePaths.has(`packages/deadvox/src/${relative}`) &&
-        branchPaths.has(`packages/deadvox/src/${relative}`);
+      const both = SCRIPT_MODULE.test(relative) && basePaths.has(relative) && branchPaths.has(relative);
       exportShims.set(
         relative,
-        both
-          ? removedExports(
-              git(['show', `${base}:packages/deadvox/src/${relative}`]),
-              await readFile(resolve(root, 'src', relative), 'utf8'),
-            )
-          : [],
+        both ? removedExports(showBase(relative), await readFile(resolve(root, 'src', relative), 'utf8')) : [],
       );
     }
     return exportShims.get(relative);
@@ -153,7 +162,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     const relative = mainOverlayPath(root, importer);
     return importer.includes(BASE_COPY) || overlays.has(relative) || baseOnlyOverlay(relative);
   };
-  const mainHtml = git(['show', `${base}:packages/deadvox/index.html`]);
+  const mainHtml = git(['show', `${base}:${basePackage}/index.html`]);
   const appliedSources = new Set();
   const server = await createServer({
     root,
@@ -186,12 +195,12 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           }
           const relative = mainOverlayPath(root, id);
           if (id.endsWith(BASE_COPY)) {
-            return git(['show', `${base}:packages/deadvox/src/${relative}`]);
+            return showBase(relative);
           }
           if (overlays.has(relative)) {
             return overlays.get(relative);
           }
-          return baseOnlyOverlay(relative) ? git(['show', `${base}:packages/deadvox/src/${relative}`]) : null;
+          return baseOnlyOverlay(relative) ? showBase(relative) : null;
         },
         transformIndexHtml: {
           order: 'pre',
