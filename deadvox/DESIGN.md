@@ -2272,6 +2272,15 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   far room sunlit. See `src/render/skylight.ts`, `Skylight.patch`. Light through
   furniture-only barriers remains accepted. Near shadows must hold at every hour;
   see `src/render/shadows.ts`, its header, and `src/core/sky.ts`, `sunShadowStrength`.
+- **Furniture is not its own roof (#998):** outside a field's sky volume, the roof
+  fallback counts a column's topmost run of furniture cells as open to the sky,
+  while the air beneath it and anything under a block roof stay roofed. Furniture
+  blocks light in whole cells, so a wall or seat beside a parked vehicle looks up
+  from inside the vehicle's cell; counting that cell as its roof left hard black
+  patches in daylight. Inside the volume, transport still treats furniture as
+  blocking, because letting its cells hold light would blend the light outside a
+  closed door into the floor of a sealed room. See `src/core/skyTransport.ts`,
+  `visitCell`.
 - First-person hands must not stay sunlit when a wall blocks the player's light,
   but nearby lights still need to reach them. Their separate scene prevents wall
   clipping; see `src/render/hands.ts`, its file header.

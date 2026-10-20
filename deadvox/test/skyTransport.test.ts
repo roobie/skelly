@@ -1,11 +1,12 @@
 import { expect, it } from 'vitest';
-import { toChunk } from '../src/core/coords.ts';
+import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { buildSkylight, skyIndex } from '../src/core/skylight.ts';
-import { captureSky, growSky, SKY_HALO, type SkySnapshot } from '../src/core/skySnapshot.ts';
+import { captureSky, containsSky, growSky, SKY_HALO, type SkySnapshot } from '../src/core/skySnapshot.ts';
 import { buildSkyResult } from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 
+const inFurniture = (input: SkySnapshot, point: Vec3) => input.furniture.some((box) => containsSky(box, point));
 function referenceHeights(input: SkySnapshot, opaque: (x: number, y: number, z: number) => boolean): Float32Array {
   const bounds = growSky(input.bounds, SKY_HALO);
   const [x0, , z0] = bounds.min;
@@ -16,6 +17,9 @@ function referenceHeights(input: SkySnapshot, opaque: (x: number, y: number, z: 
       for (let y = input.top; y >= input.bottom; y--) {
         if (opaque(x, y, z)) {
           top = y;
+          while (inFurniture(input, [x, top, z])) {
+            top -= 1;
+          }
           break;
         }
       }
@@ -24,6 +28,29 @@ function referenceHeights(input: SkySnapshot, opaque: (x: number, y: number, z: 
   }
   return result;
 }
+const roofAdmits = (input: SkySnapshot, heights: Float32Array, [x, y, z]: Vec3) => {
+  const bounds = growSky(input.bounds, SKY_HALO);
+  return y > heights[x - bounds.min[0] + (bounds.max[0] - bounds.min[0]) * (z - bounds.min[2])]!;
+};
+
+it('lets the roof fallback reach a column’s topmost furniture but not the air beneath it or a block-roofed room', () => {
+  const fixture = skyFixture();
+  // A two-cell stack outside the room's wall stands over air; another piece sits under the room's roof.
+  for (const pos of [
+    [13, 3, 8],
+    [13, 4, 8],
+    [8, 2, 8],
+  ] satisfies Vec3[]) {
+    fixture.entities.add({ type: 'fixture_door', pos, size: [1, 1, 1], facing: 'n' });
+  }
+  const { input } = fixture.capture();
+  const { heights } = buildSkyResult(input);
+  expect(roofAdmits(input, heights, [13, 4, 8])).toBe(true);
+  expect(roofAdmits(input, heights, [13, 3, 8])).toBe(true);
+  expect(roofAdmits(input, heights, [13, 2, 8])).toBe(false);
+  expect(roofAdmits(input, heights, [8, 2, 8])).toBe(false);
+  expect(roofAdmits(input, heights, [8, 3, 8])).toBe(false);
+});
 
 it('matches generous-domain transport and opaque-column heights with foliage and furniture', () => {
   const fixture = skyFixture();
