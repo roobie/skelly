@@ -425,12 +425,25 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   is not searching it. When the items have nowhere to go the move is refused,
   so nothing is lost or buried in a block.
 - **Where it can stand.** A piece may not cover a hatch or fill the space a
-  climber stands in front of a ladder, since either would wall off a floor. An
-  open upright door's doorway takes a piece, because barricading a door is a
-  use, not a mistake; the door then cannot close over it, and a moved piece
-  blocks shamblers like any solid. The front of a shaped container is its
-  body, which an open door doesn't clear, and an open hatch is a drop, so
-  neither takes a piece. See `src/core/blockEntities.ts`, `inDoorway`.
+  climber stands in front of a ladder, since either would wall off a floor. A
+  flat cover may lie on a shut hatch, because it walls nothing off and hiding
+  a way down is what the secret cellar rests on. A hatch with a cover on it
+  will not open, from either side, until the cover is lifted: refusing keeps
+  "an open hatch is a drop" true, so no cover ever lies over an invisible
+  fall, and it adds no saved state. An open upright door's doorway takes a
+  piece, because barricading a door is a use, not a mistake; the door then
+  cannot close over it, and a moved piece blocks shamblers like any solid. The
+  front of a shaped container is its body, which an open door doesn't clear,
+  and an open hatch is a drop, so neither takes a piece. See
+  `src/core/furnitureMove.ts`, `standRefusal`, and `src/core/blockEntities.ts`,
+  `inDoorway`.
+- **Covers.** A cover is a flat, loose, non-solid piece, such as a rug or a
+  tarp: walking and sight pass through it, and a pick hits it before the hatch
+  under it. The size cap does not apply to a cover, because a rug rolls up and
+  the secret hatch is wider than the cap allows a piece to be. A cover is never
+  fitted, because the room it hides must stay openable. See
+  `src/core/schema.ts`, `FurnitureSchema`, and `src/core/content.ts`,
+  `checkPaletteObjectRefs`.
 - **A carried piece carries its contents.** An explosive inside a carried
   piece goes off at its carrier, because the piece is in their hands, not where
   it last stood. See `src/game/session.ts`, `detonationPoint`.
