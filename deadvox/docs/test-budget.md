@@ -5,6 +5,7 @@ read_if:
   - you're measuring suite growth between milestones
   - you're changing content-scaling route, start-phase admission or chunk-order test work
   - you're changing base-registry or bundled-startup fixture construction or its isolation
+  - you're writing a test that admits base content, overlays it or reads authored Jsonnet definitions
 ---
 
 # Default Deadvox unit-suite reductions
@@ -47,9 +48,18 @@ must not reuse an obstructed probe's memoized geometry. See `test/scenarioStart.
 `certificate`; and `src/core/scenarioCertificate.ts`, `scenarioStartCertificate` and
 `scenarioCertificate`.
 
+A test that needs which authored definitions a Jsonnet source contributes reads them
+from the base registry by id rather than manifesting the source again: the base build
+already admitted them, and a full manifest of a large source can outweigh the test's
+own work. Because Jsonnet is lazy, a witness that names only ids and the values the
+test needs skips the rest. See `test/fixtures/jsonnet/lab-witness.jsonnet` and
+`test/scenarioCertificate.test.ts`, `witness`.
+
 ## Base-registry fixtures
 
 Gameplay tests and their shared helpers need validated content, not repeated admission of the same base pack during every file's import. Use the run's snapshots for unchanged base inputs, including helpers that select a single tuning row; keep independent builds where admission or an overlay is the behavior under test. Otherwise a small helper can silently multiply full-pack validation across its importers. Deserialize a fresh object graph for each caller; do not share mutable registries or disable file isolation. See `test/baseRegistrySetup.ts`, `setup`; `test/baseRegistry.ts`, `baseRegistry`; and `test/senseFixture.ts`, `BASE_SENSE_TUNING`. Run-owned temporary storage prevents concurrent runs from replacing each other's content or interrupting a snapshot read.
+
+A file that only reads base content does not assert the base build's issues; global setup refuses a base pack with issues, and `test/content.test.ts`, "base content has no issues", is the guard. An overlay that changes only definitions the game reads at run time, such as a skill's practice amount, patches a copy of the snapshot rather than admitting the pack again. See `test/meleeTraining.test.ts` and `test/unpacking.test.ts`, `fixture`.
 
 Content-admission and overlay tests still build their own inputs. Gameplay and configuration tests also need the bundled startup result's winning origins, not another admission pass during import. Preserve that result in a separate snapshot because bundled source paths differ from the base-registry fixture's source paths. See `test/baseRegistrySetup.ts`, `writeBaseRegistry` and `test/baseRegistry.ts`, `startupContent`. Both fixtures deserialize per caller so mutating a map, nested definition or admission result cannot leak between callers.
 
@@ -59,6 +69,6 @@ Fixture fidelity and nested mutation isolation are checked separately in `test/b
 
 Compare the previous milestone's merge commit with the new head using three interleaved default-suite runs per head, each in its own isolated run. Treat median growth beyond the run-to-run spread as an overrun, and record the per-file deltas. Absolute duration may move with host load; it is not evidence of milestone regression by itself.
 
-When a registry check approaches the test timeout, use the smallest registry source that exercises its assertion. Preserve full base/overlay builds where the assertion needs integration behavior. See `test/content.test.ts`, `baseBuild`, `baseRegistry` and `withBase`. For #318, neither whole-tree scan guard fits under one test timeout: parsing is spread across per-file cases, and mutation checks reuse the collected graph instead of re-collecting it. See `test/inputLiterals.test.ts` and `test/simulationFingerprint.test.ts`, `mutateSimulationSource`.
+A registry check admits the smallest source that exercises its assertion: a full base admission costs the same whatever the check reads, so a case that re-admits the pack for one file's rows multiplies that cost by its cases. A check that looks for one issue must still fail to find it without the mutation. Preserve full base/overlay builds where the assertion needs integration behavior. See `test/content.test.ts`, `baseBuild`, `baseRegistry` and `withBase`. For #318, neither whole-tree scan guard fits under one test timeout: parsing is spread across per-file cases, and mutation checks reuse the collected graph instead of re-collecting it. See `test/inputLiterals.test.ts` and `test/simulationFingerprint.test.ts`, `mutateSimulationSource`.
 
 Import-time work is spread across the graph. Avoid runtime-import splits or prefilters because expected savings are small against bundle and coverage risk. Revisit either only if BR asks for it.

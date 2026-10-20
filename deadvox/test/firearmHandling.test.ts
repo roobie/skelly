@@ -34,6 +34,7 @@ import { CaseEffects } from '../src/render/caseEffects.ts';
 import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { chargedRifle, settle } from './rifleFixture.ts';
@@ -43,7 +44,7 @@ const base = readdirSync(BASE)
   .filter((file) => file.endsWith('.json'))
   .sort()
   .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown }));
-const { registry } = buildRegistry(base);
+const registry = baseRegistry();
 const { registry: skillZeroRegistry } = buildRegistry([
   ...base,
   {

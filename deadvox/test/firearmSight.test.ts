@@ -1,24 +1,15 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { sightedFirearmModel } from '../src/render/firearmSight.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { fittedPartFrame } from '../src/render/models.ts';
+import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 
-const base = 'src/content/base';
-const { registry: baseRegistry, issues } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(`${base}/${file}`, 'utf8')) })),
-);
-if (issues.length > 0) {
-  throw new Error(`Invalid fixture content: ${JSON.stringify(issues)}`);
-}
+const baseRegistry = loadBaseRegistry();
 
 it('aligns ADS through the fitted optic frame and restores irons when removed', () => {
   const { registry, fitted } = withDefaultAttachment(baseRegistry, 'rifle_hunting', 'optic_hunting_3_9x');

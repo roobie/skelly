@@ -1,9 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { Character, type HandedCharacter } from '../src/core/character.ts';
 import type { FurnitureDef, ItemDef, ModelDef, Registry } from '../src/core/content.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -12,20 +9,13 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 type Pair = NonNullable<ModelDef['compatibilityPairs']>[number];
 type Choice = Pair[number];
 
-const base = 'src/content/base';
-const sources = readdirSync(base)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
-const { registry: baseRegistry, issues } = buildRegistry(sources);
-if (issues.length > 0) {
-  throw new Error(`Fixture content is invalid: ${JSON.stringify(issues)}`);
-}
+const baseRegistry = loadBaseRegistry();
 
 const makeFixture = (character?: HandedCharacter, prepareRegistry?: (registry: Registry) => void) => {
   const registry: Registry = {

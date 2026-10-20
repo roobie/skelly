@@ -1,9 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { CONTACT_SKIN, stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -14,12 +11,9 @@ import { compileTemplate, placedPoint, type Turn } from '../src/core/templates.t
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { createPlayerBody, physicsFor } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const sources = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
-const { registry, issues } = buildRegistry(sources);
+const registry = baseRegistry();
 const house = () => compileTemplate(registry, registry.templates.get('stairs_house')!);
 const set = (template: ReturnType<typeof house>, [x, y, z]: Vec3, id: number) => {
   template.blocks[x + template.size[0] * (z + template.size[2] * y)] = id;
@@ -27,7 +21,6 @@ const set = (template: ReturnType<typeof house>, [x, y, z]: Vec3, id: number) =>
 const planks = registry.blockIds.get('planks')!;
 describe('explicit storeys and ordinary-block flights', () => {
   it('admits both authorable examples including the openable bedroom door', () => {
-    expect(issues).toEqual([]);
     expect(house().pieces.some((piece) => piece.furniture === 'wood_door')).toBe(true);
   });
   it("rejects an upper-floor opening under reachable storey floor outside every flight's footprint and headroom", () => {

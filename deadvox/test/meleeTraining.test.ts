@@ -1,39 +1,31 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
-const BASE = 'src/content/base';
-const sources = readdirSync(BASE)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown }));
-const fixtureSources = sources.map(({ source, data }) => {
-  if (source !== 'recipes.json') {
-    return { source, data };
-  }
-  const recipes = structuredClone(data) as {
-    skills: {
-      id: string;
-      training?: { activities?: Record<string, { practice?: number; tier?: number }> };
-    }[];
-  };
-  const activities = recipes.skills.find(({ id }) => id === 'melee_combat')?.training?.activities;
-  if (!(activities?.hit && activities.block)) {
-    throw new Error('Expected hit and block activities in melee training fixture');
-  }
-  activities.hit.practice = 3;
-  activities.block.practice = 1;
-  return { source, data: recipes };
-});
-const { registry, issues } = buildRegistry(fixtureSources);
-if (issues.length > 0) {
-  throw new Error(`Invalid melee training fixture: ${JSON.stringify(issues)}`);
+const base = baseRegistry();
+const melee = base.skills.get('melee_combat');
+const activities = melee?.training?.activities;
+if (!(melee?.training && activities?.hit && activities.block)) {
+  throw new Error('Expected hit and block activities in melee training fixture');
 }
+const registry: Registry = {
+  ...base,
+  skills: new Map(base.skills).set('melee_combat', {
+    ...melee,
+    training: {
+      ...melee.training,
+      activities: {
+        ...activities,
+        hit: { ...activities.hit, practice: 3 },
+        block: { ...activities.block, practice: 1 },
+      },
+    },
+  }),
+};
 const hitActivity = registry.skills.get('melee_combat')?.training?.activities?.hit;
 const blockActivity = registry.skills.get('melee_combat')?.training?.activities?.block;
 if (!(hitActivity && blockActivity && hitActivity.practice !== blockActivity.practice)) {

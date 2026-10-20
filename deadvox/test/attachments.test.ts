@@ -1,21 +1,13 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf, weightOf } from '../src/core/items.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const base = 'src/content/base';
-const sources = readdirSync(base)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
-const { registry, issues } = buildRegistry(sources);
+const registry = baseRegistry();
 const ASSAULT_RIFLE = 'rifle_assault';
 const UNCERTIFIED_ATTACHMENT = /Uncertified attachment in slot/;
 describe('fitted firearm items', () => {
   it('creates removable default attachments as owned child items and renders them through the slot frame', () => {
-    expect(issues).toEqual([]);
     const rifleModel = registry.models.get(defOf(registry, ASSAULT_RIFLE).model!)!;
     const [defaultAttachment] = rifleModel.attachments ?? [];
     expect(defaultAttachment).toBeDefined();

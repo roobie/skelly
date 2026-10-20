@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -8,17 +6,11 @@ import { reach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
-const sources = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
-const { registry, issues } = buildRegistry(sources);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSeconds;
 const shellType = 'shell_12_gauge_00_buck';
 const payloadCount = 7;

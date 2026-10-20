@@ -14,6 +14,7 @@ import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
@@ -25,7 +26,7 @@ const baseContent = readdirSync('src/content/base')
     source: file,
     data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
   }));
-const { registry } = buildRegistry(baseContent);
+const registry = baseRegistry();
 // Built once at load: a full registry build inside the test body pushed it past the test timeout under load.
 const readingFixtureRegistry = buildRegistry([
   ...baseContent,

@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -11,17 +9,12 @@ import { bindReach, type ReachPlayer, type ReachSnapshot } from '../src/core/rea
 import type { FurnitureDef } from '../src/core/schema.ts';
 import type { Zombie } from '../src/core/zombies.ts';
 import { downedBodyPlan } from '../src/game/downedBody.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
-const directory = join(import.meta.dirname, '../src/content/base');
-const { registry } = buildRegistry(
-  readdirSync(directory)
-    .filter((name) => name.endsWith('.json'))
-    .sort()
-    .map((name) => ({ source: name, data: JSON.parse(readFileSync(join(directory, name), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 
 const setup = (handedness?: 'right' | 'left', contentRegistry = registry) => {
   const character = new Character(contentRegistry, handedness ? { handedness } : {});
