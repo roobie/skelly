@@ -3,14 +3,14 @@ local cabinets = import 'cabinet-shapes.libsonnet';
 local police = { usage: ['Hunting'], tier: 'Tier1' };
 local yard = import 'rural-police-yard.libsonnet';
 local foundation = [
-  '##################################gggg',
-  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
-  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
-  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
-  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
-  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
-  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
-  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
+  '##################################kkkk',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk',
   '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#####',
   '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
   '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
@@ -36,8 +36,8 @@ local foundation = [
 ];
 local furnished = [
   '##############################HH##....',
-  '#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#....',
-  '#.......#uu....#......FF.#JJJ.vvv#....',
+  '#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#j...',
+  '#.......#uu....#......FF.#JJJ.vvv#j...',
   '#.......#......#.........#.......#....',
   '#.......#......#..TTTT...#.......E....',
   '#.......#......#..TTTT...#.......E....',
@@ -68,8 +68,8 @@ local furnished = [
 ];
 local low = [
   '##############################HH##....',
-  '#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#....',
-  '#.......#uu....#......FF.#JJJ.vvv#....',
+  '#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#j...',
+  '#.......#uu....#......FF.#JJJ.vvv#j...',
   '#.......#......#.........#.......#....',
   '#.......#......#..TTTT...#.......E....',
   '#.......#......#..TTTT...#.......E....',
@@ -100,8 +100,8 @@ local low = [
 ];
 local standing = [
   '###===####===####===#===####===###....',
-  '#ff.ff..#......#......FF.#JJJ....#....',
-  '#.......#......#......FF.#JJJ....#....',
+  '#ff.ff..#......#......FF.#JJJ....#j...',
+  '#.......#......#......FF.#JJJ....#j...',
   '#.......#......#.........#.......#....',
   '#.......#......#.........#.......E....',
   '#.......#......#.........#.......E....',
@@ -132,8 +132,8 @@ local standing = [
 ];
 local standingUpper = [
   '###...####...####...#...####...###....',
-  '#ff.ff..#......#......FF.#JJJ....#....',
-  '#.......#......#......FF.#JJJ....#....',
+  '#ff.ff..#......#......FF.#JJJ....#j...',
+  '#.......#......#......FF.#JJJ....#j...',
   '#.......#......#.........#.......#....',
   '#.......#......#.........#.......E....',
   '#.......#......#.........#.......E....',
@@ -164,8 +164,8 @@ local standingUpper = [
 ];
 local heads = [
   '##################################....',
-  '#.......#......#.........#JJJ....#....',
-  '#.......#......#.........#JJJ....#....',
+  '#.......#......#.........#JJJ....#j...',
+  '#.......#......#.........#JJJ....#j...',
   '#.......#......#.........#.......#....',
   '#.......#......#.........#.......#....',
   '#.......#......#.........#.......#....',
@@ -196,8 +196,8 @@ local heads = [
 ];
 local lintel = [
   '##################################....',
-  '#.......#......#.........#JJJ....#....',
-  '#.......#......#.........#JJJ....#....',
+  '#.......#......#.........#JJJ....#j...',
+  '#.......#......#.........#JJJ....#j...',
   '#.......#......#.........#.......#....',
   '#.......#......#.........#.......#....',
   '#.......#......#.........#.......#....',
@@ -226,8 +226,69 @@ local lintel = [
   '#...........#............#...#.......#',
   '######################################',
 ];
+local roofDeck = [
+  '##################################gggg',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#jggg',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#jggg',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#####',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#',
+  '######################################',
+];
+local roof = [
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '....................XXXX..............', '....................XXXX..............', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................',
+];
+local roofAir = [
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................', '......................................', '......................................',
+  '......................................', '......................................',
+];
 shape.colliding({
   furniture: [{
+    id: 'dead_officer_body', name: 'Dead officer', size: [4, 1, 2], color: '#554f43', solid: false,
+    shape: [
+      { position: [0.2, 0, 0.5], size: [1.2, 0.15, 0.4] },
+      { position: [0.2, 0, 1.1], size: [1.2, 0.15, 0.4] },
+      { position: [1.4, 0, 0.45], size: [1.5, 0.25, 1.1] },
+      { position: [2.9, 0, 0.65], size: [0.5, 0.25, 0.7] },
+    ],
+    container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
+  }, {
     id: 'police_weapon_cabinet', name: 'Weapon cabinet', size: [2, 4, 1], color: '#657063',
     container: { pockets: [{ grid: [10, 18], handlingSimSeconds: 1.2 }] },
     shape: cabinets.gun(self.size, {
@@ -242,7 +303,7 @@ shape.colliding({
     economy: { usage: ['Hunting'], tiers: ['Tier1'] },
   }],
   loot: [{
-    id: 'gauntlet_police_office_key', rolls: [1, 1],
+    id: 'gauntlet_police_roof_key', rolls: [1, 1],
     entries: [{ item: 'gauntlet_police_armoury_key', weight: 1 }],
   }, {
     id: 'gauntlet_police_armoury_stock', rolls: [2, 3], entries: [
@@ -262,7 +323,7 @@ shape.colliding({
   }],
   templates: [{
     id: 'rural_police_station',
-    size: [38, 8, 30],
+    size: [38, 12, 30],
     lootContext: police,
     palette: {
       '.': 'air', '#': 'brick', k: 'concrete', '=': 'window_frame', g: { ground: true },
@@ -295,8 +356,10 @@ shape.colliding({
       v: { furniture: 'station_coal_bin', facing: 's' },
       i: { furniture: 'station_cleaning_sink', facing: 'w' },
       H: { furniture: 'station_coal_hatch' },
+      j: { furniture: 'ladder', facing: 'e' },
+      X: { furniture: 'dead_officer_body', loot: 'gauntlet_police_roof_key' },
     },
-    layers: [foundation, furnished, low, standing, standingUpper, heads, lintel, foundation],
+    layers: [foundation, furnished, low, standing, standingUpper, heads, lintel, roofDeck, roof, roofAir, roofAir, roofAir],
     access: {
       ground: 'ground', entrance: [10, 1, 28],
       storeys: [{ id: 'ground', floor: 1 }], stairs: [],

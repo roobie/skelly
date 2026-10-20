@@ -9,7 +9,7 @@ local find(templates, id) = std.filter(function(t) t.id == id, templates)[0];
 local policeMain = police.templates[0] + {
   palette+: {
     U: { furniture: 'wood_door', lock: { id: 'gauntlet_police_armoury', locked: true } },
-    C: { furniture: 'desk', loot: 'gauntlet_police_office_key' },
+    C: { furniture: 'desk', loot: 'desk' },
     Z: 'shop_blue',
     A: police.templates[0].palette.A,
   },
@@ -113,7 +113,7 @@ local compound(id, size, context, slots, entrance) = {
   mapPieces: [kit.piece(policeMain, policeBays), kit.piece(medicalMain, medicalBays), kit.piece(subMain, subBays), kit.piece(hqMain, hqBays)] +
              [kit.piece(t) for t in shellTemplates] + chairs,
   mapAssemblies: [furnished(policeMain, policeBays), furnished(medicalMain, medicalBays), furnished(subMain, subBays), furnished(hqMain, hqBays)] + [
-    compound('gauntlet_rural_police', [54, 8, 43], policeMain.lootContext, [
+    compound('gauntlet_rural_police', [54, 12, 43], policeMain.lootContext, [
       furnishedSlot(policeMain, [8, 0, 4], 2),
       kit.slot('front_fence', policeFront, [0, 0, 0]), kit.slot('back_fence', policeBack, [0, 0, 42]),
       kit.slot('east_fence', policeLeft, [0, 0, 1], 1), kit.slot('west_fence', policeRight, [53, 0, 1], 1),
