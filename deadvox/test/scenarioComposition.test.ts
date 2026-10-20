@@ -46,6 +46,8 @@ const fixture = () => {
     retreat: [2, 7, 2],
     resources: [{ at: [2, 1, 2], standing: [2, 1, 4] }],
     storeys: [{ id: 'lower', standing: [2, 1, 4] }],
+    stairs: [],
+    seals: [],
     descents: [{ ladder: [4, 1, 3], lower: [3, 1, 4], upper: [3, 7, 4] }],
   };
   const sources = fixtureScenarioSources(profile, service);

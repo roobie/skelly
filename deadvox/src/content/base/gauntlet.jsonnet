@@ -106,10 +106,10 @@ local utilities = [
   },
 ];
 shape.colliding({
-  items: types.items + publicNotes,
+  items: types.items + publicNotes + lab.items,
   mapPools: kits.mapPools + city.mapPools,
   blocks: types.blocks,
-  loot: types.loot + medical.loot + kits.loot + authored.loot + sewer.loot + service.loot,
+  loot: types.loot + medical.loot + kits.loot + authored.loot + sewer.loot + service.loot + lab.loot,
   mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
     air: { role: 'opening', block: 'air' }, concrete: { role: 'interior_floor', block: 'concrete' },
     brick: { role: 'shell', block: 'brick' }, galvanized: { role: 'shell', block: 'galvanized' },

@@ -400,7 +400,47 @@ export const gauntletFlow = async (browser, baseUrl) => {
         }
         return connections;
       };
+      const freeHand = async (side, position) => {
+        const held = session.inventory.hands[side];
+        if (!held) {
+          return;
+        }
+        const drop = session.queue.enqueue(held, { kind: 'pile', pos: position.map(Math.floor) });
+        if (!drop.ok) {
+          throw new Error(drop.reason);
+        }
+        await until(() => !session.inventory.hands[side], Math.ceil((drop.job.duration + 1) * 60), 'free card hand');
+      };
+      const takeCard = async (seal) => {
+        const card = session.inventory
+          .pileAt(seal.key)
+          ?.items.find(({ item }) => engine.registry.items.get(item.type)?.key)?.item;
+        if (!card) {
+          throw new Error('Placed seal keycard absent');
+        }
+        const side = session.inventory.hands.left ? 'right' : 'left';
+        await freeHand(side, seal.standing);
+        const pickup = session.queue.enqueue(card, { kind: 'hand', side });
+        if (!pickup.ok) {
+          throw new Error(pickup.reason);
+        }
+        await until(
+          () => session.inventory.hands[side]?.uid === card.uid,
+          Math.ceil((pickup.job.duration + 1) * 60),
+          'keycard pickup',
+        );
+      };
+      const takeCardsAt = async (start) => {
+        let position = start;
+        for (const seal of plan.composition.seals.filter((candidate) => candidate.standing[1] === start[1])) {
+          await walk(route(position, seal.standing));
+          await takeCard(seal);
+          position = seal.standing;
+        }
+        return position;
+      };
       const descend = async (position, descent) => {
+        const from = await takeCardsAt(position);
         const bottomAt = descent.ladder;
         const bottom = bottomAt
           ? engine.entities.at(...bottomAt)
@@ -419,7 +459,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
           descent.upper[1],
           bottom.pos[2] + bottom.size[2] / 2 - oz,
         ];
-        await walk(route(position, approach));
+        await walk(route(from, approach));
         const lid = descentLid(session, bottom, descent.upper[1]);
         const openingTime = queueDescentLidOpening(session, lid);
         await until(() => lid.open, Math.ceil((openingTime + 1) * 60), 'descent lid');
