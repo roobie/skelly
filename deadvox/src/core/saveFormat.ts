@@ -155,7 +155,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 53;
+export const SAVE_SCHEMA_VERSION = 54;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -502,7 +502,8 @@ const inventory = obj({
 const longAction = obj({
   job: nullable(
     obj({
-      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'pry', 'treatment', 'wait']),
+      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'forceDoor', 'treatment', 'wait']),
+      method: opt(str({ id: true })),
       stopped: bool,
       last: nonNegative,
       elapsed: opt(nonNegative),
@@ -1456,7 +1457,7 @@ function ownsLongActionItem(
   if (job?.jobType === 'reading') {
     return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
   }
-  if (job?.jobType === 'pry') {
+  if (job?.jobType === 'forceDoor') {
     return tree.some(({ item }) => item.uid === job.toolUid && item.type !== WORK_IN_PROGRESS);
   }
   if (job?.jobType === 'treatment') {
@@ -1469,11 +1470,11 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   const { job } = snapshot.character.longAction;
   validateLongJob(job, snapshot.character.simulation.time);
   if (
-    job?.jobType === 'pry' &&
+    job?.jobType === 'forceDoor' &&
     !job.stopped &&
     (snapshot.character.simulation.compression.active || snapshot.character.simulation.compression.c !== 1)
   ) {
-    throw new Error('Running prying action cannot use compression');
+    throw new Error('Running forcing action cannot use compression');
   }
   const tree = [...savedItemTree(snapshot.character.inventory)];
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
@@ -1482,18 +1483,18 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
     let reason = 'Missing craft work item';
     if (job?.jobType === 'reading') {
       reason = 'Missing reading book';
-    } else if (job?.jobType === 'pry') {
-      reason = 'Missing prying tool';
+    } else if (job?.jobType === 'forceDoor') {
+      reason = 'Missing forcing tool';
     } else if (job?.jobType === 'treatment') {
       reason = 'Missing treatment item';
     }
     throw new Error(reason);
   }
   if (
-    job?.jobType === 'pry' &&
+    job?.jobType === 'forceDoor' &&
     !snapshot.character.inventory.entities.entities.some(({ uid }) => uid === job.entityUid)
   ) {
-    throw new Error('Missing prying target');
+    throw new Error('Missing forcing target');
   }
   if (snapshot.character.player.ladder?.on === false && !grabbedLadder(snapshot)) {
     throw new Error('Missing grabbed ladder');

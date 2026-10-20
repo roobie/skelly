@@ -781,6 +781,30 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
   }
 };
 
+const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const { door } = furniture;
+  if (!door) {
+    return;
+  }
+  const material = registry.doorMaterials.get(door.material);
+  if (!material) {
+    report('furniture', furniture.id, '.door.material', `no door material "${door.material}"`);
+  }
+  for (const [id, method] of Object.entries(door.methods)) {
+    const path = `.door.methods.${id}`;
+    if (material && !material.methods.includes(id)) {
+      report('furniture', furniture.id, path, `material "${material.id}" does not admit method "${id}"`);
+    }
+    if (!registry.skills.has(method.skill)) {
+      report('furniture', furniture.id, `${path}.skill`, `no skill "${method.skill}"`);
+    }
+    const sound = registry.sounds.get(method.strikeSound);
+    if (!sound?.noise.enabled) {
+      report('furniture', furniture.id, `${path}.strikeSound`, 'forcing strikes need a sound that alerts hearing');
+    }
+  }
+};
+
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   for (const furniture of registry.furniture.values()) {
@@ -799,9 +823,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
     }
     checkDoorOpenNoise(registry, furniture, report);
     checkSearchNoise(registry, furniture, report);
-    if (furniture.door?.prying && !registry.skills.has(furniture.door.prying.skill)) {
-      report('furniture', furniture.id, '.door.prying.skill', `no skill "${furniture.door.prying.skill}"`);
-    }
+    checkDoorForcing(registry, furniture, report);
     if (furniture.loot !== undefined && !registry.loot.has(furniture.loot)) {
       report('furniture', furniture.id, '.loot', `no loot table "${furniture.loot}"`);
     }

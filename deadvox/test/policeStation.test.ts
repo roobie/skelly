@@ -233,6 +233,6 @@ it('keeps the office key outside the locked armoury and police weapons and ammun
     expect(near(beforeUnlock, desk)).toBe(true);
   }
   for (const lock of locks) {
-    expect(registry.furniture.get(lock.furniture)?.door?.prying).toBeDefined();
+    expect(registry.furniture.get(lock.furniture)?.door?.methods.pry).toBeDefined();
   }
 });

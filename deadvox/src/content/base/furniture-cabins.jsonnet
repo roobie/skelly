@@ -8,7 +8,7 @@ shape.colliding({
       name: "Dad's cabin front door",
       size: [2, 4, 1],
       color: '#7a5534',
-      door: { handlingSimSeconds: 0.6 },
+      door: { material: 'wood', methods: {}, handlingSimSeconds: 0.6 },
     },
     {
       id: 'gun_cabinet',

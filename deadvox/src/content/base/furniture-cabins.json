@@ -3,7 +3,9 @@
     {
       "color": "#7a5534",
       "door": {
-        "handlingSimSeconds": 0.59999999999999998
+        "handlingSimSeconds": 0.59999999999999998,
+        "material": "wood",
+        "methods": {}
       },
       "id": "dad_front_door",
       "name": "Dad's cabin front door",

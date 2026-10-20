@@ -70,7 +70,6 @@ export const SOUND_EVENT_IDS = [
   'door_roller_open',
   'door_close',
   'door_blocked_close',
-  'lock_pry',
   'furniture_scrape',
 ] as const;
 

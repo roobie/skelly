@@ -72,7 +72,7 @@ it('requires a carried tool meeting the door quality and takes its time from con
     facing: 'n',
     lock: { id: 'test_shed', locked: true },
   })!;
-  const tuning = doorDef.door?.prying;
+  const tuning = doorDef.door?.methods.pry;
   if (!tuning) {
     throw new Error('Fixture door has no prying tuning');
   }
@@ -110,16 +110,16 @@ it('higher mechanics skill shortens prying and preserves its strike count', () =
   const crowbar = inventory.create('crowbar');
   expect(inventory.add(crowbar, { kind: 'hand', side: 'right' })).toBe(true);
   const character = new Character(registry);
-  const slow = pryPlan(inventory, door, crowbar.uid, character);
+  const slow = pryPlan(inventory, door, { toolUid: crowbar.uid }, character);
   if (!slow.ok) {
     throw new Error(slow.reason);
   }
-  const tuning = definition.door!.prying!;
+  const tuning = definition.door!.methods.pry!;
   expect(slow.time).toBe(tuning.timeSimSeconds);
   while (character.skills.mechanics! < SKILL_LEVEL_MAX) {
     character.awardPractice('mechanics', practiceForNextLevel(character.skills.mechanics!), SKILL_LEVEL_MAX);
   }
-  const fast = pryPlan(inventory, door, crowbar.uid, character);
+  const fast = pryPlan(inventory, door, { toolUid: crowbar.uid }, character);
   if (!fast.ok) {
     throw new Error(fast.reason);
   }
@@ -133,7 +133,7 @@ it('prying advances at normal simulation speed without compression', () => {
   const control = makePryRuntime();
   const door = makeDoor(runtime);
   const crowbar = carryCrowbar(runtime);
-  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  expect(runtime.session.forceDoor(door, crowbar.uid)).toBeUndefined();
   expect(runtime.sim.compression.active).toBe(false);
 
   runtime.sim.frame(1);
@@ -141,8 +141,8 @@ it('prying advances at normal simulation speed without compression', () => {
 
   expect(runtime.sim.time).toBe(control.sim.time);
   expect(runtime.sim.compression.active).toBe(false);
-  expect(runtime.sim.actions.job?.jobType).toBe('pry');
-  if (runtime.sim.actions.job?.jobType !== 'pry') {
+  expect(runtime.sim.actions.job?.jobType).toBe('forceDoor');
+  if (runtime.sim.actions.job?.jobType !== 'forceDoor') {
     throw new Error('The normal-speed pry did not retain its action');
   }
   expect(runtime.sim.actions.job.stopped).toBe(false);
@@ -155,11 +155,11 @@ it('an interruption stops normal-speed prying with progress retained for the sam
   const crowbar = carryCrowbar(runtime);
   const notices: string[] = [];
   runtime.sim.actions.notice = (text) => notices.push(text);
-  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  expect(runtime.session.forceDoor(door, crowbar.uid)).toBeUndefined();
   runtime.sim.frame(1);
   const before = runtime.sim.actions.job;
-  if (before?.jobType !== 'pry') {
-    throw new Error('The normal-speed pry did not retain its action');
+  if (before?.jobType !== 'forceDoor') {
+    throw new Error('The normal-speed forcing did not retain its action');
   }
   expect(before.stopped).toBe(false);
   const reason = 'A test interruption';
@@ -168,7 +168,7 @@ it('an interruption stops normal-speed prying with progress retained for the sam
   runtime.sim.frame(0.1);
 
   expect(runtime.sim.actions.job).toMatchObject({
-    jobType: 'pry',
+    jobType: 'forceDoor',
     stopped: true,
     entityUid: door.uid,
     toolUid: crowbar.uid,
@@ -180,8 +180,8 @@ it('an interruption stops normal-speed prying with progress retained for the sam
   expect(runtime.sim.compression.active).toBe(false);
   expect(runtime.sim.compression.locksInput).toBe(false);
 
-  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
-  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false, elapsed: before.elapsed });
+  expect(runtime.session.forceDoor(door, crowbar.uid)).toBeUndefined();
+  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'forceDoor', stopped: false, elapsed: before.elapsed });
 });
 
 it('losing the carried tool stops prying without an input latch and leaves movement available', () => {
@@ -190,11 +190,11 @@ it('losing the carried tool stops prying without an input latch and leaves movem
   const crowbar = carryCrowbar(runtime);
   const notices: string[] = [];
   runtime.sim.actions.notice = (text) => notices.push(text);
-  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  expect(runtime.session.forceDoor(door, crowbar.uid)).toBeUndefined();
   runtime.sim.frame(1);
   const before = runtime.sim.actions.job;
-  if (before?.jobType !== 'pry') {
-    throw new Error('The normal-speed pry did not retain its action');
+  if (before?.jobType !== 'forceDoor') {
+    throw new Error('The normal-speed forcing did not retain its action');
   }
   expect(before.elapsed).toBeGreaterThan(0);
   const drop = runtime.inventory.move(crowbar, {
@@ -207,7 +207,7 @@ it('losing the carried tool stops prying without an input latch and leaves movem
 
   runtime.sim.frame(1);
 
-  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: true, elapsed: before.elapsed });
+  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'forceDoor', stopped: true, elapsed: before.elapsed });
   expect(notices.at(-1)).toMatch(pryingQualityHint);
   expect(runtime.sim.compression.interruption).toBeUndefined();
   expect(runtime.sim.compression.locksInput).toBe(false);
@@ -246,7 +246,7 @@ it('the matching key still unlocks a pryable door silently', () => {
 });
 
 it('refuses a carried tool below the content quality threshold', () => {
-  const { quality } = doorDef.door!.prying!;
+  const { level } = doorDef.door!.methods.pry!;
   const { registry: weakRegistry, issues } = buildRegistry([
     ...baseContent,
     {
@@ -259,7 +259,7 @@ it('refuses a carried tool below the content quality threshold', () => {
             category: 'tool',
             weight: 1,
             size: [1, 1],
-            tool: { qualities: { prying: quality - 1 } },
+            tool: { qualities: { prying: level - 1 } },
           },
         ],
       },
@@ -291,13 +291,13 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   const shamblerType = registry.zombies.get('shambler')!;
   const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
   const shambler = runtime.zombies.store.get(id)!;
-  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  expect(runtime.session.forceDoor(door, crowbar.uid)).toBeUndefined();
 
-  const { strikeIntervalSimSeconds: strikeInterval } = doorDef.door!.prying!;
+  const { strikeIntervalSimSeconds: strikeInterval } = doorDef.door!.methods.pry!;
   runtime.sim.scheduler.advance(strikeInterval + 2);
 
   const action = runtime.sim.actions.job;
-  if (action?.jobType !== 'pry') {
+  if (action?.jobType !== 'forceDoor') {
     throw new Error('The short prying observation unexpectedly finished its action');
   }
   expect(runtime.heardSounds.filter(({ event }) => event === 'lock_pry')).toHaveLength(
@@ -314,13 +314,13 @@ it('saves a running pry just before a long-action tick and completes on the same
   const splitDoor = makeDoor(split);
   const uninterruptedCrowbar = carryCrowbar(uninterrupted);
   const splitCrowbar = carryCrowbar(split);
-  expect(uninterrupted.session.pryDoor(uninterruptedDoor, uninterruptedCrowbar.uid)).toBeUndefined();
-  expect(split.session.pryDoor(splitDoor, splitCrowbar.uid)).toBeUndefined();
+  expect(uninterrupted.session.forceDoor(uninterruptedDoor, uninterruptedCrowbar.uid)).toBeUndefined();
+  expect(split.session.forceDoor(splitDoor, splitCrowbar.uid)).toBeUndefined();
 
   advance(uninterrupted, framesBeforeSave);
   advance(split, framesBeforeSave);
   const savedJob = split.sim.actions.job;
-  if (savedJob?.jobType !== 'pry') {
+  if (savedJob?.jobType !== 'forceDoor') {
     throw new Error('The pry ended before its continuation save');
   }
   expect(savedJob.last).toBeGreaterThanOrEqual(split.sim.time);
@@ -332,7 +332,12 @@ it('saves a running pry just before a long-action tick and completes on the same
   if (!loadedDoor) {
     throw new Error('The saved door was not restored');
   }
-  expect(loaded.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false, elapsed: savedJob.elapsed });
+  expect(loaded.sim.actions.job).toMatchObject({
+    jobType: 'forceDoor',
+    method: savedJob.method,
+    stopped: false,
+    elapsed: savedJob.elapsed,
+  });
 
   const frameLimit = Math.ceil((savedJob.duration - savedJob.elapsed) * 60) + 60;
   let completionFrame: number | undefined;
@@ -355,17 +360,22 @@ it('a stopped part-done pry and a destroyed lock round-trip through save and loa
   const runtime = makePryRuntime();
   const door = makeDoor(runtime);
   const crowbar = carryCrowbar(runtime);
-  const tuning = doorDef.door!.prying!;
-  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  const tuning = doorDef.door!.methods.pry!;
+  expect(runtime.session.forceDoor(door, crowbar.uid)).toBeUndefined();
 
   runtime.sim.scheduler.advance(tuning.strikeIntervalSimSeconds / 2);
   runtime.sim.actions.stop();
-  const elapsed = runtime.sim.actions.job?.jobType === 'pry' ? runtime.sim.actions.job.elapsed : 0;
+  const elapsed = runtime.sim.actions.job?.jobType === 'forceDoor' ? runtime.sim.actions.job.elapsed : 0;
   expect(elapsed).toBeGreaterThan(0);
   const bytes = await encodeFixture(capture(runtime));
   const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
   const loaded = makePryRuntime(decoded.snapshot);
-  expect(loaded.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: true, elapsed });
+  expect(loaded.sim.actions.job).toMatchObject({
+    jobType: 'forceDoor',
+    method: Object.keys(doorDef.door!.methods)[0],
+    stopped: true,
+    elapsed,
+  });
   expect(loaded.sim.actions.resume()).toBeUndefined();
   loaded.sim.scheduler.advance(tuning.timeSimSeconds - elapsed + 2);
 

@@ -31,7 +31,8 @@ export type LongJob =
   | { jobType: 'craft'; stopped: boolean; last: number; workUid: number }
   | { jobType: 'reading'; stopped: boolean; last: number; bookUid: number; elapsed: number; duration: number }
   | {
-      jobType: 'pry';
+      jobType: 'forceDoor';
+      method: string;
       stopped: boolean;
       last: number;
       entityUid: number;
@@ -65,8 +66,8 @@ const restActionRefusal = (job: LongJob | undefined): string | undefined => {
       return 'Stop crafting first';
     case 'reading':
       return 'Stop reading first';
-    case 'pry':
-      return 'Stop prying first';
+    case 'forceDoor':
+      return 'Stop forcing the door first';
     default:
       return undefined;
   }
@@ -93,10 +94,10 @@ export interface ReadingActionHooks {
   duration: (bookUid: number) => number | undefined;
   finish: (bookUid: number) => void;
 }
-export interface PryActionHooks {
-  validate: (entityUid: number, toolUid: number) => string | undefined;
-  strike: (entityUid: number, toolUid: number, time: number) => void;
-  finish: (entityUid: number, toolUid: number) => string | undefined;
+export interface DoorForcingHooks {
+  validate: (entityUid: number, toolUid: number, method: string) => string | undefined;
+  strike: (entityUid: number, toolUid: number, method: string, time: number) => void;
+  finish: (entityUid: number, toolUid: number, method: string) => string | undefined;
 }
 export interface TreatmentActionHooks {
   validate: (region: BodyRegion, itemUid: number, itemType: string) => string | undefined;
@@ -147,8 +148,10 @@ const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
   }
 };
 
-const validatePry = (job: Extract<LongJob, { jobType: 'pry' }>): void => {
+const validateForcing = (job: Extract<LongJob, { jobType: 'forceDoor' }>): void => {
   if (
+    typeof job.method !== 'string' ||
+    job.method.length === 0 ||
     !Number.isSafeInteger(job.entityUid) ||
     job.entityUid < 1 ||
     !Number.isSafeInteger(job.toolUid) ||
@@ -164,7 +167,7 @@ const validatePry = (job: Extract<LongJob, { jobType: 'pry' }>): void => {
     job.nextStrike <= job.elapsed ||
     job.nextStrike > job.elapsed + job.strikeInterval
   ) {
-    throw new Error('Invalid prying descriptor');
+    throw new Error('Invalid forcing descriptor');
   }
 };
 
@@ -226,8 +229,8 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
     case 'reading':
       validateReading(job);
       return;
-    case 'pry':
-      validatePry(job);
+    case 'forceDoor':
+      validateForcing(job);
       return;
     case 'treatment':
       validateTreatment(job);
@@ -251,7 +254,7 @@ export class LongActions {
   private current: LongJob | undefined;
   craft: CraftActionHooks | undefined;
   reading: ReadingActionHooks | undefined;
-  prying: PryActionHooks | undefined;
+  forcing: DoorForcingHooks | undefined;
   treatment: TreatmentActionHooks | undefined;
   notice: (text: string) => void = () => undefined;
   /**
@@ -272,11 +275,13 @@ export class LongActions {
    * bleeding player must still be able to treat the wound or make something to treat it (`DESIGN.md`, "Bleeding").
    */
   runsUncompressed(jobType: LongJob['jobType']): boolean {
-    return jobType === 'pry' || (RUN_WHILE_REFUSED.has(jobType) && this.sim.body.compressionRefusal !== undefined);
+    return (
+      jobType === 'forceDoor' || (RUN_WHILE_REFUSED.has(jobType) && this.sim.body.compressionRefusal !== undefined)
+    );
   }
   /** Drops to 1× for an uncompressed job, or asks for compression; returns why compression was refused. */
   private startTiming(jobType: LongJob['jobType']): string | undefined {
-    if (jobType === 'pry' || this.runsUncompressed(jobType)) {
+    if (jobType === 'forceDoor' || this.runsUncompressed(jobType)) {
       this.sim.compression.stop();
       this.sim.compression.snap();
       return undefined;
@@ -325,10 +330,10 @@ export class LongActions {
     if (state.job?.jobType === 'reading' && !this.reading?.owns(state.job.bookUid)) {
       throw new Error('Missing reading book');
     }
-    if (state.job?.jobType === 'pry') {
-      const reason = this.prying?.validate(state.job.entityUid, state.job.toolUid);
-      if (!this.prying || reason) {
-        throw new Error(reason ?? 'Missing prying action owner');
+    if (state.job?.jobType === 'forceDoor') {
+      const reason = this.forcing?.validate(state.job.entityUid, state.job.toolUid, state.job.method);
+      if (!this.forcing || reason) {
+        throw new Error(reason ?? 'Missing forcing action owner');
       }
     }
     if (state.job?.jobType === 'treatment') {
@@ -344,7 +349,7 @@ export class LongActions {
   /** A restored running action compresses up to its own cap, not the default. */
   private restoreCompressionCap(): void {
     const job = this.current;
-    if (job && !job.stopped && job.jobType !== 'pry' && this.sim.compression.active) {
+    if (job && !job.stopped && job.jobType !== 'forceDoor' && this.sim.compression.active) {
       this.sim.compressLongAction(job.jobType);
     }
   }
@@ -419,8 +424,8 @@ export class LongActions {
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
       return 'Stop reading first';
     }
-    if (this.current?.jobType === 'pry' && !this.current.stopped) {
-      return 'Stop prying first';
+    if (this.current?.jobType === 'forceDoor' && !this.current.stopped) {
+      return 'Stop forcing the door first';
     }
     const reason = this.craft.admit(plan);
     if (reason) {
@@ -460,32 +465,45 @@ export class LongActions {
     }
     return undefined;
   }
-  beginPrying(entityUid: number, toolUid: number, duration: number, strikeInterval: number): string | undefined {
+  beginForcing(
+    entityUid: number,
+    toolUid: number,
+    { method, duration, strikeInterval }: { method: string; duration: number; strikeInterval: number },
+  ): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
     if (actionRefusal) {
       return actionRefusal;
     }
-    if (!this.prying) {
-      return 'Missing prying action owner';
+    if (!this.forcing) {
+      return 'Missing forcing action owner';
     }
     if (this.current && !this.current.stopped) {
       return 'Stop the current action first';
     }
-    const reason = this.prying.validate(entityUid, toolUid);
+    const reason = this.forcing.validate(entityUid, toolUid, method);
     if (reason) {
       return reason;
     }
-    if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(strikeInterval) || strikeInterval <= 0) {
-      return 'Invalid prying time';
+    if (
+      !(method && Number.isFinite(duration)) ||
+      duration <= 0 ||
+      !Number.isFinite(strikeInterval) ||
+      strikeInterval <= 0
+    ) {
+      return 'Invalid forcing time';
     }
     const previous =
-      this.current?.jobType === 'pry' && this.current.entityUid === entityUid && this.current.toolUid === toolUid
+      this.current?.jobType === 'forceDoor' &&
+      this.current.entityUid === entityUid &&
+      this.current.toolUid === toolUid &&
+      this.current.method === method
         ? this.current
         : undefined;
     this.sim.compression.stop();
     this.sim.compression.snap();
     this.current = {
-      jobType: 'pry',
+      jobType: 'forceDoor',
+      method,
       stopped: false,
       last: this.sim.time,
       entityUid,
@@ -580,8 +598,8 @@ export class LongActions {
     if (this.current?.jobType === 'treatment' && !this.current.stopped) {
       return 'Stop treatment first';
     }
-    if (this.current?.jobType === 'pry' && !this.current.stopped) {
-      return 'Stop prying first';
+    if (this.current?.jobType === 'forceDoor' && !this.current.stopped) {
+      return 'Stop forcing the door first';
     }
     if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
       return 'Another craft is active';
@@ -698,7 +716,7 @@ export class LongActions {
       return;
     }
     const reason = this.sim.compression.interruption;
-    if (job.jobType === 'pry' || this.runsUncompressed(job.jobType)) {
+    if (job.jobType === 'forceDoor' || this.runsUncompressed(job.jobType)) {
       if (reason !== undefined) {
         this.stopUncompressed(job, reason);
       }
@@ -728,8 +746,10 @@ export class LongActions {
         return this.craft ? this.craft.validate(job.workUid) : 'Missing craft action owner';
       case 'reading':
         return this.reading ? this.reading.validate(job.bookUid) : 'Missing reading action owner';
-      case 'pry':
-        return this.prying ? this.prying.validate(job.entityUid, job.toolUid) : 'Missing prying action owner';
+      case 'forceDoor':
+        return this.forcing
+          ? this.forcing.validate(job.entityUid, job.toolUid, job.method)
+          : 'Missing forcing action owner';
       case 'treatment':
         return this.treatment
           ? this.treatment.validate(job.region, job.itemUid, job.itemType)
@@ -739,12 +759,12 @@ export class LongActions {
     }
   }
   private advanceJob(job: LongJob, seconds: number, fromTime: number): boolean {
-    if (job.jobType === 'pry') {
+    if (job.jobType === 'forceDoor') {
       const previous = job.elapsed;
       job.elapsed = Math.min(job.duration, previous + seconds);
       while (job.nextStrike <= job.elapsed) {
         const time = fromTime + (job.nextStrike - previous);
-        this.prying!.strike(job.entityUid, job.toolUid, time);
+        this.forcing!.strike(job.entityUid, job.toolUid, job.method, time);
         job.nextStrike += job.strikeInterval;
       }
       return job.elapsed === job.duration;
@@ -783,8 +803,8 @@ export class LongActions {
         this.craft!.finish(job.workUid);
       } else if (job.jobType === 'reading') {
         this.reading!.finish(job.bookUid);
-      } else if (job.jobType === 'pry') {
-        const reason = this.prying!.finish(job.entityUid, job.toolUid);
+      } else if (job.jobType === 'forceDoor') {
+        const reason = this.forcing!.finish(job.entityUid, job.toolUid, job.method);
         if (reason) {
           throw new Error(reason);
         }
@@ -831,7 +851,7 @@ export class LongActions {
     const fromTime = job.last;
     const simSecondsElapsed = Math.max(0, time - fromTime);
     const elapsed =
-      job.jobType === 'pry' || job.jobType === 'treatment'
+      job.jobType === 'forceDoor' || job.jobType === 'treatment'
         ? simSecondsElapsed
         : simSecondsElapsed * this.sim.clock.ratio;
     job.last = time;

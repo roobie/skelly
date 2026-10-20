@@ -14,7 +14,7 @@ read_if:
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you author or change the day cycle, the sky looks or the weather fog tuning
   - you change the debug kit ownership view
-  - you change settlement building eligibility, city collections or benchmark candidate admission
+  - you change settlement building eligibility, city collections, building door resistance or benchmark candidate admission
 ---
 
 # Content sections and recipes
@@ -271,6 +271,8 @@ window hole. See `src/content/base/gauntlet-city-doors.libsonnet`, `slot`,
 and `deadvox/docs/aftermath.md`, "Door variants".
 
 ### City building types
+
+Flimsy and burglary-safe doors are content choices per building, so a building's intended resistance need not change the forcing mechanism. See `src/content/base/furniture.jsonnet`, `woodDoor`, and `src/core/schema.ts`, `FurnitureSchema`.
 
 An authored collection owns prevalence and guarantees; each building owns its fit. Keeping those policies separate lets a mod tune prevalence without changing geometry and prevents collection membership from forcing an unsuitable building into a settlement. Eligibility uses content-named settlement kinds, not engine enums, and reuses the building's authored footprint for plot fit rather than maintaining a second size that can disagree with its geometry. Templates and assemblies follow the same admission rule. See `src/core/schema.ts`, `BuildingEligibilitySchema`, `TemplateSchema`, `MapAssemblySchema` and `MapPoolSchema`, `src/core/settlementPools.ts`, `eligibilityExclusion`, and `src/core/cityPlan.ts`, `cityGridOf`.
 

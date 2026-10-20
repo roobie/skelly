@@ -22,6 +22,7 @@ export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): Ci
     {
       source: 'owned-cycle.json',
       data: {
+        doorMaterials: [{ id: 'wood', methods: [] }],
         furniture: [
           { id: 'cycle_stock', name: 'Cycle stock', size: [1, 1, 1], color: '#aaaaaa', solid: false },
           {
@@ -29,7 +30,7 @@ export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): Ci
             name: 'Cycle door',
             size: [1, 1, 1],
             color: '#aaaaaa',
-            door: { handlingSimSeconds: 1 },
+            door: { material: 'wood', methods: {}, handlingSimSeconds: 1 },
           },
         ],
         items: ['a', 'b'].map((id) => ({

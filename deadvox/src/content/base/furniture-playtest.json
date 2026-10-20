@@ -305,6 +305,8 @@
       "color": "#666c70",
       "door": {
         "handlingSimSeconds": 1.2,
+        "material": "steel",
+        "methods": {},
         "openNoise": {
           "sound": "door_roller_open"
         }

@@ -2721,7 +2721,7 @@ try {
     return { hint, job: r.session.sim.actions.job, doorUid: door.uid };
   });
   assert.ok(pryPreview.hint.toLowerCase().includes('crowbar'), 'the interaction hint names its carried prying tool');
-  assert.equal(pryPreview.job?.jobType, 'pry', 'the door interaction starts the owned prying action');
+  assert.equal(pryPreview.job?.jobType, 'forceDoor', 'the door interaction starts the owned prying action');
   await page.waitForFunction(() => document.querySelector('#handling').hidden);
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.handling = true;
@@ -2736,7 +2736,7 @@ try {
     sim.frame(1);
     sim.actions.stop();
     const { job } = sim.actions;
-    if (job?.jobType !== 'pry') {
+    if (job?.jobType !== 'forceDoor') {
       throw new Error('Stopping the pry lost its progress');
     }
     return job.elapsed;
@@ -2761,7 +2761,7 @@ try {
       Math.abs(bounds.left + bounds.width / 2 - innerWidth / 2) < 2 &&
       Math.abs(bounds.top + bounds.height / 2 - innerHeight / 2) < 2;
     return (
-      r.session.sim.actions.job?.jobType === 'pry' &&
+      r.session.sim.actions.job?.jobType === 'forceDoor' &&
       !root.hidden &&
       gauge?.querySelector('.activity-progress-value') &&
       Number(gauge.getAttribute('aria-valuenow')) > 0 &&
@@ -2903,7 +2903,7 @@ try {
     assert.equal(pryAction.targetUid, toolDoor.uid, 'real F input targets the locked door with its tool');
     assert.equal(
       pryAction.job,
-      'pry',
+      'forceDoor',
       `F starts the available locked-door prying action: ${JSON.stringify(pryAction)}`,
     );
     await waitForSimulation(
@@ -2921,14 +2921,14 @@ try {
     );
     assert.equal(
       await lockedPage.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job?.jobType),
-      'pry',
+      'forceDoor',
       'the prying action remains active until interrupted',
     );
     const interruptionAt = await lockedPage.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const { session } = r;
       const { job } = session.sim.actions;
-      if (job?.jobType !== 'pry') {
+      if (job?.jobType !== 'forceDoor') {
         throw new Error('The carried-tool pry disappeared before interruption');
       }
       r.session.sim.emit({ kind: 'interrupt', reason: 'You hear something outside' });
@@ -2953,7 +2953,7 @@ try {
         notice: r.getNotice(),
       };
     });
-    assert.equal(interruptedPry.job?.jobType, 'pry', 'an interruption keeps the prying job for resumption');
+    assert.equal(interruptedPry.job?.jobType, 'forceDoor', 'an interruption keeps the prying job for resumption');
     assert.equal(interruptedPry.job?.stopped, true, 'an interruption stops prying without discarding its cursor');
     assert.ok(interruptedPry.job?.elapsed >= interruptionAt.elapsed, 'interruption time does not erase pry progress');
     assert.equal(interruptedPry.inputLocked, false, 'an interrupted prying action does not lock movement');

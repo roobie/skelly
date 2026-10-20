@@ -178,14 +178,14 @@ describe('item wear', () => {
     const { inventory } = wearing('jeans');
     const sim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
     let strikes = 0;
-    sim.actions.prying = {
+    sim.actions.forcing = {
       validate: () => undefined,
       strike: () => {
         strikes += 1;
       },
       finish: () => undefined,
     };
-    expect(sim.actions.beginPrying(1, 2, 10, 1)).toBeUndefined();
+    expect(sim.actions.beginForcing(1, 2, { method: 'fixture', duration: 10, strikeInterval: 1 })).toBeUndefined();
     sim.expose(puddle);
     expect(sim.actions.resume()).toBe(tuning.exposureRefusal);
 
