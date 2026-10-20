@@ -1,0 +1,40 @@
+name: engine
+
+# The import edges span every package, so the filter names all of packages/. Markdown-only
+# changes skip this workflow.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'package-lock.json'
+      - '!**/*.md'
+      - '.github/workflows/engine.yml'
+  pull_request:
+    paths:
+      - 'packages/**'
+      - 'package-lock.json'
+      - '!**/*.md'
+      - '.github/workflows/engine.yml'
+
+# PR updates replace this PR's checks; main/manual groups always remain unique.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/engine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ../..
+      - run: npm run typecheck
+      - run: npm test

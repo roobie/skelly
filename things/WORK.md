@@ -12,44 +12,30 @@ a gun authoring tool that together replace `gungen/`. Delete this file when gung
 
 ## Starting facts
 
-What the engine is, from reading its module headers and exports:
+Why each boundary matters, and where it is checked:
 
-- `packages/engine/` is a domain-agnostic parametric assembly framework. A `Domain` supplies part
-  families, units, palette and rules as data, and the engine supplies the rest: solids and
-  collision geometry, meshing and revolve, parts, ports and templates, resolving, rules and
-  validation, seeded generation, design persistence and GLB export. Its three.js scene lives
-  above it, in `packages/tool-ui`.
-- Only gungen imports it; deadvox and mobgen do not. It has no tests of its own, so gungen's
-  suite is what exercises it.
-- Its package exports each layer folder (`foundation`, `shapes`, `assembly`, `export`), and
-  consumers deep-import individual files; nothing marks a public API. Each layer imports only
-  itself and the ones before it, which `gungen/test/engineImportBoundary.test.ts`,
-  `engineLayers`, enforces.
-- A search for gun vocabulary in it finds none.
-- Material in it is appearance only: a material id maps to a color. Density and mass are
-  computed inside gungen (`gungen/src/gun/attachmentMass.ts`, with sourced density tables),
-  and deadvox item weights are typed by hand in content JSON.
-- Deadvox's model schema (`packages/deadvox/src/core/schema.ts`, `ModelSchema`) mixes neutral fields
-  with firearm ones, and gungen's output is tied to it by one root contract test
-  (`test/gungen-deadvox-contract.test.mjs`) rather than a shared schema.
-- Gungen's viewer mixes generic parts (parameter panel, camera and URL state, design editor)
-  with gun-specific ones (ammo, cycle and magazine views); the split is judged from file
-  names and has not been read through.
+- The engine stays domain-neutral so that each consumer can change its own data and rules
+  without the engine knowing; the neutral-name check is `packages/engine/test/engineImportBoundary.test.ts`,
+  `forbiddenDomainIdentifiers`.
+- Import edges between packages are enforced by `packages/engine/test/engineImportBoundary.test.ts`,
+  `packageEdges`. Deadvox must not import the engine, so the game's dependency graph stays free
+  of the engine's geometry (see `things/WORK.md`, "Decisions").
+- Deadvox's model schema mixes neutral and firearm fields, which is why the neutral envelope
+  moves into `thing-core`: `packages/deadvox/src/core/schema.ts`, `ModelSchema`.
+- Gungen's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
+  "gungen exports satisfy deadvox model validation".
 
 ## To check before relying on it
 
 - Whether gun vocabulary hides in the engine's neutral names, such as the palette's
   archetype finishes and the appearance context's variant.
+- Which parts of gungen's viewer are generic and which are gun-specific; settled when phase 4
+  moves gun code onto the shared packages.
 - Whether `PartFamily` and `ParamSpec` already work as family builders for non-gun things.
 - Whether single-part things fit the assembly framework or need a lighter path.
 - How validation, collision and the viewer rebuild scale with part count; no benchmark exists,
   so measure before optimising.
-- What the engine needs tested on its own, and the smallest benchmark set to add before the
-  thing tool adds load.
-- Whether the layer check should cover the packages above the engine. It covers the engine's
-  own layers and rejects an engine import of `packages/tool-ui`; nothing yet stops
-  `thing-core` or a tool from importing a gun module, or a package from importing against
-  the order below.
+- The smallest benchmark set to add before the thing tool adds load.
 
 ## Aim
 
@@ -64,6 +50,12 @@ Settled:
 
 - A shared core serves two tools, a thing authoring tool and a gun authoring tool; the gun
   tool succeeds gungen, and gungen is deleted at the end.
+- No package under `packages/` imports from gungen, because gungen is deleted at the end.
+- `thing-core` imports no package but the engine, so the core stays free of gun modules and
+  of the tools above it. Domain packs extend the schema without the core knowing.
+- Deadvox imports nothing from the engine. The game reads exported per-part mass and
+  centre-of-mass numbers and never loads the engine's shapes, so the engine's geometry stays
+  out of the game's dependency graph.
 - The model schema is one neutral schema owned by `thing-core`; domain packs extend it.
 - The directory structure is fixed before any new feature work.
 - Packages live in the top-level `packages/` directory, each a workspace of the root
