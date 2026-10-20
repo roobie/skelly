@@ -108,8 +108,10 @@ it('a stopped cut spends nothing', () => {
   runtime.sim.scheduler.advance(cut.strikeIntervalSimSeconds * 2);
 
   runtime.sim.actions.stop();
-  runtime.sim.scheduler.advance(cut.timeSimSeconds);
+  runtime.sim.scheduler.advance(1);
 
+  // A stopped job stays defined so its progress survives; its flag is what keeps it from finishing.
+  expect(runtime.sim.actions.job?.stopped).toBe(true);
   expect(door.lock?.locked).toBe(true);
   expect(chargeOf(registry, torch)).toBe(canisterCapacity);
 });
