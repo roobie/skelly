@@ -3,6 +3,7 @@ read_if:
   - you're changing an area with a lesson below
   - you're troubleshooting an input, browser, save, rendering or resource-lifetime problem
   - you're changing new-world startup, gesture-gated pointer capture or browser launch probes
+  - you're changing scenario plan admission or its boundary with world construction
   - you're changing save-worker timeout policy or interpreting its request diagnostics
   - you're sizing browser-stage budgets after adding pixel captures
   - you're changing sparse vehicle meshing or investigating startup CPU cost
@@ -24,6 +25,8 @@ Before gameplay or debug commands, browser stages must wait for world readiness 
 Request pointer capture before constructing a new world: synchronous setup can outlast the browser's transient user activation even within the click handler. Let the gesture handler return before setup so native capture can settle without competing with construction. Repeated acceptance while that work is pending must not create another survivor. A ready world with refused capture remains paused, so a debug route's missing output does not imply loading is still pending. See `src/main.ts`, `saveController.setNewWorldLauncher`, `src/game/input.ts`, `requestInputLock`, `src/ui/saveController.ts`, `confirmNewWorld`, and `test/browser/stairs.mjs`.
 
 Persistence probes must wait for controller entry before touching the bound session: accepting a launch gesture does not mean construction or checkpoint binding has finished. See `src/ui/saveController.ts`, `isEntered`, and `test/browser/save-storage.mjs`, `testTitleAndAutosave`.
+
+Scenario plans depend on immutable admitted definitions, so proving the same plan again during world construction adds delay without strengthening admission. Invalid plans must be refused while the whole content source can still be rejected. See `src/core/content.ts`, `checkScenarios`, `src/core/gauntlet.ts`, `GauntletSite`, and `test/scenarioAdmission.test.ts`, "rejects bounds that cannot preserve the reserved apron under every service turn".
 
 Construction-route probes share an immutable site, so a loaded chunk's predecessor furniture columns need no preparation on later body-cell queries. Repeating their admission checks for every sampled cell adds work without changing the route proof. See `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`, and `test/scenarioCertificate.test.ts`, "prepares furniture columns only on the first route probe into a chunk".
 

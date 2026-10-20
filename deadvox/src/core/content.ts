@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import type { BundleAdmission } from './bundleAdmission.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
@@ -1407,17 +1408,20 @@ export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is
- * skipped. Then references are checked; files with broken references are dropped
- * and the rest merged again, until what's left is consistent.
+ * skipped. Unless a matching build stamp already proves this unmodified input,
+ * references are checked; broken files are dropped and the rest merged again
+ * until what's left is consistent.
  */
 export const buildRegistry = (
   sources: readonly ContentSource[],
+  { bundle, modsSelected = false }: { bundle?: BundleAdmission | undefined; modsSelected?: boolean } = {},
 ): {
   registry: Registry;
   issues: ContentIssue[];
   /** Winning origins, including ordered overrides and whole-file removal. */
   origins: ReadonlyMap<string, Origin>;
 } => {
+  const trusted = !modsSelected && bundle?.matches(sources) === true;
   const issues: ContentIssue[] = [];
   let files: { source: string; file: ContentFile }[] = [];
   for (const src of sources) {
@@ -1429,7 +1433,7 @@ export const buildRegistry = (
   }
   for (;;) {
     const { registry, origins } = merge(files);
-    const broken = referenceIssues(registry, origins);
+    const broken = trusted ? [] : referenceIssues(registry, origins);
     if (broken.length === 0) {
       return { registry, issues, origins };
     }

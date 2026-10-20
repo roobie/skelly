@@ -1058,7 +1058,7 @@
             }
           ],
           "minimumOpenDescents": 2,
-          "spawn": [22, 41, 14],
+          "spawn": [22, 41, 4],
           "template": "gauntlet_start"
         },
         "stops": [

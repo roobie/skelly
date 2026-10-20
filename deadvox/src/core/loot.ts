@@ -193,7 +193,11 @@ export interface WeightedCandidate {
   readonly fitted?: Readonly<Record<string, string>> | undefined;
 }
 
-const admittedCandidates = (registry: Registry, point: LootSpawnPoint, candidates: readonly WeightedCandidate[]) =>
+export const admittedCandidates = (
+  registry: Registry,
+  point: LootSpawnPoint,
+  candidates: readonly WeightedCandidate[],
+) =>
   candidates.filter(
     (candidate) =>
       candidate.type === undefined ||

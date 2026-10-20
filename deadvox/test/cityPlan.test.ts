@@ -14,7 +14,6 @@ import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite, gauntletPopulation } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
-import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
 import { siteGenerationOf, sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import {
   cellsOf,
@@ -217,21 +216,17 @@ describe('one finished city plan', () => {
       ]),
     };
     const populationOf = (population: Partial<ScenarioDef['population']>) => {
-      const site = new GauntletSite({
+      const scenario = { ...bundled, population: { ...bundled.population, ...population } };
+      const plan = buildCityPlan({
         seed: 73,
         registry: cityRegistry,
-        scale,
-        scenario: { ...bundled, population: { ...bundled.population, ...population } },
+        floor,
+        grid: cityGridOf(cityRegistry, scenario.city),
+        scenario,
       });
-      const spawns: ZombieSpawn[] = [];
-      const hordes: HordeSpawn[] = [];
-      for (let cz = toChunk(site.bounds.z0); cz <= toChunk(site.bounds.z1); cz++) {
-        for (let cx = toChunk(site.bounds.x0); cx <= toChunk(site.bounds.x1); cx++) {
-          spawns.push(...site.zombiesIn(cx, cz));
-          hordes.push(...site.hordesIn(cx, cz));
-        }
-      }
-      return { spawns, hordes };
+      const site = new CitySite(73, cityRegistry, scale, plan);
+      const { zombies, hordes } = gauntletPopulation(site, scenario);
+      return { spawns: [...zombies.values()].flat(), hordes: [...hordes.values()].flat() };
     };
 
     it(

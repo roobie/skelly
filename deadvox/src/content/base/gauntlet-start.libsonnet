@@ -141,7 +141,7 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
 {
   loot: rooms.loot,
   start: {
-    template: 'gauntlet_start', cell: [0, 0], spawn: [22, roofY + 1, 14], minimumOpenDescents: 2,
+    template: 'gauntlet_start', cell: [0, 0], spawn: [22, roofY + 1, 4], minimumOpenDescents: 2,
     descents: [
       { kind: 'ladder', ladder: [39, 1, 10], upper: [36, roofY + 1, 11], lower: [41, 1, 11] },
       { kind: 'stairs', hatch: [10, roofY, 5], upper: [18, roofY + 1, 6], lower: [14, 1, 1] },
@@ -182,6 +182,12 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
     piece('gauntlet_start_room_air_crate', [14, 7, 8],
       [roomAir, roomAir, roomAir, roomAir, roomAir, roomAir, roomAir],
       [['RRRRRRRRRRRR..', 'RRRRRRRRRRRR..'] + roomClaims[2:] for y in std.range(0, 6)]),
+    piece('gauntlet_start_parapet_west', [14, 2, 1],
+      [['WWWWWWWWWWWWWW'], ['WWWWWWWWWWWWWW']], [['SSSSSSSSSSSSSS'], ['SSSSSSSSSSSSSS']]),
+    piece('gauntlet_start_parapet_lookout', [3, 2, 1],
+      [['==='], ['...']], [['SSS'], ['RRR']]),
+    piece('gauntlet_start_parapet_east', [13, 2, 1],
+      [['WWWWWWWWWWWWW'], ['WWWWWWWWWWWWW']], [['SSSSSSSSSSSSS'], ['SSSSSSSSSSSSS']]),
     piece('gauntlet_start_parapet', [30, 2, 1],
       [['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'], ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']],
       [['SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS'], ['SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS']]),
@@ -216,7 +222,9 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
       slot('hatch', 'gauntlet_start_hatch', [10, roofY, 5], [6, 1, 2]),
       slot('awning', 'gauntlet_start_awning', [0, 1, 5], [6, 2, 10]),
       slot('awning_top_air', 'gauntlet_start_awning_top_air', [0, 43, 0], [6, 2, 26]),
-      slot('roof_parapet_n', 'gauntlet_start_parapet', [7, 41, 2], [30, 2, 1]),
+      slot('roof_parapet_n_west', 'gauntlet_start_parapet_west', [7, 41, 2], [14, 2, 1]),
+      slot('roof_parapet_n_lookout', 'gauntlet_start_parapet_lookout', [21, 41, 2], [3, 2, 1]),
+      slot('roof_parapet_n_east', 'gauntlet_start_parapet_east', [24, 41, 2], [13, 2, 1]),
       slot('roof_parapet_s', 'gauntlet_start_parapet', [7, 41, 25], [30, 2, 1]),
       slot('roof_vent_ne', 'gauntlet_roof_vent', [30, 41, 4], [4, 4, 4]),
       slot('roof_ac_sw', 'gauntlet_roof_ac', [8, 41, 19], [4, 4, 4]),

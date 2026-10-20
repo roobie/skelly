@@ -197,14 +197,44 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_start_parapet",
+                "id": "gauntlet_start_parapet_west",
                 "kind": "piece"
               },
               "weight": 1
             }
           ],
-          "id": "roof_parapet_n",
-          "size": [30, 2, 1],
+          "id": "roof_parapet_n_west",
+          "size": [14, 2, 1],
+          "turn": 0
+        },
+        {
+          "at": [21, 41, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_parapet_lookout",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "roof_parapet_n_lookout",
+          "size": [3, 2, 1],
+          "turn": 0
+        },
+        {
+          "at": [24, 41, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_start_parapet_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "roof_parapet_n_east",
+          "size": [13, 2, 1],
           "turn": 0
         },
         {
@@ -6944,6 +6974,135 @@
       },
       "ports": [],
       "size": [14, 7, 8],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_parapet_west",
+      "layers": [["WWWWWWWWWWWWWW"], ["WWWWWWWWWWWWWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSSSSSSSSSSSSS"], ["SSSSSSSSSSSSSS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "H": {
+          "facing": "e",
+          "furniture": "ladder"
+        },
+        "T": {
+          "furniture": "gauntlet_start_hatch"
+        },
+        "W": {
+          "furniture": "gauntlet_roof_parapet"
+        },
+        "r": {
+          "material": "roofing_slab",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [14, 2, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_parapet_lookout",
+      "layers": [["==="], ["..."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["RRR"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "H": {
+          "facing": "e",
+          "furniture": "ladder"
+        },
+        "T": {
+          "furniture": "gauntlet_start_hatch"
+        },
+        "W": {
+          "furniture": "gauntlet_roof_parapet"
+        },
+        "r": {
+          "material": "roofing_slab",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [3, 2, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_start_parapet_east",
+      "layers": [["WWWWWWWWWWWWW"], ["WWWWWWWWWWWWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSSSSSSSSSSSS"], ["SSSSSSSSSSSSS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "H": {
+          "facing": "e",
+          "furniture": "ladder"
+        },
+        "T": {
+          "furniture": "gauntlet_start_hatch"
+        },
+        "W": {
+          "furniture": "gauntlet_roof_parapet"
+        },
+        "r": {
+          "material": "roofing_slab",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [13, 2, 1],
       "style": "brick_townhouse"
     },
     {

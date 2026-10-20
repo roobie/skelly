@@ -2490,21 +2490,6 @@
   ],
   "items": [
     {
-      "category": "tool",
-      "description": "A small key stamped ARMOURY.",
-      "economy": {
-        "tiers": ["Tier1"],
-        "usage": ["Hunting"]
-      },
-      "id": "gauntlet_police_armoury_key",
-      "key": {
-        "lock": "gauntlet_police_armoury"
-      },
-      "name": "Police armoury key",
-      "size": [1, 1],
-      "weight": 10
-    },
-    {
       "category": "note",
       "economy": {
         "tiers": ["Tier1"],
@@ -2557,16 +2542,6 @@
     {
       "entries": [
         {
-          "item": "gauntlet_police_armoury_key",
-          "weight": 1
-        }
-      ],
-      "id": "gauntlet_police_office_key",
-      "rolls": [1, 1]
-    },
-    {
-      "entries": [
-        {
           "item": "canned_beans",
           "weight": 4
         },
@@ -2609,49 +2584,6 @@
       ],
       "id": "gauntlet_civilian_guns",
       "rolls": [1, 1]
-    },
-    {
-      "entries": [
-        {
-          "condition": [0.5, 0.90000000000000002],
-          "item": "revolver_357",
-          "weight": 2
-        },
-        {
-          "condition": [0.5, 0.90000000000000002],
-          "item": "pump_shotgun",
-          "weight": 1
-        },
-        {
-          "nothing": true,
-          "weight": 1
-        }
-      ],
-      "id": "gauntlet_police_sidearms",
-      "rolls": [1, 1]
-    },
-    {
-      "entries": [
-        {
-          "count": [3, 12],
-          "item": "cartridge_357_h_magnum",
-          "weight": 3
-        },
-        {
-          "item": "cartridge_box_357_h_magnum",
-          "weight": 2
-        },
-        {
-          "item": "shotshell_box",
-          "weight": 1
-        },
-        {
-          "nothing": true,
-          "weight": 2
-        }
-      ],
-      "id": "gauntlet_police_ammunition",
-      "rolls": [1, 2]
     },
     {
       "entries": [
@@ -2883,20 +2815,6 @@
       ],
       "id": "gauntlet_searched",
       "rolls": [1, 2]
-    },
-    {
-      "entries": [
-        {
-          "table": "gauntlet_police_sidearms",
-          "weight": 1
-        },
-        {
-          "table": "gauntlet_police_ammunition",
-          "weight": 2
-        }
-      ],
-      "id": "gauntlet_police_armoury_stock",
-      "rolls": [2, 3]
     },
     {
       "entries": [
@@ -13234,7 +13152,7 @@
         "usage": ["Hunting"]
       },
       "ports": [],
-      "size": [38, 8, 30],
+      "size": [38, 12, 30],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -13248,7 +13166,7 @@
             }
           ],
           "id": "body",
-          "size": [38, 8, 30],
+          "size": [38, 12, 30],
           "turn": 0
         },
         {
@@ -13897,7 +13815,7 @@
         "usage": ["Hunting"]
       },
       "ports": [],
-      "size": [54, 8, 43],
+      "size": [54, 12, 43],
       "slots": [
         {
           "at": [8, 0, 4],
@@ -13911,7 +13829,7 @@
             }
           ],
           "id": "building",
-          "size": [38, 8, 30],
+          "size": [38, 12, 30],
           "turn": 2
         },
         {
@@ -29044,14 +28962,14 @@
       "id": "gauntlet_rural_police_station_body",
       "layers": [
         [
-          "##################################gggg",
-          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
-          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
-          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
-          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
-          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
-          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
-          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "##################################kkkk",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#kkkk",
           "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#####",
           "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
           "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
@@ -29077,8 +28995,8 @@
         ],
         [
           "##############################HH##....",
-          "#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#....",
-          "#.......#uu....#......FF.#JJJ.vvv#....",
+          "#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#j...",
+          "#.......#uu....#......FF.#JJJ.vvv#j...",
           "#.......#......#.........#.......#....",
           "#.......#......#..TTTT...#.......E....",
           "#.......#......#..TTTT...#.......E....",
@@ -29087,8 +29005,8 @@
           "######DD##DD#######DD######DD#########",
           "#........#...............#...#.....tt#",
           "#..WWW...#...............#...#.....tt#",
-          "#..WWW...O..CCC..WWW.....O...Q...BBBB#",
-          "#........O..CCC..WWW.....O...Q...BBBB#",
+          "#..WWW...O..WWW..WWW.....O...Q...BBBB#",
+          "#........O..WWW..WWW.....O...Q...BBBB#",
           "#........#...............#...#.......#",
           "#........#...............#...#########",
           "#........#...............#...#.....SS#",
@@ -29101,16 +29019,16 @@
           "#........#..#............#...O..VVVV.#",
           "#........#..#............#...O..VVVV.#",
           "##########..#............##UU#..VVVV.#",
-          "#...........O..WWW.......#...#..VVVV.#",
-          "#.ssss......O..WWW.......#...#..VVVV.#",
+          "#...........O..WWW.......#M..#..VVVV.#",
+          "#.ssss......O..WWW.......#M..#..VVVV.#",
           "#.ssss......#............#...#.......#",
           "#...........#............#AA.#.......#",
           "##########DD##################GGGGGG##"
         ],
         [
           "##############################HH##....",
-          "#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#....",
-          "#.......#uu....#......FF.#JJJ.vvv#....",
+          "#ff.ff..#uu..bb#hh.KK.FF.#JJJ.vvv#j...",
+          "#.......#uu....#......FF.#JJJ.vvv#j...",
           "#.......#......#.........#.......#....",
           "#.......#......#..TTTT...#.......E....",
           "#.......#......#..TTTT...#.......E....",
@@ -29119,8 +29037,8 @@
           "######DD##DD#######DD######DD#########",
           "#........#...............#...#.....tt#",
           "#..WWW...#...............#...#.....tt#",
-          "#..WWW...O..CCC..WWW.....O...Q.......#",
-          "#........O..CCC..WWW.....O...Q.......#",
+          "#..WWW...O..WWW..WWW.....O...Q.......#",
+          "#........O..WWW..WWW.....O...Q.......#",
           "#........#...............#...#.......#",
           "#........#...............#...#########",
           "#........#...............#...#.....SS#",
@@ -29133,16 +29051,16 @@
           "#........#..#............#...O..VVVV.#",
           "#........#..#............#...O..VVVV.#",
           "##########..#............##UU#..VVVV.#",
-          "#...........O..WWW.......#...#..VVVV.#",
-          "#.ssss......O..WWW.......#...#..VVVV.#",
+          "#...........O..WWW.......#M..#..VVVV.#",
+          "#.ssss......O..WWW.......#M..#..VVVV.#",
           "#.ssss......#............#...#.......#",
           "#...........#............#AA.#.......#",
           "##########DD##################GGGGGG##"
         ],
         [
           "###===####===####===#===####===###....",
-          "#ff.ff..#......#......FF.#JJJ....#....",
-          "#.......#......#......FF.#JJJ....#....",
+          "#ff.ff..#......#......FF.#JJJ....#j...",
+          "#.......#......#......FF.#JJJ....#j...",
           "#.......#......#.........#.......#....",
           "#.......#......#.........#.......E....",
           "#.......#......#.........#.......E....",
@@ -29165,16 +29083,16 @@
           "#........#..#............#...O..VVVV.#",
           "#........#..#............#...O..VVVV.#",
           "##########..#............##UU#..VVVV.#",
-          "#...........O..rr........#...#..VVVV.#",
-          "#...........O............#...#..VVVV.#",
+          "#...........O..rr........#M..#..VVVV.#",
+          "#...........O............#M..#..VVVV.#",
           "#...........#............#...#.......#",
           "#...........#............#AA.#.......#",
           "##===#####DD##===###===###==##GGGGGG=#"
         ],
         [
           "###...####...####...#...####...###....",
-          "#ff.ff..#......#......FF.#JJJ....#....",
-          "#.......#......#......FF.#JJJ....#....",
+          "#ff.ff..#......#......FF.#JJJ....#j...",
+          "#.......#......#......FF.#JJJ....#j...",
           "#.......#......#.........#.......#....",
           "#.......#......#.........#.......E....",
           "#.......#......#.........#.......E....",
@@ -29197,16 +29115,16 @@
           "#........#..#............#...O..VVVV.#",
           "#........#..#............#...O..VVVV.#",
           "##########..#............##UU#..VVVV.#",
-          "#...........O............#...#..VVVV.#",
-          "#...........O............#...#..VVVV.#",
+          "#...........O............#M..#..VVVV.#",
+          "#...........O............#M..#..VVVV.#",
           "#...........#............#...#.......#",
           "#...........#............#AA.#.......#",
           "##...#####DD##...###...###..##GGGGGG.#"
         ],
         [
           "##################################....",
-          "#.......#......#.........#JJJ....#....",
-          "#.......#......#.........#JJJ....#....",
+          "#.......#......#.........#JJJ....#j...",
+          "#.......#......#.........#JJJ....#j...",
           "#.......#......#.........#.......#....",
           "#.......#......#.........#.......#....",
           "#.......#......#.........#.......#....",
@@ -29237,8 +29155,8 @@
         ],
         [
           "##################################....",
-          "#.......#......#.........#JJJ....#....",
-          "#.......#......#.........#JJJ....#....",
+          "#.......#......#.........#JJJ....#j...",
+          "#.......#......#.........#JJJ....#j...",
           "#.......#......#.........#.......#....",
           "#.......#......#.........#.......#....",
           "#.......#......#.........#.......#....",
@@ -29269,8 +29187,8 @@
         ],
         [
           "##################################gggg",
-          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
-          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#jggg",
+          "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#jggg",
           "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
           "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
           "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#gggg",
@@ -29298,6 +29216,134 @@
           "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
           "#kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk#",
           "######################################"
+        ],
+        [
+          "......................................",
+          "....................XXXX..............",
+          "....................XXXX..............",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................"
+        ],
+        [
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................"
+        ],
+        [
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................"
+        ],
+        [
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................",
+          "......................................"
         ]
       ],
       "lootContext": {
@@ -29307,14 +29353,14 @@
       "ownership": {
         "layers": [
           [
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -29340,8 +29386,8 @@
           ],
           [
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR",
-            "SSSRSSRRSSSRRSSSSSRSSRSSRSSSSRSSSSRRRR",
-            "SRRRRRRRSSSRRRRSRRRRRRSSRSSSSRSSSSRRRR",
+            "SSSRSSRRSSSRRSSSSSRSSRSSRSSSSRSSSSSRRR",
+            "SRRRRRRRSSSRRRRSRRRRRRSSRSSSSRSSSSSRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRSSSSRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRSSSSRRRSRRRRRRRSRRRR",
@@ -29364,16 +29410,16 @@
             "SRRRRR..RSRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
             "SRRRRR..RSRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
             "SSSSSSSSSSRRSRRRRRRRRRRRRSSSSSRRSSSSRS",
-            "SRRRRRRRRRRRSRRSSSRRRRRRRSRRRSRRSSSSRS",
-            "SRSSSSRRRRRRSRRSSSRRRRRRRSRRRSRRSSSSRS",
+            "SRRRRRRRRRRRSRRSSSRRRRRRRSSRRSRRSSSSRS",
+            "SRSSSSRRRRRRSRRSSSRRRRRRRSSRRSRRSSSSRS",
             "SRSSSSRRRRRRSRRR..RRRRRRRSRRRSRRRRRRRS",
             "SRRRRRRRRRRRSRRR..RRRRRRRSSSRSRRRRRRRS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
           ],
           [
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR",
-            "SSSRSSRRSSSRRSSSSSRSSRSSRSSSSRSSSSRRRR",
-            "SRRRRRRRSSSRRRRSRRRRRRSSRSSSSRSSSSRRRR",
+            "SSSRSSRRSSSRRSSSSSRSSRSSRSSSSRSSSSSRRR",
+            "SRRRRRRRSSSRRRRSRRRRRRSSRSSSSRSSSSSRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRSSSSRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRSSSSRRRSRRRRRRRSRRRR",
@@ -29396,16 +29442,16 @@
             "SRRRRR..RSRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
             "SRRRRR..RSRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
             "SSSSSSSSSSRRSRRRRRRRRRRRRSSSSSRRSSSSRS",
-            "SRRRRRRRRRRRSRRSSSRRRRRRRSRRRSRRSSSSRS",
-            "SRSSSSRRRRRRSRRSSSRRRRRRRSRRRSRRSSSSRS",
+            "SRRRRRRRRRRRSRRSSSRRRRRRRSSRRSRRSSSSRS",
+            "SRSSSSRRRRRRSRRSSSRRRRRRRSSRRSRRSSSSRS",
             "SRSSSSRRRRRRSRRR..RRRRRRRSRRRSRRRRRRRS",
             "SRRRRRRRRRRRSRRR..RRRRRRRSSSRSRRRRRRRS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
           ],
           [
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR",
-            "SSSRSSRRSRRRRRRSRRRRRRSSRSSSSRRRRSRRRR",
-            "SRRRRRRRSRRRRRRSRRRRRRSSRSSSSRRRRSRRRR",
+            "SSSRSSRRSRRRRRRSRRRRRRSSRSSSSRRRRSSRRR",
+            "SRRRRRRRSRRRRRRSRRRRRRSSRSSSSRRRRSSRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
@@ -29428,16 +29474,16 @@
             "SRRRRRRRRSRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
             "SRRRRRRRRSRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
             "SSSSSSSSSSRRSRRRRRRRRRRRRSSSSSRRSSSSRS",
-            "SRRRRRRRRRRRSRRSSRRRRRRRRSRRRSRRSSSSRS",
-            "SRRRRRRRRRRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
+            "SRRRRRRRRRRRSRRSSRRRRRRRRSSRRSRRSSSSRS",
+            "SRRRRRRRRRRRSRRRRRRRRRRRRSSRRSRRSSSSRS",
             "SRRRRRRRRRRRSRRRRRRRRRRRRSRRRSRRRRRRRS",
             "SRRRRRRRRRRRSRRRRRRRRRRRRSSSRSRRRRRRRS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
           ],
           [
             "SSSRRRSSSSRRRSSSSRRRSRRRSSSSRRRSSSRRRR",
-            "SSSRSSRRSRRRRRRSRRRRRRSSRSSSSRRRRSRRRR",
-            "SRRRRRRRSRRRRRRSRRRRRRSSRSSSSRRRRSRRRR",
+            "SSSRSSRRSRRRRRRSRRRRRRSSRSSSSRRRRSSRRR",
+            "SRRRRRRRSRRRRRRSRRRRRRSSRSSSSRRRRSSRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
@@ -29460,16 +29506,16 @@
             "SRRRRRRRRSRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
             "SRRRRRRRRSRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
             "SSSSSSSSSSRRSRRRRRRRRRRRRSSSSSRRSSSSRS",
-            "SRRRRRRRRRRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
-            "SRRRRRRRRRRRSRRRRRRRRRRRRSRRRSRRSSSSRS",
+            "SRRRRRRRRRRRSRRRRRRRRRRRRSSRRSRRSSSSRS",
+            "SRRRRRRRRRRRSRRRRRRRRRRRRSSRRSRRSSSSRS",
             "SRRRRRRRRRRRSRRRRRRRRRRRRSRRRSRRRRRRRS",
             "SRRRRRRRRRRRSRRRRRRRRRRRRSSSRSRRRRRRRS",
             "SSRRRSSSSSSSSSRRRSSSRRRSSSRRSSSSSSSSRS"
           ],
           [
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR",
-            "SRRRRRRRSRRRRRRSRRRRRRRRRSSSSRRRRSRRRR",
-            "SRRRRRRRSRRRRRRSRRRRRRRRRSSSSRRRRSRRRR",
+            "SRRRRRRRSRRRRRRSRRRRRRRRRSSSSRRRRSSRRR",
+            "SRRRRRRRSRRRRRRSRRRRRRRRRSSSSRRRRSSRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
@@ -29500,8 +29546,8 @@
           ],
           [
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR",
-            "SRRRRRRRSRRRRRRSRRRRRRRRRSSSSRRRRSRRRR",
-            "SRRRRRRRSRRRRRRSRRRRRRRRRSSSSRRRRSRRRR",
+            "SRRRRRRRSRRRRRRSRRRRRRRRRSSSSRRRRSSRRR",
+            "SRRRRRRRSRRRRRRSRRRRRRRRRSSSSRRRRSSRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
             "SRRRRRRRSRRRRRRSRRRRRRRRRSRRRRRRRSRRRR",
@@ -29532,8 +29578,8 @@
           ],
           [
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....",
@@ -29561,6 +29607,134 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
           ]
         ]
       },
@@ -29578,16 +29752,12 @@
           "role": "shell"
         },
         "A": {
-          "furniture": "range_rack",
+          "furniture": "police_weapon_cabinet",
           "loot": "gauntlet_police_armoury_stock"
         },
         "B": {
           "facing": "w",
           "furniture": "bed"
-        },
-        "C": {
-          "furniture": "desk",
-          "loot": "gauntlet_police_office_key"
         },
         "D": {
           "furniture": "wood_door"
@@ -29619,6 +29789,11 @@
           "facing": "s",
           "furniture": "police_evidence_locker"
         },
+        "M": {
+          "facing": "e",
+          "furniture": "shelf",
+          "loot": "gauntlet_police_ammunition"
+        },
         "O": {
           "facing": "e",
           "furniture": "wood_door"
@@ -29635,7 +29810,7 @@
           "furniture": "range_table"
         },
         "U": {
-          "furniture": "wood_door",
+          "furniture": "steel_armoury_door",
           "lock": {
             "id": "gauntlet_police_armoury",
             "locked": true
@@ -29647,6 +29822,10 @@
         "W": {
           "furniture": "desk",
           "loot": "desk"
+        },
+        "X": {
+          "furniture": "dead_officer_body",
+          "loot": "gauntlet_police_roof_key"
         },
         "Z": {
           "material": "shop_blue",
@@ -29670,6 +29849,10 @@
         "i": {
           "facing": "w",
           "furniture": "station_cleaning_sink"
+        },
+        "j": {
+          "facing": "e",
+          "furniture": "ladder"
         },
         "k": {
           "material": "concrete",
@@ -29700,7 +29883,7 @@
         }
       },
       "ports": [],
-      "size": [38, 8, 30],
+      "size": [38, 12, 30],
       "style": "gauntlet_authored_masonry"
     },
     {

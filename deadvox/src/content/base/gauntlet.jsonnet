@@ -13,7 +13,7 @@ local service = import 'gauntlet-service.libsonnet';
 local sewer = import 'gauntlet-sewer.libsonnet';
 local metal = '#707b7e';
 local button = std.filter(function(f) f.id == 'gauntlet_look_button', look.furniture)[0];
-local deadOfficer = std.filter(function(f) f.id == 'dead_officer_body', (import 'furniture-playtest.jsonnet').furniture)[0];
+local deadOfficer = std.filter(function(f) f.id == 'dead_officer_body', (import 'rural-police.jsonnet').furniture)[0];
 local note = function(id, title, text) {
   id: id, name: title, size: [2, 2, 1], color: '#dfd6b9', solid: false,
   shape: [{ position: [0.1, 0.1, 0.8], size: [1.8, 1.8, 0.1] }],

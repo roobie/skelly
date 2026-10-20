@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change browser mod identity or startup admission
+  - you change build-time bundle validation stamps or trusted admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
@@ -53,6 +54,7 @@ read_if:
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee motions, weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
   - you're changing the quiet-key and noisy-forcing alternatives for locked doors
+  - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
   - you're changing held-item throwing or its range tuning
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
@@ -571,6 +573,14 @@ its rolls. The d502 build round moves the stops onto theme contexts and replaces
 per-building police tables. See `src/content/base/gauntlet-city-building-types.libsonnet`,
 `loot`.
 
+The police armoury key lies on a dead officer on the station's roof, which the
+start overlooks. The start's lookout keeps that view clear rather than hiding the
+officer behind its own roof edge. This gives the armoury a route independent of
+the sewer, whose exploration already carries enough. The key route and the
+blowtorch route must remain independent alternatives; neither should require the
+other. See `src/content/base/rural-police.jsonnet`, `templates` and `loot`, and
+`src/content/base/gauntlet-start.libsonnet`, `start` and `mapPieces`.
+
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
 player commits to it. See `src/content/base/gauntlet-service.libsonnet`,
@@ -678,9 +688,8 @@ each mouth reaches each port as surely as the hatch reaches the lab; an accepted
 route that play cannot cross would be worse than none. Elements list their mouths and
 ports so a later network adds entries rather than a rewrite. The plan places them in
 three dimensions and refuses one that claims a cell another placement owns: a
-corridor may pass under a building but not through it. The guard room's spare bay
-stays bare so the armoury key's container from d483 can stand there without a
-rebuild. See `src/core/cityUnderground.ts`, `placeUnderground`;
+corridor may pass under a building but not through it. See
+`src/core/cityUnderground.ts`, `placeUnderground`;
 `src/core/scenarioPortal.ts`, `undergroundPortIssues`;
 `src/content/base/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
 `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
@@ -883,6 +892,24 @@ uses the same physical reach rule as piles the player puts down. Reserved circul
 gateways and route poses stay free because finding loot must not compromise a certified
 crossing. See `src/core/templateSpatial.ts`, `templateGroundLootIssues`, and
 `src/core/reach.ts`, `pileInReach`.
+
+A ground supply must fit one pile in its worst case, and content validation enforces it:
+an overfilled pile throws when its column loads, so the check moves that failure to
+validation, where it costs nothing at play time and the author sees it. Content that
+needs more than one pile's worth uses several anchors. The check packs every reachable
+roll with the runtime's first-fit placement and credits the source's admission rules, so
+an entry the source cannot select does not count. It does not credit stack merging: each
+stack is placed as its own stack, so a large fixed stock of one stackable that play would
+merge into one stack (more one-cell items than the pile has cells) is refused, and the
+author splits it across anchors. Crediting merging would make the exact check far too
+costly to run at validation, while crediting admission is cheap and removes entries the
+source cannot select. A supply the packer cannot decide within the inventory tuning's state
+cap is reported as unproven, never accepted. The cap stays where content sets it: a higher cap
+costs several times more per supply on big tables and still leaves some of them unproven or
+overflowing, so splitting is needed either way. A table the check cannot prove fits is split
+across anchors, or replaced by a smaller one, before it is ground-anchored. Column load still
+throws on overflow; validated content cannot reach it. See `src/core/pileBound.ts`,
+`groundPileIssue`, and `src/core/placementLoot.ts`, `groundLootSupplyIssues`.
 
 Items carry no record of where they were born. Floors, caps and odds act when loot is
 placed, so no rule needs a birthplace, and keeping one only stopped equal items from
@@ -1990,13 +2017,23 @@ agreement; reference validation prevents partial files from entering a world, an
 file that fails validation is skipped whole, so one broken mod cannot leave
 half-applied content. See `src/core/content.ts`, `buildRegistry`.
 
+Admission runs in the browser because mods can change what a scenario depends on,
+and a failing mod file must be skipped whole. The bundled files pass those same
+proofs before a build ships, so re-proving unchanged content on every start adds
+pre-title delay without detecting anything new. With no mod selected, a matching
+build-validation stamp permits trusting those proofs; any selected mod restores
+full admission. Missing or mismatched evidence must also restore full admission,
+not silently trust an unproved build. See `src/core/content.ts`, `buildRegistry`,
+`src/core/bundleAdmission.ts`, `BundleAdmission`, and `tools/stampBundle.ts`, `stampBundle`.
+
 The registry is built after startup content selection and passed through the world
-configuration so URL discovery, weathering, rendering and simulation all use the
-same admitted definitions. A module-load registry would freeze the base pack before
-a player could select mods. See `src/game/bundledContent.ts`, `buildBundledContent`,
-and `src/game/config.ts`, `GameConfig`. Startup admission remains part of the
-simulation fingerprint because it can change a world without changing a simulation
-call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
+configuration so every consumer uses the same admitted definitions. A module-load
+registry would freeze the base pack before a player could select mods. See
+`src/game/bundledContent.ts`, `buildBundledContent`, and `src/game/config.ts`, `GameConfig`.
+Both admission paths remain fingerprinted because either can change a world without
+changing a simulation call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
+The stamp also binds its proof dependencies because unchanged content is not evidence
+that changed validation code ran. See `tools/bundleStampPlugin.ts`, `bundleStampPlugin`.
 
 A whole-definition override restates the entry, so it freezes the base as of its
 writing; how a mod changes one field instead is decided in
