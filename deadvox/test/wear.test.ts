@@ -1,30 +1,18 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Inventory } from '../src/core/inventory.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit, wearOnPlayerHit } from '../src/core/wear.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
-const { registry } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-    })),
-);
+const registry = baseRegistry();
 
-const hitRegistry = buildRegistry([
-  ...readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-    })),
+const wearables = 'items-wearables.json';
+const hitBuild = buildRegistry([
+  { source: wearables, data: JSON.parse(readFileSync(join('src/content/base', wearables), 'utf8')) as unknown },
   {
     source: 'test-headwear.json',
     data: {
@@ -56,7 +44,11 @@ const hitRegistry = buildRegistry([
       ],
     },
   },
-]).registry;
+]);
+if (hitBuild.issues.length > 0) {
+  throw new Error(JSON.stringify(hitBuild.issues));
+}
+const hitRegistry = hitBuild.registry;
 
 const tuning = BODY_TUNING_FIXTURE;
 

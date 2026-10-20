@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
 import { Inventory } from '../src/core/inventory.ts';
@@ -8,14 +6,11 @@ import type { FirearmShotEffect } from '../src/game/firearmHandling.ts';
 import { CaseEffects, caseFlightPoint, FLYING_CASE_CAP } from '../src/render/caseEffects.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { playerInventorySource } from './fixtures/playerInventory.ts';
 
-const BASE = 'src/content/base';
-const baseContent = readdirSync(BASE)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown }));
-const { registry } = buildRegistry(baseContent);
+const registry = baseRegistry();
 
 describe('spent-case presentation', () => {
   it('ends the ballistic presentation at the simulation landing position', () => {
@@ -64,7 +59,7 @@ describe('spent-case presentation', () => {
 
   it('uses validated pile-display components instead of item ids to choose scatter rendering', () => {
     const { registry: fixtureRegistry, issues } = buildRegistry([
-      ...baseContent,
+      playerInventorySource(),
       {
         source: 'pile-display-fixture',
         data: {

@@ -1,7 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { stepBodyHorizontal } from '../src/core/physics.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
@@ -16,12 +14,9 @@ import {
   type Placement as WorldPlacement,
 } from '../src/core/templates.ts';
 import { PLAYER } from '../src/game/player.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const sources = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
-  .sort()
-  .map((source) => ({ source, data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')) as unknown }));
-const { registry } = buildRegistry(sources);
+const registry = baseRegistry();
 
 const compileById = (id: string): CompiledTemplate => compileTemplate(registry, registry.templates.get(id)!);
 

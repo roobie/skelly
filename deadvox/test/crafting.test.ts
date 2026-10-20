@@ -8,6 +8,7 @@ import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from 
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 const inputs = readdirSync('src/content/base')
@@ -17,7 +18,7 @@ const inputs = readdirSync('src/content/base')
     source: file,
     data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
   }));
-const { registry } = buildRegistry(inputs);
+const registry = baseRegistry();
 
 interface BenchmarkEntry {
   type: string;

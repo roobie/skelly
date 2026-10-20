@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import {
   BoxGeometry,
@@ -27,21 +25,12 @@ import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { createPlayView } from '../src/render/playView.ts';
 import { Skylight } from '../src/render/skylight.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
-import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { skyWorldFixture } from './fixtures/skyWorld.ts';
 import { makeConfig } from './fixtures/startupContent.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown,
-    })),
-);
+const registry = baseRegistry();
 
 const meshFixture = () => ({
   setLinearColors: vi.fn(),

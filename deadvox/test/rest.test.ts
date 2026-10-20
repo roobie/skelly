@@ -13,6 +13,7 @@ import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
@@ -22,7 +23,7 @@ const BASE_SOURCES = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
-const { registry } = buildRegistry(BASE_SOURCES);
+const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const SPAWN_NEEDS: Needs = new Body(BODY_TUNING_FIXTURE).spawnNeeds;
 

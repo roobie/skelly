@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { actionOpenSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
@@ -10,19 +8,9 @@ import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { FirearmMechanics, type FirearmShotEffect } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const { registry, issues } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((f) => f.endsWith('.json'))
-    .map((f) => ({
-      source: f,
-      data: JSON.parse(readFileSync(join('src/content/base', f), 'utf8')) as unknown,
-    })),
-);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 const rifle = [...registry.items.values()].find((item) => item.firearm?.bolt)!;
 const model = registry.models.get(rifle.model!)!;
 const ammo = [...registry.items.values()].find((item) => item.ammo?.calibre === model.calibre)!;

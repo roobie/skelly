@@ -1,8 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { dropSpots, Inventory, type Target } from '../src/core/inventory.ts';
 import { playerPockets } from '../src/core/options.ts';
@@ -23,18 +21,10 @@ import {
   readMagazineLoadFrame,
   stepMagazineRaise,
 } from '../src/render/magazineLoadPose.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
-const base = 'src/content/base';
-const { registry, issues } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
-);
-if (issues.length > 0) {
-  throw new Error(JSON.stringify(issues));
-}
+const registry = baseRegistry();
 
 const magazineType = 'magazine_akm_30';
 const roundType = 'cartridge_7_d_62x39';
