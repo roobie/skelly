@@ -42,6 +42,7 @@ import {
   bloomThreshold,
   clampBloomClip,
   clampGrade,
+  drugVignetteShown,
   GRAIN,
   gradeParams,
   type MoodState,
@@ -95,6 +96,8 @@ export class Mood {
   private skyBloom = 0;
   private skyMist = 0;
   private painDesaturation = 0;
+  private drugVignette = 0;
+  private drugVignetteScaleValue: number;
   private crackOn = false;
   private readonly crackColor = new Color();
   private composer: EffectComposer | undefined;
@@ -110,6 +113,7 @@ export class Mood {
     this.adaptiveScale = new AdaptiveScale(graphicsTuning.renderScale);
     this.renderScaleValue = this.adaptiveScale.scale;
     this.bloomScaleValue = graphicsTuning.bloomScale.default;
+    this.drugVignetteScaleValue = graphicsTuning.drugVignette.default;
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
@@ -206,6 +210,27 @@ export class Mood {
       this.painDesaturation = clamped;
       this.sync();
     }
+  }
+
+  /**
+   * Blurs and darkens the edges for a drug in effect (`src/core/pain.ts`, `drugVignette`), 0 to 1 before the
+   * player's setting; cheap enough to call every frame. It shows only with post on, but not only with film.
+   */
+  setDrugVignette(strength: number): void {
+    if (strength !== this.drugVignette) {
+      this.drugVignette = strength;
+      this.sync();
+    }
+  }
+
+  get drugVignetteScale(): number {
+    return this.drugVignetteScaleValue;
+  }
+
+  setDrugVignetteScale(value: number): void {
+    assertGraphicsValue(this.graphicsTuning, 'drugVignette', value);
+    this.drugVignetteScaleValue = value;
+    this.sync();
   }
 
   get renderScale(): number {
@@ -447,6 +472,7 @@ export class Mood {
     u.uHighlightTint!.value = [...params.highlightTint];
     u.uVignette!.value = film ? VIGNETTE : 0;
     u.uGrain!.value = film ? GRAIN : 0;
+    u.uDrugVignette!.value = drugVignetteShown(this.drugVignette, this.drugVignetteScaleValue);
   }
 
   private releaseComposer(): void {

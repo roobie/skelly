@@ -75,6 +75,7 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
     notes: [
       { label: 'Scene scale (debug URL override)', param: 'renderscale' },
       { label: 'Bloom-chain scale (debug URL override)', param: 'bloomscale' },
+      { label: 'Painkiller vignette (debug URL override)', param: 'drugvignette' },
     ],
   },
   {

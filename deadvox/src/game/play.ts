@@ -3175,6 +3175,7 @@ export const startPlay = (
         thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
         ...thirdPersonOrbitFrame(orbitAngle),
         sightImpaired: sim.body.consequences.sightImpaired,
+        drugVignette: sim.body.drugVignette,
         painTier: painTierDef(),
       },
       $('damage'),

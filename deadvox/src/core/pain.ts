@@ -100,6 +100,21 @@ export const analgesia = (doses: readonly PainDose[], lookup: AnalgesicLookup): 
   return total;
 };
 
+/**
+ * The drug vignette from all doses: each dose's `vignette` scaled by its relief as a share of its peak, so it rises
+ * and fades with the drug. Capped at full; it changes only the picture, never pain or its effects.
+ */
+export const drugVignette = (doses: readonly PainDose[], lookup: AnalgesicLookup): number => {
+  let total = 0;
+  for (const { item, elapsedGameSeconds } of doses) {
+    const def = lookup(item)!;
+    if (def.vignette !== undefined) {
+      total += def.vignette * (doseRelief(def, elapsedGameSeconds) / def.reliefPerDose);
+    }
+  }
+  return Math.min(1, total);
+};
+
 /** Doses aged by `gameSeconds`, without those whose relief has faded, so the saved list stays short. */
 export const ageDoses = (doses: readonly PainDose[], gameSeconds: number, lookup: AnalgesicLookup): PainDose[] =>
   doses
