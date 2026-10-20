@@ -12,29 +12,27 @@ a gun authoring tool that together replace `gungen/`. Delete this file when gung
 
 ## Starting facts
 
-What the engine is, from reading its module headers and exports:
+Why each boundary matters, and where it is checked:
 
-- `packages/engine/` is a domain-agnostic parametric assembly framework. A `Domain` supplies
-  the data, and the engine supplies the geometry, resolving, validation, generation and export.
-  Its layers and their order are in `packages/engine/test/engineImportBoundary.test.ts`,
-  `engineLayers`.
-- Consumers import it by package name, so a search for `@skelly/engine` finds them. Its own
-  tests live in `packages/engine/test/`. Deadvox may not import it (see `things/WORK.md`,
-  "Decisions").
-- Its package exports each layer folder, and consumers deep-import individual files; nothing
-  marks a public API.
-- A search for gun vocabulary in it finds none.
-- Material in it is appearance only. Density and mass are computed in gungen, in
-  `gungen/src/gun/attachmentMass.ts`, and deadvox item weights are typed by hand.
-- Deadvox's model schema, `packages/deadvox/src/core/schema.ts`, mixes neutral and firearm
-  fields. Gungen's output is tied to it by `test/gungen-deadvox-contract.test.mjs`, not by a
-  shared schema.
-- Gungen's viewer mixes generic and gun-specific parts; which is which has not been read through.
+- The engine stays domain-neutral so that each consumer can change its own data and rules
+  without the engine knowing; the neutral-name check is `packages/engine/test/engineImportBoundary.test.ts`,
+  `forbiddenDomainIdentifiers`.
+- Import edges between packages are enforced by `packages/engine/test/engineImportBoundary.test.ts`,
+  `packageEdges`. Deadvox must not import the engine, so the game's dependency graph stays free
+  of the engine's geometry (see `things/WORK.md`, "Decisions").
+- Mass is gun content, so it is computed in gungen and not in the engine or deadvox:
+  `gungen/src/gun/attachmentMass.ts`, `attachmentMassKg`.
+- Deadvox's model schema mixes neutral and firearm fields, which is why the neutral envelope
+  moves into `thing-core`: `packages/deadvox/src/core/schema.ts`, `ModelSchema`.
+- Gungen's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
+  "gungen exports satisfy deadvox model validation".
 
 ## To check before relying on it
 
 - Whether gun vocabulary hides in the engine's neutral names, such as the palette's
   archetype finishes and the appearance context's variant.
+- Which parts of gungen's viewer are generic and which are gun-specific; settled when phase 4
+  moves gun code onto the shared packages.
 - Whether `PartFamily` and `ParamSpec` already work as family builders for non-gun things.
 - Whether single-part things fit the assembly framework or need a lighter path.
 - How validation, collision and the viewer rebuild scale with part count; no benchmark exists,
