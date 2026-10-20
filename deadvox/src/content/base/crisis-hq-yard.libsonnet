@@ -1,4 +1,4 @@
-local context = { usage: ['Military'], tier: 'Tier1' };
+local context = { usage: ['Military'], tier: 'Tier2' };
 local fence = ['############################################################'];
 local ground = ['............................................................'];
 local front = ['###################LLLLLLRRRRRR#############################'];

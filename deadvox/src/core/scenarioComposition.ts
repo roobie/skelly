@@ -7,9 +7,11 @@ import type { FixedLootOverrideDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth } from './settlementPools.ts';
 import {
   type CompiledTemplate,
+  cellsOf,
   compileAssembly,
   compileTemplate,
   type Placement,
+  pieceSize,
   placedPieces,
   placedPoint,
   templateResolves,
@@ -19,6 +21,7 @@ export interface ScenarioComposition {
   readonly start: ScenarioStart;
   readonly leads: readonly Placement[];
   readonly leadFaces?: readonly (Readonly<Vec3> | undefined)[];
+  readonly events: readonly Placement[];
   readonly landmarks: readonly Placement[];
   readonly lootSources: readonly PlacementLootSource[];
   readonly objective: Readonly<Vec3>;
@@ -182,6 +185,96 @@ const fixedLotTemplate = (registry: Registry, lot: Lot): CompiledTemplate | unde
   return template && templateResolves(registry, template) ? compileTemplate(registry, template) : undefined;
 };
 
+const eventCells = (registry: Registry, template: CompiledTemplate): readonly Vec3[] => {
+  const cells = new Map<string, Vec3>();
+  const add = (cell: Vec3): void => {
+    cells.set(cell.join(','), cell);
+  };
+  for (const [x, y, z] of cellsOf(template.size)) {
+    const index = x + template.size[0] * (z + template.size[2] * y);
+    if (template.blocks[index] !== 0 && template.ground?.[index] !== 1) {
+      add([x, y, z]);
+    }
+  }
+  for (const piece of template.pieces) {
+    const furniture = registry.furniture.get(piece.furniture)!;
+    for (const offset of cellsOf(pieceSize(furniture.size, piece.facing))) {
+      add(piece.pos.map((value, axis) => value + offset[axis]!) as Vec3);
+    }
+  }
+  return [...cells.values()];
+};
+
+const eventIssues = (registry: Registry, scenario: ScenarioDef): Issue[] => {
+  const issues: Issue[] = [];
+  const events = scenario.composition!.events ?? [];
+  const occupied = new Map<string, readonly Vec3[]>();
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Independent event authoring errors are collected together.
+  events.forEach((event, index) => {
+    const path = `.composition.events[${index}]`;
+    const definition = registry.templates.get(event.template);
+    if (!(definition && templateResolves(registry, definition))) {
+      issues.push([`${path}.template`, `missing or unresolved template "${event.template}"`]);
+      return;
+    }
+    const hostLot = scenario.city.lots?.find((lot) => lot.id === event.lot);
+    const host = hostLot && fixedLotTemplate(registry, hostLot);
+    if (!host) {
+      issues.push([`${path}.lot`, 'an event needs a fixed building lot']);
+      return;
+    }
+    const template = compileTemplate(registry, definition);
+    if (event.at.some((value, axis) => value < 0 || value + template.size[axis]! > host.size[axis]!)) {
+      issues.push([`${path}.at`, 'an event lies outside its lot']);
+      return;
+    }
+    const cells = eventCells(registry, template);
+    const hostFurniture = new Set(
+      host.pieces.flatMap((piece) => {
+        const furniture = registry.furniture.get(piece.furniture)!;
+        return [...cellsOf(pieceSize(furniture.size, piece.facing))].map((offset) =>
+          piece.pos.map((value, axis) => value + offset[axis]!).join(','),
+        );
+      }),
+    );
+    const overlapsHost = cells.some((cell) => {
+      const at = cell.map((value, axis) => value + event.at[axis]!) as Vec3;
+      const block = at[0] + host.size[0] * (at[2] + host.size[2] * at[1]);
+      return host.blocks[block] !== 0 || hostFurniture.has(at.join(','));
+    });
+    if (overlapsHost) {
+      issues.push([`${path}.at`, "an event overlaps its host's blocks or furniture"]);
+    }
+    for (let prior = 0; prior < index; prior++) {
+      const previous = events[prior]!;
+      const previousCells = occupied.get(`${prior}`);
+      if (previous.lot !== event.lot || !previousCells) {
+        continue;
+      }
+      if (
+        cells.some((cell) =>
+          previousCells.some((other) =>
+            cell.every((value, axis) => value + event.at[axis]! === other[axis]! + previous.at[axis]!),
+          ),
+        )
+      ) {
+        issues.push([`${path}.at`, 'events overlap']);
+        break;
+      }
+    }
+    occupied.set(`${index}`, cells);
+    issues.push(
+      ...placementLootIssues(
+        { registry, context: template.lootContext },
+        template,
+        event.fixedLoot,
+        `${path}.fixedLoot`,
+      ),
+    );
+  });
+  return issues;
+};
+
 const promisedStockIssues = (registry: Registry, scenario: ScenarioDef): Issue[] => {
   const composition = scenario.composition!;
   const issues: Issue[] = [];
@@ -230,6 +323,7 @@ export const scenarioCompositionIssues = (
     '.composition.fixedLoot',
   );
   issues.push(...promisedStockIssues(registry, scenario));
+  issues.push(...eventIssues(registry, scenario));
   for (const kind of ['leads', 'landmarks', 'incidentalTemplates'] as const) {
     composition[kind].forEach((ref, index) => {
       const id = typeof ref === 'string' ? ref : ref.template;
@@ -276,6 +370,7 @@ export const scenarioSources = (registry: Registry) => {
         ? [
             scenario.composition.start.template,
             ...scenario.composition.leads.map((lead) => lead.template),
+            ...(scenario.composition.events ?? []).map((event) => event.template),
             ...scenario.composition.landmarks,
             ...scenario.composition.incidentalTemplates,
           ]
@@ -284,6 +379,7 @@ export const scenarioSources = (registry: Registry) => {
     fixedLoot: scenarios.flatMap((scenario) => [
       ...(scenario.composition?.fixedLoot ?? []),
       ...(scenario.composition?.leads.flatMap((lead) => lead.fixedLoot ?? []) ?? []),
+      ...(scenario.composition?.events?.flatMap((event) => event.fixedLoot) ?? []),
       ...(scenario.composition?.start.fixedLoot ?? []),
       ...(scenario.composition?.stops?.flatMap((stop) => stop.fixedLoot) ?? []),
     ]),
@@ -318,6 +414,13 @@ export const composeScenario = (
   const { city } = scenario;
   const side = Math.max(service.template.size[0], service.template.size[2]);
   const leadFaces: (Readonly<Vec3> | undefined)[] = [];
+  const placedInLot = (id: string, at: Vec3, parent: Placement): Placement => {
+    const template = compileTemplate(registry, registry.templates.get(id)!);
+    const near = placedPoint(parent, at);
+    const far = placedPoint(parent, at.map((value, axis) => value + template.size[axis]!) as Vec3);
+    const origin = Object.freeze(near.map((value, axis) => Math.min(value, far[axis]!)) as Vec3) as Vec3;
+    return Object.freeze({ template, origin, turn: parent.turn });
+  };
   const leads = Object.freeze(
     authored.leads.map((lead, index): Placement => {
       if (!lead.lot) {
@@ -334,13 +437,17 @@ export const composeScenario = (
       if (!(parent && lead.at && lead.standing)) {
         throw new Error(`Missing named lead lot "${lead.lot}" or its poses`);
       }
-      const template = compileTemplate(registry, registry.templates.get(lead.template)!);
-      const near = placedPoint(parent, lead.at);
-      const far = placedPoint(parent, lead.at.map((value, axis) => value + template.size[axis]!) as Vec3);
-      const origin = near.map((value, axis) => Math.min(value, far[axis]!)) as Vec3;
       leadFaces.push(Object.freeze(placedPoint(parent, lead.standing)));
-      Object.freeze(origin);
-      return Object.freeze({ template, origin, turn: parent.turn });
+      return placedInLot(lead.template, lead.at, parent);
+    }),
+  );
+  const events = Object.freeze(
+    (authored.events ?? []).map((event): Placement => {
+      const parent = lots.find(({ definition }) => definition.id === event.lot)?.placement;
+      if (!parent) {
+        throw new Error(`Missing event lot "${event.lot}"`);
+      }
+      return placedInLot(event.template, event.at, parent);
     }),
   );
   const landmarks = Object.freeze(
@@ -391,10 +498,12 @@ export const composeScenario = (
     start: composeStart(authored.start, start),
     leads,
     leadFaces: Object.freeze(leadFaces),
+    events,
     landmarks,
     lootSources: Object.freeze([
       Object.freeze({ placement: service, fixedLoot }),
       ...leads.map((lead, index) => Object.freeze({ placement: lead, fixedLoot: authored.leads[index]!.fixedLoot })),
+      ...events.map((event, index) => promised(event, authored.events![index]!.fixedLoot)),
       ...(authored.start.fixedLoot ? [promised(start, authored.start.fixedLoot)] : []),
       ...stops,
     ]),

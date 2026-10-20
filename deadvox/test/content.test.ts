@@ -1513,14 +1513,17 @@ describe('content references', () => {
   });
 
   it('refuses a footprint shorter than its model spans between grip and anchors', () => {
+    // The refusal reads only the models and the player's cell size, so the models and inventory files are enough.
+    const modelPack = base.filter(({ source }) => source.startsWith('models') || source === 'inventory.json');
+    const modelRegistry = buildRegistry(modelPack).registry;
     const span = (id: string) => {
-      const model = baseRegistry.models.get(id)!;
+      const model = modelRegistry.models.get(id)!;
       const xs = [...Object.values(model.anchors ?? {}), ...(model.grip ? [model.grip.at] : [])].map(([x]) => x);
       return Math.max(...xs) - Math.min(...xs);
     };
-    const longest = [...baseRegistry.models.keys()].sort((a, b) => span(b) - span(a))[0]!;
+    const longest = [...modelRegistry.models.keys()].sort((a, b) => span(b) - span(a))[0]!;
     const item = { id: 'fixture_stubby', name: 'Stubby', category: 'tool', weight: 1, size: [1, 1], model: longest };
-    expect(buildRegistry([...base, { source: 'stubby.json', data: { items: [item] } }]).issues).toContainEqual(
+    expect(buildRegistry([...modelPack, { source: 'stubby.json', data: { items: [item] } }]).issues).toContainEqual(
       expect.objectContaining({ source: 'stubby.json', path: 'items[0].size' }),
     );
   });

@@ -1154,7 +1154,7 @@ export const buildCityPlan = ({
   placements.unshift(...lots.flatMap(({ placement }) => (placement ? [placement] : [])));
   checkReservedLots(lots, [service, start]);
   if (composition) {
-    placements.push(...composition.leads, ...composition.landmarks);
+    placements.push(...composition.leads, ...composition.landmarks, ...composition.events);
   }
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;

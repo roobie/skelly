@@ -200,7 +200,12 @@ const drawnBlocks = (def: FurnitureDef): readonly Readonly<Vec3>[] | undefined =
   if (def.vehicle !== undefined) {
     return solidBlocks(def.vehicle, def.size);
   }
-  return def.shape !== undefined && def.solidFill !== undefined ? shapeBlocks(def.shape, def.solidFill) : undefined;
+  if (def.shape !== undefined && def.solidFill !== undefined) {
+    return shapeBlocks(def.shape, def.solidFill);
+  }
+  return def.shape !== undefined && def.solid === false && def.door === undefined
+    ? shapeBlocks(def.shape, 0)
+    : undefined;
 };
 
 /** Whether a body's box overlaps any cell of a box of cells at a corner. */

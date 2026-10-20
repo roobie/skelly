@@ -11,15 +11,23 @@ import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { GauntletSite } from '../src/core/gauntlet.ts';
+import { GauntletSite, gauntletPopulation } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
 import { siteGenerationOf, sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { cellsOf, compileAssembly, compileTemplate, footprint, kitSlotChoices } from '../src/core/templates.ts';
+import {
+  cellsOf,
+  compileAssembly,
+  compileTemplate,
+  footprint,
+  kitSlotChoices,
+  placedSpawns,
+} from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
-import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { fixtureLootContext } from './economyFixtures.ts';
+import { fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
 import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -225,6 +233,120 @@ describe('one finished city plan', () => {
       }
       return { spawns, hordes };
     };
+
+    it(
+      'spawns each composed event marker once',
+      () => {
+        const scenario = fixtureScenario();
+        const host = {
+          id: 'fixture_marker_host',
+          eligibility: { settlementKinds: ['fixture_city'] },
+          lootContext: fixtureLootContext(),
+          size: [5, 3, 5] as [number, number, number],
+          palette: { '.': 'air', '=': 'fixture_solid' },
+          layers: [
+            ['=====', '=====', '=====', '=====', '====='],
+            ['.....', '.....', '.....', '.....', '.....'],
+            ['.....', '.....', '.....', '.....', '.....'],
+          ],
+        };
+        const event = {
+          id: 'fixture_marker_event',
+          lootContext: { usage: ['Military'] as 'Military'[], tier: 'Tier2' as const },
+          size: [1, 3, 1] as [number, number, number],
+          palette: {
+            '.': 'air',
+            '=': { ground: true as const },
+            E: { furniture: 'fixture_crate' },
+            Z: { spawn: 'shambler', chance: 1 },
+          },
+          layers: [['='], ['E'], ['Z']],
+        };
+        scenario.population.hordes = 0;
+        scenario.composition = {
+          start: fixtureStart(),
+          fixedLoot: [{ at: [2, 1, 2], items: [{ item: 'fixture_token' }] }],
+          leads: [{ template: 'fixture_marker_lead_a' }, { template: 'fixture_marker_lead_b' }],
+          landmarks: ['fixture_marker_landmark_a', 'fixture_marker_landmark_b'],
+          incidentalTemplates: [],
+          objective: [2, 1, 2],
+          objectiveFace: [2, 1, 4],
+          retreat: [2, 7, 2],
+          resources: [],
+          storeys: [],
+          stairs: [],
+          seals: [],
+          descents: [],
+          events: [
+            {
+              template: event.id,
+              lot: 'fixture_marker_lot',
+              at: [0, 0, 0],
+              fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'fixture_event_token' }] }],
+            },
+          ],
+        };
+        scenario.city.fillRows = false;
+        scenario.city.lots = [
+          {
+            id: 'fixture_marker_lot',
+            position: [-10, -10],
+            size: [5, 5],
+            turn: 1,
+            source: { kind: 'template', id: host.id },
+          },
+        ];
+        const service = structuredClone(registry.templates.get(scenario.serviceTemplate)!);
+        service.size[1] = 12;
+        service.layers = service.layers.slice(0, service.size[1]);
+        service.palette.C = { furniture: 'fixture_crate' };
+        service.layers[1]![2] = '..C.....==';
+        const note = {
+          ...registry.furniture.get('fixture_crate')!,
+          id: 'fixture_marker_note',
+          readable: { title: 'Fixture lead', text: 'Fixture directions.' },
+          solid: false,
+        };
+        const lead = (id: string) => ({
+          id,
+          lootContext: fixtureLootContext(),
+          size: [1, 2, 1] as [number, number, number],
+          palette: { '=': 'fixture_solid', N: { furniture: note.id } },
+          layers: [['='], ['N']],
+        });
+        const leads = [lead('fixture_marker_lead_a'), lead('fixture_marker_lead_b')];
+        const landmarks = [lead('fixture_marker_landmark_a'), lead('fixture_marker_landmark_b')];
+        const templates = new Map(registry.templates);
+        templates.set(service.id, service);
+        templates.set(host.id, host);
+        templates.set(event.id, event);
+        for (const template of [...leads, ...landmarks]) {
+          templates.set(template.id, template);
+        }
+        const testRegistry = {
+          ...registry,
+          furniture: new Map([...registry.furniture, [note.id, note]]),
+          templates,
+          zombies: new Map([...registry.zombies, ...native.zombies]),
+        };
+        const plan = buildCityPlan({
+          seed: 73,
+          registry: testRegistry,
+          floor,
+          grid: cityGridOf(testRegistry, scenario.city),
+          scenario,
+        });
+        const site = new CitySite(73, testRegistry, scale, plan);
+        const markers = placedSpawns(plan.composition!.events[0]!);
+        expect(markers.length).toBeGreaterThan(0);
+        const { zombies } = gauntletPopulation(site, scenario);
+        for (const marker of markers) {
+          const spawns = zombies.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
+          expect(spawns.filter((spawn) => spawn.pos.join(',') === marker.pos.join(','))).toHaveLength(1);
+        }
+      },
+      GAUNTLET_SITE_MS,
+    );
 
     it(
       'supplies ordinary wanderers and hordes even when city buildings have no spawn markers',

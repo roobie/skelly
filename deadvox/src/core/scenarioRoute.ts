@@ -75,16 +75,17 @@ export class ScenarioRouteSpace {
   private load(x: number, y: number, z: number): void {
     const cell: Vec3 = [toChunk(x), toChunk(y), toChunk(z)];
     const chunkKey = key(cell);
-    if (!this.chunks.has(chunkKey)) {
-      this.chunks.add(chunkKey);
-      const chunk = generateChunk(this.terrain, cell);
-      this.site.stamp(chunk);
-      this.world.addChunk(chunk);
-      // The initial world is fixed: load boundary-crossing furniture once per chunk, not per voxel query.
-      for (let dx = 0; dx <= this.furnitureReach; dx++) {
-        for (let dz = 0; dz <= this.furnitureReach; dz++) {
-          this.loadFurniture(cell[0] - dx, cell[2] - dz);
-        }
+    if (this.chunks.has(chunkKey)) {
+      return;
+    }
+    this.chunks.add(chunkKey);
+    const chunk = generateChunk(this.terrain, cell);
+    this.site.stamp(chunk);
+    this.world.addChunk(chunk);
+    // A preceding-column piece can obstruct this chunk; the fixed initial world needs only one load.
+    for (let dx = 0; dx <= this.furnitureReach; dx++) {
+      for (let dz = 0; dz <= this.furnitureReach; dz++) {
+        this.loadFurniture(cell[0] - dx, cell[2] - dz);
       }
     }
   }

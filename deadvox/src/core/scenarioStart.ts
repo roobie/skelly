@@ -60,6 +60,7 @@ const skylineIssues = (registry: Registry, scenario: ScenarioDef, template: Comp
     ),
     ...(city.lots ?? []).flatMap((lot) => lotChoices(registry, city, lot).map(({ ref }) => ref.id)),
     ...composition!.leads.map((lead) => lead.template),
+    ...(composition!.events ?? []).map((event) => event.template),
     ...composition!.landmarks,
     ...composition!.incidentalTemplates,
   ]);

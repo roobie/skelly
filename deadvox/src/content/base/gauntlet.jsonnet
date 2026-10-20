@@ -13,6 +13,7 @@ local service = import 'gauntlet-service.libsonnet';
 local sewer = import 'gauntlet-sewer.libsonnet';
 local metal = '#707b7e';
 local button = std.filter(function(f) f.id == 'gauntlet_look_button', look.furniture)[0];
+local deadOfficer = std.filter(function(f) f.id == 'dead_officer_body', (import 'furniture-playtest.jsonnet').furniture)[0];
 local note = function(id, title, text) {
   id: id, name: title, size: [2, 2, 1], color: '#dfd6b9', solid: false,
   shape: [{ position: [0.1, 0.1, 0.8], size: [1.8, 1.8, 0.1] }],
@@ -51,6 +52,11 @@ local utilities = [
     id: 'gauntlet_public_directions', size: [2, 3, 2], lootContext: { usage: ['Industrial'], tier: 'Tier1' },
     palette: { '=': { ground: true }, F: { furniture: 'crate', loot: 'd41_empty' } },
     layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF']],
+  },
+  {
+    id: 'gauntlet_special_ops_event', size: [6, 2, 4], lootContext: { usage: ['Military'], tier: 'Tier2' },
+    palette: { '.': 'air', '=': { ground: true }, B: { furniture: 'gauntlet_dead_special_ops' }, Z: { spawn: 'shambler', chance: 0.8 } },
+    layers: [['======', '======', '======', '======'], ['Z.....', '.BBBB.', '.BBBB.', '.....Z']],
   },
   {
     id: 'gauntlet_water_tank', size: [6, 13, 6], lootContext: emptyLoot,
@@ -113,6 +119,10 @@ shape.colliding({
   furniture: city.furniture + kits.furniture + types.furniture + authored.furniture + service.furniture + [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
+    },
+    { [k]: deadOfficer[k] for k in std.objectFields(deadOfficer) if k != 'id' && k != 'name' && k != 'container' } + {
+      id: 'gauntlet_dead_special_ops', name: 'Dead special operations soldier',
+      container: { pockets: [{ grid: [6, 6], handlingSimSeconds: 1.2 }] },
     },
     note('gauntlet_perimeter_notice', 'Notice', 'QUARANTINE ZONE'),
     note('gauntlet_perimeter_gate_notice', 'Notice', 'NO ENTRY'),

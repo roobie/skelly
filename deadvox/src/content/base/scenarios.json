@@ -920,6 +920,30 @@
             "upper": [58, 9, 30]
           }
         ],
+        "events": [
+          {
+            "at": [16, 0, 15],
+            "fixedLoot": [
+              {
+                "at": [1, 1, 1],
+                "items": [
+                  {
+                    "condition": 0.69999999999999996,
+                    "item": "rifle_assault",
+                    "key": true,
+                    "placement": "surface"
+                  },
+                  {
+                    "condition": 0.69999999999999996,
+                    "item": "magazine_stanag_30"
+                  }
+                ]
+              }
+            ],
+            "lot": "substation",
+            "template": "gauntlet_special_ops_event"
+          }
+        ],
         "fixedLoot": [
           {
             "at": [33, 41, 42],
@@ -1060,6 +1084,21 @@
               }
             ],
             "lot": "police"
+          },
+          {
+            "fixedLoot": [
+              {
+                "at": [7, 1, 33],
+                "items": [
+                  {
+                    "condition": 0.69999999999999996,
+                    "item": "rifle_ak",
+                    "key": true
+                  }
+                ]
+              }
+            ],
+            "lot": "hq"
           }
         ],
         "storeys": [
