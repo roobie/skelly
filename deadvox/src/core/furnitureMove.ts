@@ -123,7 +123,8 @@ class Shadow {
 export const movableRefusal = (inventory: Inventory, entity: BlockEntity, blockSize: number): string | undefined => {
   const messages = messagesOf(inventory);
   const { maxSizeMetres } = reachTuning(inventory.registry).furnitureMove;
-  if (entity.size.some((cells) => cells * blockSize > maxSizeMetres)) {
+  const rolls = inventory.entities.defOf(entity).cover === true;
+  if (!rolls && entity.size.some((cells) => cells * blockSize > maxSizeMetres)) {
     return messages.tooBig;
   }
   return fastened(inventory, entity) ? messages.fastened : undefined;
@@ -328,11 +329,12 @@ export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: 
     return { refusal: messages.noRoom };
   }
   const pos: Vec3 = [base[0], y, base[2]];
-  const refusal = standRefusal(mover, shadow, pos, entity.size);
+  const refusal = standRefusal(mover, shadow, pos, entity);
   return refusal ? { refusal } : { pos };
 };
 
-const standRefusal = (mover: FurnitureMover, shadow: Shadow, pos: Vec3, size: Vec3): string | undefined => {
+const standRefusal = (mover: FurnitureMover, shadow: Shadow, pos: Vec3, piece: BlockEntity): string | undefined => {
+  const { size } = piece;
   const { entities } = mover.inventory;
   const messages = messagesOf(mover.inventory);
   if (boxIntersectsBody(pos, size, mover.player)) {
@@ -342,7 +344,8 @@ const standRefusal = (mover: FurnitureMover, shadow: Shadow, pos: Vec3, size: Ve
     return messages.otherInWay;
   }
   const under = footprint(pos, size).map((cell) => shadow.occupant(below(cell)));
-  if (under.some((entity) => entity && entities.defOf(entity).door?.hatch)) {
+  const cover = entities.defOf(piece).cover === true;
+  if (under.some((entity) => entity && entities.defOf(entity).door?.hatch && (!cover || entity.open))) {
     return messages.coversHatch;
   }
   const cells = new Set(boxCells(pos, size).map(key));

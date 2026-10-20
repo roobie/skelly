@@ -23,6 +23,24 @@ shape.colliding({
   ],
   "furniture": [
     {
+      id: 'rug',
+      name: 'Rug',
+      size: [4, 1, 2],
+      color: '#7a2f2f',
+      solid: false,
+      cover: true,
+      shape: [{ position: [0.05, 0, 0.05], size: [3.9, 0.06, 1.9] }],
+    },
+    {
+      id: 'tarp',
+      name: 'Tarp',
+      size: [3, 1, 2],
+      color: '#3d5a6c',
+      solid: false,
+      cover: true,
+      shape: [{ position: [0.05, 0, 0.05], size: [2.9, 0.04, 1.9] }],
+    },
+    {
       "id": "kitchen_cupboard",
       "name": "Kitchen cupboard",
       "size": [2, 2, 1],

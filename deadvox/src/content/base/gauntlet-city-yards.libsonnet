@@ -3,7 +3,9 @@ local air = ['..................', '..................'];
 local circulation = ['AAAAARRRRRRAAAAAAA', 'AAAAARRRRRRAAAAAAA'];
 local shrubs = ['.BBB........BBB...', '.BBB........BBB...'];
 local shrubClaims = ['ASSSARRRRRRASSSAAA', 'ASSSARRRRRRASSSAAA'];
-local fenced = ['.BBB........FFFF..', '.BBB........iiii..'];
+local tarped = ['............ttt...', '............ttt...'];
+local tarpClaims = ['AAAAARRRRRRASSSAAA', 'AAAAARRRRRRASSSAAA'];
+local fenced =['.BBB........FFFF..', '.BBB........iiii..'];
 local fencedUpper = ['............FFFF..', '..................'];
 local fenceClaims = ['ASSSARRRRRRASSSSAA', 'ASSSARRRRRRASSSSAA'];
 local grownLow = ['GGGSS......wGSSGGG', 'GGwSS......GwSSGwG'];
@@ -46,6 +48,11 @@ local yard = {
       ownership: { layers: [shrubClaims, shrubClaims, circulation, circulation] },
     },
     yard + {
+      id: 'gauntlet_yard_tarp', palette: yard.palette + { t: { furniture: 'tarp' } },
+      layers: [tarped, air, air, air],
+      ownership: { layers: [tarpClaims, circulation, circulation, circulation] },
+    },
+    yard + {
       id: 'gauntlet_yard_fenced', palette: yard.palette + {
         B: { furniture: 'gauntlet_yard_shrub' }, F: { furniture: 'gauntlet_yard_fence' }, i: { furniture: 'creeper_strip' },
       },
@@ -65,6 +72,7 @@ local yard = {
     choices: [
       { ref: { kind: 'piece', id: 'gauntlet_yard_open' }, weight: 1 },
       { ref: { kind: 'piece', id: 'gauntlet_yard_shrubs' }, weight: 3 },
+      { ref: { kind: 'piece', id: 'gauntlet_yard_tarp' }, weight: 1 },
       { ref: { kind: 'piece', id: 'gauntlet_yard_fenced' }, weight: 2 },
       { ref: { kind: 'piece', id: 'gauntlet_yard_overgrown' }, weight: 2 },
     ],

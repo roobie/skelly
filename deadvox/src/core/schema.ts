@@ -321,6 +321,7 @@ const UiTuningSchema = strictObject({
     playerInWay: Name,
     otherInWay: Name,
     coversHatch: Name,
+    hatchCovered: Name,
     blocksLadder: Name,
     outOfReach: Name,
     wornOut: Name,
@@ -1264,6 +1265,8 @@ const FurnitureSchema = pipe(
     size: Size,
     color: Color,
     solid: optional(vBoolean()),
+    /** A flat piece that may lie on a shut hatch (`DESIGN.md`, "Moving furniture"); it must be non-solid and one block high. */
+    cover: optional(literal(true)),
     /** A debug practice surface; hits may receive a profile-specific presentation ping. */
     shotTarget: optional(literal(true)),
     scenarioGoal: optional(literal(true)),
@@ -1371,6 +1374,11 @@ const FurnitureSchema = pipe(
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
   check(({ climbable, solid }) => !climbable || solid === false, 'a climbable piece must not be solid'),
+  check(
+    ({ cover, solid, size, door, climbable, mount }) =>
+      !cover || (solid === false && size[1] === 1 && !door && !climbable && !mount),
+    'a cover must be non-solid, one block high and not a door, ladder or wall mount',
+  ),
   check(
     ({ mount, size, shape, solid }) =>
       !mount ||
