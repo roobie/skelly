@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { resolveAnchors } from '@skelly/engine/core/anchors.ts';
-import type { AnchorFrame } from '@skelly/engine/core/design.ts';
-import { applyDir, applyPoint, cross, dot, length, type Vec3 } from '@skelly/engine/core/math.ts';
-import { type Resolved, resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, PartDef, Solid } from '@skelly/engine/core/schema.ts';
+import { type AnchorFrame, resolveAnchors } from '@skelly/engine/assembly/anchors.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly, PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import { applyDir, applyPoint, cross, dot, length, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, type GunAnchorDeclarations, selectGunAnchors } from '../src/gun/anchors.ts';

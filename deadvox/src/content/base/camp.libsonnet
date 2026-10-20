@@ -160,13 +160,14 @@ local campWallRunCrouchHole = campWallRun + {
       "color": "#718087",
       "door": {
         "handlingSimSeconds": 0.6,
-        "prying": {
-          "quality": 3,
+        material: 'steel',
+        "methods": { pry: {
+          "quality": 'prying', level: 3, strikeSound: 'lock_pry',
           "skill": "mechanics",
           "timeSimSeconds": 15,
           "fastestTimeSimSeconds": 7.5,
           "strikeIntervalSimSeconds": 0.5
-        }
+        } }
       }
     },
     {
@@ -301,7 +302,7 @@ local campWallRunCrouchHole = campWallRun + {
       "container": {
         "pockets": [{ "grid": [4, 4], "handlingSimSeconds": 1.2 }]
       },
-      "door": { "handlingSimSeconds": 0.6 }
+      "door": { material: 'steel', methods: {}, "handlingSimSeconds": 0.6 }
     },
     {
       "id": "field_desk",
@@ -347,6 +348,7 @@ local campWallRunCrouchHole = campWallRun + {
       "size": [6, 5, 1],
       "color": "#666c70",
       "door": {
+        material: 'steel', methods: {},
         "handlingSimSeconds": 1.2
       }
     }

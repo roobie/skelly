@@ -401,7 +401,9 @@
     {
       "color": "#596562",
       "door": {
-        "handlingSimSeconds": 0.59999999999999998
+        "handlingSimSeconds": 0.59999999999999998,
+        "material": "steel",
+        "methods": {}
       },
       "id": "station_coal_hatch",
       "name": "Coal delivery hatch",
@@ -463,7 +465,9 @@
     {
       "color": "#8c9b91",
       "door": {
-        "handlingSimSeconds": 0.59999999999999998
+        "handlingSimSeconds": 0.59999999999999998,
+        "material": "steel",
+        "methods": {}
       },
       "id": "station_emergency_door",
       "name": "Emergency exit door",

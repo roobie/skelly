@@ -204,7 +204,7 @@ describe('content', () => {
               name: 'Wood door',
               size: [2, 4, 1],
               color: '#7a5534',
-              door: { handlingSimSeconds: 0.5 },
+              door: { material: 'wood', methods: {}, handlingSimSeconds: 0.5 },
             },
           ],
           templates: [
@@ -1791,7 +1791,7 @@ describe('content references', () => {
             name: 'Fixture door',
             size: [1, 1, 1],
             color: '#333333',
-            door: { handlingSimSeconds: 0.4, openNoise: { sound: 'door_open' } },
+            door: { material: 'wood', methods: {}, handlingSimSeconds: 0.4, openNoise: { sound: 'door_open' } },
           },
         ],
       },
@@ -2128,12 +2128,17 @@ describe('content references', () => {
             color: '#333333',
             door: {
               handlingSimSeconds: 0.4,
-              prying: {
-                quality: 1,
-                skill: 'missing_skill',
-                timeSimSeconds: 2,
-                fastestTimeSimSeconds: 1,
-                strikeIntervalSimSeconds: 1,
+              material: 'wood',
+              methods: {
+                pry: {
+                  quality: 'prying',
+                  level: 1,
+                  strikeSound: 'lock_pry',
+                  skill: 'missing_skill',
+                  timeSimSeconds: 2,
+                  fastestTimeSimSeconds: 1,
+                  strikeIntervalSimSeconds: 1,
+                },
               },
             },
           },
@@ -2231,7 +2236,9 @@ describe('content references', () => {
       },
     };
     expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
-      'furniture[1].door.prying.skill',
+      'furniture[1].door.material',
+      'furniture[1].door.methods.pry.skill',
+      'furniture[1].door.methods.pry.strikeSound',
       'items[0].light.power.battery',
       'zombies[0].downed.dismember.quality',
       'zombies[0].loot',
@@ -2388,7 +2395,13 @@ describe('templates', () => {
       source: 'doors.json',
       data: {
         furniture: [
-          { id: 'fixture_door', name: 'Door', size: [1, 1, 1], color: '#7a5534', door: { handlingSimSeconds: 0.5 } },
+          {
+            id: 'fixture_door',
+            name: 'Door',
+            size: [1, 1, 1],
+            color: '#7a5534',
+            door: { material: 'wood', methods: {}, handlingSimSeconds: 0.5 },
+          },
         ],
       },
     };

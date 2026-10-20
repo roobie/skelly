@@ -1,4 +1,4 @@
-import type { Solid } from './schema.ts';
+import type { Solid } from './solid.ts';
 
 export interface DisplayItem {
   readonly id: string;

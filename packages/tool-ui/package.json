@@ -1,0 +1,22 @@
+{
+  "name": "@skelly/tool-ui",
+  "private": true,
+  "license": "EUPL-1.2",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@skelly/engine": "*"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "typescript": "^7.0.2"
+  },
+  "exports": {
+    "./scene": "./src/scene.ts"
+  },
+  "peerDependencies": {
+    "three": "^0.186.0"
+  }
+}

@@ -1,11 +1,11 @@
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly, PartInstance } from '@skelly/engine/assembly/schema.ts';
 import type {
   AppearanceContext,
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
-} from '@skelly/engine/core/design.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, PartInstance } from '@skelly/engine/core/schema.ts';
+} from '@skelly/engine/export/exportTypes.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import { gunDomain } from './domain.ts';

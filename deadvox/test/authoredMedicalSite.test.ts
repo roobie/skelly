@@ -244,7 +244,7 @@ describe('authored medical site', () => {
       medical.pieces.find((piece) => piece.lock?.locked),
       'locked pharmacy door',
     );
-    expect(result.registry.furniture.get(pharmacyDoor.furniture)?.door?.prying).toBeDefined();
+    expect(result.registry.furniture.get(pharmacyDoor.furniture)?.door?.methods.pry).toBeDefined();
     expect(result.registry.items.get('pharmacy_key')?.key?.lock).toBe(pharmacyDoor.lock?.id);
     expect(staffDoor).not.toBe(pharmacyDoor);
     const staffDoorClosed = templateReachableStandingPositions(result.registry, wallOffDoor(medical, staffDoor));

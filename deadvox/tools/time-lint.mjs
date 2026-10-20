@@ -321,6 +321,14 @@ const runtimeTemporalFindings = () => {
   );
 };
 
+const catalogueHas = (known, path) => {
+  const parts = normalizedPath(path).split('.');
+  return [...known].some((entry) => {
+    const pattern = entry.split('.');
+    return pattern.length === parts.length && pattern.every((part, index) => part === '*' || part === parts[index]);
+  });
+};
+
 const collectAuthoredFields = (value, path, file, state) => {
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -334,7 +342,7 @@ const collectAuthoredFields = (value, path, file, state) => {
   for (const [name, child] of Object.entries(value)) {
     const fieldPath = path ? `${path}.${name}` : name;
     const temporalName = hasTemporalName(name);
-    if (temporalName && hasClockUnit(name) && !state.known.has(normalizedPath(fieldPath))) {
+    if (temporalName && hasClockUnit(name) && !catalogueHas(state.known, fieldPath)) {
       state.findings.push(`${file}: temporal field path "${fieldPath}" is missing from the temporal catalogue`);
     }
     collectAuthoredFields(child, fieldPath, file, state);

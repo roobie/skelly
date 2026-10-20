@@ -1,5 +1,26 @@
 local shape = import 'furniture-shape.libsonnet';
+local woodDoor = {
+  id: 'wood_door',
+  name: 'Burglary-safe wooden door',
+  size: [2, 4, 1],
+  color: '#7a5534',
+  door: {
+    material: 'wood',
+    handlingSimSeconds: 0.6,
+    methods: {
+      pry: {
+        quality: 'prying', level: 3, skill: 'mechanics',
+        timeSimSeconds: 15, fastestTimeSimSeconds: 7.5,
+        strikeIntervalSimSeconds: 0.5, strikeSound: 'lock_pry',
+      },
+    },
+  },
+};
 shape.colliding({
+  doorMaterials: [
+    { id: 'wood', methods: ['pry'] },
+    { id: 'steel', methods: ['pry', 'cut'] },
+  ],
   "furniture": [
     {
       "id": "kitchen_cupboard",
@@ -260,21 +281,29 @@ shape.colliding({
         "sleep": true
       }
     },
-    {
-      "id": "wood_door",
-      "name": "Wooden door",
-      "size": [2, 4, 1],
-      "color": "#7a5534",
-      "door": {
-        "handlingSimSeconds": 0.6,
-        "prying": {
-          "quality": 3,
-          "skill": "mechanics",
-          "timeSimSeconds": 15,
-          "fastestTimeSimSeconds": 7.5,
-          "strikeIntervalSimSeconds": 0.5
-        }
-      }
+    woodDoor,
+    woodDoor + {
+      id: 'flimsy_wood_door', name: 'Flimsy wooden door',
+      door: woodDoor.door + {
+        methods: {
+          pry: woodDoor.door.methods.pry + {
+            level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
+          },
+        },
+      },
+    },
+    woodDoor + {
+      id: 'steel_armoury_door', name: 'Steel armoury door', color: '#626a70',
+      door: woodDoor.door + {
+        material: 'steel',
+        methods: {
+          cut: {
+            quality: 'flame_cutting', level: 1, skill: 'mechanics',
+            timeSimSeconds: 90, fastestTimeSimSeconds: 45,
+            strikeIntervalSimSeconds: 1, strikeSound: 'lock_pry',
+          },
+        },
+      },
     }
   ]
 })

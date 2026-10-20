@@ -1,4 +1,4 @@
-import { validate } from '@skelly/engine/core/validate.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { variant } from './helpers.ts';

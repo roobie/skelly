@@ -488,10 +488,10 @@ const syncReadingProgress = (
   setProgress(bookIsComplete(bookUid) ? { value: 1, max: 1 } : undefined);
 };
 
-type TimedLongJob = Extract<LongJob, { jobType: 'reading' | 'pry' | 'treatment' }>;
+type TimedLongJob = Extract<LongJob, { jobType: 'reading' | 'forceDoor' | 'treatment' }>;
 
 const isTimedLongJob = (job: Readonly<LongJob>): job is TimedLongJob =>
-  job.jobType === 'reading' || job.jobType === 'pry' || job.jobType === 'treatment';
+  job.jobType === 'reading' || job.jobType === 'forceDoor' || job.jobType === 'treatment';
 
 const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
   switch (job.jobType) {
@@ -499,8 +499,8 @@ const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
       const book = inventory.itemByUid(job.bookUid);
       return book ? `Reading ${inventory.name(book)}` : 'Reading';
     }
-    case 'pry':
-      return 'Prying padlock';
+    case 'forceDoor':
+      return 'Forcing padlock';
     case 'treatment': {
       const item = inventory.itemByUid(job.itemUid);
       return item ? `Treating ${inventory.name(item)}` : 'Treating wound';
@@ -1162,14 +1162,14 @@ export const startPlay = (
   // ---- furniture: searching and doors ----
 
   const toggleDoor = (entity: BlockEntity) => {
-    if (entity.lock?.locked && entities.defOf(entity).door?.prying) {
+    if (entity.lock?.locked && Object.keys(entities.defOf(entity).door?.methods ?? {}).length > 0) {
       const plan = pryPlan(inventory, entity, undefined, session.character);
       if (!plan.ok) {
         showRefusal(plan.reason, sim.time);
         return;
       }
       queue.cancel();
-      const reason = session.pryDoor(entity, plan.tool.uid);
+      const reason = session.forceDoor(entity, plan.tool.uid, plan.method);
       if (reason) {
         showRefusal(reason, sim.time);
       }
@@ -1682,7 +1682,7 @@ export const startPlay = (
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {
-    if (sim.actions.job?.jobType === 'pry' || sim.actions.job?.jobType === 'wait') {
+    if (sim.actions.job?.jobType === 'forceDoor' || sim.actions.job?.jobType === 'wait') {
       sim.actions.stop();
     } else {
       rest.stop();
@@ -1753,7 +1753,7 @@ export const startPlay = (
       sim.actions.job?.jobType === 'craft' ||
       sim.actions.job?.jobType === 'wait' ||
       sim.actions.job?.jobType === 'reading' ||
-      sim.actions.job?.jobType === 'pry' ||
+      sim.actions.job?.jobType === 'forceDoor' ||
       sim.actions.job?.jobType === 'treatment'
     ) {
       sim.actions.stop();
@@ -2415,7 +2415,7 @@ export const startPlay = (
   };
 
   const pryHint = (entity: BlockEntity): string | undefined => {
-    if (!(entity.lock?.locked && entities.defOf(entity).door?.prying)) {
+    if (!(entity.lock?.locked && Object.keys(entities.defOf(entity).door?.methods ?? {}).length > 0)) {
       return undefined;
     }
     const plan = pryPlan(inventory, entity, undefined, session.character);

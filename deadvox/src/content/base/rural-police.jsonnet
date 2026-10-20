@@ -328,7 +328,7 @@ shape.colliding({
     palette: {
       '.': 'air', '#': 'brick', k: 'concrete', '=': 'window_frame', g: { ground: true },
       D: { furniture: 'wood_door' },
-      U: { furniture: 'wood_door', lock: { id: 'gauntlet_police_armoury', locked: true } },
+      U: { furniture: 'steel_armoury_door', lock: { id: 'gauntlet_police_armoury', locked: true } },
       O: { furniture: 'wood_door', facing: 'e' },
       E: { furniture: 'station_emergency_door', facing: 'e' },
       Q: { furniture: 'gauntlet_cell_door', facing: 'e' },

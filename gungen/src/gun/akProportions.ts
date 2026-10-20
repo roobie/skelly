@@ -1,4 +1,4 @@
-import { GRID } from '@skelly/engine/core/conventions.ts';
+import { GRID } from '@skelly/engine/foundation/conventions.ts';
 
 /**
  * AK v2 proportions, mapped from BR's golden reference, an Izhmash AKM photographed from the right:

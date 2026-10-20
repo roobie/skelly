@@ -1,9 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { worldSolid } from '@skelly/engine/core/geometry.ts';
-import { applyPoint, extrusionPoint, IDENTITY, type Vec3 } from '@skelly/engine/core/math.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, Solid } from '@skelly/engine/core/schema.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { applyPoint, extrusionPoint, IDENTITY, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { checkDesignFiles } from '../src/cli/designCheck.ts';
 import { SMALL_AR_CARTRIDGE, SMALL_AR_FRAME } from '../src/gun/arFrames.ts';

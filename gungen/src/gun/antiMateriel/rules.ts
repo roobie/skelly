@@ -1,10 +1,9 @@
 // Rules for the anti-materiel vocabulary. They follow gun/rules.ts: judge only placed parts, report readable issues.
 
-import { distanceWorld, localSolidBounds, obbPolyhedron, worldSolid } from '@skelly/engine/core/geometry.ts';
-import type { Issue } from '@skelly/engine/core/issue.ts';
-import { applyDir, applyPoint, dot, sub } from '@skelly/engine/core/math.ts';
-import type { Resolved } from '@skelly/engine/core/resolve.ts';
-import type { PartDef, Rule } from '@skelly/engine/core/schema.ts';
+import type { PartDef, Resolved, Rule } from '@skelly/engine/assembly/schema.ts';
+import type { Issue } from '@skelly/engine/foundation/issue.ts';
+import { applyDir, applyPoint, dot, sub } from '@skelly/engine/foundation/math.ts';
+import { distanceWorld, localSolidBounds, obbPolyhedron, worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import { BIPOD_GROUND_CLEARANCE_U, BIPOD_LEG_LENGTH } from './bipod.ts';
 import { X } from './common.ts';
 

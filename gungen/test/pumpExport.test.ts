@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
-import { IDENTITY, sub } from '@skelly/engine/core/math.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, Solid } from '@skelly/engine/core/schema.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { IDENTITY, sub } from '@skelly/engine/foundation/math.ts';
+import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { expect, it } from 'vitest';
 import { parseCartridgeJson } from '../src/ammo/parseCartridge.ts';
 import { exportFileText } from '../src/cli/exportFile.ts';

@@ -114,6 +114,7 @@ export const fixtureScenarioSources = (
     {
       source: 'scenario-fixture.json',
       data: {
+        doorMaterials: [{ id: 'wood', methods: [] }],
         blocks: [
           { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
           { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },
@@ -161,7 +162,7 @@ export const fixtureScenarioSources = (
             name: 'Fixture hatch',
             size: [2, 1, 3],
             color: '#808080',
-            door: { handlingSimSeconds: 0.2, hatch: true },
+            door: { material: 'wood', methods: {}, handlingSimSeconds: 0.2, hatch: true },
           },
           {
             id: 'fixture_crate',

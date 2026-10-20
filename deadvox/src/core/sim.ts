@@ -429,8 +429,8 @@ export class Simulation {
    * emitted interruption, such as a hit, stops it (`DESIGN.md`, "Long actions").
    */
   compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
-    if (this.actions.job?.jobType === 'pry' && !this.actions.job.stopped) {
-      return { ok: false, reason: 'Stop prying first' };
+    if (this.actions.job?.jobType === 'forceDoor' && !this.actions.job.stopped) {
+      return { ok: false, reason: 'Stop forcing the door first' };
     }
     return this.compression.start(undefined, 'debug', limits);
   }

@@ -1,4 +1,14 @@
 {
+  "doorMaterials": [
+    {
+      "id": "wood",
+      "methods": ["pry"]
+    },
+    {
+      "id": "steel",
+      "methods": ["pry", "cut"]
+    }
+  ],
   "furniture": [
     {
       "appearance": {
@@ -523,16 +533,63 @@
       "color": "#7a5534",
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
-        "prying": {
-          "fastestTimeSimSeconds": 7.5,
-          "quality": 3,
-          "skill": "mechanics",
-          "strikeIntervalSimSeconds": 0.5,
-          "timeSimSeconds": 15
+        "material": "wood",
+        "methods": {
+          "pry": {
+            "fastestTimeSimSeconds": 7.5,
+            "level": 3,
+            "quality": "prying",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.5,
+            "strikeSound": "lock_pry",
+            "timeSimSeconds": 15
+          }
         }
       },
       "id": "wood_door",
-      "name": "Wooden door",
+      "name": "Burglary-safe wooden door",
+      "size": [2, 4, 1]
+    },
+    {
+      "color": "#7a5534",
+      "door": {
+        "handlingSimSeconds": 0.59999999999999998,
+        "material": "wood",
+        "methods": {
+          "pry": {
+            "fastestTimeSimSeconds": 3,
+            "level": 1,
+            "quality": "prying",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.5,
+            "strikeSound": "lock_pry",
+            "timeSimSeconds": 6
+          }
+        }
+      },
+      "id": "flimsy_wood_door",
+      "name": "Flimsy wooden door",
+      "size": [2, 4, 1]
+    },
+    {
+      "color": "#626a70",
+      "door": {
+        "handlingSimSeconds": 0.59999999999999998,
+        "material": "steel",
+        "methods": {
+          "cut": {
+            "fastestTimeSimSeconds": 45,
+            "level": 1,
+            "quality": "flame_cutting",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 1,
+            "strikeSound": "lock_pry",
+            "timeSimSeconds": 90
+          }
+        }
+      },
+      "id": "steel_armoury_door",
+      "name": "Steel armoury door",
       "size": [2, 4, 1]
     }
   ]

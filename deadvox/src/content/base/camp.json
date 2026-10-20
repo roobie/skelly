@@ -4,12 +4,17 @@
       "color": "#718087",
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
-        "prying": {
-          "fastestTimeSimSeconds": 7.5,
-          "quality": 3,
-          "skill": "mechanics",
-          "strikeIntervalSimSeconds": 0.5,
-          "timeSimSeconds": 15
+        "material": "steel",
+        "methods": {
+          "pry": {
+            "fastestTimeSimSeconds": 7.5,
+            "level": 3,
+            "quality": "prying",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.5,
+            "strikeSound": "lock_pry",
+            "timeSimSeconds": 15
+          }
         }
       },
       "id": "container_door",
@@ -360,7 +365,9 @@
         ]
       },
       "door": {
-        "handlingSimSeconds": 0.59999999999999998
+        "handlingSimSeconds": 0.59999999999999998,
+        "material": "steel",
+        "methods": {}
       },
       "id": "camp_hq_safe",
       "name": "Steel reserve safe",
@@ -471,7 +478,9 @@
     {
       "color": "#666c70",
       "door": {
-        "handlingSimSeconds": 1.2
+        "handlingSimSeconds": 1.2,
+        "material": "steel",
+        "methods": {}
       },
       "id": "camp_gate_leaf",
       "name": "Camp fence-gate leaf",

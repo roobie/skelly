@@ -1705,22 +1705,30 @@ export const createSession = (options: SessionOptions) => {
     closeBlockedMessages: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.doorCloseBlockedMessages,
   });
   registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
-  sim.actions.prying = {
-    validate: (entityUid, toolUid) => {
+  sim.actions.forcing = {
+    validate: (entityUid, toolUid, method) => {
       const entity = entities.byUid(entityUid);
       if (!entity) {
         return 'The door is no longer there';
       }
-      const plan = pryPlan(inventory, entity, toolUid, character);
+      const plan = pryPlan(inventory, entity, { toolUid, method }, character);
       return plan.ok ? undefined : plan.reason;
     },
-    strike: (_entityUid, _toolUid, time) => playPlayerSound('lock_pry', time, { sourceLabel: 'prying padlock' }),
-    finish: (entityUid, toolUid) => {
+    strike: (entityUid, toolUid, method, time) => {
+      const entity = entities.byUid(entityUid);
+      if (entity) {
+        const plan = pryPlan(inventory, entity, { toolUid, method }, character);
+        if (plan.ok) {
+          playPlayerSound(plan.strikeSound, time, { sourceLabel: 'forcing padlock' });
+        }
+      }
+    },
+    finish: (entityUid, toolUid, method) => {
       const entity = entities.byUid(entityUid);
       if (!entity) {
         return 'The door is no longer there';
       }
-      const plan = pryPlan(inventory, entity, toolUid, character);
+      const plan = pryPlan(inventory, entity, { toolUid, method }, character);
       return plan.ok ? entities.breakLock(entity) : plan.reason;
     },
   };
@@ -1839,9 +1847,15 @@ export const createSession = (options: SessionOptions) => {
     quickbar,
     character,
     planCraft: (recipe: RecipeDef, prefer?: CraftPreference) => planCraft(recipe, reach(), character, prefer),
-    pryDoor: (entity: BlockEntity, toolUid?: number) => {
-      const plan = pryPlan(inventory, entity, toolUid, character);
-      return plan.ok ? sim.actions.beginPrying(entity.uid, plan.tool.uid, plan.time, plan.strikeInterval) : plan.reason;
+    forceDoor: (entity: BlockEntity, toolUid?: number, method?: string) => {
+      const plan = pryPlan(inventory, entity, { toolUid, method }, character);
+      return plan.ok
+        ? sim.actions.beginForcing(entity.uid, plan.tool.uid, {
+            method: plan.method,
+            durationSimSeconds: plan.time,
+            strikeIntervalSimSeconds: plan.strikeInterval,
+          })
+        : plan.reason;
     },
     downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, zombieStore.get(id), way),
     /** Queues finishing off or dismembering a downed body; returns why not. */

@@ -1,5 +1,6 @@
-import type { Vec3 } from '@skelly/engine/core/math.ts';
-import type { PartFamily, Solid } from '@skelly/engine/core/schema.ts';
+import type { PartFamily } from '@skelly/engine/assembly/schema.ts';
+import type { Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import type { SectionPocket } from './receiverSection.ts';
 

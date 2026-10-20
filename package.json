@@ -5,6 +5,7 @@
   "type": "module",
   "workspaces": [
     "engine",
+    "packages/tool-ui",
     "gungen",
     "deadvox",
     "mobgen"

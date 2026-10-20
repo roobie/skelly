@@ -85,7 +85,7 @@ shape.colliding({
     },
     {
       id: 'station_coal_hatch', name: 'Coal delivery hatch', size: [2, 2, 1], color: '#596562',
-      door: { handlingSimSeconds: 0.6 },
+      door: { material: 'steel', methods: {}, handlingSimSeconds: 0.6 },
     },
     {
       id: 'station_cooker', name: 'Cooker', size: [2, 2, 1], color: '#b7b9ae',
@@ -105,7 +105,7 @@ shape.colliding({
     },
     {
       id: 'station_emergency_door', name: 'Emergency exit door', size: [2, 4, 1], color: '#8c9b91',
-      door: { handlingSimSeconds: 0.6 },
+      door: { material: 'steel', methods: {}, handlingSimSeconds: 0.6 },
     },
   ],
 })

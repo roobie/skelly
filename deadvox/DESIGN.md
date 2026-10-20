@@ -53,7 +53,7 @@ read_if:
   - you're changing what the death-screen loot tally counts
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee motions, weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
-  - you're changing the quiet-key and noisy-prying alternatives for locked doors
+  - you're changing the quiet-key and noisy-forcing alternatives for locked doors
   - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
   - you're changing held-item throwing or its range tuning
@@ -1949,7 +1949,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** A matching key opens a locked door quietly; a crowbar is the noisy fallback. Prying takes 15 seconds of simulation time at mechanics 0 and 7.5 seconds at mechanics 10, with 30 strikes. It uses the existing mechanics skill, runs outside time compression, and destroys the padlock when complete. The handling-progress option shows its progress. A normal-speed interruption stops the pry with progress kept and input free. Bashing is deferred because mob and obstacle strength are not modeled; closed doors block shamblers like other solids. See `src/core/prying.ts`, `pryPlan`, `src/core/longAction.ts`, `LongActions.beginPrying`, `LongActions.interruptPrying`, `src/core/sim.ts`, `Simulation.checkInterruptions`, `src/game/play.ts`, `renderPlayHandling`, and `src/ui/hudOptions.ts`, `handling`.
+- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. Every door will be bashable given enough strength, but bashing waits because neither actor strength nor door strength is modelled. Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. See `src/core/prying.ts`, `pryPlan`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,

@@ -1,7 +1,7 @@
-import type { GlbAssetIdentity, Palette } from '@skelly/engine/core/design.ts';
-import { exportGlb } from '@skelly/engine/core/glb.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Domain, PartDef } from '@skelly/engine/core/schema.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
+import type { GlbAssetIdentity, Palette } from '@skelly/engine/export/exportTypes.ts';
+import { exportGlb } from '@skelly/engine/export/glb.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_UNITS } from '../src/gun/units.ts';
 import { readGlb } from './glbReader.ts';

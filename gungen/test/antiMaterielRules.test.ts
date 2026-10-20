@@ -1,5 +1,5 @@
-import type { Assembly } from '@skelly/engine/core/schema.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixture, variant } from './helpers.ts';

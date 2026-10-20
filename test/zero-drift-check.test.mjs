@@ -187,6 +187,21 @@ describe('zero-drift path check', () => {
     assert.ok(checks(cross('../engine/src/known.ts')).includes('path_scope'));
   });
 
+  it('treats each packages/<name> as its own project root', () => {
+    const path = 'packages/alpha/docs/fixture.md';
+    const cite = (value, tracked) =>
+      checkDocument({
+        path,
+        text: document(`See ${code(value)}.`),
+        root,
+        tracked: new Set(tracked),
+        pythonReadIf: new Map([[path, ['read this']]]),
+      });
+    assert.deepEqual(checks(cite('src/known.ts', ['packages/alpha/src/known.ts'])), []);
+    assert.deepEqual(checks(cite('packages/beta/src/known.ts', ['packages/beta/src/known.ts'])), []);
+    assert.ok(checks(cite('../../beta/src/known.ts', ['packages/beta/src/known.ts'])).includes('path_scope'));
+  });
+
   it('ignores URLs, globs, and placeholders', () => {
     const failures = scan(
       document(

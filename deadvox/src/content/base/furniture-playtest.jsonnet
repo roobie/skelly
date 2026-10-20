@@ -43,7 +43,7 @@ shape.colliding({
       name: 'Roller door',
       size: [6, 5, 1],
       color: '#666c70',
-      door: { handlingSimSeconds: 1.2, openNoise: { sound: 'door_roller_open' } },
+      door: { material: 'steel', methods: {}, handlingSimSeconds: 1.2, openNoise: { sound: 'door_roller_open' } },
     },
     { id: 'workshop_service_pit', name: 'Service pit', size: [6, 1, 2], color: '#373a3b', solid: false },
     { id: 'workshop_lift', name: 'Vehicle lift', size: [4, 2, 9], color: '#dfb72f', solid: false },

@@ -1,3 +1,5 @@
+import type { PartMotion, Resolved } from '@skelly/engine/assembly/schema.ts';
+import { compose, length, scale, sub, translation, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import {
   boundsOfPoints,
   lowerBoundDistanceWorld,
@@ -5,10 +7,8 @@ import {
   penetrationWorld,
   type WorldSolid,
   worldSolid,
-} from '@skelly/engine/core/geometry.ts';
-import { compose, length, scale, sub, translation, type Vec3 } from '@skelly/engine/core/math.ts';
-import type { Resolved } from '@skelly/engine/core/resolve.ts';
-import type { PartMotion, Solid } from '@skelly/engine/core/schema.ts';
+} from '@skelly/engine/shapes/geometry.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 
 export type GunAction = 'ak' | 'ar';
 export type CycleMode = 'fire' | 'hand';

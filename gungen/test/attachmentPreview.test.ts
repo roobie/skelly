@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AppearanceContext } from '@skelly/engine/core/design.ts';
-import type { Mat3 } from '@skelly/engine/core/math.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import type { AppearanceContext } from '@skelly/engine/export/exportTypes.ts';
+import type { Mat3 } from '@skelly/engine/foundation/math.ts';
 import { Matrix4, Mesh, MeshStandardMaterial, Quaternion } from 'three';
 import { describe, expect, it } from 'vitest';
 import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';

@@ -1,9 +1,9 @@
-import { GRID } from '@skelly/engine/core/conventions.ts';
-import { localSolidBounds, validateExtrudedPolygon } from '@skelly/engine/core/geometry.ts';
-import { cross, dot, length } from '@skelly/engine/core/math.ts';
-import { meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
-import type { PartFamily } from '@skelly/engine/core/schema.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import type { PartFamily } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { GRID } from '@skelly/engine/foundation/conventions.ts';
+import { cross, dot, length } from '@skelly/engine/foundation/math.ts';
+import { localSolidBounds, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
+import { meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import {

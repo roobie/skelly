@@ -1,5 +1,5 @@
-import { generate } from '@skelly/engine/core/generate.ts';
-import type { Assembly } from '@skelly/engine/core/schema.ts';
+import { generate } from '@skelly/engine/assembly/generate.ts';
+import type { Assembly } from '@skelly/engine/assembly/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
