@@ -1515,7 +1515,10 @@ describe('content references', () => {
     const [w, h] = gun.size as [number, number];
     expect(buildRegistry([{ source: 'locker.json', data: locker([h, w]) }]).issues).toEqual([]);
     expect(buildRegistry([{ source: 'locker.json', data: locker([h - 1, h - 1]) }]).issues).toContainEqual(
-      expect.objectContaining({ path: 'templates[0].palette["L"].loot', message: expect.stringContaining('fits no pocket') }),
+      expect.objectContaining({
+        path: 'templates[0].palette["L"].loot',
+        message: expect.stringContaining('fits no pocket'),
+      }),
     );
   });
 
