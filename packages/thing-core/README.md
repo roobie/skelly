@@ -26,10 +26,12 @@ reasons and `things/WORK.md`, "Phases" for the remaining suite work.
   entry can carry several packs' blocks without their names clashing. A field two packs
   both want is promoted into the envelope on purpose. The gun pack's block and the composed
   Deadvox schema are `packages/deadvox/src/core/schema.ts`, `GunModelSchema` and `ModelSchema`.
-- Materials are one table, kept here as content, and packs add their own. In one table every
-  tool and the game read the same values, and a mod changes a material in one place. Mass is
-  authored, not derived from material density; see `things/README.md`, "Rules". Baked asset appearance is not a second source of
-  tuning: material references retain authoring shades while resolving the shared values;
+- Materials are one table, kept here as content: each material has a colour, a finish and,
+  until g73 lands, a density, and packs add their own. Until g73 lands, mass is still derived
+  from densities, so colour and density kept apart would drift. In one table every tool and
+  the game read the same values, and a mod changes a material in one place. Once g73 lands,
+  mass is authored, not derived from material density; see `things/README.md`, "Rules".
+  Baked asset appearance is not a second source of tuning: material references retain authoring shades while resolving the shared values;
   see `src/materials.ts`, `MaterialReferenceSchema`, and
   `packages/deadvox/src/render/modelMaterials.ts`, `applyModelMaterials`.
 - Role assignments and appearance profiles belong to the authoring domain, not to a

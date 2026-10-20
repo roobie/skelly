@@ -47,7 +47,7 @@ Removal waits on the gun-authoring tool reproducing every gungen export; `things
 - The core stays free of rendering libraries so either tool, and tests, can use it headless.
 - An atom, an item not made up of other items, has an authored mass. An assembly's mass is
   the sum of its parts' masses. Deriving mass from shape volume and material density gave
-  implausible weights: a part is seldom one material, and real shapes are more complex than
+  implausible weights: not every part is one material, and real shapes are more complex than
   the authored solids. Summing still gives any assembly a total and a centre of mass, so
   removing or swapping a part is a subtraction.
 - The tools are authoring tools, not generators: each exports a closed set of items, so
