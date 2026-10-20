@@ -344,7 +344,7 @@ describe('play presentation ownership', () => {
       expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
       expect(f.sky.at(target)).toBeLessThan(f.sky.at(cameraPosition));
       const receiver = receiverLighting(f, target);
-      expect(receiver.shader).toContain('float receiverSkyVisibility = skyVisibility();');
+      expect(receiver.shader).toContain('float receiverSkyVisibility = skyVisibility(receiverSkyUnknown);');
       expect(receiver.shader).toContain('irradiance *= receiverSkyVisibility;');
       expect(f.view.flashlight.daylightScale * receiver.scale).toBeGreaterThan(
         flashlightDaylightScale(f.daylight) * 10,

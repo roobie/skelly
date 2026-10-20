@@ -2227,12 +2227,15 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   beyond them. The remaining jaggedness is accepted; do not pursue further
   refinement without a new decision. See `sunShadowTexelSize` and
   `Shadows.update` in `src/render/shadows.ts`.
-- **Sealed rooms stay dark at every hour (#562):** two solid blocks that share a
-  face pass no sunlight, and the main light shades at full strength whenever it
-  shines, low sun and the night light included. Furniture casts no sun shadow,
-  so light past a closed door is accepted. Why the sun's map is drawn from the
-  faces light enters: `src/render/shadows.ts`, its header; why its shadow never
-  fades: `src/core/sky.ts`, `sunShadowStrength`.
+- **Sealed rooms stay dark at every hour (#562):** darkness must not end where
+  detailed sun shadows stop. Beyond the near shadow box, a surface with no diffuse
+  sky light or an unknown sky field gets no direct sun, because this keeps distant
+  sealed rooms dark at no measurable frame cost. Near shadows remain authoritative.
+  The accepted cost is that far roofed floors lit sideways through a door or window
+  read dark until they enter the near box; a little diffuse sky can still leave a
+  far room sunlit. See `src/render/skylight.ts`, `Skylight.patch`. Light through
+  furniture-only barriers remains accepted. Near shadows must hold at every hour;
+  see `src/render/shadows.ts`, its header, and `src/core/sky.ts`, `sunShadowStrength`.
 - First-person hands must not stay sunlit when a wall blocks the player's light,
   but nearby lights still need to reach them. Their separate scene prevents wall
   clipping; see `src/render/hands.ts`, its file header.
