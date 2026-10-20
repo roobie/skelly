@@ -38,7 +38,6 @@
         ]
       },
       "id": "rifle_rack",
-      "loot": "military_armoury",
       "name": "Rifle rack",
       "shape": [
         {
@@ -117,7 +116,6 @@
         ]
       },
       "id": "ammo_crate",
-      "loot": "military_armoury",
       "name": "Ammunition crate",
       "shape": [
         {
@@ -213,7 +211,6 @@
         ]
       },
       "id": "footlocker",
-      "loot": "camp_supplies",
       "name": "Footlocker",
       "shape": [
         {
@@ -393,7 +390,6 @@
         ]
       },
       "id": "field_desk",
-      "loot": "camp_supplies",
       "name": "Field desk",
       "shape": [
         {
@@ -806,7 +802,8 @@
         ".": "air",
         "=": "concrete",
         "A": {
-          "furniture": "ammo_crate"
+          "furniture": "ammo_crate",
+          "loot": "military_armoury"
         },
         "D": {
           "facing": "n",
@@ -826,7 +823,8 @@
           "loot": "d41_empty"
         },
         "R": {
-          "furniture": "rifle_rack"
+          "furniture": "rifle_rack",
+          "loot": "military_armoury"
         },
         "T": {
           "facing": "w",
@@ -1792,11 +1790,13 @@
           "furniture": "wood_door"
         },
         "F": {
-          "furniture": "footlocker"
+          "furniture": "footlocker",
+          "loot": "camp_supplies"
         },
         "G": "galvanized",
         "M": {
-          "furniture": "field_desk"
+          "furniture": "field_desk",
+          "loot": "camp_supplies"
         },
         "O": {
           "furniture": "camp_orders"
@@ -1812,11 +1812,13 @@
         },
         "R": {
           "furniture": "wardrobe",
+          "loot": "wardrobe",
           "lootUsage": ["Residential"]
         },
         "S": "sandbag",
         "W": {
-          "furniture": "field_desk"
+          "furniture": "field_desk",
+          "loot": "camp_supplies"
         },
         "p": "planks",
         "z": {

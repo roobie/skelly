@@ -32,3 +32,25 @@ it.each(['P', '🧪'])('indexes furniture and blocks by code point for marker %s
   const solid = result.registry.blockIds.get('fixture_solid');
   expect([...compiled.blocks]).toEqual([solid, 0, solid, 0]);
 });
+
+it('rejects a furniture loot table', () => {
+  const source = 'furniture-loot.json';
+  const { issues } = buildRegistry([
+    {
+      source,
+      data: {
+        furniture: [
+          {
+            id: 'fixture_container',
+            name: 'Fixture container',
+            size: [1, 1, 1],
+            color: '#808080',
+            container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+            loot: 'fixture_supply',
+          },
+        ],
+      },
+    },
+  ]);
+  expect(issues).toEqual([{ source, path: 'furniture[0].loot', message: 'unknown field "loot"' }]);
+});

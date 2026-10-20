@@ -17,7 +17,7 @@ shape.colliding({
     },
     {
       id: 'medical_card_file', name: 'Card-file cabinet', size: [1, 2, 1], color: '#89918e',
-      container: pocket, appearance: { kind: 'drawers', surface: 'painted-metal' }, loot: 'medical_filler',
+      container: pocket, appearance: { kind: 'drawers', surface: 'painted-metal' },
     },
     {
       id: 'medical_bike_rack', name: 'Bike rack', size: [4, 1, 2], color: '#66706c', solid: false,

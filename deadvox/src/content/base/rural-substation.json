@@ -256,11 +256,13 @@
         "k": "concrete",
         "l": {
           "facing": "w",
-          "furniture": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf"
         },
         "s": {
           "facing": "e",
-          "furniture": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf"
         }
       },
       "size": [20, 9, 12]

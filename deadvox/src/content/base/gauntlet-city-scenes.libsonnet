@@ -10,7 +10,12 @@ local item(id, weight, count=null, condition=null) =
   + (if count == null then {} else { count: count })
   + (if condition == null then {} else { condition: condition });
 local nothing(weight) = { nothing: true, weight: weight };
-local at(furniture, x, z, facing='n', loot=null, fixed=false) =
+local furnitureLoot = {
+  kitchen_cupboard: 'kitchen_cupboard', counter: 'kitchen_cupboard', fridge: 'fridge', wardrobe: 'wardrobe',
+  desk: 'desk', shelf: 'shelf', shelf_fallen: 'shelf', shelf_on_side: 'shelf',
+  wardrobe_fallen: 'wardrobe', wardrobe_on_side: 'wardrobe', crate: 'junk',
+};
+local at(furniture, x, z, facing='n', loot=std.get(furnitureLoot, furniture, null), fixed=false) =
   { furniture: furniture, x: x, z: z, facing: facing, loot: loot, fixed: fixed };
 local shambler(x, z) = { x: x, z: z, spawn: true };
 // Placements stay in two bands, rows 6-7 and rows 10-11. Rows 4-5 are the lane a body walks between

@@ -255,7 +255,6 @@ describe('static reachability', () => {
       size: [1, 1, 1],
       color: '#000000',
       solid: false,
-      loot: 'default',
       container: { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] },
       workstation: { id: 'placed_bench', qualities: { sawing: 1 }, workFactorBonus: 0.2 },
     });
@@ -318,7 +317,6 @@ describe('static reachability', () => {
     registry.furniture.set('fixture_demo_container', {
       ...registry.furniture.get('crate')!,
       id: 'fixture_demo_container',
-      loot: 'fixture_demo_table',
     });
     registry.templates.set('fixture_demo_template', {
       id: 'fixture_demo_template',
@@ -328,7 +326,7 @@ describe('static reachability', () => {
         ['CC', 'CC'],
         ['CC', 'CC'],
       ],
-      palette: { C: { furniture: 'fixture_demo_container' } },
+      palette: { C: { furniture: 'fixture_demo_container', loot: 'fixture_demo_table' } },
     });
     const layout: SiteLayoutDef = {
       id: 'fixture_site',

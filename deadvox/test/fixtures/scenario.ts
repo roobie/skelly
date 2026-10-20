@@ -171,7 +171,6 @@ export const fixtureScenarioSources = (
             size: [1, 1, 1],
             color: '#808080',
             container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
-            loot: 'fixture_loot',
           },
         ],
         items: [
@@ -209,7 +208,7 @@ export const fixtureScenarioSources = (
             eligibility: { settlementKinds: ['fixture_city'] },
             lootContext: fixtureLootContext(),
             size: [4, 3, 4],
-            palette: { '=': 'fixture_solid', C: { furniture: 'fixture_crate' } },
+            palette: { '=': 'fixture_solid', C: { furniture: 'fixture_crate', loot: 'fixture_loot' } },
             layers: Array.from({ length: 3 }, (_layerValue, layer) =>
               Array.from({ length: 4 }, (_rowValue, row) => (layer === 1 && row === 1 ? '=C==' : '====')),
             ),
