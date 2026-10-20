@@ -545,6 +545,10 @@
           "weight": 3
         },
         {
+          "item": "gas_canister",
+          "weight": 1
+        },
+        {
           "condition": [0.40000000000000002, 1],
           "item": "baseball_bat",
           "weight": 1
