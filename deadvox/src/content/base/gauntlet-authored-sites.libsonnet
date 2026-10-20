@@ -7,20 +7,12 @@ local substation = import 'rural-substation.jsonnet';
 local hq = import 'crisis-hq.jsonnet';
 local find(templates, id) = std.filter(function(t) t.id == id, templates)[0];
 local policeMain = police.templates[0] + {
-  palette+: {
-    U: { furniture: 'wood_door', lock: { id: 'gauntlet_police_armoury', locked: true } },
-    C: { furniture: 'desk', loot: 'gauntlet_police_office_key' },
-    Z: 'shop_blue',
-    // A shelf's pocket is too short for the long guns the armoury promises and rolls.
-    A: { furniture: 'range_rack', loot: 'gauntlet_police_armoury_stock' },
-  },
+  palette+: { Z: 'shop_blue' },
   layers: [
     [
       if y == 5 && z == 29 then '##ZZZZZZZZZZZZZZZZZZZZZZZZZZZZGGGGGG##'
       else if y == 6 && z == 29 then '##ZZZZZZZZZZZZZZZZZZZZZZZZZZZZ########'
-      else std.strReplace(std.strReplace(row,
-        '##########..#............##DD#..VVVV.#', '##########..#............##UU#..VVVV.#'),
-        'O..WWW..WWW', 'O..CCC..WWW')
+      else row
       for z in std.range(0, std.length(layer) - 1) for row in [layer[z]]
     ] for y in std.range(0, std.length(police.templates[0].layers) - 1) for layer in [police.templates[0].layers[y]]
   ],
@@ -114,7 +106,7 @@ local compound(id, size, context, slots, entrance) = {
   mapPieces: [kit.piece(policeMain, policeBays), kit.piece(medicalMain, medicalBays), kit.piece(subMain, subBays), kit.piece(hqMain, hqBays)] +
              [kit.piece(t) for t in shellTemplates] + chairs,
   mapAssemblies: [furnished(policeMain, policeBays), furnished(medicalMain, medicalBays), furnished(subMain, subBays), furnished(hqMain, hqBays)] + [
-    compound('gauntlet_rural_police', [54, 8, 43], policeMain.lootContext, [
+    compound('gauntlet_rural_police', [54, 12, 43], policeMain.lootContext, [
       furnishedSlot(policeMain, [8, 0, 4], 2),
       kit.slot('front_fence', policeFront, [0, 0, 0]), kit.slot('back_fence', policeBack, [0, 0, 42]),
       kit.slot('east_fence', policeLeft, [0, 0, 1], 1), kit.slot('west_fence', policeRight, [53, 0, 1], 1),
@@ -139,7 +131,5 @@ local compound(id, size, context, slots, entrance) = {
       vault_inside: { kind: 'standing', at: [vaultAt[axis] + hqVault.access.entrance[axis] for axis in std.range(0, 2)] },
     } },
   ],
-  loot: [{ id: 'gauntlet_police_armoury_stock', rolls: [2, 3], entries: [
-    { table: 'gauntlet_police_sidearms', weight: 1 }, { table: 'gauntlet_police_ammunition', weight: 2 },
-  ] }],
+  loot: [],
 }

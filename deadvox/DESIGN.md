@@ -54,6 +54,7 @@ read_if:
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee motions, weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
+  - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
   - you're changing held-item throwing or its range tuning
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
@@ -572,6 +573,14 @@ its rolls. The d502 build round moves the stops onto theme contexts and replaces
 per-building police tables. See `src/content/base/gauntlet-city-building-types.libsonnet`,
 `loot`.
 
+The police armoury key lies on a dead officer on the station's roof, which the
+start overlooks. The start's lookout keeps that view clear rather than hiding the
+officer behind its own roof edge. This gives the armoury a route independent of
+the sewer, whose exploration already carries enough. The key route and the
+blowtorch route must remain independent alternatives; neither should require the
+other. See `src/content/base/rural-police.jsonnet`, `templates` and `loot`, and
+`src/content/base/gauntlet-start.libsonnet`, `start` and `mapPieces`.
+
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
 player commits to it. See `src/content/base/gauntlet-service.libsonnet`,
@@ -679,9 +688,8 @@ each mouth reaches each port as surely as the hatch reaches the lab; an accepted
 route that play cannot cross would be worse than none. Elements list their mouths and
 ports so a later network adds entries rather than a rewrite. The plan places them in
 three dimensions and refuses one that claims a cell another placement owns: a
-corridor may pass under a building but not through it. The guard room's spare bay
-stays bare so the armoury key's container from d483 can stand there without a
-rebuild. See `src/core/cityUnderground.ts`, `placeUnderground`;
+corridor may pass under a building but not through it. See
+`src/core/cityUnderground.ts`, `placeUnderground`;
 `src/core/scenarioPortal.ts`, `undergroundPortIssues`;
 `src/content/base/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
 `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
