@@ -22,7 +22,7 @@ import { Color, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCa
 import { describe, expect, it } from 'vitest';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { amalgamFigureForType } from '../src/core/amalgamFigure.ts';
-import type { Vec3 } from '../src/core/coords.ts';
+import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
@@ -34,6 +34,7 @@ import { type Zombie, type ZombieMode, ZombieSystem } from '../src/core/zombies.
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
+import { ChunkMeshes } from '../src/render/chunks.ts';
 import {
   fallDirectionAwayFromPlayer,
   HEARING_GAZE_JITTER,
@@ -41,6 +42,7 @@ import {
   MobActorMeshes,
   perceptionLabelFor,
 } from '../src/render/mobActors.ts';
+import { ZombieMeshes } from '../src/render/zombies.ts';
 
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -408,6 +410,44 @@ describe('feet at body.pos.y (mobgen pose convention)', () => {
 });
 
 describe('MobActorMeshes', () => {
+  it('uses terrain reveal membership for detailed and box actors without removing their presentation state', () => {
+    const terrain = new ChunkMeshes(0.5, registry);
+    const renderer = new MobActorMeshes(0.5, 1, {
+      figureSeeds: figureSeedPool(registry.zombies),
+      poolSize: 1,
+      reveal: terrain,
+    });
+    const boxes = new ZombieMeshes(0.5, 1, terrain);
+    const store = new MapEntityStore<Zombie>();
+    const zombie = makeZombie([2 * CHUNK + 1, 0, 1]);
+    const id = store.add(zombie);
+    const snapshot = structuredClone(zombie);
+    const internal = renderer as unknown as {
+      hiddenRow: number;
+      states: Map<number, { variantIndex: number; instanceIndex: number; globalRow: number }>;
+      variants: readonly { crowdSlotAttr: InstancedBufferAttribute }[];
+    };
+    try {
+      for (const allowed of [false, true, false]) {
+        terrain.setRevealedColumns(allowed ? new Set(['0,0', '1,0', '2,0']) : new Set(['0,0']));
+        renderer.sync(store);
+        boxes.sync(store);
+        const state = internal.states.get(id)!;
+        expect(state).toBeDefined();
+        // Both the colour and custom-depth shaders consume this same per-instance row.
+        const row = internal.variants[state.variantIndex]!.crowdSlotAttr.getX(state.instanceIndex);
+        expect(row).toBe(allowed ? state.globalRow : internal.hiddenRow);
+        const boxInstances = boxes.group.children as InstancedMesh[];
+        expect(boxInstances.some((mesh) => mesh.count > 0)).toBe(allowed);
+        expect(boxInstances.some((mesh) => mesh.castShadow && mesh.count > 0)).toBe(allowed);
+        expect(store.get(id)).toBe(zombie);
+        expect(zombie).toEqual(snapshot);
+      }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('reposes a runner that reuses an offscreen variant slot before it can draw', () => {
     const renderer = new MobActorMeshes(0.5, 1, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
     try {

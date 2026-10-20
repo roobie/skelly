@@ -1,3 +1,9 @@
+export interface ColumnReveal {
+  readonly revealVersion: number;
+  /** Position in world block units. */
+  isRevealed: (x: number, z: number) => boolean;
+}
+
 /** A conservative sight corridor: both inward neighbours must be drawn, including at diagonal corners. */
 export const revealedColumns = (
   center: readonly [number, number],

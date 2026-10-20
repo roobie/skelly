@@ -1,12 +1,15 @@
-import { DoubleSide, OrthographicCamera } from 'three';
+import { DoubleSide, type Group, InstancedMesh, Mesh, OrthographicCamera } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { CHUNK } from '../src/core/coords.ts';
+import { Inventory } from '../src/core/inventory.ts';
 import { buildMesh } from '../src/core/mesher.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { buildSkyResult } from '../src/core/skyTransport.ts';
 import { World } from '../src/core/world.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
+import { FurnitureMeshes } from '../src/render/furniture.ts';
+import { PileMeshes } from '../src/render/piles.ts';
 import type { ToMesher } from '../src/worker/protocol.ts';
 import { baseRegistry, baseTerrainShape } from './baseRegistry.ts';
 import { skyFixture } from './fixtures/sky.ts';
@@ -111,7 +114,43 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
   vi.stubGlobal('Worker', OwnedWorker);
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 1 };
   const world = new World();
-  const meshes = new ChunkMeshes(scale.blockSize, baseRegistry());
+  const registry = baseRegistry();
+  registry.furniture.set('reveal_piece', {
+    id: 'reveal_piece',
+    name: 'Fixture piece',
+    size: [1, 1, 1],
+    color: '#888888',
+  });
+  registry.items.set('reveal_item', {
+    id: 'reveal_item',
+    name: 'Fixture item',
+    size: [1, 1],
+    weight: 1,
+    category: 'misc',
+    economy: registry.items.values().next().value!.economy,
+  });
+  const inventory = new Inventory(registry);
+  const contentPosition: [number, number, number] = [2 * CHUNK + 1, 1, 1];
+  const entity = inventory.furnish({ type: 'reveal_piece', pos: contentPosition, size: [1, 1, 1], facing: 'n' });
+  expect(entity).toBeDefined();
+  expect(inventory.add(inventory.create('reveal_item'), { kind: 'pile', pos: contentPosition })).toBe(true);
+  const snapshot = inventory.snapshotState();
+  const meshes = new ChunkMeshes(scale.blockSize, registry);
+  const furniture = new FurnitureMeshes(scale.blockSize, meshes);
+  const piles = new PileMeshes(scale.blockSize, undefined, 17, meshes);
+  const drawnContents = (group: Group, shadow: boolean) => {
+    const drawn: Mesh[] = [];
+    group.traverseVisible((object) => {
+      if (
+        object instanceof Mesh &&
+        (!(object instanceof InstancedMesh) || object.count > 0) &&
+        (!shadow || object.castShadow)
+      ) {
+        drawn.push(object);
+      }
+    });
+    return drawn;
+  };
   const streamer = new Streamer({
     world,
     meshes,
@@ -150,7 +189,20 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
       }
     }
   };
-  const visible = () => {
+  const visible = (contentsExpected = false) => {
+    furniture.sync(inventory.entities);
+    piles.sync(inventory);
+    for (const group of [furniture.group, piles.group]) {
+      for (const shadow of [false, true]) {
+        const drawn = drawnContents(group, shadow);
+        if (contentsExpected) {
+          expect(drawn.length).toBeGreaterThan(0);
+        } else {
+          expect(drawn).toEqual([]);
+        }
+      }
+    }
+    expect(inventory.snapshotState()).toEqual(snapshot);
     meshes.selectShadowCasters(() => true, DoubleSide);
     const shadows = meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray());
     const camera = new OrthographicCamera(-200, 200, 200, -200, 0.1, 1000);
@@ -168,11 +220,11 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
   expect([...meshes.keys()]).toContain('2,0,0');
   expect(new Set(visible())).toEqual(new Set(['0,0', '0,1']));
   drain(undefined);
-  expect(new Set(visible())).toEqual(new Set(columns.map(([cx, cz]) => `${cx},${cz}`)));
+  expect(new Set(visible(true))).toEqual(new Set(columns.map(([cx, cz]) => `${cx},${cz}`)));
   const edits = world.setBlock(CHUNK + 1, 1, 1, 2);
   streamer.markEdited(edits);
   streamer.update(0, 0);
-  expect(new Set(visible())).toEqual(new Set(columns.map(([cx, cz]) => `${cx},${cz}`)));
+  expect(new Set(visible(true))).toEqual(new Set(columns.map(([cx, cz]) => `${cx},${cz}`)));
   drain(undefined);
   streamer.unloadForReplay(1, 0);
   expect(new Set(visible())).toEqual(new Set(['0,0', '0,1']));

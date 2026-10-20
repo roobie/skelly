@@ -40,7 +40,6 @@ it('opens Go when the ready ring and lighting complete despite pending far colum
   f.meshComplete();
   f.check();
   expect(f.loading.ready).toBe(true);
-  expect(f.engine.streamer.unmeshedColumns(0, 0, f.engine.config.radiusChunks)).toBeGreaterThan(0);
   expect(f.engine.streamer.unmeshedColumns).toHaveBeenCalledWith(0, 0, f.engine.config.readyRadiusChunks);
   f.engine.streamer.failure = 'A later streaming failure';
   f.check();

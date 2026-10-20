@@ -3,6 +3,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type ZombieRegion } from '../core/zombieRegions.ts';
 import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
+import type { ColumnReveal } from './columnReveal.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { StepOffset } from './stepOffset.ts';
@@ -34,9 +35,11 @@ export class ZombieMeshes {
   private readonly dummy = new Object3D();
   private readonly stepOffsets = new Map<EntityId, StepOffset>();
   private readonly blockSize: number;
+  private readonly reveal: ColumnReveal | undefined;
 
-  constructor(blockSize: number, capacity = 64) {
+  constructor(blockSize: number, capacity = 64, reveal?: ColumnReveal) {
     this.blockSize = blockSize;
+    this.reveal = reveal;
     for (const part of FIGURE_PARTS) {
       const flesh = part === 'body' || part === 'head';
       const material = withHeightFog(new MeshLambertMaterial({ color: flesh ? 0x87_96_78 : 0x68_6f_5e }), 'zombie');
@@ -158,8 +161,9 @@ export class ZombieMeshes {
       );
     });
     this.discardMissingOffsets(new Set(zombies.map(({ id }) => id)));
+    const revealed = zombies.filter(({ position }) => this.reveal?.isRevealed(position[0], position[2]) ?? true);
     for (const part of PARTS) {
-      this.syncPart(part, zombies);
+      this.syncPart(part, revealed);
     }
   }
 }

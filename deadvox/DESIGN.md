@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change browser mod identity or startup admission
+  - you change streaming reveal or loading readiness
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
@@ -109,7 +110,7 @@ place the authorities gave up on.
 
 ## Performance and scale
 
-Terrain goes on screen a whole column at a time and never beyond a column that isn't drawn yet, so no missing chunk shows what solid blocks hide. This lets play begin once a smaller ready ring is drawn while the remaining view fills in safely, without exposing sealed or buried rooms during loading or movement. Edits keep already drawn columns visible so replacement work does not create a gap. See `src/render/chunks.ts`, `ChunkMeshes`, `src/render/columnReveal.ts`, `revealedColumns`, `src/game/streamer.ts`, `Streamer`, `src/game/worldLoading.ts`, `WorldLoading`, and `src/content/base/graphics.jsonnet`, `readyRadiusM`.
+Terrain goes on screen a whole column at a time and never beyond a column that isn't drawn yet, so no missing chunk shows what solid blocks hide. This lets play begin once a smaller ready ring is drawn while the remaining view fills in safely, without exposing sealed or buried rooms during loading or movement. Furniture, piles and actors share the terrain's reveal membership so their silhouettes and shadows cannot expose a hidden room before its walls arrive. Edits keep already drawn columns visible so replacement work does not create a gap. See `src/render/furniture.ts`, `FurnitureMeshes`, `src/render/piles.ts`, `PileMeshes`, `src/render/mobActors.ts`, `MobActorMeshes`, `src/render/zombies.ts`, `ZombieMeshes`, `src/render/chunks.ts`, `ChunkMeshes`, `src/render/columnReveal.ts`, `revealedColumns`, `src/game/streamer.ts`, `Streamer`, `src/game/worldLoading.ts`, `WorldLoading`, and `src/content/base/graphics.jsonnet`, `readyRadiusM`.
 
 Performance acceptance targets 60 fps on a portable reference-laptop class:
 Intel HD 530-class integrated graphics at a device pixel ratio of 1.5. The
