@@ -1,19 +1,14 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import type {
-  AppearanceContext,
-  GlbAssetIdentity,
-  GlbExportError,
-  Palette,
-} from '@skelly/engine/export/exportTypes.ts';
+import type { AppearanceContext, GlbAssetIdentity, GlbExportError } from '@skelly/engine/export/exportTypes.ts';
 import type { RevolvedSolid, Solid } from '@skelly/engine/shapes/solid.ts';
-import { materialColours } from '@skelly/thing-core/materials';
 import { cartridgeModelAsset } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { type RoundProfiles, roundProfiles } from '../ammo/roundProfile.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
 import { exportGunGeometry as exportGlb } from './glbWriter.ts';
-import { shotshellGeometry, shotshellHullColor } from './shotshellGeometry.ts';
+import { AMMO_PALETTE, GUN_APPEARANCE } from './palette.ts';
+import { shotshellGeometry, shotshellHullMaterial } from './shotshellGeometry.ts';
 
 interface CartridgeModel {
   readonly glb: Uint8Array;
@@ -36,14 +31,6 @@ type SingleCartridgeExportResult =
 const EMPTY_PORTS: PartDef['ports'] = [];
 const EMPTY_KEEPOUTS: PartDef['keepOuts'] = [];
 const EMPTY_AXES: PartDef['axes'] = [];
-const DEFAULT_CARTRIDGE_FINISH = { case: 'brass', bullet: 'copper', primer: 'brass' } as const;
-
-const AMMO_PALETTE: Palette = {
-  familyColors: { 'cartridge-model': [0.62, 0.56, 0.43] },
-  specialColors: { case: [0.69, 0.51, 0.29], bullet: [0.7, 0.34, 0.19], primer: [0.49, 0.4, 0.23] },
-  fallbackColor: [0.62, 0.56, 0.43],
-  materials: materialColours,
-};
 const MM_DOMAIN: Domain['units'] = { metresPerUnit: 0.001, grid: 0.001, bevel: 0 };
 
 const makeModelExport = (
@@ -78,21 +65,15 @@ const makeModelExport = (
   const resolved = resolve(assembly, domain);
   const effectiveAppearance: AppearanceContext = {
     ...appearance,
-    finish: { ...DEFAULT_CARTRIDGE_FINISH, hull: 'hull-color', closure: 'closure-card', ...appearance?.finish },
+    finish: {
+      ...GUN_APPEARANCE.cartridgeFinish,
+      ...(cartridge.kind === 'shotshell' ? { hull: shotshellHullMaterial(cartridge) } : {}),
+      ...appearance?.finish,
+    },
   };
   const result = exportGlb({
     resolved,
-    palette:
-      cartridge.kind === 'shotshell'
-        ? {
-            ...AMMO_PALETTE,
-            materials: {
-              ...AMMO_PALETTE.materials,
-              'hull-color': shotshellHullColor(cartridge),
-              'closure-card': [0.27, 0.23, 0.17],
-            },
-          }
-        : AMMO_PALETTE,
+    palette: AMMO_PALETTE,
     revolveFacets: 96,
     asset,
     appearance: effectiveAppearance,

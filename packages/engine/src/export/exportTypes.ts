@@ -12,25 +12,31 @@ import type { Vec3 } from '../foundation/math.ts';
 export type SrgbColor = readonly [red: number, green: number, blue: number];
 
 /**
- * Palette keeps legacy role colours for geometry inspection and optionally supplies material/slot finishing.
- * A role selects its default slot and shade; colour follows the resolved material.
+ * Roles support geometry inspection independently of a material finish.
+ * A role selects its default slot and shade; finished colour follows the resolved material.
  */
 export interface AppearanceContext {
-  readonly variant?: string;
+  readonly appearanceProfile?: string;
   readonly finish?: Readonly<Record<string, string>>;
+}
+
+export interface MaterialAppearance {
+  readonly colour: SrgbColor;
+  readonly finish: { readonly metallic: number; readonly roughness: number };
 }
 
 export interface Palette {
   readonly familyColors: Readonly<Record<string, SrgbColor>>;
   readonly specialColors: Readonly<Record<string, SrgbColor>>;
   readonly fallbackColor: SrgbColor;
-  readonly materials?: Readonly<Record<string, SrgbColor>>;
+  readonly materials?: Readonly<Record<string, MaterialAppearance>>;
+  readonly fallbackFinish: MaterialAppearance['finish'];
   readonly roleSlots?: Readonly<Record<string, string>>;
-  /** Role-default material ids, used when no special, part, design, or archetype finish applies. */
+  /** Role-default material ids, used when no special, part, design, or profile finish applies. */
   readonly roleMaterials?: Readonly<Record<string, string>>;
   /** Multipliers, one RGB triple per role, applied to the material's sRGB base colour. */
   readonly roleShades?: Readonly<Record<string, SrgbColor>>;
-  readonly archetypeFinishes?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  readonly profileFinishes?: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 
 /**
@@ -46,7 +52,7 @@ interface PortMatingFrame {
   readonly up: Vec3;
 }
 
-interface RailPortMetadata {
+interface RepeatedPortMetadata {
   readonly count: number;
   readonly pitch: number;
 }
@@ -58,8 +64,8 @@ export interface ExportPortMetadata {
   readonly gender: Gender;
   readonly size?: string;
   readonly frame: PortMatingFrame;
-  /** Present for rails; one exported node represents the whole rail. */
-  readonly rail?: RailPortMetadata;
+  /** One port node can describe a repeated run of mating positions. */
+  readonly slots?: RepeatedPortMetadata;
 }
 
 export interface GlbAssetIdentity {
@@ -73,7 +79,7 @@ export interface GlbExportInput {
   readonly palette: Palette;
   /** Optional domain-agnostic appearance context, supplied by the caller (never inferred from assembly.name). */
   readonly appearance?: AppearanceContext;
-  /** Optional design-level slot-to-material overrides, ahead of variant defaults. */
+  /** Optional design-level slot-to-material overrides, ahead of appearance-profile defaults. */
   readonly finish?: Readonly<Record<string, string>>;
   readonly asset: GlbAssetIdentity;
   /** Optional exporter identity placed in the glTF asset record. */
@@ -89,6 +95,7 @@ export type GlbExportError =
   | { readonly code: 'unplaced-parts'; readonly partIds: readonly string[] }
   | { readonly code: 'invalid-port-id'; readonly id: string }
   | { readonly code: 'invalid-palette-color'; readonly key: string }
+  | { readonly code: 'invalid-palette-finish'; readonly key: string }
   | { readonly code: 'invalid-asset-file'; readonly file: string };
 
 export type GlbExportResult =

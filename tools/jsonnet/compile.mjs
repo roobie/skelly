@@ -13,6 +13,7 @@ const SOURCE_ROOTS = [
   'packages/deadvox/src/content/base',
   'packages/deadvox/src/config',
   'packages/deadvox/test/fixtures/mods',
+  'gungen/src/gun',
   'gungen/cartridges',
   'gungen/designs',
   'packages/mobgen/src/mob',

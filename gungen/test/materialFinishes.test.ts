@@ -36,7 +36,7 @@ describe('materials, slots, and finishes', () => {
   });
 
   it('gives every archetype a material for every slot', () => {
-    for (const [archetype, finish] of Object.entries(GUN_PALETTE.archetypeFinishes ?? {})) {
+    for (const [archetype, finish] of Object.entries(GUN_PALETTE.profileFinishes ?? {})) {
       for (const slot of GUN_FINISH_SLOTS) {
         expect(finish[slot], `${archetype}.${slot}`).toBeDefined();
         expect(GUN_PALETTE.materials?.[finish[slot] ?? ''], `${archetype}.${slot}`).toBeDefined();

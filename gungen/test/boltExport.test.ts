@@ -187,7 +187,7 @@ it('keeps the sporting front post tip centred and visible between the rear notch
   const rear = resolved.defs.get('rear-sight')!;
   const front = resolved.defs.get('front-sight')!;
   const axis = rear.axes.find(({ kind }) => kind === 'sight')!;
-  const eye = axis.origin.map((value, i) => value - axis.dir[i]! * axis.eyeReliefU!);
+  const eye = axis.origin.map((value, i) => value - axis.dir[i]! * axis.referenceDistanceU!);
   const [, leftMax] = localSolidBounds(rear.solids.find(({ id }) => id === 'leaf-left')!);
   const [rightMin] = localSolidBounds(rear.solids.find(({ id }) => id === 'leaf-right')!);
   const [postMin, postMax] = localSolidBounds(front.solids.find(({ id }) => id === 'post')!);
@@ -250,7 +250,7 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
   const optic = exportGunGlb(
     scoped,
     { id: 'fixture_scoped', file: 'assets/models/fixture_scoped.glb' },
-    { variant: 'hunting-rifle' },
+    { appearanceProfile: 'hunting-rifle' },
     { cartridge: BOLT_CARTRIDGE },
   );
   if (!optic.ok) {

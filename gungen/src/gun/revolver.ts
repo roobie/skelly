@@ -678,7 +678,7 @@ const revolverFrame: PartFamily = {
         keepOut('cylinder-gap', [cylinderFrontX, -1, -1], [boreX, 1, 1]),
         keepOut('hammer-travel', [-8.75, -1.5, -1], [-6.25, 1.25, 1], 'hammer'),
       ],
-      axes: [{ kind: 'sight', origin: [-6, 1.75, 0], dir: [1, 0, 0], eyeReliefU: 4 }],
+      axes: [{ kind: 'sight', origin: [-6, 1.75, 0], dir: [1, 0, 0], referenceDistanceU: 4 }],
     };
   },
 };

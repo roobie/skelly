@@ -14,9 +14,12 @@ describe('viewer geometry', () => {
   // Builds viewer representations for the authored design corpus.
   it('defaults to archetype finishes and preserves role colours as a geometry-check mode', { timeout: 10_000 }, () => {
     const report = validate(loadFixture('archetype-ar'), gunDomain);
-    const finish = buildLayers(report, [], 'finish', { variant: 'ar' });
-    const override = buildLayers(report, [], 'finish', { variant: 'ar', finish: { furniture: 'polymer-fde' } });
-    const role = buildLayers(report, [], 'role', { variant: 'ar' });
+    const finish = buildLayers(report, [], 'finish', { appearanceProfile: 'ar' });
+    const override = buildLayers(report, [], 'finish', {
+      appearanceProfile: 'ar',
+      finish: { furniture: 'polymer-fde' },
+    });
+    const role = buildLayers(report, [], 'role', { appearanceProfile: 'ar' });
     try {
       const colorOfStock = (layers: typeof finish) => {
         const mesh = layers.solids.children.find((child) =>
@@ -50,7 +53,7 @@ describe('viewer geometry', () => {
     const template = TEMPLATES.find((candidate) => candidate.name === loaded.design.template);
     const report = validate(loaded.design.assembly, gunDomain);
     const layers = buildLayers(report, [], 'finish', {
-      ...(template ? { variant: template.name } : {}),
+      ...(template ? { appearanceProfile: template.name } : {}),
       ...(loaded.design.finish ? { finish: loaded.design.finish } : {}),
     });
     const role = buildLayers(report, [], 'role');

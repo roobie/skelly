@@ -3,24 +3,14 @@ import type { Assembly } from '@skelly/engine/assembly/schema.ts';
 import type { AppearanceContext, GlbAssetIdentity } from '@skelly/engine/export/exportTypes.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';
+import { GUN_APPEARANCE } from '../gun/palette.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { readCartridge } from './readCartridge.ts';
 
 /** Canonical fixture identities supply appearance independently from their mechanical templates. */
-const FIXTURE_APPEARANCE: Readonly<Record<string, AppearanceContext>> = {
-  'archetype-ak': { variant: 'ak' },
-  'archetype-ar': { variant: 'ar' },
-  'archetype-ar-free-float': { variant: 'ar-free-float' },
-  'archetype-awm': { variant: 'awm' },
-  'archetype-battle-rifle': { variant: 'battle-rifle' },
-  'archetype-bolt-rifle': { variant: 'bolt-rifle' },
-  'archetype-bolt-rifle-box': { variant: 'bolt-rifle-box' },
-  'archetype-bullpup': { variant: 'bullpup' },
-  'archetype-pistol': { variant: 'pistol' },
-  'archetype-pump-shotgun': { variant: 'pump-shotgun' },
-  'archetype-revolver': { variant: 'revolver' },
-  'archetype-smg': { variant: 'smg' },
-};
+const FIXTURE_APPEARANCE: Readonly<Record<string, AppearanceContext>> = Object.fromEntries(
+  Object.entries(GUN_APPEARANCE.fixtureProfiles).map(([id, appearanceProfile]) => [id, { appearanceProfile }]),
+);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -35,9 +25,13 @@ const generatedAppearance = (
   if (!isRecord(value)) {
     return { ok: false, message: 'appearance: expected an object' };
   }
-  const { variant, finish } = value;
-  if (variant !== undefined && typeof variant !== 'string') {
-    return { ok: false, message: 'appearance.variant: expected a string' };
+  const unknownField = Object.keys(value).find((key) => key !== 'appearanceProfile' && key !== 'finish');
+  if (unknownField) {
+    return { ok: false, message: `appearance.${unknownField}: unknown field` };
+  }
+  const { appearanceProfile, finish } = value;
+  if (appearanceProfile !== undefined && typeof appearanceProfile !== 'string') {
+    return { ok: false, message: 'appearance.appearanceProfile: expected a string' };
   }
   if (
     finish !== undefined &&
@@ -48,7 +42,7 @@ const generatedAppearance = (
   return {
     ok: true,
     context: {
-      ...(variant === undefined ? {} : { variant }),
+      ...(appearanceProfile === undefined ? {} : { appearanceProfile }),
       ...(finish === undefined ? {} : { finish: finish as Record<string, string> }),
     },
   };
@@ -96,7 +90,7 @@ const readDesignAssembly = (text: string): ReadAssemblyResult => {
     warnings: loaded.issues.map((issue) => `design issue (${issue.code}): ${issue.message}`),
     ...(loaded.design.calibre === undefined ? {} : { calibre: loaded.design.calibre }),
     appearance: {
-      variant: loaded.design.template,
+      appearanceProfile: loaded.design.template,
       ...(loaded.design.finish ? { finish: loaded.design.finish } : {}),
     },
   };

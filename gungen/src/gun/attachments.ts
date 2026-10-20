@@ -1,6 +1,7 @@
 import type { PartAppearance, PartDef, PartInstance, Resolved } from '@skelly/engine/assembly/schema.ts';
 import { applyDir, applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import appearanceContent from './appearance.json' with { type: 'json' };
 import { attachmentMassKg } from './attachmentMass.ts';
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
@@ -89,9 +90,8 @@ export const attachmentInstanceForId = (
   if (!ATTACHMENT_IDS.includes(id as (typeof ATTACHMENT_IDS)[number])) {
     throw new Error(`Unknown attachment id: ${id}`);
   }
-  const instanceAppearance = appearance ?? {
-    ...(id === 'real-suppressor' || id === 'improvised-suppressor' ? { finish: { metal: 'alu-anodized-black' } } : {}),
-  };
+  const defaults: Readonly<Record<string, PartAppearance>> = appearanceContent.attachmentAppearances;
+  const instanceAppearance = appearance ?? defaults[id] ?? {};
   if (id.startsWith('optic-')) {
     return { family: 'sight', params: { type: id.slice('optic-'.length) }, appearance: instanceAppearance };
   }
@@ -233,7 +233,7 @@ const railFrontSightMetadata = (metresPerUnit: number, part?: PartDef): Attachme
     massKg: attachmentMassKg('rail-front-sight', part, metresPerUnit, 'rail-front-sight'),
     mount: 'rail-top',
     properties: span ? { railSpanNotches: span } : {},
-    ...(axis?.eyeReliefU === undefined
+    ...(axis?.referenceDistanceU === undefined
       ? {}
       : {
           sight: {
@@ -241,7 +241,7 @@ const railFrontSightMetadata = (metresPerUnit: number, part?: PartDef): Attachme
             eye: [axis.origin[0] * metresPerUnit, axis.origin[1] * metresPerUnit, axis.origin[2] * metresPerUnit],
             direction: axis.dir,
             up: [0, 1, 0],
-            eyeReliefMetres: axis.eyeReliefU * metresPerUnit,
+            eyeReliefMetres: axis.referenceDistanceU * metresPerUnit,
           },
         }),
   };

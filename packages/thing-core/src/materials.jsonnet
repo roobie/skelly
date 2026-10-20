@@ -23,4 +23,11 @@ local hex(n) = [std.floor(n / 65536) / 255, (std.floor(n / 256) % 256) / 255, (n
   copper: material([0.7, 0.34, 0.19], 8960, metalSource),
   lead: material([0.38, 0.4, 0.42], 11340, metalSource),
   steel: material([0.29, 0.32, 0.31], 7850, metalSource),
+  'paperboard-brown': material([0.27, 0.23, 0.17], 700, 'Representative modelling density; https://www.engineeringtoolbox.com/density-materials-d_1652.html'),
+  'plastic-red': material([0.7, 0.035, 0.025], 950, 'Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html'),
+  'plastic-green': self['plastic-red'] + { colour: [0.08, 0.4, 0.13] },
+  'plastic-blue': self['plastic-red'] + { colour: [0.04, 0.15, 0.6] },
+  'plastic-black': self['plastic-red'] + { colour: [0.06, 0.06, 0.06] },
+  'plastic-white': self['plastic-red'] + { colour: [0.85, 0.85, 0.8] },
+  'plastic-yellow': self['plastic-red'] + { colour: [0.85, 0.7, 0.04] },
 }

@@ -196,8 +196,8 @@ export function buildLayers(
         new three.MeshStandardMaterial({
           color,
           flatShading: !smooth,
-          roughness: 0.85,
-          metalness: 0.05,
+          roughness: appearance.finish.roughness,
+          metalness: appearance.finish.metallic,
         }),
       );
       // The solid's own box.center/profile is already baked into its mesh's positions.

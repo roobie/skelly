@@ -1,6 +1,7 @@
 import type { PartFamily } from '@skelly/engine/assembly/schema.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import appearance from './appearance.json' with { type: 'json' };
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import type { SectionPocket } from './receiverSection.ts';
 
@@ -12,7 +13,7 @@ const metal = (id: string, min: Vec3, max: Vec3): Solid => ({
     center: min.map((value, i) => (value + max[i]!) / 2) as unknown as Vec3,
     half: min.map((value, i) => (max[i]! - value) / 2) as unknown as Vec3,
   },
-  material: 'alu-anodized-black',
+  material: appearance.solidMaterials.chargingHandle,
   slot: 'metal',
   display: { bevel: false },
 });

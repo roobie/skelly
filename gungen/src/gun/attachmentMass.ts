@@ -3,20 +3,8 @@ import { clippedExtrudedPolygonPolyhedron, polyhedronVolume } from '@skelly/engi
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
-import { GUN_PALETTE } from './palette.ts';
+import { GUN_APPEARANCE, GUN_PALETTE } from './palette.ts';
 import { FAMILIES } from './parts.ts';
-
-/** Effective solid-volume shares for envelopes whose authored solids omit internal voids. */
-const ATTACHMENT_KIND_FILL: Readonly<Record<string, { readonly fraction: number; readonly source: string }>> = {
-  optic: {
-    fraction: 1,
-    source: 'Calibrated against Aimpoint Micro T-2: 0.080 kg computed versus 0.096 kg published',
-  },
-  suppressor: {
-    fraction: 0.7,
-    source: 'https://www.surefire.com/socom556-rc2/ (published 5.56 suppressor envelope and mass)',
-  },
-};
 
 /** Geometric volume in gungen units cubed, preserving a revolved profile's authored hollows. */
 const solidVolumeCache = new Map<string, number>();
@@ -75,13 +63,12 @@ const solidMaterial = (family: string, part: PartDef, solid: Solid): string => {
   }
   const familyMaterial = GUN_PALETTE.roleMaterials?.[family];
   const slot = solid.slot ?? part.slot ?? GUN_PALETTE.roleSlots?.[family];
-  if (slot === 'furniture') {
-    return GUN_PALETTE.roleMaterials?.foregrip ?? familyMaterial ?? 'polymer-black';
+  const slotMaterials: Readonly<Record<string, string>> = GUN_APPEARANCE.massSlotMaterials;
+  const material = (slot === undefined ? undefined : slotMaterials[slot]) ?? familyMaterial;
+  if (!material) {
+    throw new Error(`No mass material for role ${family}`);
   }
-  if (slot === 'accent') {
-    return 'rubber-black';
-  }
-  return familyMaterial ?? 'steel-parkerized';
+  return material;
 };
 
 /** Mass in kilograms from canonical standalone geometry when an attachment ID is known. */
@@ -94,13 +81,11 @@ export const attachmentMassKg = (
   const canonical = attachmentId ? canonicalAttachmentPart(attachmentId) : { family, part };
   const massFamily = canonical.family;
   const massPart = canonical.part;
-  let fillKind = 'solid';
-  if (massFamily === 'sight') {
-    fillKind = 'optic';
-  } else if (massFamily === 'suppressor') {
-    fillKind = 'suppressor';
+  const fills: Readonly<Record<string, number>> = GUN_APPEARANCE.massFill;
+  const fill = fills[massFamily];
+  if (fill === undefined) {
+    throw new Error(`No solid-volume fill for role ${massFamily}`);
   }
-  const fill = ATTACHMENT_KIND_FILL[fillKind]?.fraction ?? 1;
   const cubicMetresPerUnit = metresPerUnit ** 3;
   const mass = massPart.solids.reduce((sum, solid) => {
     const materialId = solidMaterial(massFamily, massPart, solid);

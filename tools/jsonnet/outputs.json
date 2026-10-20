@@ -21,6 +21,10 @@
       "output": "gungen/designs/hunting-rifle.json"
     },
     {
+      "source": "gungen/src/gun/appearance.jsonnet",
+      "output": "gungen/src/gun/appearance.json"
+    },
+    {
       "source": "packages/deadvox/src/config/browser-mods.jsonnet",
       "output": "packages/deadvox/src/config/browser-mods.json"
     },

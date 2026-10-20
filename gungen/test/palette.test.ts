@@ -87,13 +87,13 @@ describe('palette migration', () => {
 describe('palette coverage', () => {
   it('colours the tapered-stock recoil pad by its explicit rubber material', () => {
     expect(srgbToHex(solidColor(GUN_PALETTE, 'stock', 'butt-pad', 'rubber-black'))).toBe(
-      srgbToHex(GUN_PALETTE.materials!['rubber-black']!),
+      srgbToHex(GUN_PALETTE.materials!['rubber-black']!.colour),
     );
   });
 
   it('colours the pump tube cap from its explicit blued-steel material', () => {
     const capLugColor = srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'cap-lug', 'steel-blued'));
-    expect(capLugColor).toBe(srgbToHex(GUN_PALETTE.materials!['steel-blued']!));
+    expect(capLugColor).toBe(srgbToHex(GUN_PALETTE.materials!['steel-blued']!.colour));
     expect(capLugColor).not.toBe(srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'tube')));
     expect(capLugColor).not.toBe(srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'support-band')));
   });
@@ -137,7 +137,12 @@ describe('palette coverage', () => {
 });
 
 describe('palette construction', () => {
-  const base = { familyColors: {}, specialColors: {}, fallbackColor: hexToSrgb(0x88_88_88) } as const;
+  const base = {
+    familyColors: {},
+    specialColors: {},
+    fallbackColor: hexToSrgb(0x88_88_88),
+    fallbackFinish: { metallic: 0, roughness: 0.85 },
+  } as const;
 
   it('round-trips hex through normalized sRGB', () => {
     for (const hex of [0x00_00_00, 0xff_ff_ff, 0x8d_93_9c, 0x35_42_58]) {
@@ -158,6 +163,7 @@ describe('palette construction', () => {
       familyColors: { a: [0.1, 0.1, 0.1] },
       specialColors: { s: [0.2, 0.2, 0.2] },
       fallbackColor: [0.3, 0.3, 0.3],
+      fallbackFinish: { metallic: 0, roughness: 0.85 },
     });
     expect(solidColor(p, 'a', 's')).toEqual([0.2, 0.2, 0.2]);
     expect(solidColor(p, 'a', 't')).toEqual([0.1, 0.1, 0.1]);

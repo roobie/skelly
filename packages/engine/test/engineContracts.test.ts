@@ -140,6 +140,7 @@ it("pins the engine's 3.0a contracts and chosen-value storage", () => {
     familyColors: { receiver: [0.2, 0.2, 0.2] },
     specialColors: { floorplate: [0.1, 0.1, 0.1] },
     fallbackColor: [136 / 255, 136 / 255, 136 / 255],
+    fallbackFinish: { metallic: 0, roughness: 0.85 },
   };
   const resolved = {} as unknown as Resolved;
   const exportInput: GlbExportInput = {

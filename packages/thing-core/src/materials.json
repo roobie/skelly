@@ -35,6 +35,69 @@
     },
     "source": "https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html"
   },
+  "paperboard-brown": {
+    "colour": [0.27000000000000002, 0.23000000000000001, 0.17000000000000001],
+    "densityKgPerM3": 700,
+    "finish": {
+      "metallic": 0,
+      "roughness": 0.84999999999999998
+    },
+    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-materials-d_1652.html"
+  },
+  "plastic-black": {
+    "colour": [0.059999999999999998, 0.059999999999999998, 0.059999999999999998],
+    "densityKgPerM3": 950,
+    "finish": {
+      "metallic": 0,
+      "roughness": 0.84999999999999998
+    },
+    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+  },
+  "plastic-blue": {
+    "colour": [0.040000000000000001, 0.14999999999999999, 0.59999999999999998],
+    "densityKgPerM3": 950,
+    "finish": {
+      "metallic": 0,
+      "roughness": 0.84999999999999998
+    },
+    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+  },
+  "plastic-green": {
+    "colour": [0.080000000000000002, 0.40000000000000002, 0.13],
+    "densityKgPerM3": 950,
+    "finish": {
+      "metallic": 0,
+      "roughness": 0.84999999999999998
+    },
+    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+  },
+  "plastic-red": {
+    "colour": [0.69999999999999996, 0.035000000000000003, 0.025000000000000001],
+    "densityKgPerM3": 950,
+    "finish": {
+      "metallic": 0,
+      "roughness": 0.84999999999999998
+    },
+    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+  },
+  "plastic-white": {
+    "colour": [0.84999999999999998, 0.84999999999999998, 0.80000000000000004],
+    "densityKgPerM3": 950,
+    "finish": {
+      "metallic": 0,
+      "roughness": 0.84999999999999998
+    },
+    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+  },
+  "plastic-yellow": {
+    "colour": [0.84999999999999998, 0.69999999999999996, 0.040000000000000001],
+    "densityKgPerM3": 950,
+    "finish": {
+      "metallic": 0,
+      "roughness": 0.84999999999999998
+    },
+    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+  },
   "polymer-black": {
     "colour": [0.14117647058823529, 0.16078431372549021, 0.16862745098039217],
     "densityKgPerM3": 1350,

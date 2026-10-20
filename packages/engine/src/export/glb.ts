@@ -13,7 +13,7 @@ import { compose, type Mat3, type Transform, type Vec3 } from '../foundation/mat
 import { type DisplayItem, displayItems } from '../shapes/display.ts';
 import { boundsOfPoints } from '../shapes/geometry.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from '../shapes/mesh.ts';
-import { resolveAppearance } from './appearance.ts';
+import { invalidPaletteFinish, resolveAppearance } from './appearance.ts';
 import type {
   ExportGlb,
   ExportPortMetadata,
@@ -38,7 +38,7 @@ const badPaletteKey = (palette: Palette): string | undefined => {
   const entries: [string, SrgbColor][] = [
     ...Object.entries(palette.familyColors).map(([k, c]): [string, SrgbColor] => [`family ${k}`, c]),
     ...Object.entries(palette.specialColors).map(([k, c]): [string, SrgbColor] => [`special ${k}`, c]),
-    ...Object.entries(palette.materials ?? {}).map(([k, c]): [string, SrgbColor] => [`material ${k}`, c]),
+    ...Object.entries(palette.materials ?? {}).map(([k, c]): [string, SrgbColor] => [`material ${k}`, c.colour]),
     ...Object.entries(palette.roleShades ?? {}).map(([k, c]): [string, SrgbColor] => [`shade ${k}`, c]),
     ['fallback', palette.fallbackColor],
   ];
@@ -165,7 +165,7 @@ const portMetadata = (partId: string, port: PortDef, placed: Transform): ExportP
       normal: [frame.r[0], frame.r[3], frame.r[6]],
       up: [frame.r[1], frame.r[4], frame.r[7]],
     },
-    ...(port.slots ? { rail: { count: port.slots.count, pitch: port.slots.pitch } } : {}),
+    ...(port.slots ? { slots: { count: port.slots.count, pitch: port.slots.pitch } } : {}),
   };
 };
 
@@ -233,6 +233,10 @@ const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined =>
   if (badKey !== undefined) {
     return { code: 'invalid-palette-color', key: badKey };
   }
+  const badFinish = invalidPaletteFinish(palette);
+  if (badFinish !== undefined) {
+    return { code: 'invalid-palette-finish', key: badFinish };
+  }
   if (!ASSET_FILE.test(asset.file)) {
     return { code: 'invalid-asset-file', file: asset.file };
   }
@@ -274,16 +278,22 @@ export const exportGlb: ExportGlb = (input) => {
   const bin = new BinaryBuffer();
   const materials: Json[] = [];
   const materialIndex = new Map<string, number>();
-  const materialFor = (srgb: SrgbColor): number => {
+  const materialFor = (appearance: ReturnType<typeof resolveAppearance>): number => {
+    const { color: srgb, material, shade, finish } = appearance;
     const linear = srgb.map(srgbToLinear);
-    const key = linear.join(',');
+    const key = JSON.stringify([material, shade, linear, finish]);
     let index = materialIndex.get(key);
     if (index === undefined) {
       index = materials.length;
       materialIndex.set(key, index);
       materials.push({
         name: hex(srgb),
-        pbrMetallicRoughness: { baseColorFactor: [...linear, 1], metallicFactor: 0, roughnessFactor: 0.85 },
+        pbrMetallicRoughness: {
+          baseColorFactor: [...linear, 1],
+          metallicFactor: finish.metallic,
+          roughnessFactor: finish.roughness,
+        },
+        ...(material === undefined ? {} : { extras: { materialId: material, colourMultiplier: shade } }),
       });
     }
     return index;
@@ -340,7 +350,7 @@ export const exportGlb: ExportGlb = (input) => {
     return {
       attributes: { POSITION: position, NORMAL: normal },
       indices,
-      material: materialFor(appearance.color),
+      material: materialFor(appearance),
       mode: 4,
       extras: {
         ...(item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id }),
