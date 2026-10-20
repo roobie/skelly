@@ -42,8 +42,8 @@
       "category": "weapon",
       "description": "12-gauge pump shotgun. The tube holds four shells, with one more in the chamber.",
       "economy": {
-        "tiers": ["Tier2", "Tier3"],
-        "usage": ["Military"]
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearm": {
         "dispersionRadians": 0,
