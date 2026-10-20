@@ -215,7 +215,7 @@ const doorInteractionText = ({
   prying,
   name,
 }: Pick<InteractionHint, 'open' | 'doorReason' | 'lock' | 'prying' | 'name'>): TemplateResult => {
-  const action = prying ? `pry the ${name} ${prying}` : `${open ? 'close' : 'open'} the ${name}`;
+  const action = prying ? `force the ${name} ${prying}` : `${open ? 'close' : 'open'} the ${name}`;
   return html`${keyCap('world.interact')}: ${action}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
 };
 

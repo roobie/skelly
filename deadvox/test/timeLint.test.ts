@@ -79,6 +79,17 @@ describe('time lint boundary and naming rules', () => {
     }
   });
 
+  it('catalogues temporal values under data-named methods without admitting unknown fields or neighbouring records', () => {
+    const method = 'fixture_method';
+    const door = {
+      methods: { [method]: { timeSimSeconds: 1, fastestTimeSimSeconds: 1, strikeIntervalSimSeconds: 1 } },
+    };
+    const check = (value: unknown) => temporalCatalogueFindings(['fixture.json'], () => JSON.stringify(value));
+    expect(check({ furniture: [{ door }] })).toEqual([]);
+    expect(check({ furniture: [{ door: { ...door, other: door.methods } }] })).toHaveLength(3);
+    expect(check({ furniture: [{ door: { methods: { [method]: { unknownSimSeconds: 1 } } } }] })).toHaveLength(1);
+  });
+
   it('rejects arithmetic that combines branded clocks', () => {
     const source = readFileSync(fixture('mixed-clocks.ts'), 'utf8');
     expect(mixedArithmeticFindings(fixture('mixed-clocks.ts'), source)).toHaveLength(1);

@@ -155,7 +155,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 53;
+export const SAVE_SCHEMA_VERSION = 54;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -499,34 +499,40 @@ const inventory = obj({
   piles: arr(pileSchema),
   entities: entitiesState,
 });
+const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
+  obj({
+    jobType,
+    ...extra,
+    stopped: bool,
+    last: nonNegative,
+    elapsed: opt(nonNegative),
+    workUid: opt(positiveInt),
+    bookUid: opt(positiveInt),
+    entityUid: opt(positiveInt),
+    toolUid: opt(positiveInt),
+    region: opt(enumeration(bodyRegionValues)),
+    itemUid: opt(positiveInt),
+    itemType: opt(str({ id: true })),
+    duration: opt(positive),
+    strikeInterval: opt(positive),
+    nextStrike: opt(positive),
+    rest: opt(
+      obj({
+        kind: enumeration(['rest', 'sleep']),
+        furnitureUid: positiveInt,
+        rate: finite,
+        startFatigue: nonNegative,
+        wakeAt: opt(finite),
+        sleepOnset: opt(obj({ durationGameSeconds: positive, elapsedGameSeconds: nonNegative })),
+      }),
+    ),
+  });
 const longAction = obj({
   job: nullable(
-    obj({
-      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'pry', 'treatment', 'wait']),
-      stopped: bool,
-      last: nonNegative,
-      elapsed: opt(nonNegative),
-      workUid: opt(positiveInt),
-      bookUid: opt(positiveInt),
-      entityUid: opt(positiveInt),
-      toolUid: opt(positiveInt),
-      region: opt(enumeration(bodyRegionValues)),
-      itemUid: opt(positiveInt),
-      itemType: opt(str({ id: true })),
-      duration: opt(positive),
-      strikeInterval: opt(positive),
-      nextStrike: opt(positive),
-      rest: opt(
-        obj({
-          kind: enumeration(['rest', 'sleep']),
-          furnitureUid: positiveInt,
-          rate: finite,
-          startFatigue: nonNegative,
-          wakeAt: opt(finite),
-          sleepOnset: opt(obj({ durationGameSeconds: positive, elapsedGameSeconds: nonNegative })),
-        }),
-      ),
-    }),
+    union(
+      longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait'])),
+      longJob(enumeration(['forceDoor']), { method: str({ id: true }) }),
+    ),
   ),
   wakeGameHour: opt(num({ integer: true, safe: true, min: 0, max: 23 })),
 });
@@ -1456,7 +1462,7 @@ function ownsLongActionItem(
   if (job?.jobType === 'reading') {
     return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
   }
-  if (job?.jobType === 'pry') {
+  if (job?.jobType === 'forceDoor') {
     return tree.some(({ item }) => item.uid === job.toolUid && item.type !== WORK_IN_PROGRESS);
   }
   if (job?.jobType === 'treatment') {
@@ -1469,11 +1475,11 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   const { job } = snapshot.character.longAction;
   validateLongJob(job, snapshot.character.simulation.time);
   if (
-    job?.jobType === 'pry' &&
+    job?.jobType === 'forceDoor' &&
     !job.stopped &&
     (snapshot.character.simulation.compression.active || snapshot.character.simulation.compression.c !== 1)
   ) {
-    throw new Error('Running prying action cannot use compression');
+    throw new Error('Running forcing action cannot use compression');
   }
   const tree = [...savedItemTree(snapshot.character.inventory)];
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
@@ -1482,18 +1488,18 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
     let reason = 'Missing craft work item';
     if (job?.jobType === 'reading') {
       reason = 'Missing reading book';
-    } else if (job?.jobType === 'pry') {
-      reason = 'Missing prying tool';
+    } else if (job?.jobType === 'forceDoor') {
+      reason = 'Missing forcing tool';
     } else if (job?.jobType === 'treatment') {
       reason = 'Missing treatment item';
     }
     throw new Error(reason);
   }
   if (
-    job?.jobType === 'pry' &&
+    job?.jobType === 'forceDoor' &&
     !snapshot.character.inventory.entities.entities.some(({ uid }) => uid === job.entityUid)
   ) {
-    throw new Error('Missing prying target');
+    throw new Error('Missing forcing target');
   }
   if (snapshot.character.player.ladder?.on === false && !grabbedLadder(snapshot)) {
     throw new Error('Missing grabbed ladder');

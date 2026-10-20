@@ -158,14 +158,16 @@ describe('damage exposure', () => {
   it('continuous exposure also stops a real-time action and refuses its resume', () => {
     const sim = new Simulation({ seed: 1, bodyTuning: tuning });
     let strikes = 0;
-    sim.actions.prying = {
+    sim.actions.forcing = {
       validate: () => undefined,
       strike: () => {
         strikes += 1;
       },
       finish: () => undefined,
     };
-    expect(sim.actions.beginPrying(1, 2, 10, 1)).toBeUndefined();
+    expect(
+      sim.actions.beginForcing(1, 2, { method: 'fixture', durationSimSeconds: 10, strikeIntervalSimSeconds: 1 }),
+    ).toBeUndefined();
     sim.expose({ id: 'pool', rate: 1, cause: 'fixture burn', region: 'leftLeg', kind: 'acid' });
     expect(sim.actions.job?.stopped).toBe(true);
     expect(sim.actions.resume()).toBeDefined();

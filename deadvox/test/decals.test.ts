@@ -42,9 +42,16 @@ const fixture = () => {
     {
       source: 'fixture',
       data: {
+        doorMaterials: [{ id: 'wood', methods: [] }],
         blocks: [{ id: 'fixture_wall', name: 'Wall', color: '#808080', solid: true }],
         furniture: [
-          { id: 'fixture_door', name: 'Door', color: '#808080', size: [2, 4, 1], door: { handlingSimSeconds: 1 } },
+          {
+            id: 'fixture_door',
+            name: 'Door',
+            color: '#808080',
+            size: [2, 4, 1],
+            door: { material: 'wood', methods: {}, handlingSimSeconds: 1 },
+          },
         ],
       },
     },

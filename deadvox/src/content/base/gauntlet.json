@@ -1806,12 +1806,17 @@
       "door": {
         "barredFrom": "front",
         "handlingSimSeconds": 0.59999999999999998,
-        "prying": {
-          "fastestTimeSimSeconds": 7.5,
-          "quality": 3,
-          "skill": "mechanics",
-          "strikeIntervalSimSeconds": 0.5,
-          "timeSimSeconds": 15
+        "material": "wood",
+        "methods": {
+          "pry": {
+            "fastestTimeSimSeconds": 7.5,
+            "level": 3,
+            "quality": "prying",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.5,
+            "strikeSound": "lock_pry",
+            "timeSimSeconds": 15
+          }
         }
       },
       "id": "gauntlet_door_boarded",
@@ -2242,12 +2247,17 @@
       "color": "#626d70",
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
-        "prying": {
-          "fastestTimeSimSeconds": 7.5,
-          "quality": 3,
-          "skill": "mechanics",
-          "strikeIntervalSimSeconds": 0.5,
-          "timeSimSeconds": 15
+        "material": "wood",
+        "methods": {
+          "pry": {
+            "fastestTimeSimSeconds": 7.5,
+            "level": 3,
+            "quality": "prying",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.5,
+            "strikeSound": "lock_pry",
+            "timeSimSeconds": 15
+          }
         }
       },
       "id": "gauntlet_cell_door",
@@ -31109,7 +31119,7 @@
           "furniture": "range_table"
         },
         "U": {
-          "furniture": "wood_door",
+          "furniture": "steel_armoury_door",
           "lock": {
             "id": "gauntlet_police_armoury",
             "locked": true

@@ -232,9 +232,6 @@ it('keeps police weapons and ammunition behind the armoury lock', () => {
       expect(near(afterUnlock, source), source.loot).toBe(true);
     }
   }
-  for (const lock of locks) {
-    expect(registry.furniture.get(lock.furniture)?.door?.prying).toBeDefined();
-  }
 });
 
 it('lets a player climb to the matching key on the roof corpse in the base station and gauntlet', () => {
