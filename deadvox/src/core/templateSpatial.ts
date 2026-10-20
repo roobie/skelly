@@ -437,6 +437,10 @@ export const templateClimbCertificate = (
       entities,
       entityAt: (point) => entities.at(...point),
       clear,
+      solid: (cell) => {
+        const [x, y, z] = local([cell[0] + 0.5, cell[1], cell[2] + 0.5]).map(Math.floor) as Vec3;
+        return space.occupied(x, y, z, true);
+      },
       standing,
       connected: (from, to) => from[1] === to[1] && templateStandingRoute(registry, template, local(from), local(to)),
       sweep: (from, to, supported = true) => {

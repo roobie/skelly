@@ -4,7 +4,7 @@ import type { CitySite } from './citySite.ts';
 import type { Underground } from './cityUnderground.ts';
 import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import type { ScenarioComposition } from './scenarioComposition.ts';
+import type { ScenarioComposition, ScenarioResource } from './scenarioComposition.ts';
 import { ScenarioRouteSpace } from './scenarioRoute.ts';
 import type { StartDescent } from './scenarioStart.ts';
 import { type Placement, placedPieces, placedPoint } from './templates.ts';
@@ -86,6 +86,7 @@ class Certificate {
         entities: this.space.entities,
         entityAt: (point) => this.entityAt(point),
         clear: (point) => this.space.clear(point),
+        solid: ([x, y, z]) => this.space.blocked(x, y, z),
         standing: (point) => this.space.standing(point),
         sweep: (from, to, supported) => this.space.sweep(from, to, supported),
         connected: (from, to) => this.space.path(from, to) !== undefined,
@@ -240,22 +241,84 @@ class Certificate {
     });
   }
 
-  resource(resource: ScenarioComposition['resources'][number], index: number, reached: Set<number>): void {
-    const path = `.composition.resources[${index}]`;
+  stockAt(at: Readonly<Vec3>) {
+    const spawn = this.site
+      .furnitureIn(toChunk(at[0]), toChunk(at[2]))
+      .find((candidate) => candidate.spec.pos.join(',') === at.join(','));
+    return spawn && [...spawn.loot, ...(spawn.surfaceLoot ?? [])];
+  }
+
+  stocked(resource: ScenarioResource): boolean {
     const source = this.entityAt(resource.at);
-    const stock = this.site
-      .furnitureIn(toChunk(resource.at[0]), toChunk(resource.at[2]))
-      .find((spawn) => spawn.spec.pos.join(',') === resource.at.join(','));
-    const accessible =
+    return Boolean(
       this.fixedSource(resource.at) &&
-      this.floorLink(resource.standing, path) &&
-      reached.has(resource.standing[1]) &&
-      source &&
-      this.space.visibleReach(resource.standing, source) &&
-      stock &&
-      (stock.loot.length > 0 || (stock.surfaceLoot?.length ?? 0) > 0);
+        source &&
+        this.space.visibleReach(resource.standing, source) &&
+        (this.stockAt(resource.at)?.length ?? 0) > 0,
+    );
+  }
+
+  resource(resource: ScenarioResource, index: number, reached: Set<number>): void {
+    const path = `.composition.resources[${index}]`;
+    const accessible =
+      this.floorLink(resource.standing, path) && reached.has(resource.standing[1]) && this.stocked(resource);
     if (!accessible) {
       this.fail(path, 'fixed resource must be accessible without a key or resource dependency');
+    }
+  }
+
+  /** Takes the key from its holder and returns the feet it is carried from, or undefined after failing the route. */
+  keyRoute(key: NonNullable<ScenarioResource['key']>, path: string): readonly Readonly<Vec3>[] | undefined {
+    let feet: readonly Readonly<Vec3>[] = this.startFeet;
+    const reaches = (to: Readonly<Vec3>) => feet.some((foot) => this.space.path(foot, to));
+    for (const [climbIndex, climb] of key.climbs.entries()) {
+      const at = `${path}.key.climbs[${climbIndex}]`;
+      const issue = reaches(climb.lower) ? this.climbIssue(climb) : 'needs a supported body route to its climb';
+      if (issue) {
+        this.fail(at, `key route climb: ${issue}`);
+        return undefined;
+      }
+      feet = [climb.upper];
+    }
+    const holder = this.entityAt(key.at);
+    if (!(reaches(key.standing) && holder && this.space.visibleReach(key.standing, holder))) {
+      this.fail(`${path}.key`, 'key holder needs a reachable visible face on the key route');
+      return undefined;
+    }
+    const locks = (this.stockAt(key.at) ?? []).flatMap((item) => {
+      const lock = this.site.registry.items.get(item.type)?.key?.lock;
+      return lock ? [lock] : [];
+    });
+    if (locks.length === 0) {
+      this.fail(`${path}.key`, 'key holder holds no key');
+      return undefined;
+    }
+    for (const lock of locks) {
+      this.space.admitLock(lock);
+    }
+    return [key.climbs[0]?.lower ?? key.standing];
+  }
+
+  /**
+   * A lot's resource is proved from the start's feet, through its key's route alone when it has one: up the climbs to
+   * the holder, back down the certified-reversible climbs, then in past the locks the held keys open.
+   */
+  lotResource(resource: ScenarioResource, index: number): void {
+    const path = `.composition.resources[${index}]`;
+    const { key } = resource;
+    const feet = key ? this.keyRoute(key, path) : this.startFeet;
+    if (!feet) {
+      return;
+    }
+    if (!feet.some((foot) => this.space.path(foot, resource.standing))) {
+      this.fail(
+        path,
+        key
+          ? 'resource needs a supported body route from its key'
+          : 'resource needs a supported body route from the start',
+      );
+    } else if (!this.stocked(resource)) {
+      this.fail(path, 'resource needs its promised stock in visible reach');
     }
   }
 
@@ -379,7 +442,9 @@ class Certificate {
     const reached = this.reachableFloors();
     this.objective(reached);
     this.composition.resources.forEach((resource, index) => {
-      this.resource(resource, index, reached);
+      if (!resource.lot) {
+        this.resource(resource, index, reached);
+      }
     });
     const leads = this.composition.leads.map((placement, index) => this.lead(placement, index));
     for (let missed = 0; missed < leads.length; missed++) {
@@ -387,6 +452,12 @@ class Certificate {
         this.fail('.composition.leads', 'missing one clue must leave an independent accessible lead');
       }
     }
+    // Last, because a held key admits its locks for every later route.
+    this.composition.resources.forEach((resource, index) => {
+      if (resource.lot) {
+        this.lotResource(resource, index);
+      }
+    });
     return { space: this.space, issues: this.issues };
   }
 }

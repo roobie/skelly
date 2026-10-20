@@ -333,6 +333,26 @@ describe('final composed body-route certificate', () => {
     }
   });
 
+  it('rejects a keyed lot resource whose key route has lost its climb', () => {
+    const index = base.composition!.resources.findIndex((resource) => resource.key?.climbs.length);
+    const ladder = base.composition!.resources[index]?.key?.climbs[0]?.ladder;
+    if (!ladder) {
+      throw new Error('Production scenario has no climbed key route');
+    }
+    const site = siteOf();
+    const original = site.furnitureIn.bind(site);
+    vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+      original(cx, cz).filter(
+        ({ spec }) =>
+          !(registry.furniture.get(spec.type)?.climbable && spec.pos[0] === ladder[0] && spec.pos[2] === ladder[2]),
+      ),
+    );
+    expect(scenarioCertificate(site).issues).toContainEqual([
+      `.composition.resources[${index}].key.climbs[0]`,
+      expect.stringMatching(COMPOSED_LADDER),
+    ]);
+  });
+
   it('rejects a shaft-neighbor obstruction in the final furnished production lab', () => {
     const [descent] = base.composition!.descents;
     if (!descent) {

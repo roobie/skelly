@@ -47,7 +47,14 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
       objective: lab.anchors.objective,
       objectiveFace: [lab.anchors.objective[0], lab.anchors.storeys[std.length(lab.anchors.storeys) - 1].standing[1], lab.anchors.objective[2] + 3],
       retreat: [lab.surfaceOffset + 12, ground + 1, lab.surfaceOffset + 8],
-      resources: [{ at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18], standing: [lab.surfaceOffset + 11, ground + 1, lab.surfaceOffset + 21] }],
+      resources: [
+        { at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18], standing: [lab.surfaceOffset + 11, ground + 1, lab.surfaceOffset + 21] },
+        // The armoury rack, proved through the roof officer's key alone; the cellar torch is no part of it.
+        {
+          lot: 'police', at: [18, 1, 5], standing: [18, 1, 7.5],
+          key: { at: [22, 8, 31], standing: [20.5, 8, 32], climbs: [{ ladder: [11, 1, 31], upper: [12.5, 8, 32], lower: [10.5, 1, 32] }] },
+        },
+      ],
       storeys: lab.anchors.storeys,
       descents: lab.anchors.descents,
       stairs: lab.anchors.stairs,

@@ -27,7 +27,7 @@ export interface ScenarioComposition {
   readonly objective: Readonly<Vec3>;
   readonly objectiveFace: Readonly<Vec3>;
   readonly retreat: Readonly<Vec3>;
-  readonly resources: readonly { readonly at: Readonly<Vec3>; readonly standing: Readonly<Vec3> }[];
+  readonly resources: readonly ScenarioResource[];
   readonly storeys: readonly { readonly id: string; readonly standing: Readonly<Vec3> }[];
   readonly seals: readonly {
     readonly doors: readonly Readonly<Vec3>[];
@@ -40,6 +40,22 @@ export interface ScenarioComposition {
     readonly upper: Readonly<Vec3>;
     readonly lower: Readonly<Vec3>;
   }[];
+}
+
+export interface ScenarioResource {
+  readonly at: Readonly<Vec3>;
+  readonly standing: Readonly<Vec3>;
+  /** A lot's resource is reached from the start's feet; a service resource through the lab's storeys. */
+  readonly lot?: string;
+  readonly key?: {
+    readonly at: Readonly<Vec3>;
+    readonly standing: Readonly<Vec3>;
+    readonly climbs: readonly {
+      readonly ladder: Readonly<Vec3>;
+      readonly upper: Readonly<Vec3>;
+      readonly lower: Readonly<Vec3>;
+    }[];
+  };
 }
 
 type CompositionDef = NonNullable<ScenarioDef['composition']>;
@@ -127,6 +143,9 @@ const localAnchorIssues = (registry: Registry, composition: CompositionDef, serv
     anchor(storey.standing, `.composition.storeys[${index}]`);
   });
   composition.resources.forEach((resource, index) => {
+    if (resource.lot) {
+      return;
+    }
     anchor(resource.standing, `.composition.resources[${index}].standing`);
     if (!composition.fixedLoot.some((source) => source.at.join(',') === resource.at.join(','))) {
       issues.push([`.composition.resources[${index}].at`, 'resource needs a fixed loot source']);
@@ -307,6 +326,54 @@ const promisedStockIssues = (registry: Registry, scenario: ScenarioDef): Issue[]
   return issues;
 };
 
+const lotResourceIssues = (registry: Registry, scenario: ScenarioDef): Issue[] => {
+  const composition = scenario.composition!;
+  const issues: Issue[] = [];
+  composition.resources.forEach((resource, index) => {
+    const path = `.composition.resources[${index}]`;
+    if (!resource.lot) {
+      if (resource.key) {
+        issues.push([`${path}.key`, 'a key route needs a resource lot']);
+      }
+      return;
+    }
+    const lot = scenario.city.lots?.find(({ id }) => id === resource.lot);
+    const template = lot && fixedLotTemplate(registry, lot);
+    if (!template) {
+      issues.push([`${path}.lot`, 'a resource lot needs a fixed building lot']);
+      return;
+    }
+    const anchor = (point: Vec3, at: string): void => {
+      if (point.some((value, axis) => value < 0 || value >= template.size[axis]!)) {
+        issues.push([`${path}${at}`, 'anchor outside its lot']);
+      }
+    };
+    const piece = (point: Vec3) => template.pieces.find((candidate) => candidate.pos.join(',') === point.join(','));
+    anchor(resource.standing, '.standing');
+    const stop = composition.stops?.find((candidate) => candidate.lot === resource.lot);
+    if (!stop?.fixedLoot.some((source) => source.at.join(',') === resource.at.join(','))) {
+      issues.push([`${path}.at`, 'resource needs a fixed loot source']);
+    }
+    if (!resource.key) {
+      return;
+    }
+    anchor(resource.key.standing, '.key.standing');
+    if (!piece(resource.key.at)) {
+      issues.push([`${path}.key.at`, 'key holder needs a furniture anchor']);
+    }
+    resource.key.climbs.forEach((climb, climbIndex) => {
+      const at = `.key.climbs[${climbIndex}]`;
+      anchor(climb.upper, `${at}.upper`);
+      anchor(climb.lower, `${at}.lower`);
+      const ladder = piece(climb.ladder);
+      if (!(ladder && registry.furniture.get(ladder.furniture)?.climbable)) {
+        issues.push([`${path}${at}.ladder`, 'climb needs an actual ladder anchor']);
+      }
+    });
+  });
+  return issues;
+};
+
 export const scenarioCompositionIssues = (
   registry: Registry,
   scenario: ScenarioDef,
@@ -323,6 +390,7 @@ export const scenarioCompositionIssues = (
     '.composition.fixedLoot',
   );
   issues.push(...promisedStockIssues(registry, scenario));
+  issues.push(...lotResourceIssues(registry, scenario));
   issues.push(...eventIssues(registry, scenario));
   for (const kind of ['leads', 'landmarks', 'incidentalTemplates'] as const) {
     composition[kind].forEach((ref, index) => {
@@ -403,14 +471,18 @@ export const composeScenario = (
       turn: 0,
     });
   const point = (local: Vec3): Readonly<Vec3> => Object.freeze(placedPoint(service, local));
-  const pieces = placedPieces(service);
-  const furnitureAnchor = (local: Vec3): Readonly<Vec3> => {
-    const index = service.template.pieces.findIndex((piece) => piece.pos.join(',') === local.join(','));
+  const placed = new Map<Placement, ReturnType<typeof placedPieces>>();
+  const anchorIn = (building: Placement, local: Vec3): Readonly<Vec3> => {
+    const index = building.template.pieces.findIndex((piece) => piece.pos.join(',') === local.join(','));
     if (index < 0) {
-      throw new Error(`Missing scenario furniture anchor ${local.join(',')}`);
+      throw new Error(`Missing scenario furniture anchor ${local.join(',')} in ${building.template.id}`);
     }
-    return Object.freeze([...pieces[index]!.pos]) as Readonly<Vec3>;
+    if (!placed.has(building)) {
+      placed.set(building, placedPieces(building));
+    }
+    return Object.freeze([...placed.get(building)![index]!.pos]) as Readonly<Vec3>;
   };
+  const furnitureAnchor = (local: Vec3): Readonly<Vec3> => anchorIn(service, local);
   const { city } = scenario;
   const side = Math.max(service.template.size[0], service.template.size[2]);
   const leadFaces: (Readonly<Vec3> | undefined)[] = [];
@@ -511,9 +583,39 @@ export const composeScenario = (
     objectiveFace: point(authored.objectiveFace),
     retreat: point(authored.retreat),
     resources: Object.freeze(
-      authored.resources.map((resource) =>
-        Object.freeze({ at: furnitureAnchor(resource.at), standing: point(resource.standing) }),
-      ),
+      authored.resources.map((resource): ScenarioResource => {
+        if (!resource.lot) {
+          return Object.freeze({ at: furnitureAnchor(resource.at), standing: point(resource.standing) });
+        }
+        const parent = lots.find(({ definition }) => definition.id === resource.lot)?.placement;
+        if (!parent) {
+          throw new Error(`Missing resource lot "${resource.lot}"`);
+        }
+        const local = (at: Vec3): Readonly<Vec3> => Object.freeze(placedPoint(parent, at));
+        const { key } = resource;
+        return Object.freeze({
+          at: anchorIn(parent, resource.at),
+          standing: local(resource.standing),
+          lot: resource.lot,
+          ...(key
+            ? {
+                key: Object.freeze({
+                  at: anchorIn(parent, key.at),
+                  standing: local(key.standing),
+                  climbs: Object.freeze(
+                    key.climbs.map((climb) =>
+                      Object.freeze({
+                        ladder: anchorIn(parent, climb.ladder),
+                        upper: local(climb.upper),
+                        lower: local(climb.lower),
+                      }),
+                    ),
+                  ),
+                }),
+              }
+            : {}),
+        });
+      }),
     ),
     storeys: Object.freeze(
       authored.storeys.map((storey) => Object.freeze({ id: storey.id, standing: point(storey.standing) })),
