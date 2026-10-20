@@ -128,15 +128,15 @@ const vite = await createServer({
         if (hasSkyControl && id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.
           assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
-          assert.ok(code.includes('float skyVisibility() {'));
+          assert.ok(code.includes('float skyVisibility(out bool unknown) {'));
           return code
             .replace(
               'shader.uniforms.uSkyVolume = this.texture;',
               'shader.uniforms.uSkyVolume = this.texture;\nshader.uniforms.uSkyProofControl = (globalThis.skyProofControl ??= {value:0});',
             )
             .replace(
-              'float skyVisibility() {',
-              'uniform float uSkyProofControl;\nfloat skyVisibility() {\n  if (uSkyProofControl > 0.5) return 1.0;',
+              'float skyVisibility(out bool unknown) {',
+              'uniform float uSkyProofControl;\nfloat skyVisibility(out bool unknown) {\n  if (uSkyProofControl > 0.5) { unknown = false; return 1.0; }',
             );
         }
         if (!id.endsWith('/src/game/play.ts')) {
@@ -241,6 +241,9 @@ try {
       { timeout: 60_000 },
     );
     if (mode === 'lighting-cellar') {
+      await timePhase('far-sun-receiver-rule', () =>
+        page.evaluate(async (path) => (await import(path)).farSunProof(), '/test/farSun.ts'),
+      );
       const markerLighting = await page.evaluate(async () => {
         // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
         const { interactionMarkerLightingProof } = await import('/test/browser/interaction-marker-lighting.ts');

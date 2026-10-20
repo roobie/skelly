@@ -37,6 +37,7 @@ import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';
 
 const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
+const DIRECTIONAL_LIGHT_INFO_CALL = /getDirectionalLightInfo\([^;]+\);/;
 const RESIDENT_FIELDS = 4;
 const PREPARE_MS = 0.5;
 const PREFETCH_M = 16;
@@ -573,7 +574,8 @@ uniform float uSkyAtlasOffset[${RESIDENT_FIELDS}];
 uniform float uSkyEnabled;
 varying vec3 vSkyWorld;
 varying vec3 vSkyNormal;
-float skyVisibility() {
+float skyVisibility(out bool unknown) {
+  unknown = false;
   vec3 point = vSkyWorld + normalize(vSkyNormal) * float(${this.blockSize * 0.5});
   vec2 gridCell = floor(point.xz / float(${this.blockSize * CHUNK})) - uSkyGridOrigin;
   if (any(lessThan(gridCell, vec2(0.0))) || any(greaterThanEqual(gridCell, uSkyGridSize))) return 1.0;
@@ -606,16 +608,30 @@ float skyVisibility() {
       return texture(uSkyVolume, atlas).r;
     }
   }
+  unknown = eligible && !known;
   return eligible ? (known ? fallback : float(${UNKNOWN_SKY_CAP})) : 1.0;
 }`,
         )
         .replace(
           '#include <lights_fragment_begin>',
-          `float receiverSkyVisibility = skyVisibility();\n${ShaderChunk.lights_fragment_begin.replace(
-            SPOT_LIGHT_INFO_CALL,
-            `$&
+          `bool receiverSkyUnknown;
+float receiverSkyVisibility = skyVisibility(receiverSkyUnknown);
+${ShaderChunk.lights_fragment_begin
+  .replace(
+    DIRECTIONAL_LIGHT_INFO_CALL,
+    `$&
+#if defined(USE_SHADOWMAP) && (UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS)
+  vec3 nearCoord = vDirectionalShadowCoord[ i ].xyz / vDirectionalShadowCoord[ i ].w;
+  bool coveredNear = all(greaterThanEqual(nearCoord.xy, vec2(0.0)))
+    && all(lessThanEqual(nearCoord.xy, vec2(1.0))) && nearCoord.z <= 1.0;
+  if (!coveredNear && (receiverSkyVisibility <= 0.0 || receiverSkyUnknown)) directLight.color *= 0.0;
+#endif`,
+  )
+  .replace(
+    SPOT_LIGHT_INFO_CALL,
+    `$&
         directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyVisibility / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));`,
-          )}`,
+  )}`,
         )
         .replace(
           '#include <lights_fragment_end>',
@@ -626,7 +642,7 @@ float skyVisibility() {
       }
     };
     material.customProgramCacheKey = () =>
-      `${key.call(material)}:receiver-daylight-skylight:${this.blockSize}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
+      `${key.call(material)}:receiver-daylight-far-sun-skylight:${this.blockSize}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
     material.needsUpdate = true;
   }
 }
