@@ -125,7 +125,7 @@ const loadExports = () =>
       const result = exportGunGlb(
         loaded.design.assembly,
         { id, file: `assets/models/${id}.glb` },
-        { variant: loaded.design.template },
+        { appearanceProfile: loaded.design.template },
       );
       if (!result.ok) {
         throw new Error(`${file}: ${JSON.stringify(result.error)}`);

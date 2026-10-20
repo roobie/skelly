@@ -1,7 +1,9 @@
 // Sourced external dimensions, in millimetres. Internal construction is visual, not cartridge data.
 
 import type { ExtrudedPolygonSolid, RevolvedSolid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import { MATERIALS } from '@skelly/thing-core/materials';
 import type { Measure, Shotshell } from '../ammo/cartridge.ts';
+import appearance from './appearance.json' with { type: 'json' };
 
 type ShotshellSolid = RevolvedSolid | ExtrudedPolygonSolid;
 
@@ -124,20 +126,15 @@ export const shotshellGeometry = (shell: Shotshell): ShotshellGeometry => {
   };
 };
 
-/** Named display colours; the red choice is read from the cited hull colour, not guessed material. */
-const SHOTSHELL_HULL_COLORS: Readonly<Record<string, readonly [number, number, number]>> = {
-  red: [0.7, 0.035, 0.025],
-  green: [0.08, 0.4, 0.13],
-  blue: [0.04, 0.15, 0.6],
-  black: [0.06, 0.06, 0.06],
-  white: [0.85, 0.85, 0.8],
-  yellow: [0.85, 0.7, 0.04],
-};
-export const shotshellHullColor = (shell: Shotshell): readonly [number, number, number] => {
+export const shotshellHullMaterial = (shell: Shotshell): string => {
   const name = shell.hull.colors.find((entry) => entry.value !== null)?.value;
-  const color = name === undefined || name === null ? undefined : SHOTSHELL_HULL_COLORS[name];
-  if (!color) {
+  const materials: Readonly<Record<string, string>> = appearance.hullMaterials;
+  const material = name === undefined || name === null ? undefined : materials[name];
+  if (!(material && Object.hasOwn(MATERIALS, material))) {
     throw new Error(`shotshell has no supported sourced hull colour: ${String(name)}`);
   }
-  return color;
+  return material;
 };
+
+export const shotshellHullColor = (shell: Shotshell): readonly [number, number, number] =>
+  MATERIALS[shotshellHullMaterial(shell)]!.colour;

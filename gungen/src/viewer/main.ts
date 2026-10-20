@@ -410,7 +410,7 @@ const redraw = () => {
     focused ? [focused] : report.issues,
     colorMode,
     {
-      ...(contextTemplate ? { variant: contextTemplate.name } : {}),
+      ...(contextTemplate ? { appearanceProfile: contextTemplate.name } : {}),
       ...(editorState?.finish ? { finish: editorState.finish } : {}),
     },
     revolveFacets,

@@ -1,5 +1,6 @@
 import { clipPolygon } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import appearance from './appearance.json' with { type: 'json' };
 import { TAPERED_STOCK_PROPORTIONS as P } from './shotgunProportions.ts';
 import { hermite as curve, type StockContour, woodCell, woodRegion } from './stockWood.ts';
 
@@ -131,7 +132,7 @@ export const taperedStockSolids = ({
         [-len, heel],
       ],
       z: [-widths.butt, widths.butt],
-      material: 'rubber-black',
+      material: appearance.solidMaterials.stockPad,
       slot: 'accent',
     },
   ];

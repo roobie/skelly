@@ -35,6 +35,7 @@ import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
+import appearance from './appearance.json' with { type: 'json' };
 import { AR_HANDLE_CHANNEL, arChargingHandle } from './arChargingHandle.ts';
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
@@ -3170,7 +3171,7 @@ const frontSight: PartFamily = {
       solids,
       ports: [{ id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
       keepOuts: [],
-      axes: [{ kind: 'sight', origin: [0, postTop, 0], dir: X, eyeReliefU: 4 }],
+      axes: [{ kind: 'sight', origin: [0, postTop, 0], dir: X, referenceDistanceU: 4 }],
     };
   },
 };
@@ -3235,7 +3236,7 @@ const sportingRearSight: PartFamily = {
       ports: [
         { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
-      axes: [{ kind: 'sight', origin: [0, height, 0], dir: X, eyeReliefU: sporter ? eyeReliefU : 4 }],
+      axes: [{ kind: 'sight', origin: [0, height, 0], dir: X, referenceDistanceU: sporter ? eyeReliefU : 4 }],
       keepOuts: [],
     };
   },
@@ -3263,7 +3264,7 @@ const railFrontSight: PartFamily = {
       ],
       ports: [{ id: 'base', mount: 'rail-top', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
       keepOuts: [],
-      axes: [{ kind: 'sight', origin: [0, sightAxisY, 0], dir: X, eyeReliefU: 4 }],
+      axes: [{ kind: 'sight', origin: [0, sightAxisY, 0], dir: X, referenceDistanceU: 4 }],
     };
   },
 };
@@ -3370,7 +3371,7 @@ const akRearSight: PartFamily = {
         { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
       keepOuts: [],
-      axes: [{ kind: 'sight', origin: [0, AK_REAR_SIGHT_NOTCH_TOP_U, 0], dir: X, eyeReliefU: 22 }],
+      axes: [{ kind: 'sight', origin: [0, AK_REAR_SIGHT_NOTCH_TOP_U, 0], dir: X, referenceDistanceU: 22 }],
     };
   },
 };
@@ -3626,7 +3627,7 @@ const tubeMagazine: PartFamily = {
         ? [
             {
               ...octagonalPrism('cap-lug', PUMP_TUBE_CAP_HALF_EXTENT, [length - PUMP_TUBE_CAP_LENGTH, length]),
-              material: 'steel-blued',
+              material: appearance.solidMaterials.magazineMetal,
               slot: 'metal',
             },
           ]
@@ -4248,7 +4249,7 @@ const magazineGeometryFor = (
         ],
         [-shape.width / 2, shape.width / 2],
       ),
-      material: 'steel-blued' as const,
+      material: appearance.solidMaterials.magazineMetal,
       slot: 'accent' as const,
     };
     return { collision: [sharedTop, body, floorplate], display: [sharedTop, body, floorplate] };
@@ -4334,7 +4335,7 @@ export const magazine: PartFamily = {
               [-depth / 2, resolvedInsertion - len, -width / 2 - 0.25],
               [depth / 2 + 0.25, resolvedInsertion - len + 0.25, width / 2 + 0.25],
             ),
-            material: 'steel-blued',
+            material: appearance.solidMaterials.magazineMetal,
             slot: 'accent',
           },
         ]

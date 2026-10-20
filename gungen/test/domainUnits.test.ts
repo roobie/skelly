@@ -35,6 +35,7 @@ const PALETTE: Palette = {
   familyColors: { widget: [0.2, 0.3, 0.4] },
   specialColors: {},
   fallbackColor: [0.5, 0.5, 0.5],
+  fallbackFinish: { metallic: 0, roughness: 0.85 },
 };
 
 /** Two parts joined at a port, with their boxes `gap` apart along the connection normal. */

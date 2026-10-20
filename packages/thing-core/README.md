@@ -3,6 +3,7 @@ read_if:
   - you add or change the neutral model schema or the material and physical-property model
   - you decide whether code belongs in the core or in one of the tools
   - you add a domain pack's fields to the model entry
+  - you change how a model refers to shared material content
 ---
 
 # thing-core
@@ -10,7 +11,7 @@ read_if:
 The modeling core shared by the thing and gun authoring tools. The neutral fields are
 `src/schema.ts`, `NeutralModelSchema`; the material content is `src/materials.jsonnet`,
 validated by `src/materials.ts`, `MaterialSchema`. See `things/README.md` for the boundary's
-reasons and `things/WORK.md`, "Phases" for the remaining integration.
+reasons and `things/WORK.md`, "Phases" for the remaining suite work.
 
 ## Contract
 
@@ -28,4 +29,10 @@ reasons and `things/WORK.md`, "Phases" for the remaining integration.
 - Materials are one table, kept here as content: each material has a colour, a finish and a
   density, and packs add their own. Mass is derived from densities, so colour and density
   kept apart would drift; in one table every tool and the game read the same values, and a
-  mod changes a material in one place.
+  mod changes a material in one place. Baked asset appearance is not a second source of
+  tuning: material references retain authoring shades while resolving the shared values;
+  see `src/materials.ts`, `MaterialReferenceSchema`, and
+  `packages/deadvox/src/render/modelMaterials.ts`, `applyModelMaterials`.
+- Role assignments and appearance profiles belong to the authoring domain, not to a
+  material's identity. See `gungen/src/gun/appearance.jsonnet` for the gun policy. This
+  keeps the core free of thing-specific vocabulary while a material retains one definition.

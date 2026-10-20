@@ -4,6 +4,7 @@ read_if:
   - you change the forward cocking tube or sliding handle that the compact SMG reuses
   - you add the 9x19 cartridge or the compact SMG's Deadvox entry
   - you choose the reference drawing or photos a Gungen design is traced from
+  - you separate a traced design's appearance profile from a generator fixture
 ---
 
 # Compact SMG export
@@ -76,7 +77,10 @@ Profiles, slot and travel limits, notch placement (no source dimensions the notc
 
 ## Archetype decision
 
-The compact SMG sits beside `designs/archetype-smg.json` as a new compact-smg Jsonnet design, which imports the archetype and overrides parts, as `designs/hunting-rifle.jsonnet` does with its base. The archetype is a canonical generator fixture with its own appearance variant (see `src/cli/exportFile.ts`, `FIXTURE_APPEARANCE`), so replacing it would change generator output that other checks rely on. Extending it in place would bend the generic fixture toward one traced gun. Its cocking tube, sliding handle and magazine profile are reused rather than duplicated.
+Keep the traced compact SMG separate from its canonical generator fixture. Replacing the
+fixture would change generator output that other checks rely on; extending it in place
+would bend the generic fixture toward one traced gun. A separate appearance profile keeps
+that boundary explicit; see `src/cli/exportFile.ts`, `FIXTURE_APPEARANCE`.
 
 ## Build split
 

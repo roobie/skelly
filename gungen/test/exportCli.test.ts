@@ -19,7 +19,7 @@ describe('export CLI core', () => {
     const fixture = parseAssemblyJson(read('fixtures', 'archetype-ar'));
     expect(fromDesign.ok && fixture.ok).toBe(true);
     if (fromDesign.ok && fixture.ok) {
-      const fromFixture = exportGunGlb(fixture.assembly, ASSET, { variant: 'ar' });
+      const fromFixture = exportGunGlb(fixture.assembly, ASSET, { appearanceProfile: 'ar' });
       expect(fromFixture.ok).toBe(true);
       expect(fromDesign.modelEntry.file).toBe('assets/models/ar.glb');
       expect(fromDesign.modelEntry.gun.compatibility).toBeDefined();
@@ -75,7 +75,7 @@ describe('export CLI core', () => {
         { cwd: join(import.meta.dirname, '..'), encoding: 'utf8', timeout: 300_000 },
       );
       const output = JSON.parse(generated) as { appearance?: unknown };
-      expect(output.appearance).toEqual({ variant: template });
+      expect(output.appearance).toEqual({ appearanceProfile: template });
 
       const exported = exportFileText(generated, ASSET);
       expect(exported.ok).toBe(true);

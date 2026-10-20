@@ -67,7 +67,7 @@ const json = `${JSON.stringify(
   {
     ...assembly,
     ...(template.variant === undefined ? {} : { calibre: template.variant }),
-    appearance: { variant: template.name },
+    appearance: { appearanceProfile: template.name },
   },
   null,
   2,

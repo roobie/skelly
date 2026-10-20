@@ -167,6 +167,7 @@ describe('revolved solid in an assembly', () => {
       familyColors: { thing: [0.5, 0.5, 0.5] },
       specialColors: {},
       fallbackColor: [0.5, 0.5, 0.5],
+      fallbackFinish: { metallic: 0, roughness: 0.85 },
     };
     const result = exportGlb({ resolved, palette, asset, revolveFacets: 24 });
     if (!result.ok) {

@@ -51,7 +51,7 @@ const S = METRES_PER_UNIT;
 const CARRIER_ENDPOINT_PREFIX = /^bolt-carrier\./;
 const AK_CARTRIDGE = loadCartridgeFile('7.62x39.json') as MetallicCartridge;
 const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantName?: string) => {
-  const result = exportGunGlb(assembly, asset, { variant: variantName ?? 'ar' });
+  const result = exportGunGlb(assembly, asset, { appearanceProfile: variantName ?? 'ar' });
   if (!result.ok) {
     throw new Error(`export failed: ${JSON.stringify(result.error)}`);
   }
@@ -83,7 +83,7 @@ const actionExportFacts = (name: string) => {
   const core = exportGlb({
     resolved: out.resolved,
     palette: GUN_PALETTE,
-    appearance: { variant: 'ar' },
+    appearance: { appearanceProfile: 'ar' },
     asset: ASSET,
     generator: 'skelly gungen glb export',
     metadataNamespace: 'gungen',
@@ -184,7 +184,7 @@ interface PortExtras {
   mount: string;
   gender: string;
   size?: string;
-  rail?: unknown;
+  slots?: unknown;
   frame: { position: number[]; normal: number[]; up: number[] };
 }
 const portExtras = (node: { extras?: Record<string, unknown> }): PortExtras => node.extras!.port as PortExtras;
@@ -331,7 +331,7 @@ describe('glb export: port metadata', () => {
       for (const rail of rails) {
         const nodes = ar.read.json.nodes.filter((n) => n.name === `${id}.${rail.id}`);
         expect(nodes).toHaveLength(1);
-        expect(portExtras(nodes[0]!).rail).toEqual(rail.slots);
+        expect(portExtras(nodes[0]!).slots).toEqual(rail.slots);
       }
     }
   });
@@ -546,7 +546,7 @@ describe('glb export: deadvox model entry', () => {
   });
 
   it.each(loadCorpus())('exports sight metadata from valid parts: $label', ({ label, assembly }) => {
-    const result = exportGunGlb(assembly, ASSET, { variant: 'ar' });
+    const result = exportGunGlb(assembly, ASSET, { appearanceProfile: 'ar' });
     if (!result.ok) {
       throw new Error(`${label}: export failed: ${JSON.stringify(result.error)}`);
     }
@@ -746,7 +746,7 @@ describe('glb export: deadvox model entry', () => {
 
   it('exports the magazine replacement slot regardless of calibre metadata', () => {
     const assembly = design('archetype-ak');
-    const appearance = { variant: 'ak' };
+    const appearance = { appearanceProfile: 'ak' };
     const bare = exportGunGlb(assembly, ASSET, appearance);
     const assigned = exportGunGlb(assembly, ASSET, appearance, { cartridge: AK_CARTRIDGE });
     expect(bare.ok && assigned.ok).toBe(true);
@@ -804,8 +804,8 @@ describe('glb export: deadvox model entry', () => {
   });
 
   it('is deterministic', () => {
-    const a = exportGunGlb(design('archetype-ar'), ASSET, { variant: 'ar' });
-    const b = exportGunGlb(design('archetype-ar'), ASSET, { variant: 'ar' });
+    const a = exportGunGlb(design('archetype-ar'), ASSET, { appearanceProfile: 'ar' });
+    const b = exportGunGlb(design('archetype-ar'), ASSET, { appearanceProfile: 'ar' });
     expect(a.ok && b.ok && Buffer.from(a.glb).equals(Buffer.from(b.glb))).toBe(true);
   });
 });
@@ -817,7 +817,7 @@ describe('glb export: errors', () => {
     const broken = variant('archetype-ar', (a) => {
       a.connections.push({ from: 'receiver.nope', to: 'grip.top' });
     });
-    const result = exportGunGlb(broken, ASSET, { variant: 'ar' });
+    const result = exportGunGlb(broken, ASSET, { appearanceProfile: 'ar' });
     expect(result.ok).toBe(false);
     if (!result.ok && 'issues' in result.error) {
       expect(result.error.code).toBe('structure-issues');
@@ -879,7 +879,7 @@ describe('glb export: errors', () => {
       'assets/models/.glb',
       'assets/models/x.gltf',
     ]) {
-      const result = exportGunGlb(ar, { id: 'x', file: file as GlbAssetIdentity['file'] }, { variant: 'ar' });
+      const result = exportGunGlb(ar, { id: 'x', file: file as GlbAssetIdentity['file'] }, { appearanceProfile: 'ar' });
       expect(result).toEqual({ ok: false, error: { code: 'invalid-asset-file', file } });
     }
   });

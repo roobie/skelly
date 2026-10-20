@@ -66,7 +66,7 @@ describe('generated magazine round columns', () => {
       asset: { id: 'magazine_ak', file: 'assets/models/magazine-ak.glb' },
       params: { length: 'L', profile: 'ak-curved', orientation: 'straight', variant: 'ak74' },
       cartridge,
-      appearance: { variant: 'ak' },
+      appearance: { appearanceProfile: 'ak' },
     });
     expect(result.ok).toBe(true);
     if (!result.ok) {

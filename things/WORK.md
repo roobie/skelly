@@ -108,19 +108,11 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
 
 ## Phases
 
-1. **Neutral schema and material table.**
-   - The neutral envelope and gun block are integrated through
-     `packages/deadvox/src/core/schema.ts`, `ModelSchema`. The export contract is checked
-     directly in `test/gungen-deadvox-contract.test.mjs`, "gungen exports satisfy deadvox model validation".
-   - Finish the material-table integration: material colours and densities come from
-     `packages/thing-core/src/materials.ts`, `MATERIALS`, while gun role assignments and
-     appearance tuning still need content authoring. Deadvox must read shared material
-     metadata rather than only the baked GLB appearance.
-   - Give the engine's gun-shaped names neutral ones, or move them into the gun pack:
-     `packages/engine/src/assembly/schema.ts`, `eyeReliefU`; `packages/engine/src/export/exportTypes.ts`,
-     `RailPortMetadata` and `archetypeFinishes`. "Variant" names both an appearance variant
-     and a template's calibre choice, so one of them is renamed.
-   - Exit: one definition of each neutral field and of each material.
+1. **Neutral schema and material table — complete.**
+   A shared envelope and content-owned materials keep tools and the game from defining
+   competing contracts. See `packages/thing-core/src/schema.ts`, `NeutralModelSchema`;
+   `packages/thing-core/src/materials.ts`, `MATERIALS`; and
+   `test/gungen-deadvox-contract.test.mjs`, "gungen exports satisfy deadvox model validation".
 2. **Export package and physical model.**
    - Create the export package and move `packages/engine/src/export/` into it. Drop the
      export layer from `packages/engine/test/engineImportBoundary.test.ts`, `engineLayers`,

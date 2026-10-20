@@ -94,8 +94,8 @@ describe('870-derived pump silhouette', () => {
         id,
       ).toBe(true);
     }
-    const finish = buildLayers(report, [], 'finish', { variant: 'pump-shotgun' });
-    const roles = buildLayers(report, [], 'role', { variant: 'pump-shotgun' });
+    const finish = buildLayers(report, [], 'finish', { appearanceProfile: 'pump-shotgun' });
+    const roles = buildLayers(report, [], 'role', { appearanceProfile: 'pump-shotgun' });
     try {
       const finishMeshes = finish.solids.children.filter((o) => o.userData.part === 'stock');
       const roleMeshes = roles.solids.children.filter((o) => o.userData.part === 'stock');

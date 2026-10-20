@@ -5,13 +5,19 @@ read_if:
   - you change where the shared engine's tests live or what its boundary test enforces
   - you defer or implement revolute PartMotion
   - "you change the engine/domain boundary for issue #509"
+  - you distinguish construction choices from appearance profiles
 ---
 
 # Shared engine
 
 Consumers should share geometry and fit mechanisms without sharing domain policy. Keeping domain vocabulary outside the engine lets each consumer evolve its own data and rules independently.
 
-`src/assembly/template.ts`, `Template.variantParams` maps consumer choices to generic part parameters. Domain validation stays in `src/assembly/designLoader.ts`, `DesignLoadInputs.validateDesign`. Export identity remains caller-owned through `src/export/exportTypes.ts`, `GlbExportInput.generator` and `GlbExportInput.metadataNamespace`.
+Construction choices and appearance profiles stay independent so changing a finish cannot
+change assembly choices. See `src/assembly/template.ts`, `Template.variantParams`, and
+`src/export/exportTypes.ts`, `AppearanceContext`. Domain validation stays in
+`src/assembly/designLoader.ts`, `DesignLoadInputs.validateDesign`. Export identity remains
+caller-owned through `src/export/exportTypes.ts`, `GlbExportInput.generator` and
+`GlbExportInput.metadataNamespace`.
 
 Assemblies are graphs rather than trees because one part may need to fit against multiple neighbours, as a handguard can meet both receiver and barrel. Preserving that loop lets validation expose a closure mismatch instead of silently dropping a connection; see `src/assembly/resolve.ts`, `resolve`.
 

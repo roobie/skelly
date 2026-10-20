@@ -1,17 +1,12 @@
 import {
+  invalidPaletteFinish,
   type ResolvedAppearance,
   resolveAppearance as resolveCoreAppearance,
 } from '@skelly/engine/export/appearance.ts';
 import type { Palette, SrgbColor } from '@skelly/engine/export/exportTypes.ts';
-import { materialColours } from '@skelly/thing-core/materials';
-import {
-  ANTI_MATERIEL_FAMILY_COLORS,
-  ANTI_MATERIEL_FINISH,
-  ANTI_MATERIEL_ROLE_SLOTS,
-  ANTI_MATERIEL_SHADES,
-} from './antiMateriel/palette.ts';
+import { MATERIALS } from '@skelly/thing-core/materials';
+import content from './appearance.json' with { type: 'json' };
 
-/** Normalizes a 0xRRGGBB integer to an sRGB triple in [0,1]. */
 export const hexToSrgb = (hex: number): SrgbColor => [
   ((hex >> 16) & 0xff) / 255,
   ((hex >> 8) & 0xff) / 255,
@@ -20,12 +15,11 @@ export const hexToSrgb = (hex: number): SrgbColor => [
 
 const validColor = (c: SrgbColor): boolean => c.length === 3 && c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
 
-/** Returns the palette, throwing if any channel is not finite or lies outside [0,1]. */
 export const createPalette = (palette: Palette): Palette => {
   const entries: [string, SrgbColor][] = [
     ...Object.entries(palette.familyColors).map(([k, c]): [string, SrgbColor] => [`family ${k}`, c]),
     ...Object.entries(palette.specialColors).map(([k, c]): [string, SrgbColor] => [`special ${k}`, c]),
-    ...Object.entries(palette.materials ?? {}).map(([k, c]): [string, SrgbColor] => [`material ${k}`, c]),
+    ...Object.entries(palette.materials ?? {}).map(([k, c]): [string, SrgbColor] => [`material ${k}`, c.colour]),
     ...Object.entries(palette.roleShades ?? {}).map(([k, c]): [string, SrgbColor] => [`shade ${k}`, c]),
     ['fallback', palette.fallbackColor],
   ];
@@ -34,203 +28,53 @@ export const createPalette = (palette: Palette): Palette => {
       throw new Error(`palette colour ${key} must have three finite channels in [0,1]`);
     }
   }
+  const badFinish = invalidPaletteFinish(palette);
+  if (badFinish !== undefined) {
+    throw new Error(`palette finish ${badFinish} needs finite metallic and roughness values in [0,1]`);
+  }
+  for (const id of [
+    ...Object.values(palette.roleMaterials ?? {}),
+    ...Object.values(palette.profileFinishes ?? {}).flatMap(Object.values),
+  ]) {
+    if (!Object.hasOwn(palette.materials ?? {}, id)) {
+      throw new Error(`palette references unknown material ${id}`);
+    }
+  }
   return palette;
 };
 
-const fromHex = (table: Record<string, number>): Record<string, SrgbColor> =>
-  Object.fromEntries(Object.entries(table).map(([k, hex]) => [k, hexToSrgb(hex)]));
+const colour = (value: number[]): SrgbColor => {
+  if (value.length !== 3) {
+    throw new Error('Palette colour needs three channels');
+  }
+  return [value[0]!, value[1]!, value[2]!];
+};
+const colours = (table: Record<string, number[]>): Record<string, SrgbColor> =>
+  Object.fromEntries(Object.entries(table).map(([id, value]) => [id, colour(value)]));
 
-const FAMILY_HEX: Record<string, number> = {
-  receiver: 0x8d_93_9c,
-  'bolt-carrier': 0x6d_73_7c,
-  'ar-charging-handle': 0x6d_73_7c,
-  'bolt-handle': 0x6d_73_7c,
-  'bolt-handle-arm': 0x6d_73_7c,
-  'bolt-handle-knob': 0x6d_73_7c,
-  'smg-handle': 0x6d_73_7c,
-  lower: 0x6f_75_7e,
-  barrel: 0x5d_63_6b,
-  // A muzzle device reads as part of its barrel.
-  'ak-muzzle-device': 0x5d_63_6b,
-  'tube-magazine': 0x4d_53_5b,
-  forend: 0x8a_6a_52,
-  handguard: 0x74_80_5f,
-  grip: 0x7d_60_4c,
-  magazine: 0x56_62_76,
-  stock: 0x8a_6a_52,
-  sight: 0x3f_46_50,
-  suppressor: 0x4b_4f_4c,
-  'tactical-flashlight-mount': 0x27_2c_31,
-  foregrip: 0x24_29_2b,
-  frame: 0x4b_4a_45,
-  slide: 0x86_8d_97,
-  cylinder: 0x4a_55_66,
-  // Revolver components: light frame, blued drum, metal barrel, and walnut or rubber grip panels.
-  'revolver-frame': 0x8d_93_9c,
-  'revolver-cylinder': 0x4a_55_66,
-  'revolver-crane': 0x4a_55_66,
-  'revolver-ejector': 0x4a_55_66,
-  'revolver-hammer': 0x8d_93_9c,
-  'revolver-trigger': 0x8d_93_9c,
-  'revolver-barrel': 0x5d_63_6b,
-  'revolver-grip': 0x7d_60_4c,
-  'front-sight': 0x36_3d_47,
-  'front-sight-bead': 0x36_3d_47,
-  'rail-front-sight': 0x36_3d_47,
-  'sporting-rear-sight': 0x36_3d_47,
-  'gas-block': 0x2f_32_38,
-  'gas-cylinder': 0x54_5a_63,
-  ...ANTI_MATERIEL_FAMILY_COLORS,
-};
-const ROLE_SLOTS: Record<string, string> = {
-  receiver: 'metal',
-  'ak-receiver': 'metal',
-  'bolt-carrier': 'metal',
-  'ar-charging-handle': 'metal',
-  'bolt-handle': 'metal',
-  'bolt-handle-arm': 'metal',
-  'bolt-handle-knob': 'metal',
-  'smg-handle': 'metal',
-  lower: 'metal',
-  barrel: 'metal',
-  'ak-muzzle-device': 'metal',
-  'ak-rear-sight': 'metal',
-  'tube-magazine': 'metal',
-  forend: 'furniture',
-  handguard: 'furniture',
-  grip: 'furniture',
-  magazine: 'metal',
-  stock: 'furniture',
-  sight: 'metal',
-  suppressor: 'metal',
-  'tactical-flashlight-mount': 'metal',
-  foregrip: 'furniture',
-  frame: 'metal',
-  slide: 'metal',
-  cylinder: 'metal',
-  'front-sight': 'metal',
-  'front-sight-bead': 'metal',
-  'rail-front-sight': 'metal',
-  'sporting-rear-sight': 'metal',
-  'gas-block': 'metal',
-  'gas-cylinder': 'metal',
-  'revolver-frame': 'metal',
-  'revolver-cylinder': 'metal',
-  'revolver-crane': 'metal',
-  'revolver-ejector': 'metal',
-  'revolver-hammer': 'metal',
-  'revolver-trigger': 'metal',
-  'revolver-barrel': 'metal',
-  'revolver-grip': 'furniture',
-  ...ANTI_MATERIEL_ROLE_SLOTS,
-};
-const SHADE: Record<string, number> = {
-  receiver: 1,
-  'ak-receiver': 0.93,
-  'bolt-carrier': 0.78,
-  'ar-charging-handle': 0.78,
-  'bolt-handle': 0.78,
-  'bolt-handle-arm': 0.78,
-  'bolt-handle-knob': 0.78,
-  'smg-handle': 0.78,
-  lower: 0.83,
-  barrel: 0.67,
-  'ak-muzzle-device': 0.67,
-  'tube-magazine': 0.72,
-  forend: 0.95,
-  handguard: 0.9,
-  grip: 0.82,
-  magazine: 0.48,
-  stock: 1,
-  sight: 0.62,
-  suppressor: 0.55,
-  'tactical-flashlight-mount': 0.65,
-  foregrip: 0.82,
-  frame: 0.78,
-  slide: 1,
-  cylinder: 0.8,
-  'front-sight': 0.6,
-  'front-sight-bead': 0.6,
-  'rail-front-sight': 0.62,
-  'sporting-rear-sight': 0.62,
-  'gas-block': 0.55,
-  'gas-cylinder': 0.7,
-  'ak-rear-sight': 0.65,
-  'revolver-frame': 1,
-  'revolver-cylinder': 0.8,
-  'revolver-crane': 0.8,
-  'revolver-ejector': 0.8,
-  'revolver-hammer': 1,
-  'revolver-trigger': 1,
-  'revolver-barrel': 0.67,
-  'revolver-grip': 0.82,
-  ...ANTI_MATERIEL_SHADES,
-};
-const roles = Object.keys(ROLE_SLOTS);
-const ROLE_MATERIALS = Object.fromEntries(
-  roles.map((role) => {
-    const slot = ROLE_SLOTS[role];
-    if (role === 'sight' || role === 'tactical-flashlight-mount') {
-      return [role, 'alu-anodized-black'];
-    }
-    if (role === 'suppressor') {
-      return [role, 'steel-stainless'];
-    }
-    if (slot === 'furniture') {
-      return [role, 'polymer-black'];
-    }
-    if (slot === 'accent') {
-      return [role, 'rubber-black'];
-    }
-    return [role, 'steel-parkerized'];
-  }),
-) as Record<string, string>;
-const ROLE_SHADES = Object.fromEntries(
-  roles.map((role) => [role, [SHADE[role]!, SHADE[role]!, SHADE[role]!]]),
-) as Record<string, SrgbColor>;
-export const GUN_FINISH_SLOTS = ['metal', 'furniture', 'accent'] as const;
-
-const finish = (furniture: string, metal: string, accent = 'rubber-black') => ({ furniture, metal, accent });
-const FINISHES: Record<string, Readonly<Record<string, string>>> = {
-  ak: finish('wood-walnut', 'steel-blued'),
-  'pump-shotgun': finish('wood-walnut', 'steel-blued'),
-  ar: finish('polymer-black', 'alu-anodized-black'),
-  'ar-free-float': finish('polymer-black', 'alu-anodized-black'),
-  awm: finish('polymer-od-green', 'steel-parkerized'),
-  smg: finish('polymer-black', 'steel-blued'),
-  pistol: finish('polymer-black', 'steel-blued'),
-  revolver: finish('wood-walnut', 'steel-stainless'),
-  'battle-rifle': finish('wood-walnut', 'steel-parkerized'),
-  'bolt-rifle': finish('wood-walnut', 'steel-parkerized'),
-  'bolt-rifle-box': finish('wood-walnut', 'steel-parkerized'),
-  'bolt-rifle-thumbhole': finish('wood-walnut', 'steel-parkerized'),
-  bullpup: finish('polymer-black', 'steel-parkerized'),
-  barrett: { metal: 'steel-parkerized', furniture: 'steel-parkerized', accent: 'steel-parkerized' },
-  'anti-materiel': ANTI_MATERIEL_FINISH,
+const contentPalette = (definition: typeof content.gun | typeof content.ammunition): Palette => {
+  const { familyColors, specialColors, fallbackColor, fallbackFinishMaterial, ...policy } = definition;
+  const fallback = MATERIALS[fallbackFinishMaterial];
+  if (!fallback) {
+    throw new Error(`Unknown fallback finish material ${fallbackFinishMaterial}`);
+  }
+  return createPalette({
+    ...policy,
+    familyColors: colours(familyColors),
+    specialColors: colours(specialColors),
+    fallbackColor: colour(fallbackColor),
+    roleShades: 'roleShades' in definition ? colours(definition.roleShades) : {},
+    materials: MATERIALS,
+    fallbackFinish: fallback.finish,
+  });
 };
 
-export const GUN_PALETTE: Palette = createPalette({
-  familyColors: fromHex(FAMILY_HEX),
-  // Geometry-check roles of the compound wood stock; normal finishes stay wood.
-  specialColors: fromHex({
-    grip: 0x46_ac_8f,
-    'stock-joint': 0xce_9d_52,
-    'fore-stock': 0xce_9d_52,
-    'cut-stub': 0xce_9d_52,
-    'stock-comb': 0x64_8b_c4,
-    'stock-wrist': 0xa9_7c_c8,
-  }),
-  fallbackColor: hexToSrgb(0x88_88_88),
-  materials: materialColours,
-  roleSlots: ROLE_SLOTS,
-  roleMaterials: ROLE_MATERIALS,
-  roleShades: ROLE_SHADES,
-  archetypeFinishes: FINISHES,
-});
-
+export const GUN_APPEARANCE = content;
+export const GUN_FINISH_SLOTS = content.finishSlots;
+export const GUN_PALETTE = contentPalette(content.gun);
+export const AMMO_PALETTE = contentPalette(content.ammunition);
 export type Appearance = ResolvedAppearance;
 
-/** Gun-facing convenience adapter; policy lives in the shared core resolver. */
 export const resolveAppearance = (
   palette: Palette,
   role: string,
@@ -244,7 +88,7 @@ export const resolveAppearance = (
 ): Appearance =>
   resolveCoreAppearance(palette, role, solidId, {
     context: {
-      ...(options.archetype === undefined ? {} : { variant: options.archetype }),
+      ...(options.archetype === undefined ? {} : { appearanceProfile: options.archetype }),
       ...(options.finish === undefined ? {} : { finish: options.finish }),
     },
     overrides: {

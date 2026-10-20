@@ -16,6 +16,7 @@ const legacyPalette: Palette = {
   familyColors: { widget: [0.2, 0.3, 0.4] },
   specialColors: {},
   fallbackColor: [0.5, 0.5, 0.5],
+  fallbackFinish: { metallic: 0, roughness: 0.85 },
 };
 const exportWidget = (def: PartDef, colors: Palette = legacyPalette) => {
   const domain: Domain = {
@@ -58,10 +59,54 @@ describe('domain-agnostic core appearance', () => {
     expect(primitiveBySolid(glb, 'body').extras).not.toHaveProperty('slot');
   });
 
+  it('refuses out-of-range or nonfinite material finishes before writing a GLB', () => {
+    for (const roughness of [-1, 2, Number.NaN]) {
+      expect(() =>
+        exportWidget(widgetDef(), {
+          ...legacyPalette,
+          fallbackFinish: { metallic: 0, roughness },
+        }),
+      ).toThrow('invalid-palette-finish');
+    }
+  });
+
+  it('keeps equal-colour materials distinct by identity and finish', () => {
+    const palette: Palette = {
+      ...legacyPalette,
+      materials: {
+        'fixture-paint': { colour: [0.2, 0.3, 0.4], finish: { metallic: 0, roughness: 0.8 } },
+        'fixture-metal': { colour: [0.2, 0.3, 0.4], finish: { metallic: 0.9, roughness: 0.2 } },
+      },
+    };
+    const exported = exportWidget(
+      widgetDef({
+        solids: [
+          { ...box('body'), material: 'fixture-paint' },
+          { ...box('pad'), material: 'fixture-metal' },
+        ],
+      }),
+      palette,
+    );
+    const first = primitiveBySolid(exported, 'body').material;
+    const second = primitiveBySolid(exported, 'pad').material;
+    expect(first).not.toBe(second);
+    expect(exported.json.materials[first]).toMatchObject({
+      extras: { materialId: 'fixture-paint', colourMultiplier: [1, 1, 1] },
+      pbrMetallicRoughness: { metallicFactor: 0, roughnessFactor: 0.8 },
+    });
+    expect(exported.json.materials[second]).toMatchObject({
+      extras: { materialId: 'fixture-metal' },
+      pbrMetallicRoughness: { metallicFactor: 0.9, roughnessFactor: 0.2 },
+    });
+  });
+
   it('keeps part-node material part-scoped and solid material on primitives regardless of solid order', () => {
     const palette: Palette = {
       ...legacyPalette,
-      materials: { 'own-coat': [1, 0, 0], 'pad-coat': [0, 0, 0] },
+      materials: {
+        'own-coat': { colour: [1, 0, 0], finish: { metallic: 0.2, roughness: 0.4 } },
+        'pad-coat': { colour: [0, 0, 0], finish: { metallic: 0, roughness: 0.6 } },
+      },
       roleSlots: { widget: 'surface' },
       roleMaterials: { widget: 'own-coat' },
     };

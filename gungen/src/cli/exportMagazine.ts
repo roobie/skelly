@@ -9,11 +9,11 @@ import { modelEntryJson } from './modelEntryJson.ts';
 
 const MODEL_ID = /^[a-z0-9_]+$/;
 const USAGE =
-  'usage: exportMagazine <cartridge.json> <prefab-id> <model-id> <finish-variant> <model-directory> [entry-directory]';
+  'usage: exportMagazine <cartridge.json> <prefab-id> <model-id> <appearance-profile> <model-directory> [entry-directory]';
 
 const main = (): number => {
-  const [input, prefabId, modelId, variant, output, entries = output] = process.argv.slice(2);
-  if (!(input && prefabId && modelId && variant && output)) {
+  const [input, prefabId, modelId, appearanceProfile, output, entries = output] = process.argv.slice(2);
+  if (!(input && prefabId && modelId && appearanceProfile && output)) {
     console.error(USAGE);
     return 2;
   }
@@ -39,7 +39,7 @@ const main = (): number => {
     asset: { id: modelId, file: `assets/models/${modelId}.glb` },
     params: prefab.fixedParams,
     cartridge: parsed.cartridge,
-    appearance: { variant },
+    appearance: { appearanceProfile },
   });
   if (!result.ok) {
     console.error(JSON.stringify(result.error));

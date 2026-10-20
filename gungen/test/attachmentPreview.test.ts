@@ -85,7 +85,7 @@ const exportDesign = (assembly: Parameters<typeof exportGunGlb>[0]) => {
   const exported = exportGunGlb(
     assembly,
     { id: assembly.name, file: `assets/models/${assembly.name}.glb` },
-    { variant: design.template, ...(design.finish ? { finish: design.finish } : {}) },
+    { appearanceProfile: design.template, ...(design.finish ? { finish: design.finish } : {}) },
   );
   if (!exported.ok) {
     throw new Error(`${assembly.name}: ${JSON.stringify(exported.error)}`);
@@ -163,8 +163,8 @@ describe('viewer attachment previews', () => {
   });
 
   it('keeps suppressor appearance independent of the host gun finish', () => {
-    const arColor = suppressorColor(ar, { variant: 'ar' });
-    const awmColor = suppressorColor(awm, { variant: 'awm' });
+    const arColor = suppressorColor(ar, { appearanceProfile: 'ar' });
+    const awmColor = suppressorColor(awm, { appearanceProfile: 'awm' });
     expect(arColor).toBe(awmColor);
   });
 
@@ -199,7 +199,7 @@ describe('viewer attachment previews', () => {
       const report = validate(assembly, gunDomain);
       const normalizedReport = { ...report, resolved: withAttachmentInstanceAppearances(report.resolved) };
       const layers = buildLayers(normalizedReport, [], 'finish', {
-        variant: design.template,
+        appearanceProfile: design.template,
         ...(design.finish ? { finish: design.finish } : {}),
       });
       const attachments = exported.modelEntry.gun.attachments ?? [];
@@ -222,7 +222,7 @@ describe('viewer attachment previews', () => {
     if (!exported.ok) {
       throw new Error(JSON.stringify(exported.error));
     }
-    expect(suppressorColor(ar, { variant: 'ar' })).toBe(readGlb(exported.glb).json.materials[0]?.name);
+    expect(suppressorColor(ar, { appearanceProfile: 'ar' })).toBe(readGlb(exported.glb).json.materials[0]?.name);
   });
 
   it('exports a preview attachment at the same transform as the fitted GLB node', () => {

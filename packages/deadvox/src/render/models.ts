@@ -3,11 +3,13 @@
 // over the origin, for piles; and held at its grip in the data-selected pose.
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
+import { MATERIALS } from '@skelly/thing-core/materials';
 import { Box3, type BufferGeometry, Group, type Material, MathUtils, Matrix4, Mesh, Object3D, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';
+import { applyModelMaterials } from './modelMaterials.ts';
 
 /** The base pack's model files, by their path within the pack. */
 const PACK_FILES: Readonly<Record<string, string>> = Object.fromEntries(
@@ -113,6 +115,7 @@ const visibleBounds = (object: Object3D): Box3 => {
 
 /** Both forms of a loaded model. */
 export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
+  applyModelMaterials(scene, MATERIALS);
   const box = visibleBounds(scene);
   const centre = box.getCenter(new Vector3());
   // Lying: centred on x and z over the origin, resting on y = 0.
@@ -170,10 +173,14 @@ export class ModelLibrary {
       loader.load(
         url,
         (gltf) => {
-          const actionParts = actionPartPaths(gltf.scene, def.gun?.action, gltf.parser, def.gun?.revolver);
-          hideSlotNodes(def, gltf.scene, gltf.parser);
-          this.ready.set(def.id, { ...prepareModel(def, gltf.scene), actionParts });
-          this.version += 1;
+          try {
+            const actionParts = actionPartPaths(gltf.scene, def.gun?.action, gltf.parser, def.gun?.revolver);
+            hideSlotNodes(def, gltf.scene, gltf.parser);
+            this.ready.set(def.id, { ...prepareModel(def, gltf.scene), actionParts });
+            this.version += 1;
+          } catch (error) {
+            report(`model "${def.id}" didn't load: ${error instanceof Error ? error.message : String(error)}`);
+          }
         },
         undefined,
         (error) => report(`model "${def.id}" didn't load: ${error instanceof Error ? error.message : String(error)}`),

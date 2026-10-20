@@ -26,7 +26,7 @@ describe('gltf-validator', () => {
       loaded.design.assembly,
       { id, file: `assets/models/${id}.glb` },
       {
-        variant: loaded.design.template,
+        appearanceProfile: loaded.design.template,
         ...(loaded.design.finish ? { finish: loaded.design.finish } : {}),
       },
     );

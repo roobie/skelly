@@ -252,7 +252,7 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
   const eyeLocal = optic ? ([optic.ocularX, optic.opticalAxisY, 0] as Vec3) : axis.origin;
   const eye = applyPoint(transform, eyeLocal);
   let direction = normalize(applyDir(transform, axis.dir));
-  let eyeReliefU = optic?.eyeReliefU ?? axis.eyeReliefU;
+  let eyeReliefU = optic?.eyeReliefU ?? axis.referenceDistanceU;
   if (family === 'front-sight-bead') {
     ({ direction, eyeReliefU } = frontBeadSightLine(resolved, eye));
   }
