@@ -7,19 +7,12 @@ local substation = import 'rural-substation.jsonnet';
 local hq = import 'crisis-hq.jsonnet';
 local find(templates, id) = std.filter(function(t) t.id == id, templates)[0];
 local policeMain = police.templates[0] + {
-  palette+: {
-    U: { furniture: 'wood_door', lock: { id: 'gauntlet_police_armoury', locked: true } },
-    C: { furniture: 'desk', loot: 'desk' },
-    Z: 'shop_blue',
-    A: police.templates[0].palette.A,
-  },
+  palette+: { Z: 'shop_blue' },
   layers: [
     [
       if y == 5 && z == 29 then '##ZZZZZZZZZZZZZZZZZZZZZZZZZZZZGGGGGG##'
       else if y == 6 && z == 29 then '##ZZZZZZZZZZZZZZZZZZZZZZZZZZZZ########'
-      else std.strReplace(std.strReplace(row,
-        '##########..#............##DD#..VVVV.#', '##########..#............##UU#..VVVV.#'),
-        'O..WWW..WWW', 'O..CCC..WWW')
+      else row
       for z in std.range(0, std.length(layer) - 1) for row in [layer[z]]
     ] for y in std.range(0, std.length(police.templates[0].layers) - 1) for layer in [police.templates[0].layers[y]]
   ],
