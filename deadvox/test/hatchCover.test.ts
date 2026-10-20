@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
@@ -281,12 +283,42 @@ describe('the content check for covers', () => {
   });
 });
 
+const BASE = 'src/content/base';
+
+interface Slotted {
+  id: string;
+  choices?: { ref: { id: string } }[];
+}
+
+/** The content with every yard slot offering only the tarp yard, so the city is sure to hold tarps. */
+const onlyTarpYards = (data: { mapAssemblies?: { slots: Slotted[] }[] }) => ({
+  ...data,
+  ...(data.mapAssemblies && {
+    mapAssemblies: data.mapAssemblies.map((assembly) => ({
+      ...assembly,
+      slots: assembly.slots.map((slot) =>
+        slot.choices?.some(({ ref }) => ref.id === 'gauntlet_yard_tarp')
+          ? { ...slot, choices: slot.choices.filter(({ ref }) => ref.id === 'gauntlet_yard_tarp') }
+          : slot,
+      ),
+    })),
+  }),
+});
+
 describe('tarps', () => {
   it(
     'never lie over a hatch and keep clear of doors and ladders',
     () => {
-      const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
-      const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
+      const built = buildRegistry(
+        readdirSync(BASE)
+          .filter((file) => file.endsWith('.json'))
+          .sort()
+          .map((file) => ({ source: file, data: onlyTarpYards(JSON.parse(readFileSync(join(BASE, file), 'utf8'))) })),
+      );
+      expect(built.issues).toEqual([]);
+      const tarpYards = built.registry;
+      const scenario = [...tarpYards.scenarios.values()].find((candidate) => candidate.composition)!;
+      const city = new GauntletSite({ seed: 73, registry: tarpYards, scale: makeScale(0.5), scenario });
       const all = specsOf(city, city.plan.placements);
       const tarps = all.filter((spec) => spec.type === 'tarp');
       expect(tarps.length).toBeGreaterThan(0);

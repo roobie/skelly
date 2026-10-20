@@ -19941,7 +19941,8 @@
               "item": "gauntlet_cellar_note",
               "placement": "surface"
             }
-          ]
+          ],
+          "loot": "desk"
         },
         "c": {
           "facing": "e",
@@ -20198,7 +20199,8 @@
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen"
+          "furniture": "shelf_fallen",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "crate_overturned"
@@ -20464,7 +20466,8 @@
           "loot": "gauntlet_home_kitchen"
         },
         "b": {
-          "furniture": "desk"
+          "furniture": "desk",
+          "loot": "desk"
         },
         "c": {
           "facing": "e",
@@ -20981,10 +20984,12 @@
         },
         "a": {
           "facing": "e",
-          "furniture": "wardrobe_fallen"
+          "furniture": "wardrobe_fallen",
+          "loot": "wardrobe"
         },
         "b": {
-          "furniture": "shelf_on_side"
+          "furniture": "shelf_on_side",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "chair_on_back"
@@ -20993,7 +20998,8 @@
           "furniture": "chair_on_side"
         },
         "e": {
-          "furniture": "crate"
+          "furniture": "crate",
+          "loot": "junk"
         },
         "f": {
           "furniture": "rug"
@@ -21246,7 +21252,8 @@
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen"
+          "furniture": "shelf_fallen",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "crate_overturned"
@@ -21504,11 +21511,13 @@
           "spawn": "shambler"
         },
         "a": {
-          "furniture": "crate"
+          "furniture": "crate",
+          "loot": "junk"
         },
         "b": {
           "fixed": true,
-          "furniture": "kitchen_cupboard"
+          "furniture": "kitchen_cupboard",
+          "loot": "kitchen_cupboard"
         },
         "c": {
           "facing": "s",
