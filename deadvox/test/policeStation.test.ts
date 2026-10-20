@@ -8,7 +8,13 @@ import { makeScale } from '../src/core/scale.ts';
 import type { MapAssemblyDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateWalkingRoute } from '../src/core/templateSpatial.ts';
-import { type CompiledTemplate, cellsOf, compileAssembly, compileTemplate, type PlacedPiece } from '../src/core/templates.ts';
+import {
+  type CompiledTemplate,
+  cellsOf,
+  compileAssembly,
+  compileTemplate,
+  type PlacedPiece,
+} from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -234,15 +240,18 @@ it('keeps police weapons and ammunition behind the armoury lock', () => {
 it('lets a player climb to the matching key on the roof corpse in the base station and gauntlet', () => {
   const { registry } = content;
   const compound = stationOf(registry);
-  const lockIds = new Set(compound.pieces.flatMap(({ lock }) => lock ? [lock.id] : []));
+  const lockIds = new Set(compound.pieces.flatMap(({ lock }) => (lock ? [lock.id] : [])));
   const bases = [...registry.templates.values()]
-    .filter(({ palette }) => Object.values(palette).some((entry) =>
-      typeof entry === 'object' && entry.lock && lockIds.has(entry.lock.id)))
+    .filter(({ palette }) =>
+      Object.values(palette).some((entry) => typeof entry === 'object' && entry.lock && lockIds.has(entry.lock.id)),
+    )
     .map((definition) => compileTemplate(registry, definition));
   expect(bases.length).toBeGreaterThan(0);
   for (const station of [...bases, compound]) {
-    const keys = station.pieces.filter(({ loot }) => loot && lootItems(registry, loot).some((item) =>
-      lockIds.has(registry.items.get(item)?.key?.lock ?? '')));
+    const keys = station.pieces.filter(
+      ({ loot }) =>
+        loot && lootItems(registry, loot).some((item) => lockIds.has(registry.items.get(item)?.key?.lock ?? '')),
+    );
     expect(keys.length, station.id).toBeGreaterThan(0);
     for (const corpse of keys) {
       const definition = registry.furniture.get(corpse.furniture)!;
@@ -251,31 +260,63 @@ it('lets a player climb to the matching key on the roof corpse in the base stati
       expect(corpse.pos[1]).toBeGreaterThan(station.access!.entrance[1]);
       const ladders = station.pieces.filter(({ furniture }) => registry.furniture.get(furniture)?.climbable);
       expect(ladders.length).toBeGreaterThan(0);
-      const bottom = ladders.reduce((lowest, piece) => piece.pos[1] < lowest.pos[1] ? piece : lowest);
+      const bottom = ladders.reduce((lowest, piece) => (piece.pos[1] < lowest.pos[1] ? piece : lowest));
       const [ox, oz] = ladderOutward(bottom.facing);
-      const spawn: Vec3 = [bottom.pos[0] + bottom.size[0] / 2 + ox * 2, bottom.pos[1], bottom.pos[2] + bottom.size[2] / 2 + oz * 2];
+      const spawn: Vec3 = [
+        bottom.pos[0] + bottom.size[0] / 2 + ox * 2,
+        bottom.pos[1],
+        bottom.pos[2] + bottom.size[2] / 2 + oz * 2,
+      ];
       const entities = new BlockEntities(registry);
       for (const piece of station.pieces) {
-        entities.add({ type: piece.furniture, pos: piece.pos, size: piece.size, facing: piece.facing, ...(piece.lock ? { lock: piece.lock } : {}) });
+        entities.add({
+          type: piece.furniture,
+          pos: piece.pos,
+          size: piece.size,
+          facing: piece.facing,
+          ...(piece.lock ? { lock: piece.lock } : {}),
+        });
       }
       const [sx, sy, sz] = station.size;
-      const solid = (x: number, y: number, z: number) => entities.isSolid(x, y, z) ||
-        (x >= 0 && x < sx && y >= 0 && y < sy && z >= 0 && z < sz &&
+      const solid = (x: number, y: number, z: number) =>
+        entities.isSolid(x, y, z) ||
+        (x >= 0 &&
+          x < sx &&
+          y >= 0 &&
+          y < sy &&
+          z >= 0 &&
+          z < sz &&
           registry.blocks[station.blocks[x + sx * (z + sz * y)]!]!.solid);
       const scale = makeScale(0.5);
       const session = createSession({
-        registry, world: new World(), entities, isSolid: solid, isOpaque: solid, scale,
-        seed: 1, start: 43_200, spawn, ready: () => true,
+        registry,
+        world: new World(),
+        entities,
+        isSolid: solid,
+        isOpaque: solid,
+        scale,
+        seed: 1,
+        start: 43_200,
+        spawn,
+        ready: () => true,
         controls: {
-          active: () => true, intent: () => ({ ...IDLE, forward: 1, walk: true }), readyHeld: () => false,
-          consumeCrouchToggle: () => false, yaw: () => Math.atan2(ox, oz), pitch: () => 0,
-          walking: () => true, descending: () => false, useDominant: () => undefined,
+          active: () => true,
+          intent: () => ({ ...IDLE, forward: 1, walk: true }),
+          readyHeld: () => false,
+          consumeCrouchToggle: () => false,
+          yaw: () => Math.atan2(ox, oz),
+          pitch: () => 0,
+          walking: () => true,
+          descending: () => false,
+          useDominant: () => undefined,
         },
-        audio: { play: () => undefined }, notice: () => undefined, onRead: () => undefined,
+        audio: { play: () => undefined },
+        notice: () => undefined,
+        onRead: () => undefined,
       });
       expect(session.grabLadder(entities.at(...bottom.pos)!)).toBeUndefined();
       const speed = registry.furniture.get(bottom.furniture)!.climbable!.speedMetresPerSimSecond;
-      const frames = Math.ceil(((corpse.pos[1] - spawn[1]) * scale.blockSize / speed + 3) * 60);
+      const frames = Math.ceil((((corpse.pos[1] - spawn[1]) * scale.blockSize) / speed + 3) * 60);
       for (let frame = 0; frame < frames && !(session.body.onGround && session.body.pos[1] >= corpse.pos[1]); frame++) {
         session.frame(1 / 60);
       }

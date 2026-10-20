@@ -15,6 +15,7 @@ read_if:
   - you author or change the day cycle, the sky looks or the weather fog tuning
   - you change the debug kit ownership view
   - you change settlement building eligibility, city collections or benchmark candidate admission
+  - you author the police station's armoury or roof access
 ---
 
 # Content sections and recipes
@@ -280,7 +281,7 @@ The stress-test benchmark owns an independent named pool because the hamlet rost
 
 Pools and eligibility remain static content so they can become inputs to an expression selector without competing with it. There is no separate selector language here. Additive mod admission waits for the typed merge mechanism in `docs/decisions/0007-typed-field-patches.md`, "Decision"; collection ownership does not imply that list additions are already implemented.
 
-Special buildings must be deliberately designed and curated as plausible places, not generic rooms with different loot. Real plans keep room function, furnishings, circulation and supplies coherent. The gauntlet's rural police station follows that principle: a working civic place rather than a house shell relabelled by its loot. Exactly one station preserves scarcity without maintaining competing designs. A template holds only what suits its place; a reward that need not suit it belongs to the gauntlet instance (see `DESIGN.md`, "Gauntlet"). Masonry makes the civic building read correctly; wooden furnishings and door leaves do not imply timber partitions or ceilings. See `src/content/base/rural-police.jsonnet`, `templates`; `src/content/base/gauntlet-authored-sites.libsonnet`, `policeMain` and `compound`; and `src/content/base/gauntlet-layout.libsonnet`, `lots`.
+Special buildings must read as plausible places, not generic rooms distinguished only by hidden loot. The police armoury's furniture and secured door must communicate weapon and ammunition storage. Every station copy carries the armoury, so its room, key and stock belong to the base station: a scenario overlay matching room strings can silently stop matching after a layout edit. A reward that need not suit its host still belongs to the gauntlet instance (see `DESIGN.md`, "Gauntlet"). Masonry gives the civic building its character; wooden furnishings do not imply timber construction. See `src/content/base/rural-police.jsonnet`, `templates`, `furniture` and `loot`; `src/content/base/gauntlet-authored-sites.libsonnet`, `policeMain` and `compound`; and `src/content/base/gauntlet-layout.libsonnet`, `lots`.
 
 Loose furniture in abandoned buildings and yards should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-authored-sites.libsonnet`, `furnished`.
 
