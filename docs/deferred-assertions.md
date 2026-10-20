@@ -12,6 +12,7 @@ read_if:
   - you change mobgen's template material look or acid shape tuning
   - you're changing input recording or replay
   - you're tuning landing damage or its seeded outcome spread
+  - you're tuning medicine rarity or analgesic relief
   - you're deciding whether to pin a deferred value, or its pin-when trigger has come
   - a review flags a test for pinning drifting data
 ---
@@ -94,3 +95,4 @@ When you remove or skip a drifting assertion, add a row here in the same PR. Rem
 | Headless shambler CPU budget | `deadvox/test/zombies.test.ts`, `SHAMBLER_CPU_BUDGET_MS`; run `cd deadvox && npm run bench:shambler-budget` | Pass when the opt-in benchmark stays below the budget encoded by `SHAMBLER_CPU_BUDGET_MS`; the default unit suite skips this host-sensitive timing check | when a supported-host performance target is agreed |
 | Gauntlet frame intervals, first useful geometry, streamed/rendered workload and actor totals | `deadvox/src/core/gauntlet.ts`, `GauntletSite`; `deadvox/test/browser/gauntlet-flow.mjs`, `gauntletFlow` | On the exact candidate for #671, record seed/profile, viewport, renderer, loaded columns/meshes, actors and interval distributions during ordinary traversal. Software GL establishes correctness and relative traces, not hardware acceptance; BR checks hardware performance and pacing separately | when #671 establishes an explicit supported-hardware performance contract |
 | Rigid-body benchmark frame time | `deadvox/tools/bench-rigid-body.mjs` | From `deadvox/`, run the normal mode or add the optional `--fast` flag; inspect the median and p95 as diagnostic measurements without treating a host-specific time as a pass/fail contract | when a supported-host performance target is agreed |
+| Medicine share in shared tables, the strong analgesics' rarity and the opioids' relief and vignette numbers | `deadvox/src/content/base/loot.jsonnet`, `shambler_pockets` and `medical_filler`; `deadvox/src/content/base/items-other.libsonnet`, `codeine` and `morphine`; `deadvox/test/lootEconomy.test.ts` and `deadvox/test/pain.test.ts` keep the Medical-only admission and the vignette's curve, not the numbers | Search homes, bodies and kits in the gauntlet and Upheaval and compare how often bandages and infection treatment turn up against a medical stop; take each opioid while hurt and judge the relief and the blur | when a BR-approved playtest settles medicine scarcity |

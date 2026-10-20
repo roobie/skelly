@@ -572,9 +572,9 @@ theme context, the station's carrying the Police usage and the HQ's Military, an
 tables are written per theme rather than per building, because finding what suits a
 place is the economy's job (`DESIGN.md`, "Loot"). Two stops of one theme therefore
 roll alike; a stop that should feel unique gets that from its instance layer, not
-its rolls. The d502 build round moves the stops onto theme contexts and replaces the
-per-building police tables. See `src/content/base/gauntlet-city-building-types.libsonnet`,
-`loot`.
+its rolls. The station, the HQ and the armed rooms share role tables, and each
+source's context admits only the rows it allows, so the station never rolls the HQ's
+rifles. See `src/content/base/gauntlet-city-building-types.libsonnet`, `armoury_arms`.
 
 The police armoury key lies on a dead officer on the station's roof, which the
 start overlooks. The start's lookout keeps that view clear rather than hiding the
@@ -854,18 +854,18 @@ Furniture has no loot table of its own; only a placed container has one, named b
 Police is its own usage, apart from Hunting, because a police armoury holds police
 stock, not a gun store's or a hunter's. The HQ vault's Military context differs from
 the station's by tag rather than by a separate table. A tag filters only the items it
-narrows; one that every common item carries filters nothing, so police gear gives up
-the every-usage default. Item tiering stays open.
+narrows; one that every common item carries filters nothing. Police narrows only items
+no other place should hold, such as the armoury key; the station's guns, vest and
+radio stay common, so Police alone keeps rifles out of the station. Item tiering stays
+open.
 
 Medicine is rare outside medical places in every scenario: shared tables such as home
 furniture, pockets and kits weight it low, and the strong analgesics are Medical-only,
 while the common one stays findable anywhere. A medical detour is worth making only if
 the street does not already supply it. Shared tables give one knob for every scenario,
 so Upheaval's survival balance moves with the gauntlet's; whether its pace still works
-waits on a playtest. The d502 build round adds the Police usage, the narrowing and
-the Medical-only items, and retunes those tables. See
-`src/content/base/economy.libsonnet`, `authorItem`, and `src/content/base/loot.jsonnet`,
-`pills`.
+waits on a playtest. See `src/content/base/economy.libsonnet`, `medicalItems`, and
+`src/content/base/loot.jsonnet`, `shambler_pockets`.
 
 Loot never depends on the order in which places are visited. There is no map-wide
 running count of what has spawned, because such a count would make one police station's
@@ -1349,11 +1349,12 @@ free upgrade. The blur is a vignette at the edges, not a full-screen blur: the c
 where the player aims, stays sharp, while threats at the edges are harder to read.
 Aim itself is untouched, so the cost reads as the drug's and not as pain's own sway.
 The vignette rises and fades with the dose, its strength is a content number on the
-analgesic, and players who cannot tolerate it get a setting for it. Its
-strength needs a playtest. Whether the HUD stays sharp under it, whether a stacked
-dose can be dangerous, and whether dependence is ever modelled are later rulings. The
-d502 build round adds both drugs and the vignette. See `src/core/schema.ts`,
-`AnalgesicSchema`, and `src/core/pain.ts`, `analgesia`.
+analgesic, and players who cannot tolerate it get a setting for it. It lives in the
+mood pass's last draw, outside the film toggle, so it shows with post on even when
+film is off. Its strength needs a playtest. Whether the HUD stays sharp under it,
+whether a stacked dose can be dangerous, and whether dependence is ever modelled are
+later rulings. See `src/core/schema.ts`, `AnalgesicSchema`; `src/core/pain.ts`,
+`drugVignette`; and `src/render/moodOutput.ts`, `moodDrugSample`.
 
 The optional stats readout shows felt pain and its acute, injury and relief
 components so BR can tune the scale in play. This debug-style number belongs
