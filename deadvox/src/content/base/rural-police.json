@@ -786,6 +786,7 @@
         "F": {
           "facing": "s",
           "furniture": "fridge",
+          "loot": "fridge",
           "lootUsage": ["Residential"]
         },
         "G": {
@@ -804,7 +805,8 @@
         },
         "L": {
           "facing": "s",
-          "furniture": "police_evidence_locker"
+          "furniture": "police_evidence_locker",
+          "loot": "gauntlet_police_gear"
         },
         "M": {
           "facing": "e",
@@ -853,7 +855,8 @@
         },
         "f": {
           "facing": "s",
-          "furniture": "police_file_cabinet"
+          "furniture": "police_file_cabinet",
+          "loot": "gauntlet_police_gear"
         },
         "g": {
           "ground": true

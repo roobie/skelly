@@ -819,19 +819,9 @@ const checkFurniture = (registry: Registry, report: Report) => {
         report('furniture', furniture.id, `.container.pockets[${index}].grid`, issue);
       }
     });
-    const misfit = furniture.loot !== undefined && rolledFitIssue(registry, furniture, furniture.loot);
-    if (misfit) {
-      report('furniture', furniture.id, '.loot', misfit);
-    }
     checkDoorOpenNoise(registry, furniture, report);
     checkSearchNoise(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
-    if (furniture.loot !== undefined && !registry.loot.has(furniture.loot)) {
-      report('furniture', furniture.id, '.loot', `no loot table "${furniture.loot}"`);
-    }
-    if (furniture.loot !== undefined && furniture.container === undefined) {
-      report('furniture', furniture.id, '.loot', 'has loot but no container to put it in');
-    }
   }
 };
 

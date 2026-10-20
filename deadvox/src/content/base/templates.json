@@ -190,20 +190,24 @@
         },
         "C": {
           "fixed": true,
-          "furniture": "counter"
+          "furniture": "counter",
+          "loot": "kitchen_cupboard"
         },
         "D": {
           "furniture": "wood_door"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge",
+          "loot": "fridge"
         },
         "K": {
           "fixed": true,
-          "furniture": "kitchen_cupboard"
+          "furniture": "kitchen_cupboard",
+          "loot": "kitchen_cupboard"
         },
         "R": {
-          "furniture": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe"
         },
         "^": "roof",
         "c": "carpet",
@@ -380,30 +384,36 @@
           "furniture": "wood_door"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge",
+          "loot": "fridge"
         },
         "G": {
           "facing": "w",
           "fixed": true,
-          "furniture": "counter"
+          "furniture": "counter",
+          "loot": "kitchen_cupboard"
         },
         "J": {
           "facing": "w",
           "fixed": true,
-          "furniture": "kitchen_cupboard"
+          "furniture": "kitchen_cupboard",
+          "loot": "kitchen_cupboard"
         },
         "O": {
           "furniture": "sofa"
         },
         "R": {
-          "furniture": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe"
         },
         "S": {
           "facing": "e",
-          "furniture": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf"
         },
         "T": {
-          "furniture": "desk"
+          "furniture": "desk",
+          "loot": "desk"
         },
         "^": "roof",
         "c": "carpet",
@@ -584,17 +594,20 @@
           "furniture": "wood_door"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge",
+          "loot": "fridge"
         },
         "S": {
           "furniture": "shelf",
           "loot": "snacks"
         },
         "T": {
-          "furniture": "desk"
+          "furniture": "desk",
+          "loot": "desk"
         },
         "X": {
-          "furniture": "crate"
+          "furniture": "crate",
+          "loot": "junk"
         },
         "^": "roof",
         "d": {
@@ -882,7 +895,8 @@
           "furniture": "wood_door"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge",
+          "loot": "fridge"
         },
         "S": {
           "furniture": "shelf",

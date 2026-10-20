@@ -88,7 +88,7 @@ local yardTop = [
         D: { furniture: 'wood_door' }, O: { furniture: 'wood_door', facing: 'e' }, E: { furniture: 'station_emergency_door', facing: 'e' },
         W: { furniture: 'desk', loot: 'medical_filler' }, c: { furniture: 'chair', facing: 'e' }, B: { furniture: 'medical_examination_couch' }, b: { furniture: 'bed' },
         F: { furniture: 'medical_folding_screen' }, M: { furniture: 'medical_cabinet', facing: 's', loot: 'medical_filler' }, L: { furniture: 'shelf', loot: 'medical_filler' },
-        A: { furniture: 'station_washbasin', facing: 's' }, S: { furniture: 'medical_steam_sterilizer' }, C: { furniture: 'medical_card_file' }, T: { furniture: 'station_toilet', facing: 's' },
+        A: { furniture: 'station_washbasin', facing: 's' }, S: { furniture: 'medical_steam_sterilizer' }, C: { furniture: 'medical_card_file', loot: 'medical_filler' }, T: { furniture: 'station_toilet', facing: 's' },
       },
       layers: [floor, furnished, low, upper, walls, lintel, roof, ridge],
       access: { ground: 'ground', entrance: [9, 1, 12], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },

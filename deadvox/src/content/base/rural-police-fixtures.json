@@ -74,7 +74,6 @@
         ]
       },
       "id": "police_file_cabinet",
-      "loot": "gauntlet_police_gear",
       "name": "File cabinet",
       "size": [2, 4, 1]
     },
@@ -93,7 +92,6 @@
         ]
       },
       "id": "police_evidence_locker",
-      "loot": "gauntlet_police_gear",
       "name": "Evidence locker",
       "size": [2, 4, 1]
     },

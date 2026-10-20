@@ -37,16 +37,16 @@
           "spawn": "shambler"
         },
         "K": {
-          "furniture": "kitchen_cupboard", "fixed": true
+          "furniture": "kitchen_cupboard", "fixed": true, "loot": "kitchen_cupboard"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge", "loot": "fridge"
         },
         "T": {
-          "furniture": "desk"
+          "furniture": "desk", "loot": "desk"
         },
         "R": {
-          "furniture": "wardrobe"
+          "furniture": "wardrobe", "loot": "wardrobe"
         },
         "B": {
           "furniture": "bed"
@@ -392,13 +392,13 @@
           "loot": "snacks"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge", "loot": "fridge"
         },
         "X": {
-          "furniture": "crate"
+          "furniture": "crate", "loot": "junk"
         },
         "T": {
-          "furniture": "desk"
+          "furniture": "desk", "loot": "desk"
         },
         "K": {
           "furniture": "kitchen_cupboard", "fixed": true,
@@ -588,7 +588,7 @@
           "loot": "snacks"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge", "loot": "fridge"
         },
         "X": {
           "furniture": "crate",
@@ -1229,7 +1229,7 @@
           "loot": "d41_empty"
         },
         "S": {
-          "furniture": "shelf"
+          "furniture": "shelf", "loot": "shelf"
         }
       },
       "layers": [

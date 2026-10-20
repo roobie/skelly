@@ -202,7 +202,8 @@
           "furniture": "medical_examination_couch"
         },
         "C": {
-          "furniture": "medical_card_file"
+          "furniture": "medical_card_file",
+          "loot": "medical_filler"
         },
         "D": {
           "furniture": "wood_door"

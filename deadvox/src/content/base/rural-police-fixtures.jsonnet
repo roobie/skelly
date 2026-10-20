@@ -46,12 +46,10 @@ shape.colliding({
     {
       id: 'police_file_cabinet', name: 'File cabinet', size: [2, 4, 1], color: '#79857c',
       container: pocket, appearance: { kind: 'drawers', surface: 'painted-metal' },
-      loot: 'gauntlet_police_gear',
     },
     {
       id: 'police_evidence_locker', name: 'Evidence locker', size: [2, 4, 1], color: '#68777b',
       container: pocket, appearance: { kind: 'cabinet', surface: 'painted-metal' },
-      loot: 'gauntlet_police_gear',
     },
     { id: 'station_toilet', name: 'Toilet', size: [2, 2, 2], color: '#deddd3', shape: toilet },
     { id: 'station_cell_toilet', name: 'Cell toilet', size: [2, 2, 2], color: '#8b9494', shape: toilet },

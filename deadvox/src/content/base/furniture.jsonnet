@@ -53,8 +53,7 @@ shape.colliding({
             "handlingSimSeconds": 1.0
           }
         ]
-      },
-      "loot": "kitchen_cupboard"
+      }
     },
     {
       "id": "counter",
@@ -69,8 +68,7 @@ shape.colliding({
             "handlingSimSeconds": 1.0
           }
         ]
-      },
-      "loot": "kitchen_cupboard"
+      }
     },
     {
       "id": "fridge",
@@ -86,8 +84,7 @@ shape.colliding({
             "handlingSimSeconds": 1.0
           }
         ]
-      },
-      "loot": "fridge"
+      }
     },
     {
       "id": "wardrobe",
@@ -102,8 +99,7 @@ shape.colliding({
             "handlingSimSeconds": 1.2
           }
         ]
-      },
-      "loot": "wardrobe"
+      }
     },
     {
       "id": "desk",
@@ -129,8 +125,7 @@ shape.colliding({
             "handlingSimSeconds": 1.0
           }
         ]
-      },
-      "loot": "desk"
+      }
     },
     {
       "id": "range_table",
@@ -188,8 +183,7 @@ shape.colliding({
             "handlingSimSeconds": 0.8
           }
         ]
-      },
-      "loot": "shelf"
+      }
     },
     {
       "id": "workbench",
@@ -245,8 +239,7 @@ shape.colliding({
             "handlingSimSeconds": 1.2
           }
         ]
-      },
-      "loot": "junk"
+      }
     },
     {
       "id": "bed",
