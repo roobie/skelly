@@ -680,6 +680,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkUnpacking(item, registry, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
+    checkToolFuel(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {
       report('items', item.id, '.model', `no model "${item.model}"`);
     }
@@ -804,6 +805,36 @@ const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: R
     if (!sound?.noise.enabled) {
       report('furniture', furniture.id, `${path}.strikeSound`, 'forcing strikes need a sound that alerts hearing');
     }
+    if (method.fuel !== undefined) {
+      checkForcingFuel(registry, { furniture: furniture.id, path, method }, report);
+    }
+  }
+};
+
+const checkForcingFuel = (
+  registry: Registry,
+  at: { furniture: string; path: string; method: { quality: string; level: number; fuel?: number | undefined } },
+  report: Report,
+) => {
+  const { method } = at;
+  for (const item of registry.items.values()) {
+    if ((item.tool?.qualities[method.quality] ?? 0) < method.level) {
+      continue;
+    }
+    const canister = item.tool?.fuel?.canister;
+    const capacity = canister === undefined ? undefined : registry.items.get(canister)?.canister?.capacity;
+    if (capacity === undefined) {
+      report('furniture', at.furniture, `${at.path}.fuel`, `"${item.id}" meets the method but has no fuel canister`);
+    } else if (capacity < method.fuel!) {
+      report('furniture', at.furniture, `${at.path}.fuel`, `a full canister for "${item.id}" cannot cover one cut`);
+    }
+  }
+};
+
+const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
+  const canister = item.tool?.fuel?.canister;
+  if (canister !== undefined && registry.items.get(canister)?.canister === undefined) {
+    report('items', item.id, '.tool.fuel.canister', `"${canister}" is not an item with a canister component`);
   }
 };
 

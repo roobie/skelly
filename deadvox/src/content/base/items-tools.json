@@ -50,6 +50,43 @@
     },
     {
       "category": "tool",
+      "description": "A gas torch that cuts steel. It runs on a gas cartridge.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "blowtorch",
+      "name": "Blowtorch",
+      "size": [2, 3],
+      "tool": {
+        "fuel": {
+          "canister": "gas_canister",
+          "swapSimSeconds": 3
+        },
+        "qualities": {
+          "flame_cutting": 1
+        }
+      },
+      "weight": 900
+    },
+    {
+      "canister": {
+        "capacity": 3
+      },
+      "category": "misc",
+      "description": "Fuel for a blowtorch.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "gas_canister",
+      "name": "Gas cartridge",
+      "size": [1, 2],
+      "stack": 2,
+      "weight": 350
+    },
+    {
+      "category": "tool",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

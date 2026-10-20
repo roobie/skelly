@@ -408,6 +408,14 @@ const FoodSchema = pipe(
 const ToolSchema = strictObject({
   /** Quality levels, such as { "prying": 2 }. */
   qualities: record(Id, QualityLevel),
+  /** It runs on a swappable canister: the item type that fits it, and Sim seconds to swap one in. */
+  fuel: optional(strictObject({ canister: Id, swapSimSeconds: PositiveSimSeconds })),
+});
+
+/** The fill shape of a battery, for a canister a fuelled tool draws on. */
+const CanisterSchema = strictObject({
+  /** Fill when full, in the units a forcing method's `fuel` spends. */
+  capacity: Positive,
 });
 
 const WeaponSchema = strictObject({
@@ -793,6 +801,7 @@ const ItemSchema = strictObject({
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
+  canister: optional(CanisterSchema),
   /** A working alarm clock: carried, it lets a sleep run to a chosen wake hour. */
   alarm: optional(literal(true)),
   /** Initial ADS power for a variable-power optic; constrained by its exported range. */
@@ -1229,6 +1238,8 @@ const DoorForcingSchema = pipe(
     fastestTimeSimSeconds: PositiveSimSeconds,
     /** Sim seconds between noisy strikes at the lowest skill level. */
     strikeIntervalSimSeconds: PositiveSimSeconds,
+    /** Canister fill a finished cut spends; the cut won't start without it. A fuelled tool is needed. */
+    fuel: optional(Positive),
   }),
   check(
     ({ timeSimSeconds, fastestTimeSimSeconds }) => fastestTimeSimSeconds <= timeSimSeconds,

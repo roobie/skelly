@@ -19378,6 +19378,13 @@
           "furniture": "footlocker",
           "items": [
             {
+              "count": 1,
+              "fitted": {
+                "canister": "gas_canister"
+              },
+              "item": "blowtorch"
+            },
+            {
               "count": 2,
               "item": "cartridge_box_357_h_magnum"
             },

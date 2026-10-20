@@ -71,6 +71,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
+import { spendFuel } from '../core/torch.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
@@ -1729,7 +1730,14 @@ export const createSession = (options: SessionOptions) => {
         return 'The door is no longer there';
       }
       const plan = pryPlan(inventory, entity, { toolUid, method }, character);
-      return plan.ok ? entities.breakLock(entity) : plan.reason;
+      if (!plan.ok) {
+        return plan.reason;
+      }
+      const broken = entities.breakLock(entity);
+      if (broken === undefined && plan.fuel !== undefined) {
+        spendFuel(inventory, plan.tool, plan.fuel);
+      }
+      return broken;
     },
   };
 

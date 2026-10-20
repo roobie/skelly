@@ -48,7 +48,7 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
       ]
     : [];
   for (const [slotId, child] of Object.entries(item.slots ?? {})) {
-    if (slotId === 'magazine' || slotId === 'battery' || !child) {
+    if (slotId === 'magazine' || slotId === 'battery' || slotId === 'canister' || !child) {
       continue;
     }
     const mount = modelDef?.attachmentSlots?.find(({ id }) => id === slotId);

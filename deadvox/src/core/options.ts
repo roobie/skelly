@@ -2,6 +2,7 @@
 
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
+import type { ItemDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandlingQueue, MoveJob } from './handling.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
@@ -9,6 +10,7 @@ import { defOf, type Item } from './items.ts';
 import { chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { Readable } from './readable.ts';
+import { fitsFuelledTool } from './torch.ts';
 
 /** Keys stay ordinary Inventory-owned items; only held definitions authorize a door lock. */
 export const heldKeyLocks = (inventory: Inventory): string[] =>
@@ -76,9 +78,11 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'consume' | 'switch' | 'battery' | 'read';
+  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read';
   light?: Item;
   battery?: Item;
+  tool?: Item;
+  canister?: Item;
   readable?: Readable;
 }
 
@@ -226,9 +230,27 @@ const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): Use
         operation: 'battery',
         light,
         battery,
-        plan: { ok: true, time: defOf(inv.registry, light.type).light!.power!.swapSimSeconds },
+        plan: swapPlan(defOf(inv.registry, light.type).light!.power!.swapSimSeconds),
       }
     : refuseUse('Hold the light it goes in first');
+};
+
+const swapPlan = (simSeconds: number): UseOption['plan'] => ({ ok: true, time: simSeconds });
+
+const canisterOption = (canister: Item, inv: Inventory): UseOption => {
+  const tool = [inv.hands[dominantSide(inv.character)], inv.hands[offSide(inv.character)]].find(
+    (held) => held && fitsFuelledTool(inv, held, canister),
+  );
+  return tool
+    ? {
+        kind: 'use',
+        label: `Put a gas cartridge in the ${inv.name(tool).toLowerCase()}`,
+        operation: 'canister',
+        tool,
+        canister,
+        plan: swapPlan(defOf(inv.registry, tool.type).tool!.fuel!.swapSimSeconds),
+      }
+    : refuseUse('Hold the tool it goes in first');
 };
 
 const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
@@ -269,6 +291,13 @@ const useLocationRefusal = (
   return `Take the ${defOf(inventory.registry, item.type).name.toLowerCase()} in your hands first`;
 };
 
+const goneReason = (def: ItemDef, name: string): string => {
+  if (def.battery) {
+    return "The battery isn't there any more";
+  }
+  return def.canister ? "The cartridge isn't there any more" : `Take the ${name} in your hands first`;
+};
+
 /** Eligibility only: effects remain in the domain command owner. */
 export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
@@ -276,7 +305,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   const name = def.name.toLowerCase();
   const at = inv.locate(item);
   if (!at) {
-    return refuseUse(def.battery ? "The battery isn't there any more" : `Take the ${name} in your hands first`);
+    return refuseUse(goneReason(def, name));
   }
   if (!view.entries.some((entry) => entry.item === item)) {
     const place = inv.placeOf(at);
@@ -284,6 +313,9 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   }
   if (def.battery) {
     return batteryOption(item, inv);
+  }
+  if (def.canister) {
+    return canisterOption(item, inv);
   }
   const locationRefusal = useLocationRefusal(item, at, inv);
   if (locationRefusal) {

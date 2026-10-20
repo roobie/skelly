@@ -210,6 +210,7 @@ local pills(weight, least, parts, of) =
       entries: [
         item('hammer', 3, condition=[0.4, 1]),
         item('crowbar', 3, condition=[0.4, 1]),
+        item('gas_canister', 1),
         item('baseball_bat', 1, condition=[0.4, 1]),
         item('hand_saw', 2, condition=[0.4, 1]),
         item('screwdriver', 2, condition=[0.4, 1]),
