@@ -385,7 +385,7 @@ Skill definitions own their effects and training activities. Quality requirement
 
 Validate recipe and component references against the effective ordered pack. Disassembly yields and salvage are authored for the item rather than inferred by reversing every recipe; see `planDisassembly` in `src/core/disassembly.ts` and `docs/crafting.md`.
 
-The initial torch, candle, and repair-kit recipes consume whole solid items and do not consume their containers. A recipe using part of a liquid requires approval of the storage-to-volume mapping, saved partial use, and container-retention rules first. Old saves are refused rather than migrated in pre-alpha; see `SAVE_SCHEMA_VERSION` in `src/core/saveFormat.ts`.
+The initial torch, candle, and repair-kit recipes consume whole solid items and do not consume their containers. A recipe using part of a liquid requires approval of the storage-to-volume mapping, saved partial use, and container-retention rules first. Old saves are refused rather than migrated before v1.0 beta; see `docs/decisions/0002-saves.md`, "Compatibility".
 
 ## Static reachability
 
