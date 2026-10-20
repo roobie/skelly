@@ -160,7 +160,7 @@ local hasDesk(scene) = std.length([1 for thing in scene.things if thing.furnitur
       id: 'gauntlet_packed_bag', rolls: [1, 3],
       entries: [
         item('canned_beans', 3), item('crackers', 3), item('water_bottle', 3), item('lighter', 1),
-        item('matches', 2), item('bandage', 2), item('painkillers', 1), item('flashlight', 1, condition=[0.5, 1]),
+        item('matches', 2), item('bandage', 1), item('painkillers', 1), item('flashlight', 1, condition=[0.5, 1]),
         item('aa_battery', 2, count=[1, 4]), item('duct_tape', 1), nothing(2),
       ],
     },

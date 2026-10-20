@@ -116,6 +116,30 @@ export class ScenarioRouteSpace {
     this.clearCache.clear();
   }
 
+  /** Opens `ids` for one proof only, so a key one route carries can't open doors for another route's proof. */
+  withLocks<T>(ids: readonly string[], prove: () => T): T {
+    const added = [...new Set(ids)].filter((id) => !this.admittedLocks.has(id));
+    for (const id of added) {
+      this.admitLock(id);
+    }
+    try {
+      return prove();
+    } finally {
+      for (const id of added) {
+        this.admittedLocks.delete(id);
+        for (const entity of this.entities.all) {
+          if (entity.lock?.id === id && entity.lock.locked) {
+            entity.open = false;
+          }
+        }
+      }
+      if (added.length > 0) {
+        this.standingCache.clear();
+        this.clearCache.clear();
+      }
+    }
+  }
+
   blocked(x: number, y: number, z: number): boolean {
     this.load(x, y, z);
     return this.solid(x, y, z);

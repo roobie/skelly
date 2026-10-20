@@ -1,10 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { worldOpaque, worldSolid } from '../src/core/collision.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { foliageRustle, initialRustleClock } from '../src/core/foliageRustle.ts';
 import { footstepEventForBlock, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
 import { Forest } from '../src/core/forest.ts';
@@ -30,17 +27,10 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 
-const { registry, issues } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-    })),
-);
+const registry = baseRegistry();
 const scale = makeScale(0.5);
 const soundTuning = { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 };
 const senseTuning = {
@@ -122,7 +112,6 @@ const verticalBrushSession = (spawnY: number) => {
 
 describe('passable but opaque vegetation', () => {
   it('keeps foliage opaque to sight/rays but passable to bodies, attacks and acoustic rays', () => {
-    expect(issues).toEqual([]);
     const world = new World();
     const chunk = new Chunk(0, 0, 0);
     world.addChunk(chunk);

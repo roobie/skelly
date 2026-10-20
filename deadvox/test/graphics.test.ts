@@ -12,6 +12,7 @@ import {
   validGraphicsSettings,
   writeGraphicsParams,
 } from '../src/core/graphics.ts';
+import { drugVignetteShown } from '../src/core/mood.ts';
 import { GraphicsControls } from '../src/game/graphicsControls.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
 import { Mood } from '../src/render/mood.ts';
@@ -24,6 +25,7 @@ const tuning: GraphicsOptions = {
     adaptive: { enabled: true, targetRealMs: 10, min: 0.2, max: 0.9, step: 0.1, hysteresisRealMs: 1, sampleWindow: 4 },
   },
   bloomScale: scale('Fixture bloom'),
+  drugVignette: { label: 'Fixture drug vignette', min: 0, max: 1, default: 1 },
   smallSunMap: toggle('Fixture shadow'),
   fastCamo: toggle('Fixture camo'),
   coarseWeathering: toggle('Fixture weather'),
@@ -39,6 +41,7 @@ it('validates graphics ranges, defaults and allowed toggle choices before admitt
   const invalid: GraphicsOptions[] = [
     { ...tuning, renderScale: { ...tuning.renderScale, min: 0.8, max: 0.3 } },
     { ...tuning, bloomScale: { ...tuning.bloomScale, default: 1 } },
+    { ...tuning, bloomScale: { ...tuning.bloomScale, min: 0 } },
     {
       ...tuning,
       renderScale: {
@@ -115,7 +118,7 @@ it('validated setters reject disallowed values without mutating the player choic
 
 it('applies all resolved knobs on startup and player changes, with URL priority gated by debug', () => {
   const targets = {
-    mood: { setRenderScale: vi.fn(), setBloomScale: vi.fn() },
+    mood: { setRenderScale: vi.fn(), setBloomScale: vi.fn(), setDrugVignetteScale: vi.fn() },
     shadows: { setSmallSunMap: vi.fn() },
     meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn(), setCachedSurfaceNoise: vi.fn() },
   };
@@ -131,6 +134,7 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
   const controls = new GraphicsControls(tuning, targets, { debug: false, params, storage });
   expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.min, true);
   expect(targets.mood.setBloomScale).toHaveBeenLastCalledWith(tuning.bloomScale.default);
+  expect(targets.mood.setDrugVignetteScale).toHaveBeenLastCalledWith(tuning.drugVignette.default);
   expect(targets.shadows.setSmallSunMap).toHaveBeenLastCalledWith(tuning.smallSunMap.default);
   expect(targets.meshes.setFastCamo).toHaveBeenLastCalledWith(false);
   expect(targets.meshes.setCoarseWeathering).toHaveBeenLastCalledWith(tuning.coarseWeathering.default);
@@ -164,6 +168,13 @@ it('mood scale setters enforce content bounds without the former URL trial floor
   expect(() => mood.setBloomScale(tuning.bloomScale.max + 1)).toThrow(RangeError);
   expect(mood.renderScale).toBe(tuning.renderScale.min);
   expect(mood.bloomScale).toBe(tuning.bloomScale.min);
+});
+
+it('a drug vignette setting of off shows no vignette however strong the dose', () => {
+  const off = resolveGraphics(tuning, setGraphicsSetting(tuning, {}, 'drugVignette', 0)).drugVignette;
+  const full = resolveGraphics(tuning).drugVignette;
+  expect(drugVignetteShown(1, off)).toBe(0);
+  expect(drugVignetteShown(1, full)).toBeGreaterThan(0);
 });
 
 describe('machine graphics settings persistence', () => {

@@ -1,6 +1,6 @@
 local shape = import 'furniture-shape.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
-local police = { usage: ['Hunting'], tier: 'Tier1' };
+local police = { usage: ['Police'], tier: 'Tier1' };
 local yard = import 'rural-police-yard.libsonnet';
 local foundation = [
   '##################################kkkk',
@@ -300,26 +300,11 @@ shape.colliding({
     id: 'gauntlet_police_armoury_key', name: 'Police armoury key', category: 'tool',
     weight: 10, size: [1, 1], key: { lock: 'gauntlet_police_armoury' },
     description: 'A small key stamped ARMOURY.',
-    economy: { usage: ['Hunting'], tiers: ['Tier1'] },
+    economy: { usage: ['Police'], tiers: ['Tier1'] },
   }],
   loot: [{
     id: 'gauntlet_police_roof_key', rolls: [1, 1],
     entries: [{ item: 'gauntlet_police_armoury_key', weight: 1 }],
-  }, {
-    id: 'gauntlet_police_armoury_stock', rolls: [2, 3], entries: [
-      { table: 'gauntlet_police_sidearms', weight: 1 }, { table: 'gauntlet_police_ammunition', weight: 2 },
-    ],
-  }, {
-    id: 'gauntlet_police_sidearms', rolls: [1, 1], entries: [
-      { item: 'revolver_357', weight: 2, condition: [0.5, 0.9] },
-      { item: 'pump_shotgun', weight: 1, condition: [0.5, 0.9] }, { nothing: true, weight: 1 },
-    ],
-  }, {
-    id: 'gauntlet_police_ammunition', rolls: [1, 2], entries: [
-      { item: 'cartridge_357_h_magnum', weight: 3, count: [3, 12] },
-      { item: 'cartridge_box_357_h_magnum', weight: 2 },
-      { item: 'shotshell_box', weight: 1 }, { nothing: true, weight: 2 },
-    ],
   }],
   templates: [{
     id: 'rural_police_station',
@@ -334,17 +319,17 @@ shape.colliding({
       Q: { furniture: 'gauntlet_cell_door', facing: 'e' },
       G: { furniture: 'workshop_roller_door' },
       W: { furniture: 'desk', loot: 'desk' },
-      S: { furniture: 'shelf', loot: 'gauntlet_police_gear' },
-      A: { furniture: 'police_weapon_cabinet', loot: 'gauntlet_police_armoury_stock' },
-      M: { furniture: 'shelf', facing: 'e', loot: 'gauntlet_police_ammunition' },
+      S: { furniture: 'shelf', loot: 'equipment_locker' },
+      A: { furniture: 'police_weapon_cabinet', loot: 'armoury_cabinet' },
+      M: { furniture: 'shelf', facing: 'e', loot: 'armoury_ammunition' },
       F: { furniture: 'fridge', facing: 's', loot: 'fridge', lootUsage: ['Residential'] },
       T: { furniture: 'range_table' },
       c: { furniture: 'chair' },
       B: { furniture: 'bed', facing: 'w' },
       s: { furniture: 'sofa' },
       V: { furniture: 'gauntlet_car_wreck_0_0_intact' },
-      f: { furniture: 'police_file_cabinet', facing: 's', loot: 'gauntlet_police_gear' },
-      L: { furniture: 'police_evidence_locker', facing: 's', loot: 'gauntlet_police_gear' },
+      f: { furniture: 'police_file_cabinet', facing: 's', loot: 'equipment_locker' },
+      L: { furniture: 'police_evidence_locker', facing: 's', loot: 'equipment_locker' },
       r: { furniture: 'police_desk_radio', facing: 's' },
       n: { furniture: 'police_duty_notice', facing: 'w' },
       u: { furniture: 'station_toilet', facing: 's' },

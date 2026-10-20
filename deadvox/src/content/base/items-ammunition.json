@@ -15,7 +15,7 @@
       "category": "ammo",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "cartridge_308_h_winchester",
       "model": "round_308_h_winchester",
@@ -28,7 +28,7 @@
       "category": "ammo",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "cartridge_box_308_h_winchester",
       "name": "Sealed .308 Winchester box (20)",

@@ -17,8 +17,15 @@ const PILL: AnalgesicDef = {
   fadeGameMinutes: gameMinutes(60),
 };
 const ASPIRIN: AnalgesicDef = { ...PILL, reliefPerDose: 2 };
-const OPIOID: AnalgesicDef = { ...PILL, group: 'opioid', reliefPerDose: 4, maxRelief: 4 };
-const ANALGESICS: Record<string, AnalgesicDef> = { pill: PILL, aspirin: ASPIRIN, opioid: OPIOID };
+const OPIOID: AnalgesicDef = { ...PILL, group: 'opioid', reliefPerDose: 4, maxRelief: 4, vignette: 0.5 };
+// The same relief without the vignette, so felt pain matches the opioid's.
+const { vignette: _, ...CLEAR_OPIOID } = OPIOID;
+const ANALGESICS: Record<string, AnalgesicDef> = {
+  pill: PILL,
+  aspirin: ASPIRIN,
+  opioid: OPIOID,
+  clearOpioid: CLEAR_OPIOID,
+};
 const lookup = (item: string): AnalgesicDef | undefined => ANALGESICS[item];
 const bodyWith = (modifiers: readonly Modifier[] = []): Body =>
   new Body(BODY_TUNING_FIXTURE, undefined, modifiers, lookup);
@@ -140,6 +147,29 @@ describe('pain', () => {
     expect(treated.health).toBe(untreated.health);
     expect(treated.regionDamage).toEqual(untreated.regionDamage);
     expect(treated.wounds).toEqual(untreated.wounds);
+  });
+
+  it("follows an opioid's relief with its vignette through the fade, leaves pain as it was, and gives none for the common one", () => {
+    const common = steadilyHurt();
+    common.takeAnalgesic('pill');
+    ageBy(common, AT_PEAK);
+    expect(common.drugVignette).toBe(0);
+
+    const drugged = steadilyHurt();
+    const clear = steadilyHurt();
+    drugged.takeAnalgesic('opioid');
+    clear.takeAnalgesic('clearOpioid');
+    ageBy(drugged, AT_PEAK);
+    ageBy(clear, AT_PEAK);
+    const peak = drugged.drugVignette;
+    expect(peak).toBeGreaterThan(0);
+    expect(drugged.pain).toEqual(clear.pain);
+
+    ageBy(drugged, PILL.peakGameMinutes / 2 + OPIOID.fadeGameMinutes / 2);
+    expect(drugged.drugVignette).toBeGreaterThan(0);
+    expect(drugged.drugVignette).toBeLessThan(peak);
+    ageBy(drugged, OPIOID.fadeGameMinutes);
+    expect(drugged.drugVignette).toBe(0);
   });
 
   it('changes nothing below the first tier and something from it on', () => {

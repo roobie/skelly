@@ -1,8 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -10,15 +8,11 @@ import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
 import { footprint } from '../src/core/templates.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import type { ZombieSystem } from '../src/core/zombies.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
-const BASE = 'src/content/base';
-const files = readdirSync(BASE)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown }));
-const { registry } = buildRegistry(files);
-const playtest = files.find((file) => file.source === 'layouts-playtest.json')!.data as {
+const registry = baseRegistry();
+const playtest = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
   layouts: SiteLayoutDef[];
 };
 const camp = registry.layouts.get(playtest.layouts[0]!.id)!;

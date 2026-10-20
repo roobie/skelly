@@ -33,6 +33,7 @@ const tuning: GraphicsOptions = {
     adaptive: { enabled: true, targetRealMs: 10, min: 0.2, max: 1, step: 0.1, hysteresisRealMs: 1, sampleWindow: 4 },
   },
   bloomScale: { label: 'Fixture bloom', default: 1, min: 0.2, max: 1 },
+  drugVignette: { label: 'Fixture drug vignette', default: 1, min: 0, max: 1 },
   smallSunMap: toggle,
   fastCamo: toggle,
   coarseWeathering: toggle,

@@ -91,9 +91,9 @@ local spentCase(id, name, weight, description, model) = {
       description: 'An antibiotic. Treats a progressed wound infection.',
     },
     {
-      // Paracetamol-like: it starts within the hour and lasts a few hours (`DESIGN.md`, "Pain").
+      // The common analgesic: it starts within the hour and lasts a few hours (`DESIGN.md`, "Pain").
       id: 'painkillers',
-      name: 'Painkiller',
+      name: 'Aspirin',
       category: 'medical',
       weight: 1,
       size: [1, 1],
@@ -107,7 +107,45 @@ local spentCase(id, name, weight, description, model) = {
         peakGameMinutes: 210,
         fadeGameMinutes: 60,
       },
-      description: 'An over-the-counter pill. Eases pain for a few hours; it heals nothing.',
+      description: 'Eases pain for a few hours. Heals nothing.',
+    },
+    {
+      // The opioids share one cap above the common analgesic's and blur the view while they work (`DESIGN.md`, "Pain").
+      id: 'codeine',
+      name: 'Codeine',
+      category: 'medical',
+      weight: 1,
+      size: [1, 1],
+      stack: pillPack,
+      analgesic: {
+        group: 'opioid',
+        takeSimSeconds: 2,
+        reliefPerDose: 35,
+        maxRelief: 50,
+        onsetGameMinutes: 50,
+        peakGameMinutes: 240,
+        fadeGameMinutes: 90,
+        vignette: 0.35,
+      },
+      description: 'Eases strong pain for a few hours. Heals nothing. Blurs the edges of vision while it works.',
+    },
+    {
+      id: 'morphine',
+      name: 'Morphine',
+      category: 'medical',
+      weight: 20,
+      size: [1, 1],
+      analgesic: {
+        group: 'opioid',
+        takeSimSeconds: 4,
+        reliefPerDose: 60,
+        maxRelief: 80,
+        onsetGameMinutes: 55,
+        peakGameMinutes: 300,
+        fadeGameMinutes: 120,
+        vignette: 0.7,
+      },
+      description: 'Eases severe pain for hours. Heals nothing. Blurs the edges of vision while it works.',
     },
     {
       id: 'rag',

@@ -318,7 +318,7 @@ shape.colliding({
           cut: {
             quality: 'flame_cutting', level: 1, skill: 'mechanics',
             timeSimSeconds: 90, fastestTimeSimSeconds: 45,
-            strikeIntervalSimSeconds: 1, strikeSound: 'lock_pry',
+            strikeIntervalSimSeconds: 1, strikeSound: 'lock_pry', fuel: 1,
           },
         },
       },

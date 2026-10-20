@@ -458,6 +458,7 @@ export class Inventory {
     const knownSlot =
       (slot === 'magazine' && magazineWellCalibre(this.registry, owner.type) !== undefined) ||
       (slot === 'battery' && ownerDef.light?.power !== undefined) ||
+      (slot === 'canister' && ownerDef.tool?.fuel !== undefined) ||
       firearmSlotIds(this.registry, ownerDef).includes(slot);
     if (!(slots && knownSlot) || (item && this.locate(item))) {
       throw new Error('Only a loose item fits a known slot');

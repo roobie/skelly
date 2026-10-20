@@ -1,4 +1,4 @@
-local usages = ['Residential', 'Industrial', 'Medical', 'Hunting', 'Military', 'Infected'];
+local usages = ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'];
 local tiers = ['Tier1', 'Tier2', 'Tier3'];
 local militaryItems = [
   'rifle_assault', 'rifle_ak',
@@ -6,6 +6,7 @@ local militaryItems = [
   'cartridge_box_5_d_56x45', 'cartridge_box_7_d_62x39',
   'magazine_stanag_30', 'magazine_stanag_20', 'magazine_akm_30',
 ];
+local medicalItems = ['codeine', 'morphine'];
 local notSpawnable = [
   'work_in_progress', 'debug_shotgun_pump', 'spent_case_308_h_winchester', 'spent_case_357_h_magnum',
   'spent_case_5_d_56x45', 'spent_case_7_d_62x39', 'spent_case_12_h_gauge_h_00_h_buck',
@@ -28,7 +29,7 @@ local commonItems = [
   'fuse', 'nylon_cord', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp',
   'broken_table_fan', 'cracked_phone', 'broken_clock', 'sewing_repair_kit', 'electrical_repair_kit',
   'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'screwdriver', 'wrench',
-  'improvised_suppressor', 'compass', 'crowbar', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener',
+  'improvised_suppressor', 'compass', 'crowbar', 'blowtorch', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener',
   'baseball_bat', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'lighter', 'matches',
   'jeans', 'cargo_pants', 'rubber_boots', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
   'shed_key', 'pump_shotgun', 'sample_note', 'stick', 'wax', 'wooden_plank', 'repair_kit', 'copper_wire', 'field_patch',
@@ -71,11 +72,12 @@ local authorTemplate(template) = template + {
   },
 };
 local authorItem(item) =
-  assert std.member(commonItems + militaryItems + notSpawnable, item.id) : 'author economy metadata for ' + item.id;
+  assert std.member(commonItems + militaryItems + medicalItems + notSpawnable, item.id) : 'author economy metadata for ' + item.id;
   item + {
     economy:
       if std.member(notSpawnable, item.id) then { usage: [], tiers: [] }
       else if std.member(militaryItems, item.id) then { usage: ['Military'], tiers: ['Tier2', 'Tier3'] }
+      else if std.member(medicalItems, item.id) then { usage: ['Medical'], tiers: tiers }
       else { usage: usages, tiers: tiers },
   };
 {

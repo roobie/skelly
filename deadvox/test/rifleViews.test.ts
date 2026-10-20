@@ -1,5 +1,5 @@
 // A rifle as the player sees it: drawn with the magazine it really has in every view (`DESIGN.md`, "Piles and item models"), and its handling played on it from the job alone.
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   Box3,
@@ -15,7 +15,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
 import { AimController, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { dominantSide } from '../src/core/character.ts';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -29,6 +29,7 @@ import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
@@ -37,12 +38,7 @@ const RIFLE = 'rifle_assault';
 const PUMP = 'pump_shotgun';
 const SPARE = 'look-fixture-magazine';
 const SPARE_MODEL = 'look-fixture-magazine-model';
-const { registry, issues } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const registry = baseRegistry();
 const magazineType = rifleAmmunition(registry, RIFLE).magazine;
 const magazineDef = registry.items.get(magazineType)!;
 const magazineModel = registry.models.get(magazineDef.model!)!;
@@ -194,7 +190,6 @@ const rig = async () => {
 const seated = (type: string) => [{ model: modelOf(type), offset: expect.closeTo(0, 6), angle: expect.closeTo(0, 6) }];
 
 it('draws the magazine a rifle really has, in hand and on the ground: its own model at the slot, none once removed', async () => {
-  expect(issues).toEqual([]);
   const { queue, mechanics, rifle, magazine, spare, inHand, onGround, dispose } = await rig();
   try {
     expect(mechanics.loadNext(rifle.uid, 0)).toBeUndefined();
@@ -217,7 +212,6 @@ it('draws the magazine a rifle really has, in hand and on the ground: its own mo
 });
 
 it('replaces a baked default attachment with its owned model and leaves the baked node hidden when removed', async () => {
-  expect(issues).toEqual([]);
   const rifleModel = content.models.get(modelOf(RIFLE))!;
   const [defaultAttachment] = rifleModel.attachments ?? [];
   const opticDef =

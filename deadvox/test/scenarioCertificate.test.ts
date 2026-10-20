@@ -9,11 +9,11 @@ import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
+import { scenarioCertificate, scenarioLotResourceCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
-import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
+import type { MapAssemblyDef } from '../src/core/schema.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import {
   compileAssembly,
@@ -47,12 +47,25 @@ const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.se
   siteId: `scenario:${profile.id}:service`,
 });
 
-const lab = JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-lab.libsonnet')) as ContentFile;
-const { loop } = JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-lab-entry.libsonnet')) as {
+const witness = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/lab-witness.jsonnet')) as {
+  mapAssemblies: string[];
+  mapPieces: string[];
   loop: { from: Vec3; through: Vec3; to: Vec3; cut: { min: Vec3; size: Vec3 } };
 };
+const labDefinition = <T>(definitions: ReadonlyMap<string, T>, id: string): T => {
+  const definition = definitions.get(id);
+  if (!definition) {
+    throw new Error(`Base content does not admit lab definition ${id}`);
+  }
+  return definition;
+};
+const lab = {
+  mapAssemblies: witness.mapAssemblies.map((id) => labDefinition(registry.mapAssemblies, id)),
+  mapPieces: witness.mapPieces.map((id) => labDefinition(registry.mapPieces, id)),
+};
+const { loop } = witness;
 const roomPools = new Map<string, MapAssemblyDef[]>();
-for (const room of lab.mapAssemblies!) {
+for (const room of lab.mapAssemblies) {
   const shell = room.slots.find((slot) => slot.id === 'shell');
   if (!shell) {
     continue;
@@ -71,7 +84,7 @@ const substitutedRegistry: Registry = {
   ...registry,
   mapAssemblies: new Map([
     ...registry.mapAssemblies,
-    ...lab.mapAssemblies!.map(
+    ...lab.mapAssemblies.map(
       (assembly) =>
         [
           assembly.id,
@@ -99,13 +112,13 @@ const substitutedRegistry: Registry = {
 if (![...roomPools.values()].some((rooms) => rooms.length > 1)) {
   throw new Error('Production lab fixture needs substitutable furnished rooms');
 }
-const selectedServices = [9, 10, 11].map((seed) => ({
-  seed,
+const servicePick = {
+  seed: 9,
   template: compileAssembly(substitutedRegistry, substitutedRegistry.mapAssemblies.get(profile.serviceTemplate)!, {
-    seed,
+    seed: 9,
     siteId: `scenario:${profile.id}:service`,
   }),
-}));
+};
 
 const candidatePlan = (
   cell: readonly [number, number],
@@ -209,9 +222,8 @@ describe('final composed body-route certificate', () => {
   });
 
   it('joins substituted production rooms and authored yards to the fixed campus, resources and objective', () => {
-    const selected = selectedServices[0]!;
-    const plan = candidatePlan(base.serviceBlock!, base.service!.turn, selected.template, substitutedRegistry);
-    expect(scenarioCertificate(new CitySite(selected.seed, substitutedRegistry, scale, plan)).issues).toEqual([]);
+    const plan = candidatePlan(base.serviceBlock!, base.service!.turn, servicePick.template, substitutedRegistry);
+    expect(scenarioCertificate(new CitySite(servicePick.seed, substitutedRegistry, scale, plan)).issues).toEqual([]);
   });
 
   it('rejects a blocked service crossing even when its inside witness stays reachable', () => {
@@ -319,6 +331,58 @@ describe('final composed body-route certificate', () => {
     for (const link of links) {
       expect(admitted.space.path(entry, link.upper)).toBeDefined();
     }
+  });
+
+  it('rejects a keyed lot resource whose key route has lost its climb', () => {
+    const index = base.composition!.resources.findIndex((resource) => resource.key?.climbs.length);
+    const ladder = base.composition!.resources[index]?.key?.climbs[0]?.ladder;
+    if (!ladder) {
+      throw new Error('Production scenario has no climbed key route');
+    }
+    const site = siteOf();
+    const original = site.furnitureIn.bind(site);
+    vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+      original(cx, cz).filter(
+        ({ spec }) =>
+          !(registry.furniture.get(spec.type)?.climbable && spec.pos[0] === ladder[0] && spec.pos[2] === ladder[2]),
+      ),
+    );
+    expect(scenarioCertificate(site).issues).toContainEqual([
+      `.composition.resources[${index}].key.climbs[0]`,
+      expect.stringMatching(COMPOSED_LADDER),
+    ]);
+  });
+
+  it("keeps a keyed resource's admitted locks from opening a later unkeyed lot resource's route", () => {
+    const keyed = base.composition!.resources.find((resource) => resource.key);
+    if (!keyed) {
+      throw new Error('Production scenario has no keyed lot resource');
+    }
+    const { key: _key, ...unkeyed } = keyed;
+    const plan: CityPlan = { ...base, composition: { ...base.composition!, resources: [keyed, unkeyed] } };
+    // Proving the unkeyed copy unreachable would flood the whole street, so this records the doors each final search
+    // starts with instead of running it.
+    const lockedOpen: boolean[] = [];
+    const original = ScenarioRouteSpace.prototype.path;
+    const record = (space: ScenarioRouteSpace): undefined => {
+      lockedOpen.push([...space.entities.all].some((entity) => entity.lock?.locked && entity.open));
+    };
+    const path = vi.spyOn(ScenarioRouteSpace.prototype, 'path').mockImplementation(function (
+      this: ScenarioRouteSpace,
+      from,
+      to,
+      options,
+    ) {
+      return to.join(',') === keyed.standing.join(',') ? record(this) : original.call(this, from, to, options);
+    });
+    try {
+      scenarioLotResourceCertificate(siteOf(plan));
+    } finally {
+      path.mockRestore();
+    }
+    // The keyed rack's one search runs with its key's lock open; each later start-foot search runs with it shut.
+    expect(lockedOpen.lastIndexOf(true)).toBe(0);
+    expect(lockedOpen.indexOf(false)).toBe(1);
   });
 
   it('rejects a shaft-neighbor obstruction in the final furnished production lab', () => {
@@ -548,9 +612,8 @@ it(
 it(
   'walks substituted rooms and closed lids, opens descents, returns alive and activates the objective from the goal-face save',
   () => {
-    const selected = selectedServices[0]!;
-    const plan = candidatePlan(base.serviceBlock!, base.service!.turn, selected.template, substitutedRegistry);
-    traverseScenario(new CitySite(selected.seed, substitutedRegistry, scale, plan), profile, scale);
+    const plan = candidatePlan(base.serviceBlock!, base.service!.turn, servicePick.template, substitutedRegistry);
+    traverseScenario(new CitySite(servicePick.seed, substitutedRegistry, scale, plan), profile, scale);
   },
   profile.composition!.storeys.length * WALK_MS_PER_STOREY,
 );
@@ -558,20 +621,20 @@ it(
 describe('lab threat by depth', () => {
   // Follow the scenario's authored storeys, including rebuilt levels outside the grid kit.
   const { storeys } = profile.composition!;
-  const stack = lab.mapAssemblies!.find((assembly) =>
+  const stack = lab.mapAssemblies.find((assembly) =>
     storeys.every((storey) => assembly.slots.some((slot) => slot.id === storey.id)),
   )!;
   const storeySlots = stack.slots.filter((slot) => storeys.some((storey) => storey.id === slot.id));
   // A threat slot's pieces carry the marker chance; its weighted choices carry the zombie type.
   const markerChance = new Map(
-    lab.mapPieces!.map((piece) => [
+    lab.mapPieces.map((piece) => [
       piece.id,
       Object.values(piece.palette).reduce((sum, entry) => sum + ('chance' in entry ? (entry.chance ?? 0) : 0), 0),
     ]),
   );
   const expectedMarkers = (storeyId: string): number =>
-    lab
-      .mapAssemblies!.find((assembly) => assembly.id === storeyId)!
+    lab.mapAssemblies
+      .find((assembly) => assembly.id === storeyId)!
       .slots.filter((slot) => slot.id.includes('_threat_'))
       .reduce((sum, slot) => {
         const total = (slot.choices ?? []).reduce((all, choice) => all + choice.weight, 0);
@@ -597,15 +660,15 @@ describe('lab threat by depth', () => {
 
   it('offers the amalgam only on the lowest storey', () => {
     const amalgamPieces = new Set(
-      lab
-        .mapPieces!.filter((piece) =>
+      lab.mapPieces
+        .filter((piece) =>
           Object.values(piece.palette).some(
             (entry) => typeof entry !== 'string' && 'spawn' in entry && entry.spawn === 'amalgam',
           ),
         )
         .map((piece) => piece.id),
     );
-    const storeysWithAmalgam = lab.mapAssemblies!.filter((assembly) =>
+    const storeysWithAmalgam = lab.mapAssemblies.filter((assembly) =>
       assembly.slots.some((slot) => slot.choices?.some((choice) => amalgamPieces.has(choice.ref.id))),
     );
     const lowest = storeySlots.reduce((low, slot) => (slot.at[1] < low.at[1] ? slot : low));

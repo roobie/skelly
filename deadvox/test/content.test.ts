@@ -542,8 +542,10 @@ describe('content', () => {
       { field: 'firearm.roundLoadSimSeconds' },
       { field: 'firearm.handling.magazine' },
     ];
-    // One build for all drops: each takes a distinct item that has the field, and each is reported by its own path.
-    const files = structuredClone(base) as { source: string; data: { items?: Raw[] } }[];
+    // One build of the item files for all drops: each takes a distinct item that has the field, and each is reported by its own path.
+    const files = (structuredClone(base) as { source: string; data: { items?: Raw[] } }[]).filter(
+      ({ data }) => data.items,
+    );
     const items = files.flatMap((file) => file.data.items ?? []);
     const used = new Set<Raw>();
     const dropped = drops.map(({ field, reportedAt }) => {
@@ -1092,11 +1094,13 @@ describe('content', () => {
     interface ControlRows {
       controls: { id: string; keys: { code: string; modifier?: string }[] }[];
     }
+    // Control checks read only control rows, so the cases admit the controls file without the rest of base.
+    const controlsFile = () => base.find(({ source }) => source === 'controls.json')!;
     const controlsIssues = (change: (rows: ControlRows['controls']) => void): string[] => {
-      const file = base.find(({ source }) => source === 'controls.json')!;
+      const file = controlsFile();
       const data = structuredClone(file.data) as ControlRows;
       change(data.controls);
-      const built = buildRegistry(base.map((entry) => (entry === file ? { source: file.source, data } : entry)));
+      const built = buildRegistry([{ source: file.source, data }]);
       const baseSources = new Set(base.map(({ source }) => source));
       return [...built.issues, ...controlIssues(built.registry, built.origins, baseSources)].map(
         ({ message }) => message,
@@ -1109,7 +1113,7 @@ describe('content', () => {
 
     it('refuses a controls row from a mod, since the game reads default keys from the base pack only', () => {
       const modRow = { id: 'mod.action', keys: [{ code: 'KeyJ' }] };
-      const built = buildRegistry([...base, { source: 'mods/foo/controls.json', data: { controls: [modRow] } }]);
+      const built = buildRegistry([controlsFile(), { source: 'mods/foo/controls.json', data: { controls: [modRow] } }]);
       const refused = controlIssues(built.registry, built.origins, new Set(base.map(({ source }) => source)));
       expect(refused.map(({ source }) => source)).toEqual(['mods/foo/controls.json']);
       expect(refused[0]?.message).toContain("mods can't yet");
@@ -1602,18 +1606,17 @@ describe('content references', () => {
     ],
   };
 
+  // Skill tuning checks read only the recipe file's own skills.
+  const recipeFile = () => base.find(({ source }) => source === 'recipes.json')!;
+
   it('rejects craftable content when the single crafting tier offset is missing', () => {
-    const withoutOffset = base.map(({ source, data }) => {
-      if (source !== 'recipes.json') {
-        return { source, data };
-      }
-      const recipes = structuredClone(data) as { skills: { id: string; name: string; training?: unknown }[] };
-      recipes.skills = recipes.skills.map(({ training, ...skill }) =>
-        skill.id === 'crafting' ? skill : { ...skill, ...(training === undefined ? {} : { training }) },
-      );
-      return { source, data: recipes };
-    });
-    const { issues } = buildRegistry(withoutOffset);
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; name: string; training?: unknown }[];
+    };
+    recipes.skills = recipes.skills.map(({ training, ...skill }) =>
+      skill.id === 'crafting' ? skill : { ...skill, ...(training === undefined ? {} : { training }) },
+    );
+    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
     expect(
       issues.some(
         (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
@@ -1626,17 +1629,11 @@ describe('content references', () => {
     expect(baseActivity?.practice).toBeDefined();
     expect(baseActivity?.tier).toBeUndefined();
 
-    const tiered = base.map(({ source, data }) => {
-      if (source !== 'recipes.json') {
-        return { source, data };
-      }
-      const recipes = structuredClone(data) as {
-        skills: { id: string; training?: { activities?: Record<string, { tier?: number }> } }[];
-      };
-      recipes.skills.find(({ id }) => id === 'inventory_management')!.training!.activities!.handling!.tier = 1;
-      return { source, data: recipes };
-    });
-    const { issues } = buildRegistry(tiered);
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; training?: { activities?: Record<string, { tier?: number }> } }[];
+    };
+    recipes.skills.find(({ id }) => id === 'inventory_management')!.training!.activities!.handling!.tier = 1;
+    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
     expect(issues.some((issue) => issue.message.includes('must be untiered'))).toBe(true);
   });
 

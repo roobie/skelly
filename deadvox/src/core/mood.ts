@@ -147,6 +147,17 @@ export const gradeParams = (strength: number): GradeParams => {
 export const VIGNETTE = 0.3;
 /** Peak-to-peak film grain amplitude, in display-referred colour (0..1). */
 export const GRAIN = 0.035;
+/** The drug vignette's blur radius at the corner at full strength, as a share of the picture's size. */
+export const DRUG_BLUR = 0.006;
+/** The drug vignette's corner darkening at full strength, as a fraction of the picture at the corner. */
+export const DRUG_DARKEN = 0.35;
+
+/**
+ * The drug vignette the picture shows: the body's strength scaled by the player's setting, so a setting of 0 shows
+ * nothing whatever the drug.
+ */
+export const drugVignetteShown = (strength: number, setting: number): number =>
+  Math.min(1, Math.max(0, strength * setting));
 
 /** Bloom: only HDR values above the threshold glow; the sky sets the strength. */
 export const BLOOM_RADIUS = 0.6;

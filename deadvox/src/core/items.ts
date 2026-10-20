@@ -306,6 +306,9 @@ const initializeFittedSlots = (factory: ItemFactory, registry: Registry, item: I
       battery: factory.create(registry, def.light.power.battery, 1),
     };
   }
+  if (def.tool?.fuel) {
+    item.slots = { ...(item.slots ?? {}) };
+  }
   addDefaultAttachments(factory, registry, item, def.model);
 };
 

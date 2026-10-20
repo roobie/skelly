@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
@@ -61,11 +61,7 @@ const base = readdirSync('src/content/base')
     source: file,
     data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
   }));
-const baseline = buildRegistry(base);
-if (baseline.issues.length > 0) {
-  throw new Error(JSON.stringify(baseline.issues));
-}
-const baseSounds = () => [...baseline.registry.sounds.values()].find((sound) => sound.noise.enabled)!;
+const baseSounds = () => [...baseRegistry().sounds.values()].find((sound) => sound.noise.enabled)!;
 const source = (methods: string[]) => ({ source: 'forcing-fixture', data: fixture(methods) });
 
 it('rejects a door method outside its material admission even when the method itself is valid', () => {

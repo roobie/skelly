@@ -17,6 +17,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
       },
     },
     bloomScale: scale('Bloom render scale', 0.25),
+    drugVignette: scale('Painkiller vignette', 0),
     smallSunMap: toggle('Smaller sun shadow map'),
     fastCamo: toggle('Fast camouflage pattern'),
     coarseWeathering: toggle('Coarse weathering grid'),

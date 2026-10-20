@@ -567,11 +567,10 @@ an anchor, an event outside its lot or over the host's blocks or furniture, and 
 container stock that fits no pocket of its furniture; the
 seeded build and furnishing throw rather than drop it, because a silently dropped
 promise would leave the lab unwinnable. Certified promised stock means the item is
-there and fits its container, nothing more. No check proves that the street reaches
-the stop, or that the stop's door reaches the anchor, past locks or otherwise; reach is
-left to authoring and play. The stops are few and hand-placed, so review and play can
-own reach, but an edit that cuts a promised item off fails no check, and saying so
-keeps that risk in view. Each stop has its own role, and the player
+there and fits its container, nothing more. Reach is proved only for stock a scenario
+resource names, as the police armoury's rack is (below). Other stops are few and
+hand-placed, so review and play own their reach, but an edit that cuts one of them off
+fails no check, and saying so keeps that risk in view. Each stop has its own role, and the player
 may visit them in any order, so finding the stock rewards exploring rather than
 following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
 `src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
@@ -585,9 +584,9 @@ theme context, the station's carrying the Police usage and the HQ's Military, an
 tables are written per theme rather than per building, because finding what suits a
 place is the economy's job (`DESIGN.md`, "Loot"). Two stops of one theme therefore
 roll alike; a stop that should feel unique gets that from its instance layer, not
-its rolls. The d502 build round moves the stops onto theme contexts and replaces the
-per-building police tables. See `src/content/base/gauntlet-city-building-types.libsonnet`,
-`loot`.
+its rolls. The station, the HQ and the armed rooms share role tables, and each
+source's context admits only the rows it allows, so the station never rolls the HQ's
+rifles. See `src/content/base/gauntlet-city-building-types.libsonnet`, `armoury_arms`.
 
 The police armoury key lies on a dead officer on the station's roof, which the
 start overlooks. The start's lookout keeps that view clear rather than hiding the
@@ -596,6 +595,18 @@ the sewer, whose exploration already carries enough. The key route and the
 blowtorch route must remain independent alternatives; neither should require the
 other. See `src/content/base/rural-police.jsonnet`, `templates` and `loot`, and
 `src/content/base/gauntlet-start.libsonnet`, `start` and `mapPieces`.
+
+The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `src/content/base/gauntlet-city-cellars.libsonnet`, `reward`, and `src/content/base/loot.jsonnet`, `building_tools`.
+
+The armoury's gun is a proved resource through the key route alone: the certificate
+walks from the start up the officer's ladder, takes the key, comes back down and
+reaches the rack through the station and the armoury door the key opens. Without that
+proof, a layout edit that cuts the key's route would go unnoticed until play. The
+torch is no part of the guarantee, because its route is the bonus for finding the
+secret. A ladder on an outside wall holds the climber flush against the wall, so the
+climb check accepts that pose where the wall runs the whole climb. See
+`src/content/base/scenarios.jsonnet`, `resources`; `src/core/scenarioCertificate.ts`,
+`lotResource`; and `src/core/climbCertificate.ts`, `wallBacked`.
 
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
@@ -660,8 +671,7 @@ only there. See
 One owned assembly supplies the service facade and underground campus, so the
 playable world and visual inspection cannot diverge into separate geometry.
 Fixed resources and promised core stock are present whatever incidental loot rolls.
-For promised stock that is presence, not reach: a key or route between the street
-and the stock is authored and proven in play.
+Promised stock alone is presence; a resource adds reach from the start.
 Public documentary leads must be independently useful and spatially separate;
 reading one cannot authorize another. Named civic buildings keep the clues part of
 plausible places, while reserved destination landmarks keep the written directions
@@ -712,9 +722,14 @@ corridor may pass under a building but not through it. See
 `src/content/base/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
 `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
 
-Fixed resources require an initially accessible route, rather than a key or tool
-whose acquisition depends on itself. An unlocked door is reversible; a locked
-door is not assumed open simply because its key exists somewhere. Independent
+A resource's route passes a lock only with a key the proof takes on its way from
+the start, never a key or tool whose acquisition depends on the resource itself. An
+unlocked door is reversible; a locked door is not assumed open simply because its
+key exists somewhere. A key opens its locks only for its own resource's proof: a
+resource without a key is proved with none of them, so a lock that stays open for a
+later resource would turn a key-only route into a false promise of reach from the
+start, depending on the order resources are listed. See `src/core/scenarioRoute.ts`,
+`withLocks`. Independent
 public clue access must survive missing either lead; possession and reading
 never authorize the route. These are construction guarantees, not proof of clue
 interpretation or survival balance. Those judgments remain the integrated play
@@ -867,18 +882,18 @@ Furniture has no loot table of its own; only a placed container has one, named b
 Police is its own usage, apart from Hunting, because a police armoury holds police
 stock, not a gun store's or a hunter's. The HQ vault's Military context differs from
 the station's by tag rather than by a separate table. A tag filters only the items it
-narrows; one that every common item carries filters nothing, so police gear gives up
-the every-usage default. Item tiering stays open.
+narrows; one that every common item carries filters nothing. Police narrows only items
+no other place should hold, such as the armoury key; the station's guns, vest and
+radio stay common, so Police alone keeps rifles out of the station. Item tiering stays
+open.
 
 Medicine is rare outside medical places in every scenario: shared tables such as home
 furniture, pockets and kits weight it low, and the strong analgesics are Medical-only,
 while the common one stays findable anywhere. A medical detour is worth making only if
 the street does not already supply it. Shared tables give one knob for every scenario,
 so Upheaval's survival balance moves with the gauntlet's; whether its pace still works
-waits on a playtest. The d502 build round adds the Police usage, the narrowing and
-the Medical-only items, and retunes those tables. See
-`src/content/base/economy.libsonnet`, `authorItem`, and `src/content/base/loot.jsonnet`,
-`pills`.
+waits on a playtest. See `src/content/base/economy.libsonnet`, `medicalItems`, and
+`src/content/base/loot.jsonnet`, `shambler_pockets`.
 
 Loot never depends on the order in which places are visited. There is no map-wide
 running count of what has spawned, because such a count would make one police station's
@@ -1362,11 +1377,12 @@ free upgrade. The blur is a vignette at the edges, not a full-screen blur: the c
 where the player aims, stays sharp, while threats at the edges are harder to read.
 Aim itself is untouched, so the cost reads as the drug's and not as pain's own sway.
 The vignette rises and fades with the dose, its strength is a content number on the
-analgesic, and players who cannot tolerate it get a setting for it. Its
-strength needs a playtest. Whether the HUD stays sharp under it, whether a stacked
-dose can be dangerous, and whether dependence is ever modelled are later rulings. The
-d502 build round adds both drugs and the vignette. See `src/core/schema.ts`,
-`AnalgesicSchema`, and `src/core/pain.ts`, `analgesia`.
+analgesic, and players who cannot tolerate it get a setting for it. It lives in the
+mood pass's last draw, outside the film toggle, so it shows with post on even when
+film is off. Its strength needs a playtest. Whether the HUD stays sharp under it,
+whether a stacked dose can be dangerous, and whether dependence is ever modelled are
+later rulings. See `src/core/schema.ts`, `AnalgesicSchema`; `src/core/pain.ts`,
+`drugVignette`; and `src/render/moodOutput.ts`, `moodDrugSample`.
 
 The optional stats readout shows felt pain and its acute, injury and relief
 components so BR can tune the scale in play. This debug-style number belongs
@@ -1967,7 +1983,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. Every door will be bashable given enough strength, but bashing waits because neither actor strength nor door strength is modelled. Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. See `src/core/prying.ts`, `pryPlan`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
+- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. Every door will be bashable given enough strength, but bashing waits because neither actor strength nor door strength is modelled. Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,
