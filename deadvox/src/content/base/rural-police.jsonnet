@@ -1,3 +1,5 @@
+local shape = import 'furniture-shape.libsonnet';
+local cabinets = import 'cabinet-shapes.libsonnet';
 local police = { usage: ['Hunting'], tier: 'Tier1' };
 local yard = import 'rural-police-yard.libsonnet';
 local foundation = [
@@ -58,8 +60,8 @@ local furnished = [
   '#.....c..#..#............#...O..VVVV.#',
   '#........#..#............#...O..VVVV.#',
   '##########..#............##UU#..VVVV.#',
-  '#...........O..WWW.......#...#..VVVV.#',
-  '#.ssss......O..WWW.......#...#..VVVV.#',
+  '#...........O..WWW.......#M..#..VVVV.#',
+  '#.ssss......O..WWW.......#M..#..VVVV.#',
   '#.ssss......#...c........#...#.......#',
   '#...........#............#AA.#.......#',
   '##########DD##################GGGGGG##',
@@ -90,8 +92,8 @@ local low = [
   '#.....c..#..#............#...O..VVVV.#',
   '#........#..#............#...O..VVVV.#',
   '##########..#............##UU#..VVVV.#',
-  '#...........O..WWW.......#...#..VVVV.#',
-  '#.ssss......O..WWW.......#...#..VVVV.#',
+  '#...........O..WWW.......#M..#..VVVV.#',
+  '#.ssss......O..WWW.......#M..#..VVVV.#',
   '#.ssss......#...c........#...#.......#',
   '#...........#............#AA.#.......#',
   '##########DD##################GGGGGG##',
@@ -122,8 +124,8 @@ local standing = [
   '#........#..#............#...O..VVVV.#',
   '#........#..#............#...O..VVVV.#',
   '##########..#............##UU#..VVVV.#',
-  '#...........O..rr........#...#..VVVV.#',
-  '#...........O............#...#..VVVV.#',
+  '#...........O..rr........#M..#..VVVV.#',
+  '#...........O............#M..#..VVVV.#',
   '#...........#............#...#.......#',
   '#...........#............#AA.#.......#',
   '##===#####DD##===###===###==##GGGGGG=#',
@@ -154,8 +156,8 @@ local standingUpper = [
   '#........#..#............#...O..VVVV.#',
   '#........#..#............#...O..VVVV.#',
   '##########..#............##UU#..VVVV.#',
-  '#...........O............#...#..VVVV.#',
-  '#...........O............#...#..VVVV.#',
+  '#...........O............#M..#..VVVV.#',
+  '#...........O............#M..#..VVVV.#',
   '#...........#............#...#.......#',
   '#...........#............#AA.#.......#',
   '##...#####DD##...###...###..##GGGGGG.#',
@@ -224,7 +226,15 @@ local lintel = [
   '#...........#............#...#.......#',
   '######################################',
 ];
-{
+shape.colliding({
+  furniture: [{
+    id: 'police_weapon_cabinet', name: 'Weapon cabinet', size: [2, 4, 1], color: '#657063',
+    container: { pockets: [{ grid: [10, 18], handlingSimSeconds: 1.2 }] },
+    shape: cabinets.gun(self.size, {
+      shell: '#657063', frame: '#454f45', door: '#768170', metal: '#a1aaa0',
+      shadow: '#252e29', wear: '#929b86', badge: '#b9bba7',
+    }),
+  }],
   items: [{
     id: 'gauntlet_police_armoury_key', name: 'Police armoury key', category: 'tool',
     weight: 10, size: [1, 1], key: { lock: 'gauntlet_police_armoury' },
@@ -234,6 +244,21 @@ local lintel = [
   loot: [{
     id: 'gauntlet_police_office_key', rolls: [1, 1],
     entries: [{ item: 'gauntlet_police_armoury_key', weight: 1 }],
+  }, {
+    id: 'gauntlet_police_armoury_stock', rolls: [2, 3], entries: [
+      { table: 'gauntlet_police_sidearms', weight: 1 }, { table: 'gauntlet_police_ammunition', weight: 2 },
+    ],
+  }, {
+    id: 'gauntlet_police_sidearms', rolls: [1, 1], entries: [
+      { item: 'revolver_357', weight: 2, condition: [0.5, 0.9] },
+      { item: 'pump_shotgun', weight: 1, condition: [0.5, 0.9] }, { nothing: true, weight: 1 },
+    ],
+  }, {
+    id: 'gauntlet_police_ammunition', rolls: [1, 2], entries: [
+      { item: 'cartridge_357_h_magnum', weight: 3, count: [3, 12] },
+      { item: 'cartridge_box_357_h_magnum', weight: 2 },
+      { item: 'shotshell_box', weight: 1 }, { nothing: true, weight: 2 },
+    ],
   }],
   templates: [{
     id: 'rural_police_station',
@@ -249,7 +274,8 @@ local lintel = [
       G: { furniture: 'workshop_roller_door' },
       W: { furniture: 'desk', loot: 'desk' },
       S: { furniture: 'shelf', loot: 'gauntlet_police_gear' },
-      A: { furniture: 'shelf', loot: 'gauntlet_police_ammunition' },
+      A: { furniture: 'police_weapon_cabinet', loot: 'gauntlet_police_armoury_stock' },
+      M: { furniture: 'shelf', facing: 'e', loot: 'gauntlet_police_ammunition' },
       F: { furniture: 'fridge', facing: 's', lootUsage: ['Residential'] },
       T: { furniture: 'range_table' },
       c: { furniture: 'chair' },
@@ -285,4 +311,4 @@ local lintel = [
     shamblers: [], woodlands: [],
     tracks: [{ points: [[34, 47], [94, 47]], width: 4, surface: 'dirt' }],
   }],
-}
+})

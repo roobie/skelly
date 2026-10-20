@@ -11,8 +11,7 @@ local policeMain = police.templates[0] + {
     U: { furniture: 'wood_door', lock: { id: 'gauntlet_police_armoury', locked: true } },
     C: { furniture: 'desk', loot: 'gauntlet_police_office_key' },
     Z: 'shop_blue',
-    // A shelf's pocket is too short for the long guns the armoury promises and rolls.
-    A: { furniture: 'range_rack', loot: 'gauntlet_police_armoury_stock' },
+    A: police.templates[0].palette.A,
   },
   layers: [
     [
@@ -139,7 +138,5 @@ local compound(id, size, context, slots, entrance) = {
       vault_inside: { kind: 'standing', at: [vaultAt[axis] + hqVault.access.entrance[axis] for axis in std.range(0, 2)] },
     } },
   ],
-  loot: [{ id: 'gauntlet_police_armoury_stock', rolls: [2, 3], entries: [
-    { table: 'gauntlet_police_sidearms', weight: 1 }, { table: 'gauntlet_police_ammunition', weight: 2 },
-  ] }],
+  loot: [],
 }
