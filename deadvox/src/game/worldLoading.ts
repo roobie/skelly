@@ -44,8 +44,8 @@ export class WorldLoading {
     }
     const lighting = skylight?.loadingReadiness(lightingPosition);
     const unmeshed = this.recordedColumns
-      ? streamer.unmeshedRecordedColumns(position[0], position[2], this.recordedColumns)
-      : streamer.unmeshedColumns(position[0], position[2], config.radiusChunks);
+      ? streamer.unmeshedRecordedColumns(position[0], position[2], this.recordedColumns, config.readyRadiusChunks)
+      : streamer.unmeshedColumns(position[0], position[2], config.readyRadiusChunks);
     if (unmeshed === 0 && (lighting?.ready ?? true)) {
       this.state = 'ready';
       return;

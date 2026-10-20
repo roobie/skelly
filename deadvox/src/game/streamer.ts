@@ -17,6 +17,7 @@ import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
+import { revealedColumns } from '../render/columnReveal.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
 
 const COLUMNS_PER_FRAME = 2;
@@ -69,6 +70,8 @@ export class Streamer {
   private readonly opts: StreamerOptions;
   private readonly occluders: Uint8Array | undefined;
   private readonly generated = new Set<string>(); // column keys "cx,cz"
+  // An edit replaces an existing mesh; it must not close a column that already has its occluders drawn.
+  private readonly completeColumns = new Set<string>();
   private readonly dirty = new Set<string>(); // chunks needing a (re)mesh
   private readonly versions = new Map<string, number>();
   private readonly inFlight = new Set<string>();
@@ -132,6 +135,7 @@ export class Streamer {
 
   constructor(opts: StreamerOptions) {
     this.opts = opts;
+    opts.meshes.setRevealedColumns(new Set());
     this.occluders = opts.wireMeshes
       ? Uint8Array.from({ length: opts.colors.length / 3 }, (_, id) => Number(id !== 0 && !opts.wireMeshes?.[id]))
       : undefined;
@@ -211,10 +215,12 @@ export class Streamer {
     if (!(this.replayControlled && this.generated.delete(col))) {
       return;
     }
-    const { world, scale } = this.opts;
+    const { world, scale, meshes } = this.opts;
+    this.completeColumns.delete(col);
     this.dirtyReplayNeighbours(cx, cz);
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
       const key = chunkKey(cx, cy, cz);
+      meshes.remove(key);
       if (!world.getChunk(cx, cy, cz)?.edited) {
         world.removeChunk(cx, cy, cz);
         this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
@@ -222,6 +228,7 @@ export class Streamer {
         this.versions.delete(key);
       }
     }
+    this.refreshReveal();
   }
 
   /**
@@ -246,12 +253,17 @@ export class Streamer {
     return count;
   }
 
-  unmeshedRecordedColumns(x: number, z: number, columns: readonly (readonly [number, number])[]): number {
+  unmeshedRecordedColumns(
+    x: number,
+    z: number,
+    columns: readonly (readonly [number, number])[],
+    within = this.opts.radius,
+  ): number {
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
     return columns.filter(
       ([cx, cz]) =>
-        Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) <= this.opts.radius &&
+        Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) <= within &&
         this.unmeshedColumns(cx * CHUNK, cz * CHUNK, 0) > 0,
     ).length;
   }
@@ -331,6 +343,7 @@ export class Streamer {
         const [cx, , cz] = key.split(',').map(Number) as Vec3;
         if (!this.inRange(cx, cz)) {
           this.opts.meshes.remove(key);
+          this.completeColumns.delete(`${cx},${cz}`);
           this.dirty.add(key); // remesh when we come back
         }
       }
@@ -338,6 +351,21 @@ export class Streamer {
         this.unloadFar();
       }
     }
+    this.refreshReveal();
+  }
+
+  private refreshReveal(): void {
+    for (const [dx, dz] of this.offsets) {
+      const cx = this.center[0] + dx;
+      const cz = this.center[1] + dz;
+      const key = `${cx},${cz}`;
+      if (!this.completeColumns.has(key) && this.unmeshedColumns(cx * CHUNK, cz * CHUNK, 0) === 0) {
+        this.completeColumns.add(key);
+      }
+    }
+    this.opts.meshes.setRevealedColumns(
+      revealedColumns(this.center, this.offsets, (cx, cz) => this.completeColumns.has(`${cx},${cz}`)),
+    );
   }
 
   /**
@@ -358,6 +386,7 @@ export class Streamer {
         }
       }
       this.generated.delete(col);
+      this.completeColumns.delete(col);
       this.onColumnUnload(cx, cz);
     }
   }
@@ -471,6 +500,7 @@ export class Streamer {
     }
     this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);
     this.firstMeshDelivered ||= msg.mesh.indices.length > 0;
+    this.refreshReveal();
   }
 
   private send(worker: Worker, msg: ToMesher): void {

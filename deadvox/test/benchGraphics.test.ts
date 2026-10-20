@@ -39,7 +39,7 @@ const tuning = {
 it('benchmark engines use mod defaults despite saved graphics preferences and debug URL overrides', () => {
   const content = buildRegistry([
     { source: 'base/dayCycle.json', data: baseDayCycle },
-    { source: 'fixture', data: { graphics: [{ id: CORE_CONTENT_IDS.coreGraphics, ...tuning }] } },
+    { source: 'fixture', data: { graphics: [{ id: CORE_CONTENT_IDS.coreGraphics, readyRadiusM: 16, ...tuning }] } },
   ]);
   const { registry } = content;
   owner.setup = { registry };

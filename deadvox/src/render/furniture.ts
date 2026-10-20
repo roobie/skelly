@@ -15,6 +15,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor, poseKey } from '../core/blockEntities.ts';
 import { rotationOf } from '../core/orientation.ts';
 import type { FurnitureDef } from '../core/schema.ts';
+import type { ColumnReveal } from './columnReveal.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -61,10 +62,13 @@ export class FurnitureMeshes {
   private markedUid: string | undefined;
   private markedOpen: boolean | undefined;
   private drawn = -1;
+  private drawnReveal = -1;
+  private readonly reveal: ColumnReveal | undefined;
   private pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
 
-  constructor(blockSize: number) {
+  constructor(blockSize: number, reveal?: ColumnReveal) {
     this.blockSize = blockSize;
+    this.reveal = reveal;
     this.marker.visible = false;
     this.marker.receiveShadow = true;
     this.group.add(this.marker);
@@ -72,6 +76,10 @@ export class FurnitureMeshes {
 
   /** Marks the selected furniture using its visible panel pose when it has a door. */
   mark(entity: BlockEntity | undefined, definition?: FurnitureDef): void {
+    if (entity && this.reveal && !this.reveal.isRevealed(entity.pos[0], entity.pos[2])) {
+      this.mark(undefined);
+      return;
+    }
     if (entity && `furniture:${entity.uid}` === this.markedUid && entity.open === this.markedOpen) {
       return;
     }
@@ -109,7 +117,7 @@ export class FurnitureMeshes {
   ): void {
     this.markedUid = uid;
     this.markedOpen = undefined;
-    if (!uid) {
+    if (!uid || (this.reveal && !this.reveal.isRevealed(position[0] / this.blockSize, position[2] / this.blockSize))) {
       this.marker.visible = false;
       return;
     }
@@ -120,10 +128,12 @@ export class FurnitureMeshes {
 
   /** Rebuilds the meshes of pieces added, moved, turned, opened or closed, and keeps the rest. */
   sync(entities: BlockEntities): void {
-    if (entities.standing === this.drawn) {
+    const revealVersion = this.reveal?.revealVersion ?? 0;
+    if (entities.standing === this.drawn && revealVersion === this.drawnReveal) {
       return;
     }
     this.drawn = entities.standing;
+    this.drawnReveal = revealVersion;
     const pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
     this.group.clear();
     for (const entity of entities.all) {
@@ -131,6 +141,7 @@ export class FurnitureMeshes {
       const kept = this.pieces.get(entity);
       const piece =
         kept?.pose === pose ? kept : { pose, mesh: castsAndReceives(this.meshFor(entity, entities.defOf(entity))) };
+      piece.mesh.visible = this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true;
       pieces.set(entity, piece);
       this.group.add(piece.mesh);
     }

@@ -15,9 +15,10 @@ import {
   Vector3,
 } from 'three';
 import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
+import { toChunk, type Vec3 } from '../core/coords.ts';
 import type { MeshData } from '../core/mesher.ts';
 import type { WeatheringDef } from '../core/schema.ts';
+import type { ColumnReveal } from './columnReveal.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { createSurfaceNoise } from './surfaceNoise.ts';
 import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
@@ -242,7 +243,7 @@ if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheri
  * Owns the three.js meshes for chunks, keyed by chunk key, and culls them: `cull` hides
  * the meshes whose tight box is outside the camera's frustum, far plane included.
  */
-export class ChunkMeshes {
+export class ChunkMeshes implements ColumnReveal {
   readonly group = new Group();
   private readonly meshes = new Map<string, Mesh>();
   /** Each mesh's tight box, in metres. */
@@ -272,6 +273,34 @@ export class ChunkMeshes {
   private readonly frustum = new Frustum();
   private readonly viewProjection = new Matrix4();
   private changes = 0;
+  private revealed: ReadonlySet<string> | undefined;
+  private revealChanges = 0;
+
+  get revealVersion(): number {
+    return this.revealChanges;
+  }
+
+  isRevealed(x: number, z: number): boolean {
+    return this.revealed?.has(`${toChunk(Math.floor(x))},${toChunk(Math.floor(z))}`) ?? true;
+  }
+
+  setRevealedColumns(columns: ReadonlySet<string>): void {
+    if (this.revealed?.size === columns.size && [...columns].every((key) => this.revealed!.has(key))) {
+      return;
+    }
+    this.revealed = columns;
+    this.revealChanges += 1;
+    this.changes += 1;
+    for (const mesh of this.meshes.values()) {
+      if (!this.canReveal(mesh)) {
+        mesh.visible = false;
+      }
+    }
+  }
+
+  private canReveal(mesh: Mesh): boolean {
+    return this.isRevealed(mesh.position.x, mesh.position.z);
+  }
   /** Mesh replacement/removal notification, including meshes with zero triangles. Data arrivals belong to Streamer. */
   onChange?: (origin: Vec3) => void;
 
@@ -311,7 +340,7 @@ export class ChunkMeshes {
     this.group.add(warmUp);
   }
 
-  /** Bumps whenever a chunk mesh is added, replaced or removed, so a cached shadow map knows it is stale. */
+  /** Mesh and reveal changes invalidate cached shadow maps. */
   get version(): number {
     return this.changes;
   }
@@ -443,6 +472,7 @@ export class ChunkMeshes {
     mesh.updateMatrix();
     mesh.frustumCulled = false; // `cull` does it, with the box
     mesh.receiveShadow = true; // every chunk receives; `selectShadowCasters` picks the ones that cast
+    mesh.visible = this.canReveal(mesh);
     // The group only scales, so a box in blocks becomes metres by the block size.
     const box = geometry.boundingBox!.clone().translate(mesh.position);
     box.min.multiplyScalar(this.blockSize);
@@ -464,7 +494,7 @@ export class ChunkMeshes {
     this.material.shadowSide = side;
     let count = 0;
     for (const [mesh, box] of this.boxes) {
-      const on = casts(box);
+      const on = this.canReveal(mesh) && casts(box);
       mesh.castShadow = on;
       mesh.visible = on;
       count += on ? 1 : 0;
@@ -477,7 +507,7 @@ export class ChunkMeshes {
     this.viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.viewProjection);
     for (const [mesh, box] of this.boxes) {
-      mesh.visible = this.frustum.intersectsBox(box);
+      mesh.visible = this.canReveal(mesh) && this.frustum.intersectsBox(box);
     }
   }
 

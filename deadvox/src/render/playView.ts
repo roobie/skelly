@@ -163,7 +163,7 @@ export const createPlayView = (
   const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
   const models = new ModelLibrary(registry, report);
   const playerPalette = registry.figures.get(CORE_CONTENT_IDS.player)!.palette;
-  const piles = new PileMeshes(s, models, config.seed);
+  const piles = new PileMeshes(s, models, config.seed, meshes);
   const caseEffects = new CaseEffects(s, models);
   const gore = new Gore(s, config.seed);
   const decals =
@@ -203,7 +203,7 @@ export const createPlayView = (
     held.dispose();
   };
   page.addEventListener('pagehide', dispose);
-  const furniture = new FurnitureMeshes(s);
+  const furniture = new FurnitureMeshes(s, meshes);
   const carriedPiece = new CarriedPiece(
     inventory.entities,
     (entity, def) => furniture.pieceMesh(entity, def),
@@ -225,13 +225,14 @@ export const createPlayView = (
   const zombieMeshes: ZombieRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
+          reveal: meshes,
           figureSeeds: figureSeedPool(registry.zombies),
           includeAmalgam: true,
           amalgamType: amalgamTypeOf(registry.zombies),
           onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (zombie) => gore.severity(zombie),
         })
-      : new ZombieMeshes(s);
+      : new ZombieMeshes(s, undefined, meshes);
   zombieMeshes.setWorld?.(engine.isSolid, s);
   scene.add(zombieMeshes.group);
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);

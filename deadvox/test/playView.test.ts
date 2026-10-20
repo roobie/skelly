@@ -43,6 +43,14 @@ const { registry } = buildRegistry(
     })),
 );
 
+const meshFixture = () => ({
+  setLinearColors: vi.fn(),
+  setPatterns: vi.fn(),
+  setOcclusion: vi.fn(),
+  revealVersion: 0,
+  isRevealed: () => true,
+});
+
 const fixture = (isSolid: Engine['isSolid'] = () => false) => {
   const inventory = new Inventory({ ...registry, models: new Map() });
   const page = new EventTarget();
@@ -61,7 +69,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     renderer,
     scene: new Scene(),
     camera: new PerspectiveCamera(),
-    meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
+    meshes: meshFixture(),
     mood,
     shadows,
     sky: {
@@ -181,7 +189,7 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
     skylight: sky,
     isSolid: owner.knownOpaque,
     renderer: { toneMapping: 0, toneMappingExposure: 1 },
-    meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
+    meshes: meshFixture(),
     mood: {
       post: false,
       restore: vi.fn(),
@@ -433,7 +441,7 @@ describe('play presentation ownership', () => {
       registry: inventory.registry,
       scene: new Scene(),
       camera: new PerspectiveCamera(),
-      meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
+      meshes: meshFixture(),
       sky: {},
       isSolid: () => false,
     } as unknown as Engine;

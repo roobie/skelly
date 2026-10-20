@@ -1,9 +1,22 @@
 import { expect, it, vi } from 'vitest';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
+import { chunksFor } from '../src/core/scale.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
-import { applyWeatheringConfig } from '../src/game/config.ts';
+import { applyWeatheringConfig, makeConfig as makeContentConfig } from '../src/game/config.ts';
 import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
 
 const dayCycle = BUNDLED_CONTENT.registry.dayCycle!;
+
+it('takes the ready ring from content and caps it at the requested view', () => {
+  const graphics = new Map(BUNDLED_CONTENT.registry.graphics);
+  const tuning = graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+  const content = { ...BUNDLED_CONTENT, registry: { ...BUNDLED_CONTENT.registry, graphics } };
+  for (const readyRadiusM of [0, 24, 120]) {
+    graphics.set(tuning.id, { ...tuning, readyRadiusM });
+    const config = makeContentConfig(1, 80, content);
+    expect(config.readyRadiusChunks).toBe(chunksFor(config.scale, Math.min(80, readyRadiusM)));
+  }
+});
 
 it("uses the day cycle's default start when the URL has no time for a site without its own start", () => {
   expect(configFromUrl(new URLSearchParams('site=city')).start).toBe(dayCycle.defaultStartGameTimeOfDay);

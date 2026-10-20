@@ -23,6 +23,7 @@
         "options": [false, true]
       },
       "id": "core",
+      "readyRadiusM": 64,
       "renderScale": {
         "adaptive": {
           "enabled": true,

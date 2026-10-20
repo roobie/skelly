@@ -2887,7 +2887,11 @@ const RecipeSchema = strictObject({
   workstation: optional(nullable(Id)),
 });
 
-const GraphicsTuningSchema = strictObject({ id: Id, ...GraphicsOptionsSchema.entries });
+const GraphicsTuningSchema = strictObject({
+  id: Id,
+  readyRadiusM: pipe(number(), finite(), minValue(0)),
+  ...GraphicsOptionsSchema.entries,
+});
 
 /** The game's default look (core/mood.ts `LookDefaults`); URL parameters and the debug panel override it. */
 const LookDefaultsSchema = strictObject({

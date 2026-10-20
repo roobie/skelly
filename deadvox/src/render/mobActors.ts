@@ -122,6 +122,7 @@ import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './amalgamFlesh.ts';
 import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
+import type { ColumnReveal } from './columnReveal.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -412,6 +413,7 @@ interface Debris extends SlotHolder {
 }
 
 export interface MobActorMeshesOptions {
+  readonly reveal?: ColumnReveal;
   /** The authored figure seeds to build variants for (`figureSeedPool` of the registry's zombie types). */
   readonly figureSeeds: readonly number[];
   /** Builds only the first this-many of `figureSeeds`. */
@@ -514,6 +516,7 @@ const buildActorVariants = (
 export class MobActorMeshes implements ZombieRenderer {
   readonly group = new Group();
   private readonly blockSize: number;
+  private readonly reveal: ColumnReveal | undefined;
   private readonly capacity: number;
   private readonly variants: readonly Variant[];
   private readonly variantIndexBySeed: ReadonlyMap<string, number>;
@@ -560,6 +563,7 @@ export class MobActorMeshes implements ZombieRenderer {
   constructor(blockSize: number, requestedCapacity: number | undefined, options: MobActorMeshesOptions) {
     const capacity = requestedCapacity ?? DEFAULT_CAPACITY;
     this.blockSize = blockSize;
+    this.reveal = options.reveal;
     this.capacity = capacity;
     this.tentacleGeometry = options.includeAmalgam ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
     this.tentacleTipGeometry = options.includeAmalgam ? new SphereGeometry(0.16, 8, 6) : undefined;
@@ -1995,8 +1999,56 @@ export class MobActorMeshes implements ZombieRenderer {
     const corpsesDirty = this.advanceCorpses(realDt);
     const debrisDirty = this.advanceDebris(realDt);
     this.fleshChunks.update(realDt, this.rigidWorld());
+    this.applyReveal();
     if (corpsesDirty || debrisDirty || anyDirty) {
       this.texture.needsUpdate = true;
+    }
+  }
+
+  // Slot compaction can rewrite a moved actor's row, so gate only after all insertion and pruning.
+  private applyReveal(): void {
+    if (!this.reveal) {
+      return;
+    }
+    for (const [id, state] of this.states) {
+      const placement = state.lastPlacement;
+      if (placement) {
+        this.revealSlot(id, state, placement.x / this.blockSize, placement.z / this.blockSize);
+      }
+    }
+    for (const [id, corpse] of this.corpses) {
+      this.revealSlot(id, corpse, corpse.worldPos[0] / this.blockSize, corpse.worldPos[2] / this.blockSize);
+    }
+    for (const [key, debris] of this.debris) {
+      this.revealSlot(key, debris, debris.body.center[0] / this.blockSize, debris.body.center[2] / this.blockSize);
+    }
+  }
+
+  private revealSlot(key: SlotKey, holder: SlotHolder, x: number, z: number): void {
+    const allowed = this.reveal!.isRevealed(x, z);
+    const variant = this.variants[holder.variantIndex]!;
+    const row = allowed ? this.rowFor(key, holder.globalRow) : this.hiddenRow;
+    if (variant.crowdSlotAttr.getX(holder.instanceIndex) !== row) {
+      variant.crowdSlotAttr.setX(holder.instanceIndex, row);
+      variant.crowdSlotAttr.needsUpdate = true;
+    }
+    if (typeof key !== 'number') {
+      return;
+    }
+    const wound = this.wounds.get(key);
+    if (wound) {
+      wound.mesh.visible = allowed;
+    }
+    if (!allowed) {
+      const tentacle = this.tentacles.get(key);
+      if (tentacle) {
+        tentacle.shaft.visible = false;
+        tentacle.tip.visible = false;
+      }
+      const label = this.perceptionLabels.get(key);
+      if (label) {
+        label.style.display = 'none';
+      }
     }
   }
 

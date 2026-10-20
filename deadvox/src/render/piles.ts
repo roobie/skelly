@@ -22,6 +22,7 @@ import { PILE_BUNDLE_WIDTH } from '../core/pileLayout.ts';
 import type { PileScatterPlacement } from '../core/scatterPile.ts';
 import { SPENT_CASE_SCATTER_CAP } from '../core/scatterPile.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
+import type { ColumnReveal } from './columnReveal.ts';
 import { withHeightFog } from './heightFog.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
@@ -56,6 +57,7 @@ export class PileMeshes {
   private readonly blockSize: number;
   private readonly models: ModelLibrary | undefined;
   private readonly seed: number;
+  private readonly reveal: ColumnReveal | undefined;
   private drawn = '';
   private readonly itemBounds = new Map<number, Box3>();
 
@@ -70,10 +72,11 @@ export class PileMeshes {
   }
   private readonly caseVisuals = new Map<string, CaseVisual>();
 
-  constructor(blockSize: number, models?: ModelLibrary, seed = 1) {
+  constructor(blockSize: number, models?: ModelLibrary, seed = 1, reveal?: ColumnReveal) {
     this.blockSize = blockSize;
     this.models = models;
     this.seed = seed;
+    this.reveal = reveal;
     this.glowstickGeometry = new BoxGeometry(blockSize * 0.36, blockSize * 0.06, blockSize * 0.06);
     this.glowsticks = new InstancedMesh(this.glowstickGeometry, this.glowstickMaterial, 1);
   }
@@ -81,7 +84,7 @@ export class PileMeshes {
   /** Rebuilds pile meshes when inventory, models, or transient throw visibility changed. */
   sync(inventory: Inventory, hiddenItemUids: ReadonlySet<number> = new Set()): void {
     const hidden = [...hiddenItemUids].sort((a, b) => a - b).join(',');
-    const version = `${inventory.version}:${this.models?.version ?? 0}:${hidden}`;
+    const version = `${inventory.version}:${this.models?.version ?? 0}:${hidden}:${this.reveal?.revealVersion ?? 0}`;
     if (version === this.drawn) {
       return;
     }
@@ -97,6 +100,9 @@ export class PileMeshes {
       hiddenItemUids,
     });
     for (const display of displays.values()) {
+      if (this.reveal && !this.reveal.isRevealed(display.visiblePile.pos[0], display.visiblePile.pos[2])) {
+        continue;
+      }
       this.drawPile(inventory, display, casePlans);
     }
     const visibleCaseVisuals = new Set<string>();
@@ -272,7 +278,7 @@ export class PileMeshes {
   private drawEmissiveLights(inventory: Inventory, hiddenItemUids: ReadonlySet<number>): void {
     const sources = [...inventory.piles.values()].flatMap((pile) =>
       pile.items.flatMap(({ item }) => {
-        if (hiddenItemUids.has(item.uid)) {
+        if (hiddenItemUids.has(item.uid) || (this.reveal && !this.reveal.isRevealed(pile.pos[0], pile.pos[2]))) {
           return [];
         }
         const definition = defOf(inventory.registry, item.type);
