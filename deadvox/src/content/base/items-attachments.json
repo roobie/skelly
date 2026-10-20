@@ -4,7 +4,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "optic_hunting_3_9x",
       "model": "optic_hunting_3_9x",
@@ -21,7 +21,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "optic_digital_thermal",
       "model": "optic_digital_thermal",
@@ -33,7 +33,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "optic_fixed_prism_4x",
       "model": "optic_fixed_prism_4x",
@@ -45,7 +45,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "optic_high_mag_5_25x",
       "model": "optic_high_mag_5_25x",
@@ -62,7 +62,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "optic_holographic",
       "model": "optic_holographic",
@@ -74,7 +74,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "optic_lpvo_1_6x",
       "model": "optic_lpvo_1_6x",
@@ -91,7 +91,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "optic_mini_reflex",
       "model": "optic_mini_reflex",
@@ -103,7 +103,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "optic_tube_dot",
       "model": "optic_tube_dot",
@@ -115,7 +115,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "rail_front_sight",
       "model": "rail_front_sight",
@@ -127,7 +127,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
         "recoilReduction": 0.14999999999999999,
@@ -143,7 +143,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "tactical_flashlight_mount",
       "model": "tactical_flashlight_mount",
@@ -156,7 +156,7 @@
       "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "weapon_sling",
       "name": "Weapon sling",
@@ -168,7 +168,7 @@
       "category": "misc",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
         "raiseScale": 0.94999999999999996,

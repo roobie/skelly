@@ -14,7 +14,7 @@
       "description": "A steel ammunition can with a hinged lid.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "ammo_can",
       "name": "Ammo can",
@@ -40,7 +40,7 @@
       "category": "battery",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "aa_battery",
       "name": "AA battery",
@@ -53,7 +53,7 @@
       "description": "Slows or stops bleeding on one body part.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "bandage",
       "name": "Bandage",
@@ -69,7 +69,7 @@
       "description": "Treats an early wound infection.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "antiseptic",
       "name": "Antiseptic",
@@ -88,7 +88,7 @@
       "description": "An antibiotic. Treats a progressed wound infection.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "antibiotics",
       "name": "Tetracycline",
@@ -116,7 +116,7 @@
       "description": "An over-the-counter pill. Eases pain for a few hours; it heals nothing.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "painkillers",
       "name": "Painkiller",
@@ -128,7 +128,7 @@
       "category": "material",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "rag",
       "name": "Rag",
@@ -143,7 +143,7 @@
       "category": "material",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "duct_tape",
       "name": "Duct tape",
@@ -154,7 +154,7 @@
       "category": "material",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "nails",
       "name": "Nails",
@@ -166,7 +166,7 @@
       "category": "material",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "scrap_metal",
       "name": "Scrap metal",
@@ -189,7 +189,7 @@
       "category": "book",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "field_manual",
       "model": "notebook",
@@ -217,7 +217,7 @@
       "category": "book",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "camp_craft_book",
       "model": "notebook",
@@ -256,7 +256,7 @@
       "category": "book",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "home_repair_book",
       "model": "notebook",
@@ -285,7 +285,7 @@
       "category": "book",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "workshop_notes",
       "model": "notebook",
@@ -302,7 +302,7 @@
       "description": "Water-stained. Someone underlined things.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "paperback",
       "model": "notebook",
@@ -315,7 +315,7 @@
       "description": "A battered handheld radio. Its battery and metal casing can be salvaged.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "portable_radio",
       "name": "Portable radio",
@@ -338,7 +338,7 @@
       "description": "A fuel-filled can.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "jerry_can",
       "name": "Jerry can",
@@ -390,7 +390,7 @@
       "description": "Nine-pellet 00 buckshot.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "shell_12_gauge_00_buck",
       "model": "round_12_h_gauge_h_00_h_buck",
@@ -404,7 +404,7 @@
       "description": "Sealed cardboard box of twenty 00-buck shells.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "shotshell_box",
       "name": "Sealed shotshell box (20)",

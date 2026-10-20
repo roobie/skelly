@@ -2643,6 +2643,91 @@
     {
       "entries": [
         {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "revolver_357",
+          "weight": 2
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "pump_shotgun",
+          "weight": 1
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "rifle_assault",
+          "weight": 1
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "rifle_ak",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 1
+        }
+      ],
+      "id": "armoury_arms",
+      "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "count": [3, 12],
+          "item": "cartridge_357_h_magnum",
+          "weight": 3
+        },
+        {
+          "item": "cartridge_box_357_h_magnum",
+          "weight": 2
+        },
+        {
+          "item": "shotshell_box",
+          "weight": 1
+        },
+        {
+          "count": [5, 20],
+          "item": "cartridge_5_d_56x45",
+          "weight": 2
+        },
+        {
+          "item": "cartridge_box_5_d_56x45",
+          "weight": 1
+        },
+        {
+          "count": [5, 20],
+          "item": "cartridge_7_d_62x39",
+          "weight": 2
+        },
+        {
+          "item": "cartridge_box_7_d_62x39",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ],
+      "id": "armoury_ammunition",
+      "rolls": [1, 2]
+    },
+    {
+      "entries": [
+        {
+          "table": "armoury_arms",
+          "weight": 1
+        },
+        {
+          "table": "armoury_ammunition",
+          "weight": 2
+        }
+      ],
+      "id": "armoury_cabinet",
+      "rolls": [2, 3]
+    },
+    {
+      "entries": [
+        {
           "condition": [0.40000000000000002, 0.80000000000000004],
           "item": "utility_vest",
           "weight": 2
@@ -2664,7 +2749,7 @@
           "weight": 4
         }
       ],
-      "id": "gauntlet_police_gear",
+      "id": "equipment_locker",
       "rolls": [1, 2]
     },
     {
@@ -2846,7 +2931,7 @@
     {
       "entries": [
         {
-          "table": "gauntlet_police_sidearms",
+          "table": "armoury_arms",
           "weight": 1
         },
         {
@@ -2860,7 +2945,7 @@
     {
       "entries": [
         {
-          "table": "gauntlet_police_ammunition",
+          "table": "armoury_ammunition",
           "weight": 1
         },
         {
@@ -2910,7 +2995,7 @@
     {
       "entries": [
         {
-          "table": "gauntlet_police_ammunition",
+          "table": "armoury_ammunition",
           "weight": 2
         },
         {
@@ -12549,7 +12634,7 @@
       "joins": [],
       "lootContext": {
         "tier": "Tier1",
-        "usage": ["Hunting"]
+        "usage": ["Police"]
       },
       "ports": [],
       "size": [38, 12, 30],
@@ -13212,7 +13297,7 @@
       "joins": [],
       "lootContext": {
         "tier": "Tier1",
-        "usage": ["Hunting"]
+        "usage": ["Police"]
       },
       "ports": [],
       "size": [54, 12, 43],
@@ -28244,7 +28329,7 @@
         },
         "F": {
           "furniture": "range_rack",
-          "loot": "gauntlet_police_sidearms"
+          "loot": "armoury_arms"
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -31220,7 +31305,7 @@
         "C": {
           "fixed": true,
           "furniture": "counter",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "D": {
           "furniture": "wood_door"
@@ -31872,7 +31957,7 @@
       ],
       "lootContext": {
         "tier": "Tier1",
-        "usage": ["Hunting"]
+        "usage": ["Police"]
       },
       "ownership": {
         "layers": [
@@ -32277,7 +32362,7 @@
         },
         "A": {
           "furniture": "police_weapon_cabinet",
-          "loot": "gauntlet_police_armoury_stock"
+          "loot": "armoury_cabinet"
         },
         "B": {
           "facing": "w",
@@ -32313,12 +32398,12 @@
         "L": {
           "facing": "s",
           "furniture": "police_evidence_locker",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "M": {
           "facing": "e",
           "furniture": "shelf",
-          "loot": "gauntlet_police_ammunition"
+          "loot": "armoury_ammunition"
         },
         "O": {
           "facing": "e",
@@ -32330,7 +32415,7 @@
         },
         "S": {
           "furniture": "shelf",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "T": {
           "furniture": "range_table"
@@ -32364,7 +32449,7 @@
         "f": {
           "facing": "s",
           "furniture": "police_file_cabinet",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "g": {
           "ground": true
@@ -33710,7 +33795,7 @@
         "S": {
           "facing": "s",
           "furniture": "shelf",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "T": {
           "furniture": "hq_meeting_table"
@@ -33730,7 +33815,7 @@
         "f": {
           "facing": "s",
           "furniture": "police_file_cabinet",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "k": {
           "material": "concrete",
@@ -35353,17 +35438,17 @@
         "A": {
           "facing": "e",
           "furniture": "hq_weapon_cabinet",
-          "loot": "gauntlet_police_sidearms"
+          "loot": "armoury_arms"
         },
         "C": {
           "facing": "e",
           "furniture": "hq_weapon_cabinet",
-          "loot": "gauntlet_police_sidearms"
+          "loot": "armoury_arms"
         },
         "V": {
           "facing": "s",
           "furniture": "wardrobe",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "k": {
           "material": "concrete",
@@ -37159,7 +37244,8 @@
         },
         "C": {
           "furniture": "crate",
-          "loot": "gauntlet_sewer_guard_ammunition"
+          "loot": "gauntlet_sewer_guard_ammunition",
+          "lootUsage": ["Police"]
         },
         "J": {
           "facing": "w",
@@ -37168,7 +37254,8 @@
         "W": {
           "facing": "e",
           "furniture": "hq_weapon_cabinet",
-          "loot": "gauntlet_sewer_guard_arms"
+          "loot": "gauntlet_sewer_guard_arms",
+          "lootUsage": ["Police"]
         },
         "g": {
           "material": "galvanized",

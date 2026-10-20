@@ -411,7 +411,7 @@
         "S": {
           "facing": "s",
           "furniture": "shelf",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "T": {
           "furniture": "hq_meeting_table"
@@ -435,7 +435,7 @@
         "f": {
           "facing": "s",
           "furniture": "police_file_cabinet",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "k": "concrete",
         "p": {
@@ -561,17 +561,17 @@
         "A": {
           "facing": "e",
           "furniture": "hq_weapon_cabinet",
-          "loot": "gauntlet_police_sidearms"
+          "loot": "armoury_arms"
         },
         "C": {
           "facing": "e",
           "furniture": "hq_weapon_cabinet",
-          "loot": "gauntlet_police_sidearms"
+          "loot": "armoury_arms"
         },
         "V": {
           "facing": "s",
           "furniture": "wardrobe",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "k": "concrete"
       },

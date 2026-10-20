@@ -1,4 +1,4 @@
-local usages = ['Residential', 'Industrial', 'Medical', 'Hunting', 'Military', 'Infected'];
+local usages = ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'];
 local tiers = ['Tier1', 'Tier2', 'Tier3'];
 local militaryItems = [
   'rifle_assault', 'rifle_ak',

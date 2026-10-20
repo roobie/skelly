@@ -2,7 +2,7 @@ import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.ts';
 
 export const fixtureEconomy = (): ItemEconomy => ({
-  usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Military', 'Infected'],
+  usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'],
   tiers: ['Tier1', 'Tier2', 'Tier3'],
 });
 export const fixtureLootContext = (): LootContext => ({ usage: ['Residential'], tier: 'Tier1' });

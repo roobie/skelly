@@ -5,7 +5,7 @@
       "description": "A fragmentation grenade. With the pin pulled, its fuse lights as it leaves the hand.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "explosive": {
         "blast": {

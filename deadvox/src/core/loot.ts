@@ -12,7 +12,7 @@ import type { FixedLootItemDef } from './schema.ts';
 const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
 
 export const UsageSchema = pipe(
-  array(picklist(['Residential', 'Industrial', 'Medical', 'Hunting', 'Military', 'Infected'])),
+  array(picklist(['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'])),
   check(distinct, 'usage tags must be unique'),
 );
 const LootTierSchema = picklist(['Tier1', 'Tier2', 'Tier3']);

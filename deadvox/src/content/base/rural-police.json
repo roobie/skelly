@@ -222,7 +222,7 @@
       "description": "A small key stamped ARMOURY.",
       "economy": {
         "tiers": ["Tier1"],
-        "usage": ["Hunting"]
+        "usage": ["Police"]
       },
       "id": "gauntlet_police_armoury_key",
       "key": {
@@ -273,7 +273,7 @@
       "id": "rural_police_spike",
       "lootContext": {
         "tier": "Tier1",
-        "usage": ["Hunting"]
+        "usage": ["Police"]
       },
       "player": {
         "bearing": 180,
@@ -301,63 +301,6 @@
       ],
       "id": "gauntlet_police_roof_key",
       "rolls": [1, 1]
-    },
-    {
-      "entries": [
-        {
-          "table": "gauntlet_police_sidearms",
-          "weight": 1
-        },
-        {
-          "table": "gauntlet_police_ammunition",
-          "weight": 2
-        }
-      ],
-      "id": "gauntlet_police_armoury_stock",
-      "rolls": [2, 3]
-    },
-    {
-      "entries": [
-        {
-          "condition": [0.5, 0.90000000000000002],
-          "item": "revolver_357",
-          "weight": 2
-        },
-        {
-          "condition": [0.5, 0.90000000000000002],
-          "item": "pump_shotgun",
-          "weight": 1
-        },
-        {
-          "nothing": true,
-          "weight": 1
-        }
-      ],
-      "id": "gauntlet_police_sidearms",
-      "rolls": [1, 1]
-    },
-    {
-      "entries": [
-        {
-          "count": [3, 12],
-          "item": "cartridge_357_h_magnum",
-          "weight": 3
-        },
-        {
-          "item": "cartridge_box_357_h_magnum",
-          "weight": 2
-        },
-        {
-          "item": "shotshell_box",
-          "weight": 1
-        },
-        {
-          "nothing": true,
-          "weight": 2
-        }
-      ],
-      "id": "gauntlet_police_ammunition",
-      "rolls": [1, 2]
     }
   ],
   "templates": [
@@ -762,7 +705,7 @@
       ],
       "lootContext": {
         "tier": "Tier1",
-        "usage": ["Hunting"]
+        "usage": ["Police"]
       },
       "palette": {
         "#": "brick",
@@ -770,7 +713,7 @@
         "=": "window_frame",
         "A": {
           "furniture": "police_weapon_cabinet",
-          "loot": "gauntlet_police_armoury_stock"
+          "loot": "armoury_cabinet"
         },
         "B": {
           "facing": "w",
@@ -806,12 +749,12 @@
         "L": {
           "facing": "s",
           "furniture": "police_evidence_locker",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "M": {
           "facing": "e",
           "furniture": "shelf",
-          "loot": "gauntlet_police_ammunition"
+          "loot": "armoury_ammunition"
         },
         "O": {
           "facing": "e",
@@ -823,7 +766,7 @@
         },
         "S": {
           "furniture": "shelf",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "T": {
           "furniture": "range_table"
@@ -856,7 +799,7 @@
         "f": {
           "facing": "s",
           "furniture": "police_file_cabinet",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker"
         },
         "g": {
           "ground": true

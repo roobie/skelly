@@ -5,7 +5,7 @@
       "description": ".308 Winchester bolt-action rifle with an internal magazine.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearm": {
         "bolt": true,
@@ -42,8 +42,8 @@
       "category": "weapon",
       "description": "12-gauge pump shotgun. The tube holds four shells, with one more in the chamber.",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "tiers": ["Tier2", "Tier3"],
+        "usage": ["Military"]
       },
       "firearm": {
         "dispersionRadians": 0,

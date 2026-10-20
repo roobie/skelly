@@ -32,7 +32,7 @@
       "description": "A clearly marked prototype reading sample, not playtest lore.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "sample_note",
       "model": "paper_sheet",
