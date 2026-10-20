@@ -212,7 +212,7 @@ export const createPlayView = (
     reachTuning(registry).furnitureMove.carriedView,
   );
   held.attach(carriedPiece.group);
-  const playerMeshes = new PlayerMeshes(s, playerPalette);
+  const playerMeshes = new PlayerMeshes(s, playerPalette, models);
   const flashlight = new Flashlight(
     scene,
     registry.senses.get(CORE_CONTENT_IDS.player)!.light.renderedBeamLimit,

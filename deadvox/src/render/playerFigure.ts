@@ -17,9 +17,11 @@ import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
+import type { WearSlot } from '../core/schema.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { PLAYER_ARM_BOXES } from './figure.ts';
 import { withHeightFog } from './heightFog.ts';
+import type { ModelLibrary } from './models.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
 /** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
@@ -80,6 +82,8 @@ const PLAYER_BOXES: Readonly<Record<PlayerArmPart, FigureBox>> = {
   leftFoot: { size: [0.18, 0.12, 0.28], at: [-0.12, 0.06, -0.16] },
   rightFoot: { size: [0.18, 0.12, 0.28], at: [0.12, 0.06, -0.16] },
 };
+
+const WORN_ATTACHMENTS: Partial<Record<WearSlot, PlayerArmPart>> = { head: 'head' };
 
 const regionBox = (part: PlayerArmPart, anchoredLeg = false): FigureBox => {
   const box = PLAYER_BOXES[part];
@@ -205,11 +209,15 @@ export interface PlayerFigurePose {
 export class PlayerMeshes {
   readonly group = new Group();
   private readonly meshes = new Map<PlayerArmPart, InstancedMesh>();
+  private readonly attachments = new Map<PlayerArmPart, Group>();
+  private wornVersion = '';
+  private readonly models: ModelLibrary | undefined;
   private readonly dummy = new Object3D();
   private readonly placement: PlayerFigurePlacement;
   private readonly localPosition: Vec3 = [0, 0, 0];
 
-  constructor(blockSize: number, palette: FigureDef['palette']) {
+  constructor(blockSize: number, palette: FigureDef['palette'], models?: ModelLibrary) {
+    this.models = models;
     this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize, thirdPerson: false };
     for (const part of PLAYER_ARM_PARTS) {
       const mesh = new InstancedMesh(
@@ -227,6 +235,7 @@ export class PlayerMeshes {
 
   sync(pose: PlayerFigurePose): void {
     const { inventory, thirdPerson = false } = pose;
+    this.syncWorn(inventory);
     this.placement.bodyPosition = pose.body.pos;
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
@@ -237,9 +246,48 @@ export class PlayerMeshes {
       const hiddenHeldArm = isArmPart(part) && side !== undefined && hidden[side];
       const hiddenInFirstPerson = part === 'head' && !thirdPerson;
       mesh.count = hiddenHeldArm || hiddenInFirstPerson ? 0 : 1;
-      if (!(hiddenHeldArm || hiddenInFirstPerson)) {
-        this.updatePart(part, mesh, pose);
+      const attachment = this.attachments.get(part);
+      if (attachment) {
+        attachment.visible = mesh.count > 0;
       }
+      if (mesh.count > 0) {
+        this.updatePart(part, mesh, pose);
+        if (attachment) {
+          attachment.position.copy(this.dummy.position);
+          attachment.quaternion.copy(this.dummy.quaternion);
+        }
+      }
+    }
+  }
+
+  private syncWorn(inventory?: Inventory): void {
+    const version = `${inventory?.version}:${this.models?.version}`;
+    if (version === this.wornVersion) {
+      return;
+    }
+    this.wornVersion = version;
+    for (const attachment of this.attachments.values()) {
+      attachment.removeFromParent();
+    }
+    this.attachments.clear();
+    for (const [slot, part] of Object.entries(WORN_ATTACHMENTS)) {
+      if (!part) {
+        continue;
+      }
+      const item = inventory?.worn[slot as WearSlot];
+      const entry = item && defOf(inventory!.registry, item.type).wearable?.figureModel;
+      const model = entry && this.models?.part(entry.model);
+      if (!(entry && model)) {
+        continue;
+      }
+      model.position.set(...entry.at);
+      model.rotation.set(...(entry.turn.map((degrees) => (degrees * Math.PI) / 180) as [number, number, number]));
+      const attachment = new Group();
+      attachment.name = `worn-${slot}`;
+      attachment.add(model);
+      attachment.traverse((object) => object.layers.set(PLAYER_FIGURE_LAYER));
+      this.attachments.set(part, attachment);
+      this.group.add(castsAndReceives(attachment));
     }
   }
 

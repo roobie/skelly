@@ -30,6 +30,7 @@
     { "id": "cloth_bundle", "file": "assets/models/cloth_bundle.glb" },
     { "id": "stab_vest", "file": "assets/models/stab_vest.glb" },
     { "id": "riot_helmet", "file": "assets/models/riot_helmet.glb" },
+    { "id": "riot_helmet_view", "file": "assets/models/riot_helmet_view.glb" },
     { "id": "thread_spool", "file": "assets/models/thread_spool.glb" },
     { "id": "fuse", "file": "assets/models/fuse.glb" },
     { "id": "cord_coil", "file": "assets/models/cord_coil.glb" },

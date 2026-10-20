@@ -49,10 +49,19 @@ box(helmet)('visor', [0.25, 0.19, 0.012], visor, [0, 0.005, 0.145]);
 box(helmet)('visor hinge left', [0.025, 0.035, 0.04], shell, [-0.14, 0.07, 0.06]);
 box(helmet)('visor hinge right', [0.025, 0.035, 0.04], shell, [0.14, 0.07, 0.06]);
 
+const view = new Group();
+view.name = 'Riot helmet inside';
+// Unit camera frustum; the renderer adapts x/y to the current field of view.
+box(view)('pane', [2.4, 2.4, 0.001], visor, [0, 0, -1.2]);
+box(view)('rim top', [0.16, 0.016, 0.002], straps, [0, 0.057, -0.06]);
+box(view)('rim left', [0.012, 0.12, 0.002], straps, [-0.058, 0, -0.06]);
+box(view)('rim right', [0.012, 0.12, 0.002], straps, [0.058, 0, -0.06]);
+
 await Promise.all(
   [
     ['stab_vest', vest],
     ['riot_helmet', helmet],
+    ['riot_helmet_view', view],
   ].map(async ([id, model]) => {
     const bytes = await new GLTFExporter().parseAsync(model, { binary: true });
     await writeFile(new URL(`../src/content/base/assets/models/${id}.glb`, import.meta.url), Buffer.from(bytes));

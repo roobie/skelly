@@ -149,6 +149,8 @@ export interface HeldHandlingFrame {
 
 export class HeldItems {
   private readonly scene = new Scene();
+  private visor: Object3D | undefined;
+  private readonly visorMaterials: MeshBasicMaterial[] = [];
   private readonly camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.01, 10);
   /** Turned and translated with the main camera so shadow lookups use world positions. */
   private readonly view = new Group();
@@ -246,7 +248,7 @@ export class HeldItems {
     this.opticWindow.visible = false;
     this.opticWindow.renderOrder = 100;
     this.view.add(this.torso, this.opticWindow);
-    this.scene.add(this.view, this.light, this.ambient);
+    this.scene.add(this.view, this.light, this.ambient, this.camera);
     // Hidden: gives `renderer.compile` the hand material before anything is held. `sync` only clears `view`.
     const warmUp = new Mesh(this.geometry, this.material);
     warmUp.receiveShadow = true;
@@ -1206,6 +1208,11 @@ export class HeldItems {
       this.camera.aspect = main.aspect;
       this.camera.updateProjectionMatrix();
     }
+    this.visor?.scale.set(
+      this.camera.aspect * Math.tan(MathUtils.degToRad(this.camera.fov / 2)),
+      Math.tan(MathUtils.degToRad(this.camera.fov / 2)),
+      1,
+    );
     const { autoClear } = renderer;
     renderer.autoClear = false;
     renderer.clearDepth();
@@ -1220,6 +1227,7 @@ export class HeldItems {
       return;
     }
     this.drawn = version;
+    this.syncVisor();
     this.disposeCompasses();
     this.clearArms();
     for (const held of this.shown.values()) {
@@ -1246,6 +1254,42 @@ export class HeldItems {
     this.syncFistHand('left');
   }
 
+  private clearVisor(): void {
+    this.visor?.removeFromParent();
+    this.visor = undefined;
+    for (const material of this.visorMaterials) {
+      material.dispose();
+    }
+    this.visorMaterials.length = 0;
+  }
+
+  private syncVisor(): void {
+    this.clearVisor();
+    const { head } = this.inventory.worn;
+    const entry = head && defOf(this.inventory.registry, head.type).wearable?.viewModel;
+    const model = entry && this.models?.part(entry.model);
+    if (!(entry && model)) {
+      return;
+    }
+    model.traverse((object) => {
+      if (!(object instanceof Mesh)) {
+        return;
+      }
+      const source = Array.isArray(object.material) ? object.material[0] : object.material;
+      const material = new MeshBasicMaterial({
+        color: source.color,
+        transparent: true,
+        opacity: object.name === 'pane' ? entry.tint : entry.darkening,
+        depthWrite: false,
+        side: DoubleSide,
+      });
+      object.material = material;
+      this.visorMaterials.push(material);
+    });
+    this.visor = model;
+    this.camera.add(model);
+  }
+
   private disposeCompasses(): void {
     for (const compass of this.compasses.values()) {
       compass.dispose();
@@ -1255,6 +1299,7 @@ export class HeldItems {
 
   /** Releases the spike's owned display resources on page teardown too. */
   dispose(): void {
+    this.clearVisor();
     this.disposeCompasses();
     this.clearArms();
     for (const material of this.lightMaterials.values()) {

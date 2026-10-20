@@ -71,6 +71,10 @@
       "id": "riot_helmet"
     },
     {
+      "file": "assets/models/riot_helmet_view.glb",
+      "id": "riot_helmet_view"
+    },
+    {
       "file": "assets/models/thread_spool.glb",
       "id": "thread_spool"
     },

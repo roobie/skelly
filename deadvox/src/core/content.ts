@@ -657,6 +657,15 @@ const checkInventoryNameCollisions = (items: readonly ItemDef[], report: Report)
   }
 };
 
+const checkWearableModels = (item: ItemDef, registry: Registry, report: Report): void => {
+  for (const field of ['viewModel', 'figureModel'] as const) {
+    const entry = item.wearable?.[field];
+    if (entry && !registry.models.has(entry.model)) {
+      report('items', item.id, `.wearable.${field}.model`, `no model "${entry.model}"`);
+    }
+  }
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
   checkInventoryNameCollisions(items, report);
@@ -681,6 +690,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
     checkToolFuel(item, registry, report);
+    checkWearableModels(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {
       report('items', item.id, '.model', `no model "${item.model}"`);
     }

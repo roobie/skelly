@@ -13,12 +13,12 @@ import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
-const measureGlowstickFloor = async (page, uid, label) => {
-  const screenshot = await page.locator('#view canvas').screenshot();
+const measureGlowstickFloor = async (page, uid, label, capture) => {
+  const screenshot = await capture();
   const artifacts = resolve(projectRoot, 'test-results/primary-action');
   await mkdir(artifacts, { recursive: true });
   await writeFile(resolve(artifacts, `dropped-glowstick-${label}.png`), screenshot);
-  return page.evaluate(
+  const measurement = await page.evaluate(
     async ({ base64, itemUid }) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(itemUid);
@@ -63,7 +63,43 @@ const measureGlowstickFloor = async (page, uid, label) => {
     },
     { base64: screenshot.toString('base64'), itemUid: uid },
   );
+  return { measurement, screenshot };
 };
+
+const visorRatio = (page, shot) =>
+  page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0);
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    let edge = 0;
+    let edgeCount = 0;
+    let centre = 0;
+    let centreCount = 0;
+    const inCentre = (value) => value > 0.4 && value < 0.6;
+    for (let offset = 0; offset < data.length; offset += 4) {
+      const pixel = offset / 4;
+      const nx = (pixel % canvas.width) / canvas.width;
+      const ny = Math.floor(pixel / canvas.width) / canvas.height;
+      const light = data[offset] + data[offset + 1] + data[offset + 2];
+      if (nx < 0.06 || nx > 0.94 || ny < 0.06) {
+        edge += light;
+        edgeCount += 1;
+      } else if (inCentre(nx) && inCentre(ny)) {
+        centre += light;
+        centreCount += 1;
+      }
+    }
+    if (!(centre > 0 && edge > 0)) {
+      throw new Error('Visor comparison needs a visible scene');
+    }
+    return edge / edgeCount / (centre / centreCount);
+  }, shot.toString('base64'));
 
 const vite = await createServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
@@ -123,7 +159,11 @@ try {
         document.querySelector('#world-loading').hidden,
     );
   });
-  await timePhase('glowstick-pixel-assertions', async () => {
+  const clip = await page.locator('#view canvas').boundingBox();
+  assert(clip, 'the loaded scene has a canvas');
+  // Page clipping avoids the locator screenshot's extra layout-stability frames.
+  const capture = () => page.screenshot({ clip });
+  const baselineShot = await timePhase('glowstick-pixel-assertions', async () => {
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.input.pitch = -0.55;
@@ -134,7 +174,7 @@ try {
       return { uid: item.uid, frame: r.frames };
     });
     await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, fixture.frame);
-    const off = await measureGlowstickFloor(page, fixture.uid, 'off');
+    const { measurement: off } = await measureGlowstickFloor(page, fixture.uid, 'off', capture);
     assert.notEqual(off.on, true);
     const onFrame = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
@@ -151,13 +191,54 @@ try {
       return r.frames;
     }, fixture.uid);
     await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, onFrame);
-    const on = await measureGlowstickFloor(page, fixture.uid, 'on');
+    const { measurement: on, screenshot } = await measureGlowstickFloor(page, fixture.uid, 'on', capture);
     assert.equal(on.on, true);
     process.stdout.write(`Dropped glowstick floor luminance: ${JSON.stringify({ off, on })}\n`);
     assert.ok(
       on.luminance > off.luminance + 3,
       'a dropped lit glowstick visibly brightens nearby floor pixels at night',
     );
+    assert.deepEqual(pageErrors, []);
+    return screenshot;
+  });
+  await timePhase('worn-helmet-assertions', async () => {
+    const baseline = await visorRatio(page, baselineShot);
+    const uid = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.create('riot_helmet');
+      if (!r.inventory.add(item, { kind: 'worn' })) {
+        throw new Error('Could not wear helmet fixture');
+      }
+      return item.uid;
+    });
+    await page.waitForFunction(() => {
+      const r = globalThis.primaryActionTest;
+      return r.view.held.warmUpTarget.camera.children.length > 0;
+    });
+    const worn = await visorRatio(page, await capture());
+    assert.ok(worn < baseline * 0.9, 'wearing the visor darkens the outer band relative to the centre');
+    await page.evaluate(() => globalThis.primaryActionTest.thirdPerson.toggle());
+    await page.waitForFunction(() => {
+      const attachment = globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('worn-head');
+      return attachment?.visible === true && attachment.children.length > 0;
+    });
+    await page.evaluate((itemUid) => {
+      const r = globalThis.primaryActionTest;
+      const result = r.inventory.move(r.inventory.itemByUid(itemUid), { kind: 'pile', pos: r.feet() });
+      if (!result.ok) {
+        throw new Error(result.reason);
+      }
+      r.thirdPerson.toggle();
+    }, uid);
+    await page.waitForFunction(() => {
+      const r = globalThis.primaryActionTest;
+      return (
+        !r.view.playerMeshes.group.getObjectByName('worn-head') && r.view.held.warmUpTarget.camera.children.length === 0
+      );
+    });
+    const restored = await visorRatio(page, await capture());
+    process.stdout.write(`Visor edge/centre ratios: ${JSON.stringify({ baseline, worn, restored })}\n`);
+    assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     assert.deepEqual(pageErrors, []);
   });
 } finally {
