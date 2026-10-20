@@ -1,4 +1,4 @@
-import { buildCityPlan, type CityGrid, cityGridOf, scenarioPlanIssues } from './cityPlan.ts';
+import { buildCityPlan, type CityGrid, cityGridOf } from './cityPlan.ts';
 import { CitySite } from './citySite.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -27,10 +27,6 @@ export class GauntletSite extends CitySite {
     scale: Scale;
     scenario: ScenarioDef;
   }) {
-    const issues = scenarioPlanIssues(registry, scenario);
-    if (issues.length > 0) {
-      throw new Error(issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
-    }
     super(
       seed,
       registry,
