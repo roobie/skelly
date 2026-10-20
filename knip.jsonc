@@ -70,7 +70,7 @@
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
     "packages/engine": {
-      "project": ["src/**/*.{js,mjs,ts,tsx}!"]
+      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
     "packages/tool-ui": {
       "project": ["src/**/*.{js,mjs,ts,tsx}!"]
