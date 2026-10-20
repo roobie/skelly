@@ -884,6 +884,24 @@ gateways and route poses stay free because finding loot must not compromise a ce
 crossing. See `src/core/templateSpatial.ts`, `templateGroundLootIssues`, and
 `src/core/reach.ts`, `pileInReach`.
 
+A ground supply must fit one pile in its worst case, and content validation enforces it:
+an overfilled pile throws when its column loads, so the check moves that failure to
+validation, where it costs nothing at play time and the author sees it. Content that
+needs more than one pile's worth uses several anchors. The check packs every reachable
+roll with the runtime's first-fit placement and credits the source's admission rules, so
+an entry the source cannot select does not count. It does not credit stack merging: each
+stack is placed as its own stack, so a large fixed stock of one stackable that play would
+merge into one stack (more one-cell items than the pile has cells) is refused, and the
+author splits it across anchors. Crediting merging would make the exact check far too
+costly to run at validation, while crediting admission is cheap and removes entries the
+source cannot select. A supply the packer cannot decide within the inventory tuning's state
+cap is reported as unproven, never accepted. The cap stays where content sets it: a higher cap
+costs several times more per supply on big tables and still leaves some of them unproven or
+overflowing, so splitting is needed either way. A table the check cannot prove fits is split
+across anchors, or replaced by a smaller one, before it is ground-anchored. Column load still
+throws on overflow; validated content cannot reach it. See `src/core/pileBound.ts`,
+`groundPileIssue`, and `src/core/placementLoot.ts`, `groundLootSupplyIssues`.
+
 Items carry no record of where they were born. Floors, caps and odds act when loot is
 placed, so no rule needs a birthplace, and keeping one only stopped equal items from
 stacking. Debug stock is kept out of the world economy by
