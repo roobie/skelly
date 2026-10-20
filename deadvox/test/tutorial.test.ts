@@ -122,6 +122,20 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('escape');
   });
 
+  it('returns practice to its selected site and beginner mode', () => {
+    for (const [site, mode] of [
+      ['playtest', null],
+      ['gauntlet', 'beginner'],
+    ]) {
+      const returned = new URL(
+        tutorialUrl(`https://example.org/deadvox/?site=${site}&tutorial=1${mode ? `&mods=${mode}` : ''}`, false),
+      );
+      expect(returned.searchParams.get('site')).toBe(site);
+      expect(returned.searchParams.get('mods')).toBe(mode);
+      expect(returned.searchParams.has('tutorial')).toBe(false);
+    }
+  });
+
   it('also isolates direct authored-site links and clears continuation and debug parameters on exit', () => {
     expect(tutorialRequested(new URLSearchParams('site=tutorial'))).toBe(true);
     expect(tutorialRequested(new URLSearchParams('tutorial=1'))).toBe(true);

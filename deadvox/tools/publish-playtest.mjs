@@ -7,7 +7,8 @@ import { parseArgs } from 'node:util';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const ROUNDS = {
-  1: { url: 'https://deadvox-playtest-round1.surge.sh/', playPath: 'play/' },
+  1: { url: 'https://deadvox-playtest-round1.surge.sh/', playPath: 'play/', playQuery: 'site=playtest' },
+  2: { url: 'https://deadvox-playtest-round2.surge.sh/', playPath: 'play/', playQuery: 'site=gauntlet' },
 };
 const FULL_SHA_PATTERN = /^[a-f\d]{40}$/;
 const DEPENDENCY_ROOTS = ['', 'deadvox/tools/lit-check'];
@@ -120,7 +121,7 @@ export const publishPlaytest = ({ round, gameSha, dryRun = false, root = ROOT })
     const source = readFileSync(path, 'utf8')
       .replaceAll('../../../site/', './')
       .replaceAll('{{ROUND_URL}}', config.url)
-      .replaceAll('{{PLAY_URL}}', `${config.playPath}?site=playtest`);
+      .replaceAll('{{PLAY_URL}}', `${config.playPath}?${config.playQuery}`);
     writeFileSync(path, source);
   }
   buildGame(root, gameSha, join(output, config.playPath));
