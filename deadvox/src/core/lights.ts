@@ -205,9 +205,16 @@ export const chargeOf = (registry: Registry, item: Item): number | undefined => 
   if (def.battery) {
     return item.charges ?? def.battery.capacity;
   }
+  if (def.canister) {
+    return item.charges ?? def.canister.capacity;
+  }
   if (def.light?.power) {
     const battery = item.slots?.battery;
     return battery ? (battery.charges ?? capacityOf(registry, battery.type)) : 0;
+  }
+  if (def.tool?.fuel) {
+    const canister = item.slots?.canister;
+    return canister ? (canister.charges ?? defOf(registry, canister.type).canister?.capacity ?? 0) : 0;
   }
   return def.igniter ? (item.charges ?? def.igniter.capacity) : undefined;
 };
@@ -217,8 +224,10 @@ export const chargeShare = (registry: Registry, item: Item): number | undefined 
   const def = defOf(registry, item.type);
   const capacity =
     def.battery?.capacity ??
+    def.canister?.capacity ??
     def.igniter?.capacity ??
-    (item.slots?.battery ? capacityOf(registry, item.slots.battery.type) : undefined);
+    (item.slots?.battery ? capacityOf(registry, item.slots.battery.type) : undefined) ??
+    (item.slots?.canister ? defOf(registry, item.slots.canister.type).canister?.capacity : undefined);
   const charge = chargeOf(registry, item);
   return capacity === undefined || charge === undefined ? undefined : charge / capacity;
 };

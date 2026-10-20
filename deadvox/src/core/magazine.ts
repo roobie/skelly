@@ -110,7 +110,7 @@ const attachmentSlotsReason = (
 ): string | undefined => {
   const fitted: FittedAttachment[] = [];
   for (const [slotId, child] of Object.entries(slots)) {
-    if (!child || slotId === 'magazine' || slotId === 'battery' || slotId === SLING_SLOT) {
+    if (!child || slotId === 'magazine' || slotId === 'battery' || slotId === 'canister' || slotId === SLING_SLOT) {
       continue;
     }
     const result = fittedAttachmentFor(registry, model, slotId, child);
@@ -144,6 +144,21 @@ const batterySlotReason = (
   return slots.battery ? 'Only a powered light has a battery slot' : undefined;
 };
 
+const canisterSlotReason = (
+  registry: Registry,
+  canisterType: string | undefined,
+  slots: Readonly<Record<string, { readonly type: string } | undefined>>,
+): string | undefined => {
+  if (!slots.canister) {
+    return undefined;
+  }
+  return canisterType !== undefined &&
+    slots.canister.type === canisterType &&
+    registry.items.get(canisterType)?.canister
+    ? undefined
+    : 'Only a fuelled tool takes its own cartridge';
+};
+
 const slingSlotReason = (
   registry: Registry,
   definition: ItemDef | undefined,
@@ -169,9 +184,11 @@ export const slotsReason = (
   const model = definition?.model === undefined ? undefined : registry.models.get(definition.model);
   const magazineCalibre = magazineWellCalibre(registry, type);
   const batteryType = definition?.light?.power?.battery;
+  const canisterType = definition?.tool?.fuel?.canister;
   const hasSlots =
     magazineCalibre !== undefined ||
     batteryType !== undefined ||
+    canisterType !== undefined ||
     (model?.attachmentSlots?.length ?? 0) > 0 ||
     isLongGun(definition);
   if (!hasSlots) {
@@ -188,6 +205,7 @@ export const slotsReason = (
   }
   return (
     batterySlotReason(registry, batteryType, slots) ??
+    canisterSlotReason(registry, canisterType, slots) ??
     slingSlotReason(registry, definition, slots) ??
     attachmentSlotsReason(registry, model, slots)
   );

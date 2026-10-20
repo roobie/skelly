@@ -18,6 +18,7 @@ import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
 import { simSeconds, simToGameSeconds } from '../core/time.ts';
+import { swapCanister } from '../core/torch.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
 
 const numberParam = (params: JobParams, key: string): number => {
@@ -132,6 +133,20 @@ export class Survival {
       }
       return swapBattery(this.inventory, light, battery, this.hooks.feet());
     });
+    this.queue.registerAction('survival.canister', (params) => {
+      const tool = this.inventory.itemByUid(numberParam(params, 'toolUid'));
+      const canister = this.inventory.itemByUid(numberParam(params, 'canisterUid'));
+      if (!tool || this.handOf(tool) === undefined) {
+        return "The tool isn't in your hands";
+      }
+      if (!canister) {
+        return "The cartridge isn't there any more";
+      }
+      if (!this.hooks.reach().entries.some((entry) => entry.item === canister)) {
+        return 'The cartridge is no longer in reach';
+      }
+      return swapCanister(this.inventory, tool, canister, this.hooks.feet());
+    });
     sim.scheduler.register({ id: 'lights', rate: 1, maxStep: 30, tick: (dt) => this.tickLights(dt) });
   }
 
@@ -232,6 +247,12 @@ export class Survival {
         this.queue.enqueueAction('survival.battery', option.label, option.plan.time, {
           lightUid: option.light!.uid,
           batteryUid: option.battery!.uid,
+        });
+        return undefined;
+      case 'canister':
+        this.queue.enqueueAction('survival.canister', option.label, option.plan.time, {
+          toolUid: option.tool!.uid,
+          canisterUid: option.canister!.uid,
         });
         return undefined;
       case 'switch':
