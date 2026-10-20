@@ -1259,8 +1259,6 @@ const FurnitureSchema = pipe(
     readable: optional(ReadableSchema),
     mount: optional(literal('wall')),
     container: optional(ContainerSchema),
-    /** The loot table rolled into its container when the chunk generates. */
-    loot: optional(Id),
     /** Sound emitted when searching this furniture; it must alert hearing. */
     searchNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
     /** It opens and closes, taking this many Sim seconds. */
@@ -1442,7 +1440,7 @@ const PaletteThingSchema = pipe(
   strictObject({
     furniture: optional(Id),
     groundLoot: optional(GroundLootSupplySchema),
-    /** Overrides the furniture's own loot table. */
+    /** The table this container placement rolls. */
     loot: optional(Id),
     lootUsage: optional(UsageSchema),
     facing: optional(picklist(['n', 'e', 's', 'w'])),

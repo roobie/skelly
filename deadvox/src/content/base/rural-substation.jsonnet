@@ -116,10 +116,10 @@ local flue = [
       c: { furniture: 'chair' },
       L: { furniture: 'station_washbasin', facing: 'e' },
       M: { furniture: 'station_washbasin', facing: 'w' },
-      l: { furniture: 'shelf', facing: 'w' },
+      l: { furniture: 'shelf', facing: 'w', loot: 'shelf' },
       a: { furniture: 'shelf', facing: 'e', loot: 'garage_stock' },
       b: { furniture: 'shelf', facing: 'e', loot: 'building_tools' },
-      s: { furniture: 'shelf', facing: 'e' },
+      s: { furniture: 'shelf', facing: 'e', loot: 'shelf' },
     },
     layers: [foundation, furnished, furnished, standing, standingUpper, heads, roof, flue, flue],
     access: {

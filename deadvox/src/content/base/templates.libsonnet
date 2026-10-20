@@ -51,13 +51,13 @@
           "furniture": "wood_door"
         },
         "K": {
-          "furniture": "kitchen_cupboard", "fixed": true
+          "furniture": "kitchen_cupboard", "fixed": true, "loot": "kitchen_cupboard"
         },
         "C": {
-          "furniture": "counter", "fixed": true
+          "furniture": "counter", "fixed": true, "loot": "kitchen_cupboard"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge", "loot": "fridge"
         },
         "B": {
           "furniture": "bed"
@@ -66,7 +66,7 @@
           "furniture": "chair"
         },
         "R": {
-          "furniture": "wardrobe"
+          "furniture": "wardrobe", "loot": "wardrobe"
         }
       },
       "layers": [
@@ -222,30 +222,33 @@
         },
         "S": {
           "furniture": "shelf",
-          "facing": "e"
+          "facing": "e",
+          "loot": "shelf"
         },
         "T": {
-          "furniture": "desk"
+          "furniture": "desk", "loot": "desk"
         },
         "O": {
           "furniture": "sofa"
         },
         "J": {
           "furniture": "kitchen_cupboard", "fixed": true,
-          "facing": "w"
+          "facing": "w",
+          "loot": "kitchen_cupboard"
         },
         "G": {
           "furniture": "counter", "fixed": true,
-          "facing": "w"
+          "facing": "w",
+          "loot": "kitchen_cupboard"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge", "loot": "fridge"
         },
         "B": {
           "furniture": "bed"
         },
         "R": {
-          "furniture": "wardrobe"
+          "furniture": "wardrobe", "loot": "wardrobe"
         }
       },
       "layers": [
@@ -421,13 +424,13 @@
           "loot": "snacks"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge", "loot": "fridge"
         },
         "X": {
-          "furniture": "crate"
+          "furniture": "crate", "loot": "junk"
         },
         "T": {
-          "furniture": "desk"
+          "furniture": "desk", "loot": "desk"
         }
       },
       "layers": [
@@ -603,7 +606,7 @@
           "loot": "snacks"
         },
         "F": {
-          "furniture": "fridge"
+          "furniture": "fridge", "loot": "fridge"
         },
         "X": {
           "furniture": "crate",

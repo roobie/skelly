@@ -478,7 +478,7 @@ describe('templates', () => {
     id: 'l_shape',
     lootContext: { usage: ['Residential'], tier: 'Tier1' },
     size: [3, 5, 2],
-    palette: { '#': 'brick', '.': 'air', R: { furniture: 'wardrobe', facing: 'e' } },
+    palette: { '#': 'brick', '.': 'air', R: { furniture: 'wardrobe', facing: 'e', loot: 'wardrobe' } },
     layers: [
       ['##.', '#..'],
       ['R..', 'R..'],

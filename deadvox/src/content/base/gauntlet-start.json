@@ -8829,7 +8829,8 @@
       "palette": {
         "h": {
           "facing": "s",
-          "furniture": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf"
         }
       },
       "ports": [],
@@ -9104,7 +9105,8 @@
       },
       "palette": {
         "L": {
-          "furniture": "shelf_fallen"
+          "furniture": "shelf_fallen",
+          "loot": "shelf"
         }
       },
       "ports": [],
@@ -9124,7 +9126,8 @@
       },
       "palette": {
         "W": {
-          "furniture": "wardrobe_fallen"
+          "furniture": "wardrobe_fallen",
+          "loot": "wardrobe"
         }
       },
       "ports": [],
@@ -9268,7 +9271,8 @@
       "palette": {
         "d": {
           "facing": "s",
-          "furniture": "desk"
+          "furniture": "desk",
+          "loot": "desk"
         }
       },
       "ports": [],
@@ -9374,7 +9378,8 @@
       "palette": {
         "w": {
           "facing": "s",
-          "furniture": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe"
         }
       },
       "ports": [],
@@ -9418,7 +9423,8 @@
         "k": {
           "facing": "s",
           "fixed": true,
-          "furniture": "kitchen_cupboard"
+          "furniture": "kitchen_cupboard",
+          "loot": "kitchen_cupboard"
         }
       },
       "ports": [],
@@ -9438,7 +9444,8 @@
       },
       "palette": {
         "f": {
-          "furniture": "fridge"
+          "furniture": "fridge",
+          "loot": "fridge"
         }
       },
       "ports": [],
