@@ -1363,12 +1363,12 @@ works it blurs vision, more for morphine, so strong relief is a trade rather tha
 free upgrade. The blur is a vignette at the edges, not a full-screen blur: the centre,
 where the player aims, stays sharp, while threats at the edges are harder to read.
 Aim itself is untouched, so the cost reads as the drug's and not as pain's own sway.
-The vignette rises and fades with the dose, its strength is a content number on the
-analgesic, and players who cannot tolerate it get a setting for it. It lives in the
-mood pass's last draw, outside the film toggle, so it shows with post on even when
-film is off. Its strength needs a playtest. Whether the HUD stays sharp under it,
-whether a stacked dose can be dangerous, and whether dependence is ever modelled are
-later rulings. See `src/core/schema.ts`, `AnalgesicSchema`; `src/core/pain.ts`,
+The vignette follows the dose's relief, players who cannot tolerate it get a setting
+for it, and it shows even with film off. Its strength needs a playtest. The held hands and weapon blur with the edges,
+because the body is part of what the drugged player sees, and keeping the hands apart
+would make every screen effect choose whether to cover them. The HUD stays sharp
+because it is drawn on top of the game view. Whether a stacked dose can be dangerous
+and whether dependence is ever modelled are later rulings. See `src/core/schema.ts`, `AnalgesicSchema`; `src/core/pain.ts`,
 `drugVignette`; and `src/render/moodOutput.ts`, `moodDrugSample`.
 
 The optional stats readout shows felt pain and its acute, injury and relief
