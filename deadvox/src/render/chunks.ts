@@ -329,7 +329,7 @@ export class ChunkMeshes {
     this.group.add(warmUp);
   }
 
-  /** Bumps whenever a chunk mesh is added, replaced or removed, so a cached shadow map knows it is stale. */
+  /** Mesh and reveal changes invalidate cached shadow maps. */
   get version(): number {
     return this.changes;
   }

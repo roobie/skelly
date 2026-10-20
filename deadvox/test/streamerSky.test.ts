@@ -174,7 +174,9 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
   streamer.update(0, 0);
   expect(new Set(visible())).toEqual(new Set(columns.map(([cx, cz]) => `${cx},${cz}`)));
   drain(undefined);
-  // Moving into an incomplete corridor must also hide formerly drawn terrain beyond its gap.
+  streamer.unloadForReplay(1, 0);
+  expect(new Set(visible())).toEqual(new Set(['0,0', '0,1']));
+  // The player may change columns before the new corridor is generated.
   streamer.update(3 * CHUNK, 0);
   expect(visible()).toEqual([]);
 });

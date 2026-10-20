@@ -70,6 +70,7 @@ export class Streamer {
   private readonly opts: StreamerOptions;
   private readonly occluders: Uint8Array | undefined;
   private readonly generated = new Set<string>(); // column keys "cx,cz"
+  // An edit replaces an existing mesh; it must not close a column that already has its occluders drawn.
   private readonly completeColumns = new Set<string>();
   private readonly dirty = new Set<string>(); // chunks needing a (re)mesh
   private readonly versions = new Map<string, number>();
@@ -227,6 +228,7 @@ export class Streamer {
         this.versions.delete(key);
       }
     }
+    this.refreshReveal();
   }
 
   /**
