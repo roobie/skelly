@@ -1,4 +1,6 @@
 import { expect, it } from 'vitest';
+import { BlockEntities } from '../src/core/blockEntities.ts';
+import { worldOpaque } from '../src/core/collision.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { buildSkylight, skyIndex } from '../src/core/skylight.ts';
 import { captureSky, containsSky, growSky, SKY_HALO, type SkySnapshot } from '../src/core/skySnapshot.ts';
@@ -6,24 +8,27 @@ import { buildSkyResult } from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 
+type Opacity = (x: number, y: number, z: number) => boolean;
 const inFurniture = (input: SkySnapshot, point: Vec3) => input.furniture.some((box) => containsSky(box, point));
-function referenceHeights(input: SkySnapshot, opaque: (x: number, y: number, z: number) => boolean): Float32Array {
+function referenceHeight(input: SkySnapshot, [opaque, blockOpaque]: [Opacity, Opacity], x: number, z: number): number {
+  for (let y = input.top; y >= input.bottom; y--) {
+    if (opaque(x, y, z)) {
+      let top = y;
+      while (!blockOpaque(x, top, z) && inFurniture(input, [x, top, z])) {
+        top -= 1;
+      }
+      return top;
+    }
+  }
+  return input.bottom - 1;
+}
+function referenceHeights(input: SkySnapshot, opaque: Opacity, blockOpaque: Opacity): Float32Array {
   const bounds = growSky(input.bounds, SKY_HALO);
   const [x0, , z0] = bounds.min;
   const result = new Float32Array((bounds.max[0] - x0) * (bounds.max[2] - z0));
   for (let z = z0; z < bounds.max[2]; z++) {
     for (let x = x0; x < bounds.max[0]; x++) {
-      let top = input.bottom - 1;
-      for (let y = input.top; y >= input.bottom; y--) {
-        if (opaque(x, y, z)) {
-          top = y;
-          while (inFurniture(input, [x, top, z])) {
-            top -= 1;
-          }
-          break;
-        }
-      }
-      result[x - x0 + (bounds.max[0] - x0) * (z - z0)] = top;
+      result[x - x0 + (bounds.max[0] - x0) * (z - z0)] = referenceHeight(input, [opaque, blockOpaque], x, z);
     }
   }
   return result;
@@ -56,7 +61,15 @@ it('matches generous-domain transport and opaque-column heights with foliage and
   const fixture = skyFixture();
   fixture.world.setBlock(8, 9, 8, fixture.registry.blockIds.get('fixture_leaves')!);
   fixture.world.setBlock(4, 5, 8, 0);
-  fixture.entities.add({ type: 'fixture_door', pos: [14, 15, 8], size: [1, 1, 1], facing: 'n' });
+  // Furniture over air, and a furniture stack whose lower cell also holds a wall block.
+  for (const pos of [
+    [15, 15, 8],
+    [14, 15, 8],
+    [14, 16, 8],
+  ] satisfies Vec3[]) {
+    fixture.entities.add({ type: 'fixture_door', pos, size: [1, 1, 1], facing: 'n' });
+  }
+  fixture.world.setBlock(14, 15, 8, fixture.wall);
   const captured = fixture.capture();
   const result = buildSkyResult(captured.input);
   expect(result.complete).toBe(true);
@@ -73,7 +86,8 @@ it('matches generous-domain transport and opaque-column heights with foliage and
       }
     }
   }
-  expect(result.heights).toEqual(referenceHeights(captured.input, fixture.knownOpaque));
+  const blockOpaque = worldOpaque(fixture.world, fixture.registry, new BlockEntities(fixture.registry));
+  expect(result.heights).toEqual(referenceHeights(captured.input, fixture.knownOpaque, blockOpaque));
 });
 
 it('copies transfer buffers and rejects a revision change between continuation steps', () => {
