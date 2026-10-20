@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { exportGlb, partNodeName } from '@skelly/engine/core/glb.ts';
-import { meshForSolid } from '@skelly/engine/core/mesh.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Domain } from '@skelly/engine/core/schema.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Domain } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { exportGlb, partNodeName } from '@skelly/engine/export/glb.ts';
+import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';

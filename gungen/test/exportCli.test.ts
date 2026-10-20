@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
-import { parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
+import { parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';

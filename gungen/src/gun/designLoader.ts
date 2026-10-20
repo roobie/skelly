@@ -1,9 +1,9 @@
-import type { Design, DesignIssue, DesignLoadResult } from '@skelly/engine/core/design.ts';
-import type { DesignLoadInputs } from '@skelly/engine/core/designLoader.ts';
-import { loadDesign, loadDesignValue } from '@skelly/engine/core/designLoader.ts';
-import { describeValue, parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
-import type { Resolved } from '@skelly/engine/core/resolve.ts';
-import type { Template } from '@skelly/engine/core/template.ts';
+import type { Design, DesignIssue, DesignLoadResult } from '@skelly/engine/assembly/design.ts';
+import type { DesignLoadInputs } from '@skelly/engine/assembly/designLoader.ts';
+import { loadDesign, loadDesignValue } from '@skelly/engine/assembly/designLoader.ts';
+import { describeValue, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
+import type { Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { Template } from '@skelly/engine/assembly/template.ts';
 import { ATTACHMENT_IDS } from './attachments.ts';
 import { boltCalibreIssue, isBoltAssembly, withBoltCalibre } from './boltCartridge.ts';
 import { gunDomain } from './domain.ts';

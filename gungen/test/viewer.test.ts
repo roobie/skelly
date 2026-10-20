@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Vec3 } from '@skelly/engine/core/math.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import type { Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';

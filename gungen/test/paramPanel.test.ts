@@ -4,9 +4,9 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { generate } from '@skelly/engine/core/generate.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, Domain, PartDef } from '@skelly/engine/core/schema.ts';
+import { generate } from '@skelly/engine/assembly/generate.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly, Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';

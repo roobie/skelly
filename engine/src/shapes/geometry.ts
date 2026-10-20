@@ -13,21 +13,16 @@ import {
   sub,
   type Transform,
   type Vec3,
-} from './math.ts';
+} from '../foundation/math.ts';
 import { revolvedLocalPolyhedron } from './revolve.ts';
-import type { Box, ClipPlane, ExtrudedPolygonSolid, Solid, Vec2 } from './schema.ts';
+import type { ConvexPolyhedron } from './shapeTypes.ts';
+import type { Box, ClipPlane, ExtrudedPolygonSolid, Solid, Vec2 } from './solid.ts';
 
 export interface Obb {
   readonly center: Vec3;
   /** Columns are the box's local axes in the assembly frame. */
   readonly r: Transform['r'];
   readonly half: Vec3;
-}
-
-export interface ConvexPolyhedron {
-  readonly vertices: readonly Vec3[];
-  /** Each face is a cyclic list of vertex indices. */
-  readonly faces: readonly (readonly number[])[];
 }
 
 export type WorldSolid = Obb | ConvexPolyhedron;

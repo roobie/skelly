@@ -1,26 +1,27 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { AnchorFrame } from '@skelly/engine/assembly/anchors.ts';
 import type {
-  AnchorFrame,
   Design,
   DesignIssue,
   DesignLoadResult,
   DesignLocks,
   EffectiveSuggestionLocks,
+  NonEmptyReadonlyArray,
+  Suggest,
+  SuggestionResult,
+} from '@skelly/engine/assembly/design.ts';
+import type { Domain, PartInstance, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { Template } from '@skelly/engine/assembly/template.ts';
+import type {
   ExportGlb,
   ExportPortMetadata,
   GlbExportInput,
   GlbExportResult,
-  NonEmptyReadonlyArray,
   Palette,
   SrgbColor,
-  Suggest,
-  SuggestionResult,
-} from '@skelly/engine/core/design.ts';
-import type { Resolved } from '@skelly/engine/core/resolve.ts';
-import type { Domain, PartInstance } from '@skelly/engine/core/schema.ts';
-import type { Template } from '@skelly/engine/core/template.ts';
+} from '@skelly/engine/export/exportTypes.ts';
 import { LanguageVariant, SyntaxKind } from 'typescript/unstable/ast';
 import { createScanner } from 'typescript/unstable/ast/scanner';
 import { expect, expectTypeOf, it } from 'vitest';
@@ -214,7 +215,7 @@ it('pins the 3.0a contracts and chosen-value storage', () => {
   expectTypeOf(effectiveLocks).toMatchTypeOf<EffectiveSuggestionLocks>();
   expectTypeOf<(typeof suggestions.variants)[number]['status']>().toEqualTypeOf<'draft'>();
 
-  const coreRoot = fileURLToPath(new URL('../../engine/src/core/', import.meta.url));
+  const coreRoot = fileURLToPath(new URL('../../engine/src/', import.meta.url));
   const coreFiles = typeScriptFiles(coreRoot);
   expect(findForbiddenCoreIdentifier(coreFiles)).toBeUndefined();
   expect(findForbiddenIdentifier('// grip\nconst label = "deadvox"; /* clamp */')).toBeUndefined();
@@ -237,7 +238,7 @@ it('pins the 3.0a contracts and chosen-value storage', () => {
   ].join('');
   expect(findForbiddenIdentifier(templateCanary)).toBe('receiver');
   expect(findForbiddenIdentifier(nestedTemplateCanary)).toBe('receiver');
-  const canaryViolation = findForbiddenCoreIdentifier([join(coreRoot, 'math.ts')], (file) => {
+  const canaryViolation = findForbiddenCoreIdentifier([join(coreRoot, 'foundation', 'math.ts')], (file) => {
     boundaryCanaryRead = true;
     return `${readFileSync(file, 'utf8')}\n${templateCanary}`;
   });

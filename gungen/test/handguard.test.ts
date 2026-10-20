@@ -1,5 +1,5 @@
-import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

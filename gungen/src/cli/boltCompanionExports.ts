@@ -1,4 +1,4 @@
-import type { GlbAssetIdentity } from '@skelly/engine/core/design.ts';
+import type { GlbAssetIdentity } from '@skelly/engine/export/exportTypes.ts';
 import { exportAttachmentGlb } from '../gun/attachmentExport.ts';
 import { exportCartridgeModels } from '../gun/cartridgeExport.ts';
 import type { DeadvoxModelEntry, GunDeadvoxModelEntry } from '../gun/exportGlb.ts';

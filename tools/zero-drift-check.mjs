@@ -31,6 +31,13 @@ const HOME_SHORTCUT = /(^|[\s"'`(=])(~\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*)/gm;
 const HOST_PATH_VALUE_EXEMPTIONS = new Set(['~/.cache/ms-playwright']);
 const QUOTED_TEXT = /“[^”\n]*”|"[^"\n]*"/g;
 const SUBPROJECTS = new Set(['deadvox', 'engine', 'gungen', 'mobgen']);
+
+// Packages sit one level deeper, as `packages/<name>`, so a project root is two segments there.
+function projectOf(path) {
+  const [first, second] = path.split('/');
+  const name = first === 'packages' && second ? `packages/${second}` : first;
+  return name.startsWith('packages/') || SUBPROJECTS.has(name) ? name : undefined;
+}
 const LINE_CITATION = /(?<![\w/@.-])(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9_-]*:\d+(?:-\d+)?/g;
 const INLINE_CODE = /(?<!`)`([^`\n]+)`(?!`)/g;
 const LINK = /\[[^\]]*\]\(([^)]+)\)/g;
@@ -593,10 +600,10 @@ function pathCandidates(visible, markdown) {
 }
 
 function resolvedCandidates(docPath, value, root) {
-  const [subproject] = docPath.split('/');
+  const subproject = projectOf(docPath);
   const candidates = [
     value,
-    ...(SUBPROJECTS.has(subproject) ? [resolve(root, subproject, value)] : []),
+    ...(subproject ? [resolve(root, subproject, value)] : []),
     resolve(dirname(resolve(root, docPath)), value),
   ];
   return [
@@ -1058,10 +1065,9 @@ function checkPaths({ path, visible, markdown, tree, failures }) {
     if (!target) {
       add(failures, path, 'path', candidate.raw);
     } else if (candidate.kind === 'code') {
-      const [sourceProject] = path.split('/');
-      const [targetProject] = relative(tree.root, target).split(sep);
-      const crossProject =
-        SUBPROJECTS.has(sourceProject) && SUBPROJECTS.has(targetProject) && sourceProject !== targetProject;
+      const sourceProject = projectOf(path);
+      const targetProject = projectOf(relative(tree.root, target).split(sep).join('/'));
+      const crossProject = sourceProject && targetProject && sourceProject !== targetProject;
       if (crossProject && !candidate.value.startsWith(`${targetProject}/`)) {
         add(failures, path, 'path_scope', candidate.raw);
       }
@@ -1193,7 +1199,7 @@ function failureMap(failures) {
 }
 
 function group(path) {
-  return [...SUBPROJECTS].find((name) => path.startsWith(`${name}/`)) ?? 'root';
+  return projectOf(path) ?? 'root';
 }
 
 function printStats(failures) {

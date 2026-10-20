@@ -1,8 +1,8 @@
-import { generate } from '@skelly/engine/core/generate.ts';
-import { localSolidBounds, validateExtrudedPolygon } from '@skelly/engine/core/geometry.ts';
-import { applyPoint } from '@skelly/engine/core/math.ts';
-import type { Solid } from '@skelly/engine/core/schema.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { generate } from '@skelly/engine/assembly/generate.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { applyPoint } from '@skelly/engine/foundation/math.ts';
+import { localSolidBounds, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

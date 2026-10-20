@@ -1,10 +1,11 @@
 // biome-ignore-all lint/style/useNamingConvention: The injected renderer mirrors Three.js constructor names.
-import { MAIN_AXIS } from '@skelly/engine/core/conventions.ts';
-import type { Issue } from '@skelly/engine/core/issue.ts';
-import type { Vec3 } from '@skelly/engine/core/math.ts';
-import type { Report } from '@skelly/engine/core/validate.ts';
-import type { Layers as EngineLayers } from '@skelly/engine/viewer/scene';
-import { buildLayers as buildEngineLayers, disposeGroup as disposeEngineGroup } from '@skelly/engine/viewer/scene';
+
+import type { Report } from '@skelly/engine/assembly/validate.ts';
+import { MAIN_AXIS } from '@skelly/engine/foundation/conventions.ts';
+import type { Issue } from '@skelly/engine/foundation/issue.ts';
+import type { Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { Layers as EngineLayers } from '@skelly/tool-ui/scene';
+import { buildLayers as buildEngineLayers, disposeGroup as disposeEngineGroup } from '@skelly/tool-ui/scene';
 import {
   ArrowHelper,
   BoxGeometry,

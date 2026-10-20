@@ -1,17 +1,24 @@
-import { boxFromMinMax, worldSolid } from '@skelly/engine/core/geometry.ts';
-import { applyDir, applyPoint, cross, dot, extrusionPoint, length, sub, type Vec3 } from '@skelly/engine/core/math.ts';
-import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import type {
-  ClipPlane,
   KeepOut,
   ParamSpec,
   PartDef,
   PartFamily,
   PortDef,
+  Resolved,
   Rule,
-  Solid,
-  Vec2,
-} from '@skelly/engine/core/schema.ts';
+} from '@skelly/engine/assembly/schema.ts';
+import {
+  applyDir,
+  applyPoint,
+  cross,
+  dot,
+  extrusionPoint,
+  length,
+  sub,
+  type Vec3,
+} from '@skelly/engine/foundation/math.ts';
+import { boxFromMinMax, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 
 const SCALE = 1.15;
 const MILLIMETRES_PER_U = 11.5;

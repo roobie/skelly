@@ -10,6 +10,7 @@ on:
       - 'site/**'
       - 'gungen/**'
       - 'engine/**'
+      - 'packages/**'
       - 'deadvox/**'
       - 'mobgen/**'
       - 'package.json'

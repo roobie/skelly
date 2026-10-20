@@ -1,5 +1,5 @@
-import { meshForRevolved } from '@skelly/engine/core/revolve.ts';
-import type { RevolvedSolid } from '@skelly/engine/core/schema.ts';
+import { meshForRevolved } from '@skelly/engine/shapes/revolve.ts';
+import type { RevolvedSolid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 
 const solid = (profile: RevolvedSolid['profile']): RevolvedSolid => ({ id: 't', kind: 'revolved', profile });
