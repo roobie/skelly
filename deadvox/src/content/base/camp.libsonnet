@@ -195,7 +195,6 @@ local campWallRunCrouchHole = campWallRun + {
           { "name": "Right bay", "grid": [10, 14], "handlingSimSeconds": 1.2 }
         ]
       },
-      "loot": "military_armoury"
     },
     {
       "id": "ammo_crate",
@@ -225,7 +224,6 @@ local campWallRunCrouchHole = campWallRun + {
           }
         ]
       },
-      "loot": "military_armoury"
     },
     {
       "id": "ammo_can",
@@ -271,7 +269,6 @@ local campWallRunCrouchHole = campWallRun + {
           }
         ]
       },
-      "loot": "camp_supplies"
     },
     {
       "id": "camp_cot",
@@ -320,7 +317,6 @@ local campWallRunCrouchHole = campWallRun + {
           }
         ]
       },
-      "loot": "camp_supplies"
     },
     {
       "id": "camp_orders",
@@ -372,10 +368,12 @@ local campWallRunCrouchHole = campWallRun + {
           }
         },
         "R": {
-          "furniture": "rifle_rack"
+          "furniture": "rifle_rack",
+          "loot": "military_armoury"
         },
         "A": {
-          "furniture": "ammo_crate"
+          "furniture": "ammo_crate",
+          "loot": "military_armoury"
         },
         "N": {
           "furniture": "field_desk",
@@ -985,10 +983,12 @@ local campWallRunCrouchHole = campWallRun + {
           "facing": "n"
         },
         "W": {
-          "furniture": "field_desk"
+          "furniture": "field_desk",
+          "loot": "camp_supplies"
         },
         "M": {
-          "furniture": "field_desk"
+          "furniture": "field_desk",
+          "loot": "camp_supplies"
         },
         "C": {
           "furniture": "chair"
@@ -1000,10 +1000,12 @@ local campWallRunCrouchHole = campWallRun + {
           "furniture": "bed"
         },
         "R": {
-          "furniture": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe"
         },
         "F": {
-          "furniture": "footlocker"
+          "furniture": "footlocker",
+          "loot": "camp_supplies"
         },
         "Q": {
           "furniture": "camp_hq_safe",

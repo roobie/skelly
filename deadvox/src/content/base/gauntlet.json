@@ -2111,7 +2111,6 @@
         ]
       },
       "id": "shelf_fallen",
-      "loot": "shelf",
       "name": "Fallen shelf",
       "shape": [
         {
@@ -2161,7 +2160,6 @@
         ]
       },
       "id": "shelf_on_side",
-      "loot": "shelf",
       "name": "Shelf on its side",
       "shape": [
         {
@@ -2215,7 +2213,6 @@
         ]
       },
       "id": "wardrobe_fallen",
-      "loot": "wardrobe",
       "name": "Fallen wardrobe",
       "size": [2, 1, 4]
     },
@@ -2234,7 +2231,6 @@
         ]
       },
       "id": "wardrobe_on_side",
-      "loot": "wardrobe",
       "name": "Wardrobe on its side",
       "size": [4, 2, 1]
     },
@@ -14789,7 +14785,8 @@
           "loot": "gauntlet_home_kitchen"
         },
         "b": {
-          "furniture": "desk"
+          "furniture": "desk",
+          "loot": "desk"
         },
         "c": {
           "facing": "e",
@@ -15300,10 +15297,12 @@
         },
         "a": {
           "facing": "e",
-          "furniture": "wardrobe_fallen"
+          "furniture": "wardrobe_fallen",
+          "loot": "wardrobe"
         },
         "b": {
-          "furniture": "shelf_on_side"
+          "furniture": "shelf_on_side",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "chair_on_back"
@@ -15312,7 +15311,8 @@
           "furniture": "chair_on_side"
         },
         "e": {
-          "furniture": "crate"
+          "furniture": "crate",
+          "loot": "junk"
         },
         "p": {
           "material": "floor",
@@ -15562,7 +15562,8 @@
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen"
+          "furniture": "shelf_fallen",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "crate_overturned"
@@ -15817,11 +15818,13 @@
           "spawn": "shambler"
         },
         "a": {
-          "furniture": "crate"
+          "furniture": "crate",
+          "loot": "junk"
         },
         "b": {
           "fixed": true,
-          "furniture": "kitchen_cupboard"
+          "furniture": "kitchen_cupboard",
+          "loot": "kitchen_cupboard"
         },
         "c": {
           "facing": "s",
@@ -16075,7 +16078,8 @@
           "loot": "gauntlet_home_kitchen"
         },
         "b": {
-          "furniture": "desk"
+          "furniture": "desk",
+          "loot": "desk"
         },
         "c": {
           "facing": "e",
@@ -16328,10 +16332,12 @@
         },
         "a": {
           "facing": "e",
-          "furniture": "wardrobe_fallen"
+          "furniture": "wardrobe_fallen",
+          "loot": "wardrobe"
         },
         "b": {
-          "furniture": "shelf_on_side"
+          "furniture": "shelf_on_side",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "chair_on_back"
@@ -16340,7 +16346,8 @@
           "furniture": "chair_on_side"
         },
         "e": {
-          "furniture": "crate"
+          "furniture": "crate",
+          "loot": "junk"
         },
         "p": {
           "material": "floor",
@@ -16590,7 +16597,8 @@
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen"
+          "furniture": "shelf_fallen",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "crate_overturned"
@@ -16845,11 +16853,13 @@
           "spawn": "shambler"
         },
         "a": {
-          "furniture": "crate"
+          "furniture": "crate",
+          "loot": "junk"
         },
         "b": {
           "fixed": true,
-          "furniture": "kitchen_cupboard"
+          "furniture": "kitchen_cupboard",
+          "loot": "kitchen_cupboard"
         },
         "c": {
           "facing": "s",
@@ -17103,7 +17113,8 @@
           "loot": "gauntlet_home_kitchen"
         },
         "b": {
-          "furniture": "desk"
+          "furniture": "desk",
+          "loot": "desk"
         },
         "c": {
           "facing": "e",
@@ -17614,10 +17625,12 @@
         },
         "a": {
           "facing": "e",
-          "furniture": "wardrobe_fallen"
+          "furniture": "wardrobe_fallen",
+          "loot": "wardrobe"
         },
         "b": {
-          "furniture": "shelf_on_side"
+          "furniture": "shelf_on_side",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "chair_on_back"
@@ -17626,7 +17639,8 @@
           "furniture": "chair_on_side"
         },
         "e": {
-          "furniture": "crate"
+          "furniture": "crate",
+          "loot": "junk"
         },
         "p": {
           "material": "floor",
@@ -17872,11 +17886,13 @@
         },
         "a": {
           "facing": "w",
-          "furniture": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe"
         },
         "b": {
           "facing": "w",
-          "furniture": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf"
         },
         "c": {
           "facing": "e",
@@ -18134,7 +18150,8 @@
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen"
+          "furniture": "shelf_fallen",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "crate_overturned"
@@ -18389,11 +18406,13 @@
           "spawn": "shambler"
         },
         "a": {
-          "furniture": "crate"
+          "furniture": "crate",
+          "loot": "junk"
         },
         "b": {
           "fixed": true,
-          "furniture": "kitchen_cupboard"
+          "furniture": "kitchen_cupboard",
+          "loot": "kitchen_cupboard"
         },
         "c": {
           "facing": "s",
@@ -29589,6 +29608,7 @@
         "F": {
           "facing": "s",
           "furniture": "fridge",
+          "loot": "fridge",
           "lootUsage": ["Residential"]
         },
         "G": {
@@ -29607,7 +29627,8 @@
         },
         "L": {
           "facing": "s",
-          "furniture": "police_evidence_locker"
+          "furniture": "police_evidence_locker",
+          "loot": "gauntlet_police_gear"
         },
         "O": {
           "facing": "e",
@@ -29648,7 +29669,8 @@
         },
         "f": {
           "facing": "s",
-          "furniture": "police_file_cabinet"
+          "furniture": "police_file_cabinet",
+          "loot": "gauntlet_police_gear"
         },
         "g": {
           "ground": true
@@ -29983,7 +30005,8 @@
           "furniture": "medical_examination_couch"
         },
         "C": {
-          "furniture": "medical_card_file"
+          "furniture": "medical_card_file",
+          "loot": "medical_filler"
         },
         "D": {
           "furniture": "wood_door"
@@ -30367,11 +30390,13 @@
         },
         "l": {
           "facing": "w",
-          "furniture": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf"
         },
         "s": {
           "facing": "e",
-          "furniture": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf"
         }
       },
       "ports": [],
@@ -31006,7 +31031,8 @@
         },
         "f": {
           "facing": "s",
-          "furniture": "police_file_cabinet"
+          "furniture": "police_file_cabinet",
+          "loot": "gauntlet_police_gear"
         },
         "k": {
           "material": "concrete",

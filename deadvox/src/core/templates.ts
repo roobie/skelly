@@ -125,7 +125,7 @@ interface Piece {
   lock?: DoorLockDef;
   fixed?: true;
   furniture: string;
-  /** The palette's loot table, or the furniture's own. */
+  /** The palette's loot table. */
   loot?: string | undefined;
   facing: Facing;
   pos: Vec3;
@@ -226,7 +226,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
     for (const pos of findPieces(template, char, size).anchors ?? []) {
       pieces.push({
         furniture: def.id,
-        loot: entry.loot ?? def.loot,
+        loot: entry.loot,
         ...(entry.lootUsage === undefined ? {} : { lootUsage: entry.lootUsage }),
         facing,
         pos,

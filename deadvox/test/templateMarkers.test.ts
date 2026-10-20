@@ -32,3 +32,34 @@ it.each(['P', '🧪'])('indexes furniture and blocks by code point for marker %s
   const solid = result.registry.blockIds.get('fixture_solid');
   expect([...compiled.blocks]).toEqual([solid, 0, solid, 0]);
 });
+
+it('leaves a container empty when its placement has no loot table', () => {
+  const template: TemplateDef = {
+    id: 'fixture_empty_container',
+    lootContext: fixtureLootContext(),
+    size: [1, 1, 1],
+    palette: { C: { furniture: 'fixture_container' } },
+    layers: [['C']],
+  };
+  const { registry, issues } = buildRegistry([
+    {
+      source: 'empty-container.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_container',
+            name: 'Fixture container',
+            size: [1, 1, 1],
+            color: '#808080',
+            container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+          },
+        ],
+        loot: [{ id: 'fixture_supply', rolls: [1, 1], entries: [{ nothing: true, weight: 1 }] }],
+        templates: [template],
+      },
+    },
+  ]);
+  expect(issues).toEqual([]);
+  Object.assign(registry.furniture.get('fixture_container')!, { loot: 'fixture_supply' });
+  expect(compileTemplate(registry, template).pieces[0]!.loot).toBeUndefined();
+});

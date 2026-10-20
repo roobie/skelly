@@ -78,7 +78,6 @@
         ]
       },
       "id": "medical_card_file",
-      "loot": "medical_filler",
       "name": "Card-file cabinet",
       "size": [1, 2, 1]
     },

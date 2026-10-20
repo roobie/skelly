@@ -371,7 +371,6 @@
         ]
       },
       "id": "workshop_scrap_pile",
-      "loot": "workshop_filler",
       "name": "Scrap pile",
       "searchNoise": {
         "sound": "player_strain"

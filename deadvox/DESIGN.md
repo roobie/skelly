@@ -805,6 +805,8 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 Usage tags and tiers decide which items a source admits, so what a place holds matches
 what it is. See `src/core/loot.ts`, `economyEligible`.
 
+Furniture has no loot table of its own; only a placed container has one, named by the place it stands in, and later by its loot unit's plan. What a container holds follows from where it stands, not from what it is, so a bunker's wardrobe and a bedroom's can hold different things, and no container rolls a table its author never chose.
+
 Police is its own usage, apart from Hunting, because a police armoury holds police
 stock, not a gun store's or a hunter's. The HQ vault's Military context differs from
 the station's by tag rather than by a separate table. A tag filters only the items it

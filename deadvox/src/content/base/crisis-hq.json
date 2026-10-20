@@ -434,7 +434,8 @@
         },
         "f": {
           "facing": "s",
-          "furniture": "police_file_cabinet"
+          "furniture": "police_file_cabinet",
+          "loot": "gauntlet_police_gear"
         },
         "k": "concrete",
         "p": {

@@ -115,7 +115,6 @@ shape.colliding({
         { position: [1.2, 0.1, 2.2], size: [0.7, 0.14, 0.5], color: '#8a6f4a' },
       ],
       container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
-      loot: 'workshop_filler',
       searchNoise: { sound: 'player_strain' },
     },
     plaque('workshop_map_board', 'Workshop wall map', '#9f9675', {

@@ -1485,7 +1485,7 @@ describe('content references', () => {
     ]);
   });
 
-  it('refuses furniture whose loot table rolls a long gun that fits none of its pockets', () => {
+  it('refuses placement loot whose table rolls a long gun that fits none of its pockets', () => {
     const gun = { id: 'fixture_long_gun', name: 'Long gun', category: 'weapon', weight: 1, size: [2, 9] };
     const locker = (grid: [number, number]) => ({
       inventory: (base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory,
@@ -1501,14 +1501,21 @@ describe('content references', () => {
           size: [2, 4, 1],
           color: '#ffffff',
           container: { pockets: [{ grid, handlingSimSeconds: 1 }] },
-          loot: 'fixture_guns',
+        },
+      ],
+      templates: [
+        {
+          id: 'fixture_locker_template',
+          size: [2, 4, 1],
+          palette: { L: { furniture: 'fixture_locker', loot: 'fixture_guns' } },
+          layers: [['LL'], ['LL'], ['LL'], ['LL']],
         },
       ],
     });
     const [w, h] = gun.size as [number, number];
     expect(buildRegistry([{ source: 'locker.json', data: locker([h, w]) }]).issues).toEqual([]);
     expect(buildRegistry([{ source: 'locker.json', data: locker([h - 1, h - 1]) }]).issues).toContainEqual(
-      expect.objectContaining({ path: 'furniture[0].loot', message: expect.stringContaining('fits no pocket') }),
+      expect.objectContaining({ path: 'templates[0].palette["L"].loot', message: expect.stringContaining('fits no pocket') }),
     );
   });
 
@@ -2114,7 +2121,7 @@ describe('content references', () => {
       source: 'mod.json',
       data: {
         furniture: [
-          { id: 'safe', name: 'Safe', size: [1, 1, 1], color: '#333333', loot: 'vault' },
+          { id: 'safe', name: 'Safe', size: [1, 1, 1], color: '#333333' },
           {
             id: 'pry_door',
             name: 'Pry door',
@@ -2225,8 +2232,6 @@ describe('content references', () => {
       },
     };
     expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
-      'furniture[0].loot',
-      'furniture[0].loot',
       'furniture[1].door.prying.skill',
       'items[0].light.power.battery',
       'zombies[0].downed.dismember.quality',
