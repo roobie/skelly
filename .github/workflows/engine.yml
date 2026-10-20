@@ -1,7 +1,8 @@
 name: engine
 
 # The import edges span every package, so the filter names all of packages/. Markdown-only
-# changes skip this workflow.
+# changes skip this workflow. thing-core has no workflow of its own, and the packages/** filter
+# already covers it, so its checks run in this job too.
 on:
   push:
     branches: [main]
@@ -38,3 +39,7 @@ jobs:
       - run: npm ci --prefix ../..
       - run: npm run typecheck
       - run: npm test
+      - run: npm run typecheck
+        working-directory: packages/thing-core
+      - run: npm test
+        working-directory: packages/thing-core
