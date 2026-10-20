@@ -2733,6 +2733,16 @@
           "weight": 2
         },
         {
+          "condition": [0.40000000000000002, 0.80000000000000004],
+          "item": "stab_vest",
+          "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 0.80000000000000004],
+          "item": "riot_helmet",
+          "weight": 1
+        },
+        {
           "item": "flashlight",
           "weight": 2
         },

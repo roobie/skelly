@@ -197,11 +197,59 @@
       "size": [3, 3],
       "wearable": {
         "encumbrance": 6,
-        "slot": "torso",
+        "slot": "vest",
         "warmth": 5,
         "wearPerDamage": 0.002
       },
       "weight": 900
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Police"]
+      },
+      "id": "stab_vest",
+      "model": "stab_vest",
+      "name": "Stab vest",
+      "size": [3, 3],
+      "wearable": {
+        "encumbrance": 8,
+        "protects": {
+          "acid": 0,
+          "blunt": 0.10000000000000001,
+          "cut": 0.80000000000000004,
+          "pierce": 0.69999999999999996
+        },
+        "slot": "vest",
+        "warmth": 3,
+        "wearPerDamage": 0.001
+      },
+      "weight": 2500
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Police"]
+      },
+      "id": "riot_helmet",
+      "model": "riot_helmet",
+      "name": "Riot helmet",
+      "size": [2, 2],
+      "wearable": {
+        "encumbrance": 3,
+        "protects": {
+          "acid": 0.29999999999999999,
+          "blunt": 0.59999999999999998,
+          "cut": 0.59999999999999998,
+          "pierce": 0.5
+        },
+        "slot": "head",
+        "warmth": 1,
+        "wearPerDamage": 0.0015
+      },
+      "weight": 1400
     },
     {
       "category": "bag",

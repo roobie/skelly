@@ -63,6 +63,14 @@
       "id": "cloth_bundle"
     },
     {
+      "file": "assets/models/stab_vest.glb",
+      "id": "stab_vest"
+    },
+    {
+      "file": "assets/models/riot_helmet.glb",
+      "id": "riot_helmet"
+    },
+    {
       "file": "assets/models/thread_spool.glb",
       "id": "thread_spool"
     },

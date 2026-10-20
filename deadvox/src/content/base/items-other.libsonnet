@@ -228,6 +228,8 @@ local spentCase(id, name, weight, description, model) = {
         'repair_hoodie',
         'repair_jacket',
         'repair_utility_vest',
+        'repair_stab_vest',
+        'repair_riot_helmet',
         'repair_hiking_backpack',
         'repair_fanny_pack',
         'repair_flashlight',

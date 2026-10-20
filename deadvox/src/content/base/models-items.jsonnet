@@ -28,6 +28,8 @@
     { "id": "glass_lens", "file": "assets/models/glass_lens.glb" },
     { "id": "small_spring", "file": "assets/models/small_spring.glb" },
     { "id": "cloth_bundle", "file": "assets/models/cloth_bundle.glb" },
+    { "id": "stab_vest", "file": "assets/models/stab_vest.glb" },
+    { "id": "riot_helmet", "file": "assets/models/riot_helmet.glb" },
     { "id": "thread_spool", "file": "assets/models/thread_spool.glb" },
     { "id": "fuse", "file": "assets/models/fuse.glb" },
     { "id": "cord_coil", "file": "assets/models/cord_coil.glb" },

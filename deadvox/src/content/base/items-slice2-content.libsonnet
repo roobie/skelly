@@ -607,6 +607,26 @@
       "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
     },
     {
+      "id": "repair_stab_vest",
+      "kind": "repair",
+      "result": { "item": "stab_vest", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "timeGameMinutes": 15,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
+    },
+    {
+      "id": "repair_riot_helmet",
+      "kind": "repair",
+      "result": { "item": "riot_helmet", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "timeGameMinutes": 15,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [[{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
       "id": "repair_hiking_backpack",
       "kind": "repair",
       "result": { "item": "hiking_backpack", "count": 1 },

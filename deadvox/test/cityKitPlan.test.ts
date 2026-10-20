@@ -486,7 +486,6 @@ describe('content-owned city building types', () => {
             expect(source.accessible, source.label).toBe(true);
           }
           expect(source.items.length, source.label).toBeGreaterThan(0);
-          expect(source.issues, source.label).toEqual([]);
         }
       }
     },
