@@ -19906,7 +19906,8 @@
               "item": "gauntlet_cellar_note",
               "placement": "surface"
             }
-          ]
+          ],
+          "loot": "desk"
         },
         "c": {
           "facing": "e",
@@ -20163,7 +20164,8 @@
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen"
+          "furniture": "shelf_fallen",
+          "loot": "shelf"
         },
         "c": {
           "furniture": "crate_overturned"
