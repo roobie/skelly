@@ -4,6 +4,7 @@ import { basename, join } from 'node:path';
 import process from 'node:process';
 import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import { exportCartridgeModels } from '../gun/cartridgeExport.ts';
+import { modelEntryJson } from './modelEntryJson.ts';
 
 const main = (): number => {
   const [input, output, entries = output] = process.argv.slice(2);
@@ -26,10 +27,7 @@ const main = (): number => {
   for (const model of Object.values(result.models)) {
     const file = join(output, basename(model.modelEntry.file));
     writeFileSync(file, model.glb);
-    writeFileSync(
-      join(entries!, `${model.modelEntry.id}.model.json`),
-      `${JSON.stringify(model.modelEntry, null, 2)}\n`,
-    );
+    writeFileSync(join(entries!, `${model.modelEntry.id}.model.json`), modelEntryJson(model.modelEntry));
     console.log(`wrote ${file} (${model.glb.byteLength} bytes)`);
   }
   return 0;

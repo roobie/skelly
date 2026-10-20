@@ -138,6 +138,7 @@ describe('gungen exports satisfy deadvox model validation', () => {
     const exportedGuns = loadExports();
     assert.ok(exportedGuns.length > 0);
     for (const { file, model } of exportedGuns) {
+      assert.ok(model.gun, `${file}: missing gun pack block`);
       const parsed = safeParse(ModelSchema, model);
       assert.ok(parsed.success, `${file}: ${JSON.stringify(parsed.issues)}`);
     }

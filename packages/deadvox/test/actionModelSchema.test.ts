@@ -85,6 +85,14 @@ describe('optional action model metadata', () => {
     ).toContain('internal magazine metadata needs calibre and cannot carry a box round column');
   });
 
+  it('requires a neutral loading anchor for an integral gun magazine', () => {
+    const model = { ...baseModel, gun: { calibre: 'fixture-calibre', internalMagazine: { capacity: 1 } } };
+    expect(build({ ...model, anchors: Object.fromEntries([['loading_port', [0, 0, 0]]]) }).issues).toEqual([]);
+    expect(build(model).issues.map(({ message }) => message)).toContain(
+      'internal magazine metadata needs a loading_port anchor',
+    );
+  });
+
   it('leaves action fields optional for existing model entries', () => {
     const { registry, issues } = build(baseModel);
     expect(issues).toEqual([]);

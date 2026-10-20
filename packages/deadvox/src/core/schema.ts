@@ -1156,7 +1156,7 @@ const attachmentRangesDoNotOverlap = (
   );
 };
 
-export const GunModelSchema = pipe(
+const GunModelSchema = pipe(
   strictObject({
     /** Cartridge-data id (not a display designation); punctuation is normalized only in model slugs. */
     calibre: optional(CalibreId),

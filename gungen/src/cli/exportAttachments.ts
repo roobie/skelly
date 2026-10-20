@@ -4,6 +4,7 @@ import process from 'node:process';
 import { exportAttachmentGlb } from '../gun/attachmentExport.ts';
 import { ATTACHMENT_IDS } from '../gun/attachments.ts';
 import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
+import { modelEntryJson } from './modelEntryJson.ts';
 
 const out = process.argv[2] ?? '.';
 const entries = process.argv[3] ?? out;
@@ -18,5 +19,5 @@ for (const id of ATTACHMENT_IDS) {
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, `${modelId}.glb`), result.glb);
   mkdirSync(entries, { recursive: true });
-  writeFileSync(join(entries, `${modelId}.model.json`), `${JSON.stringify(result.modelEntry, null, 2)}\n`);
+  writeFileSync(join(entries, `${modelId}.model.json`), modelEntryJson(result.modelEntry));
 }

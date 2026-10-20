@@ -40,10 +40,12 @@ Why each boundary matters, and where it is checked:
 
 ## Aim
 
-One neutral, shared model schema. `thing-core` owns it as neutral interfaces: file,
-transform, grip and hold, anchors, slots, attachments, emissive material, materials and
-physical properties. Deadvox consumes it and the tools produce it; domain packs extend it
-with their own fields (a gun's calibre and magazine, for example) without the core knowing.
+One neutral, shared model envelope lets Deadvox consume every tool's output without
+making the core know which kind of thing it describes. See
+`packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
+`packages/deadvox/src/core/schema.ts`, `ModelSchema`. Domain packs own their extensions;
+sharing a field requires an intentional promotion rather than leaking one pack's vocabulary
+into another.
 
 ## Decisions
 

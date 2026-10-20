@@ -1,11 +1,10 @@
-import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import process from 'node:process';
 import { isBoltAssembly } from '../gun/boltCartridge.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from '../gun/exportGlb.ts';
 import { boltCompanionExports } from './boltCompanionExports.ts';
 import { exportFileText } from './exportFile.ts';
+import { modelEntryJson } from './modelEntryJson.ts';
 
 const MODEL_FILE = /\/([^/]+)\.glb$/;
 const root = resolve(import.meta.dirname, '../../..');
@@ -13,16 +12,7 @@ const base = resolve(root, 'packages/deadvox/src/content/base');
 const entries = resolve(base, 'gungen');
 mkdirSync(entries, { recursive: true });
 const store = (entry: DeadvoxModelEntry, glb: Uint8Array) => {
-  const formatted = execFileSync(
-    process.execPath,
-    [
-      resolve(root, 'node_modules/@biomejs/biome/bin/biome'),
-      'format',
-      `--stdin-file-path=packages/deadvox/src/content/base/gungen/${entry.id}.model.json`,
-    ],
-    { cwd: root, encoding: 'utf8', input: JSON.stringify(entry) },
-  );
-  writeFileSync(resolve(entries, `${entry.id}.model.json`), formatted);
+  writeFileSync(resolve(entries, `${entry.id}.model.json`), modelEntryJson(entry));
   writeFileSync(resolve(base, entry.file), glb);
 };
 const manifest = JSON.parse(readFileSync(resolve(base, 'assets/manifest.json'), 'utf8')) as {

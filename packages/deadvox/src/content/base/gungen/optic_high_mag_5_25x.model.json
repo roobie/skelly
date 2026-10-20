@@ -9,14 +9,8 @@
       "mount": "rail-top",
       "properties": {
         "reticleKind": "crosshair",
-        "magnification": {
-          "min": 5,
-          "max": 25
-        },
-        "railSpanNotches": {
-          "minOffset": -3,
-          "maxOffset": 3
-        }
+        "magnification": { "min": 5, "max": 25 },
+        "railSpanNotches": { "minOffset": -3, "maxOffset": 3 }
       },
       "sight": {
         "kind": "optic",
@@ -26,10 +20,7 @@
         "eyeReliefMetres": 0.092,
         "ocularDiameterMetres": 0.037375
       },
-      "mountFrame": {
-        "normal": [0, -1, 0],
-        "up": [1, 0, 0]
-      }
+      "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] }
     }
   }
 }
