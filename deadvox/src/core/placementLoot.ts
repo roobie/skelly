@@ -69,6 +69,29 @@ const sourceIssues = (
   return issues;
 };
 
+/** A palette piece's own stock: container items need a container, and every item passes admission. */
+export const pieceItemIssues = (
+  registry: Registry,
+  compiled: CompiledTemplate,
+  context: LootContext = compiled.lootContext,
+): [string, string][] => {
+  const issues: [string, string][] = [];
+  for (const [index, piece] of compiled.pieces.entries()) {
+    const path = `.pieces[${index}].items`;
+    const items = piece.items ?? [];
+    if (items.some((item) => item.placement !== 'surface') && !registry.furniture.get(piece.furniture)?.container) {
+      issues.push([path, `furniture "${piece.furniture}" at ${piece.pos.join(',')} has no container`]);
+    }
+    for (const [itemIndex, fixed] of items.entries()) {
+      const issue = fixedItemIssue(registry, fixed, { usage: piece.lootUsage ?? context.usage, tier: context.tier });
+      if (issue !== undefined) {
+        issues.push([`${path}[${itemIndex}].item`, issue]);
+      }
+    }
+  }
+  return issues;
+};
+
 const groundPointIssues = (
   registry: Registry,
   point: GroundPoint,
@@ -103,7 +126,10 @@ export const placementLootIssues = (
   overrides: readonly FixedLootOverrideDef[],
   path: string,
 ): [string, string][] => {
-  const issues = groundLootSupplyIssues(registry, compiled, context);
+  const issues = [
+    ...groundLootSupplyIssues(registry, compiled, context),
+    ...pieceItemIssues(registry, compiled, context),
+  ];
   const anchors = new Set<string>();
   for (const [index, override] of overrides.entries()) {
     const key = override.at.join(',');

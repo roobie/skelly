@@ -477,9 +477,14 @@ describe('content-owned city building types', () => {
       for (const template of buildings) {
         const evidence = buildingLootEvidence(registry, template);
         expect(evidence.standing).toBeGreaterThan(0);
-        expect(evidence.sources.length, template.id).toBeGreaterThan(0);
-        for (const source of evidence.sources) {
-          expect(source.accessible, source.label).toBe(true);
+        // Fixed stock is an incidental bonus that validation checks. The building promises the rolled loot on the
+        // storeys it declares; rolled loot below them (a bonus room) must still admit a real table, but need not be reached.
+        const rolled = evidence.sources.filter(({ stocked }) => !stocked);
+        expect(rolled.filter(({ onStorey }) => onStorey).length, template.id).toBeGreaterThan(0);
+        for (const source of rolled) {
+          if (source.onStorey) {
+            expect(source.accessible, source.label).toBe(true);
+          }
           expect(source.items.length, source.label).toBeGreaterThan(0);
           expect(source.issues, source.label).toEqual([]);
         }

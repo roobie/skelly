@@ -20,11 +20,19 @@ local note = function(id, title, text) {
   readable: { title: title, text: text },
 };
 local emptyLoot = { usage: [], tier: 'Tier1' };
-local paper = function(id, title, model, text) {
+local paper = function(id, title, model, text, usage=['Industrial']) {
   id: id, name: title, category: 'note', weight: 5, size: [1, 1],
-  model: model, economy: { usage: ['Industrial'], tiers: ['Tier1'] },
+  model: model, economy: { usage: usage, tiers: ['Tier1'] },
   readable: { title: title, text: text },
 };
+// The secret cellar house's upstairs note: a hint, not directions.
+local houseNotes = [
+  paper('gauntlet_cellar_note', 'Note for Ray', 'folded_note', |||
+    Ray, I've taken the kids to my sister's. You won't come, I know. You've barely been up from the cellar since the radio started, and at night I hear you under the house, deeper than any cellar goes. Whatever you're keeping down there, I hope it's worth more to you than we were. Don't come after us until that bite has healed.
+
+    M.
+  |||, usage=['Residential']),
+];
 local publicNotes = [
   paper('gauntlet_public_memo', 'Maintenance route', 'paper_sheet', |||
     The service store is on the block with the square raised water tank. Go around the low brick building to the rear apron. The two tall, narrow exhausts stand together there; the inspection hatch beside them opens onto the maintenance ladder. The office is not the basement access.
@@ -106,7 +114,7 @@ local utilities = [
   },
 ];
 shape.colliding({
-  items: types.items + publicNotes + lab.items,
+  items: types.items + publicNotes + houseNotes + lab.items,
   mapPools: kits.mapPools + city.mapPools,
   blocks: types.blocks,
   loot: types.loot + medical.loot + kits.loot + authored.loot + sewer.loot + service.loot + lab.loot,

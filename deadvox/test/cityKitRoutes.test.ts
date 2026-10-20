@@ -88,10 +88,20 @@ const cityAlternatives = function* (everyStyle = false) {
 
 const OWNED_AIR = 2;
 
-/** Owned air below grade that no standing anchor reaches through owned air, if any. */
+/** Owned air below grade that no standing anchor reaches through owned air, hatches or ladders, if any. */
 const sealedBelowGrade = (compiled: CompiledTemplate): Vec3 | undefined => {
+  const { furniture } = BUNDLED_CONTENT.registry;
   const [sx, sy, sz] = compiled.size;
   const [, grade] = compiled.access!.entrance;
+  const passages = new Set(
+    compiled.pieces
+      .filter((piece) => furniture.get(piece.furniture)?.door?.hatch || furniture.get(piece.furniture)?.climbable)
+      .flatMap((piece) =>
+        [...cellsOf(piece.size)].map((offset) =>
+          ownershipCell(compiled.size, offset.map((value, axis) => value + piece.pos[axis]!) as Vec3),
+        ),
+      ),
+  );
   const open = (x: number, y: number, z: number) =>
     x >= 0 &&
     y >= 0 &&
@@ -99,7 +109,8 @@ const sealedBelowGrade = (compiled: CompiledTemplate): Vec3 | undefined => {
     x < sx &&
     y < sy &&
     z < sz &&
-    compiled.ownership![ownershipCell(compiled.size, [x, y, z])] === OWNED_AIR;
+    (compiled.ownership![ownershipCell(compiled.size, [x, y, z])] === OWNED_AIR ||
+      passages.has(ownershipCell(compiled.size, [x, y, z])));
   const seen = new Set<number>();
   const queue: Vec3[] = Object.values(compiled.anchors!)
     .filter((anchor) => anchor.kind === 'standing')

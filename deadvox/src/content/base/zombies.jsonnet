@@ -234,6 +234,56 @@ local content = {
       "abilities": [],
       "loot": "soldier_pockets"
     },
+    $.zombies[0] + {
+      "id": "brute_shambler",
+      "name": "Brute",
+      "model": "brute",
+      "authoredOnly": true,
+      "regions": {
+        "head": 120,
+        "torso": 120,
+        "leftArm": 48,
+        "rightArm": 48,
+        "leftLeg": 48,
+        "rightLeg": 48
+      },
+      "speed": {
+        "wanderMetresPerSimSecond": 0.8,
+        "chaseMetresPerSimSecond": 2.4
+      },
+      "stepLength": 0.8,
+      "attack": {
+        "reach": 1.2,
+        "cooldownSimSeconds": 1.8,
+        "windupSimSeconds": 0.3,
+        "moves": [
+          {
+            "id": "clobber",
+            "weight": 5,
+            "damage": 14,
+            "damageKind": "blunt",
+            "hitRegions": [
+              { "region": "torso", "weight": 6 },
+              { "region": "head", "weight": 2 },
+              { "region": "leftArm", "weight": 1 },
+              { "region": "rightArm", "weight": 1 }
+            ]
+          },
+          {
+            "id": "bite",
+            "weight": 1,
+            "damage": 5,
+            "damageKind": "pierce",
+            "hitRegions": [
+              { "region": "leftArm", "weight": 3 },
+              { "region": "rightArm", "weight": 3 },
+              { "region": "torso", "weight": 2 },
+              { "region": "head", "weight": 1 }
+            ]
+          }
+        ]
+      }
+    },
     {
       "id": "runner",
       "name": "Runner",

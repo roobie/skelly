@@ -73,11 +73,11 @@ local marked(things, x, z) = std.length([1 for thing in things if covers(thing, 
 local carved(level, x, z) = carves[level] != null && z >= carves[level][0] && z <= carves[level][1] && x <= carves[level][2];
 local chars = std.stringChars('abcdefghijklmnoqrstuvwxy');
 local offered(level) = [scene for scene in scenes if !std.objectHas(scene, 'only') || std.member(scene.only, level)];
-local piece(level, scene) =
+local piece(level, scene, choices=offered(level), suffix='') =
   local things = std.mapWithIndex(function(i, thing) thing + { char: chars[i] }, scene.things);
   local shamblers = std.get(scene, 'shamblers', []);
   // Cells any choice furnishes are air for the others, so a slot's choices claim the same footprint.
-  local union = std.flattenArrays([other.things for other in offered(level)]);
+  local union = std.flattenArrays([other.things for other in choices]);
   local cell(x, y, z) =
     local hit = [thing for thing in things if covers(thing, x, y, z)];
     if std.length(hit) > 0 then hit[0].char
@@ -90,21 +90,40 @@ local piece(level, scene) =
     else 'R';
   local grid(f) = [[std.join('', [f(x, y, z) for x in std.range(0, 13)]) for z in std.range(0, 11)] for y in std.range(0, 6)];
   {
-    id: 'gauntlet_city_' + level + '_' + scene.id, size: [14, 7, 12], style: 'brick_townhouse',
+    id: 'gauntlet_city_' + level + '_' + scene.id + suffix, size: [14, 7, 12], style: 'brick_townhouse',
     lootContext: context,
     palette: palette + {
       [thing.char]: { furniture: thing.furniture }
                     + (if thing.facing == 'n' then {} else { facing: thing.facing })
                     + (if thing.loot == null then {} else { loot: thing.loot })
                     + (if thing.fixed then { fixed: true } else {})
+                    + (if std.objectHas(thing, 'items') then { items: thing.items } else {})
       for thing in things
     },
     layers: grid(cell),
     ownership: { layers: grid(claim) },
     anchors: {}, ports: [],
   };
+// One house's own copy of a level's scenes, each changed by `amend`; `keep` picks the scenes it can change.
+local variant(level, suffix, keep, amend) =
+  local choices = [amend(scene) for scene in offered(level) if keep(scene)];
+  {
+    mapPieces: [piece(level, scene, choices, suffix) for scene in choices],
+    slot(id, position): {
+      id: id, at: position, size: [14, 7, 12], turn: 0,
+      choices: [
+        { ref: { kind: 'piece', id: 'gauntlet_city_' + level + '_' + scene.id + suffix }, weight: scene.weight }
+        for scene in choices
+      ],
+    },
+  };
+local hasDesk(scene) = std.length([1 for thing in scene.things if thing.furniture == 'desk']) > 0;
 {
   mapPieces: [piece(level, scene) for level in std.objectFields(carves) for scene in offered(level)],
+  // The room's scenes that have a desk, with `items` lying on it.
+  onDesk(level, suffix, items): variant(level, suffix, hasDesk, function(scene) scene + {
+    things: [if thing.furniture == 'desk' then thing + { items: items } else thing for thing in scene.things],
+  }),
   slot(id, position, level): {
     id: id, at: position, size: [14, 7, 12], turn: 0,
     choices: [

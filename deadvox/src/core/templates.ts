@@ -14,6 +14,7 @@ import { pickWeighted, Rng } from './random.ts';
 import type {
   DecalDef,
   DoorLockDef,
+  FixedLootItemDef,
   GroundLootSupply,
   KitAnchor,
   KitPort,
@@ -124,6 +125,7 @@ interface Piece {
   lootUsage?: LootContext['usage'];
   lock?: DoorLockDef;
   fixed?: true;
+  items?: readonly FixedLootItemDef[];
   furniture: string;
   /** The palette's loot table, or the furniture's own. */
   loot?: string | undefined;
@@ -233,6 +235,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
         size,
         ...(entry.lock ? { lock: entry.lock } : {}),
         ...(entry.fixed ? { fixed: true as const } : {}),
+        ...(entry.items ? { items: entry.items } : {}),
       });
     }
   }
@@ -841,6 +844,7 @@ export interface PlacedPiece {
   lootUsage?: LootContext['usage'];
   lock?: DoorLockDef;
   fixed?: true;
+  items?: readonly FixedLootItemDef[];
   furniture: string;
   loot?: string | undefined;
   facing: Facing;
@@ -859,6 +863,7 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
       furniture: piece.furniture,
       ...(piece.lock ? { lock: piece.lock } : {}),
       ...(piece.fixed ? { fixed: true as const } : {}),
+      ...(piece.items ? { items: piece.items } : {}),
       loot: piece.loot,
       ...(piece.lootUsage === undefined ? {} : { lootUsage: piece.lootUsage }),
       facing: turnFacing(piece.facing, turn),

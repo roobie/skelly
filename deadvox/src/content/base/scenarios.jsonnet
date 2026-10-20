@@ -106,6 +106,7 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
       { ref: { kind: 'assembly', id: 'gauntlet_food_store' }, weight: 6, atMost: 3 },
       { ref: { kind: 'assembly', id: 'gauntlet_hardware_store' }, weight: 4, atMost: 2 },
       { ref: { kind: 'assembly', id: 'gauntlet_gun_store' }, weight: 1, atLeast: 1, atMost: 1 },
+      { ref: { kind: 'assembly', id: 'gauntlet_city_cellar_secret', style: 'brick_townhouse' }, weight: 1, atLeast: 1, atMost: 1 },
     ],
   }],
 }

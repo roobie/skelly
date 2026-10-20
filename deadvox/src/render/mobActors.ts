@@ -428,7 +428,7 @@ export interface MobActorMeshesOptions {
   readonly bloodiness?: (zombie: Zombie) => number;
 }
 
-type ActorModel = 'shambler' | 'runner' | 'crawler' | 'amalgam';
+type ActorModel = 'shambler' | 'runner' | 'crawler' | 'brute' | 'amalgam';
 interface BuiltActorVariant {
   model: ActorModel;
   figureSeed: number;
@@ -579,8 +579,8 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     const templatesByModel = new Map([...TEMPLATES, amalgamTemplate].map((template) => [template.name, template]));
     const modelIds: readonly ActorModel[] = options.includeAmalgam
-      ? ['shambler', 'runner', 'crawler', 'amalgam']
-      : ['shambler', 'runner', 'crawler'];
+      ? ['shambler', 'runner', 'crawler', 'brute', 'amalgam']
+      : ['shambler', 'runner', 'crawler', 'brute'];
 
     const t0 = performance.now();
     const built = buildActorVariants(modelIds, options.figureSeeds.slice(0, poolSize), options.amalgamType);
