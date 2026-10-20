@@ -25,7 +25,7 @@ import type { Item } from '../core/items.ts';
 import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
@@ -2575,7 +2575,7 @@ export const startPlay = (
     if (!item) {
       return;
     }
-    const result = inventory.move(item, { kind: 'pile', pos: feet() });
+    const result = inventory.move(item, dropTarget(inventory, item, feet()).target);
     if (!result.ok) {
       showRefusal(`Can't drop it: ${result.reason}`, sim.time);
       return;
