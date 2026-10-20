@@ -14,7 +14,8 @@ read_if:
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you author or change the day cycle, the sky looks or the weather fog tuning
   - you change the debug kit ownership view
-  - you change settlement building eligibility, city collections or benchmark candidate admission
+  - you change settlement building eligibility, city collections, building door resistance or benchmark candidate admission
+  - you author the police station's armoury or roof access
 ---
 
 # Content sections and recipes
@@ -272,6 +273,8 @@ and `deadvox/docs/aftermath.md`, "Door variants".
 
 ### City building types
 
+Flimsy and burglary-safe doors are content choices per building, so a building's intended resistance need not change the forcing mechanism. See `src/content/base/furniture.jsonnet`, `woodDoor`, and `src/core/schema.ts`, `FurnitureSchema`.
+
 An authored collection owns prevalence and guarantees; each building owns its fit. Keeping those policies separate lets a mod tune prevalence without changing geometry and prevents collection membership from forcing an unsuitable building into a settlement. Eligibility uses content-named settlement kinds, not engine enums, and reuses the building's authored footprint for plot fit rather than maintaining a second size that can disagree with its geometry. Templates and assemblies follow the same admission rule. See `src/core/schema.ts`, `BuildingEligibilitySchema`, `TemplateSchema`, `MapAssemblySchema` and `MapPoolSchema`, `src/core/settlementPools.ts`, `eligibilityExclusion`, and `src/core/cityPlan.ts`, `cityGridOf`.
 
 Filtering must not hide an ineffective addition: a collection entry excluded for every consumer is a load error naming the collection, building and reasons. A consumer with no eligible weighted candidates also fails at load. A shared collection may legitimately serve different kinds or plot sizes, provided each entry serves at least one consumer. Quotas apply to admitted entries; impossible guarantees fail loudly, and recovery stays bounded and deterministic rather than searching layouts. See `src/core/cityPlan.ts`, `settlementCollectionIssues`, `cityPoolIssues`, `chooseBuilding` and `buildCityPlan`.
@@ -280,7 +283,7 @@ The stress-test benchmark owns an independent named pool because the hamlet rost
 
 Pools and eligibility remain static content so they can become inputs to an expression selector without competing with it. There is no separate selector language here. Additive mod admission waits for the typed merge mechanism in `docs/decisions/0007-typed-field-patches.md`, "Decision"; collection ownership does not imply that list additions are already implemented.
 
-Special buildings must be deliberately designed and curated as plausible places, not generic rooms with different loot. Real plans keep room function, furnishings, circulation and supplies coherent. The gauntlet's rural police station follows that principle: a working civic place rather than a house shell relabelled by its loot. Exactly one station preserves scarcity without maintaining competing designs. A template holds only what suits its place; a reward that need not suit it belongs to the gauntlet instance (see `DESIGN.md`, "Gauntlet"). Masonry makes the civic building read correctly; wooden furnishings and door leaves do not imply timber partitions or ceilings. See `src/content/base/rural-police.jsonnet`, `templates`; `src/content/base/gauntlet-authored-sites.libsonnet`, `policeMain` and `compound`; and `src/content/base/gauntlet-layout.libsonnet`, `lots`.
+Special buildings must read as plausible places, not generic rooms distinguished only by hidden loot. The police armoury's furniture and secured door must communicate weapon and ammunition storage, so its door is the steel armoury leaf that only a cutting tool forces and the roof key is the way in. Every station copy carries the armoury, so its room, key and stock belong to the base station: a scenario overlay matching room strings can silently stop matching after a layout edit. A reward that need not suit its host still belongs to the gauntlet instance (see `DESIGN.md`, "Gauntlet"). Masonry gives the civic building its character; wooden furnishings do not imply timber construction. See `src/content/base/rural-police.jsonnet`, `templates`, `furniture` and `loot`; `src/content/base/gauntlet-authored-sites.libsonnet`, `policeMain` and `compound`; and `src/content/base/gauntlet-layout.libsonnet`, `lots`.
 
 Loose furniture in abandoned buildings and yards should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-authored-sites.libsonnet`, `furnished`.
 

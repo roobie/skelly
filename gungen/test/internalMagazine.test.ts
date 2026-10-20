@@ -1,5 +1,5 @@
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { PartFamily } from '@skelly/engine/core/schema.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { PartFamily } from '@skelly/engine/assembly/schema.ts';
 import { expect, it } from 'vitest';
 import { boltCartridge } from '../src/gun/boltCartridge.ts';
 import { gunDomain } from '../src/gun/domain.ts';

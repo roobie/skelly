@@ -6,7 +6,7 @@ read_if:
 
 # Revolver export
 
-The revolver uses assembly parts rather than display groups because only parts have independently transformable GLB nodes. This keeps mechanical identity in the assembly and leaves the shared writer domain-neutral; see `src/gun/revolver.ts`, `revolverFamilySet`, and `engine/src/core/glb.ts`, `addPart`.
+The revolver uses assembly parts rather than display groups because only parts have independently transformable GLB nodes. This keeps mechanical identity in the assembly and leaves the shared writer domain-neutral; see `src/gun/revolver.ts`, `revolverFamilySet`, and `engine/src/export/glb.ts`, `addPart`.
 
 ## Runtime composition
 

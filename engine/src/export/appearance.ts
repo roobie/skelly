@@ -1,4 +1,4 @@
-import type { AppearanceContext, Palette, SrgbColor } from './design.ts';
+import type { AppearanceContext, Palette, SrgbColor } from './exportTypes.ts';
 
 export interface AppearanceOverrides {
   readonly partMaterial?: string;

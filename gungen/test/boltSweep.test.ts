@@ -1,8 +1,9 @@
-import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
-import { applyDir, applyPoint, IDENTITY, type Vec3 } from '@skelly/engine/core/math.ts';
-import { motionTransform } from '@skelly/engine/core/motion.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { BoxSolid, PartFamily } from '@skelly/engine/core/schema.ts';
+import { motionTransform } from '@skelly/engine/assembly/motion.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { PartFamily } from '@skelly/engine/assembly/schema.ts';
+import { applyDir, applyPoint, IDENTITY, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import type { BoxSolid } from '@skelly/engine/shapes/solid.ts';
 import { expect, it } from 'vitest';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { sweepBoltAction } from '../src/gun/boltSweep.ts';

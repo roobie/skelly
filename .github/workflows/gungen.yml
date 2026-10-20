@@ -8,6 +8,7 @@ on:
     paths:
       - 'gungen/**'
       - 'engine/**'
+      - 'packages/**'
       - 'deadvox/src/**'
       - 'package-lock.json'
       - 'mobgen/src/**'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'gungen/**'
       - 'engine/**'
+      - 'packages/**'
       - 'deadvox/src/**'
       - 'package-lock.json'
       - 'mobgen/src/**'
@@ -56,6 +58,7 @@ jobs:
         run: npx playwright install chromium
         working-directory: deadvox
       - run: npm --prefix ../engine run typecheck
+      - run: npm --prefix ../packages/tool-ui run typecheck
       - run: npm run typecheck
       - run: npm test
       - run: npm run validate

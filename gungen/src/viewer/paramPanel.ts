@@ -4,9 +4,9 @@
 // wires this to the page. A change here only ever edits the Assembly; the
 // caller re-runs resolve()/validate() the same way loading a fixture does, so edits cannot bypass validation.
 
-import { type ResolvedParam, resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly, Connection, Domain, PartInstance } from '@skelly/engine/core/schema.ts';
-import type { Choice, ParamReference, Template } from '@skelly/engine/core/template.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly, Connection, Domain, PartInstance, ResolvedParam } from '@skelly/engine/assembly/schema.ts';
+import type { Choice, ParamReference, Template } from '@skelly/engine/assembly/template.ts';
 
 const partOf = (ref: string): string => ref.slice(0, ref.indexOf('.'));
 const choiceValues = <T>(c: Choice<T>): readonly T[] => (Array.isArray(c) ? (c as readonly T[]) : [c as T]);

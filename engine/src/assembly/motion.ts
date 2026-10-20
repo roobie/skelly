@@ -1,4 +1,4 @@
-import { add, applyDir, applyPoint, compose, type Mat3, scale, sub, type Transform } from './math.ts';
+import { add, applyDir, applyPoint, compose, type Mat3, scale, sub, type Transform } from '../foundation/math.ts';
 import type { PartMotion } from './schema.ts';
 
 /** Part-local turn followed by translation, expressed in the assembly frame. */

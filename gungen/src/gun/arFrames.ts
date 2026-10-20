@@ -1,4 +1,4 @@
-import { GRID } from '@skelly/engine/core/conventions.ts';
+import { GRID } from '@skelly/engine/foundation/conventions.ts';
 import cartridgeJson from '../../cartridges/5.56x45.json' with { type: 'json' };
 import { parseCartridge } from '../ammo/parseCartridge.ts';
 import {

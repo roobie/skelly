@@ -1,12 +1,12 @@
-import type { DesignLoadResult } from '@skelly/engine/core/design.ts';
-import { generate, generateValid } from '@skelly/engine/core/generate.ts';
-import { worldBox } from '@skelly/engine/core/geometry.ts';
-import type { Issue } from '@skelly/engine/core/issue.ts';
-import { formatParseError, parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
-import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '@skelly/engine/core/revolve.ts';
-import type { Assembly, Connection } from '@skelly/engine/core/schema.ts';
-import type { Template } from '@skelly/engine/core/template.ts';
-import { type Report, validate } from '@skelly/engine/core/validate.ts';
+import type { DesignLoadResult } from '@skelly/engine/assembly/design.ts';
+import { generate, generateValid } from '@skelly/engine/assembly/generate.ts';
+import { formatParseError, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
+import type { Assembly, Connection } from '@skelly/engine/assembly/schema.ts';
+import type { Template } from '@skelly/engine/assembly/template.ts';
+import { type Report, validate } from '@skelly/engine/assembly/validate.ts';
+import type { Issue } from '@skelly/engine/foundation/issue.ts';
+import { worldBox } from '@skelly/engine/shapes/geometry.ts';
+import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '@skelly/engine/shapes/revolve.ts';
 import {
   Box3,
   Color,

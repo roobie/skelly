@@ -187,7 +187,7 @@ describe('handlingViewModel', () => {
   it('projects each timed long job through one progress view and hides stopped jobs', () => {
     const jobs: readonly TimedActionPresentation[] = [
       {
-        kind: 'pry',
+        kind: 'forceDoor',
         label: 'Fixture action',
         elapsed: 3,
         duration: 8,

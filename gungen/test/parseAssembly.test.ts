@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseAssembly, parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
+import { parseAssembly, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import { describe, expect, it } from 'vitest';
 
 const FIXTURES = join(import.meta.dirname, '..', 'fixtures');

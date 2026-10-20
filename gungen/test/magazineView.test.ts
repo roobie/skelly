@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
 import { Group, InstancedMesh, Matrix4, Mesh, Texture, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';

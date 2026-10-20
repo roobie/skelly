@@ -269,6 +269,8 @@ describe('one finished city plan', () => {
           retreat: [2, 7, 2],
           resources: [],
           storeys: [],
+          stairs: [],
+          seals: [],
           descents: [],
           events: [
             {

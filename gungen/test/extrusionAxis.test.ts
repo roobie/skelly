@@ -1,17 +1,19 @@
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import { connectionContact, keepOut as keepOutRule } from '@skelly/engine/assembly/rules.ts';
+import type { Domain, KeepOut, PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { exportGlb, partNodeName } from '@skelly/engine/export/glb.ts';
+import { applyDir, type ExtrusionAxis, mulMM, rotX, rotY, rotZ } from '@skelly/engine/foundation/math.ts';
 import {
   boxFromMinMax,
   distanceWorld,
   localSolidBounds,
   penetrationWorld,
   worldSolid,
-} from '@skelly/engine/core/geometry.ts';
-import { exportGlb, partNodeName } from '@skelly/engine/core/glb.ts';
-import { applyDir, type ExtrusionAxis, mulMM, rotX, rotY, rotZ } from '@skelly/engine/core/math.ts';
-import { meshForSolid, type TriangleMesh } from '@skelly/engine/core/mesh.ts';
-import { type Resolved, resolve } from '@skelly/engine/core/resolve.ts';
-import { connectionContact, keepOut as keepOutRule } from '@skelly/engine/core/rules.ts';
-import type { Domain, ExtrudedPolygonSolid, KeepOut, PartDef } from '@skelly/engine/core/schema.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+} from '@skelly/engine/shapes/geometry.ts';
+import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
+import type { TriangleMesh } from '@skelly/engine/shapes/shapeTypes.ts';
+import type { ExtrudedPolygonSolid } from '@skelly/engine/shapes/solid.ts';
 import validator from 'gltf-validator';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';

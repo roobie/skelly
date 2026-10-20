@@ -1,6 +1,6 @@
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import type { Assembly } from '@skelly/engine/core/schema.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
 import { expect, it } from 'vitest';
 import { actionOpenOffsets, resolveGunAction } from '../src/gun/actionDescription.ts';
 import { gunDomain } from '../src/gun/domain.ts';

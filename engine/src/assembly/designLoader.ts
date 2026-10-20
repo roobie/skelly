@@ -5,6 +5,7 @@
 // a stale template choice, a prefab whose values differ from the stored ones.
 // A design stores only chosen values, so nothing is materialised on load.
 
+import type { Issue } from '../foundation/issue.ts';
 import type {
   Design,
   DesignIssue,
@@ -16,7 +17,6 @@ import type {
   DesignStatus,
   NonEmptyReadonlyArray,
 } from './design.ts';
-import type { Issue } from './issue.ts';
 import {
   describeValue,
   isRecord,
@@ -28,8 +28,7 @@ import {
   parseRecord,
   parseStringArray,
 } from './parseAssembly.ts';
-import type { Resolved } from './resolve.ts';
-import type { Assembly, Domain, PartInstance } from './schema.ts';
+import type { Assembly, Domain, PartInstance, Resolved } from './schema.ts';
 import type { ConditionalChoice, ParamReference, SlotTemplate, Template } from './template.ts';
 import { validate } from './validate.ts';
 

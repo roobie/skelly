@@ -32,7 +32,9 @@
       "color": "#8d969a",
       "door": {
         "handlingSimSeconds": 0.80000000000000004,
-        "hatch": true
+        "hatch": true,
+        "material": "steel",
+        "methods": {}
       },
       "id": "roof_hatch",
       "name": "Roof hatch",

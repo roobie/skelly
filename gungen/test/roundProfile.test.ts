@@ -1,4 +1,4 @@
-import { meshForRevolved } from '@skelly/engine/core/revolve.ts';
+import { meshForRevolved } from '@skelly/engine/shapes/revolve.ts';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { ASSUMED_BULLET_SEATING_DEPTH_CALIBRES, CASE_WALL_MM, roundProfiles } from '../src/ammo/roundProfile.ts';

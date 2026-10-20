@@ -1246,7 +1246,7 @@ describe('authored fixed loot', () => {
     const compiledArmoury = compileTemplate(result.registry, armoury);
     const door = compiledArmoury.pieces.find((piece) => piece.furniture === 'container_door');
     expect(door?.lock).toEqual({ id: 'camp_armoury', locked: true });
-    expect(result.registry.furniture.get('container_door')?.door?.prying).toBeDefined();
+    expect(result.registry.furniture.get('container_door')?.door?.methods.pry).toBeDefined();
     const closingNote = overrideFor(overrides, 'camp_armoury', 'camp_closing_note');
     expect(closingNote).toBeDefined();
     expect(furnitureAt(closingNote!)).toBeDefined();

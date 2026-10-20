@@ -71,6 +71,9 @@
     "engine": {
       "project": ["src/**/*.{js,mjs,ts,tsx}!"]
     },
+    "packages/tool-ui": {
+      "project": ["src/**/*.{js,mjs,ts,tsx}!"]
+    },
     "mobgen": {
       "entry": ["index.html!", "stress.html!", "src/viewer/stress.ts!"],
       "paths": {

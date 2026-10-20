@@ -259,6 +259,37 @@ class Certificate {
     }
   }
 
+  seals(): void {
+    for (const [index, seal] of this.composition.seals.entries()) {
+      const path = `.composition.seals[${index}]`;
+      const doors = seal.doors.map((point) => this.entityAt(point));
+      const lock = doors[0]?.lock?.id;
+      const source = this.site
+        .lootPointsIn(toChunk(seal.key[0]), toChunk(seal.key[2]))
+        .find(
+          (point) => point.channel === 'ground' && point.destination.every((value, axis) => value === seal.key[axis]),
+        );
+      const present =
+        source?.supply.kind === 'fixed' &&
+        source.supply.items.some(
+          (item) => this.site.registry.items.get(item.item)?.key?.lock === lock && (item.count ?? 1) > 0,
+        );
+      if (
+        !(
+          lock &&
+          doors.every((door) => door?.lock?.id === lock && door.lock.locked) &&
+          present &&
+          this.space.path(this.site.plan.portal!.lower, seal.standing, { steps: true }) &&
+          this.space.visibleGroundReach(seal.standing, seal.key)
+        )
+      ) {
+        this.fail(path, 'seal needs its matching placed keycard reachable on the open side before unlocking');
+        continue;
+      }
+      this.space.admitLock(lock);
+    }
+  }
+
   objective(reached: Set<number>): void {
     const { objectiveFace, objective, retreat } = this.composition;
     const entity = this.entityAt(objective);
@@ -327,9 +358,22 @@ class Certificate {
     }
     this.street();
     this.floors();
+    this.seals();
     this.ladder(this.site.plan.portal!, '.portal');
     this.composition.descents.forEach((descent, index) => {
       this.ladder(descent, `.composition.descents[${index}]`);
+    });
+    this.composition.stairs.forEach((stair, index) => {
+      const path = `.composition.stairs[${index}]`;
+      const upper = this.floorLink(stair.upper, path);
+      const lower = this.floorLink(stair.lower, path);
+      const down = this.space.path(stair.upper, stair.lower, { steps: true });
+      const up = this.space.path(stair.lower, stair.upper, { steps: true });
+      if (!(down && up)) {
+        this.fail(path, 'stair needs supported body routes down and back up');
+      } else if (upper && lower) {
+        this.links.push([stair.upper[1], stair.lower[1]]);
+      }
     });
     this.underground();
     const reached = this.reachableFloors();

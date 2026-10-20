@@ -1,8 +1,8 @@
-import { GRID } from '@skelly/engine/core/conventions.ts';
-import { validateExtrudedPolygon, worldSolid } from '@skelly/engine/core/geometry.ts';
-import { applyPoint } from '@skelly/engine/core/math.ts';
-import { resolve } from '@skelly/engine/core/resolve.ts';
-import { validate } from '@skelly/engine/core/validate.ts';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import { validate } from '@skelly/engine/assembly/validate.ts';
+import { GRID } from '@skelly/engine/foundation/conventions.ts';
+import { applyPoint } from '@skelly/engine/foundation/math.ts';
+import { validateExtrudedPolygon, worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { AR_ACTION_LAYOUT } from '../src/gun/arLayout.ts';
