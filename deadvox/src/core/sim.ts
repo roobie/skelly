@@ -60,6 +60,7 @@ export interface SimOptions {
   onImpact?: (amount: number, region: BodyRegion, kind: DamageKind, touch?: Touch) => void;
   /** Whether what the hit meets first keeps this kind off the region; such a hit lands nowhere. */
   impervious?: (region: BodyRegion, kind: DamageKind, touch?: Touch) => boolean;
+  protectionShare?: (region: BodyRegion, kind: DamageKind, touch?: Touch) => number;
 }
 
 /** Needs tick at 1 Hz; under compression their step grows to 30 s, 4 game minutes at 1:8. */
@@ -78,6 +79,7 @@ export class Simulation {
   readonly exposures: DamageExposures;
   private readonly onImpact: SimOptions['onImpact'];
   private readonly impervious: NonNullable<SimOptions['impervious']>;
+  private readonly protectionShare: NonNullable<SimOptions['protectionShare']>;
   /** Esc pauses everything; the inventory screen doesn't. */
   paused = false;
   /** Set when health reaches 0; from then on nothing advances. */
@@ -94,6 +96,7 @@ export class Simulation {
     this.body = new Body(options.bodyTuning, undefined, undefined, options.analgesics);
     this.onImpact = options.onImpact;
     this.impervious = options.impervious ?? (() => false);
+    this.protectionShare = options.protectionShare ?? (() => 0);
     this.exposures = new DamageExposures(options.bodyTuning, (id) => this.rng(`exposure:${id}`).next());
     this.scheduler.register({
       id: 'damage-exposure',
@@ -333,7 +336,7 @@ export class Simulation {
     exposure?: DamageExposure,
   ): number | undefined {
     let bleeding = this.body.bleedingTierForHit(
-      exposure?.damage ?? amount,
+      amount,
       region,
       kind,
       exposure?.roll ?? this.rng(`body-bleeding:${region}:${this.time}:${amount}`).next(),
@@ -349,7 +352,7 @@ export class Simulation {
   }
 
   private impact(
-    amount: number,
+    fullAmount: number,
     region: BodyRegion,
     { touch, ...effects }: HitEffects,
     exposure?: DamageExposure,
@@ -357,8 +360,12 @@ export class Simulation {
     if (effects.kind !== undefined && this.impervious(region, effects.kind, touch)) {
       return 0;
     }
+    const transmitted = effects.kind === undefined ? 1 : 1 - this.protectionShare(region, effects.kind, touch);
+    const amount = fullAmount * transmitted;
     const bleeding =
-      effects.kind === undefined ? undefined : this.openedBleedingTier(amount, region, effects.kind, exposure);
+      effects.kind === undefined
+        ? undefined
+        : this.openedBleedingTier((exposure?.damage ?? fullAmount) * transmitted, region, effects.kind, exposure);
     const woundAlreadyExists = this.body.wounds[region] !== null;
     const infectionAtRisk =
       effects.infectionAtRisk ??
@@ -371,7 +378,7 @@ export class Simulation {
       exposure.infectionAtRisk = infectionAtRisk;
     }
     if (effects.kind !== undefined) {
-      this.onImpact?.(amount, region, effects.kind, touch);
+      this.onImpact?.(fullAmount, region, effects.kind, touch);
     }
     return this.body.impact(amount, region, {
       ...effects,

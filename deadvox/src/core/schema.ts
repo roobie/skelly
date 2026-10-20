@@ -230,7 +230,7 @@ const ITEM_CATEGORIES = [
   'misc',
 ] as const;
 
-const CLOTHING_SLOTS = ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
+const CLOTHING_SLOTS = ['head', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
 /** The shoulder holds a slung long gun, never clothing (`DESIGN.md`, "Shoulder and sling"). */
 const WEAR_SLOTS = [...CLOTHING_SLOTS, 'shoulder'] as const;
 
@@ -334,6 +334,7 @@ const UiTuningSchema = strictObject({
   wearSlotLabels: strictObject({
     head: Name,
     torso: Name,
+    vest: Name,
     legs: Name,
     back: Name,
     waist: Name,
@@ -367,20 +368,27 @@ const CompressionTuningSchema = strictObject({
   }),
 });
 
-const WearableSchema = strictObject({
-  slot: picklist(CLOTHING_SLOTS),
-  /** 0–100: how much it slows and hampers you. */
-  encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
-  warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
-  wearPerDamage: optional(NonNegative),
-  /** Damage kinds that neither reach the wearer through it nor wear it (`DESIGN.md`, "Worn coverage"). */
-  imperviousTo: optional(
-    pipe(
-      array(picklist(DAMAGE_KINDS)),
-      check((kinds) => new Set(kinds).size === kinds.length, 'impervious damage kinds must be unique'),
+const WearableSchema = pipe(
+  strictObject({
+    slot: picklist(CLOTHING_SLOTS),
+    /** 0–100: how much it slows and hampers you. */
+    encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
+    warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
+    wearPerDamage: optional(NonNegative),
+    protects: optional(record(picklist(DAMAGE_KINDS), pipe(NonNegative, maxValue(1)))),
+    /** Damage kinds that neither reach the wearer through it nor wear it (`DESIGN.md`, "Worn coverage"). */
+    imperviousTo: optional(
+      pipe(
+        array(picklist(DAMAGE_KINDS)),
+        check((kinds) => new Set(kinds).size === kinds.length, 'impervious damage kinds must be unique'),
+      ),
     ),
+  }),
+  check(
+    (wearable) => !(wearable.imperviousTo ?? []).some((kind) => wearable.protects?.[kind] !== undefined),
+    'protected damage kinds must not also be impervious',
   ),
-});
+);
 
 const FoodSchema = pipe(
   strictObject({

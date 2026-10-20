@@ -15,7 +15,7 @@ const refusalSound = {
   noise: { enabled: false, radiusMetres: 1 },
 };
 const wearSlotLabels = Object.fromEntries(
-  ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, `fixture ${slot}`]),
+  ['head', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, `fixture ${slot}`]),
 );
 const tuning = {
   id: CORE_CONTENT_IDS.coreUi,

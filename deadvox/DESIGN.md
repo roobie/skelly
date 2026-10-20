@@ -27,6 +27,7 @@ read_if:
   - you're changing loaded-distance simulation or the horde representation
   - you're restructuring the per-tick zombie simulation
   - you're authoring decals or scenario outbreak age
+  - you're changing worn layers, armour protection or item wear
   - you're changing bleeding cues
   - you change landing injuries or their content tuning
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
@@ -1299,25 +1300,40 @@ activation must not replay dormant time. See `src/core/scheduler.ts`,
 `Simulation.leaveExposure`, `Simulation.endExposure` and `Simulation.actionRefusal`;
 `src/core/longAction.ts`, `LongActions.interruptExposure`.
 
-**Worn coverage.** Each body region lists the wear slots that cover it in content,
-outermost first, so new slots and layers are a content change rather than a code
-path. A blow meets the first worn slot in that list, so footwear and gloves sit
-last on their limbs and take blows only on a bare limb. A contact with a named
-touch, ground or hand, meets that touch's slot first, because a puddle reaches
-the boots before the trousers and a grip reaches the gloves before the sleeve.
-A worn item covers each of its regions whole, not a share of it, for simplicity:
-a blow meets at most one item, and coverage stays a list of slots per region.
-Worn items take damage-proportional wear but do not mitigate flesh damage or
-bleeding chance, except that an item impervious to a damage kind stops that kind
-outright: no damage, wear, wound, linger or action refusal. Put on during a
-contact, it stops harm and lifts the refusal while worn, so boots let the player
-stand in acid; the tail still runs, and taking the item off before it ends harms
-for the rest. Imperviousness is per
-kind on the wearable, so rubber boots can stop acid without a boots rule in code.
-Keeping wear and imperviousness at the shared impact boundary prevents falls,
+**Worn coverage.** Vests take their own outer slot over the torso so a vest and
+a jacket can be worn together, and the outer layer is the one a blow meets.
+One vest at a time makes the player pick pouches or protection. Whole-region
+coverage keeps layering simple rather than asking the player to judge uncovered
+fractions. Contact can meet a different layer because a puddle reaches boots
+before trousers and a grip reaches gloves before a sleeve. See `src/core/wear.ts`,
+`wornItemMet`; `src/content/base/body.jsonnet`, `coverage` and `touchFirst`.
+
+A worn item stops a share of a hit before flesh damage and bleeding are resolved,
+set per damage kind because real armour is built against particular threats.
+A stab vest's flexible panels stop blades and points but barely spread a blow;
+its fabric soaks up acid. A riot helmet's shell and padding spread blows and turn
+blades; its shell and visor turn teeth, but gaps at the neck and face edge remain.
+The visor keeps spit off the face without sealing out acid. Protection trades
+away the utility vest's pockets or the head slot's headlamp. Protective panels
+are built to take blows, while the helmet's hard shell scuffs more readily.
+The shares, burden, warmth and durability are content tuning, not armour rules.
+Later Vest-slot armour, such as plate carriers and ballistic vests, will carry
+strength in blunt and pierce because hard plates spread a blow and stop a point;
+that is why protection is per kind rather than one number. See
+`src/core/schema.ts`, `WearableSchema`; `src/content/base/items-wearables.libsonnet`,
+`items`.
+
+Armour wears by the whole blow because it took the whole blow. Protection holds
+until ruin and then stops so the player sees the moment armour fails rather than
+guessing at a fading number. A ruined item still sits in its layer until removed,
+so the player must clear it to expose the layer beneath. Imperviousness remains
+a separate per-kind rule so rubber boots can stop acid outright without a boots
+rule in code. Putting them on during contact lifts its refusal without erasing
+the exposure's tail, so removing them before it ends exposes the player again.
+Keeping protection and wear at the shared impact boundary prevents falls,
 projectiles and lingering damage from bypassing them. See `src/core/wear.ts`,
-`wornItemMet` and `playerWearHooks`; `src/core/sim.ts`, `SimOptions`,
-`Simulation.impact` and `Simulation.expose`.
+`playerWearHooks`; `src/core/sim.ts`, `SimOptions`, `Simulation.impact` and
+`Simulation.expose`.
 
 Modifier ownership follows the actor supplying the effect, not its target.
 `src/core/body.ts`, `Body.modified`, resolves the player's bodily values;

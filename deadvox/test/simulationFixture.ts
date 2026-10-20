@@ -18,7 +18,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
   coverage: {
     head: ['head'],
-    torso: ['torso'],
+    torso: ['vest', 'torso'],
     leftArm: ['torso', 'hands'],
     rightArm: ['torso', 'hands'],
     leftLeg: ['legs', 'feet'],
