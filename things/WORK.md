@@ -65,6 +65,11 @@ Settled:
   "Contract").
 - Atoms have authored mass and assemblies sum their parts; the tools author a closed set of
   items rather than generate them (`things/README.md`, "Rules").
+- Until gun parts become items in the gun tool phase, their authored masses come from one
+  gungen table keyed by part family and variant
+  (`gungen/PROJECT.md`, "Attachments and export"). A shared part then has one value, and the
+  table already has the shape of the closed item set, so the gun tool phase turns its keys
+  into item ids.
 - An assembly's export carries each part's mass and centre of mass, and an export package
   above `thing-core` writes them with the GLB and the model entry (`things/README.md`,
   "Rules"; `things/README.md`, "Packages").
@@ -123,9 +128,9 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
      `thing-core`, and deadvox may not import it.
    - Move the export lines of `packages/engine/README.md` (export identity, and export in its
      `read_if`) into the export package's README.
-   - Replace mass derivation in `gungen/src/gun/attachmentMass.ts` with authored part masses,
-     and have the package write each assembly part's mass and centre of mass into the model
-     entry.
+   - Replace mass derivation in `gungen/src/gun/attachmentMass.ts` with authored masses:
+     items read their own `weight`, and gun parts read the gungen part mass table. Have the
+     package write each assembly part's mass and centre of mass into the model entry.
    - Exit: the engine ends at assembly, an atom's mass is its authored mass, and deadvox sums
      each assembly's mass from its parts.
 3. **Thing tool, first slice.** One non-gun family end to end: source, build, GLB, model
@@ -135,7 +140,7 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    load test together. The compass keeps its dedicated display renderer.
 5. **Gun tool.** Move gungen's gun and ammo logic onto the shared packages as an authoring
    tool: its parts become a closed set of deadvox items, each atom with an authored mass, and
-   a gun is an assembly of them. Exit: every gungen export deadvox consumes is reproduced by
+   a gun is an assembly of them. The gungen part mass table's rows become those items. Exit: every gungen export deadvox consumes is reproduced by
    the gun tool and validates.
 6. **Retire gungen.** Switch CI, scripts and docs, then delete `gungen/` and its contract test.
 7. **Close out.**
