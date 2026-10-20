@@ -1,6 +1,6 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, PartAppearance, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import type { GlbAssetIdentity, GlbExportError } from '@skelly/engine/export/exportTypes.ts';
+import type { GlbAssetIdentity, GlbExportError } from '@skelly/thing-export/exportTypes.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { attachmentInstanceForId, attachmentMetadata } from './attachments.ts';
 import { gunDomain } from './domain.ts';
@@ -8,6 +8,7 @@ import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
 import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { FAMILIES } from './parts.ts';
+import { gunModelParts } from './physical.ts';
 
 export type AttachmentExportResult =
   | { readonly ok: true; readonly glb: Uint8Array; readonly modelEntry: DeadvoxModelEntry }
@@ -60,6 +61,7 @@ export const exportAttachmentGlb = (
     modelEntry: {
       id: asset.id,
       file: asset.file as DeadvoxModelFile,
+      parts: gunModelParts(resolved),
       gun: { attachment: metadata },
     },
   };

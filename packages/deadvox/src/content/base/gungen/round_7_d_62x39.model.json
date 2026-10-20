@@ -1,0 +1,12 @@
+{
+  "id": "round_7_d_62x39",
+  "file": "assets/models/round-7_d_62x39.glb",
+  "parts": {
+    "cartridge": {
+      "node": "cartridge:cartridge-model",
+      "massKg": 0.04018910662611401,
+      "centreOfMass": [0.02497761164849726, 0, 0]
+    }
+  },
+  "gun": { "calibre": "7.62x39" }
+}

@@ -1,6 +1,6 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly } from '@skelly/engine/assembly/schema.ts';
-import { solidColor, srgbToHex } from '@skelly/engine/export/appearance.ts';
+import { solidColor, srgbToHex } from '@skelly/thing-export/appearance.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { createPalette, GUN_PALETTE, hexToSrgb } from '../src/gun/palette.ts';

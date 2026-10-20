@@ -347,78 +347,9 @@
     "white": "plastic-white",
     "yellow": "plastic-yellow"
   },
-  "massFill": {
-    "ak-muzzle-device": 1,
-    "ak-rear-sight": 1,
-    "ak-receiver": 1,
-    "ar-charging-handle": 1,
-    "barrel": 1,
-    "barrel-shroud": 1,
-    "bipod": 1,
-    "bolt-carrier": 1,
-    "bolt-handle": 1,
-    "bolt-handle-arm": 1,
-    "bolt-handle-knob": 1,
-    "carry-handle": 1,
-    "cylinder": 1,
-    "foregrip": 1,
-    "forend": 1,
-    "frame": 1,
-    "front-sight": 1,
-    "front-sight-bead": 1,
-    "gas-block": 1,
-    "gas-cylinder": 1,
-    "grip": 1,
-    "handguard": 1,
-    "handle-bar": 1,
-    "handle-strut": 1,
-    "handle-trunnion": 1,
-    "heavy-bolt-carrier": 1,
-    "heavy-lower": 1,
-    "heavy-magazine": 1,
-    "heavy-receiver": 1,
-    "lower": 1,
-    "magazine": 1,
-    "monopod": 1,
-    "muzzle-brake": 1,
-    "rail-front-sight": 1,
-    "receiver": 1,
-    "recoil-stock": 1,
-    "revolver-barrel": 1,
-    "revolver-crane": 1,
-    "revolver-cylinder": 1,
-    "revolver-ejector": 1,
-    "revolver-frame": 1,
-    "revolver-grip": 1,
-    "revolver-hammer": 1,
-    "revolver-trigger": 1,
-    "sight": 1,
-    "slide": 1,
-    "smg-handle": 1,
-    "sporting-rear-sight": 1,
-    "stock": 1,
-    "suppressor": 0.69999999999999996,
-    "tactical-flashlight-mount": 1,
-    "tube-magazine": 1
-  },
-  "massSlotMaterials": {
-    "accent": "rubber-black",
-    "furniture": "polymer-black"
-  },
   "slotMaterials": {
     "accent": "rubber-black",
     "furniture": "polymer-black",
     "metal": "steel-parkerized"
-  },
-  "solidFinishes": {
-    "rubber": {
-      "material": "rubber-black",
-      "slot": "accent"
-    }
-  },
-  "solidMaterials": {
-    "chargingHandle": "alu-anodized-black",
-    "magazineMetal": "steel-blued",
-    "stockPad": "rubber-black"
   }
 }

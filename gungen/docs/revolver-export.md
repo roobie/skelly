@@ -1,12 +1,12 @@
 ---
 read_if:
-  - you change or consume the revolver model export or its moving-part transforms
+  - you change or consume the revolver model export, shared writer or moving-part transforms
   - you refresh the revolver or its ammunition in Deadvox
 ---
 
 # Revolver export
 
-The revolver uses assembly parts rather than display groups because only parts have independently transformable GLB nodes. This keeps mechanical identity in the assembly and leaves the shared writer domain-neutral; see `src/gun/revolver.ts`, `revolverFamilySet`, and `packages/engine/src/export/glb.ts`, `addPart`.
+The revolver uses assembly parts rather than display groups because only parts have independently transformable GLB nodes. This keeps mechanical identity in the assembly and leaves the shared writer domain-neutral; see `src/gun/revolver.ts`, `revolverFamilySet`, and `packages/thing-export/src/glb.ts`, `addPart`.
 
 ## Runtime composition
 

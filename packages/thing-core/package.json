@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     "./schema": "./src/schema.ts",
-    "./materials": "./src/materials.ts"
+    "./materials": "./src/materials.ts",
+    "./mass": "./src/mass.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -1,11 +1,17 @@
 {
   "id": "optic_tube_dot",
   "file": "assets/models/optic_tube_dot.glb",
+  "parts": {
+    "optic-tube-dot": {
+      "node": "optic-tube-dot:sight",
+      "massKg": 0.04629537375454333,
+      "centreOfMass": [0, 0.015540951860217221, 0]
+    }
+  },
   "gun": {
     "attachment": {
       "id": "optic-tube-dot",
       "kind": "optic",
-      "massKg": 0.04629537375454333,
       "mount": "rail-top",
       "properties": { "reticleKind": "dot", "railSpanNotches": { "minOffset": -1, "maxOffset": 1 } },
       "sight": {

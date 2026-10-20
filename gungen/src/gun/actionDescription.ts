@@ -1,7 +1,6 @@
 // Gun-owned discovery and coupling. Consumers choose a presentation mode, not instance names.
 
 import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { partNodeName } from '@skelly/engine/export/glb.ts';
 import {
   applyDir,
   applyPoint,
@@ -11,6 +10,7 @@ import {
   type Transform,
   type Vec3,
 } from '@skelly/engine/foundation/math.ts';
+import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { boltCycleMotion, type CycleMode, type CycleMotion, cycleMotion, pumpCycleMotion } from './cycle.ts';
 import { localEjectionPoint } from './ejection.ts';
 

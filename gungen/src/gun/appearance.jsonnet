@@ -47,14 +47,10 @@ local familyHex = {
     'archetype-pump-shotgun': 'pump-shotgun', 'archetype-revolver': 'revolver', 'archetype-smg': 'smg',
   },
   slotMaterials: slotMaterials,
-  solidMaterials: { stockPad: 'rubber-black', magazineMetal: 'steel-blued', chargingHandle: 'alu-anodized-black' },
-  solidFinishes: { rubber: { material: 'rubber-black', slot: 'accent' } },
   attachmentAppearances: {
     'real-suppressor': { finish: { metal: 'alu-anodized-black' } },
     'improvised-suppressor': { finish: { metal: 'alu-anodized-black' } },
   },
-  massFill: { [role]: if role == 'suppressor' then 0.7 else 1 for role in std.objectFields(roles) },
-  massSlotMaterials: { furniture: slotMaterials.furniture, accent: slotMaterials.accent },
   gun: {
     familyColors: { [role]: rgb(familyHex[role]) for role in std.objectFields(familyHex) },
     specialColors: { [role]: rgb(specialHex[role]) for role in std.objectFields(specialHex) },

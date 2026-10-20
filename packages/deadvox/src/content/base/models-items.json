@@ -7,6 +7,12 @@
       },
       "hold": "upright",
       "id": "hand_saw",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.65000000000000002
+        }
+      },
       "roll": 90
     },
     {
@@ -16,135 +22,333 @@
       },
       "hold": "upright",
       "id": "screwdriver",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.16
+        }
+      },
       "roll": 90
     },
     {
       "file": "assets/models/wire_spool.glb",
-      "id": "wire_spool"
+      "id": "wire_spool",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.080000000000000002
+        }
+      }
     },
     {
       "file": "assets/models/lamp_oil_bottle.glb",
-      "id": "lamp_oil_bottle"
+      "id": "lamp_oil_bottle",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.5
+        }
+      }
     },
     {
       "file": "assets/models/glass_shards.glb",
-      "id": "glass_shards"
+      "id": "glass_shards",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.080000000000000002
+        }
+      }
     },
     {
       "file": "assets/models/tape_roll.glb",
-      "id": "tape_roll"
+      "id": "tape_roll",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.029999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/fastener_pack.glb",
-      "id": "fastener_pack"
+      "id": "fastener_pack",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.17999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/wood_offcut.glb",
-      "id": "wood_offcut"
+      "id": "wood_offcut",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.25
+        }
+      }
     },
     {
       "file": "assets/models/rubber_strip.glb",
-      "id": "rubber_strip"
+      "id": "rubber_strip",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.044999999999999998
+        }
+      }
     },
     {
       "file": "assets/models/circuit_board.glb",
-      "id": "circuit_board"
+      "id": "circuit_board",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.074999999999999997
+        }
+      }
     },
     {
       "file": "assets/models/glass_lens.glb",
-      "id": "glass_lens"
+      "id": "glass_lens",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.040000000000000001
+        }
+      }
     },
     {
       "file": "assets/models/small_spring.glb",
-      "id": "small_spring"
+      "id": "small_spring",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.02
+        }
+      }
     },
     {
       "file": "assets/models/cloth_bundle.glb",
-      "id": "cloth_bundle"
+      "id": "cloth_bundle",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.025000000000000001
+        }
+      }
     },
     {
       "file": "assets/models/stab_vest.glb",
-      "id": "stab_vest"
+      "id": "stab_vest",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.5
+        }
+      }
     },
     {
       "file": "assets/models/riot_helmet.glb",
-      "id": "riot_helmet"
+      "id": "riot_helmet",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.3999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/riot_helmet_view.glb",
-      "id": "riot_helmet_view"
+      "id": "riot_helmet_view",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.3999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/thread_spool.glb",
-      "id": "thread_spool"
+      "id": "thread_spool",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.014999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/fuse.glb",
-      "id": "fuse"
+      "id": "fuse",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.01
+        }
+      }
     },
     {
       "file": "assets/models/cord_coil.glb",
-      "id": "cord_coil"
+      "id": "cord_coil",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.059999999999999998
+        }
+      }
     },
     {
       "file": "assets/models/pliers.glb",
-      "id": "pliers"
+      "id": "pliers",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.29999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/sewing_kit.glb",
-      "id": "sewing_kit"
+      "id": "sewing_kit",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.22
+        }
+      }
     },
     {
       "file": "assets/models/broken_toaster.glb",
-      "id": "broken_toaster"
+      "id": "broken_toaster",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.3999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/desk_lamp.glb",
-      "id": "desk_lamp"
+      "id": "desk_lamp",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.90000000000000002
+        }
+      }
     },
     {
       "file": "assets/models/table_fan.glb",
-      "id": "table_fan"
+      "id": "table_fan",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.5
+        }
+      }
     },
     {
       "file": "assets/models/cracked_phone.glb",
-      "id": "cracked_phone"
+      "id": "cracked_phone",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.25
+        }
+      }
     },
     {
       "file": "assets/models/broken_clock.glb",
-      "id": "broken_clock"
+      "id": "broken_clock",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.34999999999999998
+        }
+      }
     },
     {
       "file": "assets/models/electrical_repair_kit.glb",
-      "id": "electrical_repair_kit"
+      "id": "electrical_repair_kit",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.65000000000000002
+        }
+      }
     },
     {
       "file": "assets/models/flashlight_mount.glb",
-      "id": "flashlight_mount"
+      "id": "flashlight_mount",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.12
+        }
+      }
     },
     {
       "file": "assets/models/scrap_foregrip.glb",
-      "id": "scrap_foregrip"
+      "id": "scrap_foregrip",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.17999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/hinge_set.glb",
-      "id": "hinge_set"
+      "id": "hinge_set",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.35999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/glass_bulb.glb",
-      "id": "glass_bulb"
+      "id": "glass_bulb",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.029999999999999999
+        }
+      }
     },
     {
       "file": "assets/models/paper_sheet.glb",
-      "id": "paper_sheet"
+      "id": "paper_sheet",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.0050000000000000001
+        }
+      }
     },
     {
       "file": "assets/models/folded_note.glb",
-      "id": "folded_note"
+      "id": "folded_note",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.0050000000000000001
+        }
+      }
     },
     {
       "file": "assets/models/notebook.glb",
-      "id": "notebook"
+      "id": "notebook",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.29999999999999999
+        }
+      }
     }
   ]
 }

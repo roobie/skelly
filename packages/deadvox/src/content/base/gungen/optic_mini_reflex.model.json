@@ -1,11 +1,17 @@
 {
   "id": "optic_mini_reflex",
   "file": "assets/models/optic_mini_reflex.glb",
+  "parts": {
+    "optic-mini-reflex": {
+      "node": "optic-mini-reflex:sight",
+      "massKg": 0.08004009503411555,
+      "centreOfMass": [-0.00044561249450262864, 0.015277060840390008, -0.0001791977864068218]
+    }
+  },
   "gun": {
     "attachment": {
       "id": "optic-mini-reflex",
       "kind": "optic",
-      "massKg": 0.08004009503411555,
       "mount": "rail-top",
       "properties": { "reticleKind": "dot", "railSpanNotches": { "minOffset": -1, "maxOffset": 1 } },
       "sight": {

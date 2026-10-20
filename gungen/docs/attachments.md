@@ -12,7 +12,16 @@ Gungen owns attachment compatibility because only the firearm domain can certify
 
 Pair checks are sufficient because overlap and keep-out are relations between two placed parts. A group conflicts only when at least one pair conflicts, so a separate triple certificate would duplicate the same geometry question. For optics, rail support follows the mount feet rather than the full visual envelope; body clearance remains a separate fit relation. See `src/gun/attachments.ts`, `railSpanNotches`, `src/gun/rules.ts`, `opticMountFitForPart`, and `packages/deadvox/src/core/firearmFitting.ts`, `railFootprint`.
 
-Attachment mass is a geometry-and-material estimate, not inventory weight or a product specification. Keep exact outputs unpinned until BR approves the density and fill assumptions; otherwise model choices can be mistaken for measured product weights. See `src/gun/attachmentMass.ts`, `attachmentMassKg`, and `docs/deferred-assertions.md`. Item appearance belongs to the attachment instance rather than its host so the same item can keep its own finish across firearms; see `src/gun/attachments.ts`, `attachmentInstanceForId`, and `packages/engine/src/export/glb.ts`, `exportGlb`.
+Attachment physics uses canonical item geometry so host-specific mount presentation cannot
+change an item's mass. Density and fill assumptions are estimates, not measured product
+weights; keep exact outputs unpinned. See `src/gun/physical.ts`, `gunModelParts`;
+`src/gun/physical.jsonnet`, `roles`; and `docs/deferred-assertions.md`. Shared derivation
+belongs to `packages/thing-export/src/physical.ts`, `partProperties`, rather than the gun pack.
+
+Item appearance belongs to the attachment instance rather than its host so the same item
+can keep its own finish across firearms without changing its physical inputs; see
+`src/gun/attachments.ts`, `attachmentInstanceForId`, and
+`packages/thing-export/src/glb.ts`, `exportGlb`.
 
 ## Muzzle devices
 

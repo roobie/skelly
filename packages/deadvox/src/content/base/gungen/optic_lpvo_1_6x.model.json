@@ -1,11 +1,17 @@
 {
   "id": "optic_lpvo_1_6x",
   "file": "assets/models/optic_lpvo_1_6x.glb",
+  "parts": {
+    "optic-lpvo-1-6x": {
+      "node": "optic-lpvo-1-6x:sight",
+      "massKg": 0.16156919783654183,
+      "centreOfMass": [0.010220719648688032, 0.023160299261483004, 0.0031407789167277995]
+    }
+  },
   "gun": {
     "attachment": {
       "id": "optic-lpvo-1-6x",
       "kind": "optic",
-      "massKg": 0.16156919783654183,
       "mount": "rail-top",
       "properties": {
         "reticleKind": "crosshair",

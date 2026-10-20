@@ -306,7 +306,14 @@
           }
         ]
       },
-      "id": "magazine_stanag_30"
+      "id": "magazine_stanag_30",
+      "parts": {
+        "magazine": {
+          "centreOfMass": [0.0044177364152701145, -0.085942973843625606, 6.0040816396839085e-19],
+          "massKg": 2.4372265031888931,
+          "node": "magazine:magazine"
+        }
+      }
     },
     {
       "file": "assets/models/magazine_stanag_20.glb",
@@ -396,7 +403,14 @@
           }
         ]
       },
-      "id": "magazine_stanag_20"
+      "id": "magazine_stanag_20",
+      "parts": {
+        "magazine": {
+          "centreOfMass": [-0.00065072016460905342, -0.049667695473251033, 2.71729358149101e-20],
+          "massKg": 1.495902945410156,
+          "node": "magazine:magazine"
+        }
+      }
     },
     {
       "file": "assets/models/magazine_akm_30.glb",
@@ -526,7 +540,14 @@
           }
         ]
       },
-      "id": "magazine_akm_30"
+      "id": "magazine_akm_30",
+      "parts": {
+        "magazine": {
+          "centreOfMass": [0.033939947688144644, -0.085424371904508592, 3.7499791663030147e-19],
+          "massKg": 2.7098867032532596,
+          "node": "magazine:magazine"
+        }
+      }
     }
   ]
 }

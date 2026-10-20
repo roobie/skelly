@@ -1,11 +1,17 @@
 {
   "id": "optic_hunting_3_9x",
   "file": "assets/models/optic_hunting_3_9x.glb",
+  "parts": {
+    "optic-hunting-3-9x": {
+      "node": "optic-hunting-3-9x:sight",
+      "massKg": 0.17393058603090866,
+      "centreOfMass": [0.007643466640026472, 0.025204213045438604, 0.0014079295839888545]
+    }
+  },
   "gun": {
     "attachment": {
       "id": "optic-hunting-3-9x",
       "kind": "optic",
-      "massKg": 0.17393058603090866,
       "mount": "rail-top",
       "properties": {
         "reticleKind": "crosshair",

@@ -1,10 +1,10 @@
+import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   invalidPaletteFinish,
   type ResolvedAppearance,
   resolveAppearance as resolveCoreAppearance,
-} from '@skelly/engine/export/appearance.ts';
-import type { Palette, SrgbColor } from '@skelly/engine/export/exportTypes.ts';
-import { MATERIALS } from '@skelly/thing-core/materials';
+} from '@skelly/thing-export/appearance.ts';
+import type { Palette, SrgbColor } from '@skelly/thing-export/exportTypes.ts';
 import content from './appearance.json' with { type: 'json' };
 
 export const hexToSrgb = (hex: number): SrgbColor => [

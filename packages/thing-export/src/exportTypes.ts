@@ -1,9 +1,9 @@
 // Inputs and results of the GLB exporter, and the palette it colours with. They sit above the assembly
 // layer because the exporter needs a resolved assembly; the assembly types never import them.
 
-import type { Gender, Resolved } from '../assembly/schema.ts';
-import type { Issue } from '../foundation/issue.ts';
-import type { Vec3 } from '../foundation/math.ts';
+import type { Gender, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { Issue } from '@skelly/engine/foundation/issue.ts';
+import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 
 /**
  * An sRGB colour as normalized red, green, blue channels in [0, 1]. TypeScript cannot enforce finiteness or range;

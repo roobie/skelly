@@ -15,16 +15,8 @@ import type {
   Suggest,
   SuggestionResult,
 } from '../src/assembly/design.ts';
-import type { Domain, PartInstance, Resolved } from '../src/assembly/schema.ts';
+import type { Domain, PartInstance } from '../src/assembly/schema.ts';
 import type { Template } from '../src/assembly/template.ts';
-import type {
-  ExportGlb,
-  ExportPortMetadata,
-  GlbExportInput,
-  GlbExportResult,
-  Palette,
-  SrgbColor,
-} from '../src/export/exportTypes.ts';
 
 const typeScriptFiles = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -136,31 +128,11 @@ it("pins the engine's 3.0a contracts and chosen-value storage", () => {
     declaredStatus: undefined,
     error: { code: 'invalid-json', message: 'not JSON' },
   };
-  const palette: Palette = {
-    familyColors: { receiver: [0.2, 0.2, 0.2] },
-    specialColors: { floorplate: [0.1, 0.1, 0.1] },
-    fallbackColor: [136 / 255, 136 / 255, 136 / 255],
-    fallbackFinish: { metallic: 0, roughness: 0.85 },
-  };
-  const resolved = {} as unknown as Resolved;
-  const exportInput: GlbExportInput = {
-    resolved,
-    palette,
-    asset: { id: 'ar', file: 'assets/models/ar.glb' },
-  };
-  const exportSuccess: GlbExportResult = { ok: true, glb: new Uint8Array() };
-  const exportFailure: GlbExportResult = { ok: false, error: { code: 'unplaced-parts', partIds: ['sight'] } };
   const effectiveLocks: EffectiveSuggestionLocks = { params: { magazine: ['length'] }, optionalParts: ['sight'] };
   const suggestions: SuggestionResult = { variants: [{ ...validDesign, status: 'draft' }], exhausted: false };
 
   expectTypeOf<Design['format']>().toEqualTypeOf<1>();
   expectTypeOf<Design['status']>().toEqualTypeOf<'draft' | 'published'>();
-  expectTypeOf<Parameters<ExportGlb>>().toEqualTypeOf<[input: GlbExportInput]>();
-  expectTypeOf<ReturnType<ExportGlb>>().toEqualTypeOf<GlbExportResult>();
-  expectTypeOf(exportInput).toMatchTypeOf<GlbExportInput>();
-  expectTypeOf<keyof GlbExportInput>().toEqualTypeOf<
-    'resolved' | 'palette' | 'appearance' | 'finish' | 'asset' | 'revolveFacets' | 'generator' | 'metadataNamespace'
-  >();
   expectTypeOf<Parameters<Suggest>>().toEqualTypeOf<
     [
       design: Design,
@@ -179,13 +151,9 @@ it("pins the engine's 3.0a contracts and chosen-value storage", () => {
   >;
   expectTypeOf<LoadWithIssues['design']['status']>().toEqualTypeOf<'draft'>();
   expectTypeOf<LoadWithIssues['declaredStatus']>().toEqualTypeOf<'draft' | 'published'>();
-  expectTypeOf<Palette['familyColors']>().toEqualTypeOf<Readonly<Record<string, SrgbColor>>>();
-  expectTypeOf<ExportPortMetadata['id']>().toEqualTypeOf<`${string}.${string}`>();
   expectTypeOf(cleanLoad).toMatchTypeOf<DesignLoadResult>();
   expectTypeOf(draftLoad).toMatchTypeOf<DesignLoadResult>();
   expectTypeOf(failedLoad).toMatchTypeOf<DesignLoadResult>();
-  expectTypeOf(exportSuccess).toMatchTypeOf<GlbExportResult>();
-  expectTypeOf(exportFailure).toMatchTypeOf<GlbExportResult>();
   expectTypeOf(effectiveLocks).toMatchTypeOf<EffectiveSuggestionLocks>();
   expectTypeOf<(typeof suggestions.variants)[number]['status']>().toEqualTypeOf<'draft'>();
 

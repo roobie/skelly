@@ -6,11 +6,11 @@ import type { ItemDef, ModelDef } from '../src/core/schema.ts';
 const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachment']>['properties']): ModelDef => ({
   id: 'optic_fixture_model',
   file: 'assets/models/optic_fixture_model.glb',
+  parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
   gun: {
     attachment: {
       id: 'optic_fixture',
       kind: 'optic',
-      massKg: 1,
       mount: 'rail-top',
       mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
       properties: { ...properties, railSpanNotches: { minOffset: 0, maxOffset: 0 } },

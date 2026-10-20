@@ -1,0 +1,449 @@
+{
+  "roles": {
+    "ak-muzzle-device": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "ak-rear-sight": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "ak-receiver": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "ar-charging-handle": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "barrel": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "barrel-shroud": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "bipod": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "bolt-carrier": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "bolt-handle": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "bolt-handle-arm": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "bolt-handle-knob": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "carry-handle": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "cartridge-model": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "brass",
+      "slotMaterials": {
+        "bullet": "lead",
+        "case": "brass",
+        "closure": "paperboard-brown",
+        "hull": "plastic-red",
+        "primer": "brass"
+      }
+    },
+    "cylinder": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "foregrip": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "polymer-black",
+      "slotMaterials": {}
+    },
+    "forend": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "polymer-black",
+      "slotMaterials": {}
+    },
+    "frame": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "front-sight": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "front-sight-bead": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "gas-block": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "gas-cylinder": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "grip": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "polymer-black",
+      "slotMaterials": {}
+    },
+    "handguard": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "polymer-black",
+      "slotMaterials": {}
+    },
+    "handle-bar": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "handle-strut": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "handle-trunnion": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "heavy-bolt-carrier": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "heavy-lower": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "heavy-magazine": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "heavy-receiver": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "lower": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "magazine": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "monopod": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "muzzle-brake": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "rail-front-sight": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "receiver": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "recoil-stock": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "polymer-black",
+      "slotMaterials": {}
+    },
+    "revolver-barrel": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "revolver-crane": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "revolver-cylinder": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "revolver-ejector": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "revolver-frame": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "revolver-grip": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "polymer-black",
+      "slotMaterials": {}
+    },
+    "revolver-hammer": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "revolver-trigger": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "sight": {
+      "fill": {
+        "fraction": 1,
+        "source": "Calibrated against Aimpoint Micro T-2: 0.080 kg computed versus 0.096 kg published"
+      },
+      "material": "alu-anodized-black",
+      "slotMaterials": {}
+    },
+    "slide": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "smg-handle": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "sporting-rear-sight": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    },
+    "stock": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "polymer-black",
+      "slotMaterials": {}
+    },
+    "suppressor": {
+      "fill": {
+        "fraction": 0.69999999999999996,
+        "source": "https://www.surefire.com/socom556-rc2/ (published 5.56 suppressor envelope and mass)"
+      },
+      "material": "steel-stainless",
+      "slotMaterials": {}
+    },
+    "tactical-flashlight-mount": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "alu-anodized-black",
+      "slotMaterials": {}
+    },
+    "tube-magazine": {
+      "fill": {
+        "fraction": 1,
+        "source": "Authored solids represent the full material envelope."
+      },
+      "material": "steel-parkerized",
+      "slotMaterials": {}
+    }
+  },
+  "slotMaterials": {
+    "accent": "rubber-black",
+    "furniture": "polymer-black"
+  },
+  "solidFinishes": {
+    "rubber": {
+      "material": "rubber-black",
+      "slot": "accent"
+    }
+  },
+  "solidMaterials": {
+    "chargingHandle": "alu-anodized-black",
+    "magazineMetal": "steel-blued",
+    "stockPad": "rubber-black"
+  }
+}

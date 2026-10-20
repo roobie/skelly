@@ -38,7 +38,7 @@ const fixture = (massKg = 0.4) => {
   const model = registry.models.get(exported.modelId)!;
   registry.models.set(exported.modelId, {
     ...model,
-    gun: { ...model.gun, attachment: { ...model.gun!.attachment!, massKg } },
+    parts: { body: { massKg, centreOfMass: [0, 0, 0] } },
   });
   const inventory = new Inventory(registry);
   return { registry, inventory, rifle: inventory.create('rifle_assault'), ...exported };
@@ -63,7 +63,9 @@ describe('muzzle load', () => {
     const optic = heavy.registry.models.get(heavy.modelId)!;
     heavy.registry.models.set(heavy.modelId, {
       ...optic,
-      gun: { ...optic.gun, attachment: { ...optic.gun!.attachment!, massKg: optic.gun!.attachment!.massKg! * 2 } },
+      parts: Object.fromEntries(
+        Object.entries(optic.parts).map(([id, part]) => [id, { ...part, massKg: part.massKg * 2 }]),
+      ),
     });
     const heavyLoad = muzzleLoad(heavy.registry, heavy.rifle)!;
 
@@ -158,7 +160,9 @@ describe('muzzle load', () => {
     const optic = registry.models.get(modelId)!;
     registry.models.set(modelId, {
       ...optic,
-      gun: { ...optic.gun, attachment: { ...optic.gun!.attachment!, massKg: optic.gun!.attachment!.massKg! * 2 } },
+      parts: Object.fromEntries(
+        Object.entries(optic.parts).map(([id, part]) => [id, { ...part, massKg: part.massKg * 2 }]),
+      ),
     });
 
     expect(weightOf(registry, rifle)).toBeGreaterThan(original);

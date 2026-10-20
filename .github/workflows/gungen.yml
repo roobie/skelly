@@ -7,6 +7,8 @@ on:
     branches: [main]
     paths:
       - 'gungen/**'
+      - 'packages/thing-core/**'
+      - 'packages/thing-export/**'
       - 'packages/engine/**'
       - 'packages/tool-ui/**'
       - 'packages/deadvox/src/**'
@@ -19,6 +21,8 @@ on:
   pull_request:
     paths:
       - 'gungen/**'
+      - 'packages/thing-core/**'
+      - 'packages/thing-export/**'
       - 'packages/engine/**'
       - 'packages/tool-ui/**'
       - 'packages/deadvox/src/**'

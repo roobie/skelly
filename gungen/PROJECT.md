@@ -5,6 +5,7 @@ read_if:
   - you use or update the golden AKM reference photo or its overlays
   - you change attachment compatibility, sights or the Gungen-to-Deadvox export contract
   - you change a gun Deadvox ships, or anything its export reads
+  - you change physical inputs or their ownership
   - you change Gungen's test or cross-project integration policy
 ---
 
@@ -46,7 +47,12 @@ A Gungen change to a gun Deadvox ships refreshes Deadvox's copy, its GLB and mod
 
 The hunting rifle's civilian identity, integral loading, separate scope and phased turn-bolt contract are governed by `docs/bolt-action-export.md`. Geometry is exported before playable handling so Deadvox consumes fitted dimensions rather than inventing them.
 
-The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `packages/deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is a geometry/material estimate, not inventory weight or a product specification; see `src/gun/attachmentMass.ts#attachmentMassKg` and `docs/deferred-assertions.md`.
+Gungen supplies firearm metadata and physical assumptions; shared export derives physical
+properties so neither a gun adapter nor Deadvox duplicates geometry integration. See
+`src/gun/exportGlb.ts`, `exportGunGlb`; `src/gun/physical.jsonnet`, `roles`; and
+`packages/thing-export/src/physical.ts`, `modelParts`. Physical estimates are not product
+specifications; exact outputs stay unpinned (`docs/deferred-assertions.md`). Deadvox owns
+playable handling; see `packages/deadvox/docs/decisions/0006-firearm-handling.md`.
 
 Revolvers use independently mounted moving parts and a separate rotational export contract so the linear carrier contract stays focused; see `docs/revolver-export.md` and `src/gun/revolverExport.ts`, `RevolverMetadata`.
 

@@ -6,7 +6,6 @@
         "attachment": {
           "id": "foregrip",
           "kind": "foregrip",
-          "massKg": 0.016938745312499996,
           "mount": "rail-bottom",
           "mountFrame": {
             "normal": [0, 1, 0],
@@ -21,7 +20,14 @@
           }
         }
       },
-      "id": "foregrip"
+      "id": "foregrip",
+      "parts": {
+        "foregrip": {
+          "centreOfMass": [0, -0.01646590909090909, 0],
+          "massKg": 0.016938745312499996,
+          "node": "foregrip:foregrip"
+        }
+      }
     },
     {
       "file": "assets/models/improvised_suppressor.glb",
@@ -29,7 +35,6 @@
         "attachment": {
           "id": "improvised-suppressor",
           "kind": "suppressor",
-          "massKg": 1.2218603437304045,
           "mount": "muzzle",
           "mountFrame": {
             "normal": [-1, 0, 0],
@@ -41,7 +46,14 @@
           }
         }
       },
-      "id": "improvised_suppressor"
+      "id": "improvised_suppressor",
+      "parts": {
+        "improvised-suppressor": {
+          "centreOfMass": [0.088573570710034369, 0, 0],
+          "massKg": 1.2218603437304045,
+          "node": "improvised-suppressor:suppressor"
+        }
+      }
     },
     {
       "file": "assets/models/optic_digital_thermal.glb",
@@ -49,7 +61,6 @@
         "attachment": {
           "id": "optic-digital-thermal",
           "kind": "optic",
-          "massKg": 0.33766184237147778,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -76,7 +87,14 @@
           }
         }
       },
-      "id": "optic_digital_thermal"
+      "id": "optic_digital_thermal",
+      "parts": {
+        "optic-digital-thermal": {
+          "centreOfMass": [0.0093616970013592465, 0.048119079041628751, 0.0038520631010739558],
+          "massKg": 0.33766184237147778,
+          "node": "optic-digital-thermal:sight"
+        }
+      }
     },
     {
       "file": "assets/models/optic_fixed_prism_4x.glb",
@@ -84,7 +102,6 @@
         "attachment": {
           "id": "optic-fixed-prism-4x",
           "kind": "optic",
-          "massKg": 0.35748803804025397,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -111,7 +128,14 @@
           }
         }
       },
-      "id": "optic_fixed_prism_4x"
+      "id": "optic_fixed_prism_4x",
+      "parts": {
+        "optic-fixed-prism-4x": {
+          "centreOfMass": [-0.0045595163577226133, 0.023076901424569109, -0.0019968650891139649],
+          "massKg": 0.35748803804025397,
+          "node": "optic-fixed-prism-4x:sight"
+        }
+      }
     },
     {
       "file": "assets/models/optic_high_mag_5_25x.glb",
@@ -119,7 +143,6 @@
         "attachment": {
           "id": "optic-high-mag-5-25x",
           "kind": "optic",
-          "massKg": 0.32549166112242423,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -146,7 +169,14 @@
           }
         }
       },
-      "id": "optic_high_mag_5_25x"
+      "id": "optic_high_mag_5_25x",
+      "parts": {
+        "optic-high-mag-5-25x": {
+          "centreOfMass": [0.0097659611971712135, 0.036016734028457939, 0.0047259561996612475],
+          "massKg": 0.32549166112242423,
+          "node": "optic-high-mag-5-25x:sight"
+        }
+      }
     },
     {
       "file": "assets/models/optic_holographic.glb",
@@ -154,7 +184,6 @@
         "attachment": {
           "id": "optic-holographic",
           "kind": "optic",
-          "massKg": 0.30874713046874996,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -177,7 +206,14 @@
           }
         }
       },
-      "id": "optic_holographic"
+      "id": "optic_holographic",
+      "parts": {
+        "optic-holographic": {
+          "centreOfMass": [-0.0040185473815461349, 0.022921134663341648, 0],
+          "massKg": 0.30874713046874996,
+          "node": "optic-holographic:sight"
+        }
+      }
     },
     {
       "file": "assets/models/optic_lpvo_1_6x.glb",
@@ -185,7 +221,6 @@
         "attachment": {
           "id": "optic-lpvo-1-6x",
           "kind": "optic",
-          "massKg": 0.16156919783654183,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -212,7 +247,14 @@
           }
         }
       },
-      "id": "optic_lpvo_1_6x"
+      "id": "optic_lpvo_1_6x",
+      "parts": {
+        "optic-lpvo-1-6x": {
+          "centreOfMass": [0.010220719648688032, 0.023160299261483004, 0.0031407789167277995],
+          "massKg": 0.16156919783654183,
+          "node": "optic-lpvo-1-6x:sight"
+        }
+      }
     },
     {
       "file": "assets/models/optic_mini_reflex.glb",
@@ -220,7 +262,6 @@
         "attachment": {
           "id": "optic-mini-reflex",
           "kind": "optic",
-          "massKg": 0.080040095034115549,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -243,7 +284,14 @@
           }
         }
       },
-      "id": "optic_mini_reflex"
+      "id": "optic_mini_reflex",
+      "parts": {
+        "optic-mini-reflex": {
+          "centreOfMass": [-0.00044561249450262864, 0.015277060840390008, -0.0001791977864068218],
+          "massKg": 0.080040095034115549,
+          "node": "optic-mini-reflex:sight"
+        }
+      }
     },
     {
       "file": "assets/models/optic_tube_dot.glb",
@@ -251,7 +299,6 @@
         "attachment": {
           "id": "optic-tube-dot",
           "kind": "optic",
-          "massKg": 0.046295373754543331,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -274,7 +321,14 @@
           }
         }
       },
-      "id": "optic_tube_dot"
+      "id": "optic_tube_dot",
+      "parts": {
+        "optic-tube-dot": {
+          "centreOfMass": [0, 0.015540951860217221, 0],
+          "massKg": 0.046295373754543331,
+          "node": "optic-tube-dot:sight"
+        }
+      }
     },
     {
       "file": "assets/models/rail_front_sight.glb",
@@ -282,7 +336,6 @@
         "attachment": {
           "id": "rail-front-sight",
           "kind": "iron-sight",
-          "massKg": 0.025743185742187501,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -303,7 +356,14 @@
           }
         }
       },
-      "id": "rail_front_sight"
+      "id": "rail_front_sight",
+      "parts": {
+        "rail-front-sight": {
+          "centreOfMass": [0, 0.0036041666666666665, 0],
+          "massKg": 0.025743185742187501,
+          "node": "rail-front-sight:rail-front-sight"
+        }
+      }
     },
     {
       "file": "assets/models/real_suppressor.glb",
@@ -311,7 +371,6 @@
         "attachment": {
           "id": "real-suppressor",
           "kind": "suppressor",
-          "massKg": 0.49797642922183399,
           "mount": "muzzle",
           "mountFrame": {
             "normal": [-1, 0, 0],
@@ -323,7 +382,14 @@
           }
         }
       },
-      "id": "real_suppressor"
+      "id": "real_suppressor",
+      "parts": {
+        "real-suppressor": {
+          "centreOfMass": [0.071313214922867046, 0, 0],
+          "massKg": 0.49797642922183399,
+          "node": "real-suppressor:suppressor"
+        }
+      }
     },
     {
       "file": "assets/models/tactical_flashlight_mount.glb",
@@ -331,7 +397,6 @@
         "attachment": {
           "id": "tactical-flashlight-mount",
           "kind": "flashlight-mount",
-          "massKg": 0.015398859374999999,
           "mount": "rail-side",
           "mountFrame": {
             "normal": [0, 0, -1],
@@ -345,7 +410,14 @@
           }
         }
       },
-      "id": "tactical_flashlight_mount"
+      "id": "tactical_flashlight_mount",
+      "parts": {
+        "tactical-flashlight-mount": {
+          "centreOfMass": [0, 0, 0.01035],
+          "massKg": 0.015398859374999999,
+          "node": "tactical-flashlight-mount:tactical-flashlight-mount"
+        }
+      }
     }
   ]
 }

@@ -1,0 +1,43 @@
+name: thing-export
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/thing-export/**'
+      - 'packages/thing-core/**'
+      - 'packages/engine/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '!**/*.md'
+      - '.github/workflows/thing-export.yml'
+  pull_request:
+    paths:
+      - 'packages/thing-export/**'
+      - 'packages/thing-core/**'
+      - 'packages/engine/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '!**/*.md'
+      - '.github/workflows/thing-export.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/thing-export
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ../..
+      - run: npm run typecheck
+      - run: npm test

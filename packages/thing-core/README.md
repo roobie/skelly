@@ -16,8 +16,9 @@ reasons and `things/WORK.md`, "Phases" for the remaining suite work.
 ## Contract
 
 - Math comes from the engine and is used, never reimplemented.
-- Shapes, meshing and assembly belong to the engine. Work that needs them, such as deriving
-  mass from shape volumes, belongs in the export package, not here.
+- Shapes, meshing and assembly belong to the engine. Shape-derived physical properties belong
+  above this core so consumers can read them without loading geometry; see
+  `packages/thing-export/README.md`, "Physical model".
 - Nothing here names a kind of thing, so any code that does belongs in a tool.
 - Deadvox depends on this package for the model schema, so it stays free of rendering
   libraries and of assembly code.
@@ -33,6 +34,22 @@ reasons and `things/WORK.md`, "Phases" for the remaining suite work.
   tuning: material references retain authoring shades while resolving the shared values;
   see `src/materials.ts`, `MaterialReferenceSchema`, and
   `packages/deadvox/src/render/modelMaterials.ts`, `applyModelMaterials`.
-- Role assignments and appearance profiles belong to the authoring domain, not to a
-  material's identity. See `gungen/src/gun/appearance.jsonnet` for the gun policy. This
-  keeps the core free of thing-specific vocabulary while a material retains one definition.
+- Role assignments, physical assumptions and appearance profiles belong to the authoring
+  domain, not to a material's identity. See `gungen/src/gun/physical.jsonnet`, `roles`, and
+  `gungen/src/gun/appearance.jsonnet`, `profileFinishes`. This keeps the core free of
+  thing-specific vocabulary while a material retains one definition.
+- Physical parts are neutral so every kind of model shares one mass contract; see
+  `src/schema.ts`, `ModelPartSchema`, and `src/mass.ts`, `modelMassKg`. A node association
+  lets consumers distinguish baked geometry from separately owned child items without
+  inspecting meshes. Counting both would count the same material twice; see
+  `packages/deadvox/src/core/modelMass.ts`, `modelBodyMassKg`.
+
+## Authored assets
+
+A model without a shape source still needs explicit physical metadata, not a runtime
+fallback to item weight or loaded mesh geometry. Single-body authoring uses the file origin
+as an estimated physical reference; these are class estimates, not mesh-derived centres.
+Unambiguous item authoring supplies the mass, and shared visual proxies or assets without
+items require an explicit estimate. See
+`packages/deadvox/src/content/base/authored-model-physics.libsonnet`, `estimates`.
+The thing-family work on #509 replaces these estimates as families gain shape sources.

@@ -1,5 +1,6 @@
 import type { ModelDef, Registry } from './content.ts';
 import { defOf, type Item } from './items.ts';
+import { modelBodyMassKg } from './modelMass.ts';
 
 /** Sum of attachment mass times its mount distance from the grip, in kg·m. */
 export interface FirearmAttachmentResponse {
@@ -72,7 +73,7 @@ export const muzzleLoad = (registry: Registry, firearm: Item): number | undefine
     if (!childModel?.gun?.attachment) {
       return 0;
     }
-    const { massKg } = childModel.gun.attachment;
+    const massKg = modelBodyMassKg(childModel);
     const grip = host?.grip?.at;
     const slot = host?.gun?.attachmentSlots?.find(({ id }) => id === slotId);
     if (!(slot && grip)) {

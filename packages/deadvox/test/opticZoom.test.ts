@@ -20,11 +20,11 @@ const fixture = (rememberPerWeapon = true, fixed = false) => {
   const model: ModelDef = {
     id: 'fixture_optic_model',
     file: 'fixture.glb',
+    parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
     gun: {
       attachment: {
         id: 'fixture_optic',
         kind: 'optic',
-        massKg: 1,
         mount: 'rail-top',
         mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
         properties: { magnification: range },

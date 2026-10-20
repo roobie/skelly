@@ -1,6 +1,63 @@
 {
   "id": "rifle_hunting",
   "file": "assets/models/rifle_hunting.glb",
+  "parts": {
+    "barrel": {
+      "node": "barrel:barrel",
+      "massKg": 1.8989726805666498,
+      "centreOfMass": [0.27600000000000013, 0, 3.3800251656466966e-17]
+    },
+    "bolt-carrier": {
+      "node": "bolt-carrier:bolt-carrier",
+      "massKg": 0.25890095734199,
+      "centreOfMass": [-0.10710417212839816, -0.00009943256296338273, 0.00013257675061783907]
+    },
+    "bolt-handle-arm": {
+      "node": "bolt-handle-arm:bolt-handle-arm",
+      "massKg": 0.022253586100390448,
+      "centreOfMass": [-0.17644683721965596, -0.021537348878623814, 0.029090511658967845]
+    },
+    "bolt-handle-knob": {
+      "node": "bolt-handle-knob:bolt-handle-knob",
+      "massKg": 0.015453879236382253,
+      "centreOfMass": [-0.18152134221635646, -0.04183536886542586, 0.04431402664906938]
+    },
+    "front-sight": {
+      "node": "front-sight:front-sight",
+      "massKg": 0.05084969622421838,
+      "centreOfMass": [0.52325, 0.0017332386088154059, 6.42882937071194e-17]
+    },
+    "handguard": {
+      "node": "handguard:handguard",
+      "massKg": 0.41776389782034085,
+      "centreOfMass": [0.00816388989348924, -0.025381844996752025, -0.00035250878317454564]
+    },
+    "lower": {
+      "node": "lower:lower",
+      "massKg": 0.14690404907226562,
+      "centreOfMass": [-0.10515867724867727, -0.050835171957671954, -1.1203412338072778e-19]
+    },
+    "magazine": {
+      "node": "magazine:magazine",
+      "massKg": 0.459646446875,
+      "centreOfMass": [-0.048875, -0.0273125, -2.1125157285291842e-18]
+    },
+    "rear-sight": {
+      "node": "rear-sight:sporting-rear-sight",
+      "massKg": 0.0018188120361328124,
+      "centreOfMass": [0.07475, 0.017139423076923076, 8.463604681607309e-18]
+    },
+    "receiver": {
+      "node": "receiver:receiver",
+      "massKg": 0.4277123033514165,
+      "centreOfMass": [-0.09342798504095144, -0.0004790244446958029, -0.0007390509595252858]
+    },
+    "stock": {
+      "node": "stock:stock",
+      "massKg": 1.0121106620598435,
+      "centreOfMass": [-0.37933866770641966, -0.07258650212225506, -2.3728597656592904e-17]
+    }
+  },
   "grip": { "at": [-0.215625, -0.048875, 0], "turn": [0, 0, 0] },
   "anchors": {
     "support": [0.14145, -0.031929, 0],

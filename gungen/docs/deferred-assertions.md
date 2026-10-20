@@ -1,13 +1,18 @@
 ---
 read_if:
-  - you tune attachment mass from published product comparisons
+  - you tune attachment physical inputs from published product comparisons
   - you decide when attachment mass figures can become pinned assertions
   - you review geometry snapshots or exact seeded outputs in generator tests
 ---
 
 # Deferred assertions
 
-Attachment masses are class estimates, not fixed product replicas. Keep exact outputs unpinned until BR approves the material-density and fill assumptions; otherwise a geometry choice would be presented as a measured product weight. Recompute with `src/gun/attachmentMass.ts`, `attachmentMassKg`, and compare against its cited specifications.
+Attachment masses are class estimates, not fixed product replicas. Exact outputs stay
+unpinned until BR approves the physical assumptions, because geometry choices must not be
+presented as measured product weights. Recompute through `src/gun/physical.ts`,
+`gunModelParts`, and compare against the sources beside `src/gun/physical.jsonnet`, `roles`.
+The density relation is protected with fixture materials in
+`packages/thing-export/test/physical.test.ts`, "uses material density as a mass relation for identical geometry".
 
 The exported flashlight is only a mount, so it cannot be compared with a complete weapon light until a flashlight-body export exists. This is a boundary on the comparison, not a reason to infer the missing mass.
 

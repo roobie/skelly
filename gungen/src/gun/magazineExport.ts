@@ -5,7 +5,7 @@ import type {
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
-} from '@skelly/engine/export/exportTypes.ts';
+} from '@skelly/thing-export/exportTypes.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import { gunDomain } from './domain.ts';
@@ -13,6 +13,7 @@ import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
 import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { magazineRoundColumn, magazineRoundPoses } from './magazineGeometry.ts';
 import { GUN_PALETTE } from './palette.ts';
+import { gunModelParts } from './physical.ts';
 
 export interface MagazineExportInput {
   readonly asset: GlbAssetIdentity;
@@ -56,6 +57,7 @@ export const exportMagazineGlb = (input: MagazineExportInput): MagazineExportRes
     modelEntry: {
       id: input.asset.id,
       file: input.asset.file as DeadvoxModelFile,
+      parts: gunModelParts(resolved),
       gun: {
         calibre: input.cartridge.id,
         capacity: column.capacity,

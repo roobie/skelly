@@ -1,5 +1,12 @@
 {
   "id": "case_308_h_winchester",
   "file": "assets/models/case-308_h_winchester.glb",
+  "parts": {
+    "cartridge": {
+      "node": "cartridge:cartridge-model",
+      "massKg": 0.007983470374119048,
+      "centreOfMass": [0.01835771716833193, 0, 0]
+    }
+  },
   "gun": { "calibre": "308-winchester" }
 }

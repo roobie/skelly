@@ -1,11 +1,17 @@
 {
   "id": "optic_digital_thermal",
   "file": "assets/models/optic_digital_thermal.glb",
+  "parts": {
+    "optic-digital-thermal": {
+      "node": "optic-digital-thermal:sight",
+      "massKg": 0.3376618423714778,
+      "centreOfMass": [0.009361697001359246, 0.04811907904162875, 0.003852063101073956]
+    }
+  },
   "gun": {
     "attachment": {
       "id": "optic-digital-thermal",
       "kind": "optic",
-      "massKg": 0.3376618423714778,
       "mount": "rail-top",
       "properties": {
         "reticleKind": "crosshair",

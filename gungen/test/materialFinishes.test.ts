@@ -1,4 +1,4 @@
-import { srgbToHex } from '@skelly/engine/export/appearance.ts';
+import { srgbToHex } from '@skelly/thing-export/appearance.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_FINISH_SLOTS, GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

@@ -1,15 +1,15 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import type { NeutralModel } from '@skelly/thing-core/schema';
 import type {
   AppearanceContext,
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
-} from '@skelly/engine/export/exportTypes.ts';
-import { partNodeName } from '@skelly/engine/export/glb.ts';
-import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
-import type { NeutralModel } from '@skelly/thing-core/schema';
+} from '@skelly/thing-export/exportTypes.ts';
+import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { resolveGunAction } from './actionDescription.ts';
@@ -36,6 +36,7 @@ import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { internalMagazineCapacity } from './internalMagazine.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
+import { gunModelParts } from './physical.ts';
 import { type RevolverMetadata, revolverMetadata } from './revolverExport.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
@@ -371,12 +372,14 @@ const sightMetadata = (resolved: Resolved): GunModelFields['sight'] => {
 
 export const createGunModelEntry = ({
   asset,
+  parts,
   anchors,
   metresPerUnit,
   options = {},
   sight,
 }: {
   asset: GunAssetIdentity;
+  parts: NeutralModel['parts'];
   anchors: SelectedAnchors;
   metresPerUnit: number;
   options?: GunModelEntryOptions;
@@ -393,6 +396,7 @@ export const createGunModelEntry = ({
   return {
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
+    parts,
     grip: { at: modelPoint(anchors.hold.position, metresPerUnit), turn: gripTurn() },
     ...(others.length > 0 || handling
       ? {
@@ -464,6 +468,7 @@ export const exportGunGlb = (
   } = resolved.domain;
   const modelEntry = createGunModelEntry({
     asset,
+    parts: gunModelParts(resolved),
     anchors,
     metresPerUnit,
     options: {

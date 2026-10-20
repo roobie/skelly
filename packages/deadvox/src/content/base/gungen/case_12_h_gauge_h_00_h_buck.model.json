@@ -1,0 +1,12 @@
+{
+  "id": "case_12_h_gauge_h_00_h_buck",
+  "file": "assets/models/case-12_h_gauge_h_00_h_buck.glb",
+  "parts": {
+    "cartridge": {
+      "node": "cartridge:cartridge-model",
+      "massKg": 0.008604945816003864,
+      "centreOfMass": [0.011625468591017207, 0, 0]
+    }
+  },
+  "gun": { "calibre": "12-gauge-00-buck" }
+}

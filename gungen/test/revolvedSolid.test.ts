@@ -1,12 +1,12 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
-import type { GlbAssetIdentity, Palette } from '@skelly/engine/export/exportTypes.ts';
-import { exportGlb } from '@skelly/engine/export/glb.ts';
 import { type ExtrusionAxis, extrusionPoint, IDENTITY } from '@skelly/engine/foundation/math.ts';
 import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
 import type { DomainUnits, RevolvedSolid, Solid } from '@skelly/engine/shapes/solid.ts';
+import type { GlbAssetIdentity, Palette } from '@skelly/thing-export/exportTypes.ts';
+import { exportGlb } from '@skelly/thing-export/glb.ts';
 import { describe, expect, it } from 'vitest';
 import { readGlb } from './glbReader.ts';
 

@@ -5,6 +5,7 @@ const SOURCE = 'test/fixtures/packs/lamp/lamp.json';
 const baseModel = {
   id: 'lamp',
   file: 'assets/models/lamp.glb',
+  parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
   grip: { at: [0.05, 0.02, 0] },
 };
 const cycle = {
@@ -93,7 +94,7 @@ describe('optional action model metadata', () => {
     );
   });
 
-  it('leaves action fields optional for existing model entries', () => {
+  it('does not require gun action metadata on a neutral model', () => {
     const { registry, issues } = build(baseModel);
     expect(issues).toEqual([]);
     expect(registry.models.get('lamp')?.gun?.action).toBeUndefined();

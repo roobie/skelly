@@ -25,6 +25,10 @@
       "output": "gungen/src/gun/appearance.json"
     },
     {
+      "source": "gungen/src/gun/physical.jsonnet",
+      "output": "gungen/src/gun/physical.json"
+    },
+    {
       "source": "packages/deadvox/src/config/browser-mods.jsonnet",
       "output": "packages/deadvox/src/config/browser-mods.json"
     },
@@ -187,6 +191,10 @@
     {
       "source": "packages/deadvox/src/content/base/models-items.jsonnet",
       "output": "packages/deadvox/src/content/base/models-items.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/models-melee.jsonnet",
+      "output": "packages/deadvox/src/content/base/models-melee.json"
     },
     {
       "source": "packages/deadvox/src/content/base/range.jsonnet",

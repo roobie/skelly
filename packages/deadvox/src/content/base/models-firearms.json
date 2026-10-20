@@ -175,7 +175,13 @@
         "at": [0.086599999999999996, 0, 0.026599999999999999],
         "turn": [-90, 0, 0]
       },
-      "id": "pistol_compact"
+      "id": "pistol_compact",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.69999999999999996
+        }
+      }
     },
     {
       "anchors": {
@@ -186,7 +192,13 @@
         "at": [0.088499999999999995, 0, 0.031199999999999999],
         "turn": [-90, 0, 0]
       },
-      "id": "pistol_full"
+      "id": "pistol_full",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.90000000000000002
+        }
+      }
     },
     {
       "anchors": {
@@ -632,7 +644,6 @@
           {
             "id": "optic-lpvo-1-6x",
             "kind": "optic",
-            "massKg": 0.16156919783654183,
             "mount": "rail-top",
             "mountFrame": {
               "normal": [0, -1, 0],
@@ -1705,7 +1716,64 @@
           }
         }
       },
-      "id": "rifle_assault"
+      "id": "rifle_assault",
+      "parts": {
+        "barrel": {
+          "centreOfMass": [0.19406249999999994, 1.1416158540019516e-19, 2.7078956367341458e-17],
+          "massKg": 1.5132438548265508,
+          "node": "barrel:barrel"
+        },
+        "bolt-carrier": {
+          "centreOfMass": [-0.071624173470552957, 0.0019156041111343869, -2.0898427739723737e-18],
+          "massKg": 0.31580891971627523,
+          "node": "bolt-carrier:bolt-carrier"
+        },
+        "charging-handle": {
+          "centreOfMass": [-0.15716046672828093, 0.022090734750462103, -0.0011239602587800538],
+          "massKg": 0.0077753973937499908,
+          "node": "charging-handle:ar-charging-handle"
+        },
+        "front-sight": {
+          "centreOfMass": [0.30762499999999998, 0.018047474096690962, 4.0935425365352248e-17],
+          "massKg": 0.11352875716171837,
+          "node": "front-sight:front-sight"
+        },
+        "grip": {
+          "centreOfMass": [-0.16434811272068695, -0.092641014036426467, 1.3536269438268472e-17],
+          "massKg": 0.13057759264309635,
+          "node": "grip:grip"
+        },
+        "handguard": {
+          "centreOfMass": [0.14859439238210395, 0, 1.8197564700198944e-17],
+          "massKg": 0.31837141757812504,
+          "node": "handguard:handguard"
+        },
+        "lower": {
+          "centreOfMass": [-0.10538275556302508, -0.043084253969090054, 1.7554398241411374e-18],
+          "massKg": 0.7280890318969373,
+          "node": "lower:lower"
+        },
+        "magazine": {
+          "centreOfMass": [-0.049525720164609058, -0.069792695473251037, 1.1135991928018791e-17],
+          "massKg": 1.495902945410156,
+          "node": "magazine:magazine"
+        },
+        "receiver": {
+          "centreOfMass": [-0.09836006879322258, 0.0028006505524942066, -0.00058161410761878665],
+          "massKg": 2.5701250465703134,
+          "node": "receiver:receiver"
+        },
+        "sight": {
+          "centreOfMass": [-0.058779280351311962, 0.051910299261483002, 0.0031407789167277969],
+          "massKg": 0.16156919783654183,
+          "node": "sight:sight"
+        },
+        "stock": {
+          "centreOfMass": [-0.31043670198688395, -0.01545420458790229, -1.5484030238298522e-17],
+          "massKg": 0.62779986746679828,
+          "node": "stock:stock"
+        }
+      }
     },
     {
       "anchors": {
@@ -2077,49 +2145,158 @@
           }
         }
       },
-      "id": "rifle_ak"
+      "id": "rifle_ak",
+      "parts": {
+        "barrel": {
+          "centreOfMass": [0.18399999999999991, -1.1416158540019518e-19, 2.2904526256861924e-17],
+          "massKg": 0.71211475521249445,
+          "node": "barrel:barrel"
+        },
+        "bolt-carrier": {
+          "centreOfMass": [-0.048049920717642497, 0.01130144299012974, 0.00089117930491619275],
+          "massKg": 0.46015532661641845,
+          "node": "bolt-carrier:bolt-carrier"
+        },
+        "front-sight": {
+          "centreOfMass": [0.34787499999999999, 0.016230898901780321, 4.2503117589131489e-17],
+          "massKg": 0.10046701243871499,
+          "node": "front-sight:front-sight"
+        },
+        "gas-block": {
+          "centreOfMass": [0.23913884848459069, 0.014282167799755866, 2.758643035280883e-17],
+          "massKg": 0.14904177719390155,
+          "node": "gas-block:gas-block"
+        },
+        "gas-cylinder": {
+          "centreOfMass": [0.12650000000000003, 0.025874999999999999, 1.0562578642645924e-17],
+          "massKg": 0.33380379150585654,
+          "node": "gas-cylinder:gas-cylinder"
+        },
+        "grip": {
+          "centreOfMass": [-0.22759811272068695, -0.075391014036426451, 1.3536269438268472e-17],
+          "massKg": 0.13057759264309635,
+          "node": "grip:grip"
+        },
+        "handguard": {
+          "centreOfMass": [0.087835695876288672, 0.0047580756013745704, 1.0756770380577729e-17],
+          "massKg": 0.18671116992187498,
+          "node": "handguard:handguard"
+        },
+        "lower": {
+          "centreOfMass": [-0.13545944980710492, -0.02224182619583543, 1.3154943067727052e-18],
+          "massKg": 1.785984730041468,
+          "node": "lower:lower"
+        },
+        "magazine": {
+          "centreOfMass": [-0.052310052311855357, -0.11417437190450859, 2.3410450369565397e-17],
+          "massKg": 2.7098867032532596,
+          "node": "magazine:magazine"
+        },
+        "muzzle-device": {
+          "centreOfMass": [0.37706416140387333, -0.0010826897832388839, 4.7383061434103781e-17],
+          "massKg": 0.033086389353967023,
+          "node": "muzzle-device:ak-muzzle-device"
+        },
+        "rear-sight": {
+          "centreOfMass": [-0.028749999999999998, 0.045999999999999999, -3.5208595475486404e-19],
+          "massKg": 0.00149235859375,
+          "node": "rear-sight:ak-rear-sight"
+        },
+        "receiver": {
+          "centreOfMass": [-0.12354146143650842, 0.013454965144264731, -0.001674435405156182],
+          "massKg": 2.4208481473339836,
+          "node": "receiver:ak-receiver"
+        },
+        "stock": {
+          "centreOfMass": [-0.39731292235524374, -0.038553524494325517, -1.5932860475501818e-17],
+          "massKg": 0.56844507000642497,
+          "node": "stock:stock"
+        }
+      }
     },
     {
       "file": "assets/models/round-7_d_62x39.glb",
       "gun": {
         "calibre": "7.62x39"
       },
-      "id": "round_7_d_62x39"
+      "id": "round_7_d_62x39",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.02497761164849726, 0, 0],
+          "massKg": 0.04018910662611401,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "file": "assets/models/case-7_d_62x39.glb",
       "gun": {
         "calibre": "7.62x39"
       },
-      "id": "case_7_d_62x39"
+      "id": "case_7_d_62x39",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.013124501360492154, 0, 0],
+          "massKg": 0.005980416791464797,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "file": "assets/models/round-5_d_56x45.glb",
       "gun": {
         "calibre": "5.56x45"
       },
-      "id": "round_5_d_56x45"
+      "id": "round_5_d_56x45",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.025058314161977943, 0, 0],
+          "massKg": 0.028784689499338684,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "file": "assets/models/case-5_d_56x45.glb",
       "gun": {
         "calibre": "5.56x45"
       },
-      "id": "case_5_d_56x45"
+      "id": "case_5_d_56x45",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.016329721097704392, 0, 0],
+          "massKg": 0.0053648851625307907,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "file": "assets/models/round-12_h_gauge_h_00_h_buck.glb",
       "gun": {
         "calibre": "12-gauge-00-buck"
       },
-      "id": "round_12_h_gauge_h_00_h_buck"
+      "id": "round_12_h_gauge_h_00_h_buck",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.0099615300767105178, 0, 0],
+          "massKg": 0.0083547274247723364,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "file": "assets/models/case-12_h_gauge_h_00_h_buck.glb",
       "gun": {
         "calibre": "12-gauge-00-buck"
       },
-      "id": "case_12_h_gauge_h_00_h_buck"
+      "id": "case_12_h_gauge_h_00_h_buck",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.011625468591017207, 0, 0],
+          "massKg": 0.0086049458160038644,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "anchors": {
@@ -2188,21 +2365,77 @@
           "up": [0, 1, 0]
         }
       },
-      "id": "revolver"
+      "id": "revolver",
+      "parts": {
+        "barrel": {
+          "centreOfMass": [0.062788785454845092, -0.0044540234881007426, 4.2555409614896696e-17],
+          "massKg": 0.55920806286402736,
+          "node": "barrel:revolver-barrel"
+        },
+        "crane": {
+          "centreOfMass": [-0.0012609649122806968, -0.033390350877192984, 3.7185218379373369e-18],
+          "massKg": 0.028354813281249999,
+          "node": "crane:revolver-crane"
+        },
+        "cylinder": {
+          "centreOfMass": [-0.031625, -0.014374999999999999, -1.5046719395719485e-20],
+          "massKg": 0.67536440422569277,
+          "node": "cylinder:revolver-cylinder"
+        },
+        "ejector": {
+          "centreOfMass": [0.020631865117256006, -0.014375000000000002, 2.0505286091569182e-17],
+          "massKg": 0.0039741180788601116,
+          "node": "ejector:revolver-ejector"
+        },
+        "frame": {
+          "centreOfMass": [-0.060921078483350967, -0.034108606719764449, 2.0866078324479625e-20],
+          "massKg": 1.0158186958986324,
+          "node": "frame:revolver-frame"
+        },
+        "grip": {
+          "centreOfMass": [-0.12100266232423491, -0.09855019644334162, 4.675113213115974e-18],
+          "massKg": 0.25857251367187495,
+          "node": "grip:revolver-grip"
+        },
+        "hammer": {
+          "centreOfMass": [-0.081870949074074079, -0.0069878472222222225, -1.0026299572672079e-17],
+          "massKg": 0.020146841015625,
+          "node": "hammer:revolver-hammer"
+        },
+        "trigger": {
+          "centreOfMass": [-0.041645833333333326, -0.066604166666666659, -5.1001436489490806e-18],
+          "massKg": 0.0085810619140625002,
+          "node": "trigger:revolver-trigger"
+        }
+      }
     },
     {
       "file": "assets/models/round-357_h_magnum.glb",
       "gun": {
         "calibre": "357-magnum"
       },
-      "id": "round_357_h_magnum"
+      "id": "round_357_h_magnum",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.020363187451775917, 0, 0],
+          "massKg": 0.032661152417979025,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "file": "assets/models/case-357_h_magnum.glb",
       "gun": {
         "calibre": "357-magnum"
       },
-      "id": "case_357_h_magnum"
+      "id": "case_357_h_magnum",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.010918769271957731, 0, 0],
+          "massKg": 0.0050852375711805007,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "anchors": {
@@ -2213,7 +2446,13 @@
         "at": [0.31580000000000003, 0.00040000000000000002, -0.0138],
         "turn": [-90, 0, 0]
       },
-      "id": "rifle_battle"
+      "id": "rifle_battle",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 4
+        }
+      }
     },
     {
       "anchors": {
@@ -2224,7 +2463,13 @@
         "at": [0.2903, -0.00069999999999999999, 0.0123],
         "turn": [-90, 0, 0]
       },
-      "id": "shotgun_auto"
+      "id": "shotgun_auto",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.5
+        }
+      }
     },
     {
       "anchors": {
@@ -2291,7 +2536,49 @@
           "up": [1.1351772940589751e-32, 1, -1.2246467991473532e-16]
         }
       },
-      "id": "shotgun_pump"
+      "id": "shotgun_pump",
+      "parts": {
+        "barrel": {
+          "centreOfMass": [0.24724999999999994, 0, 2.5350188742350208e-17],
+          "massKg": 2.2253586100390446,
+          "node": "barrel:barrel"
+        },
+        "bolt-carrier": {
+          "centreOfMass": [-0.032264638239242562, -0.00012133381615205266, 2.7422271155500979e-19],
+          "massKg": 0.16897080941874998,
+          "node": "bolt-carrier:bolt-carrier"
+        },
+        "forend": {
+          "centreOfMass": [0.23118523233230717, -0.034793450233515606, 3.5977787277780008e-17],
+          "massKg": 0.42282586621902885,
+          "node": "forend:forend"
+        },
+        "front-bead": {
+          "centreOfMass": [0.44850000000000001, 0.021562499999999998, 4.9115990688303534e-17],
+          "massKg": 0.014923585937499999,
+          "node": "front-bead:front-sight-bead"
+        },
+        "lower": {
+          "centreOfMass": [-0.14217796076313896, -0.047038021958243338, 8.3129293637046553e-19],
+          "massKg": 0.17274050722656248,
+          "node": "lower:lower"
+        },
+        "receiver": {
+          "centreOfMass": [-0.077222002977915941, -0.013185393626960076, -0.00056135952483560216],
+          "massKg": 2.4067341659335941,
+          "node": "receiver:receiver"
+        },
+        "stock": {
+          "centreOfMass": [-0.41491093194021661, -0.070897791219857009, -2.8344105302746668e-17],
+          "massKg": 1.2810947171637335,
+          "node": "stock:stock"
+        },
+        "tube": {
+          "centreOfMass": [0.21152607105651297, -0.031558433426193799, 2.1084581066280276e-17],
+          "massKg": 1.2085263044865566,
+          "node": "tube:tube-magazine"
+        }
+      }
     },
     {
       "anchors": {
@@ -2302,7 +2589,13 @@
         "at": [0.2868, 0.0001, 0.057000000000000002],
         "turn": [-90, 0, 0]
       },
-      "id": "smg_compact"
+      "id": "smg_compact",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.5
+        }
+      }
     },
     {
       "anchors": {
@@ -2313,7 +2606,13 @@
         "at": [0.2944, 0, 0.036499999999999998],
         "turn": [-90, 0, 0]
       },
-      "id": "smg_full"
+      "id": "smg_full",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3
+        }
+      }
     },
     {
       "anchors": {
@@ -2324,7 +2623,13 @@
         "at": [0.31719999999999998, 0.0111, -0.018100000000000002],
         "turn": [-90, 0, 0]
       },
-      "id": "sniper_material"
+      "id": "sniper_material",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 12
+        }
+      }
     },
     {
       "anchors": {
@@ -2335,7 +2640,13 @@
         "at": [0.29599999999999999, 0.0077999999999999996, -0.017899999999999999],
         "turn": [-90, 0, 0]
       },
-      "id": "sniper_rifle"
+      "id": "sniper_rifle",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 5
+        }
+      }
     },
     {
       "anchors": {
@@ -2501,21 +2812,92 @@
           "up": [1.4997597826618576e-32, 1, -1.2246467991473532e-16]
         }
       },
-      "id": "rifle_hunting"
+      "id": "rifle_hunting",
+      "parts": {
+        "barrel": {
+          "centreOfMass": [0.27600000000000013, 0, 3.3800251656466966e-17],
+          "massKg": 1.8989726805666498,
+          "node": "barrel:barrel"
+        },
+        "bolt-carrier": {
+          "centreOfMass": [-0.10710417212839816, -9.9432562963382731e-5, 0.00013257675061783907],
+          "massKg": 0.25890095734198998,
+          "node": "bolt-carrier:bolt-carrier"
+        },
+        "bolt-handle-arm": {
+          "centreOfMass": [-0.17644683721965596, -0.021537348878623814, 0.029090511658967845],
+          "massKg": 0.022253586100390448,
+          "node": "bolt-handle-arm:bolt-handle-arm"
+        },
+        "bolt-handle-knob": {
+          "centreOfMass": [-0.18152134221635646, -0.041835368865425861, 0.044314026649069381],
+          "massKg": 0.015453879236382253,
+          "node": "bolt-handle-knob:bolt-handle-knob"
+        },
+        "front-sight": {
+          "centreOfMass": [0.52324999999999999, 0.0017332386088154059, 6.4288293707119399e-17],
+          "massKg": 0.05084969622421838,
+          "node": "front-sight:front-sight"
+        },
+        "handguard": {
+          "centreOfMass": [0.0081638898934892398, -0.025381844996752025, -0.00035250878317454564],
+          "massKg": 0.41776389782034085,
+          "node": "handguard:handguard"
+        },
+        "lower": {
+          "centreOfMass": [-0.10515867724867727, -0.050835171957671954, -1.1203412338072778e-19],
+          "massKg": 0.14690404907226562,
+          "node": "lower:lower"
+        },
+        "magazine": {
+          "centreOfMass": [-0.048875000000000002, -0.0273125, -2.1125157285291842e-18],
+          "massKg": 0.459646446875,
+          "node": "magazine:magazine"
+        },
+        "rear-sight": {
+          "centreOfMass": [0.074749999999999997, 0.017139423076923076, 8.4636046816073085e-18],
+          "massKg": 0.0018188120361328124,
+          "node": "rear-sight:sporting-rear-sight"
+        },
+        "receiver": {
+          "centreOfMass": [-0.093427985040951442, -0.0004790244446958029, -0.00073905095952528583],
+          "massKg": 0.42771230335141652,
+          "node": "receiver:receiver"
+        },
+        "stock": {
+          "centreOfMass": [-0.37933866770641966, -0.072586502122255064, -2.3728597656592904e-17],
+          "massKg": 1.0121106620598435,
+          "node": "stock:stock"
+        }
+      }
     },
     {
       "file": "assets/models/round-308_h_winchester.glb",
       "gun": {
         "calibre": "308-winchester"
       },
-      "id": "round_308_h_winchester"
+      "id": "round_308_h_winchester",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.031381073433621245, 0, 0],
+          "massKg": 0.057812696371302624,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "file": "assets/models/case-308_h_winchester.glb",
       "gun": {
         "calibre": "308-winchester"
       },
-      "id": "case_308_h_winchester"
+      "id": "case_308_h_winchester",
+      "parts": {
+        "cartridge": {
+          "centreOfMass": [0.018357717168331931, 0, 0],
+          "massKg": 0.0079834703741190477,
+          "node": "cartridge:cartridge-model"
+        }
+      }
     },
     {
       "file": "assets/models/optic_hunting_3_9x.glb",
@@ -2523,7 +2905,6 @@
         "attachment": {
           "id": "optic-hunting-3-9x",
           "kind": "optic",
-          "massKg": 0.17393058603090866,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -2550,7 +2931,14 @@
           }
         }
       },
-      "id": "optic_hunting_3_9x"
+      "id": "optic_hunting_3_9x",
+      "parts": {
+        "optic-hunting-3-9x": {
+          "centreOfMass": [0.0076434666400264717, 0.025204213045438604, 0.0014079295839888545],
+          "massKg": 0.17393058603090866,
+          "node": "optic-hunting-3-9x:sight"
+        }
+      }
     }
   ]
 }

@@ -1,7 +1,12 @@
 {
   "id": "case_357_h_magnum",
   "file": "assets/models/case-357_h_magnum.glb",
-  "gun": {
-    "calibre": "357-magnum"
-  }
+  "parts": {
+    "cartridge": {
+      "node": "cartridge:cartridge-model",
+      "massKg": 0.005085237571180501,
+      "centreOfMass": [0.01091876927195773, 0, 0]
+    }
+  },
+  "gun": { "calibre": "357-magnum" }
 }

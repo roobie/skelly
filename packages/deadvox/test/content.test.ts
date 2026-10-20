@@ -681,15 +681,16 @@ describe('content', () => {
         {
           id: 'fixture_gun',
           file: 'assets/models/fixture_gun.glb',
+          parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
           gun: { compatibility: { 'barrel.muzzle.0': ['fixture-suppressor'] } },
         },
         {
           id: 'fixture_suppressor',
           file: 'assets/models/fixture_suppressor.glb',
+          parts: { body: { massKg: 0.4, centreOfMass: [0, 0, 0] } },
           gun: {
             attachment: {
               id: 'fixture-suppressor',
-              massKg: 0.4,
               kind: 'suppressor',
               mount: 'muzzle',
               mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
@@ -1716,7 +1717,13 @@ describe('content references', () => {
               light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, emissive: 1 },
             },
           ],
-          models: [{ id: 'glowstick', file: 'assets/models/glowstick.glb' }],
+          models: [
+            {
+              id: 'glowstick',
+              file: 'assets/models/glowstick.glb',
+              parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
+            },
+          ],
         },
       },
     ]);

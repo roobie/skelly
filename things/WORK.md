@@ -19,8 +19,8 @@ Why each boundary matters, and where it is checked:
   without the engine knowing; the neutral-name check is `packages/engine/test/engineImportBoundary.test.ts`,
   `forbiddenDomainIdentifiers`.
 - Import edges between packages are enforced by `packages/engine/test/engineImportBoundary.test.ts`,
-  `packageEdges`. Deadvox must not import the engine, so the game's dependency graph stays free
-  of the engine's geometry (see `things/WORK.md`, "Decisions").
+  `packageEdges`. Deadvox must not import the engine or export package, so the game's
+  dependency graph stays free of authoring geometry (see `things/WORK.md`, "Decisions").
 - Neutral fields have one definition in `packages/thing-core/src/schema.ts`,
   `NeutralModelSchema`. Deadvox composes them with the gun pack's named block in
   `packages/deadvox/src/core/schema.ts`, `ModelSchema`; `GunModelSchema` owns the
@@ -65,8 +65,8 @@ Settled:
   "Contract").
 - Exports carry mass per part, and an export package above `thing-core` writes it with the GLB
   and the model entry (`things/README.md`, "Rules"; `things/README.md`, "Packages").
-- The engine's layers are foundation, shapes and assembly, in that import order; its export
-  layer moves into the export package (`packages/engine/README.md`, "Layers").
+- The engine ends at assembly; export belongs above the neutral core so material and model
+  contracts cannot pull dependencies back into geometry (`packages/engine/README.md`, "Layers").
 - The directory structure is fixed before any new feature work.
 - Packages live in the top-level `packages/` directory, each a workspace of the root
   package. Gungen stays at the root until the gun tool phase, so it moves once, under its
@@ -113,16 +113,12 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    competing contracts. See `packages/thing-core/src/schema.ts`, `NeutralModelSchema`;
    `packages/thing-core/src/materials.ts`, `MATERIALS`; and
    `test/gungen-deadvox-contract.test.mjs`, "gungen exports satisfy deadvox model validation".
-2. **Export package and physical model.**
-   - Create the export package and move `packages/engine/src/export/` into it. Drop the
-     export layer from `packages/engine/test/engineImportBoundary.test.ts`, `engineLayers`,
-     and give the package its edges in `packageEdges`: it may import the engine and
-     `thing-core`, and deadvox may not import it.
-   - Move the export lines of `packages/engine/README.md` (export identity, and export in its
-     `read_if`) into the export package's README.
-   - Move mass and centre-of-mass derivation out of `gungen/src/gun/attachmentMass.ts` into
-     the package, and write per-part mass and centre of mass into every model entry.
-   - Exit: the engine ends at assembly, and deadvox sums every model's mass from its parts.
+2. **Export package and physical model — complete.**
+   Export belongs above the neutral core so physical derivation uses shapes without making
+   the game load them. See `packages/thing-export/README.md`, "Physical model";
+   `packages/thing-core/src/schema.ts`, `ModelPartSchema`; and
+   `packages/deadvox/src/core/modelMass.ts`, `modelBodyMassKg`. The engine ends at assembly,
+   and model-backed item mass comes from exported parts.
 3. **Thing tool, first slice.** One non-gun family end to end: source, build, GLB, model
    entry, validation and load in deadvox, viewed in the tool. Exit: those models replace
    their committed binaries.

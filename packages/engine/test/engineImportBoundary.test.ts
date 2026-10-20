@@ -79,7 +79,7 @@ const resolveRelativeImport = (from: string, specifier: string): string | undefi
 };
 
 // Each engine folder may import only itself and the folders before it in this list.
-const engineLayers = ['foundation', 'shapes', 'assembly', 'export'];
+const engineLayers = ['foundation', 'shapes', 'assembly'];
 
 const layerIndex = (engineSrc: string, path: string): number =>
   engineLayers.indexOf(relative(engineSrc, path).split(sep)[0] ?? '');
@@ -107,6 +107,7 @@ const importTarget = (file: string, specifier: string, roots: Roots): string | u
 const packageEdges = (roots: Roots): readonly PackageEdge[] => {
   const engine = join(roots.packages, 'engine');
   const thingCore = join(roots.packages, 'thing-core');
+  const thingExport = join(roots.packages, 'thing-export');
   return [
     { from: roots.packages, forbids: (target) => isWithin(roots.gungen, target), problem: 'imports gungen' },
     {
@@ -121,8 +122,19 @@ const packageEdges = (roots: Roots): readonly PackageEdge[] => {
       problem: 'deadvox imports the engine',
     },
     {
+      from: thingExport,
+      forbids: (target) =>
+        isWithin(roots.packages, target) && ![engine, thingCore, thingExport].some((root) => isWithin(root, target)),
+      problem: 'thing-export imports a package other than the engine or thing-core',
+    },
+    {
+      from: join(roots.packages, 'deadvox'),
+      forbids: (target) => isWithin(thingExport, target),
+      problem: 'deadvox imports thing-export',
+    },
+    {
       from: roots.engineSrc,
-      forbids: (target) => isWithin(join(roots.packages, 'tool-ui'), target),
+      forbids: (target) => isWithin(roots.packages, target) && !isWithin(engine, target),
       problem: 'engine imports a package above the engine',
     },
   ];
@@ -433,7 +445,26 @@ describe('engine import boundary', () => {
     }
   });
 
-  it('flags deadvox importing the engine, by name, by relative path or by type-only re-export', () => {
+  it('keeps thing-export to its own modules, engine and core', () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'thing-export-boundary-'));
+    const fixtureRoots = rootsUnder(fixtureRoot);
+    const directory = join(fixtureRoots.packages, 'thing-export', 'src');
+    mkdirSync(directory, { recursive: true });
+    try {
+      const file = join(directory, 'physical.ts');
+      writeFileSync(
+        file,
+        "import '@skelly/engine/shapes/solid.ts';\nimport '@skelly/thing-core/materials';\nimport './glb.ts';\n",
+      );
+      expect(findBoundaryViolations([file], fixtureRoots)).toEqual([]);
+      writeFileSync(file, "import '@skelly/tool-ui/scene';\n");
+      expect(findBoundaryViolations([file], fixtureRoots)[0]).toContain('thing-export imports a package other than');
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('flags deadvox importing geometry or export, including type-only re-exports', () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), 'deadvox-engine-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
     const deadvoxSrc = join(fixtureRoots.packages, 'deadvox', 'src');
@@ -446,12 +477,18 @@ describe('engine import boundary', () => {
       writeFileSync(namedImport, "import '@skelly/engine/shapes/solid.ts';\n");
       writeFileSync(relativeImport, "import '../../engine/src/shapes/solid.ts';\n");
       writeFileSync(typeReExport, "export type { Solid } from '@skelly/engine/shapes/solid.ts';\n");
+      const exportImport = join(deadvoxSrc, 'export.ts');
+      writeFileSync(exportImport, "import '@skelly/thing-export/glb.ts';\n");
 
-      const violations = findBoundaryViolations([namedImport, relativeImport, typeReExport], fixtureRoots);
-      expect(violations).toHaveLength(3);
+      const violations = findBoundaryViolations(
+        [namedImport, relativeImport, typeReExport, exportImport],
+        fixtureRoots,
+      );
+      expect(violations).toHaveLength(4);
       expect(violations[0]).toContain('deadvox imports the engine');
       expect(violations[1]).toContain('deadvox imports the engine');
       expect(violations[2]).toContain('deadvox imports the engine');
+      expect(violations[3]).toContain('deadvox imports thing-export');
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }

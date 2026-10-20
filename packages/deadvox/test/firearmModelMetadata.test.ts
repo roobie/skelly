@@ -3,10 +3,15 @@ import { validateContent } from '../src/core/content.ts';
 
 const source = 'models.json';
 const validate = (model: unknown) => validateContent({ source, data: { models: [model] } });
-const base = { id: 'round_7_d_62x39', file: 'assets/models/round-7_d_62x39.glb' };
+const base = {
+  id: 'round_7_d_62x39',
+  file: 'assets/models/round-7_d_62x39.glb',
+  parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
+};
 const magazine = {
   id: 'magazine_ak_30',
   file: 'assets/models/magazine-ak-30.glb',
+  parts: base.parts,
   gun: {
     calibre: '7.62x39',
     capacity: 2,
@@ -19,7 +24,7 @@ const magazine = {
 };
 
 describe('firearm model metadata', () => {
-  it('keeps every added field optional for existing entries', () => {
+  it('leaves gun metadata optional on a neutral model', () => {
     expect(validate(base)).toEqual([]);
   });
 

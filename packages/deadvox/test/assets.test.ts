@@ -83,7 +83,14 @@ describe('asset files', () => {
 
   it("finds each model's file next to the content file that defines it", () => {
     const { registry } = buildRegistry([
-      { source: 'pack/models.json', data: { models: [{ id: 'lamp', file: 'assets/models/lamp.glb' }] } },
+      {
+        source: 'pack/models.json',
+        data: {
+          models: [
+            { id: 'lamp', file: 'assets/models/lamp.glb', parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } } },
+          ],
+        },
+      },
     ]);
     const asked: string[] = [];
     const issues = modelFileIssues(registry, (contentFile, file) => {
