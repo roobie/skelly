@@ -2057,7 +2057,6 @@ describe('content references', () => {
     const furniture = {
       ...structuredClone(baseRegistry.furniture.get('crate')!),
       id: 'fixture_crate',
-      loot: undefined,
     };
     const [width, height, depth] = furniture.size;
     const template = {

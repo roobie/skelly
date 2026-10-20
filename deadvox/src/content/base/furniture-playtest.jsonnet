@@ -39,20 +39,6 @@ shape.colliding({
     { id: 'sample_rack', name: 'Specimen rack', size: [2, 3, 1], color: '#7c8581' },
     { id: 'sample_tray', name: 'Sample tray', size: [2, 1, 1], color: '#b6c1bc' },
     {
-      id: 'dead_officer_body',
-      name: 'Dead military officer',
-      size: [4, 1, 2],
-      color: '#554f43',
-      solid: false,
-      shape: [
-        { position: [0.2, 0, 0.5], size: [1.2, 0.15, 0.4] },
-        { position: [0.2, 0, 1.1], size: [1.2, 0.15, 0.4] },
-        { position: [1.4, 0, 0.45], size: [1.5, 0.25, 1.1] },
-        { position: [2.9, 0, 0.65], size: [0.5, 0.25, 0.7] },
-      ],
-      container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
-    },
-    {
       id: 'workshop_roller_door',
       name: 'Roller door',
       size: [6, 5, 1],

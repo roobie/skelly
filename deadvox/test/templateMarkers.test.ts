@@ -33,17 +33,11 @@ it.each(['P', '🧪'])('indexes furniture and blocks by code point for marker %s
   expect([...compiled.blocks]).toEqual([solid, 0, solid, 0]);
 });
 
-it('leaves a container empty when its placement has no loot table', () => {
-  const template: TemplateDef = {
-    id: 'fixture_empty_container',
-    lootContext: fixtureLootContext(),
-    size: [1, 1, 1],
-    palette: { C: { furniture: 'fixture_container' } },
-    layers: [['C']],
-  };
-  const { registry, issues } = buildRegistry([
+it('rejects a furniture loot table', () => {
+  const source = 'furniture-loot.json';
+  const { issues } = buildRegistry([
     {
-      source: 'empty-container.json',
+      source,
       data: {
         furniture: [
           {
@@ -52,14 +46,11 @@ it('leaves a container empty when its placement has no loot table', () => {
             size: [1, 1, 1],
             color: '#808080',
             container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+            loot: 'fixture_supply',
           },
         ],
-        loot: [{ id: 'fixture_supply', rolls: [1, 1], entries: [{ nothing: true, weight: 1 }] }],
-        templates: [template],
       },
     },
   ]);
-  expect(issues).toEqual([]);
-  Object.assign(registry.furniture.get('fixture_container')!, { loot: 'fixture_supply' });
-  expect(compileTemplate(registry, template).pieces[0]!.loot).toBeUndefined();
+  expect(issues).toEqual([{ source, path: 'furniture[0].loot', message: 'unknown field "loot"' }]);
 });
