@@ -106,11 +106,13 @@ const importTarget = (file: string, specifier: string, roots: Roots): string | u
 // Each edge rejects an import from the files under `from` into the targets it forbids.
 const packageEdges = (roots: Roots): readonly PackageEdge[] => {
   const engine = join(roots.packages, 'engine');
+  const thingCore = join(roots.packages, 'thing-core');
   return [
     { from: roots.packages, forbids: (target) => isWithin(roots.gungen, target), problem: 'imports gungen' },
     {
-      from: join(roots.packages, 'thing-core'),
-      forbids: (target) => isWithin(roots.packages, target) && !isWithin(engine, target),
+      from: thingCore,
+      forbids: (target) =>
+        isWithin(roots.packages, target) && !isWithin(engine, target) && !isWithin(thingCore, target),
       problem: 'thing-core imports a package other than the engine',
     },
     {
@@ -235,7 +237,9 @@ const referencesAt = (tokens: readonly Token[], index: number, token: Token): Mo
     }
     return next === undefined || notImportStatement.has(next) ? [] : staticImportReference(tokens, index);
   }
-  const reExports = next === SyntaxKind.AsteriskToken || next === SyntaxKind.OpenBraceToken;
+  // `export type { … } from` and `export type * from` re-export types; the clause follows `type`.
+  const clause = next === SyntaxKind.TypeKeyword ? tokens[index + 2]?.kind : next;
+  const reExports = clause === SyntaxKind.AsteriskToken || clause === SyntaxKind.OpenBraceToken;
   return token.kind === SyntaxKind.ExportKeyword && reExports ? reExportReference(tokens, index) : [];
 };
 
@@ -299,6 +303,13 @@ describe('engine import boundary', () => {
       ].join('\n'),
     );
     expect(references.map(({ specifier }) => specifier)).toEqual(['./a.ts', './b.ts', './c.ts', './f.ts']);
+  });
+
+  it('reads type-only named and star re-exports as module references', () => {
+    const references = moduleReferences(
+      ["export type { T } from './t.ts';", "export type * from './u.ts';", 'export type V = number;'].join('\n'),
+    );
+    expect(references.map(({ specifier }) => specifier)).toEqual(['./t.ts', './u.ts']);
   });
 
   it('flags relative imports outside engine/src and bare gungen imports', () => {
@@ -406,7 +417,23 @@ describe('engine import boundary', () => {
     }
   });
 
-  it('flags deadvox importing the engine, by name or by relative path', () => {
+  it('allows thing-core to import its own modules', () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'thing-core-internal-boundary-'));
+    const fixtureRoots = rootsUnder(fixtureRoot);
+    const coreSrc = join(fixtureRoots.packages, 'thing-core', 'src');
+    mkdirSync(coreSrc, { recursive: true });
+
+    try {
+      const schema = join(coreSrc, 'schema.ts');
+      writeFileSync(schema, "import './types.ts';\nimport '../../thing-core/src/types.ts';\n");
+
+      expect(findBoundaryViolations([schema], fixtureRoots)).toEqual([]);
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('flags deadvox importing the engine, by name, by relative path or by type-only re-export', () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), 'deadvox-engine-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
     const deadvoxSrc = join(fixtureRoots.packages, 'deadvox', 'src');
@@ -415,13 +442,16 @@ describe('engine import boundary', () => {
     try {
       const namedImport = join(deadvoxSrc, 'named.ts');
       const relativeImport = join(deadvoxSrc, 'relative.ts');
+      const typeReExport = join(deadvoxSrc, 'types.ts');
       writeFileSync(namedImport, "import '@skelly/engine/shapes/solid.ts';\n");
       writeFileSync(relativeImport, "import '../../engine/src/shapes/solid.ts';\n");
+      writeFileSync(typeReExport, "export type { Solid } from '@skelly/engine/shapes/solid.ts';\n");
 
-      const violations = findBoundaryViolations([namedImport, relativeImport], fixtureRoots);
-      expect(violations).toHaveLength(2);
+      const violations = findBoundaryViolations([namedImport, relativeImport, typeReExport], fixtureRoots);
+      expect(violations).toHaveLength(3);
       expect(violations[0]).toContain('deadvox imports the engine');
       expect(violations[1]).toContain('deadvox imports the engine');
+      expect(violations[2]).toContain('deadvox imports the engine');
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }

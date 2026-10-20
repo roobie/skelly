@@ -14,27 +14,22 @@ a gun authoring tool that together replace `gungen/`. Delete this file when gung
 
 What the engine is, from reading its module headers and exports:
 
-- `packages/engine/` is a domain-agnostic parametric assembly framework. A `Domain` supplies part
-  families, units, palette and rules as data, and the engine supplies the rest: solids and
-  collision geometry, meshing and revolve, parts, ports and templates, resolving, rules and
-  validation, seeded generation, design persistence and GLB export. Its three.js scene lives
-  above it, in `packages/tool-ui`.
-- Only gungen imports it; deadvox and mobgen do not. It has its own tests in
-  `packages/engine/test/`, and gungen's suite exercises it as a consumer.
-- Its package exports each layer folder (`foundation`, `shapes`, `assembly`, `export`), and
-  consumers deep-import individual files; nothing marks a public API. Each layer imports only
-  itself and the ones before it, which `packages/engine/test/engineImportBoundary.test.ts`,
-  `engineLayers`, enforces.
+- `packages/engine/` is a domain-agnostic parametric assembly framework. A `Domain` supplies
+  the data, and the engine supplies the geometry, resolving, validation, generation and export.
+  Its layers and their order are in `packages/engine/test/engineImportBoundary.test.ts`,
+  `engineLayers`.
+- Consumers import it by package name, so a search for `@skelly/engine` finds them. Its own
+  tests live in `packages/engine/test/`. Deadvox may not import it (see `things/WORK.md`,
+  "Decisions").
+- Its package exports each layer folder, and consumers deep-import individual files; nothing
+  marks a public API.
 - A search for gun vocabulary in it finds none.
-- Material in it is appearance only: a material id maps to a color. Density and mass are
-  computed inside gungen (`gungen/src/gun/attachmentMass.ts`, with sourced density tables),
-  and deadvox item weights are typed by hand in content JSON.
-- Deadvox's model schema (`packages/deadvox/src/core/schema.ts`, `ModelSchema`) mixes neutral fields
-  with firearm ones, and gungen's output is tied to it by one root contract test
-  (`test/gungen-deadvox-contract.test.mjs`) rather than a shared schema.
-- Gungen's viewer mixes generic parts (parameter panel, camera and URL state, design editor)
-  with gun-specific ones (ammo, cycle and magazine views); the split is judged from file
-  names and has not been read through.
+- Material in it is appearance only. Density and mass are computed in gungen, in
+  `gungen/src/gun/attachmentMass.ts`, and deadvox item weights are typed by hand.
+- Deadvox's model schema, `packages/deadvox/src/core/schema.ts`, mixes neutral and firearm
+  fields. Gungen's output is tied to it by `test/gungen-deadvox-contract.test.mjs`, not by a
+  shared schema.
+- Gungen's viewer mixes generic and gun-specific parts; which is which has not been read through.
 
 ## To check before relying on it
 
