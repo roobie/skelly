@@ -31,18 +31,23 @@ const AdaptiveScaleSchema = pipe(
   ),
 );
 
-const ScaleOptionSchema = pipe(
-  strictObject({
-    label: pipe(string(), nonEmpty()),
-    default: pipe(number(), finite()),
-    min: pipe(number(), finite(), minValue(Number.MIN_VALUE), maxValue(1)),
-    max: pipe(number(), finite(), minValue(Number.MIN_VALUE), maxValue(1)),
-  }),
-  check(
-    ({ min, max, default: value }) => min <= max && value >= min && value <= max,
-    'range must be ordered and contain the default',
-  ),
-);
+/** A scale up to 1; `floor` is the least its bounds may be. */
+const scaleOptionSchema = (floor: number) =>
+  pipe(
+    strictObject({
+      label: pipe(string(), nonEmpty()),
+      default: pipe(number(), finite()),
+      min: pipe(number(), finite(), minValue(floor), maxValue(1)),
+      max: pipe(number(), finite(), minValue(floor), maxValue(1)),
+    }),
+    check(
+      ({ min, max, default: value }) => min <= max && value >= min && value <= max,
+      'range must be ordered and contain the default',
+    ),
+  );
+const ScaleOptionSchema = scaleOptionSchema(Number.MIN_VALUE);
+/** A strength that may be turned off entirely. */
+const ShareOptionSchema = scaleOptionSchema(0);
 
 const ToggleOptionSchema = pipe(
   strictObject({
@@ -70,6 +75,7 @@ export const GRAPHICS_KNOBS = {
     ),
   },
   bloomScale: { kind: 'scale', url: 'bloomscale', schema: ScaleOptionSchema },
+  drugVignette: { kind: 'scale', url: 'drugvignette', schema: ShareOptionSchema },
   smallSunMap: { kind: 'toggle', url: 'sunsmall', schema: ToggleOptionSchema },
   fastCamo: { kind: 'toggle', url: 'camofast', schema: ToggleOptionSchema },
   coarseWeathering: { kind: 'toggle', url: 'weathercoarse', schema: ToggleOptionSchema },

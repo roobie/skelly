@@ -9148,7 +9148,8 @@
       "palette": {
         "o": {
           "furniture": "dead_officer_body",
-          "loot": "gauntlet_police_gear"
+          "loot": "equipment_locker",
+          "lootUsage": ["Police"]
         }
       },
       "ports": [],
@@ -9315,7 +9316,8 @@
         "g": {
           "facing": "s",
           "furniture": "range_rack",
-          "loot": "gauntlet_police_sidearms"
+          "loot": "armoury_arms",
+          "lootUsage": ["Police"]
         }
       },
       "ports": [],

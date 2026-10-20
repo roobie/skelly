@@ -22,7 +22,7 @@
       "description": "A small key for the shed's door.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "shed_key",
       "key": {

@@ -49,6 +49,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     restore: vi.fn(),
     render: vi.fn((draw: () => void) => draw()),
     setPainDesaturation: vi.fn(),
+    setDrugVignette: vi.fn(),
     setSky: vi.fn(),
   };
   const shadows = { restore: vi.fn(), attachTorches: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };

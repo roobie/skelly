@@ -17,6 +17,12 @@
         "label": "Coarse weathering grid",
         "options": [false, true]
       },
+      "drugVignette": {
+        "default": 1,
+        "label": "Painkiller vignette",
+        "max": 1,
+        "min": 0
+      },
       "fastCamo": {
         "default": false,
         "label": "Fast camouflage pattern",

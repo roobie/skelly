@@ -736,6 +736,8 @@ const AnalgesicSchema = strictObject({
   peakGameMinutes: GameMinutes,
   /** Game minutes it then takes to fall back to nothing; 0 stops at once. */
   fadeGameMinutes: GameMinutes,
+  /** Edge blur and darkening at a dose's peak, as a share of full; it follows the dose's relief curve. */
+  vignette: optional(Fraction),
 });
 
 /** What one application does to a body wound (`DESIGN.md`, "Bleeding"). */

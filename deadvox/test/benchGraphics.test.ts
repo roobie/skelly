@@ -30,6 +30,7 @@ const tuning = {
     },
   },
   bloomScale: scale,
+  drugVignette: scale,
   smallSunMap: toggle,
   fastCamo: toggle,
   coarseWeathering: toggle,

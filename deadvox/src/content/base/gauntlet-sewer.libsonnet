@@ -52,8 +52,8 @@ local body = {
     p: { role: 'interior_floor', material: 'floor' }, '=': { role: 'shell', material: 'concrete' },
     '.': { role: 'opening', material: 'air' }, h: { role: 'trim', material: 'hazard' }, g: { role: 'trim', material: 'galvanized' },
     J: { furniture: 'ladder', facing: 'w' },
-    W: { furniture: 'hq_weapon_cabinet', facing: 'e', loot: 'gauntlet_sewer_guard_arms' },
-    C: { furniture: 'crate', loot: 'gauntlet_sewer_guard_ammunition' },
+    W: { furniture: 'hq_weapon_cabinet', facing: 'e', loot: 'gauntlet_sewer_guard_arms', lootUsage: ['Police'] },
+    C: { furniture: 'crate', loot: 'gauntlet_sewer_guard_ammunition', lootUsage: ['Police'] },
   },
   layers: plane(0), ownership: { layers: plane(1) }, anchors: {}, ports: [],
 };
@@ -77,9 +77,10 @@ local mouth = { ladder: [shaft.ladder, 1, shaft.z0], upper: [rim.x1 + 1, ground 
     joins: [], ports: [], anchors: {},
     access: { ground: 'street', entrance: mouth.upper, storeys: [{ id: 'street', floor: ground + 1 }], stairs: [] },
   }],
-  // Each guard-room container rolls its police table or stays empty; the empty weight sets the chance.
+  // Each guard-room container rolls an armed-stock table under Police or stays empty; the empty
+  // weight sets the chance. Police, not Military, keeps the sewer a trade rather than a rifle shortcut.
   loot: [
-    { id: 'gauntlet_sewer_guard_arms', rolls: [1, 1], entries: [{ table: 'gauntlet_police_sidearms', weight: 1 }, { nothing: true, weight: 1 }] },
-    { id: 'gauntlet_sewer_guard_ammunition', rolls: [1, 1], entries: [{ table: 'gauntlet_police_ammunition', weight: 1 }, { nothing: true, weight: 1 }] },
+    { id: 'gauntlet_sewer_guard_arms', rolls: [1, 1], entries: [{ table: 'armoury_arms', weight: 1 }, { nothing: true, weight: 1 }] },
+    { id: 'gauntlet_sewer_guard_ammunition', rolls: [1, 1], entries: [{ table: 'armoury_ammunition', weight: 1 }, { nothing: true, weight: 1 }] },
   ],
 }
