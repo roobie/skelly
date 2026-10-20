@@ -16,8 +16,8 @@ reasons and `things/WORK.md`, "Phases" for the remaining suite work.
 ## Contract
 
 - Math comes from the engine and is used, never reimplemented.
-- Shapes, meshing and assembly belong to the engine. Work that needs them, such as deriving
-  mass from shape volumes, belongs in the export package, not here.
+- Shapes, meshing and assembly belong to the engine. Work that needs them, such as placing a
+  part's centre of mass, belongs in the export package, not here.
 - Nothing here names a kind of thing, so any code that does belongs in a tool.
 - Deadvox depends on this package for the model schema, so it stays free of rendering
   libraries and of assembly code.
@@ -26,10 +26,9 @@ reasons and `things/WORK.md`, "Phases" for the remaining suite work.
   entry can carry several packs' blocks without their names clashing. A field two packs
   both want is promoted into the envelope on purpose. The gun pack's block and the composed
   Deadvox schema are `packages/deadvox/src/core/schema.ts`, `GunModelSchema` and `ModelSchema`.
-- Materials are one table, kept here as content: each material has a colour, a finish and a
-  density, and packs add their own. Mass is derived from densities, so colour and density
-  kept apart would drift; in one table every tool and the game read the same values, and a
-  mod changes a material in one place. Baked asset appearance is not a second source of
+- Materials are one table, kept here as content, and packs add their own. In one table every
+  tool and the game read the same values, and a mod changes a material in one place. Mass is
+  authored, not derived from material density; see `things/README.md`, "Rules". Baked asset appearance is not a second source of
   tuning: material references retain authoring shades while resolving the shared values;
   see `src/materials.ts`, `MaterialReferenceSchema`, and
   `packages/deadvox/src/render/modelMaterials.ts`, `applyModelMaterials`.
