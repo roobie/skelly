@@ -593,11 +593,11 @@ describe('rifle firearm handling', () => {
       const model = registry.models.get(registry.items.get(item.type)!.model!)!;
       const data = firearmHandlingFor(item, registry);
       expect(data.model).toBe(model);
-      expect(data.action).toBe(model.action);
-      expect(data.roundsPerSimSecond).toBe(model.action!.roundsPerSimMinute);
-      expect(data.calibre).toBe(model.calibre);
+      expect(data.action).toBe(model.gun?.action);
+      expect(data.roundsPerSimSecond).toBe(model.gun!.action!.roundsPerSimMinute);
+      expect(data.calibre).toBe(model.gun?.calibre);
       expect(data.caseModelId?.startsWith('case_')).toBe(true);
-      expect(registry.models.get(data.caseModelId!)?.calibre).toBe(model.calibre);
+      expect(registry.models.get(data.caseModelId!)?.gun?.calibre).toBe(model.gun?.calibre);
     }
   });
 
@@ -653,14 +653,14 @@ describe('rifle firearm handling', () => {
 
   it('aligns ejection and held stroke when rpm caps a longer exported automatic cycle', () => {
     const model = registry.models.get('rifle_assault')!;
-    const action = structuredClone(model.action!);
+    const action = structuredClone(model.gun!.action!);
     const fire = action.fire!;
     const fixtureStretch = ((1 / action.roundsPerSimMinute!) * 2) / fire.durationSimSeconds;
     for (const key of ['durationSimSeconds', 'rearwardSimSeconds', 'dwellSimSeconds', 'forwardSimSeconds'] as const) {
       fire[key] = simSeconds(fire[key] * fixtureStretch);
     }
     const fixture = { ...registry, models: new Map(registry.models) };
-    fixture.models.set(model.id, { ...model, action });
+    fixture.models.set(model.id, { ...model, gun: { ...model.gun, action } });
     const { inventory, mechanics, rifle } = armed({ pose: () => undefined }, { content: fixture });
     expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
     const duration = 1 / action.roundsPerSimMinute!;
@@ -729,7 +729,7 @@ describe('rifle firearm handling', () => {
     ]);
     expect(fixture.issues).toEqual([]);
     const model = fixture.registry.models.get('pistol_full')!;
-    expect(model.calibre).toBeUndefined();
+    expect(model.gun?.calibre).toBeUndefined();
     const bytes = readFileSync(join(BASE, model.file));
     const gltf = await new GLTFLoader().parseAsync(
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
@@ -737,7 +737,7 @@ describe('rifle firearm handling', () => {
     );
     const held = cloneHeldModel(
       prepareModel(model, gltf.scene).held,
-      actionPartPaths(gltf.scene, model.action, gltf.parser),
+      actionPartPaths(gltf.scene, model.gun?.action, gltf.parser),
     );
     expect(held.root.children.length).toBeGreaterThan(0);
     expect(held.parts).toEqual([]);
@@ -792,7 +792,7 @@ describe('rifle firearm handling', () => {
   /** The content's bolt rifle in hand with one round worked through its internal magazine into the chamber. */
   const armedBolt = (options: Partial<MechanicsOptions>, content: Registry) => {
     const definition = [...content.items.values()].find((item) => item.firearm?.bolt)!;
-    const { calibre } = content.models.get(definition.model!)!;
+    const { calibre } = content.models.get(definition.model!)!.gun!;
     const ammo = [...content.items.values()].find((item) => item.ammo?.calibre === calibre)!;
     const inventory = new Inventory(content);
     const queue = new HandlingQueue(inventory);

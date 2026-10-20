@@ -18,15 +18,15 @@ const freshRegistry = () => ({
 
 const exportedDefault = (registry: Registry) => {
   const firearmModel = registry.models.get(defOf(registry, 'rifle_assault').model!)!;
-  const [attachment] = firearmModel.attachments ?? [];
+  const [attachment] = firearmModel.gun?.attachments ?? [];
   if (!attachment) {
     throw new Error('Fixture firearm has no exported default attachment');
   }
   const item = [...registry.items.values()].find((candidate) => {
     const model = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
-    return model?.attachment?.id === attachment.id;
+    return model?.gun?.attachment?.id === attachment.id;
   });
-  if (!(item?.model && registry.models.get(item.model)?.attachment)) {
+  if (!(item?.model && registry.models.get(item.model)?.gun?.attachment)) {
     throw new Error('Fixture attachment has no registered standalone model');
   }
   return { attachment, item, modelId: item.model };
@@ -38,7 +38,7 @@ const fixture = (massKg = 0.4) => {
   const model = registry.models.get(exported.modelId)!;
   registry.models.set(exported.modelId, {
     ...model,
-    attachment: { ...model.attachment!, massKg },
+    gun: { ...model.gun, attachment: { ...model.gun!.attachment!, massKg } },
   });
   const inventory = new Inventory(registry);
   return { registry, inventory, rifle: inventory.create('rifle_assault'), ...exported };
@@ -63,7 +63,7 @@ describe('muzzle load', () => {
     const optic = heavy.registry.models.get(heavy.modelId)!;
     heavy.registry.models.set(heavy.modelId, {
       ...optic,
-      attachment: { ...optic.attachment!, massKg: optic.attachment!.massKg! * 2 },
+      gun: { ...optic.gun, attachment: { ...optic.gun!.attachment!, massKg: optic.gun!.attachment!.massKg! * 2 } },
     });
     const heavyLoad = muzzleLoad(heavy.registry, heavy.rifle)!;
 
@@ -72,14 +72,17 @@ describe('muzzle load', () => {
     const rifleModel = farther.registry.models.get(rifleModelId)!;
     farther.registry.models.set(rifleModelId, {
       ...rifleModel,
-      attachmentSlots: rifleModel.attachmentSlots!.map((slot) =>
-        slot.id === farther.attachment.mountedAt
-          ? {
-              ...slot,
-              position: [slot.position[0] + 1, slot.position[1], slot.position[2]] as [number, number, number],
-            }
-          : slot,
-      ),
+      gun: {
+        ...rifleModel.gun,
+        attachmentSlots: rifleModel.gun!.attachmentSlots!.map((slot) =>
+          slot.id === farther.attachment.mountedAt
+            ? {
+                ...slot,
+                position: [slot.position[0] + 1, slot.position[1], slot.position[2]] as [number, number, number],
+              }
+            : slot,
+        ),
+      },
     });
     const fartherLoad = muzzleLoad(farther.registry, farther.rifle)!;
 
@@ -155,7 +158,7 @@ describe('muzzle load', () => {
     const optic = registry.models.get(modelId)!;
     registry.models.set(modelId, {
       ...optic,
-      attachment: { ...optic.attachment!, massKg: optic.attachment!.massKg! * 2 },
+      gun: { ...optic.gun, attachment: { ...optic.gun!.attachment!, massKg: optic.gun!.attachment!.massKg! * 2 } },
     });
 
     expect(weightOf(registry, rifle)).toBeGreaterThan(original);

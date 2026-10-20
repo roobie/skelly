@@ -7,6 +7,7 @@ import { actionCycleSeconds, type FirearmAction, type FirearmMode } from '../cor
 import type { CylinderState } from '../core/firearmState.ts';
 import { heldAnchorOffset } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
+import type { GunModelDef } from '../core/schema.ts';
 import type { FirearmCycleFrame } from '../game/firearmHandling.ts';
 import type { RevolverFrame } from '../game/revolverHandling.ts';
 
@@ -21,7 +22,7 @@ export interface ActionPartPath {
   readonly travel: Vector3;
   readonly turn?: { readonly pivot: Vector3; readonly axis: Vector3; readonly angleRadians: number };
   readonly parentFromModel?: Matrix4;
-  readonly revolverPart?: keyof NonNullable<ModelDef['revolver']>;
+  readonly revolverPart?: keyof NonNullable<GunModelDef['revolver']>;
 }
 
 export interface HeldActionPart {
@@ -34,7 +35,7 @@ export interface HeldActionPart {
   readonly modes: readonly FirearmMode[];
   readonly nodeIndex: number;
   readonly parentFromModel?: Matrix4;
-  readonly revolverPart?: keyof NonNullable<ModelDef['revolver']>;
+  readonly revolverPart?: keyof NonNullable<GunModelDef['revolver']>;
   readonly restMatrix: Matrix4;
 }
 
@@ -65,7 +66,7 @@ export const actionPartPaths = (
   scene: Object3D,
   action: FirearmAction | undefined,
   parser: GLTFParser,
-  revolver?: ModelDef['revolver'],
+  revolver?: GunModelDef['revolver'],
 ): ActionPartPath[] => {
   scene.updateMatrixWorld(true);
   const names = parser.json.nodes as readonly { name?: string }[];
@@ -297,7 +298,13 @@ export const rackCant = (
   grip: { readonly x: number; readonly y: number },
 ): number => {
   if (
-    !(model?.internalMagazine && model.grip && model.anchors?.ejection && model.anchors.loading_port && model.action) ||
+    !(
+      model?.gun?.internalMagazine &&
+      model.grip &&
+      model.anchors?.ejection &&
+      model.anchors.loading_port &&
+      model.gun.action
+    ) ||
     frame?.mode !== 'hand'
   ) {
     return 0;
@@ -318,7 +325,7 @@ export const rackCant = (
   const clearance = Math.atan2(away, -grip.y - port[1]);
   const reveal = Math.atan2(Math.abs(across), Math.abs(port[1] - loading[1]));
   const angle = Math.min(MAX_RACK_CANT_RADIANS, clearance + reveal);
-  const stroke = sampleActionStroke(model.action, 'hand', frame.elapsed, frame.duration);
+  const stroke = sampleActionStroke(model.gun.action, 'hand', frame.elapsed, frame.duration);
   const eased = stroke * stroke * (3 - 2 * stroke);
   return portSide * angle * eased;
 };
@@ -374,7 +381,7 @@ const hammerAmount = (cocked: boolean, step: RevolverFrame['step'] | undefined, 
 };
 
 const revolverMotion = (
-  data: NonNullable<ModelDef['revolver']>,
+  data: NonNullable<GunModelDef['revolver']>,
   cylinder: CylinderState,
   frame?: Pick<FirearmCycleFrame, 'elapsed' | 'duration' | 'revolver'>,
 ): Record<'crane' | 'cylinder' | 'ejector' | 'hammer' | 'trigger', Matrix4> => {
@@ -410,7 +417,7 @@ const revolverMotion = (
 
 export const poseRevolverParts = (
   parts: readonly HeldActionPart[],
-  data: NonNullable<ModelDef['revolver']>,
+  data: NonNullable<GunModelDef['revolver']>,
   cylinder: CylinderState,
   frame?: Pick<FirearmCycleFrame, 'elapsed' | 'duration' | 'revolver'>,
 ): void => {

@@ -1,7 +1,7 @@
 // Shared exported timing contract: mechanics and held projection use the same clock.
 import type { ModelDef } from './content.ts';
 
-export type FirearmAction = NonNullable<ModelDef['action']>;
+export type FirearmAction = NonNullable<NonNullable<ModelDef['gun']>['action']>;
 export type FirearmMode = 'fire' | 'hand';
 
 export const actionCycleSeconds = (action: FirearmAction, mode: FirearmMode): number => {

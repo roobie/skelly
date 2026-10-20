@@ -3,6 +3,7 @@
     {
       "id": "magazine_stanag_30",
       "file": "assets/models/magazine_stanag_30.glb",
+      gun: {
       "calibre": "5.56x45",
       "capacity": 30,
       "rounds": [
@@ -37,10 +38,12 @@
         { "at": [0.00745, -0.126757, 0.0067], "tilt": 10.875 },
         { "at": [0.008356, -0.131471, -0.0067], "tilt": 10.875 }
       ]
+      }
     },
     {
       "id": "magazine_stanag_20",
       "file": "assets/models/magazine_stanag_20.glb",
+      gun: {
       "calibre": "5.56x45",
       "capacity": 20,
       "rounds": [
@@ -65,10 +68,12 @@
         { "at": [0, -0.079215, 0.0067], "tilt": 0 },
         { "at": [0, -0.084015, -0.0067], "tilt": 0 }
       ]
+      }
     },
     {
       "id": "magazine_akm_30",
       "file": "assets/models/magazine_akm_30.glb",
+      gun: {
       "calibre": "7.62x39",
       "capacity": 30,
       "rounds": [
@@ -103,6 +108,7 @@
         { "at": [0.073572, -0.1367, 0.007263], "tilt": 54.260417 },
         { "at": [0.078178, -0.140014, -0.007263], "tilt": 54.260417 }
       ]
+      }
     }
   ],
   "items": [

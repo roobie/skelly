@@ -18,16 +18,15 @@ const fixtureRegistry = (): Registry => {
   const { registry } = content;
   const source = [...registry.items.values()].find((item) => item.firearm?.revolver)!;
   const model = registry.models.get(source.model!)!;
-  const ammo = [...registry.items.values()].find((item) => item.ammo?.calibre === model.calibre)!;
-  const spent = registry.items.get(spentCaseItemId(model.calibre!))!;
+  const ammo = [...registry.items.values()].find((item) => item.ammo?.calibre === model.gun?.calibre)!;
+  const spent = registry.items.get(spentCaseItemId(model.gun!.calibre!))!;
   const calibre = 'fixture-revolver';
   return {
     ...registry,
     models: new Map(registry.models).set('fixture_revolver_model', {
       ...model,
       id: 'fixture_revolver_model',
-      calibre,
-      revolver: { ...model.revolver!, chambers: 4 },
+      gun: { ...model.gun, calibre, revolver: { ...model.gun!.revolver!, chambers: 4 } },
     }),
     items: new Map(registry.items)
       .set('fixture_revolver', { ...source, id: 'fixture_revolver', model: 'fixture_revolver_model' })

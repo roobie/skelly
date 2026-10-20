@@ -478,7 +478,7 @@ describe('attachment parts and export metadata', () => {
     for (const { id, modelId, result, deadvox, gltf, nodes } of models) {
       expect(deadvox.issues).toEqual([]);
       expect(deadvox.registry.models.has(modelId)).toBe(true);
-      expect(attachmentMetadataProblems(id, result.modelEntry.attachment)).toEqual([]);
+      expect(attachmentMetadataProblems(id, result.modelEntry.gun.attachment)).toEqual([]);
       const { familyName, params, part } = attachmentBuild(id);
       const metadata = attachmentMetadata(familyName, params, gunDomain.units.metresPerUnit, part)!;
       const port = part.ports.find(({ gender, mount }) => gender === 'male' && mount === metadata.mount);
@@ -501,7 +501,7 @@ describe('attachment parts and export metadata', () => {
     if (!result.ok) {
       throw new Error(`${opticId}: ${JSON.stringify(result.error)}`);
     }
-    expect(result.modelEntry.attachment?.properties.magnification).toEqual(optic.magnification);
+    expect(result.modelEntry.gun.attachment?.properties.magnification).toEqual(optic.magnification);
   });
 
   describe('AR default-mods export', () => {
@@ -515,19 +515,19 @@ describe('attachment parts and export metadata', () => {
     it('exports fitted default mods as node-backed metadata linked to mount slots', () => {
       const model = defaultModsModel;
       const nodes = model.read.json.nodes.map(({ name }) => name);
-      const fitted = model.modelEntry.attachments ?? [];
-      const slots = model.modelEntry.attachmentSlots ?? [];
+      const fitted = model.modelEntry.gun.attachments ?? [];
+      const slots = model.modelEntry.gun.attachmentSlots ?? [];
       expect(fitted.some(({ kind, node }) => kind === 'optic' && nodes.includes(node))).toBe(true);
       expect(
         fitted.every(({ mountedAt, mount }) => slots.some((slot) => slot.id === mountedAt && slot.mount === mount)),
       ).toBe(true);
       expect(validateInDeadvox(model.modelEntry).issues).toEqual([]);
-      const { compatibility } = model.modelEntry;
+      const { compatibility } = model.modelEntry.gun;
       if (!compatibility) {
         throw new Error('gungen did not export attachment compatibility');
       }
       expect(Object.keys(compatibility).sort()).toEqual(slots.map(({ id }) => id).sort());
-      expect(model.modelEntry.compatibilityPairs).toBeDefined();
+      expect(model.modelEntry.gun.compatibilityPairs).toBeDefined();
       for (const ids of Object.values(compatibility)) {
         for (const id of ids) {
           expect(ATTACHMENT_IDS).toContain(id);
@@ -536,7 +536,7 @@ describe('attachment parts and export metadata', () => {
     });
 
     it('matches fitted optic mass to the standalone attachment export', () => {
-      const fittedOptic = defaultModsModel.modelEntry.attachments?.find(({ id }) => id === 'optic-lpvo-1-6x');
+      const fittedOptic = defaultModsModel.modelEntry.gun.attachments?.find(({ id }) => id === 'optic-lpvo-1-6x');
       expect(fittedOptic?.massKg).toBeDefined();
       const standalone = exportAttachmentGlb('optic-lpvo-1-6x', {
         id: 'optic_lpvo_mass_comparison',
@@ -545,7 +545,7 @@ describe('attachment parts and export metadata', () => {
       if (!standalone.ok) {
         throw new Error(JSON.stringify(standalone.error));
       }
-      expect(fittedOptic?.massKg).toBe(standalone.modelEntry.attachment?.massKg);
+      expect(fittedOptic?.massKg).toBe(standalone.modelEntry.gun.attachment?.massKg);
     });
   });
 
@@ -634,23 +634,26 @@ describe('attachment parts and export metadata', () => {
 
   it('rejects a fitted mod whose mount slot is absent from the exported interfaces', () => {
     const model = exported(design('archetype-ar'), 'ar_default_mods');
-    const fitted = model.modelEntry.attachments?.[0];
+    const fitted = model.modelEntry.gun.attachments?.[0];
     if (!fitted) {
       throw new Error('archetype-ar has no fitted default mods');
     }
     const invalid = {
       ...model.modelEntry,
-      attachmentSlots: model.modelEntry.attachmentSlots?.filter(({ id }) => id !== fitted.mountedAt),
+      gun: {
+        ...model.modelEntry.gun,
+        attachmentSlots: model.modelEntry.gun.attachmentSlots?.filter(({ id }) => id !== fitted.mountedAt),
+      },
     };
     expect(validateInDeadvox(invalid).issues.length).toBeGreaterThan(0);
   });
 
   it('tracks a fitted rail sight to its removable mount slot', () => {
     const model = exported(design('archetype-ar-free-float'), 'ar_free_float', false);
-    const fittedSight = model.modelEntry.attachments?.find(({ kind }) => kind === 'iron-sight');
+    const fittedSight = model.modelEntry.gun.attachments?.find(({ kind }) => kind === 'iron-sight');
     expect(fittedSight?.node).toBeTruthy();
     expect(
-      model.modelEntry.attachmentSlots?.some(
+      model.modelEntry.gun.attachmentSlots?.some(
         ({ id, mount }) => id === fittedSight?.mountedAt && mount === fittedSight.mount,
       ),
     ).toBe(true);
@@ -658,15 +661,15 @@ describe('attachment parts and export metadata', () => {
 
   it('rejects two fitted attachments whose rail notch spans overlap', () => {
     const model = exported(design('archetype-ar'), 'ar_overlap');
-    const fitted = model.modelEntry.attachments?.find(({ mount }) => mount !== 'muzzle');
-    const anchor = model.modelEntry.attachmentSlots?.find(({ id }) => id === fitted?.mountedAt);
+    const fitted = model.modelEntry.gun.attachments?.find(({ mount }) => mount !== 'muzzle');
+    const anchor = model.modelEntry.gun.attachmentSlots?.find(({ id }) => id === fitted?.mountedAt);
     const span = fitted?.properties.railSpanNotches;
     if (!(fitted && anchor?.railId && anchor.notchIndex !== undefined && span)) {
       throw new Error('AR default optic has no rail span');
     }
     const min = anchor.notchIndex + span.minOffset;
     const max = anchor.notchIndex + span.maxOffset;
-    const conflict = model.modelEntry.attachmentSlots?.find(
+    const conflict = model.modelEntry.gun.attachmentSlots?.find(
       ({ id, railId, notchIndex }) =>
         id !== anchor.id &&
         railId === anchor.railId &&
@@ -679,10 +682,13 @@ describe('attachment parts and export metadata', () => {
     }
     const invalid = {
       ...model.modelEntry,
-      attachments: [
-        ...(model.modelEntry.attachments ?? []),
-        { ...fitted, id: 'overlapping-attachment', node: 'overlapping_node', mountedAt: conflict.id },
-      ],
+      gun: {
+        ...model.modelEntry.gun,
+        attachments: [
+          ...(model.modelEntry.gun.attachments ?? []),
+          { ...fitted, id: 'overlapping-attachment', node: 'overlapping_node', mountedAt: conflict.id },
+        ],
+      },
     };
     expect(validateInDeadvox(invalid).issues.map(({ message }) => message)).toContain(
       'fitted attachments need unique matching mount slots and non-overlapping rail spans',
@@ -697,9 +703,9 @@ describe('attachment parts and export metadata', () => {
       connections: [...ar.connections, { from: 'barrel.muzzle', to: 'suppressor.base' }],
     };
     const model = exported(assembly, 'ar_suppressor');
-    expect(model.modelEntry.attachmentSlots?.some(({ id }) => id.startsWith('suppressor.'))).toBe(false);
+    expect(model.modelEntry.gun.attachmentSlots?.some(({ id }) => id.startsWith('suppressor.'))).toBe(false);
     expect(
-      model.modelEntry.attachments?.some(
+      model.modelEntry.gun.attachments?.some(
         ({ id, mountedAt }) => id === 'real-suppressor' && mountedAt === 'barrel.muzzle.0',
       ),
     ).toBe(true);
@@ -724,7 +730,7 @@ describe('attachment parts and export metadata', () => {
     if (!result.ok) {
       throw new Error(JSON.stringify(result.error));
     }
-    const suppressor = result.modelEntry.attachments?.find(({ id }) => id === 'real-suppressor');
+    const suppressor = result.modelEntry.gun.attachments?.find(({ id }) => id === 'real-suppressor');
     expect(suppressor?.mountedAt).toBe('barrel.muzzle.0');
   });
 
@@ -732,7 +738,7 @@ describe('attachment parts and export metadata', () => {
     for (const name of ['archetype-ar', 'archetype-ak-akm']) {
       const assembly = design(name);
       const model = exported(assembly, name.replaceAll('-', '_'));
-      const slot = model.modelEntry.slots?.magazine;
+      const slot = model.modelEntry.gun.slots?.magazine;
       if (!slot) {
         throw new Error(`${name} did not export its magazine slot`);
       }
@@ -778,8 +784,8 @@ describe('attachment parts and export metadata', () => {
 
   it.each(corpus)('exports mount poses for $label', ({ label, assembly }) => {
     const model = exported(assembly, `corpus_${assembly.name.replaceAll('-', '_')}`, false);
-    const slots = model.modelEntry.attachmentSlots ?? [];
-    const fitted = model.modelEntry.attachments ?? [];
+    const slots = model.modelEntry.gun.attachmentSlots ?? [];
+    const fitted = model.modelEntry.gun.attachments ?? [];
     expect(
       fitted.every(({ mountedAt, mount }) => slots.some((slot) => slot.id === mountedAt && slot.mount === mount)),
       label,

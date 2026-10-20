@@ -20,7 +20,7 @@ const rotateAround = (point: Vec3, pivot: Vec3, axis: Vec3, angle: number): Vec3
 
 /** File-frame chamber seat; the crane carries every mouth, independent of the presentation-only loading angle. */
 export const revolverChamberPoint = (
-  data: NonNullable<ModelDef['revolver']>,
+  data: NonNullable<NonNullable<ModelDef['gun']>['revolver']>,
   chamber: number,
   aligned: number,
   open: number,

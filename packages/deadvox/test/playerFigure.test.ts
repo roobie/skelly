@@ -196,7 +196,7 @@ describe('optic lens presentation', () => {
     const optic = Object.values(firearm.slots ?? {}).find((item) => {
       const definition = registry.items.get(item.type);
       const model = definition?.model === undefined ? undefined : registry.models.get(definition.model);
-      return model?.attachment?.kind === 'optic';
+      return model?.gun?.attachment?.kind === 'optic';
     });
     if (!optic) {
       throw new Error('Fixture firearm needs a mounted optic');
@@ -653,7 +653,7 @@ describe('player figure', () => {
         id: 'support_fixture',
         file: 'assets/models/support_fixture.glb' as const,
         grip: { at: [0, 0, 0] as [number, number, number], turn: [0, 0, 0] as [number, number, number] },
-        internalMagazine: { capacity: 1 },
+        gun: { internalMagazine: { capacity: 1 } },
         anchors: {
           support: [0.3, 0, 0] as [number, number, number],
           // biome-ignore lint/style/useNamingConvention: model anchors use content Ids.

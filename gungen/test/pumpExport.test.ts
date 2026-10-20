@@ -31,12 +31,12 @@ it('exports a hand-only coupled 12-gauge action and an integral tube without box
     throw new Error(out.message);
   }
   expect(out.warnings).toEqual([]);
-  expect(out.modelEntry.calibre).toBe(shell.id);
+  expect(out.modelEntry.gun.calibre).toBe(shell.id);
   const resolved = resolve(assembly, gunDomain);
-  expect(out.modelEntry.internalMagazine?.capacity).toBe(tubeMagazineCapacity(resolved, shell));
-  expect(out.modelEntry.capacity).toBeUndefined();
-  expect(out.modelEntry.rounds).toBeUndefined();
-  const action = out.modelEntry.action!;
+  expect(out.modelEntry.gun.internalMagazine?.capacity).toBe(tubeMagazineCapacity(resolved, shell));
+  expect(out.modelEntry.gun.capacity).toBeUndefined();
+  expect(out.modelEntry.gun.rounds).toBeUndefined();
+  const action = out.modelEntry.gun.action!;
   expect(action.fire).toBeUndefined();
   expect(action.roundsPerSimMinute).toBeUndefined();
   for (const part of Object.values(action.parts)) {

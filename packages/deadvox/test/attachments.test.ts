@@ -9,16 +9,16 @@ const UNCERTIFIED_ATTACHMENT = /Uncertified attachment in slot/;
 describe('fitted firearm items', () => {
   it('creates removable default attachments as owned child items and renders them through the slot frame', () => {
     const rifleModel = registry.models.get(defOf(registry, ASSAULT_RIFLE).model!)!;
-    const [defaultAttachment] = rifleModel.attachments ?? [];
+    const [defaultAttachment] = rifleModel.gun?.attachments ?? [];
     expect(defaultAttachment).toBeDefined();
     const defaultItem = [...registry.items.values()].find((item) => {
       const model = item.model === undefined ? undefined : registry.models.get(item.model);
-      return model?.attachment?.id === defaultAttachment!.id;
+      return model?.gun?.attachment?.id === defaultAttachment!.id;
     });
     expect(defaultItem).toBeDefined();
     const rival = [...registry.items.values()].find((item) => {
       const model = item.model === undefined ? undefined : registry.models.get(item.model);
-      return model?.attachment && model.attachment.mount !== defaultAttachment!.mount;
+      return model?.gun?.attachment && model.gun.attachment.mount !== defaultAttachment!.mount;
     });
     expect(rival).toBeDefined();
 

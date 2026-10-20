@@ -67,12 +67,14 @@ describe('time lint boundary and naming rules', () => {
       roundsPerSimMinute: 60,
     };
     for (const [file, data] of [
-      ['fixture.model.json', { action }],
-      ['fixture-pack.json', { models: [{ action }] }],
+      ['fixture.model.json', { gun: { action } }],
+      ['fixture-pack.json', { models: [{ gun: { action } }] }],
     ] as const) {
       expect(temporalCatalogueFindings([file], () => JSON.stringify(data))).toEqual([]);
       const unknown = { ...action, hand: { ...action.hand, fixtureSimSeconds: 1 } };
-      const invalid = file.endsWith('.model.json') ? { action: unknown } : { models: [{ action: unknown }] };
+      const invalid = file.endsWith('.model.json')
+        ? { gun: { action: unknown } }
+        : { models: [{ gun: { action: unknown } }] };
       const findings = temporalCatalogueFindings([file], () => JSON.stringify(invalid));
       expect(findings).toHaveLength(1);
       expect(findings[0]).toContain('fixtureSimSeconds');

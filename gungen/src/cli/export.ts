@@ -10,6 +10,7 @@ import { basename, join } from 'node:path';
 import process from 'node:process';
 import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
 import { exportFileText } from './exportFile.ts';
+import { modelEntryJson } from './modelEntryJson.ts';
 import { readCartridge } from './readCartridge.ts';
 
 const USAGE =
@@ -55,7 +56,7 @@ const main = (): number => {
   const glbPath = join(out, `${id}.glb`);
   const entryPath = join(entryOut, `${id}.model.json`);
   writeFileSync(glbPath, result.glb);
-  writeFileSync(entryPath, `${JSON.stringify(result.modelEntry, null, 2)}\n`);
+  writeFileSync(entryPath, modelEntryJson(result.modelEntry));
   console.log(`wrote ${glbPath} (${result.glb.byteLength} bytes)`);
   console.log(`wrote ${entryPath}`);
   return 0;

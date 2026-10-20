@@ -217,7 +217,7 @@ try {
       throw new Error('Native pump loadout has no sealed box');
     }
     const { count: payload, item: payloadType } = inv.registry.items.get(box.type).unpack;
-    const { capacity } = inv.registry.models.get(inv.registry.items.get(gun.type).model).internalMagazine;
+    const { capacity } = inv.registry.models.get(inv.registry.items.get(gun.type).model).gun.internalMagazine;
     // Count the initial loadout separately from the box payload.
     const carried = [...inv.items()]
       .filter(
@@ -244,7 +244,7 @@ try {
     const { registry } = session.inventory;
     const gun = session.inventory.itemByUid(gunUid);
     const model = registry.models.get(registry.items.get(gun.type)?.model);
-    const calibre = model?.calibre;
+    const calibre = model?.gun?.calibre;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
     const stocked = new Set(rack.pockets.flat().map(({ item }) => item.type));
     return {
@@ -963,18 +963,18 @@ try {
       throw new Error('Range rack has no bolt rifle');
     }
     const model = inventory.registry.models.get(inventory.registry.items.get(gun.type).model);
-    const round = stock.find((item) => inventory.registry.items.get(item.type)?.ammo?.calibre === model.calibre);
+    const round = stock.find((item) => inventory.registry.items.get(item.type)?.ammo?.calibre === model.gun.calibre);
     if (!round) {
       throw new Error('Range rack has no matching bolt ammunition');
     }
-    const caseType = spentCaseItemId(model.calibre);
+    const caseType = spentCaseItemId(model.gun.calibre);
     const casesBefore = [...inventory.items()]
       .filter(({ item, location }) => item.type === caseType && location.kind === 'pile')
       .reduce((count, { item }) => count + item.count, 0);
     return {
       gun: gun.uid,
       round: round.uid,
-      cycleSeconds: model.action.hand.durationSimSeconds,
+      cycleSeconds: model.gun.action.hand.durationSimSeconds,
       caseType,
       casesBefore,
     };
@@ -1064,12 +1064,12 @@ try {
     const inv = session.inventory;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
     const stock = rack.pockets.flat().map(({ item }) => item);
-    const gun = stock.find((item) => inv.registry.models.get(inv.registry.items.get(item.type)?.model)?.revolver);
+    const gun = stock.find((item) => inv.registry.models.get(inv.registry.items.get(item.type)?.model)?.gun?.revolver);
     if (!gun) {
       throw new Error('Debug range has no revolver');
     }
     const definition = inv.registry.items.get(gun.type);
-    const { calibre } = inv.registry.models.get(definition.model);
+    const { calibre } = inv.registry.models.get(definition.model).gun;
     const ammo = stock.find((item) => inv.registry.items.get(item.type)?.ammo?.calibre === calibre);
     if (!ammo) {
       throw new Error('Debug range has no compatible loose revolver rounds');

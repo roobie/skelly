@@ -94,7 +94,7 @@ const basisAlong = (forward: Vec3, up: Vec3): AimBasis => {
   return { forward, right, up: correctedUp };
 };
 
-type Action = NonNullable<ModelDef['action']>;
+type Action = NonNullable<NonNullable<ModelDef['gun']>['action']>;
 export interface FirearmHandlingData {
   readonly model: ModelDef;
   readonly action: Action;
@@ -124,13 +124,13 @@ export const ammoMatchesCalibre = (type: string, calibre: string, registry: Regi
 
 const exportedActionReason = (item: Item, registry: Registry, mode: 'fire' | 'hand'): string | undefined => {
   const model = firearmModelFor(item, registry);
-  if (model?.revolver && model.calibre && model.grip && model.anchors?.muzzle) {
+  if (model?.gun?.revolver && model.gun.calibre && model.grip && model.anchors?.muzzle) {
     return undefined;
   }
-  if (!(model?.calibre && model.action?.hand && model.grip && model.anchors?.ejection)) {
+  if (!(model?.gun?.calibre && model.gun.action?.hand && model.grip && model.anchors?.ejection)) {
     return 'No exported action data for this gun';
   }
-  return mode === 'fire' && !(model.action.fire && model.action.roundsPerSimMinute)
+  return mode === 'fire' && !(model.gun.action.fire && model.gun.action.roundsPerSimMinute)
     ? 'No exported automatic action data for this gun'
     : undefined;
 };
@@ -141,15 +141,15 @@ export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandl
     throw new Error(reason);
   }
   const model = firearmModelFor(item, registry)!;
-  const action = model.action!;
+  const action = model.gun!.action!;
   const [caseModelId] = [...registry.models.values()]
-    .filter((candidate) => candidate.calibre === model.calibre && candidate.id.startsWith('case_'))
+    .filter((candidate) => candidate.gun?.calibre === model.gun?.calibre && candidate.id.startsWith('case_'))
     .map((candidate) => candidate.id)
     .sort();
   return {
     model,
     action,
-    calibre: model.calibre!,
+    calibre: model.gun!.calibre!,
     roundsPerSimSecond: action?.roundsPerSimMinute,
     ...(caseModelId ? { caseModelId } : {}),
     ...(defOf(registry, item.type).firearm
@@ -432,7 +432,7 @@ export class FirearmMechanics {
     if (reason) {
       return reason;
     }
-    if (pump && !firearmHandlingFor(item, this.inventory.registry).model.internalMagazine) {
+    if (pump && !firearmHandlingFor(item, this.inventory.registry).model.gun?.internalMagazine) {
       return 'No exported internal magazine data for this gun';
     }
     // Automatic motion will feed before the next cadence deadline. fire() rejects overlapping cycles;
@@ -924,7 +924,7 @@ export class FirearmMechanics {
     if (
       !shell ||
       (gun.firearm?.tube?.length ?? 0) >=
-        firearmHandlingFor(gun, this.inventory.registry).model.internalMagazine!.capacity
+        firearmHandlingFor(gun, this.inventory.registry).model.gun!.internalMagazine!.capacity
     ) {
       if (this.isBolt(gun) && gun.firearm?.actionOpen) {
         this.cock(gun.uid, time);
@@ -981,13 +981,13 @@ export class FirearmMechanics {
       return reason;
     }
     const data = firearmHandlingFor(gun, this.inventory.registry);
-    if (!(data.model.internalMagazine && data.model.anchors?.loading_port)) {
+    if (!(data.model.gun?.internalMagazine && data.model.anchors?.loading_port)) {
       return 'No exported loading port or internal magazine';
     }
     if (!ammoMatchesCalibre(ammo.type, data.calibre, this.inventory.registry)) {
       return 'Wrong ammunition';
     }
-    return (gun.firearm?.tube?.length ?? 0) >= data.model.internalMagazine.capacity
+    return (gun.firearm?.tube?.length ?? 0) >= data.model.gun.internalMagazine.capacity
       ? 'The magazine is full'
       : undefined;
   }
@@ -1003,7 +1003,7 @@ export class FirearmMechanics {
     }
     this.queue.enqueueAction(
       LOAD_ACTION,
-      `Load round ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.internalMagazine!.capacity}`,
+      `Load round ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.gun!.internalMagazine!.capacity}`,
       defOf(this.inventory.registry, gun.type).firearm!.roundLoadSimSeconds! * this.handlingFactor('reloadDuration'),
       { uid: gun.uid, ammoUid: ammo.uid },
     );
@@ -1180,13 +1180,13 @@ export class FirearmMechanics {
         ...(item.firearm?.retainedRoundType
           ? [`Retained round: ${defOf(this.inventory.registry, item.firearm.retainedRoundType).name}`]
           : []),
-        `Magazine: ${item.firearm?.tube?.length ?? 0}/${firearmHandlingFor(item, this.inventory.registry).model.internalMagazine!.capacity}`,
+        `Magazine: ${item.firearm?.tube?.length ?? 0}/${firearmHandlingFor(item, this.inventory.registry).model.gun!.internalMagazine!.capacity}`,
       ];
     }
     const state = item.firearm!;
     return [
       `Chamber: ${{ round: '00 buck shell', case: 'fired hull — rack before firing', empty: 'empty' }[state.chamber!]}`,
-      `Tube: ${state.tube!.length}/${firearmHandlingFor(item, this.inventory.registry).model.internalMagazine!.capacity} shells`,
+      `Tube: ${state.tube!.length}/${firearmHandlingFor(item, this.inventory.registry).model.gun!.internalMagazine!.capacity} shells`,
     ];
   }
 
@@ -1628,7 +1628,7 @@ export class FirearmMechanics {
     const data = firearmHandlingFor(item, this.inventory.registry);
     const { model } = data;
     const cylinder = item.firearm!.cylinder!;
-    const point = revolverChamberPoint(model.revolver!, chamber, cylinder.aligned, 1);
+    const point = revolverChamberPoint(model.gun!.revolver!, chamber, cylinder.aligned, 1);
     const local = modelToView(model, point.map((value, index) => value - model.grip!.at[index]!) as Vec3);
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const grip = heldGripOffset(side, false);

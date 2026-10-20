@@ -1,1 +1,5 @@
-{ "id": "round_308_h_winchester", "file": "assets/models/round-308_h_winchester.glb", "calibre": "308-winchester" }
+{
+  "id": "round_308_h_winchester",
+  "file": "assets/models/round-308_h_winchester.glb",
+  "gun": { "calibre": "308-winchester" }
+}

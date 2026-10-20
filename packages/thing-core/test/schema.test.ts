@@ -13,6 +13,10 @@ describe('neutral model envelope', () => {
     expect(safeParse(schema, { ...model, fixturePack: { unknown: true } }).success).toBe(false);
   });
 
+  it('rejects pack blocks that would replace a neutral field', () => {
+    expect(() => modelSchema({ grip: optional(string()) })).toThrow();
+  });
+
   it('rejects nonfinite model-frame coordinates', () => {
     expect(safeParse(NeutralModelSchema, model).success).toBe(true);
     expect(

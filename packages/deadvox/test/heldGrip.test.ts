@@ -104,7 +104,7 @@ describe('actual-slot held placement', () => {
     const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
     for (const modelId of ['rifle_assault', 'rifle_ak', 'shotgun_pump']) {
       const model = registry.models.get(modelId)!;
-      expect(model.sight?.eyeReliefMetres).toBeGreaterThan(0);
+      expect(model.gun?.sight?.eyeReliefMetres).toBeGreaterThan(0);
       const pose = heldFirearmTransform({
         model,
         side: 'right',
@@ -138,15 +138,18 @@ describe('actual-slot held placement', () => {
 
   it('keeps the sight and bore together off the fixed view during ADS recoil', () => {
     const coaxialSource = [...registry.models.values()].find(
-      (candidate) => candidate.sight && candidate.grip && candidate.anchors?.muzzle,
+      (candidate) => candidate.gun?.sight && candidate.grip && candidate.anchors?.muzzle,
     );
-    if (!coaxialSource?.sight) {
+    if (!coaxialSource?.gun?.sight) {
       throw new Error('No sighted firearm model fixture');
     }
     const model = {
       ...coaxialSource,
-      muzzleDirection: coaxialSource.sight.direction,
-      sight: { ...coaxialSource.sight, direction: coaxialSource.sight.direction },
+      gun: {
+        ...coaxialSource.gun,
+        muzzleDirection: coaxialSource.gun.sight.direction,
+        sight: { ...coaxialSource.gun.sight, direction: coaxialSource.gun.sight.direction },
+      },
     };
     const common = {
       model,

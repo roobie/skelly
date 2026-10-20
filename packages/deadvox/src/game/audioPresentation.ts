@@ -46,7 +46,7 @@ const hasMountedSuppressor = (registry: Registry, item: Item): boolean =>
       return false;
     }
     const modelId = defOf(registry, attachment.type).model;
-    const metadata = modelId === undefined ? undefined : registry.models.get(modelId)?.attachment;
+    const metadata = modelId === undefined ? undefined : registry.models.get(modelId)?.gun?.attachment;
     return metadata?.kind === 'suppressor' || hasMountedSuppressor(registry, attachment);
   });
 

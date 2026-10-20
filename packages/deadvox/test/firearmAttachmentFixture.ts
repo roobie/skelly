@@ -1,7 +1,7 @@
 import type { ModelDef, Registry } from '../src/core/content.ts';
 
-export type FixtureAttachment = NonNullable<ModelDef['attachment']>;
-export type FixtureFittedAttachment = NonNullable<ModelDef['attachments']>[number];
+export type FixtureAttachment = NonNullable<NonNullable<ModelDef['gun']>['attachment']>;
+export type FixtureFittedAttachment = NonNullable<NonNullable<ModelDef['gun']>['attachments']>[number];
 
 export const withDefaultAttachment = (
   base: Registry,
@@ -20,19 +20,19 @@ export const withDefaultAttachment = (
   const attachmentDef = registry.items.get(attachmentType);
   const attachmentModelId = attachmentDef?.model;
   const attachmentModel = attachmentModelId === undefined ? undefined : registry.models.get(attachmentModelId);
-  const attachment = attachmentOverride ?? attachmentModel?.attachment;
+  const attachment = attachmentOverride ?? attachmentModel?.gun?.attachment;
   if (!(firearmModelId && firearmModel && attachmentModelId && attachmentModel && attachment)) {
     throw new Error('Fixture firearm or attachment model is missing');
   }
-  const slot = firearmModel.attachmentSlots?.find(({ mount }) => mount === attachment.mount);
+  const slot = firearmModel.gun?.attachmentSlots?.find(({ mount }) => mount === attachment.mount);
   if (!slot) {
     throw new Error('Fixture firearm has no exported slot for the attachment mount');
   }
   const fitted: FixtureFittedAttachment = { ...attachment, node: 'fixture-attachment-node', mountedAt: slot.id };
-  registry.models.set(attachmentModelId, { ...attachmentModel, attachment });
+  registry.models.set(attachmentModelId, { ...attachmentModel, gun: { ...attachmentModel.gun, attachment } });
   registry.models.set(firearmModelId, {
     ...firearmModel,
-    attachments: [...(firearmModel.attachments ?? []), fitted],
+    gun: { ...firearmModel.gun, attachments: [...(firearmModel.gun?.attachments ?? []), fitted] },
   });
   return { registry, fitted, slot, itemType: attachmentType };
 };
@@ -42,9 +42,9 @@ export const withDefaultMountedLight = (base: Registry, firearmType: string, lig
   const sourceLight = base.items.get(lightType);
   const mountItem = base.items.get('tactical_flashlight_mount');
   const mountModel = mountItem?.model === undefined ? undefined : base.models.get(mountItem.model);
-  const exportedAttachment = mountModel?.attachment;
+  const exportedAttachment = mountModel?.gun?.attachment;
   const attachment = exportedAttachment && { ...exportedAttachment, id: 'fixture-mounted-light' };
-  const slot = firearmModel?.attachmentSlots?.find(({ mount }) => mount === attachment?.mount);
+  const slot = firearmModel?.gun?.attachmentSlots?.find(({ mount }) => mount === attachment?.mount);
   if (!(slot && sourceLight && mountModel && attachment)) {
     throw new Error('Fixture firearm, powered light, or exported rail mount is missing');
   }

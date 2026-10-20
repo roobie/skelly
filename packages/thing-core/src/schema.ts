@@ -29,8 +29,14 @@ export const NeutralModelSchema = strictObject({
   anchors: optional(record(Id, ModelPointSchema)),
 });
 
-export const modelSchema = <const Packs extends ObjectEntries>(packs: Packs) =>
-  strictObject({ ...NeutralModelSchema.entries, ...packs });
+export const modelSchema = <const Packs extends ObjectEntries>(packs: Packs) => {
+  for (const key of Object.keys(packs)) {
+    if (Object.hasOwn(NeutralModelSchema.entries, key)) {
+      throw new Error(`Pack block ${key} would replace a neutral model field`);
+    }
+  }
+  return strictObject({ ...NeutralModelSchema.entries, ...packs });
+};
 
 type DeepReadonly<T> = T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
 export type NeutralModel = DeepReadonly<InferOutput<typeof NeutralModelSchema>>;

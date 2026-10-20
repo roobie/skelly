@@ -27,9 +27,12 @@ const load = (model: ModelDef = ar) => {
 describe('exported firearm presentation', () => {
   it('turns the exported bolt knob before drawing it by the exported stroke and resets from rest', async () => {
     const bolt = firearmContent.models.find(
-      (candidate) => 'action' in candidate && Object.values(candidate.action.parts).some((part) => 'turn' in part),
+      (candidate) =>
+        'gun' in candidate &&
+        'action' in candidate.gun &&
+        Object.values(candidate.gun.action.parts).some((part) => 'turn' in part),
     ) as ModelDef;
-    const action = bolt.action!;
+    const action = bolt.gun!.action!;
     const gltf = await load(bolt);
     const paths = actionPartPaths(gltf.scene, action, gltf.parser);
     const clone = cloneHeldModel(prepareModel(bolt, gltf.scene).held, paths);
@@ -85,7 +88,7 @@ describe('exported firearm presentation', () => {
     });
     expect(rearSight).toBeDefined();
     const bounds = new Box3().setFromObject(rearSight!);
-    expect(ak.sight?.eye[1]).toBeCloseTo(bounds.max.y, 7);
+    expect(ak.gun?.sight?.eye[1]).toBeCloseTo(bounds.max.y, 7);
   });
 
   it('binds the real colon-named export by glTF index even when every Object3D name is changed', async () => {
@@ -93,8 +96,8 @@ describe('exported firearm presentation', () => {
     gltf.scene.traverse((node) => {
       node.name = 'not-an-exported-name';
     });
-    const paths = actionPartPaths(gltf.scene, ar.action, gltf.parser);
-    const definitions = Object.values(ar.action!.parts);
+    const paths = actionPartPaths(gltf.scene, ar.gun?.action, gltf.parser);
+    const definitions = Object.values(ar.gun!.action!.parts);
     expect(definitions.length).toBeGreaterThan(0);
     expect(paths).toHaveLength(definitions.length);
     const { held } = prepareModel(ar, gltf.scene);
@@ -122,7 +125,7 @@ describe('exported firearm presentation', () => {
       forwardSimSeconds: simSeconds(0.2),
     };
     const action = {
-      ...ar.action!,
+      ...ar.gun!.action!,
       fire: cycle,
       hand: cycle,
       roundsPerSimMinute: simPerMinute(600),
@@ -144,7 +147,7 @@ describe('exported firearm presentation', () => {
   });
 
   it('samples a hand-only action without inventing an automatic pose', () => {
-    const { fire: _fire, roundsPerSimMinute: _rate, ...handOnly } = ar.action!;
+    const { fire: _fire, roundsPerSimMinute: _rate, ...handOnly } = ar.gun!.action!;
     const rearward = handOnly.hand.rearwardSimSeconds;
     expect(sampleActionStroke(handOnly, 'fire', rearward / 2)).toBe(0);
     expect(sampleActionStroke(handOnly, 'hand', rearward / 2)).toBeCloseTo(0.5);
@@ -181,7 +184,7 @@ describe('exported firearm presentation', () => {
 
   it('keeps cloned action motion independent from another held copy and the prepared ground meshes', async () => {
     const gltf = await load();
-    const paths = actionPartPaths(gltf.scene, ar.action, gltf.parser);
+    const paths = actionPartPaths(gltf.scene, ar.gun?.action, gltf.parser);
     const prepared = prepareModel(ar, gltf.scene);
     const groundBefore = prepared.groundParts.map(({ matrix }) => matrix.clone());
     const first = cloneHeldModel(prepared.held, paths);
@@ -209,7 +212,9 @@ describe('exported firearm presentation', () => {
       view.updateMatrixWorld(true);
       const heldScene = held.children[0]!.children[0]!.children[0]!;
       const expectedAt = heldScene.localToWorld(new Vector3(...model.anchors!.ejection!));
-      const expectedDirection = new Vector3(...model.action!.ejectDirection).transformDirection(heldScene.matrixWorld);
+      const expectedDirection = new Vector3(...model.gun!.action!.ejectDirection).transformDirection(
+        heldScene.matrixWorld,
+      );
       const actual = heldEjectionPose({ model, side, twoHanded: true, eye: [eye.x, eye.y, eye.z], yaw, pitch });
       for (let axis = 0; axis < 3; axis += 1) {
         expect(actual.origin[axis]).toBeCloseTo(expectedAt.getComponent(axis), 9);
@@ -221,7 +226,7 @@ describe('exported firearm presentation', () => {
   it('converts model-frame travel through a rotated parent instead of moving on the parent x axis', async () => {
     const gltf = await load();
     const index = gltf.parser.json.nodes.findIndex(
-      (node: { name?: string }) => node.name === ar.action!.parts.carrier!.node,
+      (node: { name?: string }) => node.name === ar.gun!.action!.parts.carrier!.node,
     );
     let carrier: Object3D | undefined;
     gltf.scene.traverse((node) => {
@@ -233,13 +238,13 @@ describe('exported firearm presentation', () => {
     parent.rotation.z = Math.PI / 2;
     gltf.scene.add(parent);
     parent.add(carrier!);
-    const paths = actionPartPaths(gltf.scene, ar.action, gltf.parser);
+    const paths = actionPartPaths(gltf.scene, ar.gun?.action, gltf.parser);
     const clone = cloneHeldModel(prepareModel(ar, gltf.scene).held, paths);
     clone.root.updateMatrixWorld(true);
     const moving = clone.parts.find((part) => part.nodeIndex === index)!;
     const before = moving.node.getWorldPosition(new Vector3());
     const modelScene = clone.root.children[0]!.children[0]!.children[0]!;
-    const definition = ar.action!.parts.carrier!;
+    const definition = ar.gun!.action!.parts.carrier!;
     const modelOrigin = new Vector3().applyMatrix4(modelScene.matrixWorld);
     const expected = new Vector3(...definition.axis)
       .multiplyScalar(definition.strokeMetres)

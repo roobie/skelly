@@ -2,59 +2,61 @@
   "id": "revolver",
   "file": "assets/models/revolver.glb",
   "grip": { "at": [-0.12075, -0.094875, 0], "turn": [0, 0, 0] },
-  "sight": {
-    "kind": "iron",
-    "eye": [-0.069, 0.020125, 0],
-    "direction": [1, 0, 0],
-    "up": [0, 1, 0],
-    "eyeReliefMetres": 0.046
-  },
-  "muzzleDirection": [1, 0, 4.898587196589413e-16],
   "anchors": { "muzzle": [0.12075, 0, 0] },
-  "calibre": "357-magnum",
-  "revolver": {
-    "chambers": 6,
-    "crane": {
-      "node": "crane:revolver-crane",
-      "pivot": [0, -0.043125, -0.005749999999999996],
-      "axis": [1, 0, 2.4492935982947064e-16],
-      "openRadians": -1.2915436464758039
+  "gun": {
+    "sight": {
+      "kind": "iron",
+      "eye": [-0.069, 0.020125, 0],
+      "direction": [1, 0, 0],
+      "up": [0, 1, 0],
+      "eyeReliefMetres": 0.046
     },
-    "cylinder": {
-      "node": "cylinder:revolver-cylinder",
-      "centre": [-0.031625, -0.014374999999999999, 0],
-      "axis": [1, 0, 2.4492935982947064e-16],
-      "chamberRadiusMetres": 0.014374999999999999,
-      "chamberZeroRadians": 0
+    "muzzleDirection": [1, 0, 4.898587196589413e-16],
+    "calibre": "357-magnum",
+    "revolver": {
+      "chambers": 6,
+      "crane": {
+        "node": "crane:revolver-crane",
+        "pivot": [0, -0.043125, -0.005749999999999996],
+        "axis": [1, 0, 2.4492935982947064e-16],
+        "openRadians": -1.2915436464758039
+      },
+      "cylinder": {
+        "node": "cylinder:revolver-cylinder",
+        "centre": [-0.031625, -0.014374999999999999, 0],
+        "axis": [1, 0, 2.4492935982947064e-16],
+        "chamberRadiusMetres": 0.014374999999999999,
+        "chamberZeroRadians": 0
+      },
+      "ejector": {
+        "node": "ejector:revolver-ejector",
+        "axis": [-1, 0, -3.6739403974420594e-16],
+        "strokeMetres": 0.03277
+      },
+      "hammer": {
+        "node": "hammer:revolver-hammer",
+        "pivot": [-0.0761875, -0.01725, -9.330277801003897e-18],
+        "axis": [-1.2246467991473532e-16, 0, 1],
+        "cockRadians": 0.11461955804015964
+      },
+      "trigger": {
+        "node": "trigger:revolver-trigger",
+        "pivot": [-0.037375, -0.05175, -4.5771174118132325e-18],
+        "axis": [-1.2246467991473532e-16, 0, 1],
+        "pullRadians": -0.7827734975084494
+      }
     },
-    "ejector": {
-      "node": "ejector:revolver-ejector",
-      "axis": [-1, 0, -3.6739403974420594e-16],
-      "strokeMetres": 0.03277
-    },
-    "hammer": {
-      "node": "hammer:revolver-hammer",
-      "pivot": [-0.0761875, -0.01725, -9.330277801003897e-18],
-      "axis": [-1.2246467991473532e-16, 0, 1],
-      "cockRadians": 0.11461955804015964
-    },
-    "trigger": {
-      "node": "trigger:revolver-trigger",
-      "pivot": [-0.037375, -0.05175, -4.5771174118132325e-18],
-      "axis": [-1.2246467991473532e-16, 0, 1],
-      "pullRadians": -0.7827734975084494
-    }
-  },
-  "attachments": [],
-  "attachmentSlots": [
-    {
-      "id": "barrel.muzzle.0",
-      "mount": "muzzle",
-      "position": [0.12075, 0, 0],
-      "direction": [1, 0, 4.898587196589413e-16],
-      "up": [0, 1, 0]
-    }
-  ],
-  "compatibility": { "barrel.muzzle.0": [] },
-  "compatibilityPairs": []
+    "attachments": [],
+    "attachmentSlots": [
+      {
+        "id": "barrel.muzzle.0",
+        "mount": "muzzle",
+        "position": [0.12075, 0, 0],
+        "direction": [1, 0, 4.898587196589413e-16],
+        "up": [0, 1, 0]
+      }
+    ],
+    "compatibility": { "barrel.muzzle.0": [] },
+    "compatibilityPairs": []
+  }
 }

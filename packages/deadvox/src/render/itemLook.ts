@@ -34,7 +34,7 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
     return undefined;
   }
   const modelDef = registry.models.get(model);
-  const magazineSlot = modelDef?.slots?.magazine;
+  const magazineSlot = modelDef?.gun?.slots?.magazine;
   const fittedMagazine = item.slots?.magazine;
   const magazineModel = fittedMagazine && defOf(registry, fittedMagazine.type).model;
   const slots: ItemLookSlot[] = magazineSlot
@@ -51,9 +51,9 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
     if (slotId === 'magazine' || slotId === 'battery' || slotId === 'canister' || !child) {
       continue;
     }
-    const mount = modelDef?.attachmentSlots?.find(({ id }) => id === slotId);
+    const mount = modelDef?.gun?.attachmentSlots?.find(({ id }) => id === slotId);
     const attachmentModel = defOf(registry, child.type).model;
-    const mountFrame = attachmentModel ? registry.models.get(attachmentModel)?.attachment?.mountFrame : undefined;
+    const mountFrame = attachmentModel ? registry.models.get(attachmentModel)?.gun?.attachment?.mountFrame : undefined;
     if (mount && attachmentModel && mountFrame) {
       slots.push({
         slot: slotId,

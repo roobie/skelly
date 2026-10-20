@@ -20,13 +20,15 @@ const fixture = (rememberPerWeapon = true, fixed = false) => {
   const model: ModelDef = {
     id: 'fixture_optic_model',
     file: 'fixture.glb',
-    attachment: {
-      id: 'fixture_optic',
-      kind: 'optic',
-      massKg: 1,
-      mount: 'rail-top',
-      mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
-      properties: { magnification: range },
+    gun: {
+      attachment: {
+        id: 'fixture_optic',
+        kind: 'optic',
+        massKg: 1,
+        mount: 'rail-top',
+        mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
+        properties: { magnification: range },
+      },
     },
   };
   const registry = { items: new Map([[optic.id, optic]]), models: new Map([[model.id, model]]) };

@@ -152,7 +152,7 @@ it('a dedicated cock job is ineligible for rummage independently of live firearm
 
 it('a live firearm pose takes precedence over a generic held move', () => {
   const gunDef = [...registry.items.values()].find(
-    (def) => def.firearm && !def.firearm.pump && def.model && registry.models.get(def.model)?.action?.fire,
+    (def) => def.firearm && !def.firearm.pump && def.model && registry.models.get(def.model)?.gun?.action?.fire,
   );
   expect(gunDef).toBeDefined();
   const f = fixture(gunDef!.id, (before, after) => expect(after).toEqual(before));

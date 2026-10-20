@@ -681,18 +681,20 @@ describe('content', () => {
         {
           id: 'fixture_gun',
           file: 'assets/models/fixture_gun.glb',
-          compatibility: { 'barrel.muzzle.0': ['fixture-suppressor'] },
+          gun: { compatibility: { 'barrel.muzzle.0': ['fixture-suppressor'] } },
         },
         {
           id: 'fixture_suppressor',
           file: 'assets/models/fixture_suppressor.glb',
-          attachment: {
-            id: 'fixture-suppressor',
-            massKg: 0.4,
-            kind: 'suppressor',
-            mount: 'muzzle',
-            mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
-            properties: { noiseFactor: 0.25 },
+          gun: {
+            attachment: {
+              id: 'fixture-suppressor',
+              massKg: 0.4,
+              kind: 'suppressor',
+              mount: 'muzzle',
+              mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
+              properties: { noiseFactor: 0.25 },
+            },
           },
         },
       ],
@@ -1857,7 +1859,7 @@ describe('content references', () => {
       {
         source: 'military-fixture.json',
         data: {
-          models: [{ ...firearmModel, id: item, attachments: [] }],
+          models: [{ ...firearmModel, id: item, gun: { ...firearmModel.gun, attachments: [] } }],
           items: [
             {
               id: item,

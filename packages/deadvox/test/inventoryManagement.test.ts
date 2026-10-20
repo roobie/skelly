@@ -23,7 +23,11 @@ const fixtureRegistry = (): Registry => {
     throw new Error('Registry has no model to adapt for the magazine fixture');
   }
   const modelId = 'fixture_inventory_magazine_model';
-  models.set(modelId, { ...existingModel, id: modelId, calibre: 'fixture_calibre', capacity: 3 });
+  models.set(modelId, {
+    ...existingModel,
+    id: modelId,
+    gun: { ...existingModel.gun, calibre: 'fixture_calibre', capacity: 3 },
+  });
   const items = new Map(registry.items);
   const definitions: ItemDef[] = [
     {
@@ -308,7 +312,7 @@ describe('Firearms Combat attachment work', () => {
     if (!inventory.add(firearm, { kind: 'hand', side: 'right' })) {
       throw new Error('Could not hold the attachment fixture firearm');
     }
-    const slot = registry.models.get(defOf(registry, 'rifle_assault').model!)!.attachments![0]!.mountedAt;
+    const slot = registry.models.get(defOf(registry, 'rifle_assault').model!)!.gun!.attachments![0]!.mountedAt;
     const fitted = firearm.slots?.[slot];
     if (!fitted) {
       throw new Error('The fixture firearm has no default attachment to remove');

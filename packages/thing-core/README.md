@@ -23,7 +23,8 @@ reasons and `things/WORK.md`, "Phases" for the remaining integration.
 - Each domain pack owns one named block on a model entry and validates it with its own
   schema. The envelope then names no kind of thing, nothing leaks between packs, and one
   entry can carry several packs' blocks without their names clashing. A field two packs
-  both want is promoted into the envelope on purpose.
+  both want is promoted into the envelope on purpose. The gun pack's block and the composed
+  Deadvox schema are `packages/deadvox/src/core/schema.ts`, `GunModelSchema` and `ModelSchema`.
 - Materials are one table, kept here as content: each material has a colour, a finish and a
   density, and packs add their own. Mass is derived from densities, so colour and density
   kept apart would drift; in one table every tool and the game read the same values, and a

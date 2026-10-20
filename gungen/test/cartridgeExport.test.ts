@@ -63,13 +63,13 @@ describe('standalone cartridge GLBs', () => {
     expect(round.modelEntry).toMatchObject({
       id: 'round_7_d_62x39',
       file: 'assets/models/round-7_d_62x39.glb',
-      calibre: '7.62x39',
+      gun: { calibre: '7.62x39' },
     });
     expect(round.modelEntry.grip).toBeUndefined();
     expect(firedCase.modelEntry).toMatchObject({
       id: 'case_7_d_62x39',
       file: 'assets/models/case-7_d_62x39.glb',
-      calibre: '7.62x39',
+      gun: { calibre: '7.62x39' },
     });
 
     const gltf = glbJson(round.glb);

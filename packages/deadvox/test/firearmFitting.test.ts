@@ -1,18 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Character, type HandedCharacter } from '../src/core/character.ts';
-import type { FurnitureDef, ItemDef, ModelDef, Registry } from '../src/core/content.ts';
+import type { FurnitureDef, ItemDef, Registry } from '../src/core/content.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf, type Item } from '../src/core/items.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { bindReach } from '../src/core/reach.ts';
+import type { GunModelDef } from '../src/core/schema.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
-type Pair = NonNullable<ModelDef['compatibilityPairs']>[number];
+type Pair = NonNullable<GunModelDef['compatibilityPairs']>[number];
 type Choice = Pair[number];
 
 const baseRegistry = loadBaseRegistry();
@@ -27,21 +28,22 @@ const makeFixture = (character?: HandedCharacter, prepareRegistry?: (registry: R
   prepareRegistry?.(registry);
   const firearmType = 'rifle_assault';
   const modelId = defOf(registry, firearmType).model!;
-  const model = registry.models.get(modelId)!;
+  const entry = registry.models.get(modelId)!;
+  const model = entry.gun!;
   const attachmentType = [...registry.items.values()].find((candidate) => {
     const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
-    return attachmentModel?.attachment?.kind === 'foregrip';
+    return attachmentModel?.gun?.attachment?.kind === 'foregrip';
   })!.id;
   const inventory = new Inventory(registry, undefined, undefined, character);
   const firearm = inventory.create(firearmType);
   const foregrip = inventory.create(attachmentType);
-  const withModel = (change: (model: ModelDef) => ModelDef): void => {
-    registry.models.set(modelId, change(model));
+  const withModel = (change: (model: GunModelDef) => GunModelDef): void => {
+    registry.models.set(modelId, { ...entry, gun: change(model) });
   };
   return { registry, model, modelId, inventory, firearm, foregrip, withModel };
 };
 
-const bottomRailSlots = (model: ModelDef): string[] =>
+const bottomRailSlots = (model: GunModelDef): string[] =>
   (model.attachmentSlots ?? [])
     .filter((slot) => slot.mount === 'rail-bottom')
     .map((slot) => slot.id)
@@ -174,7 +176,7 @@ const baseOpticFitsFirearm = (opticDefinition: ItemDef, firearmDefinition: ItemD
   const firearm = inventory.create(firearmDefinition.id);
   const optic = inventory.create(opticDefinition.id);
   const firearmModel = baseRegistry.models.get(firearmDefinition.model!);
-  for (const slot of firearmModel?.attachmentSlots ?? []) {
+  for (const slot of firearmModel?.gun?.attachmentSlots ?? []) {
     if (firearm.slots?.[slot.id]) {
       inventory.fitSlot(firearm, slot.id, undefined);
     }
@@ -184,7 +186,7 @@ const baseOpticFitsFirearm = (opticDefinition: ItemDef, firearmDefinition: ItemD
     throw new Error('Base firearm and optic could not be placed for fitting');
   }
   const handling = new FirearmAttachmentHandling(inventory, new HandlingQueue(inventory), () => [0, 0, 0]);
-  return (firearmModel?.attachmentSlots ?? []).some(
+  return (firearmModel?.gun?.attachmentSlots ?? []).some(
     (slot) => slot.mount === 'rail-top' && handling.fitReason(firearm, slot.id, optic) === undefined,
   );
 };
@@ -236,9 +238,12 @@ describe('certified firearm fitting', () => {
     const gripModel = fixture.registry.models.get(gripModelId)!;
     fixture.registry.models.set(gripModelId, {
       ...gripModel,
-      attachment: {
-        ...gripModel.attachment!,
-        properties: { ...gripModel.attachment!.properties, railSpanNotches: { minOffset: 0, maxOffset: 1 } },
+      gun: {
+        ...gripModel.gun,
+        attachment: {
+          ...gripModel.gun!.attachment!,
+          properties: { ...gripModel.gun!.attachment!.properties, railSpanNotches: { minOffset: 0, maxOffset: 1 } },
+        },
       },
     });
     fixture.withModel((model) => ({
@@ -362,12 +367,12 @@ describe('certified firearm fitting', () => {
     const fixture = makeFixture();
     const optic = [...fixture.registry.items.values()].find((item) => {
       const model = item.model === undefined ? undefined : fixture.registry.models.get(item.model);
-      const range = model?.attachment?.properties.magnification;
+      const range = model?.gun?.attachment?.properties.magnification;
       return (
-        model?.attachment?.kind === 'optic' &&
+        model?.gun?.attachment?.kind === 'optic' &&
         range !== undefined &&
         range.min < range.max &&
-        Object.values(fixture.model.compatibility ?? {}).some((ids) => ids.includes(model.attachment!.id))
+        Object.values(fixture.model.compatibility ?? {}).some((ids) => ids.includes(model.gun!.attachment!.id))
       );
     });
     if (!optic) {
@@ -376,7 +381,7 @@ describe('certified firearm fitting', () => {
     fixture.registry.items.set(optic.id, { ...optic, opticMagnification: undefined });
     const opticModel = fixture.registry.models.get(optic.model!)!;
     const firearmSlot = fixture.model.attachmentSlots!.find(({ id }) =>
-      fixture.model.compatibility?.[id]?.includes(opticModel.attachment!.id),
+      fixture.model.compatibility?.[id]?.includes(opticModel.gun!.attachment!.id),
     );
     if (!firearmSlot) {
       throw new Error('Fixture firearm needs a compatible optic slot');
@@ -405,7 +410,7 @@ describe('certified firearm fitting', () => {
     const firearms = [...baseRegistry.items.values()].filter((item) => item.firearm && item.model);
     const optics = [...baseRegistry.items.values()].filter((item) => {
       const model = item.model === undefined ? undefined : baseRegistry.models.get(item.model);
-      return model?.attachment?.kind === 'optic' && opticViewSettings(item, model) !== undefined;
+      return model?.gun?.attachment?.kind === 'optic' && opticViewSettings(item, model) !== undefined;
     });
     if (!(firearms.length > 0 && optics.length > 0)) {
       throw new Error('Base content needs firearms and optics');
@@ -426,9 +431,12 @@ describe('certified firearm fitting', () => {
     const gripModel = fixture.registry.models.get(gripModelId)!;
     fixture.registry.models.set(gripModelId, {
       ...gripModel,
-      attachment: {
-        ...gripModel.attachment!,
-        properties: { ...gripModel.attachment!.properties, railSpanNotches: { minOffset: 0, maxOffset: 1 } },
+      gun: {
+        ...gripModel.gun,
+        attachment: {
+          ...gripModel.gun!.attachment!,
+          properties: { ...gripModel.gun!.attachment!.properties, railSpanNotches: { minOffset: 0, maxOffset: 1 } },
+        },
       },
     });
     const second = fixture.inventory.create(fixture.foregrip.type);

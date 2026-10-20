@@ -1,0 +1,14 @@
+{
+  "id": "foregrip",
+  "file": "assets/models/foregrip.glb",
+  "gun": {
+    "attachment": {
+      "id": "foregrip",
+      "kind": "foregrip",
+      "massKg": 0.016938745312499996,
+      "mount": "rail-bottom",
+      "properties": { "handlingClass": "vertical", "railSpanNotches": { "minOffset": 0, "maxOffset": 0 } },
+      "mountFrame": { "normal": [0, 1, 0], "up": [1, 0, 0] }
+    }
+  }
+}

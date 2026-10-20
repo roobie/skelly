@@ -8,7 +8,7 @@ export const boltCompanionExports = (
   model: GunDeadvoxModelEntry,
   optics: readonly GlbAssetIdentity[],
 ): { modelEntry: DeadvoxModelEntry; glb: Uint8Array }[] => {
-  const cartridge = readCartridge(model.calibre);
+  const cartridge = readCartridge(model.gun.calibre);
   if (!(cartridge.ok && cartridge.cartridge)) {
     throw new Error(`calibre: ${cartridge.ok ? 'bolt export requires a cartridge' : cartridge.message}`);
   }
@@ -17,7 +17,7 @@ export const boltCompanionExports = (
     throw new Error(JSON.stringify(ammunition.error));
   }
   const exports = Object.values(ammunition.models);
-  const compatible = new Set(Object.values(model.compatibility ?? {}).flat());
+  const compatible = new Set(Object.values(model.gun.compatibility ?? {}).flat());
   for (const asset of optics) {
     const attachment = asset.id.replaceAll('_', '-');
     if (!compatible.has(attachment)) {

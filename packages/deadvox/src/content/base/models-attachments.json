@@ -1,291 +1,351 @@
 {
   "models": [
     {
-      "id": "foregrip",
       "file": "assets/models/foregrip.glb",
-      "attachment": {
-        "id": "foregrip",
-        "kind": "foregrip",
-        "massKg": 0.016938745312499996,
-        "mount": "rail-bottom",
-        "mountFrame": { "normal": [0, 1, 0], "up": [1, 0, 0] },
-        "properties": {
-          "handlingClass": "vertical",
-          "railSpanNotches": {
-            "minOffset": 0,
-            "maxOffset": 0
+      "gun": {
+        "attachment": {
+          "id": "foregrip",
+          "kind": "foregrip",
+          "massKg": 0.016938745312499996,
+          "mount": "rail-bottom",
+          "mountFrame": {
+            "normal": [0, 1, 0],
+            "up": [1, 0, 0]
+          },
+          "properties": {
+            "handlingClass": "vertical",
+            "railSpanNotches": {
+              "maxOffset": 0,
+              "minOffset": 0
+            }
           }
         }
-      }
+      },
+      "id": "foregrip"
     },
     {
-      "id": "improvised_suppressor",
       "file": "assets/models/improvised_suppressor.glb",
-      "attachment": {
-        "id": "improvised-suppressor",
-        "kind": "suppressor",
-        "mount": "muzzle",
-        "massKg": 1.2218603437304045,
-        "mountFrame": { "normal": [-1, 0, 0], "up": [0, 1, 0] },
-        "properties": {
-          "noiseFactor": 0.7,
-          "wearClass": "improvised"
+      "gun": {
+        "attachment": {
+          "id": "improvised-suppressor",
+          "kind": "suppressor",
+          "massKg": 1.2218603437304045,
+          "mount": "muzzle",
+          "mountFrame": {
+            "normal": [-1, 0, 0],
+            "up": [0, 1, 0]
+          },
+          "properties": {
+            "noiseFactor": 0.69999999999999996,
+            "wearClass": "improvised"
+          }
         }
-      }
+      },
+      "id": "improvised_suppressor"
     },
     {
-      "id": "optic_digital_thermal",
       "file": "assets/models/optic_digital_thermal.glb",
-      "attachment": {
-        "id": "optic-digital-thermal",
-        "kind": "optic",
-        "massKg": 0.3376618423714778,
-        "mount": "rail-top",
-        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
-        "properties": {
-          "reticleKind": "crosshair",
-          "magnification": {
-            "min": 3,
-            "max": 12
-          },
-          "railSpanNotches": {
-            "minOffset": -3,
-            "maxOffset": 3
-          }
-        },
-        "sight": {
+      "gun": {
+        "attachment": {
+          "id": "optic-digital-thermal",
           "kind": "optic",
-          "eye": [-0.1725, 0.048875, 0],
-          "direction": [1, 0, 0],
-          "up": [0, 1, 0],
-          "eyeReliefMetres": 0.07475,
-          "ocularDiameterMetres": 0.043125
+          "massKg": 0.33766184237147778,
+          "mount": "rail-top",
+          "mountFrame": {
+            "normal": [0, -1, 0],
+            "up": [1, 0, 0]
+          },
+          "properties": {
+            "magnification": {
+              "max": 12,
+              "min": 3
+            },
+            "railSpanNotches": {
+              "maxOffset": 3,
+              "minOffset": -3
+            },
+            "reticleKind": "crosshair"
+          },
+          "sight": {
+            "direction": [1, 0, 0],
+            "eye": [-0.17249999999999999, 0.048875000000000002, 0],
+            "eyeReliefMetres": 0.074749999999999997,
+            "kind": "optic",
+            "ocularDiameterMetres": 0.043124999999999997,
+            "up": [0, 1, 0]
+          }
         }
-      }
+      },
+      "id": "optic_digital_thermal"
     },
     {
-      "id": "optic_fixed_prism_4x",
       "file": "assets/models/optic_fixed_prism_4x.glb",
-      "attachment": {
-        "id": "optic-fixed-prism-4x",
-        "kind": "optic",
-        "massKg": 0.357488038040254,
-        "mount": "rail-top",
-        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
-        "properties": {
-          "reticleKind": "chevron",
-          "magnification": {
-            "min": 4,
-            "max": 4
-          },
-          "railSpanNotches": {
-            "minOffset": -3,
-            "maxOffset": 3
-          }
-        },
-        "sight": {
+      "gun": {
+        "attachment": {
+          "id": "optic-fixed-prism-4x",
           "kind": "optic",
-          "eye": [-0.07475, 0.025875, 0],
-          "direction": [1, 0, 0],
-          "up": [0, 1, 0],
-          "eyeReliefMetres": 0.04025,
-          "ocularDiameterMetres": 0.01725
+          "massKg": 0.35748803804025397,
+          "mount": "rail-top",
+          "mountFrame": {
+            "normal": [0, -1, 0],
+            "up": [1, 0, 0]
+          },
+          "properties": {
+            "magnification": {
+              "max": 4,
+              "min": 4
+            },
+            "railSpanNotches": {
+              "maxOffset": 3,
+              "minOffset": -3
+            },
+            "reticleKind": "chevron"
+          },
+          "sight": {
+            "direction": [1, 0, 0],
+            "eye": [-0.074749999999999997, 0.025874999999999999, 0],
+            "eyeReliefMetres": 0.040250000000000001,
+            "kind": "optic",
+            "ocularDiameterMetres": 0.017250000000000001,
+            "up": [0, 1, 0]
+          }
         }
-      }
+      },
+      "id": "optic_fixed_prism_4x"
     },
     {
-      "id": "optic_high_mag_5_25x",
       "file": "assets/models/optic_high_mag_5_25x.glb",
-      "attachment": {
-        "id": "optic-high-mag-5-25x",
-        "kind": "optic",
-        "massKg": 0.3254916611224242,
-        "mount": "rail-top",
-        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
-        "properties": {
-          "reticleKind": "crosshair",
-          "magnification": {
-            "min": 5,
-            "max": 25
-          },
-          "railSpanNotches": {
-            "minOffset": -3,
-            "maxOffset": 3
-          }
-        },
-        "sight": {
+      "gun": {
+        "attachment": {
+          "id": "optic-high-mag-5-25x",
           "kind": "optic",
-          "eye": [-0.181125, 0.0345, 0],
-          "direction": [1, 0, 0],
-          "up": [0, 1, 0],
-          "eyeReliefMetres": 0.092,
-          "ocularDiameterMetres": 0.037375
+          "massKg": 0.32549166112242423,
+          "mount": "rail-top",
+          "mountFrame": {
+            "normal": [0, -1, 0],
+            "up": [1, 0, 0]
+          },
+          "properties": {
+            "magnification": {
+              "max": 25,
+              "min": 5
+            },
+            "railSpanNotches": {
+              "maxOffset": 3,
+              "minOffset": -3
+            },
+            "reticleKind": "crosshair"
+          },
+          "sight": {
+            "direction": [1, 0, 0],
+            "eye": [-0.18112500000000001, 0.034500000000000003, 0],
+            "eyeReliefMetres": 0.091999999999999998,
+            "kind": "optic",
+            "ocularDiameterMetres": 0.037374999999999999,
+            "up": [0, 1, 0]
+          }
         }
-      }
+      },
+      "id": "optic_high_mag_5_25x"
     },
     {
-      "id": "optic_holographic",
       "file": "assets/models/optic_holographic.glb",
-      "attachment": {
-        "id": "optic-holographic",
-        "kind": "optic",
-        "massKg": 0.30874713046874996,
-        "mount": "rail-top",
-        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
-        "properties": {
-          "reticleKind": "dot",
-          "railSpanNotches": {
-            "minOffset": -1,
-            "maxOffset": 1
-          }
-        },
-        "sight": {
+      "gun": {
+        "attachment": {
+          "id": "optic-holographic",
           "kind": "optic",
-          "eye": [-0.043125, 0.0345, 0],
-          "direction": [1, 0, 0],
-          "up": [0, 1, 0],
-          "eyeReliefMetres": 0.04025,
-          "ocularDiameterMetres": 0.031625
-        }
-      }
-    },
-    {
-      "id": "optic_lpvo_1_6x",
-      "file": "assets/models/optic_lpvo_1_6x.glb",
-      "attachment": {
-        "id": "optic-lpvo-1-6x",
-        "kind": "optic",
-        "massKg": 0.16156919783654183,
-        "mount": "rail-top",
-        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
-        "properties": {
-          "reticleKind": "crosshair",
-          "magnification": {
-            "min": 1,
-            "max": 6
+          "massKg": 0.30874713046874996,
+          "mount": "rail-top",
+          "mountFrame": {
+            "normal": [0, -1, 0],
+            "up": [1, 0, 0]
           },
-          "railSpanNotches": {
-            "minOffset": -3,
-            "maxOffset": 3
+          "properties": {
+            "railSpanNotches": {
+              "maxOffset": 1,
+              "minOffset": -1
+            },
+            "reticleKind": "dot"
+          },
+          "sight": {
+            "direction": [1, 0, 0],
+            "eye": [-0.043124999999999997, 0.034500000000000003, 0],
+            "eyeReliefMetres": 0.040250000000000001,
+            "kind": "optic",
+            "ocularDiameterMetres": 0.031625,
+            "up": [0, 1, 0]
           }
-        },
-        "sight": {
-          "kind": "optic",
-          "eye": [-0.11499999999999999, 0.023, 0],
-          "direction": [1, 0, 0],
-          "up": [0, 1, 0],
-          "eyeReliefMetres": 0.08625,
-          "ocularDiameterMetres": 0.031625
         }
-      }
+      },
+      "id": "optic_holographic"
     },
     {
-      "id": "optic_mini_reflex",
+      "file": "assets/models/optic_lpvo_1_6x.glb",
+      "gun": {
+        "attachment": {
+          "id": "optic-lpvo-1-6x",
+          "kind": "optic",
+          "massKg": 0.16156919783654183,
+          "mount": "rail-top",
+          "mountFrame": {
+            "normal": [0, -1, 0],
+            "up": [1, 0, 0]
+          },
+          "properties": {
+            "magnification": {
+              "max": 6,
+              "min": 1
+            },
+            "railSpanNotches": {
+              "maxOffset": 3,
+              "minOffset": -3
+            },
+            "reticleKind": "crosshair"
+          },
+          "sight": {
+            "direction": [1, 0, 0],
+            "eye": [-0.11499999999999999, 0.023, 0],
+            "eyeReliefMetres": 0.086249999999999993,
+            "kind": "optic",
+            "ocularDiameterMetres": 0.031625,
+            "up": [0, 1, 0]
+          }
+        }
+      },
+      "id": "optic_lpvo_1_6x"
+    },
+    {
       "file": "assets/models/optic_mini_reflex.glb",
-      "attachment": {
-        "id": "optic-mini-reflex",
-        "kind": "optic",
-        "massKg": 0.08004009503411555,
-        "mount": "rail-top",
-        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
-        "properties": {
-          "reticleKind": "dot",
-          "railSpanNotches": {
-            "minOffset": -1,
-            "maxOffset": 1
-          }
-        },
-        "sight": {
+      "gun": {
+        "attachment": {
+          "id": "optic-mini-reflex",
           "kind": "optic",
-          "eye": [-0.025875, 0.01725, 0],
-          "direction": [1, 0, 0],
-          "up": [0, 1, 0],
-          "eyeReliefMetres": 0.028749999999999998,
-          "ocularDiameterMetres": 0.028749999999999998
+          "massKg": 0.080040095034115549,
+          "mount": "rail-top",
+          "mountFrame": {
+            "normal": [0, -1, 0],
+            "up": [1, 0, 0]
+          },
+          "properties": {
+            "railSpanNotches": {
+              "maxOffset": 1,
+              "minOffset": -1
+            },
+            "reticleKind": "dot"
+          },
+          "sight": {
+            "direction": [1, 0, 0],
+            "eye": [-0.025874999999999999, 0.017250000000000001, 0],
+            "eyeReliefMetres": 0.028749999999999998,
+            "kind": "optic",
+            "ocularDiameterMetres": 0.028749999999999998,
+            "up": [0, 1, 0]
+          }
         }
-      }
+      },
+      "id": "optic_mini_reflex"
     },
     {
-      "id": "optic_tube_dot",
       "file": "assets/models/optic_tube_dot.glb",
-      "attachment": {
-        "id": "optic-tube-dot",
-        "kind": "optic",
-        "massKg": 0.04629537375454333,
-        "mount": "rail-top",
-        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
-        "properties": {
-          "reticleKind": "dot",
-          "railSpanNotches": {
-            "minOffset": -1,
-            "maxOffset": 1
-          }
-        },
-        "sight": {
+      "gun": {
+        "attachment": {
+          "id": "optic-tube-dot",
           "kind": "optic",
-          "eye": [-0.0345, 0.023, 0],
-          "direction": [1, 0, 0],
-          "up": [0, 1, 0],
-          "eyeReliefMetres": 0.0345,
-          "ocularDiameterMetres": 0.028749999999999998
+          "massKg": 0.046295373754543331,
+          "mount": "rail-top",
+          "mountFrame": {
+            "normal": [0, -1, 0],
+            "up": [1, 0, 0]
+          },
+          "properties": {
+            "railSpanNotches": {
+              "maxOffset": 1,
+              "minOffset": -1
+            },
+            "reticleKind": "dot"
+          },
+          "sight": {
+            "direction": [1, 0, 0],
+            "eye": [-0.034500000000000003, 0.023, 0],
+            "eyeReliefMetres": 0.034500000000000003,
+            "kind": "optic",
+            "ocularDiameterMetres": 0.028749999999999998,
+            "up": [0, 1, 0]
+          }
         }
-      }
+      },
+      "id": "optic_tube_dot"
     },
     {
-      "id": "rail_front_sight",
       "file": "assets/models/rail_front_sight.glb",
-      "attachment": {
-        "id": "rail-front-sight",
-        "kind": "iron-sight",
-        "massKg": 0.0257431857421875,
-        "mount": "rail-top",
-        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
-        "properties": {
-          "railSpanNotches": {
-            "minOffset": 0,
-            "maxOffset": 0
+      "gun": {
+        "attachment": {
+          "id": "rail-front-sight",
+          "kind": "iron-sight",
+          "massKg": 0.025743185742187501,
+          "mount": "rail-top",
+          "mountFrame": {
+            "normal": [0, -1, 0],
+            "up": [1, 0, 0]
+          },
+          "properties": {
+            "railSpanNotches": {
+              "maxOffset": 0,
+              "minOffset": 0
+            }
+          },
+          "sight": {
+            "direction": [1, 0, 0],
+            "eye": [0, 0.020125000000000001, 0],
+            "eyeReliefMetres": 0.045999999999999999,
+            "kind": "iron",
+            "up": [0, 1, 0]
           }
-        },
-        "sight": {
-          "kind": "iron",
-          "eye": [0, 0.020125, 0],
-          "direction": [1, 0, 0],
-          "up": [0, 1, 0],
-          "eyeReliefMetres": 0.046
         }
-      }
+      },
+      "id": "rail_front_sight"
     },
     {
-      "id": "real_suppressor",
       "file": "assets/models/real_suppressor.glb",
-      "attachment": {
-        "id": "real-suppressor",
-        "kind": "suppressor",
-        "massKg": 0.497976429221834,
-        "mount": "muzzle",
-        "mountFrame": { "normal": [-1, 0, 0], "up": [0, 1, 0] },
-        "properties": {
-          "noiseFactor": 0.25,
-          "wearClass": "real"
-        }
-      }
-    },
-    {
-      "id": "tactical_flashlight_mount",
-      "file": "assets/models/tactical_flashlight_mount.glb",
-      "attachment": {
-        "id": "tactical-flashlight-mount",
-        "kind": "flashlight-mount",
-        "massKg": 0.015398859374999999,
-        "mount": "rail-side",
-        "mountFrame": { "normal": [0, 0, -1], "up": [0, 1, 0] },
-        "properties": {
-          "railSpanNotches": {
-            "minOffset": 0,
-            "maxOffset": 0
+      "gun": {
+        "attachment": {
+          "id": "real-suppressor",
+          "kind": "suppressor",
+          "massKg": 0.49797642922183399,
+          "mount": "muzzle",
+          "mountFrame": {
+            "normal": [-1, 0, 0],
+            "up": [0, 1, 0]
+          },
+          "properties": {
+            "noiseFactor": 0.25,
+            "wearClass": "real"
           }
         }
-      }
+      },
+      "id": "real_suppressor"
+    },
+    {
+      "file": "assets/models/tactical_flashlight_mount.glb",
+      "gun": {
+        "attachment": {
+          "id": "tactical-flashlight-mount",
+          "kind": "flashlight-mount",
+          "massKg": 0.015398859374999999,
+          "mount": "rail-side",
+          "mountFrame": {
+            "normal": [0, 0, -1],
+            "up": [0, 1, 0]
+          },
+          "properties": {
+            "railSpanNotches": {
+              "maxOffset": 0,
+              "minOffset": 0
+            }
+          }
+        }
+      },
+      "id": "tactical_flashlight_mount"
     }
   ]
 }

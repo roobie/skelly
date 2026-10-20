@@ -40,7 +40,10 @@ const testContent = (): Registry => {
   const modelId = registry.items.get(magazineType)!.model!;
   return {
     ...registry,
-    models: new Map(registry.models).set(modelId, { ...registry.models.get(modelId)!, capacity: CAPACITY }),
+    models: new Map(registry.models).set(modelId, {
+      ...registry.models.get(modelId)!,
+      gun: { ...registry.models.get(modelId)!.gun, capacity: CAPACITY },
+    }),
     items: new Map(registry.items).set(markedRound, { ...registry.items.get(roundType)!, id: markedRound }),
   };
 };

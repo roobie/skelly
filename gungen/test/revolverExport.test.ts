@@ -18,7 +18,7 @@ const exported = exportFileText(readFileSync('designs/archetype-revolver.json', 
 if (!exported.ok) {
   throw new Error(exported.message);
 }
-const metadata = exported.modelEntry.revolver!;
+const metadata = exported.modelEntry.gun.revolver!;
 const glb = readGlb(exported.glb);
 const resolved = resolve(loadFixture('archetype-revolver'), gunDomain);
 const vec = (value: readonly number[]) => new Vector3(value[0], value[1], value[2]);
@@ -34,7 +34,7 @@ const transform = (matrix: Matrix4): Transform => {
 
 it('exports separate moving nodes, chamber geometry and bore-parallel axes that deadvox validates', () => {
   expect(metadata).toBeDefined();
-  expect(exported.modelEntry.action).toBeUndefined();
+  expect(exported.modelEntry.gun.action).toBeUndefined();
   const roles = [metadata.crane, metadata.cylinder, metadata.ejector, metadata.hammer, metadata.trigger];
   expect(new Set(roles.map(({ node }) => node)).size).toBe(roles.length);
   for (const role of roles) {
@@ -42,10 +42,10 @@ it('exports separate moving nodes, chamber geometry and bore-parallel axes that 
   }
   expect(metadata.chambers).toBe(Number(resolved.params.get('cylinder')!.chamberCount!.value));
   for (const { axis } of [metadata.crane, metadata.cylinder]) {
-    expect(vec(axis).cross(vec(exported.modelEntry.muzzleDirection!)).length()).toBeLessThan(1e-9);
+    expect(vec(axis).cross(vec(exported.modelEntry.gun.muzzleDirection!)).length()).toBeLessThan(1e-9);
   }
   for (const { axis } of [metadata.hammer, metadata.trigger]) {
-    expect(Math.abs(vec(axis).dot(vec(exported.modelEntry.muzzleDirection!)))).toBeLessThan(1e-9);
+    expect(Math.abs(vec(axis).dot(vec(exported.modelEntry.gun.muzzleDirection!)))).toBeLessThan(1e-9);
   }
   const frame = resolved.defs.get('frame')!;
   for (let axis = 0; axis < 3; axis++) {
@@ -133,7 +133,7 @@ it('rejects malformed revolver rotations and aliased moving nodes', () => {
     { ...metadata.crane, node: metadata.cylinder.node },
     { ...metadata.crane, openRadians: 0 },
   ]) {
-    const model = { ...exported.modelEntry, revolver: { ...metadata, crane } };
+    const model = { ...exported.modelEntry, gun: { ...exported.modelEntry.gun, revolver: { ...metadata, crane } } };
     expect(buildRegistry([{ source: 'fixture', data: { models: [model] } }]).issues.length).toBeGreaterThan(0);
   }
 });

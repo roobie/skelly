@@ -181,17 +181,17 @@ describe('piles with models', () => {
 
 it('prepares integral-magazine manual exports and binds movers by glTF node index, not sanitized name', async () => {
   const models = [...registry.models.values()].filter(
-    (model) => model.internalMagazine && model.action && !model.action.fire,
+    (model) => model.gun?.internalMagazine && model.gun.action && !model.gun.action.fire,
   );
   expect(models.length).toBeGreaterThan(0);
   await Promise.all(
     models.map(async (def) => {
       const gltf = await parseGlb(readFileSync(`${BASE}/${def.file}`));
-      expect(def.internalMagazine!.capacity).toBeGreaterThan(0);
-      expect(def.calibre).toBeDefined();
-      expect(def.sight?.kind).toBe('iron');
-      expect(def.sight?.direction[0]).toBeGreaterThan(0);
-      for (const part of Object.values(def.action!.parts)) {
+      expect(def.gun!.internalMagazine!.capacity).toBeGreaterThan(0);
+      expect(def.gun?.calibre).toBeDefined();
+      expect(def.gun?.sight?.kind).toBe('iron');
+      expect(def.gun?.sight?.direction[0]).toBeGreaterThan(0);
+      for (const part of Object.values(def.gun!.action!.parts)) {
         const index = gltf.parser.json.nodes.findIndex((node: { name?: string }) => node.name === part.node);
         expect(index).toBeGreaterThanOrEqual(0);
         let found = false;
@@ -267,10 +267,10 @@ describe('model forms', () => {
 
 describe('fitted attachment model frames', () => {
   it('maps every exported connector frame to the firearm slot frame', () => {
-    const attachments = [...registry.models.values()].filter((model) => model.attachment);
+    const attachments = [...registry.models.values()].filter((model) => model.gun?.attachment);
     expect(attachments.length).toBeGreaterThan(0);
     for (const model of attachments) {
-      const { mountFrame } = model.attachment!;
+      const { mountFrame } = model.gun!.attachment!;
       const frame = fittedPartFrame({
         slot: 'fixture',
         at: [0, 0, 0],
@@ -288,11 +288,11 @@ describe('fitted attachment model frames', () => {
 
   it('keeps the default fitted optic along the bore and seated on its rail', async () => {
     const firearm = registry.models.get('rifle_assault')!;
-    const optic = firearm.attachments?.find(({ kind }) => kind === 'optic');
+    const optic = firearm.gun?.attachments?.find(({ kind }) => kind === 'optic');
     if (!optic) {
       throw new Error('Exported firearm has no default optic');
     }
-    const mount = firearm.attachmentSlots!.find(({ id }) => id === optic.mountedAt)!;
+    const mount = firearm.gun!.attachmentSlots!.find(({ id }) => id === optic.mountedAt)!;
     const look = itemLook(registry, new Inventory(registry).create('rifle_assault'))!;
     const slot = look.slots.find(({ slot: id }) => id === optic.mountedAt)!;
     if (!(slot.model && slot.mountFrame)) {
@@ -336,7 +336,7 @@ describe('fitted attachment model frames', () => {
 describe('fitted magazine model frame', () => {
   it('keeps the carried-magazine overlay aligned with the firearm export', async () => {
     const firearm = registry.models.get('rifle_assault');
-    if (!firearm?.slots?.magazine) {
+    if (!firearm?.gun?.slots?.magazine) {
       throw new Error('Exported rifle has no magazine slot');
     }
     const look = itemLook(registry, new Inventory(registry).create('rifle_assault'));
@@ -352,9 +352,9 @@ describe('fitted magazine model frame', () => {
       throw new Error('Exported rifle has no magazine node transform');
     }
     node.translation.forEach((coordinate, axis) => {
-      expect(coordinate).toBeCloseTo(firearm.slots!.magazine!.at[axis]!, 12);
+      expect(coordinate).toBeCloseTo(firearm.gun!.slots!.magazine!.at[axis]!, 12);
     });
-    expect(slot.at).toEqual(firearm.slots.magazine.at);
+    expect(slot.at).toEqual(firearm.gun.slots.magazine.at);
   });
 });
 
@@ -560,8 +560,8 @@ describe('base pack modeled ammunition and spent cases', () => {
       const { calibre } = loaded.ammo!;
       const fired = registry.items.get(spentCaseItemId(calibre));
       expect(fired).toBeDefined();
-      expect(registry.models.get(loaded.model!)?.calibre).toBe(calibre);
-      expect(registry.models.get(fired!.model!)?.calibre).toBe(calibre);
+      expect(registry.models.get(loaded.model!)?.gun?.calibre).toBe(calibre);
+      expect(registry.models.get(fired!.model!)?.gun?.calibre).toBe(calibre);
       expect(loaded.stack).toBeGreaterThan(1);
       expect(fired!.stack).toBeGreaterThan(1);
     }
@@ -571,7 +571,7 @@ describe('base pack modeled ammunition and spent cases', () => {
     ['case_12_h_gauge_h_00_h_buck', 0.0701],
   ] as const)('%s loads through prepareModel and rests at its sourced dimensions', async (id, length) => {
     const def = registry.models.get(id)!;
-    expect(def.calibre).toBe('12-gauge-00-buck');
+    expect(def.gun?.calibre).toBe('12-gauge-00-buck');
     expect(def.grip).toBeUndefined();
     const { scene } = await parseGlb(readFileSync(`${BASE}/${def.file}`));
     const { ground, groundParts } = prepareModel(def, scene);
@@ -612,7 +612,7 @@ describe('base pack guns', () => {
     const bytes = readFileSync(`src/content/base/${def.file}`);
     const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     if (gltf.parser.json.asset.generator === 'skelly gungen glb export') {
-      expect(def.sight, `${def.id} Gungen exports need sight metadata`).toBeDefined();
+      expect(def.gun?.sight, `${def.id} Gungen exports need sight metadata`).toBeDefined();
     }
     const { held } = prepareModel(def, gltf.scene);
     held.updateMatrixWorld(true);

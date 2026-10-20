@@ -27,7 +27,7 @@ export const firearmAttachmentResponse = (registry: Registry, firearm: Item): Fi
   for (const attachment of attachedItems(firearm)) {
     const modelId = defOf(registry, attachment.type).model;
     const model = modelId === undefined ? undefined : registry.models.get(modelId);
-    const metadata = model?.attachment;
+    const metadata = model?.gun?.attachment;
     if (!metadata) {
       continue;
     }
@@ -53,7 +53,7 @@ export const firearmAttachmentResponse = (registry: Registry, firearm: Item): Fi
 export const wearFirearmAttachments = (registry: Registry, firearm: Item): void => {
   for (const attachment of attachedItems(firearm)) {
     const modelId = defOf(registry, attachment.type).model;
-    const metadata = modelId === undefined ? undefined : registry.models.get(modelId)?.attachment;
+    const metadata = modelId === undefined ? undefined : registry.models.get(modelId)?.gun?.attachment;
     if (metadata?.kind !== 'suppressor') {
       continue;
     }
@@ -69,12 +69,12 @@ export const muzzleLoad = (registry: Registry, firearm: Item): number | undefine
   };
   const mountedLoad = (host: ModelDef | undefined, slotId: string, child: Item): number | undefined => {
     const childModel = modelFor(child);
-    if (!childModel?.attachment) {
+    if (!childModel?.gun?.attachment) {
       return 0;
     }
-    const { massKg } = childModel.attachment;
+    const { massKg } = childModel.gun.attachment;
     const grip = host?.grip?.at;
-    const slot = host?.attachmentSlots?.find(({ id }) => id === slotId);
+    const slot = host?.gun?.attachmentSlots?.find(({ id }) => id === slotId);
     if (!(slot && grip)) {
       return undefined;
     }

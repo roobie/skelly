@@ -123,7 +123,10 @@ export class FirearmAttachmentHandling {
     const attachmentModel = attachmentDefinition.model
       ? this.inventory.registry.models.get(attachmentDefinition.model)
       : undefined;
-    if (attachmentModel?.attachment?.kind === 'optic' && !opticViewSettings(attachmentDefinition, attachmentModel)) {
+    if (
+      attachmentModel?.gun?.attachment?.kind === 'optic' &&
+      !opticViewSettings(attachmentDefinition, attachmentModel)
+    ) {
       return 'This optic has no supported view';
     }
     return undefined;

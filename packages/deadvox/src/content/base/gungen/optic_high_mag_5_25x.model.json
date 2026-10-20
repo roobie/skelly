@@ -1,0 +1,26 @@
+{
+  "id": "optic_high_mag_5_25x",
+  "file": "assets/models/optic_high_mag_5_25x.glb",
+  "gun": {
+    "attachment": {
+      "id": "optic-high-mag-5-25x",
+      "kind": "optic",
+      "massKg": 0.3254916611224242,
+      "mount": "rail-top",
+      "properties": {
+        "reticleKind": "crosshair",
+        "magnification": { "min": 5, "max": 25 },
+        "railSpanNotches": { "minOffset": -3, "maxOffset": 3 }
+      },
+      "sight": {
+        "kind": "optic",
+        "eye": [-0.181125, 0.0345, 0],
+        "direction": [1, 0, 0],
+        "up": [0, 1, 0],
+        "eyeReliefMetres": 0.092,
+        "ocularDiameterMetres": 0.037375
+      },
+      "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] }
+    }
+  }
+}

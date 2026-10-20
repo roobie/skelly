@@ -1,0 +1,21 @@
+{
+  "id": "rail_front_sight",
+  "file": "assets/models/rail_front_sight.glb",
+  "gun": {
+    "attachment": {
+      "id": "rail-front-sight",
+      "kind": "iron-sight",
+      "massKg": 0.0257431857421875,
+      "mount": "rail-top",
+      "properties": { "railSpanNotches": { "minOffset": 0, "maxOffset": 0 } },
+      "sight": {
+        "kind": "iron",
+        "eye": [0, 0.020125, 0],
+        "direction": [1, 0, 0],
+        "up": [0, 1, 0],
+        "eyeReliefMetres": 0.046
+      },
+      "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] }
+    }
+  }
+}

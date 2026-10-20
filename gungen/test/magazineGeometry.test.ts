@@ -73,11 +73,11 @@ describe('generated magazine round columns', () => {
       return;
     }
     expect(new TextDecoder().decode(result.glb.slice(0, 4))).toBe('glTF');
-    expect(result.modelEntry.calibre).toBe('7.62x39');
-    expect(result.modelEntry.capacity).toBe(30);
-    expect(result.modelEntry.rounds).toHaveLength(result.modelEntry.capacity!);
-    expect(result.modelEntry.rounds?.[0]?.at[2]).toBeGreaterThan(0);
-    expect(result.modelEntry.rounds?.[1]?.at[2]).toBeLessThan(0);
+    expect(result.modelEntry.gun.calibre).toBe('7.62x39');
+    expect(result.modelEntry.gun.capacity).toBe(30);
+    expect(result.modelEntry.gun.rounds).toHaveLength(result.modelEntry.gun.capacity!);
+    expect(result.modelEntry.gun.rounds?.[0]?.at[2]).toBeGreaterThan(0);
+    expect(result.modelEntry.gun.rounds?.[1]?.at[2]).toBeLessThan(0);
   });
 
   it('keeps the STANAG 20 straight with a slanted floorplate and the 30-round shared top', () => {

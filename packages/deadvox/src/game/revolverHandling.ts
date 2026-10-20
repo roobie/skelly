@@ -179,7 +179,7 @@ export class RevolverHandling {
   }
 
   private matches(gun: Item, ammo: Item): boolean {
-    return defOf(this.inventory.registry, ammo.type).ammo?.calibre === this.model(gun)?.calibre;
+    return defOf(this.inventory.registry, ammo.type).ammo?.calibre === this.model(gun)?.gun?.calibre;
   }
 
   private model(gun: Item) {
@@ -237,7 +237,7 @@ export class RevolverHandling {
       .filter((item) => this.carried(item) && this.matches(gun, item))
       .sort((a, b) => a.uid - b.uid);
     if (!(cylinder.open || ammo || cylinder.chambers.some((chamber) => chamber.state === 'case'))) {
-      const calibre = this.model(gun)?.calibre;
+      const calibre = this.model(gun)?.gun?.calibre;
       const round = [...this.inventory.registry.items.values()].find((item) => item.ammo?.calibre === calibre);
       return `I have no ${round?.name ?? 'compatible round'}s`;
     }

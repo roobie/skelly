@@ -43,7 +43,9 @@ const magazineType = rifleAmmunition(registry, RIFLE).magazine;
 const magazineDef = registry.items.get(magazineType)!;
 const magazineModel = registry.models.get(magazineDef.model!)!;
 // A spare that fits the same well but looks like another magazine, so a change shows a different model.
-const otherLook = [...registry.models.values()].find((model) => model.rounds && model.file !== magazineModel.file)!;
+const otherLook = [...registry.models.values()].find(
+  (model) => model.gun?.rounds && model.file !== magazineModel.file,
+)!;
 const content: Registry = {
   ...registry,
   models: new Map(registry.models).set(SPARE_MODEL, { ...magazineModel, id: SPARE_MODEL, file: otherLook.file }),
@@ -213,12 +215,12 @@ it('draws the magazine a rifle really has, in hand and on the ground: its own mo
 
 it('replaces a baked default attachment with its owned model and leaves the baked node hidden when removed', async () => {
   const rifleModel = content.models.get(modelOf(RIFLE))!;
-  const [defaultAttachment] = rifleModel.attachments ?? [];
+  const [defaultAttachment] = rifleModel.gun?.attachments ?? [];
   const opticDef =
     defaultAttachment &&
     [...content.items.values()].find((item) => {
       const model = item.model === undefined ? undefined : content.models.get(item.model);
-      return model?.attachment?.id === defaultAttachment.id;
+      return model?.gun?.attachment?.id === defaultAttachment.id;
     });
   if (!(defaultAttachment && opticDef)) {
     throw new Error('generated rifle has no registered default attachment');

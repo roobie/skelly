@@ -10,10 +10,12 @@ import { exportCartridgeModels } from '../gungen/src/gun/cartridgeExport.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
+import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
+const { safeParse } = deadvoxRequire('valibot');
 const ROOT = new URL('../', import.meta.url).pathname;
 const DESIGNS = join(ROOT, 'gungen/designs');
 const DEADVOX_BASE = join(ROOT, 'packages/deadvox/src/content/base');
@@ -27,10 +29,11 @@ const EXPORTED_GUNS = ASSET_SOURCES.flatMap(({ url, files }) => {
   const design = typeof url === 'string' ? DESIGN_SOURCE.exec(url)?.[1] : undefined;
   return design ? files.map((file) => ({ design, file, modelId: MODEL_FILE.exec(file)?.[1] })) : [];
 });
-const omitDeadvoxOwnedFields = ({ chargingHandleDegrees: _chargingHandleDegrees, anchors, ...model }) => {
+const omitDeadvoxOwnedFields = ({ gun, anchors, ...model }) => {
+  const { chargingHandleDegrees: _chargingHandleDegrees, ...exportedGun } = gun ?? {};
   // Gungen owns contact geometry; Deadvox content may place the player's wrist relative to that contact.
   const { support_wrist: _supportWrist, ...exportedAnchors } = anchors ?? {};
-  return { ...model, ...(anchors ? { anchors: exportedAnchors } : {}) };
+  return { ...model, ...(gun ? { gun: exportedGun } : {}), ...(anchors ? { anchors: exportedAnchors } : {}) };
 };
 const glbJson = (bytes) =>
   JSON.parse(
@@ -135,8 +138,9 @@ describe('gungen exports satisfy deadvox model validation', () => {
     const exportedGuns = loadExports();
     assert.ok(exportedGuns.length > 0);
     for (const { file, model } of exportedGuns) {
-      const { issues } = buildRegistry([{ source: `gungen/designs/${file}`, data: { models: [model] } }]);
-      assert.deepEqual(issues, [], `${file}: ${JSON.stringify(issues)}`);
+      assert.ok(model.gun, `${file}: missing gun pack block`);
+      const parsed = safeParse(ModelSchema, model);
+      assert.ok(parsed.success, `${file}: ${JSON.stringify(parsed.issues)}`);
     }
   });
 
@@ -210,7 +214,7 @@ describe('gungen exports satisfy deadvox model validation', () => {
   });
 
   it('loads every exported revolver moving node through the Deadvox parser association', async () => {
-    const models = FIREARM_CONTENT.models.filter((model) => model.revolver);
+    const models = FIREARM_CONTENT.models.filter((model) => model.gun?.revolver);
     assert.ok(models.length > 0);
     await Promise.all(
       models.map(async (model) => {
@@ -221,7 +225,7 @@ describe('gungen exports satisfy deadvox model validation', () => {
         const nodes = namedNodes(
           loaded.scene,
           loaded.parser,
-          roles.map((role) => model.revolver[role].node),
+          roles.map((role) => model.gun.revolver[role].node),
         );
         assert.equal(new Set(nodes).size, roles.length);
         for (const node of nodes) {
@@ -232,12 +236,12 @@ describe('gungen exports satisfy deadvox model validation', () => {
   });
 
   it('rejects unknown action fields', () => {
-    const { file, model } = loadExports().find(({ model: entry }) => entry.action?.fire) ?? {};
-    assert.ok(file && model?.action?.fire);
+    const { file, model } = loadExports().find(({ model: entry }) => entry.gun?.action?.fire) ?? {};
+    assert.ok(file && model?.gun?.action?.fire);
     const source = `gungen/designs/${file}`;
     assert.deepEqual(buildRegistry([{ source, data: { models: [model] } }]).issues, []);
     const unknownField = 'fixtureUnknownActionField';
-    const invalidModel = { ...model, action: { ...model.action, [unknownField]: true } };
+    const invalidModel = { ...model, gun: { ...model.gun, action: { ...model.gun.action, [unknownField]: true } } };
     const { issues } = buildRegistry([{ source, data: { models: [invalidModel] } }]);
     assert.equal(issues.length, 1);
     assert.ok(JSON.stringify(issues[0]).includes(unknownField), JSON.stringify(issues));
