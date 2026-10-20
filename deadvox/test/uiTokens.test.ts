@@ -40,6 +40,7 @@ const tuning = {
       'playerInWay',
       'otherInWay',
       'coversHatch',
+      'hatchCovered',
       'blocksLadder',
       'outOfReach',
       'wornOut',

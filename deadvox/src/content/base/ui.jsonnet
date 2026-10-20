@@ -19,6 +19,7 @@
       playerInWay: "I'm in the way",
       otherInWay: "Someone's in the way",
       coversHatch: 'It would cover the hatch',
+      hatchCovered: "Something's lying on it",
       blocksLadder: 'It would block the ladder',
       outOfReach: "I can't reach there",
       wornOut: "I can't hold it any longer",

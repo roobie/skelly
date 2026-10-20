@@ -6,6 +6,7 @@
 
 import { solidBlocks } from '../vehicles/solid.ts';
 import type { FurnitureDef, Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
@@ -592,12 +593,21 @@ export class BlockEntities {
       if (door.barredFrom && from && this.sideOf(entity, from) === door.barredFrom) {
         return "It's boarded up";
       }
+      if (door.hatch && this.lyingOn(entity)) {
+        return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.hatchCovered;
+      }
       return entity.lock?.locked ? "It's locked" : undefined;
     }
     if (operation === 'close') {
       return entity.open ? undefined : "It's already closed";
     }
     return this.lockRefusal(entity, operation === 'lock', keys);
+  }
+
+  /** Whether a piece lies on the cells just above a hatch, where its lid would swing. */
+  private lyingOn(hatch: BlockEntity): boolean {
+    const above: Vec3 = [hatch.pos[0], hatch.pos[1] + hatch.size[1], hatch.pos[2]];
+    return this.covered(above, [hatch.size[0], 1, hatch.size[2]]);
   }
 
   /** Which face of a door a point is on: the facing side is the front. */

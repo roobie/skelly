@@ -88,14 +88,17 @@ const cityAlternatives = function* (everyStyle = false) {
 
 const OWNED_AIR = 2;
 
-/** Owned air below grade that no standing anchor reaches through owned air, hatches or ladders, if any. */
+/** Owned air below grade that no standing anchor reaches through owned air, hatches, ladders or covers, if any. */
 const sealedBelowGrade = (compiled: CompiledTemplate): Vec3 | undefined => {
   const { furniture } = BUNDLED_CONTENT.registry;
   const [sx, sy, sz] = compiled.size;
   const [, grade] = compiled.access!.entrance;
   const passages = new Set(
     compiled.pieces
-      .filter((piece) => furniture.get(piece.furniture)?.door?.hatch || furniture.get(piece.furniture)?.climbable)
+      .filter((piece) => {
+        const def = furniture.get(piece.furniture);
+        return def?.door?.hatch || def?.climbable || def?.cover;
+      })
       .flatMap((piece) =>
         [...cellsOf(piece.size)].map((offset) =>
           ownershipCell(compiled.size, offset.map((value, axis) => value + piece.pos[axis]!) as Vec3),

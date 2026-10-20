@@ -22,11 +22,14 @@ local subCellar = std.filter(function(piece) piece.id == 'gauntlet_city_sub_cell
 local depth = subCellar.size[1];
 local up = function(at) [at[0], at[1] + depth, at[2]];
 local noted = kit.scenes.onDesk('room', '_noted', [{ item: 'gauntlet_cellar_note', placement: 'surface' }]);
+// The rug lies over the secret hatch, which sits in the ground floor beneath the room's north-east corner.
+local rugged = kit.scenes.lying('lower', '_rug', 'rug', 10, 0);
 local secretHouse = cellarHouse + {
   id: 'gauntlet_city_cellar_secret',
   size: [cellarHouse.size[0], cellarHouse.size[1] + depth, cellarHouse.size[2]],
   slots: [{ id: 'sub_cellar', at: [0, 0, 0], size: subCellar.size, turn: 0, choices: only(subCellar.id) }] + [
     if part.id == 'ground' then part + { at: up(part.at), choices: only('gauntlet_city_secret_floor') }
+    else if part.id == 'room' then rugged.slot(part.id, up(part.at))
     else if part.id == 'upper_room' then noted.slot(part.id, up(part.at))
     else part + { at: up(part.at) }
     for part in cellarHouse.slots
@@ -56,6 +59,6 @@ local dressed = function(building) building + {
   loot: kit.loot,
   mapPools: decor.mapPools,
   furniture: kit.furniture + decor.furniture + yards.furniture,
-  mapPieces: kit.mapPieces + cellars.mapPieces + noted.mapPieces + decor.mapPieces + yards.mapPieces,
+  mapPieces: kit.mapPieces + cellars.mapPieces + noted.mapPieces + rugged.mapPieces + decor.mapPieces + yards.mapPieces,
   mapAssemblies: decor.mapAssemblies + [dressed(building) for building in buildings],
 }

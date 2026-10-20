@@ -843,6 +843,9 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   if (entry.lock && furniture && !furniture.door) {
     found.push(['.lock', 'only a door can have a lock']);
   }
+  if (entry.fixed && furniture?.cover) {
+    found.push(['.fixed', 'a cover must be liftable, so it cannot be fitted']);
+  }
   if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
     found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
   }

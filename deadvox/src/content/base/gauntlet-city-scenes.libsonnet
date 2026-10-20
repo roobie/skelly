@@ -124,6 +124,10 @@ local hasDesk(scene) = std.length([1 for thing in scene.things if thing.furnitur
   onDesk(level, suffix, items): variant(level, suffix, hasDesk, function(scene) scene + {
     things: [if thing.furniture == 'desk' then thing + { items: items } else thing for thing in scene.things],
   }),
+  // Every scene of the level, with `furniture` lying at (x, z).
+  lying(level, suffix, furniture, x, z): variant(level, suffix, function(scene) true, function(scene) scene + {
+    things: scene.things + [at(furniture, x, z)],
+  }),
   slot(id, position, level): {
     id: id, at: position, size: [14, 7, 12], turn: 0,
     choices: [
