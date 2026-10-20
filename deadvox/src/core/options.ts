@@ -230,10 +230,12 @@ const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): Use
         operation: 'battery',
         light,
         battery,
-        plan: { ok: true, time: defOf(inv.registry, light.type).light!.power!.swapSimSeconds },
+        plan: swapPlan(defOf(inv.registry, light.type).light!.power!.swapSimSeconds),
       }
     : refuseUse('Hold the light it goes in first');
 };
+
+const swapPlan = (simSeconds: number): UseOption['plan'] => ({ ok: true, time: simSeconds });
 
 const canisterOption = (canister: Item, inv: Inventory): UseOption => {
   const tool = [inv.hands[dominantSide(inv.character)], inv.hands[offSide(inv.character)]].find(
@@ -246,7 +248,7 @@ const canisterOption = (canister: Item, inv: Inventory): UseOption => {
         operation: 'canister',
         tool,
         canister,
-        plan: { ok: true, time: defOf(inv.registry, tool.type).tool!.fuel!.swapSimSeconds },
+        plan: swapPlan(defOf(inv.registry, tool.type).tool!.fuel!.swapSimSeconds),
       }
     : refuseUse('Hold the tool it goes in first');
 };
