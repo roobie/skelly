@@ -20230,7 +20230,7 @@
         "W": {
           "facing": "n",
           "furniture": "wardrobe",
-          "loot": "d41_empty"
+          "loot": "wardrobe"
         },
         "Z": {
           "spawn": "brute_shambler"

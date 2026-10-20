@@ -66,6 +66,7 @@ export const buildingLootEvidence = (registry: Registry, template: CompiledTempl
       return {
         label: `${template.id}: ${piece.furniture}`,
         stocked: point.supply.kind === 'fixed',
+        onStorey: template.access?.storeys.some(({ floor }) => floor === feet) ?? false,
         accessible,
         items,
         issues: items

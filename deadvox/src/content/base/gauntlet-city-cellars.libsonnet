@@ -123,7 +123,7 @@ local reward = [
         J: { furniture: 'ladder', facing: 'w' },
         Z: { spawn: 'brute_shambler' },
         L: { furniture: 'footlocker', loot: 'd41_empty', items: reward },
-        W: { furniture: 'wardrobe', facing: 'n', loot: 'd41_empty' },
+        W: { furniture: 'wardrobe', facing: 'n', loot: 'wardrobe' },
       },
       layers: [slab, roomFloor, roomLocker, roomLocker, roomWardrobe, room],
       ownership: { layers: [slabClaims, roomFloorClaims, roomLockerClaims, roomLockerClaims, roomWardrobeClaims, roomClaims] },
