@@ -65,6 +65,43 @@ const measureGlowstickFloor = async (page, uid, label) => {
   );
 };
 
+const visorRatio = async (page) => {
+  const shot = await page.locator('#view canvas').screenshot();
+  return page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0);
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    let edge = 0;
+    let edgeCount = 0;
+    let centre = 0;
+    let centreCount = 0;
+    const inCentre = (value) => value > 0.4 && value < 0.6;
+    for (let offset = 0; offset < data.length; offset += 4) {
+      const pixel = offset / 4;
+      const nx = (pixel % canvas.width) / canvas.width;
+      const ny = Math.floor(pixel / canvas.width) / canvas.height;
+      const light = data[offset] + data[offset + 1] + data[offset + 2];
+      if (nx < 0.06 || nx > 0.94 || ny < 0.06) {
+        edge += light;
+        edgeCount += 1;
+      } else if (inCentre(nx) && inCentre(ny)) {
+        centre += light;
+        centreCount += 1;
+      }
+    }
+    if (!(centre > 0 && edge > 0)) {
+      throw new Error('Visor comparison needs a visible scene');
+    }
+    return edge / edgeCount / (centre / centreCount);
+  }, shot.toString('base64'));
+};
+
 const vite = await createServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
   root: projectRoot,
@@ -158,6 +195,53 @@ try {
       on.luminance > off.luminance + 3,
       'a dropped lit glowstick visibly brightens nearby floor pixels at night',
     );
+    assert.deepEqual(pageErrors, []);
+  });
+  await timePhase('worn-helmet-assertions', async () => {
+    const baseline = await visorRatio(page);
+    const uid = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.create('riot_helmet');
+      if (!r.inventory.add(item, { kind: 'worn' })) {
+        throw new Error('Could not wear helmet fixture');
+      }
+      return item.uid;
+    });
+    await page.waitForFunction(() => {
+      const r = globalThis.primaryActionTest;
+      const { model } = r.inventory.registry.items.get(r.inventory.worn.head.type).wearable.viewModel;
+      return r.view.models.has(model);
+    });
+    const loadedFrame = await page.evaluate(() => globalThis.primaryActionTest.frames);
+    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, loadedFrame);
+    const worn = await visorRatio(page);
+    assert.ok(worn < baseline * 0.9, 'wearing the visor darkens the outer band relative to the centre');
+    await page.evaluate(() => globalThis.primaryActionTest.thirdPerson.toggle());
+    const orbitFrame = await page.evaluate(() => globalThis.primaryActionTest.frames);
+    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, orbitFrame);
+    assert.equal(
+      await page.evaluate(() => {
+        const attachment = globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('worn-head');
+        return attachment?.visible === true && attachment.children.length > 0;
+      }),
+      true,
+      'third-person head carries a loaded helmet model',
+    );
+    await page.evaluate((itemUid) => {
+      const r = globalThis.primaryActionTest;
+      const result = r.inventory.move(r.inventory.itemByUid(itemUid), { kind: 'pile', pos: r.feet() });
+      if (!result.ok) {
+        throw new Error(result.reason);
+      }
+    }, uid);
+    await page.waitForFunction(
+      () => !globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('worn-head'),
+    );
+    await page.evaluate(() => globalThis.primaryActionTest.thirdPerson.toggle());
+    await page.waitForFunction(() => !globalThis.primaryActionTest.thirdPerson.enabled());
+    const restored = await visorRatio(page);
+    process.stdout.write(`Visor edge/centre ratios: ${JSON.stringify({ baseline, worn, restored })}\n`);
+    assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     assert.deepEqual(pageErrors, []);
   });
 } finally {

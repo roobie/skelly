@@ -98,6 +98,7 @@ export const observationPlugin = {
     streamer,
     survival,
     debugTools,
+    thirdPerson,
     engine,
     view,
     caseEffects,

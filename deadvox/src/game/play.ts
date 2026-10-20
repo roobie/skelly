@@ -1473,6 +1473,14 @@ export const startPlay = (
     }
   };
   installReviewMapMessageListener(reviewMapFrame, routeReviewMapKey, () => toggleReviewMap(false));
+  const thirdPerson = {
+    enabled: () => thirdPersonViewEnabled,
+    toggle: () => {
+      thirdPersonViewEnabled = !thirdPersonViewEnabled;
+      thirdPersonOrbit.reset();
+      cancelBackquoteGesture(backquoteGesture);
+    },
+  };
   debugTools = debugModule?.attachDebugTools({
     engine,
     weather,
@@ -1506,14 +1514,7 @@ export const startPlay = (
         spectatorBodyView = spectatorCameraEnabled ? { yaw: input.yaw, pitch: input.pitch } : undefined;
       },
     },
-    thirdPerson: {
-      enabled: () => thirdPersonViewEnabled,
-      toggle: () => {
-        thirdPersonViewEnabled = !thirdPersonViewEnabled;
-        thirdPersonOrbit.reset();
-        cancelBackquoteGesture(backquoteGesture);
-      },
-    },
+    thirdPerson,
     perceptionLabels: {
       enabled: () => perceptionLabelsEnabled,
       toggle: () => {

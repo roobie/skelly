@@ -263,7 +263,11 @@ describe('player figure', () => {
     expect(torsoBehind).toBeGreaterThanOrEqual(0.05);
     expect(torsoBehind).toBeLessThanOrEqual(0.1);
     const eyeY = body.pos[1] * scale.blockSize + PLAYER.eye;
-    const shoulderTop = Math.max(...[parts[1]!, parts[2]!].flatMap((part) => corners(part).map((point) => point.y)));
+    const shoulders = [
+      parts[PLAYER_ARM_PARTS.indexOf('leftUpperArm')]!,
+      parts[PLAYER_ARM_PARTS.indexOf('rightUpperArm')]!,
+    ];
+    const shoulderTop = Math.max(...shoulders.flatMap((part) => corners(part).map((point) => point.y)));
     expect(shoulderTop).toBeLessThan(eyeY);
   });
 

@@ -371,6 +371,20 @@ const CompressionTuningSchema = strictObject({
 const WearableSchema = pipe(
   strictObject({
     slot: picklist(CLOTHING_SLOTS),
+    viewModel: optional(
+      strictObject({
+        model: Id,
+        tint: Fraction,
+        darkening: Fraction,
+      }),
+    ),
+    figureModel: optional(
+      strictObject({
+        model: Id,
+        at: tuple([number(), number(), number()]),
+        turn: tuple([number(), number(), number()]),
+      }),
+    ),
     /** 0–100: how much it slows and hampers you. */
     encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
     warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
@@ -384,6 +398,10 @@ const WearableSchema = pipe(
       ),
     ),
   }),
+  check(
+    (wearable) => wearable.viewModel === undefined || wearable.slot === 'head',
+    'a first-person model requires the head slot',
+  ),
   check(
     (wearable) => !(wearable.imperviousTo ?? []).some((kind) => wearable.protects?.[kind] !== undefined),
     'protected damage kinds must not also be impervious',

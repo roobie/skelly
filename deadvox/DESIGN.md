@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change worn head gear seen from inside or on the player figure
   - you change browser mod identity or startup admission
   - you change streaming reveal or loading readiness
   - you change build-time bundle validation stamps or trusted admission
@@ -1299,6 +1300,17 @@ activation must not replay dormant time. See `src/core/scheduler.ts`,
 `src/core/sim.ts`, `Simulation.expose`,
 `Simulation.leaveExposure`, `Simulation.endExposure` and `Simulation.actionRefusal`;
 `src/core/longAction.ts`, `LongActions.interruptExposure`.
+
+**Worn items seen.** Head gear can sit in front of the eyes, so the player should
+see what they look through. It belongs with the hands because the world camera
+cannot draw that close to the eye. It blurs under painkillers for the same reason
+the hands do: it is part of what the drugged player sees. Its strength is moddable
+content, not a player setting like the HUD's options: the frame belongs to the
+item worn, so a mod that changes the item changes how it looks from inside.
+Worn items belong on the body figure so the player's shadow and outside views
+show what they wear. Other slots follow the helmet when an item or view needs
+them. See `src/core/schema.ts`, `WearableSchema`; `src/render/hands.ts`,
+`HeldItems`; `src/render/playerFigure.ts`, `PlayerMeshes`.
 
 **Worn coverage.** Vests take their own outer slot over the torso so a vest and
 a jacket can be worn together, and the outer layer is the one a blow meets.
