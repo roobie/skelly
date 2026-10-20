@@ -267,8 +267,11 @@ class Certificate {
     }
   }
 
-  /** Takes the key from its holder and returns the feet it is carried from, or undefined after failing the route. */
-  keyRoute(key: NonNullable<ScenarioResource['key']>, path: string): readonly Readonly<Vec3>[] | undefined {
+  /** Takes the key from its holder and returns where it is carried from and what it opens, or undefined on failure. */
+  keyRoute(
+    key: NonNullable<ScenarioResource['key']>,
+    path: string,
+  ): { feet: readonly Readonly<Vec3>[]; locks: readonly string[] } | undefined {
     let feet: readonly Readonly<Vec3>[] = this.startFeet;
     const reaches = (to: Readonly<Vec3>) => feet.some((foot) => this.space.path(foot, to));
     for (const [climbIndex, climb] of key.climbs.entries()) {
@@ -293,33 +296,40 @@ class Certificate {
       this.fail(`${path}.key`, 'key holder holds no key');
       return undefined;
     }
-    for (const lock of locks) {
-      this.space.admitLock(lock);
-    }
-    return [key.climbs[0]?.lower ?? key.standing];
+    return { feet: [key.climbs[0]?.lower ?? key.standing], locks };
   }
 
   /**
    * A lot's resource is proved from the start's feet, through its key's route alone when it has one: up the climbs to
-   * the holder, back down the certified-reversible climbs, then in past the locks the held keys open.
+   * the holder, back down the certified-reversible climbs, then in past only the locks its own key opens.
    */
   lotResource(resource: ScenarioResource, index: number): void {
     const path = `.composition.resources[${index}]`;
     const { key } = resource;
-    const feet = key ? this.keyRoute(key, path) : this.startFeet;
-    if (!feet) {
+    const carried = key ? this.keyRoute(key, path) : { feet: this.startFeet, locks: [] };
+    if (!carried) {
       return;
     }
-    if (!feet.some((foot) => this.space.path(foot, resource.standing))) {
-      this.fail(
-        path,
-        key
+    const { feet, locks } = carried;
+    const issue = this.space.withLocks(locks, () => {
+      if (!feet.some((foot) => this.space.path(foot, resource.standing))) {
+        return key
           ? 'resource needs a supported body route from its key'
-          : 'resource needs a supported body route from the start',
-      );
-    } else if (!this.stocked(resource)) {
-      this.fail(path, 'resource needs its promised stock in visible reach');
+          : 'resource needs a supported body route from the start';
+      }
+      return this.stocked(resource) ? undefined : 'resource needs its promised stock in visible reach';
+    });
+    if (issue) {
+      this.fail(path, issue);
     }
+  }
+
+  lotResources(): void {
+    this.composition.resources.forEach((resource, index) => {
+      if (resource.lot) {
+        this.lotResource(resource, index);
+      }
+    });
   }
 
   seals(): void {
@@ -452,12 +462,7 @@ class Certificate {
         this.fail('.composition.leads', 'missing one clue must leave an independent accessible lead');
       }
     }
-    // Last, because a held key admits its locks for every later route.
-    this.composition.resources.forEach((resource, index) => {
-      if (resource.lot) {
-        this.lotResource(resource, index);
-      }
-    });
+    this.lotResources();
     return { space: this.space, issues: this.issues };
   }
 }
@@ -472,6 +477,18 @@ export const scenarioStartCertificate = (site: CitySite): ScenarioCertificate =>
   }
   const certificate = new Certificate(site, composition);
   certificate.start();
+  return { space: certificate.space, issues: certificate.issues };
+};
+
+/** The start and lot resources alone, so a lot-resource case need not certify the lab. */
+export const scenarioLotResourceCertificate = (site: CitySite): ScenarioCertificate => {
+  const { composition } = site.plan;
+  if (!composition) {
+    return scenarioStartCertificate(site);
+  }
+  const certificate = new Certificate(site, composition);
+  certificate.start();
+  certificate.lotResources();
   return { space: certificate.space, issues: certificate.issues };
 };
 

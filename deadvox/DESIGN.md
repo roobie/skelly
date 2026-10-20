@@ -712,8 +712,11 @@ corridor may pass under a building but not through it. See
 A resource's route passes a lock only with a key the proof takes on its way from
 the start, never a key or tool whose acquisition depends on the resource itself. An
 unlocked door is reversible; a locked door is not assumed open simply because its
-key exists somewhere. A held key opens its locks for every later route, so keyed
-resources are proved after everything else. Independent
+key exists somewhere. A key opens its locks only for its own resource's proof: a
+resource without a key is proved with none of them, so a lock that stays open for a
+later resource would turn a key-only route into a false promise of reach from the
+start, depending on the order resources are listed. See `src/core/scenarioRoute.ts`,
+`withLocks`. Independent
 public clue access must survive missing either lead; possession and reading
 never authorize the route. These are construction guarantees, not proof of clue
 interpretation or survival balance. Those judgments remain the integrated play
