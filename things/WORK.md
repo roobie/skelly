@@ -20,8 +20,6 @@ Why each boundary matters, and where it is checked:
 - Import edges between packages are enforced by `packages/engine/test/engineImportBoundary.test.ts`,
   `packageEdges`. Deadvox must not import the engine, so the game's dependency graph stays free
   of the engine's geometry (see `things/WORK.md`, "Decisions").
-- Mass is gun content, so it is computed in gungen and not in the engine or deadvox:
-  `gungen/src/gun/attachmentMass.ts`, `attachmentMassKg`.
 - Deadvox's model schema mixes neutral and firearm fields, which is why the neutral envelope
   moves into `thing-core`: `packages/deadvox/src/core/schema.ts`, `ModelSchema`.
 - Gungen's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
