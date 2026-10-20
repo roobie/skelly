@@ -94,6 +94,17 @@ local furnished = function(id, shellId, first, second) {
 {
   room: furnished,
   mapPieces: [shell, holdingTop,
+    shell + { id: 'gauntlet_lab_shell_stair_join', ownership: { layers: [room.ownership.layers[0]] + [[
+      'SSSSSSSRRRRSSSSSSS', 'SRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRS', 'SR....RRRRRRRRRRRS',
+      'SR....RRRRRRRRRRRS', 'RR....RRRRRRRRRRRR', 'RRRR............RR', 'RRRR............RR',
+      'RRRRRRRRRRR....RRR', 'SRRRRRRRRRR....RRS', 'SRRRRRRRRRR....RRS', 'SRRRRRRRRRRRRRRRRS',
+      'SRRRRRRRRRRRRRRRRS', 'SSSSSSSRRRRSSSSSSS',
+    ] for _ in std.range(1, 5)] + [[
+      'SSSSSSSRRRRSSSSSSS', 'SRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRS', 'SRAAAARRRRRRRRRRRS',
+      'SRAAAARRRRRRRRRRRS', 'RRRRRRRRRRRRRRRRRR', 'RRRR............RR', 'RRRR............RR',
+      'RRRRRRRRRRRAAAARRR', 'SRRRRRRRRRRAAAARRS', 'SRRRRRRRRRRRRRRRRS', 'SRRRRRRRRRRRRRRRRS',
+      'SRRRRRRRRRRRRRRRRS', 'SSSSSSSRRRRSSSSSSS',
+    ] for _ in std.range(6, 7)] } },
     shell + { id: 'gauntlet_lab_shell_incoming', ownership: { layers: [room.ownership.layers[0], punch(incomingClaims), incomingClaims, incomingClaims, incomingClaims, incomingClaims, (import 'gauntlet-lab-descents.libsonnet').mapPieces[0].ownership.layers[3], (import 'gauntlet-lab-descents.libsonnet').mapPieces[0].ownership.layers[3]] } },
     shell + { id: 'gauntlet_lab_shell_incoming_east', ownership: { layers: [room.ownership.layers[0], punch(incomingEastClaims), incomingEastClaims, incomingEastClaims, incomingEastClaims, incomingEastClaims, incomingEastTop, incomingEastTop] } },
     shell + { id: 'gauntlet_lab_shell_outgoing', layers: [outgoingFloor, walls, walls, walls, walls, walls, walls, walls], ownership: { layers: [outgoingClaims, punch(bayClaims), bayClaims, bayClaims, bayClaims, bayClaims, room.ownership.layers[3], room.ownership.layers[3]] } },

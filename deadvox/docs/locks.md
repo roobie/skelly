@@ -1,15 +1,15 @@
 ---
 read_if:
-  - you change door-lock content, interaction or save ownership
+  - you change door-lock content, forcing, interaction or save ownership
   - you use the `lock_test` first-look fixture
 ---
 
 # Minimal door locks
 
-A door's lock state belongs to its block entity and is saved with the door. A locked door cannot be open. Keys are ordinary items whose content declares the lock they fit; ids are global, and validation rejects invalid or ambiguous lock/key relationships. This is authored metadata, not a procedural placement-id scheme. See `src/core/blockEntities.ts`, `BlockEntities`, and `src/core/schema.ts`.
+Locks belong to their doors rather than procedural placement ids, so authored keys can fit doors across composed sites. Forced entry destroys the lock: a breach is a one-way choice, not another way to unlock and relock. See `src/core/blockEntities.ts`, `BlockEntities`, and `src/core/schema.ts`, `FurnitureSchema`.
 
-`world.interact` opens or closes a door. A carried matching key is activated on a closed door to lock or unlock it from either side. The action rechecks reach, key and state when queued and when completed. A locked door with prying support can be forced with the qualifying carried tool; prying destroys the padlock and leaves the door unlocked, making forced entry a one-way breach. See `src/game/play.ts`, `startPlay`, and `src/core/prying.ts`, `pryPlan`.
+How a door yields follows from its material and its own resistance. Material admission prevents an individual door from bypassing the material's rules; resistance belongs to each door so stronger leaves can demand better tools and longer work. The quiet key route trades against the noisy forcing route. The fallback needs the door's forcing tool, not always the crowbar, so finding that tool is part of the trade. See `src/core/content.ts`, `referenceIssues`, `src/core/prying.ts`, `pryPlan`, and `src/core/longAction.ts`, `LongActions.beginForcing`.
 
-The `lock_test` site keeps its key beside the shed and the crowbar in the debug loadout; its key is outside the hamlet's found-material closure. The medical-hall pharmacy uses the same key-or-crowbar contract, with its key in the front counter. See `src/content/base/templates-medical.json` and `src/content/base/layouts-playtest.json`.
+Every door will be bashable given enough strength. Bashing waits because neither actor strength nor door strength is modelled. Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists.
 
-Picking, shambler bashing and hunting-cabin placement remain outside this minimal lock system. Save identity changes normally; no old-save migration path is provided.
+Use the `lock_test` site for a first look without depending on a loot roll. See `src/content/base/locks.libsonnet`. Save shape changes have no migration path before compatibility is owed; see `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".

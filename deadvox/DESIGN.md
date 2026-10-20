@@ -2,6 +2,7 @@
 read_if:
   - you change browser mod identity or startup admission
   - you change streaming reveal or loading readiness
+  - you change build-time bundle validation stamps or trusted admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
@@ -53,7 +54,8 @@ read_if:
   - you're changing what the death-screen loot tally counts
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee motions, weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
-  - you're changing the quiet-key and noisy-prying alternatives for locked doors
+  - you're changing the quiet-key and noisy-forcing alternatives for locked doors
+  - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
   - you're changing held-item throwing or its range tuning
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
@@ -574,6 +576,14 @@ its rolls. The d502 build round moves the stops onto theme contexts and replaces
 per-building police tables. See `src/content/base/gauntlet-city-building-types.libsonnet`,
 `loot`.
 
+The police armoury key lies on a dead officer on the station's roof, which the
+start overlooks. The start's lookout keeps that view clear rather than hiding the
+officer behind its own roof edge. This gives the armoury a route independent of
+the sewer, whose exploration already carries enough. The key route and the
+blowtorch route must remain independent alternatives; neither should require the
+other. See `src/content/base/rural-police.jsonnet`, `templates` and `loot`, and
+`src/content/base/gauntlet-start.libsonnet`, `start` and `mapPieces`.
+
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
 player commits to it. See `src/content/base/gauntlet-service.libsonnet`,
@@ -621,10 +631,12 @@ in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `src/core/ladders.ts`, `ladderOutward`.
 
 Lab threat grows with depth so descending feels like going deeper into a failing
-facility, not repeating one room. Each storey authors weighted marker rows, and each
-room kind sets how many of its marker cells are live; breach and quarantine rooms are
-densest. Crawlers and runners appear only below the containment storey. The rows are
-slot choices, so a mod retunes a storey by overriding data. The amalgam body is taller
+facility, not repeating one room. Each level, or grid storey until its rebuild,
+authors weighted marker rows, so threat
+follows depth and not a level's function, and each room kind sets how many of its
+marker cells are live; breach and quarantine rooms are densest. The faster types
+appear only deep down. The rows are slot choices, so a mod retunes a level by
+overriding data. The amalgam body is taller
 than a storey, so the bottom storey holds it in a double-height chamber: the room piece
 is one storey, and a cap piece in the storey above owns the slab and air over it, with
 solid wall and cap around so nothing walks over the opening. The amalgam row appears
@@ -670,20 +682,19 @@ to this immutable initial-world proof, not a cache of live edited terrain. See
 `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`; `src/core/scenarioCertificate.ts`,
 `scenarioCertificate`; and `test/gauntletRoutes.test.ts`.
 
-A sewer from the HQ yard to the lab's intake storey is a second way in, and a trade
+A sewer from the HQ yard to the lab's entry level is a second way in, and a trade
 rather than a shortcut: it skips the street run to the hatch, but the tunnel is dark,
 sparsely haunted and opens through a guard room whose containers may roll police arms
 and ammunition from the existing tables. Its mouth is visible at street level and no
 note points to it, so the sewer is found by looking. Because it is a real entrance,
-admission requires a body-clear threshold through the lab's shell into the intake
-storey's circulation, and the certificate proves the street reaches each mouth and
+admission requires a body-clear threshold through the lab's shell into the entry
+level's circulation, and the certificate proves the street reaches each mouth and
 each mouth reaches each port as surely as the hatch reaches the lab; an accepted
 route that play cannot cross would be worse than none. Elements list their mouths and
 ports so a later network adds entries rather than a rewrite. The plan places them in
 three dimensions and refuses one that claims a cell another placement owns: a
-corridor may pass under a building but not through it. The guard room's spare bay
-stays bare so the armoury key's container from d483 can stand there without a
-rebuild. See `src/core/cityUnderground.ts`, `placeUnderground`;
+corridor may pass under a building but not through it. See
+`src/core/cityUnderground.ts`, `placeUnderground`;
 `src/core/scenarioPortal.ts`, `undergroundPortIssues`;
 `src/content/base/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
 `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
@@ -708,19 +719,45 @@ freezes them so Continue cannot rewrite the journey. See
 `src/core/scenarioDiscovery.ts`, `discoveryForPlan`; `src/core/scenarioRun.ts`,
 `ScenarioRun`; and `src/game/session.ts`, `createSession`.
 
-The lab is a multi-storey subterranean complex whose danger rises with depth,
-with the nuclear objective at the bottom. A storey contains several distinct
-special rooms, not one stop on a ladder shaft. Looped circulation and separated,
-offset descents make exploration and descent route choices rather than a single
-corridor followed by a continuous climb. Adjacent storeys share alternate links
-so returning need not retrace the approach.
+The lab's target is four levels below the hatch, with the nuclear objective at the
+bottom. Each function from the drawn plan gets a level, but the drawing is inspiration,
+not a blueprint: its mood guides the rebuild and BR judges fidelity in play. Looped
+circulation and separated descents make exploration and retreat choices rather than
+one corridor and a continuous climb. Entry and security replaces the grid's top
+storey; the lower grid remains until its top-down review rounds, with one grid storey
+to retire when the final rebuild establishes the target depth. See
+`src/content/base/gauntlet-lab-entry.libsonnet`, `plan`, and
+`src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
 
-Author room assignments, storey placement and offset links as curated composition,
-not as partition or row-building code. Shared room shells delegate equipment bays so
-furnishing cannot borrow a threshold or connector's body space. Different equipment
-and damage distinguish laboratory work, support and containment, but those inert cues
-are not a danger or balance proof. See `src/content/base/gauntlet-lab.libsonnet`,
-`storey`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
+The stair is the main way down because a building's descent should read as one. A
+lidded shaft remains an alternate return route. Both join the grid below through a
+temporary landing; administration's rebuild replaces that join. Threat may drop down
+a shaft but never climb up, so deep threat cannot reach the top and depth ordering
+holds. A lid then defends only against threat above. Until d508, threat stays on its
+own level. See `src/content/base/gauntlet-lab-entry.libsonnet`, `stair`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
+
+The hatch-side entrance is open. Level one's ways down need a keycard from one authored
+spot on the open side, the same spot every run. Acquisition cannot depend on the seal
+it opens. The seals are vault or bulkhead doors, which a crowbar cannot force: only
+the card opens them. The certificate checks that the matching placed card is present,
+reachable from the hatch landing with the seals closed, and within visible pickup reach
+before admitting those locks to the descent proof. This prevents a missing or self-locked
+card from making the run a dead end. See `src/content/base/gauntlet-lab-entry.libsonnet`,
+`seal`; `src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
+
+Each level is fully rebuilt and judged in play before the next one, so the first
+level sets the look and the destination is built last. Unrebuilt grid storeys keep
+their shafts without seals or fixtures. Their shell and circulation retire with
+them; equipment, descent lids, threat and the holding cap are reused where they fit.
+The authored plan scales rooms together while equipment and doors stay human-sized.
+The content scale is provisional until level one's play review. Rooms differ in
+height, finish and furnishing so each reads as its own space under a carried light.
+Loops run between rooms instead of along a one-sided excavation corridor that serves
+nothing; unused excavation stays solid rather than making the rooms larger and emptier.
+Delegated equipment bays prevent furnishings from borrowing thresholds or circulation.
+Those cues are not a danger or balance proof. See
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`, and
+`src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
 
 The underground campus extends beyond the small service facade because a surface
 disguise must not dictate the lab's capacity. One compiled assembly owns their common
@@ -770,10 +807,15 @@ Readable furniture does not confer objective authority; the live interaction mus
 reach the terminal button. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`,
 and `src/game/session.ts`, `activateGoal`.
 
-Darkness uses world-derived sky transport and an ordinary carried light, not
-invented powered lab fixtures. Finished site placements expose the same sky
-eligibility contract across authored layouts, hamlets and scenario composition;
-there is no lab lighting category. Benchmark city plans do not opt into scenario
+Darkness uses world-derived sky transport and an ordinary carried light. The lab's
+fixtures are intended to light only after power is restored, so light is earned,
+not given. Entry's working and broken fixtures are inert set dressing. Its breaker
+belongs in the security post; d509 builds that interaction and its saved per-level
+power state. Later levels' switch positions are decided at their own reviews. The
+lab has no lighting category until its light round. See
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`. Finished site placements
+expose the same sky eligibility contract across authored layouts, hamlets and
+scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
 reachability, while admitted scenario templates and fixed items are world sources.
 See `src/core/site.ts`, `Site`; `src/game/engine.ts`, `createEngine`;
@@ -1908,7 +1950,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** A matching key opens a locked door quietly; a crowbar is the noisy fallback. Prying takes 15 seconds of simulation time at mechanics 0 and 7.5 seconds at mechanics 10, with 30 strikes. It uses the existing mechanics skill, runs outside time compression, and destroys the padlock when complete. The handling-progress option shows its progress. A normal-speed interruption stops the pry with progress kept and input free. Bashing is deferred because mob and obstacle strength are not modeled; closed doors block shamblers like other solids. See `src/core/prying.ts`, `pryPlan`, `src/core/longAction.ts`, `LongActions.beginPrying`, `LongActions.interruptPrying`, `src/core/sim.ts`, `Simulation.checkInterruptions`, `src/game/play.ts`, `renderPlayHandling`, and `src/ui/hudOptions.ts`, `handling`.
+- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. Every door will be bashable given enough strength, but bashing waits because neither actor strength nor door strength is modelled. Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. See `src/core/prying.ts`, `pryPlan`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,
@@ -2011,13 +2053,23 @@ agreement; reference validation prevents partial files from entering a world, an
 file that fails validation is skipped whole, so one broken mod cannot leave
 half-applied content. See `src/core/content.ts`, `buildRegistry`.
 
+Admission runs in the browser because mods can change what a scenario depends on,
+and a failing mod file must be skipped whole. The bundled files pass those same
+proofs before a build ships, so re-proving unchanged content on every start adds
+pre-title delay without detecting anything new. With no mod selected, a matching
+build-validation stamp permits trusting those proofs; any selected mod restores
+full admission. Missing or mismatched evidence must also restore full admission,
+not silently trust an unproved build. See `src/core/content.ts`, `buildRegistry`,
+`src/core/bundleAdmission.ts`, `BundleAdmission`, and `tools/stampBundle.ts`, `stampBundle`.
+
 The registry is built after startup content selection and passed through the world
-configuration so URL discovery, weathering, rendering and simulation all use the
-same admitted definitions. A module-load registry would freeze the base pack before
-a player could select mods. See `src/game/bundledContent.ts`, `buildBundledContent`,
-and `src/game/config.ts`, `GameConfig`. Startup admission remains part of the
-simulation fingerprint because it can change a world without changing a simulation
-call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
+configuration so every consumer uses the same admitted definitions. A module-load
+registry would freeze the base pack before a player could select mods. See
+`src/game/bundledContent.ts`, `buildBundledContent`, and `src/game/config.ts`, `GameConfig`.
+Both admission paths remain fingerprinted because either can change a world without
+changing a simulation call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
+The stamp also binds its proof dependencies because unchanged content is not evidence
+that changed validation code ran. See `tools/bundleStampPlugin.ts`, `bundleStampPlugin`.
 
 A whole-definition override restates the entry, so it freezes the base as of its
 writing; how a mod changes one field instead is decided in

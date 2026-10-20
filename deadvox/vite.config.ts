@@ -11,6 +11,7 @@ import { TEST_POOL } from '../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
 import { bundledModCatalogue } from './src/core/bundledModCatalogue.ts';
 import { canonicalJson } from './src/core/canonicalJson.ts';
+import { bundleStampPlugin, UNSTAMPED_BUNDLE_DEFINES } from './tools/bundleStampPlugin.ts';
 import {
   fingerprintAfterHotChange,
   fingerprintSimulationSources,
@@ -192,6 +193,7 @@ export default defineConfig({
     // biome-ignore lint/style/noProcessEnv: publication tooling opts into the analytics described by its consent page.
     pagesAnalyticsPlugin(process.env.PAGES_ANALYTICS === '1'),
     simulationFingerprintPlugin(),
+    bundleStampPlugin(packageRoot),
     bundledModListPlugin(),
     // biome-ignore lint/style/noProcessEnv: HTTPS is an opt-in local development server mode.
     ...(process.env.DEADVOX_HTTPS === '1' ? [basicSsl()] : []),
@@ -199,6 +201,7 @@ export default defineConfig({
   define: {
     [buildRevisionDefine]: JSON.stringify(buildRevision),
     [baseContentHashDefine]: JSON.stringify(baseContentHash),
+    ...UNSTAMPED_BUNDLE_DEFINES,
   },
   base: './', // served from /skelly/deadvox/ on GitHub Pages
   resolve: {

@@ -1209,11 +1209,17 @@ const ModelSchema = pipe(
 
 // ---- furniture ----
 
-const DoorPryingSchema = pipe(
+const DoorMaterialSchema = strictObject({
+  id: Id,
+  methods: array(Id),
+});
+
+const DoorForcingSchema = pipe(
   strictObject({
-    /** Minimum tool quality needed to force the door's lock. */
-    quality: QualityLevel,
-    /** Skill whose level shortens prying time. */
+    quality: Id,
+    level: QualityLevel,
+    strikeSound: Id,
+    /** Skill whose level shortens forcing time. */
     skill: Id,
     /** Sim seconds of work at the lowest skill level. */
     timeSimSeconds: PositiveSimSeconds,
@@ -1224,7 +1230,7 @@ const DoorPryingSchema = pipe(
   }),
   check(
     ({ timeSimSeconds, fastestTimeSimSeconds }) => fastestTimeSimSeconds <= timeSimSeconds,
-    'fastest prying time cannot exceed the base time',
+    'fastest forcing time cannot exceed the base time',
   ),
 );
 
@@ -1261,7 +1267,8 @@ const FurnitureSchema = pipe(
     door: optional(
       strictObject({
         handlingSimSeconds: SimSeconds,
-        prying: optional(DoorPryingSchema),
+        material: Id,
+        methods: record(Id, DoorForcingSchema),
         openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
         hatch: optional(literal(true)),
@@ -1976,6 +1983,13 @@ const ScenarioSchema = strictObject({
         nonEmpty('needs a resource standing pose'),
       ),
       storeys: pipe(array(strictObject({ id: Id, standing: CellPosition })), minLength(1), maxLength(16)),
+      seals: optional(
+        array(
+          strictObject({ doors: pipe(array(CellPosition), nonEmpty()), key: CellPosition, standing: CellPosition }),
+        ),
+        [],
+      ),
+      stairs: optional(array(strictObject({ upper: CellPosition, lower: CellPosition })), []),
       descents: pipe(
         array(strictObject({ ladder: CellPosition, upper: CellPosition, lower: CellPosition })),
         maxLength(32),
@@ -2904,6 +2918,7 @@ const LookDefaultsSchema = strictObject({
 const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
+  doorMaterials: { schema: optional(array(DoorMaterialSchema)), label: 'door materials', order: 32 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },

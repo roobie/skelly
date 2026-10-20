@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import type { BundleAdmission } from './bundleAdmission.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
@@ -781,6 +782,30 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
   }
 };
 
+const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const { door } = furniture;
+  if (!door) {
+    return;
+  }
+  const material = registry.doorMaterials.get(door.material);
+  if (!material) {
+    report('furniture', furniture.id, '.door.material', `no door material "${door.material}"`);
+  }
+  for (const [id, method] of Object.entries(door.methods)) {
+    const path = `.door.methods.${id}`;
+    if (material && !material.methods.includes(id)) {
+      report('furniture', furniture.id, path, `material "${material.id}" does not admit method "${id}"`);
+    }
+    if (!registry.skills.has(method.skill)) {
+      report('furniture', furniture.id, `${path}.skill`, `no skill "${method.skill}"`);
+    }
+    const sound = registry.sounds.get(method.strikeSound);
+    if (!sound?.noise.enabled) {
+      report('furniture', furniture.id, `${path}.strikeSound`, 'forcing strikes need a sound that alerts hearing');
+    }
+  }
+};
+
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   for (const furniture of registry.furniture.values()) {
@@ -799,9 +824,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
     }
     checkDoorOpenNoise(registry, furniture, report);
     checkSearchNoise(registry, furniture, report);
-    if (furniture.door?.prying && !registry.skills.has(furniture.door.prying.skill)) {
-      report('furniture', furniture.id, '.door.prying.skill', `no skill "${furniture.door.prying.skill}"`);
-    }
+    checkDoorForcing(registry, furniture, report);
     if (furniture.loot !== undefined && !registry.loot.has(furniture.loot)) {
       report('furniture', furniture.id, '.loot', `no loot table "${furniture.loot}"`);
     }
@@ -1385,17 +1408,20 @@ export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is
- * skipped. Then references are checked; files with broken references are dropped
- * and the rest merged again, until what's left is consistent.
+ * skipped. Unless a matching build stamp already proves this unmodified input,
+ * references are checked; broken files are dropped and the rest merged again
+ * until what's left is consistent.
  */
 export const buildRegistry = (
   sources: readonly ContentSource[],
+  { bundle, modsSelected = false }: { bundle?: BundleAdmission | undefined; modsSelected?: boolean } = {},
 ): {
   registry: Registry;
   issues: ContentIssue[];
   /** Winning origins, including ordered overrides and whole-file removal. */
   origins: ReadonlyMap<string, Origin>;
 } => {
+  const trusted = !modsSelected && bundle?.matches(sources) === true;
   const issues: ContentIssue[] = [];
   let files: { source: string; file: ContentFile }[] = [];
   for (const src of sources) {
@@ -1407,7 +1433,7 @@ export const buildRegistry = (
   }
   for (;;) {
     const { registry, origins } = merge(files);
-    const broken = referenceIssues(registry, origins);
+    const broken = trusted ? [] : referenceIssues(registry, origins);
     if (broken.length === 0) {
       return { registry, issues, origins };
     }
