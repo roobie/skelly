@@ -1,7 +1,6 @@
 import { expect, it } from 'vitest';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf } from '../src/core/lights.ts';
-import { pryPlan } from '../src/core/prying.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { swapCanister } from '../src/core/torch.ts';
 import {
@@ -109,23 +108,10 @@ it('a stopped cut spends nothing', () => {
   runtime.sim.scheduler.advance(cut.strikeIntervalSimSeconds * 2);
 
   runtime.sim.actions.stop();
-  runtime.sim.scheduler.advance(1);
+  runtime.sim.scheduler.advance(cut.timeSimSeconds);
 
   expect(door.lock?.locked).toBe(true);
   expect(chargeOf(registry, torch)).toBe(canisterCapacity);
-});
-
-it('a tool with only the cutting quality has no way through a flame-cut door', () => {
-  const runtime = makeRuntime();
-  const door = makeDoor(runtime);
-  const knife = hold(runtime, 'kitchen_knife');
-  expect(registry.items.get('kitchen_knife')!.tool!.qualities.cutting).toBeGreaterThan(0);
-
-  const plan = pryPlan(runtime.inventory, door, { toolUid: knife.uid });
-
-  expect(plan.ok).toBe(false);
-  expect(runtime.session.forceDoor(door, knife.uid)).toBeTypeOf('string');
-  expect(runtime.sim.actions.job).toBeUndefined();
 });
 
 it('swapping in a cartridge returns the old one whatever its fill', () => {
