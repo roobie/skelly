@@ -583,13 +583,15 @@ blowtorch route must remain independent alternatives; neither should require the
 other. See `src/content/base/rural-police.jsonnet`, `templates` and `loot`, and
 `src/content/base/gauntlet-start.libsonnet`, `start` and `mapPieces`.
 
+The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `src/content/base/gauntlet-city-cellars.libsonnet`, `reward`, and `src/content/base/loot.jsonnet`, `building_tools`.
+
 The armoury's gun is a proved resource through the key route alone: the certificate
 walks from the start up the officer's ladder, takes the key, comes back down and
 reaches the rack through the station and the armoury door the key opens. Without that
 proof, a layout edit that cuts the key's route would go unnoticed until play. The
-blowtorch is no part of the guarantee: its route is a bonus whose source is a secret.
-A ladder on an outside wall holds the climber flush against the wall, so the climb
-check accepts that pose where the wall runs the whole climb. See
+torch is no part of the guarantee, because its route is the bonus for finding the
+secret. A ladder on an outside wall holds the climber flush against the wall, so the
+climb check accepts that pose where the wall runs the whole climb. See
 `src/content/base/scenarios.jsonnet`, `resources`; `src/core/scenarioCertificate.ts`,
 `lotResource`; and `src/core/climbCertificate.ts`, `wallBacked`.
 
@@ -1964,7 +1966,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. Every door will be bashable given enough strength, but bashing waits because neither actor strength nor door strength is modelled. Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. See `src/core/prying.ts`, `pryPlan`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
+- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. Every door will be bashable given enough strength, but bashing waits because neither actor strength nor door strength is modelled. Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,

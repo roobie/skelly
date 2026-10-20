@@ -103,8 +103,9 @@ local roomClaims = [
   '......SRRRRRRRRS..', '......SRRRRRRRRS..', '......SRRRRRRRRS..', '......SSSSSSSSSS..',
   '..................', '..................', '..................', '..................',
 ];
-// The owner's stash: d483's blowtorch is one more entry here.
+// The owner's stash holds the game's only blowtorch, with one cartridge fitted.
 local reward = [
+  { item: 'blowtorch', count: 1, fitted: { canister: 'gas_canister' } },
   { item: 'cartridge_box_357_h_magnum', count: 2 },
   { item: 'shotshell_box', count: 1 },
 ];
