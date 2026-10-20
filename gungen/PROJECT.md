@@ -16,7 +16,7 @@ Gungen designs stylized firearm assemblies whose parts fit and whose moving path
 
 Curated designs choose from a constrained vocabulary of part families, parameters and prefabs. New archetypal shapes belong in that vocabulary rather than unconstrained vertex editing; this keeps fit rules applicable as designs change. See `src/gun/designLoader.ts#loadGunDesign` and `src/gun/templates.ts#TEMPLATES`.
 
-The shared engine owns domain-neutral assembly, geometry and fit mechanisms. Gungen owns firearm data and policy so other consumers do not inherit gun-specific concepts; see `engine/README.md`, "Shared engine".
+The shared engine owns domain-neutral assembly, geometry and fit mechanisms. Gungen owns firearm data and policy so other consumers do not inherit gun-specific concepts; see `packages/engine/README.md`, "Shared engine".
 
 ## Scale and ammunition
 
@@ -46,7 +46,7 @@ A Gungen change to a gun Deadvox ships refreshes Deadvox's copy, its GLB and mod
 
 The hunting rifle's civilian identity, integral loading, separate scope and phased turn-bolt contract are governed by `docs/bolt-action-export.md`. Geometry is exported before playable handling so Deadvox consumes fitted dimensions rather than inventing them.
 
-The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is a geometry/material estimate, not inventory weight or a product specification; see `src/gun/attachmentMass.ts#attachmentMassKg` and `docs/deferred-assertions.md`.
+The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `packages/deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is a geometry/material estimate, not inventory weight or a product specification; see `src/gun/attachmentMass.ts#attachmentMassKg` and `docs/deferred-assertions.md`.
 
 Revolvers use independently mounted moving parts and a separate rotational export contract so the linear carrier contract stays focused; see `docs/revolver-export.md` and `src/gun/revolverExport.ts`, `RevolverMetadata`.
 

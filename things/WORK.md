@@ -14,7 +14,7 @@ a gun authoring tool that together replace `gungen/`. Delete this file when gung
 
 What the engine is, from reading its module headers and exports:
 
-- `engine/` is a domain-agnostic parametric assembly framework. A `Domain` supplies part
+- `packages/engine/` is a domain-agnostic parametric assembly framework. A `Domain` supplies part
   families, units, palette and rules as data, and the engine supplies the rest: solids and
   collision geometry, meshing and revolve, parts, ports and templates, resolving, rules and
   validation, seeded generation, design persistence and GLB export. Its three.js scene lives
@@ -29,7 +29,7 @@ What the engine is, from reading its module headers and exports:
 - Material in it is appearance only: a material id maps to a color. Density and mass are
   computed inside gungen (`gungen/src/gun/attachmentMass.ts`, with sourced density tables),
   and deadvox item weights are typed by hand in content JSON.
-- Deadvox's model schema (`deadvox/src/core/schema.ts`, `ModelSchema`) mixes neutral fields
+- Deadvox's model schema (`packages/deadvox/src/core/schema.ts`, `ModelSchema`) mixes neutral fields
   with firearm ones, and gungen's output is tied to it by one root contract test
   (`test/gungen-deadvox-contract.test.mjs`) rather than a shared schema.
 - Gungen's viewer mixes generic parts (parameter panel, camera and URL state, design editor)
@@ -66,9 +66,9 @@ Settled:
   tool succeeds gungen, and gungen is deleted at the end.
 - The model schema is one neutral schema owned by `thing-core`; domain packs extend it.
 - The directory structure is fixed before any new feature work.
-- New packages live in the top-level `packages/` directory, each a workspace of the root
-  package. The four existing projects stay where they are; #962 tracks moving them under
-  `packages/` too, in a repo-wide move on its own branch once few PRs are open.
+- Packages live in the top-level `packages/` directory, each a workspace of the root
+  package. Gungen stays at the root until the gun tool phase, so it moves once, under its
+  new name.
 - At pre-pre-alpha no old format is kept alive; only deadvox validating and loading every
   export is owed.
 - Work is tracked in this file and GitHub issues, with no work-item prefix until open
@@ -82,9 +82,9 @@ every answer to an open question. Move an item up here once it is decided.
 
 | Area | Home |
 |---|---|
-| Math, conventions, RNG | `engine/foundation` |
-| Solids, mesh, volume, collision | `engine/shapes` |
-| Parts, ports, templates, resolving, validation, generation | `engine/assembly` |
+| Math, conventions, RNG | `packages/engine/foundation` |
+| Solids, mesh, volume, collision | `packages/engine/shapes` |
+| Parts, ports, templates, resolving, validation, generation | `packages/engine/assembly` |
 | Materials, mass and center of mass, anchors, neutral model envelope | `thing-core` |
 | GLB and model-entry serialization | with the package that owns the format's inputs |
 | Scene, camera, parameter panel, URL state | `packages/tool-ui` |

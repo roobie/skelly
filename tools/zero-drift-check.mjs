@@ -30,7 +30,7 @@ const RUN_USER_PATH = /\/run\/user\/\d+[A-Za-z0-9_./$-]*/g;
 const HOME_SHORTCUT = /(^|[\s"'`(=])(~\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*)/gm;
 const HOST_PATH_VALUE_EXEMPTIONS = new Set(['~/.cache/ms-playwright']);
 const QUOTED_TEXT = /“[^”\n]*”|"[^"\n]*"/g;
-const SUBPROJECTS = new Set(['deadvox', 'engine', 'gungen', 'mobgen']);
+const SUBPROJECTS = new Set(['gungen']);
 
 // Packages sit one level deeper, as `packages/<name>`, so a project root is two segments there.
 function projectOf(path) {
@@ -985,7 +985,7 @@ const CITATION_PATTERNS = [
 ];
 
 function policyExempt(path) {
-  return POLICY_EXEMPT.has(path) || PACKAGE_LOCK.test(path) || path.startsWith('mobgen/reference/');
+  return POLICY_EXEMPT.has(path) || PACKAGE_LOCK.test(path) || path.startsWith('packages/mobgen/reference/');
 }
 
 function checkCitations(path, text, markdown, failures) {
@@ -1088,7 +1088,7 @@ export function checkDocument({
   parsedMarkdown = new Map(),
 }) {
   const failures = new Map();
-  if (path.startsWith('mobgen/reference/')) {
+  if (path.startsWith('packages/mobgen/reference/')) {
     return [];
   }
   if (!tracked) {

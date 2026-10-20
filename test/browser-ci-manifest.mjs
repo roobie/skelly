@@ -159,7 +159,7 @@ export function repositoryManifest(root = dirname(dirname(fileURLToPath(import.m
   return browserManifest({
     caller: read('.github/workflows/deadvox.yml'),
     reusable: read('.github/workflows/deadvox-browser.yml'),
-    scripts: JSON.parse(read('deadvox/package.json')).scripts,
+    scripts: JSON.parse(read('packages/deadvox/package.json')).scripts,
   });
 }
 

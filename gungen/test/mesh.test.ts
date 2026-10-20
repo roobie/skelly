@@ -145,7 +145,7 @@ const meshSpecifierRe = /(^|\/)mesh(\.ts)?$/;
 describe('mesh module is display-only', () => {
   it('the validator path in the engine does not import mesh.ts', () => {
     for (const name of ['assembly/validate.ts', 'assembly/rules.ts', 'assembly/resolve.ts', 'shapes/geometry.ts']) {
-      const source = readFileSync(join(import.meta.dirname, '..', '..', 'engine', 'src', name), 'utf8');
+      const source = readFileSync(join(import.meta.dirname, '..', '..', 'packages', 'engine', 'src', name), 'utf8');
       const specs = [...source.matchAll(importRe)].map((m) => m[1] ?? m[2] ?? '');
       expect(specs.length, `${name}: no imports parsed`).toBeGreaterThan(0);
       expect(

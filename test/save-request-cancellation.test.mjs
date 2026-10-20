@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { outgoingCancellation } from '../deadvox/test/browser/save-request-cancellation.mjs';
+import { outgoingCancellation } from '../packages/deadvox/test/browser/save-request-cancellation.mjs';
 
 it('only owned outgoing-document Firefox cancellations bypass save-page errors, not destination failures', () => {
   const navigation = { label: 'owned fixture reload' };

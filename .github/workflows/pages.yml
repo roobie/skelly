@@ -9,10 +9,10 @@ on:
     paths:
       - 'site/**'
       - 'gungen/**'
-      - 'engine/**'
-      - 'packages/**'
-      - 'deadvox/**'
-      - 'mobgen/**'
+      - 'packages/engine/**'
+      - 'packages/tool-ui/**'
+      - 'packages/deadvox/**'
+      - 'packages/mobgen/**'
       - 'package.json'
       - 'package-lock.json'
       - 'biome.jsonc'
@@ -22,8 +22,8 @@ on:
       - '.github/workflows/pages.yml'
       - '!**/*.md'
       - '!gungen/test/**'
-      - '!deadvox/test/**'
-      - '!mobgen/test/**'
+      - '!packages/deadvox/test/**'
+      - '!packages/mobgen/test/**'
   workflow_dispatch:
 
 permissions:
@@ -52,11 +52,11 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            deadvox/tools/lit-check/package-lock.json
+            packages/deadvox/tools/lit-check/package-lock.json
       - name: Lint (repo-wide)
         run: |
           npm ci
-          npm ci --prefix deadvox/tools/lit-check
+          npm ci --prefix packages/deadvox/tools/lit-check
           npm run jsonnet:setup
           npm run ci
           npm run test:site
@@ -67,14 +67,14 @@ jobs:
           npm test
           PAGES_ANALYTICS=1 npx vite build
       - name: Check and build deadvox
-        working-directory: deadvox
+        working-directory: packages/deadvox
         run: |
           npm run typecheck
           npm test
           npm run validate
           PAGES_ANALYTICS=1 npx vite build
       - name: Check and build mobgen
-        working-directory: mobgen
+        working-directory: packages/mobgen
         run: |
           npm run typecheck
           npm test
@@ -83,9 +83,9 @@ jobs:
         run: |
           mkdir -p _site
           cp -r site/. _site/
-          for P in gungen deadvox mobgen; do
-            mkdir -p _site/$P
-            cp -r $P/dist/. _site/$P/
+          for P in gungen packages/deadvox packages/mobgen; do
+            mkdir -p _site/${P#packages/}
+            cp -r $P/dist/. _site/${P#packages/}/
           done
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

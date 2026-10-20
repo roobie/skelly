@@ -10,9 +10,9 @@ tags: [deadvox, adr, mods, url, debug, testing]
 
 ## Context
 
-The game entry reads a long list of query parameters that mix four concerns: preparing a world, preparing the player, changing what the developer sees, and driving test harnesses. Each preset is TypeScript that reads its own parameter, so a new demo needs code, and none of it is content a mod could provide. See `deadvox/src/game/config.ts`, `configFromUrl`. The bench reads its own run parameters and world setup on the same entry; see `deadvox/src/bench/run.ts`, `benchRunFromUrl`.
+The game entry reads a long list of query parameters that mix four concerns: preparing a world, preparing the player, changing what the developer sees, and driving test harnesses. Each preset is TypeScript that reads its own parameter, so a new demo needs code, and none of it is content a mod could provide. See `packages/deadvox/src/game/config.ts`, `configFromUrl`. The bench reads its own run parameters and world setup on the same entry; see `packages/deadvox/src/bench/run.ts`, `benchRunFromUrl`.
 
-Mods can already replace definitions and are recorded in save identity, but a mod cannot state how a new game starts, and the starting kit is code; see `deadvox/src/game/loadout.ts`, `startingLoadout`.
+Mods can already replace definitions and are recorded in save identity, but a mod cannot state how a new game starts, and the starting kit is code; see `packages/deadvox/src/game/loadout.ts`, `startingLoadout`.
 
 The project owes no backwards compatibility; see `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
 
@@ -27,9 +27,9 @@ Everything that sets up a world or a player comes from mods, and the URL only na
 
 Every caller follows the same homes, the bench and the tutorial included, so no harness keeps a private URL format that a later change has to work around. A prepared game then has one way to start, whether it is a demo, a bench world or the tutorial.
 
-Which packs load and in what order is the pack layering's concern, not this decision's; see `deadvox/docs/pack-split.md`, "Core is the default first pack, not a required one".
+Which packs load and in what order is the pack layering's concern, not this decision's; see `packages/deadvox/docs/pack-split.md`, "Core is the default first pack, not a required one".
 
-The design plan and its slices are in `deadvox/docs/url-mods.md`.
+The design plan and its slices are in `packages/deadvox/docs/url-mods.md`.
 
 ## Reasons for the details
 

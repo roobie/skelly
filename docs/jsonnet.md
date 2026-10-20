@@ -13,12 +13,12 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 
 ## Source boundaries
 
-- Keep maps edited in Tiled as `.tmj`; compilation must not overwrite editor-owned data. Use `.tmj.jsonnet` only for maps not edited in Tiled. See `deadvox/maps/README.md`.
+- Keep maps edited in Tiled as `.tmj`; compilation must not overwrite editor-owned data. Use `.tmj.jsonnet` only for maps not edited in Tiled. See `packages/deadvox/maps/README.md`.
 - Add structured sources only under the compiler's declared `SOURCE_ROOTS`, preserving each consumer's expected output format. See `tools/jsonnet/compile.mjs`, `SOURCE_ROOTS`.
 - Keep exporter-written JSON outside the Jsonnet source manifest so a refresh has one writer; the exporter owns its output rather than a second authored source.
 - Do not impose a subprocess capture limit on trusted formatter output: growing a content document must not fail because of the process API's default buffer. See `tools/jsonnet/compile.mjs`, `formatJson`.
-- Deadvox core-pack data is authored under `deadvox/src/content/base` and consumed through `deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `deadvox/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
-- Mobgen's material tables stay separate from body-plan construction so look tuning remains content-owned. See `mobgen/src/mob/materialTemplates.jsonnet` and `mobgen/src/mob/materials.ts`, `resolveMaterials`.
+- Deadvox core-pack data is authored under `packages/deadvox/src/content/base` and consumed through `packages/deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `packages/deadvox/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
+- Mobgen's material tables stay separate from body-plan construction so look tuning remains content-owned. See `packages/mobgen/src/mob/materialTemplates.jsonnet` and `packages/mobgen/src/mob/materials.ts`, `resolveMaterials`.
 - Build-specific settings must be explicit top-level arguments, not hidden environment inputs, so identical sources produce identical output.
 
 ## Curated map features
@@ -29,8 +29,8 @@ A placed content template is spatial data, not a Jsonnet constructor. Constructo
 
 Curated geometry lets authors inspect and change intended spaces without reverse-engineering a generator. Exclusive ownership prevents composition from repainting a correctly authored shell, while reserved walking space protects circulation from furnishing. See `docs/decisions/0005-curated-map-kits.md`, "Decision".
 
-Generated geometry in `deadvox/src/content/base/camp.libsonnet`,
-`deadvox/src/content/base/ladders.libsonnet` and `deadvox/src/content/base/locks.libsonnet`
+Generated geometry in `packages/deadvox/src/content/base/camp.libsonnet`,
+`packages/deadvox/src/content/base/ladders.libsonnet` and `packages/deadvox/src/content/base/locks.libsonnet`
 remains outside #712's city-and-lab migration. Those features need a separate curated
 migration before they satisfy this rule; the gauntlet migration does not authorize
 additional generators.

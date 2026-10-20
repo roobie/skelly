@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 // PROJECT.md cites code as `src/...ts#symbol`, not by line number, so a citation
 // only goes stale when the symbol is renamed or removed. deadvox citations
-// (`deadvox/src/...`) point at another package and are not checked here.
+// (`packages/deadvox/src/...`) point at another package and are not checked here.
 
 const root = new URL('../', import.meta.url);
 const doc = readFileSync(new URL('PROJECT.md', root), 'utf8');

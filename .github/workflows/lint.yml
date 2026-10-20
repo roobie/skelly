@@ -41,9 +41,9 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            deadvox/tools/lit-check/package-lock.json
+            packages/deadvox/tools/lit-check/package-lock.json
       - run: npm ci
-      - run: npm ci --prefix deadvox/tools/lit-check
+      - run: npm ci --prefix packages/deadvox/tools/lit-check
       - name: Install pinned go-jsonnet
         run: npm run jsonnet:setup
       - run: npm run knip

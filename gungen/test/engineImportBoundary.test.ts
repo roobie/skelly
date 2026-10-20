@@ -106,7 +106,7 @@ const findBoundaryViolations = async (files: readonly string[], engineSrc: strin
 };
 
 describe('engine import boundary', () => {
-  const engineSrc = fileURLToPath(new URL('../../engine/src/', import.meta.url));
+  const engineSrc = fileURLToPath(new URL('../../packages/engine/src/', import.meta.url));
 
   it('keeps engine source imports and identifiers domain-neutral', async () => {
     const files = sourceFiles(engineSrc);

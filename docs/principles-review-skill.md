@@ -33,9 +33,9 @@ the skill keeps no second copy.
 
 1. **Engineering pillars and repository rules:** `PILLARS.md`, "Pillars"; `PILLARS.md`, "Static analysis"; `PILLARS.md`, "Maintainability"; `AGENTS.md`, "Project stage"; `AGENTS.md`, "No host-specific information in tracked files"; `AGENTS.md`, "Dependency age".
 2. **Subproject pillars and content ownership:** `PILLARS.md`, "Content forward compatibility", and each subproject's own pillars,
-   such as `deadvox/DESIGN.md`, "Pillars", whose "Depth through data" covers
+   such as `packages/deadvox/DESIGN.md`, "Pillars", whose "Depth through data" covers
    deadvox code that owns a decision belonging to content; for performance,
-   `deadvox/DESIGN.md`, "Performance and scale"; for authored data, `docs/jsonnet.md`, "Jsonnet authoring"; and `docs/PROCESS.md`, "Continuous consolidation", for ownership and duplicated decisions.
+   `packages/deadvox/DESIGN.md`, "Performance and scale"; for authored data, `docs/jsonnet.md`, "Jsonnet authoring"; and `docs/PROCESS.md`, "Continuous consolidation", for ownership and duplicated decisions.
 3. **Zero drift and docs:** `PILLARS.md`, "Zero drift"; `AGENTS.md`, "Zero drift";
    `docs/PROCESS.md`, "The life of a change", step 4.
 4. **Tests:** `AGENTS.md`, "Tests". From "Before pushing: tiered checks", a review
@@ -111,7 +111,7 @@ reasoning.
 A change that breaks a settled rule a lens cites, or lacks what that rule
 requires (a verbatim quote and stamp, a `read_if`, a test that fails before the
 fix), is a FIX. For example, deadvox code that decides one item's behaviour, a
-decision `deadvox/DESIGN.md`, "Pillars"; `deadvox/DESIGN.md`, "Depth through data", gives to content,
+decision `packages/deadvox/DESIGN.md`, "Pillars"; `packages/deadvox/DESIGN.md`, "Depth through data", gives to content,
 is a FIX. A violation of a settled rule is a real defect in the sense of
 `AGENTS.md`, "Tests", whose FIX threshold the review applies. The rules' owners
 also set what blocks: `AGENTS.md`, "Tests"; `AGENTS.md`, "Zero drift"; `PILLARS.md`, "Zero drift"; and `docs/PROCESS.md`, "The life of a change", step 4. Anything else is

@@ -5,7 +5,7 @@ import { validate } from '@skelly/engine/assembly/validate.ts';
 import { applyDir, applyPoint, invert, length, sub } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../../deadvox/src/core/content.ts';
+import { buildRegistry } from '../../packages/deadvox/src/core/content.ts';
 import { boltCompanionExports } from '../src/cli/boltCompanionExports.ts';
 import { exportFileText } from '../src/cli/exportFile.ts';
 import { readCartridge } from '../src/cli/readCartridge.ts';

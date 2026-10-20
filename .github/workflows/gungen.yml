@@ -7,11 +7,11 @@ on:
     branches: [main]
     paths:
       - 'gungen/**'
-      - 'engine/**'
-      - 'packages/**'
-      - 'deadvox/src/**'
+      - 'packages/engine/**'
+      - 'packages/tool-ui/**'
+      - 'packages/deadvox/src/**'
       - 'package-lock.json'
-      - 'mobgen/src/**'
+      - 'packages/mobgen/src/**'
       - '!**/*.md'
       - 'gungen/PROJECT.md'
       - 'testPool.ts'
@@ -19,11 +19,11 @@ on:
   pull_request:
     paths:
       - 'gungen/**'
-      - 'engine/**'
-      - 'packages/**'
-      - 'deadvox/src/**'
+      - 'packages/engine/**'
+      - 'packages/tool-ui/**'
+      - 'packages/deadvox/src/**'
       - 'package-lock.json'
-      - 'mobgen/src/**'
+      - 'packages/mobgen/src/**'
       - '!**/*.md'
       - 'gungen/PROJECT.md'
       - 'testPool.ts'
@@ -56,8 +56,8 @@ jobs:
       - name: Install Playwright Chromium
         timeout-minutes: 3
         run: npx playwright install chromium
-        working-directory: deadvox
-      - run: npm --prefix ../engine run typecheck
+        working-directory: packages/deadvox
+      - run: npm --prefix ../packages/engine run typecheck
       - run: npm --prefix ../packages/tool-ui run typecheck
       - run: npm run typecheck
       - run: npm test

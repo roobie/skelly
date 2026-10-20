@@ -10,7 +10,7 @@ import { exportFileText } from './exportFile.ts';
 
 const MODEL_FILE = /\/([^/]+)\.glb$/;
 const root = resolve(import.meta.dirname, '../../..');
-const base = resolve(root, 'deadvox/src/content/base');
+const base = resolve(root, 'packages/deadvox/src/content/base');
 const data = JSON.parse(compileJsonnetFile(resolve(base, 'models-firearms.libsonnet'))) as {
   models: (DeadvoxModelEntry & { chargingHandleDegrees?: number })[];
 };
@@ -27,7 +27,7 @@ const store = (entry: DeadvoxModelEntry, glb: Uint8Array) => {
     [
       resolve(root, 'node_modules/@biomejs/biome/bin/biome'),
       'format',
-      `--stdin-file-path=deadvox/src/content/base/gungen/${entry.id}.model.json`,
+      `--stdin-file-path=packages/deadvox/src/content/base/gungen/${entry.id}.model.json`,
     ],
     { cwd: root, encoding: 'utf8', input: JSON.stringify(merged) },
   );

@@ -12,7 +12,7 @@ tags: [deadvox, adr, mods, content, schema, validation]
 ## Context
 
 A later pack replaces an earlier definition whole, by id, and the registry remembers one
-winning file per entry. See `deadvox/src/core/content.ts`, `merge` and `contentOrigins`.
+winning file per entry. See `packages/deadvox/src/core/content.ts`, `merge` and `contentOrigins`.
 A mod that needs one field of a base entry changed must restate the entry, or build it from
 the base sources in Jsonnet, which still compiles to a whole entry.
 
@@ -56,7 +56,7 @@ override the same value or object, or a mod overrides a dependency without decla
 Load order alone never decides, because the order in which a player enables mods says
 nothing about which one meant to win. The dependency decides instead: the overriding mod
 always loads after the owner. This is the rule for competing skill providers in
-`deadvox/docs/pack-split.md`, "Skill providers", so one rule covers every place where two
+`packages/deadvox/docs/pack-split.md`, "Skill providers", so one rule covers every place where two
 mods claim one thing. The declaration is needed as well, because a dependency alone lets a
 mod overwrite its owner's value by accident with nothing to flag it. Declaring each
 override makes it deliberate and checkable at load, and failing closed stops a silent
@@ -76,8 +76,8 @@ change from reaching play.
 
 Which item builds the merge step for field patches. The conflict check is d476's, and
 admitting an override needs the pack dependencies of #637 round 1; see
-`deadvox/docs/pack-split.md`, "Round split". Until d476 lands,
-`deadvox/src/core/content.ts`, `merge` lets any later pack replace an entry whole, so
+`packages/deadvox/docs/pack-split.md`, "Round split". Until d476 lands,
+`packages/deadvox/src/core/content.ts`, `merge` lets any later pack replace an entry whole, so
 "Conflicts" binds mod authors without the loader enforcing it. Once d476 lands, a
 whole-entry mod that replaces another pack's entry loads only if it depends on that pack
 and declares the override. Nothing needs migrating before v1.0 beta.
@@ -88,6 +88,6 @@ Validation needs an origin per patched field, not only per entry, so a diagnosti
 every mod that changed a value. A conflict between two mods becomes a load error a player
 can act on, at the cost of requiring mod authors to declare overrides and dependencies.
 Save identity records the ordered pack list, which fixes the patched result; see
-`deadvox/src/core/saveFormat.ts`, `currentSaveVersionIdentity`. It holds until d433
+`packages/deadvox/src/core/saveFormat.ts`, `currentSaveVersionIdentity`. It holds until d433
 moves identity to the evaluated content, as
-`deadvox/docs/decisions/0008-deterministic-world.md`, "Decision" rules.
+`packages/deadvox/docs/decisions/0008-deterministic-world.md`, "Decision" rules.

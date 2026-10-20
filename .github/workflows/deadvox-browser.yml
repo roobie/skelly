@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: ${{ inputs.shard == 'control-check' && 100 || 30 }}
     defaults:
       run:
-        working-directory: deadvox
+        working-directory: packages/deadvox
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,11 +29,11 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            deadvox/tools/lit-check/package-lock.json
-      - run: npm ci --prefix ..
+            packages/deadvox/tools/lit-check/package-lock.json
+      - run: npm ci --prefix ../..
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
-        run: npm --prefix .. run jsonnet:setup
+        run: npm --prefix ../.. run jsonnet:setup
       - name: Cache Playwright Chromium
         if: ${{ inputs.shard != 'firefox' }}
         uses: actions/cache@v4
@@ -223,5 +223,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: deadvox-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.shard }}
-          path: deadvox/test-results/
+          path: packages/deadvox/test-results/
           if-no-files-found: ignore

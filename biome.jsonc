@@ -94,7 +94,7 @@
     },
     {
       // Tiled 1.11 supplies these globals; Qt 5's ES6 engine cannot parse object spread.
-      "includes": ["deadvox/maps/extensions/*.mjs"],
+      "includes": ["packages/deadvox/maps/extensions/*.mjs"],
       "javascript": { "globals": ["FileInfo", "tiled", "TextFile", "TileMap", "MapObject"] },
       "linter": { "rules": { "style": { "useObjectSpread": "off" } } }
     },
@@ -106,10 +106,10 @@
         "**/vite.config.ts",
         "testPool.ts",
         "tools/jsonnet/**",
-        "deadvox/tools/publish-playtest.mjs",
-        "deadvox/tools/police-item-models.mjs",
-        "deadvox/tools/perf-baseline.mjs",
-        "deadvox/tools/perf-baseline.test.mjs"
+        "packages/deadvox/tools/publish-playtest.mjs",
+        "packages/deadvox/tools/police-item-models.mjs",
+        "packages/deadvox/tools/perf-baseline.mjs",
+        "packages/deadvox/tools/perf-baseline.test.mjs"
       ],
       "linter": { "rules": { "correctness": { "noNodejsModules": "off" } } }
     },
@@ -118,8 +118,8 @@
       "includes": [
         "**/src/bench/*-cpu.mjs",
         "**/deadvox/tools/bench-zombie-swings.mjs",
-        "deadvox/tools/bench-expressions.mjs",
-        "deadvox/tools/probe-wasm-expressions.mjs"
+        "packages/deadvox/tools/bench-expressions.mjs",
+        "packages/deadvox/tools/probe-wasm-expressions.mjs"
       ],
       "linter": {
         "rules": {
@@ -140,7 +140,7 @@
       }
     },
     {
-      "includes": ["deadvox/tools/perf-baseline.mjs"],
+      "includes": ["packages/deadvox/tools/perf-baseline.mjs"],
       "linter": { "rules": { "suspicious": { "noConsole": "off" }, "performance": { "noAwaitInLoops": "off" } } }
     },
     {

@@ -19,7 +19,7 @@ don't require byte-identical exports. What must still work: gungen exports a mod
 that deadvox validates and loads. Migration, especially of save games, starts
 mattering at v1.0 beta.
 
-Before writing or changing player-visible text, apply `deadvox/INTERFACE.md`, "Text".
+Before writing or changing player-visible text, apply `packages/deadvox/INTERFACE.md`, "Text".
 
 ## Jsonnet
 
@@ -44,8 +44,8 @@ a comment or a PR:
 
 - Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
   no lists, tables or values copied from code. A cited path is relative to the repo
-  root, the doc's subproject root (`deadvox/`, `engine/`, `gungen/`, `mobgen/`, or a package under `packages/`) when relevant,
-  or the doc itself. Cross-subproject cues use a repo-root path.
+  root, the doc's subproject root (`gungen/` or a package under `packages/`) when
+  relevant, or the doc itself. Cross-subproject cues use a repo-root path.
 - Prose section cues use only a backticked path, comma and double-quoted name:
   `PILLARS.md`, "Zero drift". Bare paths, backticked names and numbered references
   fail: agents copy nearby examples, so alternate spellings undermine the rule.
@@ -120,7 +120,7 @@ pinned compiler required by `tools/jsonnet/compile.mjs`, `compileJsonnetSources`
 
 The projects are npm workspaces (`package.json`, `workspaces`), so one lockfile keeps
 shared packages, `three` above all, on one version and one instance. Add a dependency
-with `npm install <pkg> --workspace <name>`. `deadvox/tools/lit-check` stays a separate
+with `npm install <pkg> --workspace <name>`. `packages/deadvox/tools/lit-check` stays a separate
 install because its analyzer pins its own TypeScript.
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.

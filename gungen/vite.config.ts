@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 import { pagesAnalyticsPlugin } from '../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../testPool.ts';
 
-const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
+const mobgenSrc = fileURLToPath(new URL('../packages/mobgen/src/', import.meta.url));
 
 export default defineConfig({
   base: './',

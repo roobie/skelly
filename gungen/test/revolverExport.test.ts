@@ -4,7 +4,7 @@ import { applyPoint, compose, type Transform } from '@skelly/engine/foundation/m
 import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../../deadvox/src/core/content.ts';
+import { buildRegistry } from '../../packages/deadvox/src/core/content.ts';
 import { parseCartridgeJson } from '../src/ammo/parseCartridge.ts';
 import { exportFileText } from '../src/cli/exportFile.ts';
 import { gunDomain } from '../src/gun/domain.ts';

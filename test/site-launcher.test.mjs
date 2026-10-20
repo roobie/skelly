@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { bundledModCatalogueIssues } from '../deadvox/src/core/bundledModCatalogue.ts';
-import { tutorialRequested } from '../deadvox/src/game/tutorial.ts';
-import { gitEnvironment, playtestRound, publishPlaytest } from '../deadvox/tools/publish-playtest.mjs';
+import { bundledModCatalogueIssues } from '../packages/deadvox/src/core/bundledModCatalogue.ts';
+import { tutorialRequested } from '../packages/deadvox/src/game/tutorial.ts';
+import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
@@ -15,8 +15,8 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const selectLanguage = (languages, search) => applyPlaytestLanguage(languages, search);
 const page = read('site/launcher.js');
-const round1Page = read('deadvox/playtests/round1/round1.js');
-const round2Page = read('deadvox/playtests/round2/round2.js');
+const round1Page = read('packages/deadvox/playtests/round1/round1.js');
+const round2Page = read('packages/deadvox/playtests/round2/round2.js');
 const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAY_LINK_PATTERN = /<a[^>]*class="playtest-action"[^>]*>/;
@@ -30,7 +30,7 @@ const ENGLISH_DOCUMENT_LANGUAGE_PATTERN = /<html lang="en">/;
 const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
-const DEADVOX_CONTENT = 'deadvox/src/content/base';
+const DEADVOX_CONTENT = 'packages/deadvox/src/content/base';
 const RESOURCE_URL_PATTERNS = [
   /\b(?:href|src)\s*=\s*["']([^"']+)["']/g,
   /url\(\s*["']?([^"')\s]+)["']?\s*\)/g,
@@ -231,12 +231,12 @@ describe('playtest language and catalog', () => {
 describe('site launchers track the games’ URL parameters', () => {
   it('offers every supported deadvox URL parameter except documented omissions', () => {
     const supported = paramsReadBy([
-      'deadvox/src/main.ts',
-      'deadvox/src/game/config.ts',
-      'deadvox/src/core/weatheringUrl.ts',
-      'deadvox/src/bench/run.ts',
-      'deadvox/src/bench/shamblers.ts',
-      'deadvox/src/debug/debugLoadout.ts',
+      'packages/deadvox/src/main.ts',
+      'packages/deadvox/src/game/config.ts',
+      'packages/deadvox/src/core/weatheringUrl.ts',
+      'packages/deadvox/src/bench/run.ts',
+      'packages/deadvox/src/bench/shamblers.ts',
+      'packages/deadvox/src/debug/debugLoadout.ts',
     ]);
     const omitted = new Set(Object.keys(intentionallyUnofferedDeadvoxParams));
     for (const name of omitted) {
@@ -255,7 +255,7 @@ describe('site launchers track the games’ URL parameters', () => {
       assert.match(page, new RegExp(`name="${parameter}" data-url-param="${parameter}"`));
     }
 
-    const gameMax = read('deadvox/src/core/weather.ts').match(GAME_WEATHERING_MAX_PATTERN);
+    const gameMax = read('packages/deadvox/src/core/weather.ts').match(GAME_WEATHERING_MAX_PATTERN);
     const launcherMax = page.match(LAUNCHER_WEATHERING_MAX_PATTERN);
     assert.ok(gameMax, 'game weathering ceiling is declared');
     assert.ok(launcherMax, 'static launcher weathering ceiling is declared');
@@ -293,7 +293,7 @@ describe('site launchers track the games’ URL parameters', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const defaults = launcherModelForTest().deadvox;
     const gauntlet = { ...defaults, ...launcherPresetsForTest().gauntlet };
-    const scenarioIds = JSON.parse(read('deadvox/src/content/base/scenarios.json')).scenarios.map(
+    const scenarioIds = JSON.parse(read('packages/deadvox/src/content/base/scenarios.json')).scenarios.map(
       (scenario) => scenario.id,
     );
     const play = makeDeadvox(gauntlet);
@@ -309,7 +309,7 @@ describe('site launchers track the games’ URL parameters', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const model = launcherModelForTest();
     const onInput = onInputForTest(model);
-    const ids = JSON.parse(read('deadvox/src/config/bundled-mods.json')).mods.map((mod) => mod.id);
+    const ids = JSON.parse(read('packages/deadvox/src/config/bundled-mods.json')).mods.map((mod) => mod.id);
     const toggle = (id, checked) =>
       onInput({ currentTarget: { id: 'deadvox-form' }, target: { dataset: { modId: id }, type: 'checkbox', checked } });
 
@@ -418,12 +418,12 @@ describe('site launcher playtest entry', () => {
   it('dry-run pairs the current landing with the frozen game and carries every referenced local file', () => {
     const root = mkdtempSync(join(tmpdir(), 'skelly-playtest-'));
     try {
-      mkdirSync(join(root, 'deadvox'), { recursive: true });
-      cpSync(join(ROOT, 'deadvox/playtests'), join(root, 'deadvox/playtests'), { recursive: true });
+      mkdirSync(join(root, 'packages/deadvox'), { recursive: true });
+      cpSync(join(ROOT, 'packages/deadvox/playtests'), join(root, 'packages/deadvox/playtests'), { recursive: true });
       cpSync(join(ROOT, 'site'), join(root, 'site'), { recursive: true });
       writeFileSync(
         join(root, '.gitignore'),
-        '/deadvox/dist-playtest/\n/deadvox/dist/\nnode_modules/\n/tools/jsonnet/bin/\n',
+        '/packages/deadvox/dist-playtest/\n/packages/deadvox/dist/\nnode_modules/\n/tools/jsonnet/bin/\n',
       );
       writeFileSync(join(root, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3 }));
       mkdirSync(join(root, 'node_modules/fixture-dep'), { recursive: true });
@@ -432,20 +432,20 @@ describe('site launcher playtest entry', () => {
       writeFileSync(join(root, 'tools/jsonnet/runtime.json'), JSON.stringify({ version: 'fixture' }));
       writeFileSync(join(root, 'tools/jsonnet/bin/fixture'), 'compiler fixture');
       writeFileSync(
-        join(root, 'deadvox/package.json'),
+        join(root, 'packages/deadvox/package.json'),
         JSON.stringify({ type: 'module', scripts: { build: 'node build.mjs' } }),
       );
       writeFileSync(
-        join(root, 'deadvox/build.mjs'),
+        join(root, 'packages/deadvox/build.mjs'),
         [
           "import { mkdirSync, copyFileSync, realpathSync } from 'node:fs';",
           "import { dirname } from 'node:path';",
-          "if (!realpathSync('../node_modules/fixture-dep').startsWith(dirname(process.cwd()) + '/node_modules/')) throw new Error('Dependency escaped checkout');",
+          "if (!realpathSync('../../node_modules/fixture-dep').startsWith(dirname(dirname(process.cwd())) + '/node_modules/')) throw new Error('Dependency escaped checkout');",
           "mkdirSync('dist'); copyFileSync('index.html', 'dist/index.html');",
         ].join('\n'),
       );
       const frozenGame = '<main>Frozen fixture game</main>';
-      writeFileSync(join(root, 'deadvox/index.html'), frozenGame);
+      writeFileSync(join(root, 'packages/deadvox/index.html'), frozenGame);
       const git = (...args) => execFileSync('git', ['-C', root, ...args], { env: gitEnvironment() });
       git('init', '-q');
       git('add', '.');
@@ -460,8 +460,8 @@ describe('site launcher playtest entry', () => {
         'fixture',
       );
       const gameSha = git('rev-parse', 'HEAD').toString().trim();
-      writeFileSync(join(root, 'deadvox/index.html'), '<main>Unpublished fixture game</main>');
-      const landingPath = join(root, 'deadvox/playtests/round1/index.html');
+      writeFileSync(join(root, 'packages/deadvox/index.html'), '<main>Unpublished fixture game</main>');
+      const landingPath = join(root, 'packages/deadvox/playtests/round1/index.html');
       const landingMarker = '<meta name="fixture-landing" content="latest">';
       writeFileSync(landingPath, readFileSync(landingPath, 'utf8').replace('</head>', `${landingMarker}</head>`));
       git('add', '.');

@@ -8,13 +8,13 @@ import { compileJsonnetFile, REPOSITORY_ROOT } from './index.mjs';
 const BIOME_EXECUTABLE = resolve(REPOSITORY_ROOT, 'node_modules/@biomejs/biome/bin/biome');
 const OUTPUT_MANIFEST = resolve(REPOSITORY_ROOT, 'tools/jsonnet/outputs.json');
 const SOURCE_ROOTS = [
-  'deadvox/maps',
-  'deadvox/src/content/base',
-  'deadvox/src/config',
-  'deadvox/test/fixtures/mods',
+  'packages/deadvox/maps',
+  'packages/deadvox/src/content/base',
+  'packages/deadvox/src/config',
+  'packages/deadvox/test/fixtures/mods',
   'gungen/cartridges',
   'gungen/designs',
-  'mobgen/src/mob',
+  'packages/mobgen/src/mob',
   'site',
 ];
 

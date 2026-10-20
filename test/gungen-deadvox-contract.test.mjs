@@ -3,20 +3,20 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { buildRegistry } from '../deadvox/src/core/content.ts';
-import { namedNodes } from '../deadvox/src/render/firearmModel.ts';
 import { parseCartridgeJson } from '../gungen/src/ammo/parseCartridge.ts';
 import { exportFileText } from '../gungen/src/cli/exportFile.ts';
 import { exportAttachmentGlb } from '../gungen/src/gun/attachmentExport.ts';
 import { exportCartridgeModels } from '../gungen/src/gun/cartridgeExport.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
+import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
+import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 
-const deadvoxRequire = createRequire(new URL('../deadvox/package.json', import.meta.url));
+const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const ROOT = new URL('../', import.meta.url).pathname;
 const DESIGNS = join(ROOT, 'gungen/designs');
-const DEADVOX_BASE = join(ROOT, 'deadvox/src/content/base');
+const DEADVOX_BASE = join(ROOT, 'packages/deadvox/src/content/base');
 const FIREARM_CONTENT = JSON.parse(readFileSync(join(DEADVOX_BASE, 'models-firearms.json'), 'utf8'));
 // The asset manifest credits each exported gun to its gungen design, so a new export joins the sync check with its credit.
 const DESIGN_SOURCE = /\/gungen\/designs\/([^/]+\.json)$/;
@@ -194,7 +194,7 @@ describe('gungen exports satisfy deadvox model validation', () => {
         });
         assert.ok(exported.ok, exported.ok ? '' : JSON.stringify(exported.error));
         const exportedColor = glbJson(Buffer.from(exported.glb)).materials[0].pbrMetallicRoughness.baseColorFactor;
-        const asset = readFileSync(join(ROOT, `deadvox/src/content/base/assets/models/${id}.glb`));
+        const asset = readFileSync(join(ROOT, `packages/deadvox/src/content/base/assets/models/${id}.glb`));
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(asset).buffer, '');
         const loadedColors = [];
         loaded.scene.traverse((object) => {

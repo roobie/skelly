@@ -9,12 +9,12 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const PAGE_FILES = [
   'gungen/index.html',
-  'deadvox/index.html',
-  'deadvox/sounds.html',
-  'mobgen/index.html',
-  'mobgen/stress.html',
+  'packages/deadvox/index.html',
+  'packages/deadvox/sounds.html',
+  'packages/mobgen/index.html',
+  'packages/mobgen/stress.html',
 ];
-const PROJECT_CONFIGS = ['gungen/vite.config.ts', 'deadvox/vite.config.ts', 'mobgen/vite.config.ts'];
+const PROJECT_CONFIGS = ['gungen/vite.config.ts', 'packages/deadvox/vite.config.ts', 'packages/mobgen/vite.config.ts'];
 const WORKFLOW_FILE = /\.ya?ml$/;
 const workflowFiles = (files) => files.filter((file) => WORKFLOW_FILE.test(file));
 const WORKFLOW_FILES = workflowFiles(readdirSync(join(ROOT, '.github/workflows')));

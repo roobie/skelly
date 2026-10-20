@@ -215,7 +215,7 @@ it('pins the 3.0a contracts and chosen-value storage', () => {
   expectTypeOf(effectiveLocks).toMatchTypeOf<EffectiveSuggestionLocks>();
   expectTypeOf<(typeof suggestions.variants)[number]['status']>().toEqualTypeOf<'draft'>();
 
-  const coreRoot = fileURLToPath(new URL('../../engine/src/', import.meta.url));
+  const coreRoot = fileURLToPath(new URL('../../packages/engine/src/', import.meta.url));
   const coreFiles = typeScriptFiles(coreRoot);
   expect(findForbiddenCoreIdentifier(coreFiles)).toBeUndefined();
   expect(findForbiddenIdentifier('// grip\nconst label = "deadvox"; /* clamp */')).toBeUndefined();

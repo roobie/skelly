@@ -1,0 +1,375 @@
+import { describe, expect, it } from 'vitest';
+import { generate, generateValid, realize, realizeLod, recommendedProfileFor } from '../src/core/generate.ts';
+import type { Genome } from '../src/core/template.ts';
+import { worldPosition } from '../src/core/voxelize.ts';
+import { HUMANOID_PARAM_ORDER } from '../src/mob/humanoid.ts';
+import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
+import { sweepGroup } from './sweeps.ts';
+
+const SEEDS = 100;
+
+describe('generate', () => {
+  it('is deterministic: same seed, same genome', () => {
+    for (const t of TEMPLATES) {
+      expect(generate(t, 42)).toEqual(generate(t, 42));
+    }
+  });
+
+  it('is deterministic: same genome, identical voxel arrays', () => {
+    for (const t of TEMPLATES) {
+      const genome = generate(t, 42);
+      const a = realize(genome).voxels;
+      const b = realize(genome).voxels;
+      expect(a.dims).toEqual(b.dims);
+      expect(a.origin).toEqual(b.origin);
+      expect([...a.owner]).toEqual([...b.owner]);
+      expect([...a.color]).toEqual([...b.color]);
+    }
+  });
+
+  it('a genome survives JSON and realizes to the same voxels (the genome is the save format)', () => {
+    for (const t of TEMPLATES) {
+      const genome = generate(t, 42);
+      const again = JSON.parse(JSON.stringify(genome)) as Genome;
+      expect(again).toEqual(genome);
+      const a = realize(genome).voxels;
+      const b = realize(again).voxels;
+      expect(b.dims).toEqual(a.dims);
+      expect([...b.owner]).toEqual([...a.owner]);
+      expect([...b.color]).toEqual([...a.color]);
+    }
+  });
+
+  it('varies with the seed', () => {
+    for (const t of TEMPLATES) {
+      const keys = new Set(Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, seed).params)));
+      expect(keys.size).toBeGreaterThan(40);
+    }
+  });
+});
+
+describe('genome checks', () => {
+  const shambler = TEMPLATES.find((x) => x.name === 'shambler')!;
+
+  it('every template samples exactly the humanoid params (a misspelled override would otherwise be silently ignored)', () => {
+    for (const t of TEMPLATES) {
+      expect(Object.keys(t.params).sort()).toEqual([...HUMANOID_PARAM_ORDER].sort());
+    }
+  });
+
+  it('realize rejects a genome missing a param, naming it', () => {
+    for (const name of ['height', 'strideFactor']) {
+      const genome = generate(shambler, 42);
+      const { [name]: _dropped, ...params } = genome.params;
+      expect(() => realize({ ...genome, params })).toThrow(`param "${name}"`);
+    }
+  });
+
+  it('rejects non-finite params and bad wounds', () => {
+    const genome = generate(shambler, 42);
+    expect(() => realize({ ...genome, params: { ...genome.params, girth: Number.NaN } })).toThrow('girth');
+    const wound = { bone: 'spine', t: 0.5, angle: 0, radius: 0.03 };
+    expect(() => realize({ ...genome, wounds: [{ ...wound, bone: 'head' }] })).toThrow('wound 0 has bone "head"');
+    expect(() => realize({ ...genome, wounds: [{ ...wound, t: Number.NaN }] })).toThrow('wound 0 t ');
+  });
+});
+
+const skullRadii = (genome: Genome): readonly number[] => {
+  const skull = realize(genome).body.features.find(
+    (feature) => feature.bone === 'head' && feature.op === 'add' && feature.shape.kind === 'ellipsoid',
+  );
+  if (skull?.shape.kind !== 'ellipsoid') {
+    throw new Error('the humanoid skull ellipsoid is missing');
+  }
+  return skull.shape.radii;
+};
+
+const headBounds = (genome: Genome) => {
+  const { body, voxels } = realize(genome);
+  const headOwners = new Set(['head', 'jaw'].map((id) => body.bones.findIndex((bone) => bone.id === id) + 1));
+  const min: [number, number, number] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+  const max: [number, number, number] = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  const [nx, ny] = voxels.dims;
+  for (let index = 0; index < voxels.owner.length; index++) {
+    if (!headOwners.has(voxels.owner[index]!)) {
+      continue;
+    }
+    const i = index % nx;
+    const j = Math.floor(index / nx) % ny;
+    const k = Math.floor(index / (nx * ny));
+    const point = worldPosition(voxels, i, j, k);
+    for (let axis = 0; axis < 3; axis++) {
+      min[axis] = Math.min(min[axis]!, point[axis]!);
+      max[axis] = Math.max(max[axis]!, point[axis]!);
+    }
+  }
+  return { min, max };
+};
+
+describe('coarser voxel sizes', () => {
+  const shambler = TEMPLATES.find((template) => template.name === 'shambler')!;
+  const base = generate(shambler, 17);
+  const sizes = [0.5 / 6, 0.5 / 4];
+
+  it.each(sizes)('keeps skull metric radii and head bounds within one voxel at size %s', (voxelSize) => {
+    const defaultRadii = skullRadii(base);
+    const coarseGenome = { ...base, voxelSize };
+    const coarseRadii = skullRadii(coarseGenome);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(Math.abs(coarseRadii[axis]! - defaultRadii[axis]!)).toBeLessThanOrEqual(1e-6);
+    }
+    const defaultBounds = headBounds(base);
+    const coarseBounds = headBounds(coarseGenome);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(Math.abs(coarseBounds.min[axis]! - defaultBounds.min[axis]!)).toBeLessThanOrEqual(voxelSize);
+      expect(Math.abs(coarseBounds.max[axis]! - defaultBounds.max[axis]!)).toBeLessThanOrEqual(voxelSize);
+    }
+  });
+
+  it('scales skull radii proportionally when only height changes', () => {
+    const tall = { ...base, params: { ...base.params, height: base.params.height! * 1.1 } };
+    const baseRadii = skullRadii(base);
+    const tallRadii = skullRadii(tall);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(tallRadii[axis]! / baseRadii[axis]!).toBeCloseTo(1.1, 10);
+    }
+  });
+
+  it('every humanoid template passes all rules at 1/6-block voxels for fixed seeds', () => {
+    for (const template of HUMANOID_TEMPLATES) {
+      for (const seed of [7, 42]) {
+        const genome = { ...generate(template, seed), voxelSize: 0.5 / 6 };
+        const { report } = realize(genome);
+        expect(report.ok, `${template.name} seed ${seed}: ${JSON.stringify(report.issues)}`).toBe(true);
+      }
+    }
+  });
+
+  it('pins the 1/4-block foot-resolution limit without loosening attached', () => {
+    const brute = TEMPLATES.find((template) => template.name === 'brute')!;
+    for (const seed of [7, 42]) {
+      expect(realize({ ...generate(brute, seed), voxelSize: 0.5 / 4 }).report.ok).toBe(true);
+    }
+    for (const template of HUMANOID_TEMPLATES.filter((candidate) => candidate.name !== 'brute')) {
+      for (const seed of [7, 42]) {
+        const { report } = realize({ ...generate(template, seed), voxelSize: 0.5 / 4 });
+        expect(report.ok, `${template.name} seed ${seed}`).toBe(false);
+        expect(report.issues.every((issue) => issue.rule === 'attached' || issue.rule === 'grounded')).toBe(true);
+        expect(report.issues.some((issue) => issue.bones?.some((bone) => bone.startsWith('foot.')))).toBe(true);
+      }
+    }
+  });
+});
+
+const LOD_SIZES = [0.5 / 6, 0.5 / 4, 0.5 / 2] as const;
+
+interface BudgetFailureSummary {
+  count: number;
+  worstExcess: number;
+  seed: number;
+  actual: number;
+  bound: number;
+}
+
+const BUDGET_FAILURE_PATTERN = /(Total voxels|Total triangles) (\d+) is outside \[1, (\d+)\]\./;
+
+const recordBudgetFailure = (input: {
+  readonly template: (typeof TEMPLATES)[number];
+  readonly seed: number;
+  readonly voxelSize: number;
+  readonly message: string;
+  readonly failures: Map<string, BudgetFailureSummary>;
+}): string | undefined => {
+  const { template, seed, voxelSize, message, failures } = input;
+  const match = message.match(BUDGET_FAILURE_PATTERN);
+  if (!match) {
+    return `${template.name} seed ${seed} at ${voxelSize}: ${message}`;
+  }
+  const actual = Number(match[2]);
+  const bound = Number(match[3]);
+  const key = `${voxelSize} ${match[1]!.toLowerCase()}`;
+  const summary = failures.get(key);
+  if (summary) {
+    summary.count += 1;
+    if (actual - bound > summary.worstExcess) {
+      summary.worstExcess = actual - bound;
+      summary.seed = seed;
+      summary.actual = actual;
+      summary.bound = bound;
+    }
+  } else {
+    failures.set(key, { count: 1, worstExcess: actual - bound, seed, actual, bound });
+  }
+  return undefined;
+};
+
+const collectFarLodFailures = (
+  template: (typeof TEMPLATES)[number],
+  source: {
+    readonly genome: Genome;
+    readonly realized: ReturnType<typeof realize>;
+    readonly seed: number;
+    readonly attempts: number;
+  },
+  budgetFailures: Map<string, BudgetFailureSummary>,
+): string[] => {
+  const otherFailures: string[] = [];
+  for (const voxelSize of LOD_SIZES) {
+    const lod = realizeLod(source, voxelSize);
+    for (const issue of lod.realized.report.issues) {
+      const failure = recordBudgetFailure({
+        template,
+        seed: source.seed,
+        voxelSize,
+        message: issue.message,
+        failures: budgetFailures,
+      });
+      if (failure) {
+        otherFailures.push(failure);
+      }
+    }
+  }
+  return otherFailures;
+};
+
+const validateFarLodSeeds = (template: (typeof TEMPLATES)[number]) => {
+  let validSources = 0;
+  const otherFailures: string[] = [];
+  const budgetFailures = new Map<string, BudgetFailureSummary>();
+  for (let seed = 0; seed < 100; seed++) {
+    const genome = generate(template, seed);
+    const realized = realize(genome);
+    if (!realized.report.ok) {
+      continue;
+    }
+    validSources += 1;
+    otherFailures.push(...collectFarLodFailures(template, { genome, realized, seed, attempts: 1 }, budgetFailures));
+  }
+  const failures = [...budgetFailures].map(
+    ([key, value]) =>
+      `${key}: ${value.count}/${validSources}, worst +${value.worstExcess} (seed ${value.seed}: ${value.actual} > ${value.bound})`,
+  );
+  if (otherFailures.length > 0) {
+    failures.push(`${otherFailures.length} non-budget failures; example ${otherFailures[0]}`);
+  }
+  return { validSources, failures };
+};
+
+describe('validation profiles', () => {
+  it('keeps full rules as the default at 1/12 and 1/16 for every template', () => {
+    for (const template of TEMPLATES) {
+      const base = generate(template, 7);
+      for (const voxelSize of [0.5 / 12, 0.5 / 16]) {
+        const genome = { ...base, voxelSize };
+        const implicit = realize(genome);
+        const explicit = realize(genome, { profile: 'full' });
+        expect(implicit.profile).toBe('full');
+        expect(implicit.report).toEqual(explicit.report);
+      }
+    }
+  });
+
+  it('recommends from full-detail limb thickness in cells without changing the explicit full default', () => {
+    const base = generate(TEMPLATES.find((template) => template.name === 'shambler')!, 7);
+    const thin = { ...base, voxelSize: 0.05, params: { ...base.params, height: 2, girth: 0.1 } };
+    const thick = { ...thin, params: { ...thin.params, girth: 4 } };
+    expect(recommendedProfileFor(thin)).toBe('silhouette');
+    expect(recommendedProfileFor(thick)).toBe('full');
+    // The recommendation must not silently change the caller's omitted profile.
+    expect(realize(thin).profile).toBe('full');
+  });
+
+  it('derives all three far sizes from an already full-valid humanoid genome', () => {
+    for (const template of HUMANOID_TEMPLATES) {
+      const source = generateValid(template, 7)!;
+      for (const voxelSize of LOD_SIZES) {
+        const lod = realizeLod(source, voxelSize);
+        expect(lod.genome.voxelSize).toBe(voxelSize);
+        expect(lod.realized.profile).toBe('silhouette');
+        expect(
+          lod.realized.report.ok,
+          `${template.name} ${voxelSize}: ${JSON.stringify(lod.realized.report.issues)}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('refuses an invalid or non-full-detail LOD source and a non-coarser size', () => {
+    const source = generateValid(TEMPLATES[0]!, 7)!;
+    expect(() =>
+      realizeLod(
+        { ...source, realized: { ...source.realized, report: { ...source.realized.report, ok: false } } },
+        0.5 / 4,
+      ),
+    ).toThrow('full-detail validation');
+    expect(() => realizeLod(source, source.genome.voxelSize)).toThrow('coarser');
+  });
+
+  sweepGroup('far LOD silhouette validation', () => {
+    it('passes for every full-valid genome in 100 seeds per template at 1/6, 1/4 and 1/2 block', () => {
+      const results = HUMANOID_TEMPLATES.map((template) => validateFarLodSeeds(template));
+      const insufficientSources = results.flatMap((result, index) =>
+        result.validSources < 80 ? [`${HUMANOID_TEMPLATES[index]!.name}: ${result.validSources}`] : [],
+      );
+      const failures = results.flatMap((result, index) =>
+        result.failures.map((failure) => `${HUMANOID_TEMPLATES[index]!.name}: ${failure}`),
+      );
+      expect(insufficientSources, 'templates with too few full-valid sources').toEqual([]);
+      expect(failures, 'far LOD budget/silhouette failures').toEqual([]);
+    }, 120_000);
+  });
+});
+
+sweepGroup('template generation validity rate', () => {
+  for (const t of HUMANOID_TEMPLATES) {
+    it(
+      `${t.name} retains at least 80% valid figures across ${SEEDS} seeds`,
+      () => {
+        let validSeeds = 0;
+        for (let seed = 0; seed < SEEDS; seed++) {
+          if (realize(generate(t, seed)).report.ok) {
+            validSeeds += 1;
+          }
+        }
+        expect(validSeeds / SEEDS).toBeGreaterThanOrEqual(0.8);
+      },
+      SEEDS * 100,
+    );
+  }
+});
+
+describe('templates', () => {
+  for (const t of HUMANOID_TEMPLATES) {
+    describe(t.name, () => {
+      it('generateValid finds a passing build', () => {
+        const found = generateValid(t, 1000)!;
+        expect(found).toBeDefined();
+        expect(found.realized.report.ok).toBe(true);
+        expect(found.genome.voxelSize).toBe(t.voxelSize);
+        expect(found.seed).toBe(1000 + found.attempts - 1);
+        expect(found.genome).toEqual(generate(t, found.seed));
+      });
+    });
+  }
+
+  sweepGroup('head volume sweep', () => {
+    it(
+      'shambler head+jaw voxel count is within the template budget on average',
+      () => {
+        const t = TEMPLATES.find((x) => x.name === 'shambler')!;
+        const head = t.budgets.groups.head!;
+        let sum = 0;
+        for (let seed = 0; seed < SEEDS; seed++) {
+          const { report } = realize(generate(t, seed));
+          sum += (report.stats.perBoneVoxels.head ?? 0) + (report.stats.perBoneVoxels.jaw ?? 0);
+        }
+        const mean = sum / SEEDS;
+        // Bounds come from the template itself (packages/mobgen/src/mob/templates.ts), not repeated here, so a
+        // deliberate head-size retune (e.g. the 5-voxel-wide face) can't leave this test stale.
+        expect(mean).toBeGreaterThanOrEqual(head.min);
+        expect(mean).toBeLessThanOrEqual(head.max);
+      },
+      SEEDS * 100,
+    );
+  });
+});

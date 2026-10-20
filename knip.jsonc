@@ -5,7 +5,7 @@
       "entry": ["site/launcher.js!", "test/**/*.mjs", "testPool.ts", "tools/**/*.mjs"],
       "project": ["site/**/*.js!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"]
     },
-    "deadvox": {
+    "packages/deadvox": {
       "ignoreBinaries": [
         // Local publication uses the operator's mise-managed, authenticated Surge CLI.
         "mise",
@@ -69,13 +69,13 @@
       "entry": ["index.html!"],
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
-    "engine": {
+    "packages/engine": {
       "project": ["src/**/*.{js,mjs,ts,tsx}!"]
     },
     "packages/tool-ui": {
       "project": ["src/**/*.{js,mjs,ts,tsx}!"]
     },
-    "mobgen": {
+    "packages/mobgen": {
       "entry": ["index.html!", "stress.html!", "src/viewer/stress.ts!"],
       "paths": {
         "@mobgen/*": ["src/*"]
