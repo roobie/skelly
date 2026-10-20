@@ -305,7 +305,7 @@ describe('final composed body-route certificate', () => {
         closed.blocked(...door);
         const definition = closed.entities.defOf(closed.entities.at(...door)!);
         expect(definition.door).toBeDefined();
-        expect(definition.door!.prying).toBeUndefined();
+        expect(definition.door!.methods).toEqual({});
       }
     }
     const [, upper] = entry;
