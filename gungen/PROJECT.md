@@ -5,6 +5,7 @@ read_if:
   - you use or update the golden AKM reference photo or its overlays
   - you change attachment compatibility, sights or the Gungen-to-Deadvox export contract
   - you change a gun Deadvox ships, or anything its export reads
+  - you author or key a gun part's mass
   - you change Gungen's test or cross-project integration policy
 ---
 
@@ -28,7 +29,7 @@ The AR's magazine source choices are deliberate: the straight 20-round body foll
 
 ## Design and variants
 
-The generator proposes variations; the curated design remains the product because a valid assembly is not necessarily a good-looking one. Automated geometry checks establish fit, not appearance, so source-incomplete proportions still need visual judgment.
+Gungen is an authoring tool, not a generator: the curated design is the product because a valid assembly is not necessarily a good-looking one, and because every part it exports needs an authored mass (`things/README.md`, "Rules"). Seeded variations only propose shapes to curate. Automated geometry checks establish fit, not appearance, so source-incomplete proportions still need visual judgment.
 
 The golden reference photograph and overlays stay outside the repository; cite [the public photo](https://www.americanrifleman.org/media/caqhmu12/izhmash_akm_right.jpg?width=1920&height=620) instead. The AK silhouette is registered to its public side-view reference by the bore and scaled from published overall length, rather than moving the receiver to force sight alignment. This preserves the receiver-to-bore relationship and places the rear sight on the receiver without an artificial post; see `src/gun/akProportions.ts#AK_PROPORTIONS`. The gas cylinder keeps the reference height and the piston stays on its axis; the lower handguard does not extend below the receiver, and the wooden stock keeps its straight bottom. Both AKM and AK-74 curved magazines fit the layout. The two muzzle devices remain separate threaded choices because a muzzle style should not change the barrel geometry. See `src/gun/parts.ts#akMuzzleDevice` and `test/ak.test.ts`. The AK design retains its 7.62×39 identity; 5.45×39 support is separate follow-up #362 rather than an inference from similar geometry.
 
@@ -46,7 +47,9 @@ A Gungen change to a gun Deadvox ships refreshes Deadvox's copy, its GLB and mod
 
 The hunting rifle's civilian identity, integral loading, separate scope and phased turn-bolt contract are governed by `docs/bolt-action-export.md`. Geometry is exported before playable handling so Deadvox consumes fitted dimensions rather than inventing them.
 
-The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `packages/deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is a geometry/material estimate, not inventory weight or a product specification; see `src/gun/attachmentMass.ts#attachmentMassKg` and `docs/deferred-assertions.md`.
+The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `packages/deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is authored on the attachment's item, because an attachment is an atom (`things/README.md`, "Rules"); until g73 lands, `src/gun/attachmentMass.ts#attachmentMassKg` still estimates it from geometry and material.
+
+Until a gun's parts become items (`../things/WORK.md`, "Phases"), each body part's authored mass comes from one part mass table keyed by part family and variant. A part shared by several designs then has one value, and the table already has the shape of the closed item set. A parametric part gets one row per variant rather than a scaling rule, because a rule would derive mass again. A row names only the params that make it a different part, so a pose or a placement does not split a row. Export fails when a part matches no row or more than one, because a guessed mass is the derivation the rule removes.
 
 Revolvers use independently mounted moving parts and a separate rotational export contract so the linear carrier contract stays focused; see `docs/revolver-export.md` and `src/gun/revolverExport.ts`, `RevolverMetadata`.
 
