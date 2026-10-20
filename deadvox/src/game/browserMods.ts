@@ -69,7 +69,10 @@ export const evaluateMods = (mods: readonly BrowserMod[]): ModEvaluation => {
       selected.push(parsed);
     }
   }
-  const content = buildBundledContent(selected);
+  const content = buildBundledContent(
+    selected,
+    mods.some((mod) => mod.enabled),
+  );
   for (const issue of content.issues) {
     const list = issues.get(issue.source) ?? [];
     list.push(issue);
