@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change browser mod identity or startup admission
+  - you change build-time bundle validation stamps or trusted admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
@@ -2008,13 +2009,23 @@ agreement; reference validation prevents partial files from entering a world, an
 file that fails validation is skipped whole, so one broken mod cannot leave
 half-applied content. See `src/core/content.ts`, `buildRegistry`.
 
+Admission runs in the browser because mods can change what a scenario depends on,
+and a failing mod file must be skipped whole. The bundled files pass those same
+proofs before a build ships, so re-proving unchanged content on every start adds
+pre-title delay without detecting anything new. With no mod selected, a matching
+build-validation stamp permits trusting those proofs; any selected mod restores
+full admission. Missing or mismatched evidence must also restore full admission,
+not silently trust an unproved build. See `src/core/content.ts`, `buildRegistry`,
+`src/core/bundleAdmission.ts`, `BundleAdmission`, and `tools/stampBundle.ts`, `stampBundle`.
+
 The registry is built after startup content selection and passed through the world
-configuration so URL discovery, weathering, rendering and simulation all use the
-same admitted definitions. A module-load registry would freeze the base pack before
-a player could select mods. See `src/game/bundledContent.ts`, `buildBundledContent`,
-and `src/game/config.ts`, `GameConfig`. Startup admission remains part of the
-simulation fingerprint because it can change a world without changing a simulation
-call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
+configuration so every consumer uses the same admitted definitions. A module-load
+registry would freeze the base pack before a player could select mods. See
+`src/game/bundledContent.ts`, `buildBundledContent`, and `src/game/config.ts`, `GameConfig`.
+Both admission paths remain fingerprinted because either can change a world without
+changing a simulation call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
+The stamp also binds its proof dependencies because unchanged content is not evidence
+that changed validation code ran. See `tools/bundleStampPlugin.ts`, `bundleStampPlugin`.
 
 A whole-definition override restates the entry, so it freezes the base as of its
 writing; how a mod changes one field instead is decided in
