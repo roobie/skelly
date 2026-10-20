@@ -113,16 +113,61 @@
         "takeSimSeconds": 2
       },
       "category": "medical",
-      "description": "An over-the-counter pill. Eases pain for a few hours; it heals nothing.",
+      "description": "Eases pain for a few hours. Heals nothing.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "painkillers",
-      "name": "Painkiller",
+      "name": "Aspirin",
       "size": [1, 1],
       "stack": 24,
       "weight": 1
+    },
+    {
+      "analgesic": {
+        "fadeGameMinutes": 90,
+        "group": "opioid",
+        "maxRelief": 50,
+        "onsetGameMinutes": 50,
+        "peakGameMinutes": 240,
+        "reliefPerDose": 35,
+        "takeSimSeconds": 2,
+        "vignette": 0.34999999999999998
+      },
+      "category": "medical",
+      "description": "Eases strong pain for a few hours. Heals nothing. Blurs the edges of vision while it works.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Medical"]
+      },
+      "id": "codeine",
+      "name": "Codeine",
+      "size": [1, 1],
+      "stack": 24,
+      "weight": 1
+    },
+    {
+      "analgesic": {
+        "fadeGameMinutes": 120,
+        "group": "opioid",
+        "maxRelief": 80,
+        "onsetGameMinutes": 55,
+        "peakGameMinutes": 300,
+        "reliefPerDose": 60,
+        "takeSimSeconds": 4,
+        "vignette": 0.69999999999999996
+      },
+      "category": "medical",
+      "description": "Eases severe pain for hours. Heals nothing. Blurs the edges of vision while it works.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Medical"]
+      },
+      "id": "morphine",
+      "name": "Morphine",
+      "size": [1, 1],
+      "weight": 20
     },
     {
       "category": "material",

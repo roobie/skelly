@@ -2768,6 +2768,15 @@
           "weight": 1
         },
         {
+          "count": [2, 8],
+          "item": "codeine",
+          "weight": 0.5
+        },
+        {
+          "item": "morphine",
+          "weight": 0.25
+        },
+        {
           "table": "medical_filler",
           "weight": 2
         },
@@ -2874,7 +2883,7 @@
         },
         {
           "item": "bandage",
-          "weight": 2
+          "weight": 1
         },
         {
           "item": "painkillers",

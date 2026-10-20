@@ -413,15 +413,15 @@
         },
         {
           "item": "bandage",
-          "weight": 1
+          "weight": 0.5
         },
         {
           "item": "antiseptic",
-          "weight": 1
+          "weight": 0.5
         },
         {
           "item": "antibiotics",
-          "weight": 1
+          "weight": 0.5
         },
         {
           "item": "chocolate_bar",
@@ -453,11 +453,11 @@
       "entries": [
         {
           "item": "bandage",
-          "weight": 3
+          "weight": 1.5
         },
         {
           "item": "antiseptic",
-          "weight": 1
+          "weight": 0.5
         },
         {
           "count": [4, 12],
@@ -751,6 +751,15 @@
           "count": [6, 16],
           "item": "painkillers",
           "weight": 2
+        },
+        {
+          "count": [2, 8],
+          "item": "codeine",
+          "weight": 0.5
+        },
+        {
+          "item": "morphine",
+          "weight": 0.25
         },
         {
           "item": "rag",
