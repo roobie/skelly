@@ -32,6 +32,18 @@ local spentCase(id, name, weight, description, model) = {
   pillPack:: pillPack,
   items: [
     {
+      id: 'ammo_can',
+      name: 'Ammo can',
+      category: 'bag',
+      weight: 1600,
+      size: [3, 2],
+      description: 'A steel ammunition can with a hinged lid.',
+      container: {
+        rigid: true,
+        pockets: [{ grid: [3, 2], handlingSimSeconds: 0.4 }],
+      },
+    },
+    {
       id: 'work_in_progress',
       name: 'Work in progress',
       category: 'material',

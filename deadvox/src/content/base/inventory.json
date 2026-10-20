@@ -15,6 +15,7 @@
         "liftStamina": 15,
         "maxSizeMetres": 1
       },
+      "groundPileStateCap": 65536,
       "id": "player",
       "reachMetres": 2,
       "search": {

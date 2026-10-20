@@ -2,6 +2,8 @@ import type { Registry } from './content.ts';
 import { couldFit, ItemFactory } from './items.ts';
 import { type LootContext, lootTypeIssue } from './loot.ts';
 import { slotsReason } from './magazine.ts';
+import { groundPileIssue } from './pileBound.ts';
+import { reachTuning } from './reach.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import { type CompiledTemplate, type Placement, placedPieces } from './templates.ts';
 
@@ -42,26 +44,23 @@ const pocketFitIssue = (
     : `"${fixed.item}" fits no pocket of "${furniture}"`;
 };
 
-export const groundLootSupplyIssues = (
+const groundPileStateCap = (registry: Registry): number => reachTuning(registry).groundPileStateCap;
+
+type GroundPoint = NonNullable<CompiledTemplate['groundLoot']>[number];
+
+const sourceIssues = (
   registry: Registry,
-  compiled: CompiledTemplate,
-  context: LootContext = compiled.lootContext,
+  { supply }: GroundPoint,
+  sourceContext: LootContext,
+  path: string,
 ): [string, string][] => {
   const issues: [string, string][] = [];
-  for (const [index, point] of (compiled.groundLoot ?? []).entries()) {
-    const path = `.groundLoot[${index}].supply`;
-    const { supply } = point;
-    if ('table' in supply && supply.table !== undefined && !registry.loot.has(supply.table)) {
-      issues.push([`${path}.table`, `no loot table "${supply.table}"`]);
-    }
-    if (supply.kind !== 'fixed') {
-      continue;
-    }
+  if ('table' in supply && supply.table !== undefined && !registry.loot.has(supply.table)) {
+    issues.push([`${path}.table`, `no loot table "${supply.table}"`]);
+  }
+  if (supply.kind === 'fixed') {
     for (const [itemIndex, fixed] of supply.items.entries()) {
-      const issue = fixedItemIssue(registry, fixed, {
-        usage: point.lootUsage ?? context.usage,
-        tier: context.tier,
-      });
+      const issue = fixedItemIssue(registry, fixed, sourceContext);
       if (issue !== undefined) {
         issues.push([`${path}.items[${itemIndex}].item`, issue]);
       }
@@ -92,6 +91,34 @@ export const pieceItemIssues = (
   }
   return issues;
 };
+
+const groundPointIssues = (
+  registry: Registry,
+  point: GroundPoint,
+  sourceContext: LootContext,
+  path: string,
+): [string, string][] => {
+  const issues = sourceIssues(registry, point, sourceContext, path);
+  if (point.supply.kind === 'empty' || issues.length > 0) {
+    return issues;
+  }
+  const overfill = groundPileIssue(registry, point.supply, sourceContext, groundPileStateCap(registry));
+  return overfill === undefined ? [] : [[path, overfill]];
+};
+
+export const groundLootSupplyIssues = (
+  registry: Registry,
+  compiled: CompiledTemplate,
+  context: LootContext = compiled.lootContext,
+): [string, string][] =>
+  (compiled.groundLoot ?? []).flatMap((point, index) =>
+    groundPointIssues(
+      registry,
+      point,
+      { usage: point.lootUsage ?? context.usage, tier: context.tier },
+      `.groundLoot[${index}].supply`,
+    ),
+  );
 
 export const placementLootIssues = (
   { registry, context }: { registry: Registry; context: LootContext },

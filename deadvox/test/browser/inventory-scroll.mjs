@@ -1065,7 +1065,9 @@ try {
   await page.mouse.move(press.x, press.y);
   await page.mouse.down();
   await page.mouse.move(pointer.x, pointer.y, { steps: 8 });
-  const ghost = await page.locator('#inventory-drag-root .inv-ghost').boundingBox();
+  const ghost = await page
+    .locator('#inventory-drag-root .inv-ghost')
+    .evaluate((node) => node.getBoundingClientRect().toJSON());
   await page.mouse.up();
   assert.ok(
     ghost && Math.abs(ghost.x - (pointer.x - grab.x)) <= 0.5 && Math.abs(ghost.y - (pointer.y - grab.y)) <= 0.5,

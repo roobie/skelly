@@ -409,34 +409,36 @@ describe('furniture', () => {
     expect(panelBounds.max.z).toBeLessThanOrEqual(bodyBounds.min.z);
   });
 
-  it('lets a body walk through a non-solid container yet keeps it pickable', () => {
+  it('picks a non-solid container only where its low shape is drawn', () => {
     const fixture = {
       id: 'fixture_body',
       name: 'Fixture body',
-      size: [4, 1, 2],
+      size: [4, 2, 2],
       color: '#554f43',
       solid: false,
       container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
+      shape: [{ position: [0, 0, 0], size: [4, 0.5, 2] }],
     };
     const { registry: fixtureRegistry, issues } = buildRegistry([
       { source: 'body-fixture.json', data: { furniture: [fixture] } },
     ]);
     expect(issues).toEqual([]);
     const entities = new BlockEntities(fixtureRegistry);
-    const corpse = entities.add({ type: fixture.id, pos: [4, 1, 8], size: [4, 1, 2], facing: 'n' })!;
-
-    expect(entities.at(5, 1, 8)).toBe(corpse);
-    expect(entities.isSolid(5, 1, 8)).toBe(false);
-    expect(
+    const corpse = entities.add({ type: fixture.id, pos: [4, 1, 8], size: [4, 2, 2], facing: 'n' })!;
+    const pick = (height: number) =>
       pickFurniture({
         entities,
-        origin: [5.5, 1.5, 6],
+        origin: [5.5, height, 6],
         direction: [0, 0, 1],
         maxDistance: 4,
         blockSize: BLOCK_SIZE,
         isSolid: (x, y, z) => entities.isSolid(x, y, z),
-      }),
-    ).toBe(corpse);
+      });
+
+    expect(entities.at(5, 1, 8)).toBe(corpse);
+    expect(entities.isSolid(5, 1, 8)).toBe(false);
+    expect(pick(2.5)).toBeUndefined();
+    expect(pick(1.5)).toBe(corpse);
   });
 
   it('shares the renderer door-panel transform with the core box within 1 mm for every facing/state', () => {

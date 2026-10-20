@@ -1,11 +1,10 @@
-import { buildCityPlan, type CityGrid, cityGridOf, scenarioPlanIssues } from './cityPlan.ts';
+import { buildCityPlan, type CityGrid, cityGridOf } from './cityPlan.ts';
 import { CitySite } from './citySite.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { hamletHordeSpawn, hamletZombieSpawns, ordinaryHamletSpawnWeights } from './hamlet.ts';
 import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
-import { scenarioCertificate } from './scenarioCertificate.ts';
 import type { ScenarioDef } from './schema.ts';
 import { type HordeSpawn, rectDistance, type ZombieSpawn } from './site.ts';
 import { terrainShapeOf } from './sitePalette.ts';
@@ -28,10 +27,6 @@ export class GauntletSite extends CitySite {
     scale: Scale;
     scenario: ScenarioDef;
   }) {
-    const issues = scenarioPlanIssues(registry, scenario);
-    if (issues.length > 0) {
-      throw new Error(issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
-    }
     super(
       seed,
       registry,
@@ -44,10 +39,6 @@ export class GauntletSite extends CitySite {
         scenario,
       }),
     );
-    const certificate = scenarioCertificate(this);
-    if (certificate.issues.length > 0) {
-      throw new Error(certificate.issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
-    }
     this.scenario = scenario;
     const population = gauntletPopulation(this, scenario);
     this.population = population.zombies;
@@ -127,7 +118,7 @@ const hordeGroupStarts = (seed: number, starts: number[], population: ScenarioDe
   );
 };
 
-const gauntletPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
+export const gauntletPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;

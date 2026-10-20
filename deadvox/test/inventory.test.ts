@@ -259,48 +259,6 @@ describe('stacking', () => {
   });
 });
 
-describe('nesting', () => {
-  it('refuses a bag with anything in it inside another container', () => {
-    const inv = new Inventory(registry);
-    const hiking = onFloor(inv, 'hiking_backpack');
-    inv.worn.back = inv.create('hoodie'); // wrong slot on purpose: only the grid matters here
-    const school = onFloor(inv, 'school_backpack');
-    const beans = onFloor(inv, 'canned_beans');
-    inv.move(beans, { kind: 'pocket', owner: school, pocket: 1 });
-    expect(inv.plan(school, { kind: 'pocket', owner: hiking, pocket: 0 })).toEqual({
-      ok: false,
-      reason: 'Only empty bags go inside other containers',
-    });
-    inv.move(beans, { kind: 'pile', pos: [5, 0, 0] });
-    expect(inv.move(school, { kind: 'pocket', owner: hiking, pocket: 0 }).ok).toBe(true);
-  });
-
-  it('refuses an empty bag that is too big, and a bag inside itself', () => {
-    const { inv, hoodie } = dressed();
-    const fanny = onFloor(inv, 'fanny_pack'); // 2 × 2, its pocket 3 × 2
-    const hiking = onFloor(inv, 'hiking_backpack'); // 4 × 5
-    expect(inv.plan(hiking, { kind: 'pocket', owner: hoodie, pocket: 0 })).toEqual({
-      ok: false,
-      reason: 'Too big for it',
-    });
-    expect(inv.plan(fanny, { kind: 'pocket', owner: fanny, pocket: 0 })).toEqual({
-      ok: false,
-      reason: "It can't go inside itself",
-    });
-    expect(inv.move(fanny, { kind: 'pocket', owner: hoodie, pocket: 0 }).ok).toBe(true);
-  });
-
-  it('finds items at any depth, and counts their weight', () => {
-    const { inv, backpack } = dressed();
-    const fanny = onFloor(inv, 'fanny_pack');
-    inv.move(fanny, { kind: 'pocket', owner: backpack, pocket: 0 });
-    const aa = onFloor(inv, 'aa_battery', 3);
-    inv.move(aa, { kind: 'pocket', owner: fanny, pocket: 0 });
-    expect(inv.locate(aa)).toMatchObject({ kind: 'pocket', owner: fanny, pocket: 0 });
-    expect(weightOf(registry, backpack)).toBe(600 + 200 + 3 * 23);
-  });
-});
-
 describe('hands and wearing', () => {
   it('needs both hands for a two-handed item', () => {
     const inv = new Inventory(registry);

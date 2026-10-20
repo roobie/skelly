@@ -3,6 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
+import { ADMISSION_ENTRIES } from '../tools/bundleStampPlugin.ts';
 import {
   collectSimulationSourceGraph,
   fingerprintAfterHotChange,
@@ -54,6 +55,9 @@ const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
+  'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
+  'src/core/scenarioRoute.ts':
+    'Test-only route-proof support; cityLots.ts imports only its types, and its value user scenarioCertificate.ts is test-only.',
   'src/core/pileDisplay.ts': 'Presentation-only pile projection; it does not alter simulation or save identity.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
   'src/game/indexedDbCommit.ts': 'IndexedDB commit policy runs only in the save worker, outside simulation state.',
@@ -132,6 +136,24 @@ async function mutateSimulationSource(
 }
 
 describe('simulation source fingerprint', () => {
+  it('covers both admission paths in the stamp and simulation fingerprints', async () => {
+    const host = await actualSimulationHost();
+    const proof = await collectSimulationSourceGraph(ADMISSION_ENTRIES, projectRoot, host);
+    const simulation = await actualSimulationGraph();
+    for (const path of ['src/core/content.ts', 'src/core/bundleAdmission.ts', 'src/core/schema.ts']) {
+      expect(proof.sources.has(path)).toBe(true);
+      expect(simulation.sources.has(path)).toBe(true);
+    }
+    const before = fingerprintSimulationSourceMap(proof.sources);
+    const changed = new Map(proof.sources);
+    const path = 'src/core/bundleAdmission.ts';
+    changed.set(path, `${changed.get(path)!}\n// Fixture admission policy mutation.\n`);
+    expect(fingerprintSimulationSourceMap(changed)).not.toBe(before);
+    const mutation = await mutateSimulationSource(host, path);
+    expect(mutation.included).toBe(true);
+    expect(mutation.value).not.toBe(await actualSimulationFingerprint());
+  });
+
   it('keeps excluded runtime edges and presentation libraries out of the actual Vite-resolved graph', async () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
