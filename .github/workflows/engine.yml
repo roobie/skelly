@@ -1,8 +1,8 @@
 name: engine
 
 # The import edges span every package, so the filter names all of packages/. Markdown-only
-# changes skip this workflow. thing-core is the shared model contract the engine's packages
-# build on, so its checks run here too.
+# changes skip this workflow. thing-core has no workflow of its own, and the packages/** filter
+# already covers it, so its checks run in this job too.
 on:
   push:
     branches: [main]
