@@ -62,7 +62,7 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   update();
   expect(sky.at([2, 14.5, 2])).toBeGreaterThan(0);
   expect(sky.at([2, 14.5, 2])).toBeLessThan(1);
-  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
+  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world,
     meshes: meshes as never,
@@ -114,7 +114,7 @@ it('reports generated-column transitions that match the generated-column snapsho
   vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
-  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
+  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world,
     meshes: meshes as never,
@@ -150,7 +150,7 @@ it('lets replay drive terrain generation and unloading without live streaming si
   vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
-  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
+  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world,
     meshes: meshes as never,
@@ -201,7 +201,7 @@ describe('lazy restored world diffs', () => {
       },
       (id) => (id === 'base' ? wrongBase : 0),
     );
-    const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
+    const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
     const streamer = new Streamer({
       world,
       meshes: meshes as never,

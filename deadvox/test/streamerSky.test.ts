@@ -1,11 +1,14 @@
+import { DoubleSide, OrthographicCamera } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
+import { CHUNK } from '../src/core/coords.ts';
 import { buildMesh } from '../src/core/mesher.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { buildSkyResult } from '../src/core/skyTransport.ts';
 import { World } from '../src/core/world.ts';
 import { Streamer } from '../src/game/streamer.ts';
+import { ChunkMeshes } from '../src/render/chunks.ts';
 import type { ToMesher } from '../src/worker/protocol.ts';
-import { baseTerrainShape } from './baseRegistry.ts';
+import { baseRegistry, baseTerrainShape } from './baseRegistry.ts';
 import { skyFixture } from './fixtures/sky.ts';
 
 class OwnedWorker {
@@ -30,8 +33,8 @@ class OwnedWorker {
     this.waiting.push(copy);
     this.posted.push(copy.type);
   }
-  replyNext() {
-    const message = this.waiting.shift();
+  replyNext(index = 0) {
+    const [message] = this.waiting.splice(index, 1);
     if (!message) {
       throw new Error('No worker request');
     }
@@ -62,7 +65,7 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
   vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
   vi.stubGlobal('Worker', OwnedWorker);
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
-  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
+  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world: new World(),
     meshes: meshes as never,
@@ -93,15 +96,94 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
   worker.replyNext();
   expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(0);
   expect(meshes.set).toHaveBeenCalled();
+  const recorded = [
+    [0, 0],
+    [1, 0],
+  ] as const;
+  expect(streamer.unmeshedRecordedColumns(0, 0, recorded, 0)).toBe(0);
+  expect(streamer.unmeshedRecordedColumns(0, 0, recorded, 1)).toBe(1);
   streamer.unloadForReplay(1, 0);
   expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(1);
+});
+
+it.each([0, 1])('blocks sight past an incomplete column (height %i), even after moving', (missingCy) => {
+  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
+  vi.stubGlobal('Worker', OwnedWorker);
+  const scale = { ...makeScale(0.5), minCy: 0, maxCy: 1 };
+  const world = new World();
+  const meshes = new ChunkMeshes(scale.blockSize, baseRegistry());
+  const streamer = new Streamer({
+    world,
+    meshes,
+    seed: 17,
+    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4 },
+    shape: baseTerrainShape(),
+    colors: new Uint8Array(256 * 3).fill(255),
+    patterns: new Uint8Array(256),
+    weatherable: new Uint8Array(256),
+    scale,
+    structures: [],
+    radius: 2,
+    surface: { height: () => -1, top: () => undefined },
+    stamp: (chunk) => chunk.set(1, 1, 1, 1),
+  });
+  streamer.setReplayControlled();
+  streamer.update(0, 0);
+  const columns = [
+    [0, 0],
+    [1, 0],
+    [2, 0],
+    [0, 1],
+    [1, 1],
+  ] as const;
+  for (const [cx, cz] of columns) {
+    expect(streamer.generateForReplay(cx, cz)).toBe(true);
+  }
+  const worker = OwnedWorker.instances[0]!;
+  const missing = `1,${missingCy},0`;
+  const drain = (hold: string | undefined) => {
+    for (let step = 0; step < columns.length * 4; step++) {
+      streamer.update(0, 0);
+      const index = worker.waiting.findIndex((message) => message.type === 'mesh' && message.key !== hold);
+      if (index >= 0) {
+        worker.replyNext(index);
+      }
+    }
+  };
+  const visible = () => {
+    meshes.selectShadowCasters(() => true, DoubleSide);
+    const shadows = meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray());
+    const camera = new OrthographicCamera(-200, 200, 200, -200, 0.1, 1000);
+    camera.position.set(0, 100, 100);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld();
+    meshes.cull(camera);
+    expect(meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray())).toEqual(
+      shadows,
+    );
+    return shadows.map(([x, , z]) => `${x! / CHUNK},${z! / CHUNK}`);
+  };
+  drain(missing);
+  expect(worker.waiting.some((message) => message.type === 'mesh' && message.key === missing)).toBe(true);
+  expect([...meshes.keys()]).toContain('2,0,0');
+  expect(new Set(visible())).toEqual(new Set(['0,0', '0,1']));
+  drain(undefined);
+  expect(new Set(visible())).toEqual(new Set(columns.map(([cx, cz]) => `${cx},${cz}`)));
+  const edits = world.setBlock(CHUNK + 1, 1, 1, 2);
+  streamer.markEdited(edits);
+  streamer.update(0, 0);
+  expect(new Set(visible())).toEqual(new Set(columns.map(([cx, cz]) => `${cx},${cz}`)));
+  drain(undefined);
+  // Moving into an incomplete corridor must also hide formerly drawn terrain beyond its gap.
+  streamer.update(3 * CHUNK, 0);
+  expect(visible()).toEqual([]);
 });
 
 it('delivers the first mesh before sky and admits queued sky at the next completion despite mesh backlog', () => {
   vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
   vi.stubGlobal('Worker', OwnedWorker);
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
-  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
+  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world: new World(),
     meshes: meshes as never,

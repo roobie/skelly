@@ -4,6 +4,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
 {
   graphics: [{
     id: 'core',
+    readyRadiusM: 64,
     renderScale: scale('Scene render scale', 0.5) + {
       adaptive: {
         enabled: true,

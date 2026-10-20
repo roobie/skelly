@@ -7,11 +7,11 @@ function fixture(workUnits = 2) {
   let holes = 1;
   let lightReady = false;
   const engine = {
-    config: { radiusChunks: 3, scale: { minCy: 0, maxCy: 1 } },
+    config: { radiusChunks: 3, readyRadiusChunks: 1, scale: { minCy: 0, maxCy: 1 } },
     streamer: {
       failure: undefined as string | undefined,
       loadingWorkUnits: workUnits,
-      unmeshedColumns: vi.fn(() => holes),
+      unmeshedColumns: vi.fn((_x: number, _z: number, within: number) => (within > 1 ? 1 : holes)),
       unmeshedRecordedColumns: vi.fn(() => holes),
     },
     skylight: { loadingReadiness: () => ({ ready: lightReady, workUnits: 1 }) },
@@ -30,7 +30,7 @@ function fixture(workUnits = 2) {
   };
 }
 
-it('keeps the world masked until both mesh and lighting owners complete, without reopening for later streaming', () => {
+it('opens Go when the ready ring and lighting complete despite pending far columns, without reopening for later streaming', () => {
   const f = fixture();
   f.check();
   expect(f.loading.ready).toBe(false);
@@ -40,7 +40,8 @@ it('keeps the world masked until both mesh and lighting owners complete, without
   f.meshComplete();
   f.check();
   expect(f.loading.ready).toBe(true);
-  expect(f.engine.streamer.unmeshedColumns).toHaveBeenCalledWith(0, 0, f.engine.config.radiusChunks);
+  expect(f.engine.streamer.unmeshedColumns(0, 0, f.engine.config.radiusChunks)).toBeGreaterThan(0);
+  expect(f.engine.streamer.unmeshedColumns).toHaveBeenCalledWith(0, 0, f.engine.config.readyRadiusChunks);
   f.engine.streamer.failure = 'A later streaming failure';
   f.check();
   expect(f.loading.ready).toBe(true);
@@ -89,7 +90,12 @@ it('uses only recorded initial terrain for replay rather than requiring a full v
   const loading = new WorldLoading(f.engine as unknown as Engine, columns);
   loading.check([0, 0, 0], realTimestamp(0));
   expect(loading.ready).toBe(false);
-  expect(f.engine.streamer.unmeshedRecordedColumns).toHaveBeenCalledWith(0, 0, columns);
+  expect(f.engine.streamer.unmeshedRecordedColumns).toHaveBeenCalledWith(
+    0,
+    0,
+    columns,
+    f.engine.config.readyRadiusChunks,
+  );
   expect(f.engine.streamer.unmeshedColumns).not.toHaveBeenCalled();
   f.meshComplete();
   f.lightComplete();
