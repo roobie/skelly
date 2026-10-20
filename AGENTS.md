@@ -142,11 +142,12 @@ So:
 - **Test hygiene is must-fix.** A test that does any of the following is fixed or removed
   in the same round, never deferred as a nit:
   - pins drifting data;
-  - writes state past its owner, or sets state a player can't. A git fixture clears every
-    inherited `GIT_*` variable: a pre-push hook exports `GIT_DIR` and its kin, so the
-    fixture's git would rewrite the pushing repository, and only a hook or CI run shows
-    it. See `packages/deadvox/tools/publish-playtest.mjs`, `gitEnvironment`, and the
-    caller of `test/sky-main-arrival.test.mjs`, `movedPackageHistory`;
+  - writes state past its owner, or sets state a player can't;
+  - runs git with inherited repository bindings (`GIT_DIR` and its kin). Git exports them
+    to its hooks, so a fixture run inside a hook rewrites the pushing repository, and
+    only a hook run shows it. See `packages/deadvox/tools/publish-playtest.mjs`,
+    `gitEnvironment`, and the test around `test/sky-main-arrival.test.mjs`,
+    `movedPackageHistory`;
   - waits on wall-clock time for simulated work;
   - can pass vacuously;
   - near-duplicates another test.
