@@ -3,7 +3,9 @@
     {
       "color": "#68767b",
       "door": {
-        "handlingSimSeconds": 1.2
+        "handlingSimSeconds": 1.2,
+        "material": "steel",
+        "methods": {}
       },
       "id": "gauntlet_lab_bulkhead",
       "name": "Steel bulkhead door",
