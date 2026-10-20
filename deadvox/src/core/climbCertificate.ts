@@ -7,6 +7,7 @@ export interface ClimbSpace {
   readonly entities: BlockEntities;
   readonly entityAt: (point: Readonly<Vec3>) => BlockEntity | undefined;
   readonly clear: (point: Readonly<Vec3>) => boolean;
+  readonly solid: (cell: Readonly<Vec3>) => boolean;
   readonly standing: (point: Readonly<Vec3>) => boolean;
   readonly sweep: (from: Readonly<Vec3>, to: Readonly<Vec3>, supported?: boolean) => boolean;
   readonly connected: (from: Readonly<Vec3>, to: Readonly<Vec3>) => boolean;
@@ -68,6 +69,37 @@ const exitSupported = (
   );
 };
 
+const wallBacked = (space: ClimbSpace, link: ClimbLink, bottom: BlockEntity): boolean => {
+  const [ox, oz] = ladderOutward(bottom.facing);
+  const [x0, , z0] = bottom.pos;
+  const [sx, , sz] = bottom.size;
+  const within = (x: number, z: number) => x >= x0 && x < x0 + sx && z >= z0 && z < z0 + sz;
+  const behind: [number, number][] = [];
+  for (let z = z0; z < z0 + sz; z++) {
+    for (let x = x0; x < x0 + sx; x++) {
+      if (!within(x - ox, z - oz)) {
+        behind.push([x - ox, z - oz]);
+      }
+    }
+  }
+  const heights = Array.from({ length: link.upper[1] - link.lower[1] }, (_, index) => link.lower[1] + index);
+  return heights.every((y) => behind.every(([x, z]) => space.solid([x, y, z])));
+};
+
+const landed = (space: ClimbSpace, link: ClimbLink, bottom: BlockEntity, centre: Vec3): boolean => {
+  if (!shaft(space, link, bottom, centre)) {
+    return false;
+  }
+  for (let dx = -1; dx <= 1; dx += 0.5) {
+    for (let dz = -1; dz <= 1; dz += 0.5) {
+      if (exitSupported(space, link, bottom, { centre, step: [dx, dz] })) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
 // A continuous shaft and reversible supported landings certify both ascent and descent.
 export const climbCertificate = (space: ClimbSpace, link: ClimbLink): string | undefined => {
   if (link.upper[1] <= link.lower[1]) {
@@ -77,15 +109,17 @@ export const climbCertificate = (space: ClimbSpace, link: ClimbLink): string | u
   if (!(bottom && space.entities.defOf(bottom).climbable)) {
     return 'missing composed ladder';
   }
-  const centre: Vec3 = [bottom.pos[0] + bottom.size[0] / 2, bottom.pos[1], bottom.pos[2] + bottom.size[2] / 2];
-  if (shaft(space, link, bottom, centre)) {
-    for (let dx = -1; dx <= 1; dx += 0.5) {
-      for (let dz = -1; dz <= 1; dz += 0.5) {
-        if (exitSupported(space, link, bottom, { centre, step: [dx, dz] })) {
-          return undefined;
-        }
-      }
-    }
-  }
-  return 'composed ladder needs continuous body-clear shaft and supported braced landings';
+  const middle: Vec3 = [bottom.pos[0] + bottom.size[0] / 2, bottom.pos[1], bottom.pos[2] + bottom.size[2] / 2];
+  // The climb pulls the body to the ladder's centre line, so a wall the whole way up behind it holds the body flush
+  // against that wall; a lone obstruction beside a free-standing shaft still blocks it.
+  const [ox, oz] = ladderOutward(bottom.facing);
+  const flush: Vec3 = [
+    middle[0] + ox * Math.max(0, STAIR_BODY_HALF_WIDTH - bottom.size[0] / 2),
+    middle[1],
+    middle[2] + oz * Math.max(0, STAIR_BODY_HALF_WIDTH - bottom.size[2] / 2),
+  ];
+  const centres = wallBacked(space, link, bottom) ? [middle, flush] : [middle];
+  return centres.some((centre) => landed(space, link, bottom, centre))
+    ? undefined
+    : 'composed ladder needs continuous body-clear shaft and supported braced landings';
 };

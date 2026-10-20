@@ -9,7 +9,7 @@ import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
+import { scenarioCertificate, scenarioLotResourceCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
@@ -331,6 +331,58 @@ describe('final composed body-route certificate', () => {
     for (const link of links) {
       expect(admitted.space.path(entry, link.upper)).toBeDefined();
     }
+  });
+
+  it('rejects a keyed lot resource whose key route has lost its climb', () => {
+    const index = base.composition!.resources.findIndex((resource) => resource.key?.climbs.length);
+    const ladder = base.composition!.resources[index]?.key?.climbs[0]?.ladder;
+    if (!ladder) {
+      throw new Error('Production scenario has no climbed key route');
+    }
+    const site = siteOf();
+    const original = site.furnitureIn.bind(site);
+    vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+      original(cx, cz).filter(
+        ({ spec }) =>
+          !(registry.furniture.get(spec.type)?.climbable && spec.pos[0] === ladder[0] && spec.pos[2] === ladder[2]),
+      ),
+    );
+    expect(scenarioCertificate(site).issues).toContainEqual([
+      `.composition.resources[${index}].key.climbs[0]`,
+      expect.stringMatching(COMPOSED_LADDER),
+    ]);
+  });
+
+  it("keeps a keyed resource's admitted locks from opening a later unkeyed lot resource's route", () => {
+    const keyed = base.composition!.resources.find((resource) => resource.key);
+    if (!keyed) {
+      throw new Error('Production scenario has no keyed lot resource');
+    }
+    const { key: _key, ...unkeyed } = keyed;
+    const plan: CityPlan = { ...base, composition: { ...base.composition!, resources: [keyed, unkeyed] } };
+    // Proving the unkeyed copy unreachable would flood the whole street, so this records the doors each final search
+    // starts with instead of running it.
+    const lockedOpen: boolean[] = [];
+    const original = ScenarioRouteSpace.prototype.path;
+    const record = (space: ScenarioRouteSpace): undefined => {
+      lockedOpen.push([...space.entities.all].some((entity) => entity.lock?.locked && entity.open));
+    };
+    const path = vi.spyOn(ScenarioRouteSpace.prototype, 'path').mockImplementation(function (
+      this: ScenarioRouteSpace,
+      from,
+      to,
+      options,
+    ) {
+      return to.join(',') === keyed.standing.join(',') ? record(this) : original.call(this, from, to, options);
+    });
+    try {
+      scenarioLotResourceCertificate(siteOf(plan));
+    } finally {
+      path.mockRestore();
+    }
+    // The keyed rack's one search runs with its key's lock open; each later start-foot search runs with it shut.
+    expect(lockedOpen.lastIndexOf(true)).toBe(0);
+    expect(lockedOpen.indexOf(false)).toBe(1);
   });
 
   it('rejects a shaft-neighbor obstruction in the final furnished production lab', () => {

@@ -1995,8 +1995,28 @@ const ScenarioSchema = strictObject({
       objective: CellPosition,
       objectiveFace: CellPosition,
       retreat: CellPosition,
+      /**
+       * Service-local unless `lot` names a fixed lot, whose stop then holds the stock and whose local frame the poses
+       * use. A `key` route is proved from the start: up its climbs to the holder, back down, then to the resource.
+       */
       resources: pipe(
-        array(strictObject({ at: CellPosition, standing: CellPosition })),
+        array(
+          strictObject({
+            at: CellPosition,
+            standing: CellPosition,
+            lot: optional(Id),
+            key: optional(
+              strictObject({
+                at: CellPosition,
+                standing: CellPosition,
+                climbs: optional(
+                  array(strictObject({ ladder: CellPosition, upper: CellPosition, lower: CellPosition })),
+                  [],
+                ),
+              }),
+            ),
+          }),
+        ),
         nonEmpty('needs a resource standing pose'),
       ),
       storeys: pipe(array(strictObject({ id: Id, standing: CellPosition })), minLength(1), maxLength(16)),
