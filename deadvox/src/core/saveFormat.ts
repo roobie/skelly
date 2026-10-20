@@ -499,35 +499,40 @@ const inventory = obj({
   piles: arr(pileSchema),
   entities: entitiesState,
 });
+const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
+  obj({
+    jobType,
+    ...extra,
+    stopped: bool,
+    last: nonNegative,
+    elapsed: opt(nonNegative),
+    workUid: opt(positiveInt),
+    bookUid: opt(positiveInt),
+    entityUid: opt(positiveInt),
+    toolUid: opt(positiveInt),
+    region: opt(enumeration(bodyRegionValues)),
+    itemUid: opt(positiveInt),
+    itemType: opt(str({ id: true })),
+    duration: opt(positive),
+    strikeInterval: opt(positive),
+    nextStrike: opt(positive),
+    rest: opt(
+      obj({
+        kind: enumeration(['rest', 'sleep']),
+        furnitureUid: positiveInt,
+        rate: finite,
+        startFatigue: nonNegative,
+        wakeAt: opt(finite),
+        sleepOnset: opt(obj({ durationGameSeconds: positive, elapsedGameSeconds: nonNegative })),
+      }),
+    ),
+  });
 const longAction = obj({
   job: nullable(
-    obj({
-      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'forceDoor', 'treatment', 'wait']),
-      method: opt(str({ id: true })),
-      stopped: bool,
-      last: nonNegative,
-      elapsed: opt(nonNegative),
-      workUid: opt(positiveInt),
-      bookUid: opt(positiveInt),
-      entityUid: opt(positiveInt),
-      toolUid: opt(positiveInt),
-      region: opt(enumeration(bodyRegionValues)),
-      itemUid: opt(positiveInt),
-      itemType: opt(str({ id: true })),
-      duration: opt(positive),
-      strikeInterval: opt(positive),
-      nextStrike: opt(positive),
-      rest: opt(
-        obj({
-          kind: enumeration(['rest', 'sleep']),
-          furnitureUid: positiveInt,
-          rate: finite,
-          startFatigue: nonNegative,
-          wakeAt: opt(finite),
-          sleepOnset: opt(obj({ durationGameSeconds: positive, elapsedGameSeconds: nonNegative })),
-        }),
-      ),
-    }),
+    union(
+      longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait'])),
+      longJob(enumeration(['forceDoor']), { method: str({ id: true }) }),
+    ),
   ),
   wakeGameHour: opt(num({ integer: true, safe: true, min: 0, max: 23 })),
 });

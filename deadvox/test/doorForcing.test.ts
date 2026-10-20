@@ -69,8 +69,12 @@ const baseSounds = () => [...baseline.registry.sounds.values()].find((sound) => 
 const source = (methods: string[]) => ({ source: 'forcing-fixture', data: fixture(methods) });
 
 it('rejects a door method outside its material admission even when the method itself is valid', () => {
-  expect(buildFixtureRegistry([...base, source(['fixture_method'])]).issues).toEqual([]);
-  const rejected = buildFixtureRegistry([...base, source([])]).issues;
+  const minimal = (methods: string[]) => [
+    { source: 'forcing-skills', data: { skills: [{ id: 'mechanics', name: 'Mechanics' }] } },
+    source(methods),
+  ];
+  expect(buildFixtureRegistry(minimal(['fixture_method'])).issues).toEqual([]);
+  const rejected = buildFixtureRegistry(minimal([])).issues;
   expect(rejected).toEqual([
     expect.objectContaining({
       path: 'furniture[0].door.methods.fixture_method',

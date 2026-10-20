@@ -49,7 +49,7 @@ export const pryPlan = (
     return refuse('Too far away');
   }
   if (methods.length === 0) {
-    return refuse("I can't force this lock");
+    return refuse("There's no way to force this lock");
   }
   const carried = [...inventory.items()]
     .filter(({ path }) => path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))
@@ -66,7 +66,5 @@ export const pryPlan = (
     const strikeInterval = tuning.strikeIntervalSimSeconds * (time / tuning.timeSimSeconds);
     return { ok: true, method, time, strikeInterval, strikeSound: tuning.strikeSound, tool };
   }
-  return refuse(
-    `Need a tool with ${methods.map(([, method]) => `${method.quality} quality ${method.level}`).join(' or ')}`,
-  );
+  return refuse('I have nothing that will force it');
 };
