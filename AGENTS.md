@@ -143,6 +143,11 @@ So:
   in the same round, never deferred as a nit:
   - pins drifting data;
   - writes state past its owner, or sets state a player can't;
+  - runs git with inherited repository bindings (`GIT_DIR` and its kin). Git exports them
+    to its hooks, so a fixture run inside a hook rewrites the pushing repository, and
+    only a hook run shows it. See `packages/deadvox/tools/publish-playtest.mjs`,
+    `gitEnvironment`, and the test around `test/sky-main-arrival.test.mjs`,
+    `movedPackageHistory`;
   - waits on wall-clock time for simulated work;
   - can pass vacuously;
   - near-duplicates another test.
