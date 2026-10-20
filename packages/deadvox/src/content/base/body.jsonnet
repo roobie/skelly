@@ -12,7 +12,7 @@ local normalSleep = 100 / normalSleepGameHours;
     staminaRegenDelaySimSeconds: 5,
     proneEyeHeightMetres: 0.3,
     shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
-    // Acid eats the outermost worn layer, so clothing is a consumable (`deadvox/docs/acid-zombie.md`).
+    // Acid eats the outermost worn layer, so clothing is a consumable (`packages/deadvox/docs/acid-zombie.md`).
     outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
     // Footwear and gloves are each limb's last layer, so a blow meets them only on a bare limb.
     coverage: {

@@ -2772,7 +2772,7 @@ const CriticalNeedSchema = pipe(
   check((rule) => (rule.below === undefined) !== (rule.above === undefined), 'needs exactly one of below and above'),
 );
 
-/** Survival needs and stamina. Vitals run 0 to 100; fatigue is sleep debt (`deadvox/src/core/needs.ts`). */
+/** Survival needs and stamina. Vitals run 0 to 100; fatigue is sleep debt (`packages/deadvox/src/core/needs.ts`). */
 const NeedsTuningSchema = strictObject({
   /** The needs and stamina a new character starts with. */
   spawn: strictObject({ calories: NeedPercent, hydration: NeedPercent, fatigue: NonNegative, stamina: NeedPercent }),

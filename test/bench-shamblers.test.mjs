@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-const DEADVOX = fileURLToPath(new URL('../deadvox/', import.meta.url));
+const DEADVOX = fileURLToPath(new URL('../packages/deadvox/', import.meta.url));
 const POPULATION_REPORT = /^N=(\d+) \(/m;
 
 test('one-shambler CPU benchmark runs through its npm script under plain Node', () => {

@@ -25,7 +25,7 @@ Long actions must advance the world quickly without letting entities tunnel thro
 
 ## 4. Many zombies in a browser
 
-Hundreds of fully active agents would compete with rendering and player simulation. The v1 acceptance target is 60 active zombies and 300 in the background tier, with simulation under 4 ms per frame. Use activity tiers: only nearby threats need detailed behavior; background threats can move in cheaper steps, while distant hordes remain abstract. Keep active attention selection unchanged when simplifying background movement. Grow data-oriented storage or move systems to a worker only when counts require it. Slice 3 develops background movement; abstract hordes remain Slice 4b work. Benchmark simulation cost separately from the complete rendered scene. See `src/bench/shamblers.ts`, `startShamblerBench`, and `mobgen/src/cli/bench.ts`.
+Hundreds of fully active agents would compete with rendering and player simulation. The v1 acceptance target is 60 active zombies and 300 in the background tier, with simulation under 4 ms per frame. Use activity tiers: only nearby threats need detailed behavior; background threats can move in cheaper steps, while distant hordes remain abstract. Keep active attention selection unchanged when simplifying background movement. Grow data-oriented storage or move systems to a worker only when counts require it. Slice 3 develops background movement; abstract hordes remain Slice 4b work. Benchmark simulation cost separately from the complete rendered scene. See `src/bench/shamblers.ts`, `startShamblerBench`, and `packages/mobgen/src/cli/bench.ts`.
 
 ## 5. Inventory speed in real time
 

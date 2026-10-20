@@ -7,11 +7,11 @@ read_if:
 
 # Slice 3 playtest
 
-The playtest is self-serve: testers use the landing page to play or practise the controls, and may share feedback or metrics by choice. Practice is unsaved and leaves the saved world alone so newcomers can learn without risking a run. The Round 1 page asks them to survive and find the military camp. See `../EPIC.md`, "Playtest plan", and the [playtest feedback form](../../.github/ISSUE_TEMPLATE/playtest-feedback.md).
+The playtest is self-serve: testers use the landing page to play or practise the controls, and may share feedback or metrics by choice. Practice is unsaved and leaves the saved world alone so newcomers can learn without risking a run. The Round 1 page asks them to survive and find the military camp. See `../EPIC.md`, "Playtest plan", and the [playtest feedback form](../../../.github/ISSUE_TEMPLATE/playtest-feedback.md).
 
 ## Frozen round publication
 
-The lead publishes a round locally after BR approves the build. One domain per round holds both the landing and game, published together because Surge replaces the whole domain. The landing comes from the current clean checkout; the game always comes from an explicitly chosen game commit, even for a landing-only correction, so a consent-page edit cannot ship newer game code by accident. See `deadvox/tools/publish-playtest.mjs`, `publishPlaytest` and `playtestRound`. A reused dependency install must match the game commit's lockfiles, so the published build's dependencies never change silently.
+The lead publishes a round locally after BR approves the build. One domain per round holds both the landing and game, published together because Surge replaces the whole domain. The landing comes from the current clean checkout; the game always comes from an explicitly chosen game commit, even for a landing-only correction, so a consent-page edit cannot ship newer game code by accident. See `packages/deadvox/tools/publish-playtest.mjs`, `publishPlaytest` and `playtestRound`. A reused dependency install must match the game commit's lockfiles, so the published build's dependencies never change silently.
 
 No automation publishes to Surge. The build exists so that the testers' game changes only when we decide, not so that it can never take main's fixes; Pages keeps rolling with main so merged work stays playable without touching the testers' build. The landing links relatively to the game beneath the same domain. Browser saves belong to an origin, so keep the game address for the whole round.
 

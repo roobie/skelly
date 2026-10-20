@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { compileMapSite } from '../src/core/mapKit.ts';
 import type { ContentFile, MapSiteDef } from '../src/core/schema.ts';
 import {
@@ -14,7 +14,9 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 it('lab room substitutions preserve furnished threshold-to-circulation and return routes at every quarter turn', () => {
-  const data = JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-lab-rooms.libsonnet')) as ContentFile;
+  const data = JSON.parse(
+    compileJsonnetFile('packages/deadvox/src/content/base/gauntlet-lab-rooms.libsonnet'),
+  ) as ContentFile;
   const rooms = data.mapPieces!;
   const registry = {
     ...BUNDLED_CONTENT.registry,

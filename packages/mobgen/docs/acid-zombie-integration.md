@@ -12,7 +12,7 @@ read_if:
 The acid zombie uses a ground-up body because its hunched silhouette and exposed sac
 define its identity independently of humanoid variations. Body facts stay separate from
 game effects so each boundary can be validated before gameplay consumes it. What the
-model must show stays in `deadvox/docs/acid-zombie.md`, "Model", and its behaviour,
+model must show stays in `packages/deadvox/docs/acid-zombie.md`, "Model", and its behaviour,
 including acid immunity and the leg-burning puddle, stays in that doc's other sections.
 
 ## Body rules the plan starts from
@@ -76,8 +76,8 @@ Materials cross the builder, viewer, CLI and Deadvox boundary. Consumers decode 
 the voxel grid's local table rather than a shared palette, because a compatibility shim
 would keep two competing material contracts. See `src/core/voxelize.ts`, `materialOf`;
 `src/viewer/scene.ts`, `vertexColors`; `src/cli/view.ts`, `printView`; and
-`deadvox/src/render/amalgamFlesh.ts`, `mergeBoneMeshes`. Declarative material dependencies
-also enter the generated-body fingerprint; see `deadvox/tools/simulationFingerprint.ts`,
+`packages/deadvox/src/render/amalgamFlesh.ts`, `mergeBoneMeshes`. Declarative material dependencies
+also enter the generated-body fingerprint; see `packages/deadvox/tools/simulationFingerprint.ts`,
 `collectSimulationSourceGraph`.
 
 ### Other mobs' outputs that can change
@@ -109,7 +109,7 @@ Construction stays in TypeScript because anatomy is logic rather than authored t
 
 **Content and logic split.** Authors tune appearance without changing what makes the body
 an acid zombie. Keeping that tuning in `src/mob/acidTemplate.jsonnet` lets a later tier
-remain a data change (`deadvox/docs/acid-zombie.md`, "Ability, not type"). See
+remain a data change (`packages/deadvox/docs/acid-zombie.md`, "Ability, not type"). See
 `src/mob/acidTemplate.ts`, `acidTemplate`.
 
 **Measurement.** Shape measurement must be independent of game voxel size and forced
@@ -146,9 +146,9 @@ Tuning stays in content rather than test literals. Its release-freeze triggers b
 ## What Deadvox needs
 
 Deadvox picks a model by id, resolves it through `consumableTemplate` and builds hit boxes
-from bones listed per region. See `deadvox/src/core/schema.ts`, `ZOMBIE_MODEL`;
+from bones listed per region. See `packages/deadvox/src/core/schema.ts`, `ZOMBIE_MODEL`;
 `src/mob/shamblerFigure.ts`, `zombieFigure` and `REGION_BONES`; and
-`deadvox/src/core/zombieRegions.ts`. The acid body's bones have their own names (it has a
+`packages/deadvox/src/core/zombieRegions.ts`. The acid body's bones have their own names (it has a
 skull and maw, not head and jaw, and a belly and hips, not spine and pelvis), so the
 humanoid lookup would find nothing.
 
@@ -158,23 +158,23 @@ humanoid lookup would find nothing.
   torso, so no region or region name is added.
 - **Severing.** Severable subtrees come from the bone disposition rather than
   `src/mob/dismember.ts`, `SEVERABLE_PARTS`. The crowd gore mask already sizes itself from
-  the widest body (`deadvox/src/render/mobActors.ts` passes the bone count to
+  the widest body (`packages/deadvox/src/render/mobActors.ts` passes the bone count to
   `crowdTextureLayout`), so the acid bone count needs no encoding change. A severed acid
   part drops the shambler's severed-part item for its region
-  (`deadvox/src/core/zombieRegionNames.ts`, `SEVERED_ITEM`), and no new item content is
+  (`packages/deadvox/src/core/zombieRegionNames.ts`, `SEVERED_ITEM`), and no new item content is
   added. That mapping is keyed by region, and the acid bones map into the same regions, so
   it needs no acid entry.
 - **Death burst.** On death the sac's voxels are removed without leaving a severed item and
   without any simulation consequence, so presentation reads death and the sac stays out of
   saves and fingerprints. Keeping it a disposition rather than a Deadvox special case lets a
   later tier attach an effect by data.
-- **Poses and gait.** `deadvox/src/core/zombiePose.ts` and the mobgen pose modules address
+- **Poses and gait.** `packages/deadvox/src/core/zombiePose.ts` and the mobgen pose modules address
   humanoid bones by name. The acid body needs its own idle, walk, attack, hit-reaction and
   death poses, written against its bones and limits as the dog and crawler did. Its spit
   wind-up pulls the head back, which is a pose, not a material change.
 - **Gaze.** `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES` gets an acid entry turning
   `skull`. The mouth that releases a spit should come from the model, replacing the grab
-  height stand-in (`deadvox/src/core/zombies.ts`, `AcidSpitRelease`), because line of sight
+  height stand-in (`packages/deadvox/src/core/zombies.ts`, `AcidSpitRelease`), because line of sight
   is checked from the mouth.
 - **Materials and glow.** Deadvox reads colour and glow from the body's material table. That
   keeps the glow a content value instead of a Deadvox list of glowing material names. How
@@ -188,7 +188,7 @@ humanoid lookup would find nothing.
 
 The sac and eyes use an emissive material: they give off their own light, and the wind-up
 raises the sac's emission. The glow also lights the surroundings by borrowing slots from the
-renderer's existing point-light pool (`deadvox/src/render/lightPool.ts`, `LightPool`), which
+renderer's existing point-light pool (`packages/deadvox/src/render/lightPool.ts`, `LightPool`), which
 item lights also use. The nearest glowing actors take the slots first, and their light casts
 no shadows.
 
@@ -203,7 +203,7 @@ Borrowed slots are chosen over a light path built for crowds. Such a path is cos
 grows with the number of glowing actors and the light's reach, and it costs something even
 when nothing glows. It would also still need occlusion, receiver coverage and a world-domain
 policy before it could ship. Borrowed slots add no draws, passes or shader paths, and a lab
-storey holds few acid zombies (`deadvox/docs/acid-zombie.md`, "Spawning"), so lighting only the
+storey holds few acid zombies (`packages/deadvox/docs/acid-zombie.md`, "Spawning"), so lighting only the
 nearest of them loses little.
 
 ### Far level of detail is its own later item
@@ -220,7 +220,7 @@ path and severing still shows at distance. A per-mob far budget in content is a 
 later refinement within that direction, not a decision here.
 
 Until that item lands the acid zombie draws its near mesh at distance. That is acceptable
-only because labs hold few of them (`deadvox/docs/acid-zombie.md`, "Spawning").
+only because labs hold few of them (`packages/deadvox/docs/acid-zombie.md`, "Spawning").
 
 ## Rounds
 
@@ -246,7 +246,7 @@ before it lands.
 4. **Deadvox consumption and effects** (hard coder). Add plan-owned region bones with the
    sac under torso, disposition-driven severing, the cosmetic death burst, the emissive
    glow with the sac-only wind-up brightening and its borrowed-slot light, the falling drips and the death splash as
-   presentation in `deadvox/src/render/acidEffects.ts`, `AcidEffects`, the `acid` model id
+   presentation in `packages/deadvox/src/render/acidEffects.ts`, `AcidEffects`, the `acid` model id
    and the content switch off the placeholder shambler body, and flip readiness. The effects
    ship in this round so the mob ships with them. Done when: Deadvox validates and loads it;
    a shot on the sac counts as a torso hit, severs follow the dispositions and drop the

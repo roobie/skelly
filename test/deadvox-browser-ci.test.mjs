@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parse, stringify } from 'yaml';
-import { reserveDistinctPorts } from '../deadvox/tools/browser-ports.mjs';
+import { reserveDistinctPorts } from '../packages/deadvox/tools/browser-ports.mjs';
 import {
   browserManifest,
   browserStagesOfScripts,
@@ -16,7 +16,7 @@ import {
 } from './browser-ci-manifest.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const { scripts } = JSON.parse(readFileSync(join(ROOT, 'deadvox/package.json'), 'utf8'));
+const { scripts } = JSON.parse(readFileSync(join(ROOT, 'packages/deadvox/package.json'), 'utf8'));
 const { scripts: gungenScripts } = JSON.parse(readFileSync(join(ROOT, 'gungen/package.json'), 'utf8'));
 const browserStages = browserStagesOfScripts(scripts);
 const customChromiumSelection = /\b(?:executablePath|CHROME_BIN)\b|channel\s*:\s*(?!\s*['"]chromium['"])/;
@@ -173,7 +173,7 @@ describe('deadvox browser CI coverage', () => {
   it('routes browser stages through the managed Chromium helper without system selection', () => {
     const sources = browserStagePaths.map((path) => ({
       path,
-      source: readFileSync(join(ROOT, 'deadvox', path), 'utf8'),
+      source: readFileSync(join(ROOT, 'packages/deadvox', path), 'utf8'),
     }));
     for (const { path, source } of sources) {
       assert.doesNotMatch(source, customChromiumSelection, `${path} must not select a system browser`);
@@ -182,7 +182,7 @@ describe('deadvox browser CI coverage', () => {
         assert.match(source, sharedChromiumLaunchPattern, `${path} must use launchChromium`);
       }
     }
-    const helper = readFileSync(join(ROOT, 'deadvox/test/browser/chromium.mjs'), 'utf8');
+    const helper = readFileSync(join(ROOT, 'packages/deadvox/test/browser/chromium.mjs'), 'utf8');
     assert.match(helper, helperChromiumLaunchPattern, 'the shared helper owns Chromium launch');
     assert.doesNotMatch(helper, unhandledRejectionListenerPattern, 'the helper must not swallow floating rejections');
   });
@@ -273,7 +273,7 @@ describe('gungen browser CI', () => {
     assert.ok(cache && install, 'Gungen CI caches and installs managed Chromium');
     assert.ok(cache.uses.startsWith('actions/cache@'));
     assert.equal(cache.with.path, '~/.cache/ms-playwright');
-    assert.equal(install['working-directory'], 'deadvox');
+    assert.equal(install['working-directory'], 'packages/deadvox');
     assert.match(install.run, playwrightChromiumInstallPattern);
     assert.ok(Number.isFinite(install['timeout-minutes']), 'managed-browser install has a finite bound');
     assert.ok(install['timeout-minutes'] > 0);

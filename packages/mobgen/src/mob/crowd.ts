@@ -1,8 +1,8 @@
 // Pure pieces of "crowd" rendering: packing a whole crowd's bone matrices into
 // one shared texture instead of one Skeleton/bone-texture per actor, and the GLSL that reads it back.
 // Deliberately three-free and DOM-free — deadvox imports this module directly (via the `@mobgen/` alias)
-// to build its own zombie renderer, and must never pull in mobgen/src/viewer (which imports three and the DOM
-// — see mobgen/src/viewer/stressActors.ts, the original home of
+// to build its own zombie renderer, and must never pull in packages/mobgen/src/viewer (which imports three and the DOM
+// — see packages/mobgen/src/viewer/stressActors.ts, the original home of
 // this code, for the three.js-side builder that still lives there: buildCrowdGeometry, buildCrowdRender).
 //
 // Texture layout: one row per actor ("slot"), `bonesPerSlot * 3` texels for the bone matrices plus enough
@@ -164,7 +164,7 @@ export const packCrowdBoneMatrix = (
   data[i + 11] = tz;
 };
 
-// ---- GLSL: patched into a material's vertex shader via onBeforeCompile (see mobgen/src/viewer/
+// ---- GLSL: patched into a material's vertex shader via onBeforeCompile (see packages/mobgen/src/viewer/
 // stressActors.ts's buildCrowdRender for the three.js-side wiring). Plain strings, three-free, so this
 // module stays importable from deadvox. Written in three.js's own pre-r163-style GLSL (attribute/
 // texture2D, matching e.g. its skinning_pars_vertex.glsl.js), not GLSL ES 300's in/out/texture: three

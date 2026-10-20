@@ -365,7 +365,7 @@ export interface Zombie {
   stepOffset?: number | undefined;
   /** Fixed-step hit reaction time; optional for backward-compatible saves. */
   hitFlinchTime?: number | undefined;
-  /** Part names (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS, e.g. "upperArm.L", "head") severed so
+  /** Part names (packages/mobgen/src/mob/dismember.ts's SEVERABLE_PARTS, e.g. "upperArm.L", "head") severed so
    * far — cumulative, never un-severed. A renderer derives what to hide via mobgen's severedBoneSet, not
    * stored pre-expanded here (severing upperArm.L already implies forearm.L/hand.L without listing them). */
   severed: string[];
@@ -903,7 +903,7 @@ const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
 };
 
 // ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
-// Mirrors mobgen/src/mob/dismember.ts's SEVERABLE_PARTS (arms only here — the head has its own
+// Mirrors packages/mobgen/src/mob/dismember.ts's SEVERABLE_PARTS (arms only here — the head has its own
 // headOnKillChance roll in swing(), not picked randomly among these).
 
 const ARM_PARTS = ['hand.L', 'hand.R', 'forearm.L', 'forearm.R', 'upperArm.L', 'upperArm.R'] as const;

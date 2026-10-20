@@ -7,7 +7,7 @@ import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 import { sweepGroup } from './sweeps.ts';
 
 // Play doesn't prove the route before Go, so these tests stand in for that proof: the certificate's issues cover
-// every entrance, crossing, resource and the lab terminal. See `deadvox/DESIGN.md`, "Gauntlet".
+// every entrance, crossing, resource and the lab terminal. See `packages/deadvox/DESIGN.md`, "Gauntlet".
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
 const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'gauntlet');

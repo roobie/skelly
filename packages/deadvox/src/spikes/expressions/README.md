@@ -112,7 +112,7 @@ modifier system or re-entrant event emission is proved. Those contracts belong t
 
 ## Exercised, not chosen
 
-The game's mod rules are in `../../../../docs/decisions/0004-content-language.md`, "Mod rules";
+The game's mod rules are in `../../../../../docs/decisions/0004-content-language.md`, "Mod rules";
 the harness settles none of them. Each item says what the spike exercised and where that differs
 from the rule. The differences change the engine envelope or the admitted CEL environment, not
 CEL's ability to evaluate a pure expression.
@@ -154,11 +154,11 @@ CEL's ability to evaluate a pure expression.
   is exercised and matches the rule. Tick rollback is the harness's own. A later rule sees earlier
   state changes, including changes from a chained rule.
 - **Field patches:** not exercised. They belong to the content loader, not CEL; see
-  `../../../../docs/decisions/0007-typed-field-patches.md`, "Decision".
+  `../../../../../docs/decisions/0007-typed-field-patches.md`, "Decision".
 - **UI:** not exercised; mod UI is deferred to a spike once #313 puts an expression language in
   place.
 - **Core tuning:** a mod changes a core value as it changes any pack's value
-  (`../../../../docs/decisions/0004-content-language.md`, "Runtime design"); this is not exercised.
+  (`../../../../../docs/decisions/0004-content-language.md`, "Runtime design"); this is not exercised.
   Overrides need engine authorization and identity; exposing more numeric inputs alone does not
   authorize writes.
 - **Save mismatch:** strict mod-identity/state rejection is exercised and is the game's rule
@@ -188,4 +188,4 @@ profile entries so wrapper growth is not mistaken for additional CEL package cod
 See `../../../test/expressionWasmCases.ts`, `wasmCases`, for behaviour checks shared between Node
 and browser probes. Float equality across engines is bounded fixture evidence, not proof of all
 floating-point programs or future runtime versions. No runtime is adopted; see
-`../../../../docs/decisions/0004-content-language.md`, "Runtime design".
+`../../../../../docs/decisions/0004-content-language.md`, "Runtime design".

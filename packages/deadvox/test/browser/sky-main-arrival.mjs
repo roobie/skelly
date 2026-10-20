@@ -99,7 +99,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   if (eventPath && ref === 'origin/main') {
     throw new Error('GitHub event has neither a pull-request base nor a branch ref');
   }
-  const repository = resolve(root, '..');
+  const repository = resolve(root, '../..');
   const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8' }).trim();
   let base;
   if (eventPath) {
@@ -108,18 +108,24 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   } else {
     base = git(['rev-parse', ref]);
   }
-  const basePaths = new Set(git(['ls-tree', '-r', '--name-only', base, '--', 'deadvox/src']).split('\n'));
-  const branchPaths = new Set(git(['ls-tree', '-r', '--name-only', 'HEAD', '--', 'deadvox/src']).split('\n'));
+  const basePaths = new Set(git(['ls-tree', '-r', '--name-only', base, '--', 'packages/deadvox/src']).split('\n'));
+  const branchPaths = new Set(git(['ls-tree', '-r', '--name-only', 'HEAD', '--', 'packages/deadvox/src']).split('\n'));
   for (const path of mainSourceOverlays) {
-    if (!basePaths.has(`deadvox/src/${path}`)) {
-      throw new Error(`Main source overlay missing at ${base}: deadvox/src/${path}; update mainSourceOverlays`);
+    if (!basePaths.has(`packages/deadvox/src/${path}`)) {
+      throw new Error(
+        `Main source overlay missing at ${base}: packages/deadvox/src/${path}; update mainSourceOverlays`,
+      );
     }
   }
-  const overlays = new Map(mainSourceOverlays.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
+  const overlays = new Map(
+    mainSourceOverlays.map((path) => [path, git(['show', `${base}:packages/deadvox/src/${path}`])]),
+  );
   // A main startup source may import a file the branch deleted; serve that file from the base
   // too, so the overlay never fails to resolve a module main still owns.
   const baseOnlyOverlay = (relative) =>
-    relative !== null && basePaths.has(`deadvox/src/${relative}`) && !branchPaths.has(`deadvox/src/${relative}`);
+    relative !== null &&
+    basePaths.has(`packages/deadvox/src/${relative}`) &&
+    !branchPaths.has(`packages/deadvox/src/${relative}`);
   // A main source may import an export the branch removed from a module both keep. That module stays the
   // branch's core owner: a shim re-exports it and adds only the removed names, from main's copy of the module.
   const exportShims = new Map();
@@ -127,13 +133,13 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     if (!exportShims.has(relative)) {
       const both =
         SCRIPT_MODULE.test(relative) &&
-        basePaths.has(`deadvox/src/${relative}`) &&
-        branchPaths.has(`deadvox/src/${relative}`);
+        basePaths.has(`packages/deadvox/src/${relative}`) &&
+        branchPaths.has(`packages/deadvox/src/${relative}`);
       exportShims.set(
         relative,
         both
           ? removedExports(
-              git(['show', `${base}:deadvox/src/${relative}`]),
+              git(['show', `${base}:packages/deadvox/src/${relative}`]),
               await readFile(resolve(root, 'src', relative), 'utf8'),
             )
           : [],
@@ -147,7 +153,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     const relative = mainOverlayPath(root, importer);
     return importer.includes(BASE_COPY) || overlays.has(relative) || baseOnlyOverlay(relative);
   };
-  const mainHtml = git(['show', `${base}:deadvox/index.html`]);
+  const mainHtml = git(['show', `${base}:packages/deadvox/index.html`]);
   const appliedSources = new Set();
   const server = await createServer({
     root,
@@ -180,12 +186,12 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           }
           const relative = mainOverlayPath(root, id);
           if (id.endsWith(BASE_COPY)) {
-            return git(['show', `${base}:deadvox/src/${relative}`]);
+            return git(['show', `${base}:packages/deadvox/src/${relative}`]);
           }
           if (overlays.has(relative)) {
             return overlays.get(relative);
           }
-          return baseOnlyOverlay(relative) ? git(['show', `${base}:deadvox/src/${relative}`]) : null;
+          return baseOnlyOverlay(relative) ? git(['show', `${base}:packages/deadvox/src/${relative}`]) : null;
         },
         transformIndexHtml: {
           order: 'pre',

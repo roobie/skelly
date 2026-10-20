@@ -12,7 +12,7 @@ tags: [deadvox, mods, url, debug, testing, design]
 
 # URL mods and hash state
 
-This is the design plan for `../../docs/decisions/0006-url-mods-and-hash-state.md`, which holds the decision and its reasons.
+This is the design plan for `../../../docs/decisions/0006-url-mods-and-hash-state.md`, which holds the decision and its reasons.
 
 ## Start state in mods
 

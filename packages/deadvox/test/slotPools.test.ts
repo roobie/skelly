@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { scenarioPlanIssues } from '../src/core/cityPlan.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
@@ -11,7 +11,7 @@ import { fixtureScenario } from './fixtures/scenario.ts';
 const BUNDLED_CONTENT = startupContent();
 
 const fixture = (): ContentFile =>
-  JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
+  JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
 const pooledFixture = () => {
   const data = fixture();
   const slot = data.mapAssemblies![0]!.slots[0]!;
@@ -164,7 +164,9 @@ it('revalidates retained slot consumers after a pool override changes their spat
 });
 
 it('a pool-only Jsonnet mod changes real slot candidate weights without overriding assemblies', () => {
-  const mod = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/roof-equipment-mod.jsonnet')) as ContentFile;
+  const mod = JSON.parse(
+    compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/roof-equipment-mod.jsonnet'),
+  ) as ContentFile;
   expect(Object.keys(mod)).toEqual(['mapPools']);
   const sources = readdirSync('src/content/base')
     .filter((file) => file.endsWith('.json'))

@@ -35,7 +35,7 @@ The core pack is `deadvox.core`. This game's setting is Upheaval, in the pack `d
 
 **Dependencies point down only.** A pack may reference ids in its own layer and in the layers below it, and never above. The engine references no content id at all. The reason is substitution: a medieval setting replaces the setting pack whole, so a core entry that names a setting id would break it, and engine code that names a setting id would need a code edit for every new setting. One-way references also make the load order follow from the layering instead of from file names.
 
-This is the dependency boundary that `../../docs/decisions/0004-content-language.md`, "Runtime design" proposes as `dependencies: Mod[]`: each bundled pack declares the packs it builds on. Mods declare the packs they require from round 1, and loading refuses a mod whose required packs the stack lacks, because a mod written for one setting would otherwise fail confusingly under another. The bundled stack needs only its declared order.
+This is the dependency boundary that `../../../docs/decisions/0004-content-language.md`, "Runtime design" proposes as `dependencies: Mod[]`: each bundled pack declares the packs it builds on. Mods declare the packs they require from round 1, and loading refuses a mod whose required packs the stack lacks, because a mod written for one setting would otherwise fail confusingly under another. The bundled stack needs only its declared order.
 
 ## Classification rule
 

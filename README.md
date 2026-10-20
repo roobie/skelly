@@ -14,10 +14,10 @@ skelly is a hobby monorepo built around **deadvox**, a voxel survival game that 
 
 ## Projects
 
-- **[deadvox](deadvox/PROJECT.md)**: the game. You scavenge a large voxel world full of zombies, with detailed items, bodies and crafting. It runs entirely in the browser, with no server.
+- **[deadvox](packages/deadvox/PROJECT.md)**: the game. You scavenge a large voxel world full of zombies, with detailed items, bodies and crafting. It runs entirely in the browser, with no server.
 - **[gungen](gungen/PROJECT.md)**: a designer for low-poly firearms whose parts fit together and whose moving parts have room to move. It exports the guns deadvox loads.
-- **[mobgen](mobgen/PROJECT.md)**: a procedural generator of voxel creatures, from humanoids to crawlers and dogs, with bodies that can be severed.
-- **[engine](engine/README.md)**: the shared assembly, geometry and fit code that gungen builds on.
+- **[mobgen](packages/mobgen/PROJECT.md)**: a procedural generator of voxel creatures, from humanoids to crawlers and dogs, with bodies that can be severed.
+- **[engine](packages/engine/README.md)**: the shared assembly, geometry and fit code that gungen builds on.
 
 ## Run and check locally
 
@@ -30,9 +30,9 @@ npm run setup
 Start a project's dev server:
 
 ```sh
-npm run dev --prefix deadvox
+npm run dev --prefix packages/deadvox
 npm run dev --prefix gungen
-npm run dev --prefix mobgen
+npm run dev --prefix packages/mobgen
 ```
 
 Run the repository-wide checks with `npm run ci` and `npm run test:site`. Each project's `package.json` lists its own checks, and CI runs the workflows under `.github/workflows/`.

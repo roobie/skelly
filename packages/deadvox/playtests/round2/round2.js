@@ -1,12 +1,12 @@
 // biome-ignore lint/correctness/noUnresolvedImports: the browser loads this ESM module from jsDelivr.
 import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
-import { loadPlaytestText } from '../../../site/playtestCatalog.js';
-import { applyPlaytestLanguage } from '../../../site/playtestLanguage.js';
+import { loadPlaytestText } from '../../../../site/playtestCatalog.js';
+import { applyPlaytestLanguage } from '../../../../site/playtestLanguage.js';
 
 // Bumped by each published patch; see `docs/playtest-run.md`, "Frozen round publication".
 const PATCH = 1;
 const language = applyPlaytestLanguage(navigator.languages, location.search);
-const text = await loadPlaytestText(fetch, new URL('../../../site/playtest.json', import.meta.url), language);
+const text = await loadPlaytestText(fetch, new URL('../../../../site/playtest.json', import.meta.url), language);
 
 const app = text
   ? html`<main>

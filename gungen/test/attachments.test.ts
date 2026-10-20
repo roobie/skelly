@@ -10,7 +10,7 @@ import { applyPoint } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import validator from 'gltf-validator';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { buildRegistry } from '../../deadvox/src/core/content.ts';
+import { buildRegistry } from '../../packages/deadvox/src/core/content.ts';
 import { AK_MAGAZINE_CALIBRE_BY_VARIANT, AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
 import { attachmentCompatibility, attachmentCompatibilityPairs } from '../src/gun/attachmentCompatibility.ts';
 import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';

@@ -138,7 +138,7 @@ choices retain ownership rather than being overwritten by adaptation. See
 `src/content/base/graphics.jsonnet`, `src/render/adaptiveScale.ts`, `AdaptiveScale`,
 `src/render/mood.ts`, `Mood.setRenderScale`, and `src/render/screenScale.ts`, `ScreenScale`.
 Look changes made for performance
-follow `deadvox/GRAPHICS.md`, "Look decisions".
+follow `packages/deadvox/GRAPHICS.md`, "Look decisions".
 
 Half-metre blocks keep doorways, furniture and interiors at human scale, and
 make stairs walkable rather than jump-sized. The finer quarter-metre scale did
@@ -233,7 +233,7 @@ Real time stays at the frame, input, and presentation boundary. Duration and
 rate conversions use named helpers, and content rates use the Game clock so
 clock-ratio tuning does not retune content. See `src/core/time.ts`,
 `src/core/temporalFields.ts`, and the `lint:time` contract in
-`deadvox/tools/time-lint.mjs`.
+`packages/deadvox/tools/time-lint.mjs`.
 
 Advancing never moves Sim time back; only a seek can. A system tick may end up to the scheduler's epsilon
 past an advance's target, and a Game timestamp recorded inside that tick (a
@@ -864,7 +864,7 @@ specific sites and their rewards.
 Keep the firearm-handling range in the debug test house, not ordinary world
 sites, so test stock cannot become a playable-world loot source. Derive rack
 contents from firearm and ammunition compatibility. The range layout is content, see
-`deadvox/docs/content.md`. See `HandlingRange` in `src/core/range.ts` and
+`packages/deadvox/docs/content.md`. See `HandlingRange` in `src/core/range.ts` and
 `testHouseRangeSupply` in `src/game/testHouseRange.ts`.
 
 ### Loot
@@ -1703,7 +1703,7 @@ application rather than weapon-class special cases. See `ZombieSchema` in
   covers the amalgam too, which is fused from shamblers. See
   `src/core/zombies.ts`, `ZombieSystemOptions.onWound`; `src/render/gore.ts`,
   `Gore` and `woundSeverity`; `src/render/bloodStain.ts`, `bloodStain`; and
-  `mobgen/src/mob/crowd.ts`, `packBloodiness`.
+  `packages/mobgen/src/mob/crowd.ts`, `packBloodiness`.
 - **Determinism.** Hit regions, blast falloff and any spread are seeded, so
   saves and replays stay exact. Region and material state is simulation state:
   it goes into the save snapshot and the source fingerprint.
@@ -1830,7 +1830,7 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 1 | Runner | Fast, fragile |
 | 1 | Screamer | Weak, but its scream pulls in the horde |
 | 1 | Bloater | Bursts into a noxious cloud |
-| 1 | Acid zombie | Spits acid from a distance; the first ranged enemy and first of the acid evolution line, lab storeys only. See `deadvox/docs/acid-zombie.md`, "Acid zombie" |
+| 1 | Acid zombie | Spits acid from a distance; the first ranged enemy and first of the acid evolution line, lab storeys only. See `packages/deadvox/docs/acid-zombie.md`, "Acid zombie" |
 | 2 | Brute | Big, knocks you back, breaks doors |
 | 2 | Soldier | Armoured; carries ordinary kit at the military camp |
 | 2 | Hazmat | Resists acid and fire (from lab sites) |
@@ -1840,7 +1840,7 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 
 Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers and explicit camp spawns; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection. Its kit uses ordinary items; military loot remains restricted to site containers. For #487, defer the military clothing palette, armour, and body searching; the soldier first appears in civilian clothes, carries ordinary kit, and drops loot on death.
 
-The brute shambler guards the secret cellar (`deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It neither knocks the player back nor breaks doors: those belong to the tier-2 Brute and arrive with door bashing (`deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
+The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It neither knocks the player back nor breaks doors: those belong to the tier-2 Brute and arrive with door bashing (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
 
 ### Spawning
 
@@ -1926,8 +1926,8 @@ or simulation fingerprints. The test-noise action is different because it
 intentionally enters the simulation's sound path. The mobgen viewer has no
 perception state, so its gaze follows its camera. See `ZombieSystem.updateAttention`
 in `src/core/zombies.ts`. The crawler gait and support rules live in
-`crawlerGaitPose` in `mobgen/src/mob/crawler.ts` and `resolveSupportBones` in
-`mobgen/src/core/generate.ts`.
+`crawlerGaitPose` in `packages/mobgen/src/mob/crawler.ts` and `resolveSupportBones` in
+`packages/mobgen/src/core/generate.ts`.
 
 When #370 is addressed, define hesitation and pursuit decisions on non-violent
 sounds. When #371 is addressed, define how nearby shamblers respond to a
@@ -1965,9 +1965,9 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
   not by spending range on vertical distance.
   See `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/zombies.ts`, `seesPlayer`
   and `ZombieSystem.updateHordes`; and `src/core/clock.ts`, `resolveSpawnTime`.
-- A shambler moves directly toward its current attention target in the horizontal plane. Collision resolution preserves available tangential motion; when a head-on intent has none, `ZombieSystem.tick` uses the seeded `obstacleSlideSide` to supply it. `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the distance configured in `src/content/base/zombies.jsonnet`, then resumes toward its current target. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
+- A shambler moves directly toward its current attention target in the horizontal plane. Collision resolution preserves available tangential motion; when a head-on intent has none, `ZombieSystem.tick` uses the seeded `obstacleSlideSide` to supply it. `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the distance configured in `src/content/base/zombies.jsonnet`, then resumes toward its current target. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `packages/deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
 - Shamblers do not gain stair knowledge from an attention target on another floor.
-- For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
+- For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `packages/deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - Background zombies beeline in big, cheap steps.
@@ -2152,14 +2152,14 @@ see `src/game/browserMods.ts`, `readMod` and `evaluateMods`.
 
 A save records the base pack's identity, and a save made with different base content
 is refused rather than migrated until v1.0 beta
-(`../AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
+(`../../AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
 Browser mods join the ordered save-pack identity so changing a selection cannot
 silently resume a different world. Selection persistence is atomic so a storage
 failure cannot load half a set. See `docs/content.md`, "Browser mod identity", and
 `src/core/saveFormat.ts`, `versionDifferences`.
 
 Import voxel-editor work (MagicaVoxel, vengi) only when a building outgrows curated
-Jsonnet pieces (`../docs/jsonnet.md`, "Curated map features"); no importer contract
+Jsonnet pieces (`../../docs/jsonnet.md`, "Curated map features"); no importer contract
 is settled.
 
 ## A world that feels real

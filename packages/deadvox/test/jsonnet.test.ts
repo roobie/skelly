@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 
-const validSource = 'deadvox/test/fixtures/jsonnet/pipeline-valid.jsonnet';
+const validSource = 'packages/deadvox/test/fixtures/jsonnet/pipeline-valid.jsonnet';
 const INVALID_SOURCE_PATTERN = /pipeline-invalid\.jsonnet/;
 
 it('compiles a fixed-root Jsonnet import and loads its output through the content registry', () => {
@@ -16,7 +16,7 @@ it('compiles a fixed-root Jsonnet import and loads its output through the conten
 });
 
 it('names the source when Jsonnet compilation fails', () => {
-  expect(() => compileJsonnetFile('deadvox/test/fixtures/jsonnet/pipeline-invalid.jsonnet')).toThrow(
+  expect(() => compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/pipeline-invalid.jsonnet')).toThrow(
     INVALID_SOURCE_PATTERN,
   );
 });

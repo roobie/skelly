@@ -13,7 +13,7 @@ export interface BoneMesh {
   /** The bone index owning the *other* side of this face — one value per vertex (shared by all 4 corners
    * of a quad, since only same-neighbour faces merge; see greedyMerge's key). -1 for a face exposed to
    * empty space. Dismemberment's gore effect uses this: a face whose neighbour bone is severed, on a bone
-   * that isn't, is a fresh cut and gets tinted (see mobgen/src/mob/crowd.ts's fragment shader patch). */
+   * that isn't, is a fresh cut and gets tinted (see packages/mobgen/src/mob/crowd.ts's fragment shader patch). */
   readonly neighbourBone: Int32Array;
   readonly indices: Uint32Array;
   readonly triangles: number;

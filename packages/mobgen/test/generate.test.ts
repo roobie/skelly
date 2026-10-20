@@ -364,7 +364,7 @@ describe('templates', () => {
           sum += (report.stats.perBoneVoxels.head ?? 0) + (report.stats.perBoneVoxels.jaw ?? 0);
         }
         const mean = sum / SEEDS;
-        // Bounds come from the template itself (mobgen/src/mob/templates.ts), not repeated here, so a
+        // Bounds come from the template itself (packages/mobgen/src/mob/templates.ts), not repeated here, so a
         // deliberate head-size retune (e.g. the 5-voxel-wide face) can't leave this test stale.
         expect(mean).toBeGreaterThanOrEqual(head.min);
         expect(mean).toBeLessThanOrEqual(head.max);

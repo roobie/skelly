@@ -6,11 +6,11 @@ read_if:
 
 # Revolver export
 
-The revolver uses assembly parts rather than display groups because only parts have independently transformable GLB nodes. This keeps mechanical identity in the assembly and leaves the shared writer domain-neutral; see `src/gun/revolver.ts`, `revolverFamilySet`, and `engine/src/export/glb.ts`, `addPart`.
+The revolver uses assembly parts rather than display groups because only parts have independently transformable GLB nodes. This keeps mechanical identity in the assembly and leaves the shared writer domain-neutral; see `src/gun/revolver.ts`, `revolverFamilySet`, and `packages/engine/src/export/glb.ts`, `addPart`.
 
 ## Runtime composition
 
-The separate revolver contract avoids pretending that rotating parts follow the linear carrier timeline. See `src/gun/revolverExport.ts`, `RevolverMetadata`, and `src/gun/exportGlb.ts`, `DeadvoxModelEntry`. The playable consumer validates it through `deadvox/src/core/schema.ts`, `RevolverSchema`.
+The separate revolver contract avoids pretending that rotating parts follow the linear carrier timeline. See `src/gun/revolverExport.ts`, `RevolverMetadata`, and `src/gun/exportGlb.ts`, `DeadvoxModelEntry`. The playable consumer validates it through `packages/deadvox/src/core/schema.ts`, `RevolverSchema`.
 
 All points, axes and displacements use the exported model frame, with lengths in metres and signed right-hand rotations in radians. Each node's rest transform is its assembled GLB pose, not an identity transform and not a pivot-relative pose. The writer's node list is flat. Consumers must reset to that rest pose each frame rather than accumulate deltas.
 
@@ -22,6 +22,6 @@ The hinge comes from the swing-side lower yoke edge. The opening angle must carr
 
 The curated design carries its own cartridge identity. Geometry-only exports without cartridge metadata omit the revolver block because the ejector stroke needs a sourced case length. Unknown cartridge measurements stay unknown; presentation may use the sourced maximum overall length when no typical length is available. The generic projectile seating and primer remain visual proxies, not cartridge specifications; see `src/ammo/roundProfile.ts`, `roundProfiles`, and `cartridges/README.md`.
 
-Asset credits cover runtime media rather than Jsonnet authoring programs. Keeping the manifest's source beside its compiled output must not require that source to credit itself; see `deadvox/src/core/assets.ts`, `assetFileIssues`.
+Asset credits cover runtime media rather than Jsonnet authoring programs. Keeping the manifest's source beside its compiled output must not require that source to credit itself; see `packages/deadvox/src/core/assets.ts`, `assetFileIssues`.
 
-The CLI owns the GLBs and JSON entries under `deadvox/src/content/base/gungen`; Jsonnet imports those entries into the firearm pack so refreshes have one metadata writer. See `src/cli/export.ts`, `src/cli/exportCartridges.ts`, and `deadvox/src/content/base/models-firearms.libsonnet`. Do not hand-edit exported geometry or metadata.
+The CLI owns the GLBs and JSON entries under `packages/deadvox/src/content/base/gungen`; Jsonnet imports those entries into the firearm pack so refreshes have one metadata writer. See `src/cli/export.ts`, `src/cli/exportCartridges.ts`, and `packages/deadvox/src/content/base/models-firearms.libsonnet`. Do not hand-edit exported geometry or metadata.

@@ -1,5 +1,5 @@
 // The humanoid body plan, built deterministically from
-// a genome's sampled params. Joint proportions come from mobgen/reference/
+// a genome's sampled params. Joint proportions come from packages/mobgen/reference/
 // README.md's fgc_skeleton table (converted: Blender Z-up/-Y-forward ->
 // ours, Y-up/-Z-forward, i.e. (x, y, z)_blender -> (x, z, y)_ours), as
 // fractions of the `height` param.
@@ -92,7 +92,7 @@ export const WOUNDABLE_BONES = [
 ] as const;
 
 // ---- Reference proportions (fractions of `height`) ----
-// mobgen/reference/README.md, fgc_skeleton joint heights, converted to our axes.
+// packages/mobgen/reference/README.md, fgc_skeleton joint heights, converted to our axes.
 const REF = {
   topOfHead: 1.0,
   baseOfSkull: 0.897,
@@ -267,7 +267,7 @@ export const FEET_BONES = SIDES.map((s) => `foot.${s}`);
 const mid = (a: Vec3, b: Vec3): Vec3 => scale(add(a, b), 0.5);
 
 /** Linear radii below were authored generously; this scales total flesh volume down to match
- * mobgen/reference/README.md's voxel counts (volume, and so voxel count, scales roughly as the square
+ * packages/mobgen/reference/README.md's voxel counts (volume, and so voxel count, scales roughly as the square
  * of a limb radius since bone lengths don't change). */
 const FLESH_SCALE = 0.65;
 
@@ -400,7 +400,7 @@ const footFeature = (bone: string, foot: readonly [Vec3, Vec3], hg: readonly [nu
 const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): Feature[] => {
   const h = layout.height;
   // Radii below were authored generously and then measured against the reference voxel counts
-  // (mobgen/reference/README.md); FLESH_SCALE brings total body volume in line without re-deriving
+  // (packages/mobgen/reference/README.md); FLESH_SCALE brings total body volume in line without re-deriving
   // every constant.
   const g = p.girth * FLESH_SCALE;
   const chestCenter = mid(layout.chest.head, layout.chest.tail);

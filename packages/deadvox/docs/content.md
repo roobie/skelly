@@ -7,7 +7,7 @@ read_if:
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
-  - you're authoring or changing exterior door openings, lab-yard perimeters and dressing, or townhouse aftermath scenes (`deadvox/docs/aftermath.md`)
+  - you're authoring or changing exterior door openings, lab-yard perimeters and dressing, or townhouse aftermath scenes (`packages/deadvox/docs/aftermath.md`)
   - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you author decals or scenario outbreak age
   - you author a scenario, its start-building rooms or ways down, or move scenario rules from code into content
@@ -22,7 +22,7 @@ read_if:
 
 ## Authoring source
 
-Use the repository-wide authoring and conversion rule in `../../docs/jsonnet.md`. The shared compiler produces the JSON consumed by `buildRegistry` in `src/core/content.ts`; validation and runtime references therefore meet at one boundary.
+Use the repository-wide authoring and conversion rule in `../../../docs/jsonnet.md`. The shared compiler produces the JSON consumed by `buildRegistry` in `src/core/content.ts`; validation and runtime references therefore meet at one boundary.
 
 ## Browser mod identity
 
@@ -30,7 +30,7 @@ Give each browser mod a required top-level `id`, independent of its delivery URL
 or filename. Missing identities and repeat selections are refused so a renamed
 upload or mirrored URL cannot silently admit the same mod twice. Identity is not a
 definition-id collision rule; which mod may override another's definition is
-`../../docs/decisions/0007-typed-field-patches.md`, "Conflicts".
+`../../../docs/decisions/0007-typed-field-patches.md`, "Conflicts".
 The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
 and `evaluateMods`. Bundled core-pack fragments remain content files rather than
 independent mods; see `src/game/bundledContent.ts`, `buildBundledContent`.
@@ -170,7 +170,7 @@ Terrain shape and the tree and forest tunables are required `siteGeneration` fie
 
 Every site kind shares one block palette in the same entry, so a block choice has a single content home. Hamlet-only choices (hedge and the template pools) sit apart in its `hamlet` field. Code reads them through `sitePalette` in `src/core/sitePalette.ts`; names that resolve to nothing are validation errors (`checkSiteGeneration` in `src/core/content.ts`), never a runtime fallback.
 
-Keep site-placement tuning required so missing content fails validation rather than silently selecting a code default. See `src/core/schema.ts`, `SiteGenerationSchema`. Optional benchmark geometry belongs with its independent consumer, not required site-generation content; see `deadvox/docs/content.md`, "City building types".
+Keep site-placement tuning required so missing content fails validation rather than silently selecting a code default. See `src/core/schema.ts`, `SiteGenerationSchema`. Optional benchmark geometry belongs with its independent consumer, not required site-generation content; see `packages/deadvox/docs/content.md`, "City building types".
 
 Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
@@ -269,7 +269,7 @@ the opening they fill. The slot's size binds the door's own size, so a window-si
 cannot host a door. A door must be its own opening, not a leaf standing in a larger
 window hole. See `src/content/base/gauntlet-city-doors.libsonnet`, `slot`,
 `src/core/templates.ts`, `compileAssembly`, `test/cityKitPlan.test.ts`, "gauntlet door openings",
-and `deadvox/docs/aftermath.md`, "Door variants".
+and `packages/deadvox/docs/aftermath.md`, "Door variants".
 
 ### City building types
 
@@ -285,7 +285,7 @@ Pools and eligibility remain static content so they can become inputs to an expr
 
 Special buildings must read as plausible places, not generic rooms distinguished only by hidden loot. The police armoury's furniture and secured door must communicate weapon and ammunition storage, so its door is the steel armoury leaf that only a cutting tool forces and the roof key is the way in. Every station copy carries the armoury, so its room, key and stock belong to the base station: a scenario overlay matching room strings can silently stop matching after a layout edit. A reward that need not suit its host still belongs to the gauntlet instance (see `DESIGN.md`, "Gauntlet"). Masonry gives the civic building its character; wooden furnishings do not imply timber construction. See `src/content/base/rural-police.jsonnet`, `templates`, `furniture` and `loot`; `src/content/base/gauntlet-authored-sites.libsonnet`, `policeMain` and `compound`; and `src/content/base/gauntlet-layout.libsonnet`, `lots`.
 
-Loose furniture in abandoned buildings and yards should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-authored-sites.libsonnet`, `furnished`.
+Loose furniture in abandoned buildings and yards should suggest abrupt flight rather than tidy occupation. Keep disorder inside authored furnishing bays, outside reserved circulation, so seeded variation cannot obstruct doors or room access. Use content-owned weighted poses instead of a runtime physics simulation: the existing kit selector provides location-stable variation, and bounded furniture definitions keep appearance and collision together. Tipped chairs are not seats. Townhouse rooms follow the scene rules in `packages/deadvox/docs/aftermath.md`, "Scene slots". See `src/content/base/aftermath.libsonnet`, `poses`, `pieces` and `slot`, and `src/content/base/gauntlet-authored-sites.libsonnet`, `furnished`.
 
 The lab's surface enclosure follows the underground footprint rather than just the service building, so the slab reads as one abandoned compound. Keep the apron and named perimeter crossings usable so fencing does not obscure the way down or turn the yard into a trap. Lot and service-yard openings share the same reach-and-sweep certificate so an alternate entrance cannot hide a blocked crossing. See `src/content/base/gauntlet-lab-yard.libsonnet`, `slots` and `routes`, and `src/core/cityLots.ts`, `perimeterRouteIssues`.
 
@@ -297,7 +297,7 @@ Supply shops supplement the houses, while police and gun supplies remain scarce.
 
 Every shop shows a street cue that no house carries, and no two shop types share one, so a player walking the street can tell a shop from a house, and one kind of shop from another, before entering. The cue is built from blocks that only shop fronts use, on the street face and in the yard in front of it. A cue prop must never narrow what a standing player or shambler can walk: the yard cells in front of a door keep full standing headroom, so a prop that hangs over the yard goes above the standing body, not at head height. The rule is data-only, with no code special cases per shop type. See `src/content/base/gauntlet-city-building-types.libsonnet`, `shell`, and `test/cityKitPlan.test.ts`, "gauntlet shop fronts".
 
-The secret house is a cellar house with one more storey under the cellar, reached by a ladder through a floor hatch. Its pool row carries a quota of exactly one, because a secret is special only while it is rare; a city that cannot fit it fails loudly rather than dropping it. Quota rows take their lots in authored order without a seed, so the secret house and the gun store stand in the same lot every seed. The fixed lot is accepted because it keeps the engine unchanged, rather than adding a seeded lot per quota row. What that leaves open: once found, the secret is found for every later run, so its note, hatch and reward reward a first visit only, and changing the pool's authored lots is the only way to move it. See `src/core/cityLots.ts`, `matchQuotas`. The note upstairs hints that something lies deeper without giving directions, so finding the hatch stays the player's discovery. The sealed room is furnished as a prepper's bunker, with a bed and a wardrobe beside the stash and a little more floor than a stash alone needs, so it reads as a room someone built to wait out the end rather than a hidden locker. A rug lies over the hatch in every choice of the room above it, so the way down is hidden until the player lifts the rug; tarps lie elsewhere, in some city yards, so a cover is not always a tell. A rug is a cover, which `deadvox/DESIGN.md`, "Moving furniture", defines. The sealed room holds one brute shambler so the reward is guarded rather than free. It is not an acid zombie, because acid zombies stay a lab threat and a city house would blur that. What the brute shambler is belongs to `deadvox/DESIGN.md`, "Types are data". The room is not certified as a resource: the reward is a bonus, not a promise, so it is fixed stock on the room's furniture outside `composition.resources` and no route proof depends on it. Its wardrobe rolls ordinary wardrobe loot, which is part of the same bonus: the room lies below every storey the house declares, so the building's loot promise does not cover it. The stock is police-calibre ammunition only, keeping the stash within the scarcity police supplies already set; the footlocker also holds the game's only blowtorch, with one gas cartridge fitted. Palette stock is checked like any fixed loot: a container item needs a container and the building's source context must admit it. See `src/content/base/scenarios.jsonnet`, `mapPools`; `src/content/base/gauntlet-city-variants.libsonnet`, `secretHouse`; `src/content/base/gauntlet-city-cellars.libsonnet`, `reward`; and `src/core/placementLoot.ts`, `pieceItemIssues`.
+The secret house is a cellar house with one more storey under the cellar, reached by a ladder through a floor hatch. Its pool row carries a quota of exactly one, because a secret is special only while it is rare; a city that cannot fit it fails loudly rather than dropping it. Quota rows take their lots in authored order without a seed, so the secret house and the gun store stand in the same lot every seed. The fixed lot is accepted because it keeps the engine unchanged, rather than adding a seeded lot per quota row. What that leaves open: once found, the secret is found for every later run, so its note, hatch and reward reward a first visit only, and changing the pool's authored lots is the only way to move it. See `src/core/cityLots.ts`, `matchQuotas`. The note upstairs hints that something lies deeper without giving directions, so finding the hatch stays the player's discovery. The sealed room is furnished as a prepper's bunker, with a bed and a wardrobe beside the stash and a little more floor than a stash alone needs, so it reads as a room someone built to wait out the end rather than a hidden locker. A rug lies over the hatch in every choice of the room above it, so the way down is hidden until the player lifts the rug; tarps lie elsewhere, in some city yards, so a cover is not always a tell. A rug is a cover, which `packages/deadvox/DESIGN.md`, "Moving furniture", defines. The sealed room holds one brute shambler so the reward is guarded rather than free. It is not an acid zombie, because acid zombies stay a lab threat and a city house would blur that. What the brute shambler is belongs to `packages/deadvox/DESIGN.md`, "Types are data". The room is not certified as a resource: the reward is a bonus, not a promise, so it is fixed stock on the room's furniture outside `composition.resources` and no route proof depends on it. Its wardrobe rolls ordinary wardrobe loot, which is part of the same bonus: the room lies below every storey the house declares, so the building's loot promise does not cover it. The stock is police-calibre ammunition only, keeping the stash within the scarcity police supplies already set; the footlocker also holds the game's only blowtorch, with one gas cartridge fitted. Palette stock is checked like any fixed loot: a container item needs a container and the building's source context must admit it. See `src/content/base/scenarios.jsonnet`, `mapPools`; `src/content/base/gauntlet-city-variants.libsonnet`, `secretHouse`; `src/content/base/gauntlet-city-cellars.libsonnet`, `reward`; and `src/core/placementLoot.ts`, `pieceItemIssues`.
 
 ### City perimeter
 
@@ -317,7 +317,7 @@ and `perimeterIssues`; `src/content/base/gauntlet-layout.libsonnet`, `bounds`; a
 A scenario is mod content: a mod must be able to express a scenario like the gauntlet in
 Jsonnet without a code edit. The scenario row must supply the values, such as counts,
 chances, densities, thresholds and authored placements, and must select code-owned
-mechanisms, as `../../PILLARS.md`, "Content forward compatibility" requires. Code keeps
+mechanisms, as `../../../PILLARS.md`, "Content forward compatibility" requires. Code keeps
 what a mod cannot safely or usefully restate: the body route oracle, the physical climb
 and reach certificates, spawn admission with its saved ledger, and the scenario run's win
 state. See `src/core/schema.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts`,
@@ -374,7 +374,7 @@ ownership so a mod can express the scenario without a code edit.
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules
 beyond data, such as triggers, timed events and conditional consequences, wait for the
-runtime-function format that `../../docs/decisions/0004-content-language.md` leaves open
+runtime-function format that `../../../docs/decisions/0004-content-language.md` leaves open
 in #313, so no scenario grows a private rule language first.
 
 ## Recipes
@@ -401,7 +401,7 @@ Separate item admission from table weights and world placement. Exact tier membe
 
 Templates own procedural defaults. Authored building contexts override them; when that override is absent, the site's tier combines with template usage. Anchor overrides replace usage without changing the resolved tier. See `src/core/authoredPlacement.ts`, `placementOf`, and `src/core/site.ts`, `lootSourcesOf`. Native content metadata is an explicit authoring choice with unknown-row assertions, not a runtime default; see `src/content/base/economy.libsonnet`, `authorItem` and `context`.
 
-Keep empty source descriptions so a dynamic event can address any source without regenerating geometry; world loot itself rolls once per chunk column (`deadvox/DESIGN.md`, "Loot"). Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
+Keep empty source descriptions so a dynamic event can address any source without regenerating geometry; world loot itself rolls once per chunk column (`packages/deadvox/DESIGN.md`, "Loot"). Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
 
 Debug descriptions are fixture-scoped so showcase stock cannot define production eligibility. Explicit fixture stock may include demonstration items without changing their economy metadata. The world selector still rejects those types in ordinary pools; see `src/game/worldSetup.ts`, `fixtureLootSource`, and `src/core/loot.ts`, `selectLootType`.
 
@@ -425,11 +425,11 @@ Merge detail into the fixture's existing draw object and cache geometry between 
 
 Survey the fixture's real-world construction and its authored role before choosing detail. Identify the recognizable silhouette, front, panels and opening hardware without inspecting hidden loot; recognition should help a player understand the fixture, not reveal its search state.
 
-Choose the structural appearance in content through `src/core/schema.ts`, `FurnitureSchema`, rather than a renderer ID exception. Follow `../../docs/jsonnet.md`, "Jsonnet authoring", for the source boundary. Derive procedural parts from the definition's dimensions in `src/render/furnitureDetail.ts`, `furnitureDetail`, so the same construction works for differently sized definitions. Keep front relief within the occupied envelope and check rotated facings: protruding decoration would advertise interaction space the picker cannot reach.
+Choose the structural appearance in content through `src/core/schema.ts`, `FurnitureSchema`, rather than a renderer ID exception. Follow `../../../docs/jsonnet.md`, "Jsonnet authoring", for the source boundary. Derive procedural parts from the definition's dimensions in `src/render/furnitureDetail.ts`, `furnitureDetail`, so the same construction works for differently sized definitions. Keep front relief within the occupied envelope and check rotated facings: protruding decoration would advertise interaction space the picker cannot reach.
 
-Use `deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
+Use `packages/deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
 
-Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
+Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
 
 ## Furniture solidity
 

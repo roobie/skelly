@@ -466,7 +466,7 @@ try {
       'Skipping Firefox weatheringTest page subflow (#670 quarantine; set DEADVOX_FIREFOX_UI_WEATHERING_TEST=1 to run locally).\n',
     );
   }
-  // Quarantined as a flake under `../AGENTS.md`, "Tests"; #670 owns the root cause.
+  // Quarantined as a flake under `AGENTS.md`, "Tests"; #670 owns the root cause.
   if (runWeatheringTestPage) {
     pageErrors.length = 0;
     consoleErrors.length = 0;

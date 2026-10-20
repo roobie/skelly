@@ -5,11 +5,11 @@
 //
 // mobgen's pure core/mob modules (bones, IK, gait, the crowd bone-matrix packing) are reused directly via
 // the `@mobgen/` alias (vite.config.ts, tsconfig.json) — no npm dependency, just a sibling-project source
-// import. three.js itself is `import`ed here directly; mobgen only reaches three from mobgen/src/viewer,
+// import. three.js itself is `import`ed here directly; mobgen only reaches three from packages/mobgen/src/viewer,
 // which this file — and everything under @mobgen/ — must never import; see test/mobgenBoundary.test.ts. The draw strategy mirrors mobgen's own stress-page 'crowd'
-// mode (mobgen/src/viewer/stressActors.ts's buildCrowdRender): one shared bone-matrix DataTexture for
+// mode (packages/mobgen/src/viewer/stressActors.ts's buildCrowdRender): one shared bone-matrix DataTexture for
 // every zombie (one GPU upload/frame, not one per zombie) and one InstancedMesh per body variant, each
-// vertex fetching its own bone's matrix with a single texelFetch — see mobgen/src/mob/crowd.ts for the
+// vertex fetching its own bone's matrix with a single texelFetch — see packages/mobgen/src/mob/crowd.ts for the
 // packing/layout and the GLSL, patched into MeshLambertMaterial here via onBeforeCompile exactly as
 // stressActors.ts patches MeshStandardMaterial (checked against three r186's meshlambert.glsl.js: same
 // <begin_vertex>/<beginnormal_vertex> chunks, same relative order, so the same patch applies unchanged).
@@ -32,7 +32,7 @@
 // the slot. Corpses are render-only; incapacitated zombies remain simulation entities, fall once and lie in
 // their existing row, excluded from corpse eviction, until finishing one off makes it an ordinary corpse.
 //
-// Dismemberment (mobgen/src/mob/dismember.ts): src/core/zombies.ts's Zombie.severed (part names, e.g.
+// Dismemberment (packages/mobgen/src/mob/dismember.ts): src/core/zombies.ts's Zombie.severed (part names, e.g.
 // "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live zombie,
 // just re-expands zombie.severed via severedBoneSet every sync() (cheap, and it's what makes save/load
 // "just work": a restored zombie's severed list is already exactly right). A severed bone is hidden by
@@ -221,11 +221,11 @@ interface Variant {
   readonly bodyScale?: number;
   readonly realized: Realized;
   /** Shared bones/extents/params/seed; each zombie using this variant clones it with its own GaitCache
-   * (mobgen/src/mob/gait.ts's GaitCache — per zombie, not per variant, since several zombies sharing a
+   * (packages/mobgen/src/mob/gait.ts's GaitCache — per zombie, not per variant, since several zombies sharing a
    * variant have different speeds/step indices at once; see mobgen's own crowd-cache report). */
   readonly walkActorTemplate: WalkActor;
   /** Every bone's own rest extents (not just the feet) — deathPose's own re-grounding needs the whole
-   * fallen body, since the lowest point once lying down is rarely a foot (see mobgen/src/mob/gait.ts's
+   * fallen body, since the lowest point once lying down is rarely a foot (see packages/mobgen/src/mob/gait.ts's
    * bodyRestExtents doc comment). */
   readonly bodyExtents: ReadonlyMap<string, Extent>;
   readonly rigidParts: ReadonlyMap<

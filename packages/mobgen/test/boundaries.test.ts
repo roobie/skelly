@@ -5,7 +5,7 @@ import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(import.meta.dirname, '..');
-const REPO = resolve(ROOT, '..');
+const REPO = resolve(ROOT, '../..');
 const IMPORT_SPECIFIER = /\bfrom\s+'([^']+)'|\bimport\s+'([^']+)'|\bimport\(\s*'([^']+)'\s*\)/g;
 const DOMAIN_DIR = /(^|\/)\.\.\/(mob|viewer|cli)(\/|$)/;
 

@@ -20,9 +20,11 @@ if (args.length > 0 && (args.length !== 2 || args[0] !== '--shape-ref' || !/^[0-
 const shapeUrl = new URL('../core/amalgamShape.ts', import.meta.url).href;
 let substituted = false;
 if (args.length > 0) {
-  const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
   const source = stripTypeScriptTypes(
-    execFileSync('git', ['-C', root, 'show', `${args[1]}:deadvox/src/core/amalgamShape.ts`], { encoding: 'utf8' }),
+    execFileSync('git', ['-C', root, 'show', `${args[1]}:packages/deadvox/src/core/amalgamShape.ts`], {
+      encoding: 'utf8',
+    }),
   );
   registerHooks({
     load(url, context, nextLoad) {

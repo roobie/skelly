@@ -1,8 +1,8 @@
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-import { pagesAnalyticsPlugin } from '../pagesAnalyticsPlugin.ts';
-import { TEST_POOL } from '../testPool.ts';
+import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
+import { TEST_POOL } from '../../testPool.ts';
 
 export default defineConfig({
   base: './',

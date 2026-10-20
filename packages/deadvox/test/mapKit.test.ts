@@ -1,12 +1,16 @@
 import { expect, it } from 'vitest';
-import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import { compileMapSite } from '../src/core/mapKit.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { compileAssembly } from '../src/core/templates.ts';
 
-const FIXTURE = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
-const CLIMB_FIXTURE = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/climb-kits.jsonnet')) as ContentFile;
+const FIXTURE = JSON.parse(
+  compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet'),
+) as ContentFile;
+const CLIMB_FIXTURE = JSON.parse(
+  compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/climb-kits.jsonnet'),
+) as ContentFile;
 const fixture = (): ContentFile => structuredClone(FIXTURE);
 const climbFixture = (): ContentFile => structuredClone(CLIMB_FIXTURE);
 const build = (data: ContentFile) => buildRegistry([{ source: 'fixture-kits.json', data }]);

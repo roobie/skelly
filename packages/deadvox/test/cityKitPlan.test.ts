@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityPlan.ts';
 import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
@@ -14,7 +14,7 @@ import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 const BUNDLED_CONTENT = startupContent();
 
 it('resolves one repeatable variant per slot and varies city assemblies across buildings and seeds', () => {
-  const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
+  const data = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
   const { registry, issues } = buildRegistry([{ source: 'fixture-city-kits.json', data }]);
   expect(issues).toEqual([]);
   const grid = {
@@ -54,7 +54,9 @@ it('resolves one repeatable variant per slot and varies city assemblies across b
 
 describe('authored city grounding', () => {
   it('aligns the authored ground course with the city surface while keeping cellar floors below it', () => {
-    const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
+    const data = JSON.parse(
+      compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet'),
+    ) as ContentFile;
     const building = data.mapAssemblies![0]!;
     building.size[1] *= 2;
     data.mapPieces!.push({ ...data.mapPieces![0]!, id: 'street_room', ports: [] });
@@ -104,7 +106,7 @@ describe('authored city grounding', () => {
 });
 
 it('reports an unknown style on a pool row or a slot ref with its source path', () => {
-  const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
+  const data = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
   const { registry, issues } = buildRegistry([{ source: 'fixture-city-kits.json', data }]);
   expect(issues).toEqual([]);
   const pooled = buildRegistry([
@@ -136,7 +138,7 @@ it('reports an unknown style on a pool row or a slot ref with its source path', 
 });
 
 it('rejects ambiguous city pool identities instead of choosing a template or assembly namespace', () => {
-  const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
+  const data = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
   data.templates = [
     {
       id: 'fixture_route',
@@ -580,7 +582,9 @@ const houseId = /^gauntlet_city_\d+/;
 // The yard rows in front of a shop door, where a player walks up from the street.
 const yardRows = 2;
 const shopIds = (
-  JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-city-building-types.libsonnet')) as ContentFile
+  JSON.parse(
+    compileJsonnetFile('packages/deadvox/src/content/base/gauntlet-city-building-types.libsonnet'),
+  ) as ContentFile
 ).mapAssemblies!.map(({ id }) => id);
 
 describe('gauntlet shop fronts', () => {

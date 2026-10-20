@@ -1,7 +1,7 @@
 // Gauntlet townhouse scenes: what a room looks like once its people have gone. A room slot
 // is a weighted choice of scene pieces; each scene is a list of furniture placements and
 // shambler markers that the library turns into one piece per level. See
-// `deadvox/docs/aftermath.md`, "Scene slots".
+// `packages/deadvox/docs/aftermath.md`, "Scene slots".
 function(palette, context)
 local base = (import 'furniture.jsonnet').furniture + (import 'aftermath.libsonnet').furniture;
 local sizes = { [f.id]: f.size for f in base };

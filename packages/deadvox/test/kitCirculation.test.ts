@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { templateStandingRoute } from '../src/core/templateSpatial.ts';
@@ -41,7 +41,9 @@ it('equipment alternatives leave declared level circulation reachable in both di
 });
 
 it('a fixture mod can replace a role style by id without changing curated geometry', () => {
-  const mod = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/concrete-style-mod.jsonnet')) as ContentFile;
+  const mod = JSON.parse(
+    compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/concrete-style-mod.jsonnet'),
+  ) as ContentFile;
   const sources = readdirSync('src/content/base')
     .filter((file) => file.endsWith('.json'))
     .sort()

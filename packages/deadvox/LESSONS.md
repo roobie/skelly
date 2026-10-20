@@ -54,7 +54,7 @@ Admit and commit seeded sound choice, cooldown and hearing stimulus in the simul
 
 ## Item ownership
 
-Hands, worn slots and container/pile/furniture trees own items. Quickbar bindings and selected lights hold UIDs and resolve them through inventory; they are not aliases that require lifetime cleanup; a quickbar binding resolves only among carried items (`deadvox/INTERACTIONS.md`, "Ownership"). At snapshot boundaries validate saved light references rather than repairing malformed data. See `src/core/itemTree.ts`, `walkItemTree`, and `src/core/inventory.ts`, `Inventory.itemByUid`.
+Hands, worn slots and container/pile/furniture trees own items. Quickbar bindings and selected lights hold UIDs and resolve them through inventory; they are not aliases that require lifetime cleanup; a quickbar binding resolves only among carried items (`packages/deadvox/INTERACTIONS.md`, "Ownership"). At snapshot boundaries validate saved light references rather than repairing malformed data. See `src/core/itemTree.ts`, `walkItemTree`, and `src/core/inventory.ts`, `Inventory.itemByUid`.
 
 ## Save-storage deadlines
 

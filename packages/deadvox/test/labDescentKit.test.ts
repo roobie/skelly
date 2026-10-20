@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { compileMapSite } from '../src/core/mapKit.ts';
 import type { ContentFile, MapAssemblyDef, MapSiteDef } from '../src/core/schema.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -7,7 +7,7 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 const content = JSON.parse(
-  compileJsonnetFile('deadvox/src/content/base/gauntlet-lab-descents.libsonnet'),
+  compileJsonnetFile('packages/deadvox/src/content/base/gauntlet-lab-descents.libsonnet'),
 ) as ContentFile;
 const [incoming, outgoing, shaft] = content.mapPieces!;
 if (!(incoming && outgoing && shaft)) {

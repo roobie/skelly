@@ -18,7 +18,7 @@ Deadvox prioritizes a deep simulation and a moddable, text-dense interface. Its 
 
 Build a TypeScript browser game with its own chunked voxel engine and simulation. Use three.js for world rendering, HTML/CSS for the interface, and data files for authored content. Publish a static build to GitHub Pages.
 
-Keeping the simulation as plain data separate from rendering supports pause, time compression, catch-up and exact saves. HTML/CSS supports the text-dense, moddable interface; its screen boundary is in [ADR 0001](0001-ui-rendering-with-lit-html.md). Content packs keep authored items and systems extensible; their language is in [ADR 0004](../../../docs/decisions/0004-content-language.md).
+Keeping the simulation as plain data separate from rendering supports pause, time compression, catch-up and exact saves. HTML/CSS supports the text-dense, moddable interface; its screen boundary is in [ADR 0001](0001-ui-rendering-with-lit-html.md). Content packs keep authored items and systems extensible; their language is in [ADR 0004](../../../../docs/decisions/0004-content-language.md).
 
 ## Rejected alternatives
 

@@ -1,6 +1,6 @@
 import { deepStrictEqual } from 'node:assert/strict';
 import { describe, expect, it, vi } from 'vitest';
-import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import type { Chunk } from '../src/core/chunk.ts';
 import { perimeterRouteIssues } from '../src/core/cityLots.ts';
 import { buildCityPlan, type CityPlan, cityGridOf, servicePlacement } from '../src/core/cityPlan.ts';
@@ -47,7 +47,7 @@ const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.se
   siteId: `scenario:${profile.id}:service`,
 });
 
-const witness = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/lab-witness.jsonnet')) as {
+const witness = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/lab-witness.jsonnet')) as {
   mapAssemblies: string[];
   mapPieces: string[];
   loop: { from: Vec3; through: Vec3; to: Vec3; cut: { min: Vec3; size: Vec3 } };

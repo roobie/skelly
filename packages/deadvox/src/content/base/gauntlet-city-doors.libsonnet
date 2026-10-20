@@ -2,7 +2,7 @@
 // opening it fills. The shell leaves that 2 × 4 × 1 slot unclaimed, so the
 // building assembly delegates the doorway to this piece and a window bay
 // cannot host it. The variants are alternatives for that one slot. See
-// `deadvox/docs/content.md`, "Curated kits" and `deadvox/docs/aftermath.md`, "Door variants".
+// `packages/deadvox/docs/content.md`, "Curated kits" and `packages/deadvox/docs/aftermath.md`, "Door variants".
 local context = { usage: ['Residential'], tier: 'Tier1' };
 local leaf = std.filter(function(f) f.id == 'wood_door', (import 'furniture.jsonnet').furniture)[0];
 local door(id, palette, rows, claim) = {

@@ -16,7 +16,7 @@ The first-look body is approved, but the scope of the requested visual improveme
 
 ## Exact-shape movement cost (#574)
 
-The generated amalgam shape is also a gameplay collision input, so rendering budgets alone do not establish the cost of movement in tight spaces. Keep collision-query measurements distinct from Mobgen's voxel and triangle budgets. See `deadvox/src/core/amalgamShape.ts`, `AmalgamShape`, and `deadvox/src/core/zombies.ts`, `pushTurn`.
+The generated amalgam shape is also a gameplay collision input, so rendering budgets alone do not establish the cost of movement in tight spaces. Keep collision-query measurements distinct from Mobgen's voxel and triangle budgets. See `packages/deadvox/src/core/amalgamShape.ts`, `AmalgamShape`, and `packages/deadvox/src/core/zombies.ts`, `pushTurn`.
 
 ## Animated-pose limits
 
@@ -24,4 +24,4 @@ Rest-pose feasibility cannot establish that every animated pose stays within use
 
 ## Cross-engine voxel identity
 
-A seed is repeatable within a JavaScript engine, but floating-point differences near shape boundaries can change voxel ownership across engines. Deadvox hit and carving behavior depends on the generated figure, so seed identity alone does not promise identical geometry across browsers. See `src/core/random.ts`, `seededRng`, `src/core/voxelize.ts`, `voxelize`, `deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and `deadvox/src/core/saveFormat.ts`.
+A seed is repeatable within a JavaScript engine, but floating-point differences near shape boundaries can change voxel ownership across engines. Deadvox hit and carving behavior depends on the generated figure, so seed identity alone does not promise identical geometry across browsers. See `src/core/random.ts`, `seededRng`, `src/core/voxelize.ts`, `voxelize`, `packages/deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and `packages/deadvox/src/core/saveFormat.ts`.

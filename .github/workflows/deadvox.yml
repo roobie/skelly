@@ -5,31 +5,31 @@ on:
   push:
     branches: [main]
     paths:
-      - 'deadvox/**'
-      - 'engine/**'
-      - 'packages/**'
+      - 'packages/deadvox/**'
+      - 'packages/engine/**'
+      - 'packages/tool-ui/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'
-      - 'mobgen/src/**'
+      - 'packages/mobgen/src/**'
       - 'testPool.ts'
       - '!**/*.md'
-      - 'deadvox/TROUBLESHOOTING.md'
+      - 'packages/deadvox/TROUBLESHOOTING.md'
       - '.github/workflows/deadvox*.yml'
       - 'tools/browser-ci*.mjs'
       - 'test/browser-ci*.mjs'
   pull_request:
     paths:
-      - 'deadvox/**'
-      - 'engine/**'
-      - 'packages/**'
+      - 'packages/deadvox/**'
+      - 'packages/engine/**'
+      - 'packages/tool-ui/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'
-      - 'mobgen/src/**'
+      - 'packages/mobgen/src/**'
       - 'testPool.ts'
       - '!**/*.md'
-      - 'deadvox/TROUBLESHOOTING.md'
+      - 'packages/deadvox/TROUBLESHOOTING.md'
       - '.github/workflows/deadvox*.yml'
       - 'tools/browser-ci*.mjs'
       - 'test/browser-ci*.mjs'
@@ -55,7 +55,7 @@ jobs:
     timeout-minutes: 50
     defaults:
       run:
-        working-directory: deadvox
+        working-directory: packages/deadvox
     steps:
       - uses: actions/checkout@v4
       - name: Cache go-jsonnet
@@ -69,14 +69,14 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            deadvox/tools/lit-check/package-lock.json
-      - run: npm ci --prefix ..
+            packages/deadvox/tools/lit-check/package-lock.json
+      - run: npm ci --prefix ../..
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
-        run: npm --prefix .. run jsonnet:setup
+        run: npm --prefix ../.. run jsonnet:setup
       - name: Browser partition manifest
         timeout-minutes: 1
-        run: node ../test/browser-ci-manifest.mjs
+        run: node ../../test/browser-ci-manifest.mjs
       - run: npm ci --prefix tools/lit-check
         timeout-minutes: 3
       - run: timeout 300 npm run lint:lit
@@ -94,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: deadvox-fast-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: deadvox/test-results/
+          path: packages/deadvox/test-results/
           if-no-files-found: ignore
 
   browser:

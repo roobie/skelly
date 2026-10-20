@@ -1,4 +1,4 @@
-// The debug test range (`deadvox/docs/content.md`, "Handling range"). Fire runs down the lane from the
+// The debug test range (`packages/deadvox/docs/content.md`, "Handling range"). Fire runs down the lane from the
 // firing line, so each target sits at its own lateral offset: a nearer one never hides a farther one.
 {
   handlingRange: [{

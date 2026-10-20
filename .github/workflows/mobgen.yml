@@ -4,9 +4,9 @@ name: mobgen
 on:
   push:
     branches: [main]
-    paths: ['mobgen/**', 'package.json', 'package-lock.json', '!**/*.md', 'testPool.ts', '.github/workflows/mobgen.yml']
+    paths: ['packages/mobgen/**', 'package.json', 'package-lock.json', '!**/*.md', 'testPool.ts', '.github/workflows/mobgen.yml']
   pull_request:
-    paths: ['mobgen/**', 'package.json', 'package-lock.json', '!**/*.md', 'testPool.ts', '.github/workflows/mobgen.yml']
+    paths: ['packages/mobgen/**', 'package.json', 'package-lock.json', '!**/*.md', 'testPool.ts', '.github/workflows/mobgen.yml']
 
 # PR updates replace this PR's checks; main/manual groups always remain unique.
 concurrency:
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobgen
+        working-directory: packages/mobgen
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,7 +26,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci --prefix ..
+      - run: npm ci --prefix ../..
       - run: npm run typecheck
       - run: npm test
       - run: npx vite build

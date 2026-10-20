@@ -1,7 +1,7 @@
 // biome-ignore lint/correctness/noUnresolvedImports: the browser loads this ESM module from jsDelivr.
 import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
 
-// The static launcher cannot import deadvox/src/core/weather.ts; keep its control range in sync with WEATHERING_STRENGTH_MAX.
+// The static launcher cannot import packages/deadvox/src/core/weather.ts; keep its control range in sync with WEATHERING_STRENGTH_MAX.
 const WEATHERING_STRENGTH_MAX = 8;
 
 const page = (state) => html`  <main>

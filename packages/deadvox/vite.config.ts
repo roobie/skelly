@@ -6,8 +6,8 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defineConfig } from 'vitest/config';
-import { pagesAnalyticsPlugin } from '../pagesAnalyticsPlugin.ts';
-import { TEST_POOL } from '../testPool.ts';
+import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
+import { TEST_POOL } from '../../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
 import { bundledModCatalogue } from './src/core/bundledModCatalogue.ts';
 import { canonicalJson } from './src/core/canonicalJson.ts';
@@ -184,7 +184,7 @@ function bundledModListPlugin() {
 }
 
 // mobgen's pure core/mob modules (no three, no DOM — see src/render/mobActors.ts's own header comment)
-// live in the sibling project, reused here rather than duplicated. mobgen/src/viewer (which imports three
+// live in the sibling project, reused here rather than duplicated. packages/mobgen/src/viewer (which imports three
 // and the DOM) must never be reachable through this alias; see test/mobgenBoundary.test.ts.
 const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
 

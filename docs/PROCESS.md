@@ -81,7 +81,7 @@ check below catches a failure it misses.
   closes open work.
 - **Save envelope version:** when a deadvox PR bumps `SAVE_SCHEMA_VERSION`, its value must
   exceed main's at merge. Two PRs bumping to the same number would otherwise give two
-  envelopes one number. When to bump is in `deadvox/docs/decisions/0002-saves.md`.
+  envelopes one number. When to bump is in `packages/deadvox/docs/decisions/0002-saves.md`.
 - **No rerun of a failed deadvox run:** its required check stays red after a failed attempt
   (`docs/browser-ci.md`). Comment the failure's disposition on the PR, then close and reopen
   it for a fresh run, so the PR records why the earlier failure doesn't count.

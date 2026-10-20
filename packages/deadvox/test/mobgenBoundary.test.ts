@@ -3,8 +3,8 @@
 // src/render/mobActors.ts's header comment.
 //
 // Two directions can break that:
-//   1. Something here starts importing mobgen/src/viewer/** (which itself imports three and the DOM).
-//   2. mobgen/src/core/** or mobgen/src/mob/** (the directories `@mobgen/` actually points reuse) starts
+//   1. Something here starts importing packages/mobgen/src/viewer/** (which itself imports three and the DOM).
+//   2. packages/mobgen/src/core/** or packages/mobgen/src/mob/** (the directories `@mobgen/` actually points reuse) starts
 //      importing 'three' or a DOM lib/global, breaking the "pure" assumption for every consumer, not just
 //      deadvox.
 // Both are plain text scans — no bundler involved, so this stays fast and independent of build config.
@@ -13,9 +13,12 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const REPO_ROOT = join(import.meta.dirname, '..', '..');
-const DEADVOX_SRC = join(REPO_ROOT, 'deadvox', 'src');
-const MOBGEN_PURE_DIRS = [join(REPO_ROOT, 'mobgen', 'src', 'core'), join(REPO_ROOT, 'mobgen', 'src', 'mob')];
+const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
+const DEADVOX_SRC = join(REPO_ROOT, 'packages', 'deadvox', 'src');
+const MOBGEN_PURE_DIRS = [
+  join(REPO_ROOT, 'packages', 'mobgen', 'src', 'core'),
+  join(REPO_ROOT, 'packages', 'mobgen', 'src', 'mob'),
+];
 
 const TS_FILE = /\.tsx?$/;
 const MOBGEN_VIEWER_IMPORT = /@mobgen\/viewer\b/;

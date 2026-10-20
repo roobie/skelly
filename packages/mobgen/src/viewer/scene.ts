@@ -215,7 +215,7 @@ export const disposeActor = (actor: Actor): void => {
 };
 
 // ---- The deadvox shambler, for scale comparison ----
-// Box sizes and colours copied from deadvox/src/render/zombies.ts's BOXES constant (not imported:
+// Box sizes and colours copied from packages/deadvox/src/render/zombies.ts's BOXES constant (not imported:
 // subprojects don't share code across the repo boundary). Kept in metres, at the same scale as the
 // generated figure, placed 1 m to its right (+X).
 

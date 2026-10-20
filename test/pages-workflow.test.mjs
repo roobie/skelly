@@ -76,7 +76,7 @@ test('Pages project checks run in their PR workflows', () => {
 });
 
 test('Gungen filters include representative Deadvox and Mobgen import files', () => {
-  const importedFiles = ['deadvox/src/core/amalgamFigure.ts', 'mobgen/src/core/generate.ts'];
+  const importedFiles = ['packages/deadvox/src/core/amalgamFigure.ts', 'packages/mobgen/src/core/generate.ts'];
   for (const event of ['push', 'pull_request']) {
     for (const file of importedFiles) {
       assert.ok(workflowIncludesPath(gungen, event, file), `Gungen ${event} filter includes ${file}`);
@@ -91,7 +91,7 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
   const temp = mkdtempSync(join(tmpdir(), 'skelly-pages-assembly-'));
   try {
     cpSync(join(ROOT, 'site'), join(temp, 'site'), { recursive: true });
-    for (const project of ['gungen', 'deadvox', 'mobgen']) {
+    for (const project of ['gungen', 'packages/deadvox', 'packages/mobgen']) {
       const dist = join(temp, project, 'dist');
       mkdirSync(dist, { recursive: true });
       writeFileSync(join(dist, 'index.html'), `<main>${project}</main>`);

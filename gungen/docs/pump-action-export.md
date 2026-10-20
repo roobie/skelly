@@ -16,6 +16,6 @@ The integral capacity record is shape-neutral so both a pump tube and a rifle we
 
 Deadvox owns playable firearm handling. Gungen exports only the data needed to describe the hand-driven action and its geometry; it does not imply that exported ammunition is already consumed or that the model simulates loading and firing. The maintained export and preparation contracts are exercised by `test/pumpExport.test.ts` and Deadvox's firearm-model tests. If automatic shotguns are added, they use an AK-like stick/paddle handle; pump shotguns stay handle-free, as tracked by #649.
 
-The curated design carries its own calibre, so exporting its model does not require a separate calibre override. The generated entry replaces the pump's entry in `deadvox/src/content/base/models-firearms.json`; the asset credits point to the curated project design. See `designs/archetype-pump-shotgun.json` and `test/gungen-deadvox-contract.test.mjs`.
+The curated design carries its own calibre, so exporting its model does not require a separate calibre override. The generated entry replaces the pump's entry in `packages/deadvox/src/content/base/models-firearms.json`; the asset credits point to the curated project design. See `designs/archetype-pump-shotgun.json` and `test/gungen-deadvox-contract.test.mjs`.
 
 The barrel's muzzle exports as a smoothbore muzzle slot: only devices built for smoothbores certify there. See `attachments.md`, "Muzzle devices".

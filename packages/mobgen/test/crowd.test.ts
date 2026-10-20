@@ -1,7 +1,7 @@
 // Pure-math tests for src/mob/crowd.ts — the shared crowd bone-matrix packing
 // deadvox's own zombie renderer imports directly (via the `@mobgen/` alias), independent of mobgen's
 // three.js-touching viewer layer. See test/stressActors.test.ts for the three.js-side integration
-// (buildCrowdRender) that still lives in mobgen/src/viewer.
+// (buildCrowdRender) that still lives in packages/mobgen/src/viewer.
 
 import { describe, expect, it } from 'vitest';
 import { generateValid, realize } from '../src/core/generate.ts';

@@ -337,7 +337,7 @@ qualities, the body model, saves, dark nights and sound. They are the game.
 1. **Plan:** a `SLICE-<number>.md` with its goal, playtest questions, scope, ordered
    milestones and a definition of done. Run or explicitly reuse the slice-start
    consolidation surveys for deadvox, gungen and mobgen, following
-   [Continuous consolidation](../docs/PROCESS.md#continuous-consolidation).
+   [Continuous consolidation](../../docs/PROCESS.md#continuous-consolidation).
    Give open findings owners, decisions and calendar revisit dates; name which
    work is standalone and which folds into a milestone.
 2. **Build:** in PR-sized milestones. Each one is merged and deployed to Pages,
