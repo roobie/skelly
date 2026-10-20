@@ -21,28 +21,38 @@ interface Column {
   index: number;
   furniture: SkyBounds[];
   roof: boolean;
+  /** Still inside the column's topmost run of furniture-only cells. */
+  furnitureTop: boolean;
   highest: number;
 }
-function solidAt(snapshot: SkySnapshot, column: Column, chunk: SkyChunk | undefined, y: number): boolean {
+const BLOCK = 1;
+const FURNITURE = 2;
+function cellAt(snapshot: SkySnapshot, column: Column, chunk: SkyChunk | undefined, y: number): number {
   if (y > snapshot.top) {
-    return false;
+    return 0;
   }
   const id = chunk?.uniform ?? chunk?.raw?.[column.index + CHUNK * CHUNK * (y & (CHUNK - 1))];
-  return (
-    y < snapshot.bottom ||
-    id === undefined ||
-    Boolean(snapshot.opacity[id]) ||
-    column.furniture.some((box) => y >= box.min[1] && y < box.max[1])
-  );
+  if (y < snapshot.bottom || id === undefined || snapshot.opacity[id]) {
+    return BLOCK;
+  }
+  return column.furniture.some((box) => y >= box.min[1] && y < box.max[1]) ? FURNITURE : 0;
 }
+// The fallback roof sits below the column's topmost furniture: a receiver whose lookup lands in a coarse
+// furniture cell beside a wall would otherwise read that cell as its own roof and go black in daylight.
 function visitCell(
   column: Column,
   y: number,
-  solid: boolean,
+  cell: number,
   { bounds, visit }: { bounds: SkyBounds; visit: Visit },
 ): void {
+  const solid = cell !== 0;
   if (solid && !column.roof) {
     column.highest = y;
+    column.furnitureTop = cell === FURNITURE;
+  }
+  column.furnitureTop &&= cell === FURNITURE;
+  if (column.furnitureTop) {
+    column.highest = y - 1;
   }
   column.roof ||= solid;
   if (y < bounds.max[1]) {
@@ -63,6 +73,7 @@ function scanColumn(
       (box) => x >= box.min[0] && x < box.max[0] && z >= box.min[2] && z < box.max[2],
     ),
     roof: false,
+    furnitureTop: false,
     highest: snapshot.bottom - 1,
   };
   const start = Math.max(snapshot.top, bounds.max[1] - 1);
@@ -78,7 +89,7 @@ function scanColumn(
       continue;
     }
     for (let y = hi; y >= lo; y--) {
-      visitCell(column, y, solidAt(snapshot, column, chunk, y), context);
+      visitCell(column, y, cellAt(snapshot, column, chunk, y), context);
     }
   }
 }
