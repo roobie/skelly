@@ -1,0 +1,35 @@
+{
+  "id": "optic_fixed_prism_4x",
+  "file": "assets/models/optic_fixed_prism_4x.glb",
+  "gun": {
+    "attachment": {
+      "id": "optic-fixed-prism-4x",
+      "kind": "optic",
+      "massKg": 0.357488038040254,
+      "mount": "rail-top",
+      "properties": {
+        "reticleKind": "chevron",
+        "magnification": {
+          "min": 4,
+          "max": 4
+        },
+        "railSpanNotches": {
+          "minOffset": -3,
+          "maxOffset": 3
+        }
+      },
+      "sight": {
+        "kind": "optic",
+        "eye": [-0.07475, 0.025875, 0],
+        "direction": [1, 0, 0],
+        "up": [0, 1, 0],
+        "eyeReliefMetres": 0.04025,
+        "ocularDiameterMetres": 0.01725
+      },
+      "mountFrame": {
+        "normal": [0, -1, 0],
+        "up": [1, 0, 0]
+      }
+    }
+  }
+}

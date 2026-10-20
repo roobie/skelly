@@ -16,10 +16,10 @@ it('aligns ADS through the fitted optic frame and restores irons when removed', 
   const inventory = new Inventory(registry);
   const rifle = inventory.create('rifle_hunting');
   const bare = registry.models.get(registry.items.get(rifle.type)!.model!)!;
-  expect(bare.sight?.kind).toBe('iron');
+  expect(bare.gun?.sight?.kind).toBe('iron');
   const look = itemLook(registry, rifle)!;
   const slot = look.slots.find((entry) => entry.slot === fitted.mountedAt)!;
-  const optic = registry.models.get(slot.model!)!.attachment!.sight!;
+  const optic = registry.models.get(slot.model!)!.gun!.attachment!.sight!;
   expect(optic.kind).toBe('optic');
   const seat = fittedPartFrame(slot);
   seat.updateMatrix();
@@ -27,12 +27,12 @@ it('aligns ADS through the fitted optic frame and restores irons when removed', 
   const direction = new Vector3(...optic.direction).transformDirection(seat.matrix);
   const up = new Vector3(...optic.up).transformDirection(seat.matrix);
   const resolved = sightedFirearmModel(registry, rifle)!;
-  expect(resolved.sight?.kind).toBe('optic');
-  expect(resolved.sight?.eye).toEqual(eye.toArray());
-  expect(resolved.sight?.direction).toEqual(direction.toArray());
-  expect(resolved.sight?.up).toEqual(up.toArray());
-  expect(resolved.sight?.eyeReliefMetres).toBe(optic.eyeReliefMetres);
-  expect(resolved.sight?.ocularDiameterMetres).toBe(optic.ocularDiameterMetres);
+  expect(resolved.gun?.sight?.kind).toBe('optic');
+  expect(resolved.gun?.sight?.eye).toEqual(eye.toArray());
+  expect(resolved.gun?.sight?.direction).toEqual(direction.toArray());
+  expect(resolved.gun?.sight?.up).toEqual(up.toArray());
+  expect(resolved.gun?.sight?.eyeReliefMetres).toBe(optic.eyeReliefMetres);
+  expect(resolved.gun?.sight?.ocularDiameterMetres).toBe(optic.ocularDiameterMetres);
   expect(resolved.grip).toBe(bare.grip);
   const pose = heldFirearmTransform({
     model: resolved,
@@ -51,5 +51,5 @@ it('aligns ADS through the fitted optic frame and restores irons when removed', 
   }
   inventory.fitSlot(rifle, fitted.mountedAt, undefined);
   expect(sightedFirearmModel(registry, rifle)).toBe(bare);
-  expect(bare.sight?.kind).toBe('iron');
+  expect(bare.gun?.sight?.kind).toBe('iron');
 });

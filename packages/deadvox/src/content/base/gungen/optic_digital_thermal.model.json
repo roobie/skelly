@@ -1,0 +1,35 @@
+{
+  "id": "optic_digital_thermal",
+  "file": "assets/models/optic_digital_thermal.glb",
+  "gun": {
+    "attachment": {
+      "id": "optic-digital-thermal",
+      "kind": "optic",
+      "massKg": 0.3376618423714778,
+      "mount": "rail-top",
+      "properties": {
+        "reticleKind": "crosshair",
+        "magnification": {
+          "min": 3,
+          "max": 12
+        },
+        "railSpanNotches": {
+          "minOffset": -3,
+          "maxOffset": 3
+        }
+      },
+      "sight": {
+        "kind": "optic",
+        "eye": [-0.1725, 0.048875, 0],
+        "direction": [1, 0, 0],
+        "up": [0, 1, 0],
+        "eyeReliefMetres": 0.07475,
+        "ocularDiameterMetres": 0.043125
+      },
+      "mountFrame": {
+        "normal": [0, -1, 0],
+        "up": [1, 0, 0]
+      }
+    }
+  }
+}

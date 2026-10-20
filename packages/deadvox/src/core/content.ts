@@ -407,10 +407,10 @@ const acceptsSuppressor = (registry: Registry, model: ModelDef | undefined): boo
   const suppressors = new Set(
     [...registry.items.values()].flatMap((candidate) => {
       const candidateModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
-      return candidateModel?.attachment?.kind === 'suppressor' ? [candidateModel.attachment.id] : [];
+      return candidateModel?.gun?.attachment?.kind === 'suppressor' ? [candidateModel.gun.attachment.id] : [];
     }),
   );
-  return Object.values(model?.compatibility ?? {}).some((ids) => ids.some((id) => suppressors.has(id)));
+  return Object.values(model?.gun?.compatibility ?? {}).some((ids) => ids.some((id) => suppressors.has(id)));
 };
 
 /** Authored shot selections must resolve, and a gun that can mount a suppressor must author the quiet event. */
@@ -461,7 +461,7 @@ const checkFirearmHandling = (
   report: Report,
 ): void => {
   const model = item.model ? registry.models.get(item.model) : undefined;
-  if (Boolean(model?.revolver) !== Boolean(firearm.revolver)) {
+  if (Boolean(model?.gun?.revolver) !== Boolean(firearm.revolver)) {
     report('items', item.id, '.firearm.revolver', 'revolver model and handling tuning must be present together');
   }
   if ((firearm.pump || firearm.bolt) && firearm.roundLoadSimSeconds === undefined) {
@@ -470,9 +470,9 @@ const checkFirearmHandling = (
   if (
     firearm.bolt &&
     (firearm.pump ||
-      !model?.internalMagazine ||
+      !model?.gun?.internalMagazine ||
       !model.anchors?.loading_port ||
-      !Object.values(model.action?.parts ?? {}).some((part) => part.turn))
+      !Object.values(model.gun.action?.parts ?? {}).some((part) => part.turn))
   ) {
     report('items', item.id, '.firearm.bolt', 'a bolt firearm needs a turning action and integral loading port');
   }
@@ -486,7 +486,7 @@ const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): vo
     report('items', item.id, '.firearm.dispersionRadians', 'pump pellet spread owns its cone');
   }
   // The fitted magazine is drawn at this slot, so a magazine-fed gun's model shows whether one is fitted.
-  if (magazineWellCalibre(registry, item.id) !== undefined && !registry.models.get(item.model!)?.slots?.magazine) {
+  if (magazineWellCalibre(registry, item.id) !== undefined && !registry.models.get(item.model!)?.gun?.slots?.magazine) {
     report('items', item.id, '.model', 'a magazine-fed firearm needs a model with a magazine slot');
   }
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
@@ -494,10 +494,10 @@ const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): vo
     checkFirearmSounds(item, model, registry, report);
     checkFirearmHandling(item, item.firearm, registry, report);
   }
-  for (const attachment of model?.attachments ?? []) {
+  for (const attachment of model?.gun?.attachments ?? []) {
     const registered = [...registry.items.values()].some((candidate) => {
       const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
-      return attachmentModel?.attachment?.id === attachment.id;
+      return attachmentModel?.gun?.attachment?.id === attachment.id;
     });
     if (!registered) {
       report('items', item.id, '.model', `no item model registered for attachment "${attachment.id}"`);
@@ -529,10 +529,10 @@ const addDerivedItems = (registry: Registry, item: ItemDef, items: Set<string>):
     items.add(yieldItem.item);
   }
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
-  for (const fitted of model?.attachments ?? []) {
+  for (const fitted of model?.gun?.attachments ?? []) {
     const child = [...registry.items.values()].find((candidate) => {
       const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
-      return attachmentModel?.attachment?.id === fitted.id;
+      return attachmentModel?.gun?.attachment?.id === fitted.id;
     });
     if (child) {
       items.add(child.id);
@@ -570,7 +570,7 @@ const obtainableItems = (registry: Registry): ReadonlySet<string> => {
 
 const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlySet<string>, report: Report): void => {
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
-  const attachment = model?.attachment;
+  const attachment = model?.gun?.attachment;
   const range = attachment?.properties.magnification;
   const variable = attachment?.kind === 'optic' && range !== undefined && range.min < range.max;
   if (item.opticMagnification !== undefined && attachment?.kind !== 'optic') {

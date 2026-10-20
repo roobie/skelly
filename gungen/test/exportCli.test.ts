@@ -22,8 +22,8 @@ describe('export CLI core', () => {
       const fromFixture = exportGunGlb(fixture.assembly, ASSET, { variant: 'ar' });
       expect(fromFixture.ok).toBe(true);
       expect(fromDesign.modelEntry.file).toBe('assets/models/ar.glb');
-      expect(fromDesign.modelEntry.compatibility).toBeDefined();
-      expect(fromDesign.modelEntry.compatibilityPairs).toBeDefined();
+      expect(fromDesign.modelEntry.gun.compatibility).toBeDefined();
+      expect(fromDesign.modelEntry.gun.compatibilityPairs).toBeDefined();
       if (fromFixture.ok) {
         expect(fromDesign.modelEntry.grip.turn).toEqual(fromFixture.modelEntry.grip.turn);
       }
@@ -37,9 +37,9 @@ describe('export CLI core', () => {
     if (!(optic.ok && irons.ok)) {
       return;
     }
-    expect(optic.modelEntry.sight?.kind).toBe('optic');
-    expect(irons.modelEntry.sight?.kind).toBe('iron');
-    for (const { sight, muzzleDirection } of [optic.modelEntry, irons.modelEntry]) {
+    expect(optic.modelEntry.gun.sight?.kind).toBe('optic');
+    expect(irons.modelEntry.gun.sight?.kind).toBe('iron');
+    for (const { sight, muzzleDirection } of [optic.modelEntry.gun, irons.modelEntry.gun]) {
       expect(sight).toBeDefined();
       expect(Math.hypot(...sight!.direction)).toBeCloseTo(1);
       expect(Math.hypot(...sight!.up)).toBeCloseTo(1);
@@ -129,7 +129,7 @@ describe('export CLI core', () => {
     const designCalibre = (JSON.parse(designText) as { calibre?: string }).calibre;
     expect(designCalibre).toBeTruthy();
     const fromDesign = exportFileText(designText, ASSET);
-    expect(fromDesign.ok && fromDesign.modelEntry.calibre).toBe(designCalibre);
+    expect(fromDesign.ok && fromDesign.modelEntry.gun.calibre).toBe(designCalibre);
     const mismatchedDesign = JSON.parse(designText) as Record<string, unknown>;
     mismatchedDesign.calibre = `${designCalibre}-other`;
     expect(exportFileText(JSON.stringify(mismatchedDesign), ASSET)).toMatchObject({
@@ -154,14 +154,13 @@ describe('export CLI core', () => {
         { cwd: join(import.meta.dirname, '..') },
       );
       const entry = JSON.parse(readFileSync(join(temp, 'ak_test.model.json'), 'utf8')) as {
-        calibre: string;
+        gun: { calibre: string; slots?: { magazine?: { node: string; at: number[]; turn: number[] } } };
         anchors?: Record<string, number[]>;
-        slots?: { magazine?: { node: string; at: number[]; turn: number[] } };
       };
-      expect(entry.calibre).toBe('7.62x39');
+      expect(entry.gun.calibre).toBe('7.62x39');
       expect(entry.anchors?.magwell).toBeUndefined();
-      expect(entry.slots?.magazine?.node).toBeTruthy();
-      expect(entry.slots?.magazine?.at).toHaveLength(3);
+      expect(entry.gun.slots?.magazine?.node).toBeTruthy();
+      expect(entry.gun.slots?.magazine?.at).toHaveLength(3);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

@@ -278,10 +278,10 @@ const addDefaultAttachments = (
   modelId: string | undefined,
 ): void => {
   const model = modelId === undefined ? undefined : registry.models.get(modelId);
-  for (const attachment of model?.attachments ?? []) {
+  for (const attachment of model?.gun?.attachments ?? []) {
     const attachmentType = [...registry.items.values()].find((candidate) => {
       const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
-      return attachmentModel?.attachment?.id === attachment.id;
+      return attachmentModel?.gun?.attachment?.id === attachment.id;
     });
     if (!attachmentType?.model) {
       throw new Error(`No item registered for default attachment "${attachment.id}"`);
@@ -336,10 +336,10 @@ export class ItemFactory {
       item.firearm = { chamber: 'empty', tube: [], ...(def.firearm.bolt ? { actionOpen: false } : {}) };
     }
     const model = def.model ? registry.models.get(def.model) : undefined;
-    if (def.firearm && model?.revolver) {
+    if (def.firearm && model?.gun?.revolver) {
       item.firearm = {
         cylinder: {
-          chambers: Array.from({ length: model.revolver.chambers }, () => ({ state: 'empty' })),
+          chambers: Array.from({ length: model.gun.revolver.chambers }, () => ({ state: 'empty' })),
           aligned: 0,
           open: false,
           cocked: false,
@@ -408,11 +408,11 @@ const assertMagazineFedChamber = (registry: Registry, type: string, state: Firea
 };
 
 const assertCylinderAmmunition = (registry: Registry, model: ModelDef, state: FirearmState): void => {
-  if (!state.cylinder || state.cylinder.chambers.length !== model.revolver!.chambers) {
+  if (!state.cylinder || state.cylinder.chambers.length !== model.gun!.revolver!.chambers) {
     throw new Error('Cylinder chamber count does not match exported model');
   }
   for (const chamber of state.cylinder.chambers) {
-    if (chamber.state === 'round' && defOf(registry, chamber.roundType).ammo?.calibre !== model.calibre) {
+    if (chamber.state === 'round' && defOf(registry, chamber.roundType).ammo?.calibre !== model.gun?.calibre) {
       throw new Error('Cylinder ammunition calibre mismatch');
     }
   }
@@ -420,8 +420,8 @@ const assertCylinderAmmunition = (registry: Registry, model: ModelDef, state: Fi
 
 const assertIntegralAmmunition = (registry: Registry, model: ModelDef | undefined, state: FirearmState): void => {
   if (
-    !(state.tube && model?.internalMagazine) ||
-    state.tube.length > model.internalMagazine.capacity ||
+    !(state.tube && model?.gun?.internalMagazine) ||
+    state.tube.length > model.gun.internalMagazine.capacity ||
     state.cycle?.mode === 'fire'
   ) {
     throw new Error('Invalid exported integral magazine state');
@@ -434,7 +434,7 @@ const assertIntegralAmmunition = (registry: Registry, model: ModelDef | undefine
     ...(state.roundType ? [state.roundType] : []),
     ...(state.retainedRoundType ? [state.retainedRoundType] : []),
   ]) {
-    if (defOf(registry, round).ammo?.calibre !== model.calibre) {
+    if (defOf(registry, round).ammo?.calibre !== model.gun?.calibre) {
       throw new Error('Integral-magazine ammunition calibre mismatch');
     }
   }
@@ -450,7 +450,7 @@ const assertAmmunition = (registry: Registry, type: string, state: FirearmState)
     throw new Error('Action-open state needs a bolt firearm');
   }
   const revolverModel = def.model ? registry.models.get(def.model) : undefined;
-  if (revolverModel?.revolver) {
+  if (revolverModel?.gun?.revolver) {
     assertCylinderAmmunition(registry, revolverModel, state);
     return;
   }
@@ -564,7 +564,7 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
 const itemWeightGrams = (registry: Registry, item: Item): number => {
   const def = defOf(registry, item.type);
   const model = def.model ? registry.models.get(def.model) : undefined;
-  return model?.attachment ? model.attachment.massKg * 1000 : def.weight;
+  return model?.gun?.attachment ? model.gun.attachment.massKg * 1000 : def.weight;
 };
 
 /** Grams, counting the stack, ammunition and everything in its pockets. */
@@ -588,12 +588,12 @@ const ammunitionWeight = (registry: Registry, item: Item): number => {
     ...(state.cylinder?.chambers.flatMap((chamber) => (chamber.state === 'round' ? [chamber.roundType] : [])) ?? []),
   ];
   const modelId = defOf(registry, item.type).model;
-  const calibre = modelId ? registry.models.get(modelId)?.calibre : undefined;
+  const calibre = modelId ? registry.models.get(modelId)?.gun?.calibre : undefined;
   const hull =
     state.chamber === 'case' || state.cylinder?.chambers.some((chamber) => chamber.state === 'case')
       ? [...registry.items.values()].find((def) => {
           const model = def.model ? registry.models.get(def.model) : undefined;
-          return model?.id.startsWith('case_') && model.calibre === calibre;
+          return model?.id.startsWith('case_') && model.gun?.calibre === calibre;
         })
       : undefined;
   return rounds.reduce(

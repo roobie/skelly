@@ -20,7 +20,7 @@ it('rack pose turns an away-facing port only during handling without changing ga
   model.hold = undefined;
   model.anchors = { ...model.anchors, ejection: [0, 0.04, 0.02] };
   model.anchors.loading_port = [0, -0.02, 0];
-  model.action!.hand = {
+  model.gun!.action!.hand = {
     durationSimSeconds: simSeconds(1.2),
     rearwardSimSeconds: simSeconds(0.4),
     dwellSimSeconds: simSeconds(0.3),
@@ -70,7 +70,7 @@ it('rack pose turns an away-facing port only during handling without changing ga
   expect(update().angleTo(rest)).toBeCloseTo(0);
   expect(mechanics.cock(gun.uid, 0)).toBeUndefined();
   expect(update().angleTo(rest)).toBeCloseTo(0);
-  const halfway = model.action!.hand.rearwardSimSeconds + model.action!.hand.dwellSimSeconds / 2;
+  const halfway = model.gun!.action!.hand.rearwardSimSeconds + model.gun!.action!.hand.dwellSimSeconds / 2;
   queue.tick(halfway);
   mechanics.advanceTo(halfway);
   const rotated = update();
@@ -104,7 +104,7 @@ it('rack pose turns an away-facing port only during handling without changing ga
   mechanics.advanceTo(halfway);
   expect(update().angleTo(rest)).toBeCloseTo(0);
   expect(mechanics.cock(gun.uid, 2)).toBeUndefined();
-  queue.tick(model.action!.hand.durationSimSeconds);
-  mechanics.advanceTo(2 + model.action!.hand.durationSimSeconds);
+  queue.tick(model.gun!.action!.hand.durationSimSeconds);
+  mechanics.advanceTo(2 + model.gun!.action!.hand.durationSimSeconds);
   expect(update().angleTo(rest)).toBeCloseTo(0);
 });

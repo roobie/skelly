@@ -45,8 +45,8 @@ it('discovers the pump open-pose pair after receiver/carrier/forend renames with
     if (!exported.ok) {
       throw new Error('pump export failed');
     }
-    expect(exported.modelEntry.action?.fire).toBeUndefined();
-    expect(exported.modelEntry.action?.parts.forend?.node).toBe('pump-grip:forend');
+    expect(exported.modelEntry.gun.action?.fire).toBeUndefined();
+    expect(exported.modelEntry.gun.action?.parts.forend?.node).toBe('pump-grip:forend');
     expect([...resolve(assembly, gunDomain).placed].map(([id, pose]) => [id, pose.t])).toEqual(before);
   } finally {
     for (const group of Object.values(layers)) {

@@ -12,7 +12,7 @@ export const sightedFirearmModel = (registry: Registry, item: Item): ModelDef | 
     return undefined;
   }
   for (const slot of itemLook(registry, item)?.slots ?? []) {
-    const attachment = slot.model === undefined ? undefined : registry.models.get(slot.model)?.attachment;
+    const attachment = slot.model === undefined ? undefined : registry.models.get(slot.model)?.gun?.attachment;
     if (attachment?.kind !== 'optic' || !attachment.sight) {
       continue;
     }
@@ -22,11 +22,14 @@ export const sightedFirearmModel = (registry: Registry, item: Item): ModelDef | 
     seat.updateMatrix();
     return {
       ...model,
-      sight: {
-        ...sight,
-        eye: new Vector3(...sight.eye).applyMatrix4(seat.matrix).toArray() as Vec3,
-        direction: new Vector3(...sight.direction).transformDirection(seat.matrix).toArray() as Vec3,
-        up: new Vector3(...sight.up).transformDirection(seat.matrix).toArray() as Vec3,
+      gun: {
+        ...model.gun,
+        sight: {
+          ...sight,
+          eye: new Vector3(...sight.eye).applyMatrix4(seat.matrix).toArray() as Vec3,
+          direction: new Vector3(...sight.direction).transformDirection(seat.matrix).toArray() as Vec3,
+          up: new Vector3(...sight.up).transformDirection(seat.matrix).toArray() as Vec3,
+        },
       },
     };
   }

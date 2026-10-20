@@ -23,10 +23,10 @@ export interface MagazineSpec {
 export const magazineSpec = (registry: Registry, type: string): MagazineSpec | undefined => {
   const def = registry.items.get(type);
   const model = def?.model === undefined ? undefined : registry.models.get(def.model);
-  if (model?.capacity === undefined || model.calibre === undefined || def?.firearm) {
+  if (model?.gun?.capacity === undefined || model.gun.calibre === undefined || def?.firearm) {
     return undefined;
   }
-  return { calibre: model.calibre, capacity: model.capacity };
+  return { calibre: model.gun.calibre, capacity: model.gun.capacity };
 };
 
 /** The calibre a detachable-magazine firearm takes. */
@@ -36,7 +36,7 @@ export const magazineWellCalibre = (registry: Registry, type: string): string | 
     return undefined;
   }
   const model = def.model === undefined ? undefined : registry.models.get(def.model);
-  return model?.revolver ? undefined : model?.calibre;
+  return model?.gun?.revolver ? undefined : model?.gun?.calibre;
 };
 
 /** Whether a magazine of this type fits the firearm's magazine slot: same calibre. */
@@ -61,12 +61,13 @@ const fittedAttachmentFor = (
   slotId: string,
   child: { readonly type: string },
 ): FittedAttachment | string => {
-  const slot = model?.attachmentSlots?.find(({ id }) => id === slotId);
+  const slot = model?.gun?.attachmentSlots?.find(({ id }) => id === slotId);
   const attachmentId = attachmentIdFor(registry, child as Item);
   const attachmentModelId = registry.items.get(child.type)?.model;
-  const attachment = attachmentModelId === undefined ? undefined : registry.models.get(attachmentModelId)?.attachment;
+  const attachment =
+    attachmentModelId === undefined ? undefined : registry.models.get(attachmentModelId)?.gun?.attachment;
   const isDefault =
-    model?.attachments?.some(
+    model?.gun?.attachments?.some(
       (defaultAttachment) => defaultAttachment.mountedAt === slotId && defaultAttachment.id === attachmentId,
     ) ?? false;
   if (!(slot && attachment && attachmentId) || attachment.mount !== slot.mount) {
@@ -189,7 +190,7 @@ export const slotsReason = (
     magazineCalibre !== undefined ||
     batteryType !== undefined ||
     canisterType !== undefined ||
-    (model?.attachmentSlots?.length ?? 0) > 0 ||
+    (model?.gun?.attachmentSlots?.length ?? 0) > 0 ||
     isLongGun(definition);
   if (!hasSlots) {
     return slots === undefined ? undefined : 'This item has no fitted-item slots';

@@ -61,7 +61,7 @@ const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantNa
 type ExportedGun = ReturnType<typeof exported>;
 const actionExportFacts = (name: string) => {
   const out = exported(design(name));
-  const action = out.modelEntry.action!;
+  const action = out.modelEntry.gun.action!;
   if (!(action.fire && action.roundsPerSimMinute)) {
     throw new Error('automatic actions require fire timing and roundsPerSimMinute');
   }
@@ -132,7 +132,7 @@ const sightTargetPartId = (out: ExportedGun, endpoint: Vec3, label: string): str
 };
 
 const expectSightLineClear = (out: ExportedGun, label: string): void => {
-  const { sight } = out.modelEntry;
+  const { sight } = out.modelEntry.gun;
   if (!sight) {
     throw new Error(`${label}: export has no sight metadata`);
   }
@@ -550,16 +550,16 @@ describe('glb export: deadvox model entry', () => {
     if (!result.ok) {
       throw new Error(`${label}: export failed: ${JSON.stringify(result.error)}`);
     }
-    expect(result.modelEntry.sight).toBeDefined();
+    expect(result.modelEntry.gun.sight).toBeDefined();
   });
 
   it('exports optic ocular diameter and eye relief with the sight line', () => {
     const optic = exported(design('archetype-ar'));
     const iron = exported(design('archetype-ak'));
-    expect(optic.modelEntry.sight?.eyeReliefMetres).toBeGreaterThan(0);
-    expect(optic.modelEntry.sight?.ocularDiameterMetres).toBeGreaterThan(0);
-    expect(iron.modelEntry.sight?.eyeReliefMetres).toBeGreaterThan(0);
-    expect(iron.modelEntry.sight?.ocularDiameterMetres).toBeUndefined();
+    expect(optic.modelEntry.gun.sight?.eyeReliefMetres).toBeGreaterThan(0);
+    expect(optic.modelEntry.gun.sight?.ocularDiameterMetres).toBeGreaterThan(0);
+    expect(iron.modelEntry.gun.sight?.eyeReliefMetres).toBeGreaterThan(0);
+    expect(iron.modelEntry.gun.sight?.ocularDiameterMetres).toBeUndefined();
   });
 
   it('aims the pump shotgun front bead along a clear line above the barrel', () => {
@@ -567,7 +567,7 @@ describe('glb export: deadvox model entry', () => {
     const beadId = Object.entries(out.resolved.assembly.parts).find(
       ([, part]) => part.family === 'front-sight-bead',
     )?.[0];
-    if (!(beadId && out.modelEntry.sight)) {
+    if (!(beadId && out.modelEntry.gun.sight)) {
       throw new Error('pump shotgun needs its front bead in the exported sight data');
     }
     const beadAxis = out.resolved.defs.get(beadId)!.axes.find(({ kind }) => kind === 'sight')!;
@@ -604,18 +604,18 @@ describe('glb export: deadvox model entry', () => {
       eyeToBead[2] / sightLength,
     ];
     const scale = out.resolved.domain.units.metresPerUnit;
-    const exportedEye: Vec3 = out.modelEntry.sight.eye.map((value) => value / scale) as unknown as Vec3;
-    const exportedDirection = out.modelEntry.sight.direction;
+    const exportedEye: Vec3 = out.modelEntry.gun.sight.eye.map((value) => value / scale) as unknown as Vec3;
+    const exportedDirection = out.modelEntry.gun.sight.direction;
     const exportedEyePoint: Vec3 = [
-      exportedEye[0] - exportedDirection[0] * (out.modelEntry.sight.eyeReliefMetres / scale),
-      exportedEye[1] - exportedDirection[1] * (out.modelEntry.sight.eyeReliefMetres / scale),
-      exportedEye[2] - exportedDirection[2] * (out.modelEntry.sight.eyeReliefMetres / scale),
+      exportedEye[0] - exportedDirection[0] * (out.modelEntry.gun.sight.eyeReliefMetres / scale),
+      exportedEye[1] - exportedDirection[1] * (out.modelEntry.gun.sight.eyeReliefMetres / scale),
+      exportedEye[2] - exportedDirection[2] * (out.modelEntry.gun.sight.eyeReliefMetres / scale),
     ];
     expect(eyePoint[1]).toBeGreaterThan(receiverTop[1]);
     expect(eyePoint[0]).toBeLessThan(beadTop[0]);
     near(exportedEyePoint, eyePoint);
     near(exportedDirection, toFileAxes(expectedDirection));
-    expect(out.modelEntry.sight.kind).toBe('iron');
+    expect(out.modelEntry.gun.sight.kind).toBe('iron');
   });
 
   it('keeps the AK sight line clear of other solids', () => {
@@ -637,7 +637,7 @@ describe('glb export: deadvox model entry', () => {
     const out = exported(design('archetype-ak'));
     const rearId = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'ak-rear-sight')?.[0];
     const frontId = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'front-sight')?.[0];
-    if (!(rearId && frontId && out.modelEntry.sight)) {
+    if (!(rearId && frontId && out.modelEntry.gun.sight)) {
       throw new Error('AK design needs rear and front sights');
     }
     const rearAxis = out.resolved.defs.get(rearId)!.axes.find(({ kind }) => kind === 'sight')!;
@@ -647,7 +647,7 @@ describe('glb export: deadvox model entry', () => {
     const vector: Vec3 = [postTip[0] - eye[0], postTip[1] - eye[1], postTip[2] - eye[2]];
     const magnitude = Math.hypot(...vector);
     const expectedDirection: Vec3 = toFileAxes([vector[0] / magnitude, vector[1] / magnitude, vector[2] / magnitude]);
-    near(out.modelEntry.sight.direction, expectedDirection);
+    near(out.modelEntry.gun.sight.direction, expectedDirection);
 
     const rear = out.resolved.defs.get(rearId)!;
     const front = out.resolved.defs.get(frontId)!;
@@ -690,7 +690,7 @@ describe('glb export: deadvox model entry', () => {
 
   it('retains action metadata when the carrier instance is consistently renamed', () => {
     const assembly = design('archetype-ar');
-    expect(exported(assembly).modelEntry.action).toBeDefined();
+    expect(exported(assembly).modelEntry.gun.action).toBeDefined();
     const renamed: Assembly = {
       ...assembly,
       parts: Object.fromEntries(
@@ -704,8 +704,8 @@ describe('glb export: deadvox model entry', () => {
     };
     const out = exported(renamed);
     expect(out.read.json.nodes.some((node) => node.name === 'carrier-renamed:bolt-carrier')).toBe(true);
-    expect(out.modelEntry.action, 'identity-only changes must not silently drop action data').toBeDefined();
-    expect(out.modelEntry.action!.parts.carrier!.node).toBe('carrier-renamed:bolt-carrier');
+    expect(out.modelEntry.gun.action, 'identity-only changes must not silently drop action data').toBeDefined();
+    expect(out.modelEntry.gun.action!.parts.carrier!.node).toBe('carrier-renamed:bolt-carrier');
   });
 
   it('keeps Gungen GLB identity in the Gungen export adapter', () => {
@@ -753,10 +753,10 @@ describe('glb export: deadvox model entry', () => {
     if (!(bare.ok && assigned.ok)) {
       return;
     }
-    expect(bare.modelEntry).not.toHaveProperty('calibre');
-    expect(assigned.modelEntry.calibre).toBe('7.62x39');
-    const bareSlot = bare.modelEntry.slots?.magazine;
-    const assignedSlot = assigned.modelEntry.slots?.magazine;
+    expect(bare.modelEntry.gun).not.toHaveProperty('calibre');
+    expect(assigned.modelEntry.gun.calibre).toBe('7.62x39');
+    const bareSlot = bare.modelEntry.gun.slots?.magazine;
+    const assignedSlot = assigned.modelEntry.gun.slots?.magazine;
     expect(bare.modelEntry.anchors?.magwell).toBeUndefined();
     expect(assigned.modelEntry.anchors?.magwell).toBeUndefined();
     expect(bareSlot).toBeDefined();

@@ -75,6 +75,10 @@ interface GunActionMetadata {
 }
 
 export interface DeadvoxModelEntry extends NeutralModel {
+  readonly gun: GunModelFields;
+}
+
+export interface GunModelFields {
   /** The model-derived eye point and sight axis used to align the player view. */
   readonly sight?: {
     readonly kind: 'iron' | 'optic';
@@ -303,7 +307,7 @@ const attachmentData = (resolved: Resolved): (AttachmentMetadata & { node: strin
     ];
   });
 
-const magazineSlotData = (resolved: Resolved): NonNullable<DeadvoxModelEntry['slots']>['magazine'] | undefined => {
+const magazineSlotData = (resolved: Resolved): NonNullable<GunModelFields['slots']>['magazine'] | undefined => {
   const [partId, instance] =
     Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'magazine') ?? [];
   const transform = partId && resolved.placed.get(partId);
@@ -317,7 +321,7 @@ const magazineSlotData = (resolved: Resolved): NonNullable<DeadvoxModelEntry['sl
   };
 };
 
-const sightMetadata = (resolved: Resolved): GunDeadvoxModelEntry['sight'] => {
+const sightMetadata = (resolved: Resolved): GunModelFields['sight'] => {
   const candidates = [...resolved.defs.entries()].flatMap(([id, part]) => {
     const candidate = sightCandidate(resolved, id, part);
     return candidate ? [candidate] : [];
@@ -376,7 +380,7 @@ export const createGunModelEntry = ({
   anchors: SelectedAnchors;
   metresPerUnit: number;
   options?: GunModelEntryOptions;
-  sight?: GunDeadvoxModelEntry['sight'];
+  sight?: GunModelFields['sight'];
 }): GunDeadvoxModelEntry => {
   const { handling } = options;
   const calibre = options.cartridge?.id;
@@ -390,8 +394,6 @@ export const createGunModelEntry = ({
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
     grip: { at: modelPoint(anchors.hold.position, metresPerUnit), turn: gripTurn() },
-    ...(sight ? { sight } : {}),
-    ...(anchors.others.muzzle ? { muzzleDirection: normalize(toFileAxes(anchors.others.muzzle.forward)) } : {}),
     ...(others.length > 0 || handling
       ? {
           anchors: {
@@ -400,9 +402,13 @@ export const createGunModelEntry = ({
           },
         }
       : {}),
-    ...(calibre === undefined ? {} : { calibre }),
-    ...(handling ? { action: handling.action } : {}),
-    ...(options.internalCapacity === undefined ? {} : { internalMagazine: { capacity: options.internalCapacity } }),
+    gun: {
+      ...(sight ? { sight } : {}),
+      ...(anchors.others.muzzle ? { muzzleDirection: normalize(toFileAxes(anchors.others.muzzle.forward)) } : {}),
+      ...(calibre === undefined ? {} : { calibre }),
+      ...(handling ? { action: handling.action } : {}),
+      ...(options.internalCapacity === undefined ? {} : { internalMagazine: { capacity: options.internalCapacity } }),
+    },
   };
 };
 
@@ -486,11 +492,16 @@ export const exportGunGlb = (
     ...result,
     modelEntry: {
       ...modelEntry,
-      ...(revolver ? { revolver } : {}),
-      attachments: attachmentData(resolved),
-      attachmentSlots: attachmentSlotsData,
-      ...(compatibility === undefined || compatibilityPairs === undefined ? {} : { compatibility, compatibilityPairs }),
-      ...(magazine ? { slots: { magazine } } : {}),
+      gun: {
+        ...modelEntry.gun,
+        ...(revolver ? { revolver } : {}),
+        attachments: attachmentData(resolved),
+        attachmentSlots: attachmentSlotsData,
+        ...(compatibility === undefined || compatibilityPairs === undefined
+          ? {}
+          : { compatibility, compatibilityPairs }),
+        ...(magazine ? { slots: { magazine } } : {}),
+      },
     },
   };
 };

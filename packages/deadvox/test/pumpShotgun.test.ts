@@ -56,7 +56,7 @@ const fixture = (
   const capacity = 3;
   const testContent = {
     ...content,
-    models: new Map(content.models).set(modelId, { ...model, internalMagazine: { capacity } }),
+    models: new Map(content.models).set(modelId, { ...model, gun: { ...model.gun, internalMagazine: { capacity } } }),
   };
   const inventory = new Inventory(testContent);
   const gun = inventory.create('pump_shotgun');
@@ -692,7 +692,7 @@ describe('real pump ammunition', () => {
     f.rack(1);
     expect(f.mechanics.cock(f.gun.uid, 3)).toBeUndefined();
     const model = registry.models.get('shotgun_pump')!;
-    const at = model.action!.hand.rearwardSimSeconds * model.action!.ejectAt;
+    const at = model.gun!.action!.hand.rearwardSimSeconds * model.gun!.action!.ejectAt;
     f.finish(at - 1e-6, 3 + at - 1e-6);
     expect(f.effects).toEqual([]);
     f.finish(1e-6, 3 + at);
@@ -712,7 +712,7 @@ describe('real pump ammunition', () => {
     );
     const landingAt = f.gun.firearm?.landings?.[0]?.at;
     expect(landingAt).toBeDefined();
-    const duration = model.action!.hand.durationSimSeconds;
+    const duration = model.gun!.action!.hand.durationSimSeconds;
     f.finish(landingAt! - (3 + at), landingAt!);
     const ground = [...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item));
     expect(ground.map((item) => [item.type, item.count])).toEqual([[shellType, 1]]);
@@ -895,7 +895,7 @@ describe('real pump ammunition', () => {
     f.rack(1);
     expect(f.fire(3)).toBe(true);
     expect(f.mechanics.cock(f.gun.uid, 4)).toBeUndefined();
-    const action = registry.models.get('shotgun_pump')!.action!;
+    const action = registry.models.get('shotgun_pump')!.gun!.action!;
     const ejectAt = action.hand.rearwardSimSeconds * action.ejectAt;
     f.finish(ejectAt, 4 + ejectAt);
     const restored = Inventory.restoreState(f.inventory.registry, f.inventory.snapshotState());

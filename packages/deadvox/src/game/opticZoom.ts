@@ -21,7 +21,7 @@ export class OpticZoom {
 
   frame(firearm: Item | undefined, aimingDownSights: boolean): OpticZoomFrame | undefined {
     const optic = firearm && aimingDownSights ? mountedOptic(this.registry, firearm) : undefined;
-    const range = optic?.model.attachment?.properties.magnification;
+    const range = optic?.model.gun?.attachment?.properties.magnification;
     const tuning = optic?.item.opticZoom;
     const view = optic && opticViewSettings(optic.item, optic.model);
     if (!(firearm && optic && range && range.min < range.max && tuning && view)) {

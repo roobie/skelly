@@ -56,9 +56,11 @@ export const exportMagazineGlb = (input: MagazineExportInput): MagazineExportRes
     modelEntry: {
       id: input.asset.id,
       file: input.asset.file as DeadvoxModelFile,
-      calibre: input.cartridge.id,
-      capacity: column.capacity,
-      rounds: magazineRoundPoses(column),
+      gun: {
+        calibre: input.cartridge.id,
+        capacity: column.capacity,
+        rounds: magazineRoundPoses(column),
+      },
     },
   };
 };

@@ -1,0 +1,35 @@
+{
+  "id": "optic_lpvo_1_6x",
+  "file": "assets/models/optic_lpvo_1_6x.glb",
+  "gun": {
+    "attachment": {
+      "id": "optic-lpvo-1-6x",
+      "kind": "optic",
+      "massKg": 0.16156919783654183,
+      "mount": "rail-top",
+      "properties": {
+        "reticleKind": "crosshair",
+        "magnification": {
+          "min": 1,
+          "max": 6
+        },
+        "railSpanNotches": {
+          "minOffset": -3,
+          "maxOffset": 3
+        }
+      },
+      "sight": {
+        "kind": "optic",
+        "eye": [-0.11499999999999999, 0.023, 0],
+        "direction": [1, 0, 0],
+        "up": [0, 1, 0],
+        "eyeReliefMetres": 0.08625,
+        "ocularDiameterMetres": 0.031625
+      },
+      "mountFrame": {
+        "normal": [0, -1, 0],
+        "up": [1, 0, 0]
+      }
+    }
+  }
+}

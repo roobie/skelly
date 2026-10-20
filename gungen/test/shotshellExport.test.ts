@@ -43,7 +43,7 @@ describe('shotshell cartridge export', () => {
       expect(model.modelEntry).toEqual({
         id: `${kind}_${assetId}`,
         file: `assets/models/${kind}-${assetId}.glb`,
-        calibre: shell.id,
+        gun: { calibre: shell.id },
       });
       const bounds = new Box3().setFromObject(scene);
       expect(bounds.min.x).toBeCloseTo(0, 8);

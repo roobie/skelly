@@ -56,8 +56,8 @@ export const equipDebugLoadout = (
 const equipRevolver = (inventory: Inventory, backpack: Item, open: boolean): void => {
   const definition = [...inventory.registry.items.values()].find((item) => item.firearm?.revolver);
   const model = definition?.model ? inventory.registry.models.get(definition.model) : undefined;
-  const ammo = [...inventory.registry.items.values()].find((item) => item.ammo?.calibre === model?.calibre);
-  if (!(definition && model?.revolver && ammo)) {
+  const ammo = [...inventory.registry.items.values()].find((item) => item.ammo?.calibre === model?.gun?.calibre);
+  if (!(definition && model?.gun?.revolver && ammo)) {
     throw new Error('No revolver preview content');
   }
   const gun = inventory.create(definition.id);

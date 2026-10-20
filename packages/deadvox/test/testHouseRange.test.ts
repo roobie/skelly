@@ -42,7 +42,7 @@ const withRangeStockFixtures = (): { registry: Registry; firearm: string; ammo: 
   const ammo = 'range_test_ammo';
   const box = 'range_test_ammo_box';
   const model = 'range_test_model';
-  models.set(model, { ...sourceModel, id: model, calibre });
+  models.set(model, { ...sourceModel, id: model, gun: { ...sourceModel.gun, calibre } });
   items.set(firearm, { ...sourceFirearm, id: firearm, model });
   items.set(ammo, { ...sourceAmmo, id: ammo, ammo: { ...sourceAmmo.ammo, calibre } });
   items.set(box, { ...sourceBox, id: box, unpack: { ...sourceBox.unpack, item: ammo } });
@@ -68,13 +68,17 @@ const withMagazineFixtures = (): { registry: Registry; firearm: string; fitting:
   models.set('range_test_magazine_firearm_model', {
     ...firearmModel,
     id: 'range_test_magazine_firearm_model',
-    calibre,
+    gun: { ...firearmModel.gun, calibre },
   });
-  models.set('range_test_fitting_model', { ...magazineModel, id: 'range_test_fitting_model', calibre });
+  models.set('range_test_fitting_model', {
+    ...magazineModel,
+    id: 'range_test_fitting_model',
+    gun: { ...magazineModel.gun, calibre },
+  });
   models.set('range_test_non_fitting_model', {
     ...magazineModel,
     id: 'range_test_non_fitting_model',
-    calibre: 'range-test-unused-calibre',
+    gun: { ...magazineModel.gun, calibre: 'range-test-unused-calibre' },
   });
   items.set(firearm, { ...sourceFirearm, id: firearm, model: 'range_test_magazine_firearm_model' });
   items.set(fitting, { ...sourceMagazine, id: fitting, model: 'range_test_fitting_model' });
@@ -336,7 +340,7 @@ describe('the debug test-house range', () => {
     const calibres = new Set(
       [...registry.items.values()]
         .filter((item) => item.firearm)
-        .map((item) => firearmModelForType(item.id, registry)?.calibre)
+        .map((item) => firearmModelForType(item.id, registry)?.gun?.calibre)
         .filter((calibre): calibre is string => calibre !== undefined),
     );
     for (const item of registry.items.values()) {

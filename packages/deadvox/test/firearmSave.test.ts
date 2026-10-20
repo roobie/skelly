@@ -109,12 +109,12 @@ it('runtime firearm skill sliders tune the held gun and reset when its save is l
 it('saves and restores fitted attachment identity and a nested light battery', async () => {
   const firearm = registry.items.get('rifle_assault')!;
   const firearmModel = registry.models.get(firearm.model!)!;
-  const [defaultAttachment] = firearmModel.attachments ?? [];
+  const [defaultAttachment] = firearmModel.gun?.attachments ?? [];
   const defaultItem =
     defaultAttachment &&
     [...registry.items.values()].find((item) => {
       const model = item.model === undefined ? undefined : registry.models.get(item.model);
-      return model?.attachment?.id === defaultAttachment.id;
+      return model?.gun?.attachment?.id === defaultAttachment.id;
     });
   if (!(defaultAttachment && defaultItem)) {
     throw new Error('The firearm export has no registered default attachment');

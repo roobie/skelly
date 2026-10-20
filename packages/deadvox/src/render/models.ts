@@ -45,8 +45,8 @@ export interface ComposedHeld extends HeldModel {
 /** Hides the baked geometry of item-owned slots: an item's look draws what is really fitted there instead. */
 const hideSlotNodes = (def: ModelDef, scene: Object3D, parser: Parameters<typeof namedNodes>[1]): void => {
   const names = [
-    ...Object.values(def.slots ?? {}).flatMap((slot) => (slot ? [slot.node] : [])),
-    ...(def.attachments ?? []).map(({ node }) => node),
+    ...Object.values(def.gun?.slots ?? {}).flatMap((slot) => (slot ? [slot.node] : [])),
+    ...(def.gun?.attachments ?? []).map(({ node }) => node),
   ];
   for (const node of namedNodes(scene, parser, names)) {
     node.visible = false;
@@ -170,7 +170,7 @@ export class ModelLibrary {
       loader.load(
         url,
         (gltf) => {
-          const actionParts = actionPartPaths(gltf.scene, def.action, gltf.parser, def.revolver);
+          const actionParts = actionPartPaths(gltf.scene, def.gun?.action, gltf.parser, def.gun?.revolver);
           hideSlotNodes(def, gltf.scene, gltf.parser);
           this.ready.set(def.id, { ...prepareModel(def, gltf.scene), actionParts });
           this.version += 1;

@@ -60,7 +60,7 @@ export const exportAttachmentGlb = (
     modelEntry: {
       id: asset.id,
       file: asset.file as DeadvoxModelFile,
-      attachment: metadata,
+      gun: { attachment: metadata },
     },
   };
 };

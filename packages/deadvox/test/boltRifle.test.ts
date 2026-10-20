@@ -13,7 +13,7 @@ import { baseRegistry } from './baseRegistry.ts';
 const registry = baseRegistry();
 const rifle = [...registry.items.values()].find((item) => item.firearm?.bolt)!;
 const model = registry.models.get(rifle.model!)!;
-const ammo = [...registry.items.values()].find((item) => item.ammo?.calibre === model.calibre)!;
+const ammo = [...registry.items.values()].find((item) => item.ammo?.calibre === model.gun?.calibre)!;
 const pose = {
   feet: [0, 0, 0] as [number, number, number],
   eye: [0, 3, 0] as [number, number, number],
@@ -33,7 +33,7 @@ const fixture = (skill = 0) => {
     models: new Map(registry.models).set('fixture_model', {
       ...model,
       id: 'fixture_model',
-      internalMagazine: { capacity: 3 },
+      gun: { ...model.gun, internalMagazine: { capacity: 3 } },
     }),
   };
   const inventory = new Inventory(content);
@@ -195,7 +195,7 @@ it('tops up the full magazine while keeping the separately chambered round', () 
   f.load();
   f.rack();
   const before = f.total();
-  const { capacity } = f.inventory.registry.models.get('fixture_model')!.internalMagazine!;
+  const { capacity } = f.inventory.registry.models.get('fixture_model')!.gun!.internalMagazine!;
   for (let index = 0; index < capacity; index++) {
     f.load();
   }
@@ -237,7 +237,9 @@ it('cancelling a round leaves it carried and the bolt open; an open rack only pu
   expect(f.gun.firearm?.actionOpen).toBe(true);
   expect(f.mechanics.fireReason(f.gun.uid)).toBeDefined();
   expect(f.mechanics.cock(f.gun.uid, f.time())).toBeUndefined();
-  expect(f.queue.remaining).toBeCloseTo(model.action!.hand.durationSimSeconds - actionOpenSeconds(model.action!));
+  expect(f.queue.remaining).toBeCloseTo(
+    model.gun!.action!.hand.durationSimSeconds - actionOpenSeconds(model.gun!.action!),
+  );
   f.finish();
   expect(f.gun.firearm?.chamber).toBe('round');
   expect(f.effects).toEqual([]);
@@ -283,7 +285,7 @@ it('skill scales the bolt clock and ejection includes the exported unlock phase'
     expect(f.mechanics.cock(f.gun.uid, 0)).toBeUndefined();
   }
   expect(experienced.queue.remaining).toBeLessThan(novice.queue.remaining);
-  const action = model.action!;
+  const action = model.gun!.action!;
   expect(ejectSeconds(action, 'hand')).toBeCloseTo(
     action.hand.unlockSimSeconds! + action.hand.rearwardSimSeconds * action.ejectAt,
   );
@@ -294,7 +296,7 @@ it('a top-up save retains the extracted round outside the magazine and cancels o
   f.load();
   f.rack();
   expect(f.mechanics.load(f.rounds, f.time())).toBeUndefined();
-  f.step((ejectSeconds(model.action!, 'hand') + actionOpenSeconds(model.action!)) / 2);
+  f.step((ejectSeconds(model.gun!.action!, 'hand') + actionOpenSeconds(model.gun!.action!)) / 2);
   expect(f.gun.firearm?.cycle?.phase).toBe('open');
   const state = await savedInventory(f);
   const restored = Inventory.restoreState(f.inventory.registry, state);
@@ -340,5 +342,5 @@ it('opening and closing the bolt each play their own stroke; a full cycle closes
   const [open, close, ...rest] = strokes();
   expect([open?.event, close?.event, rest]).toEqual([boltOpenSound, boltCloseSound, []]);
   expect(open?.time).toBe(start);
-  expect(close?.time).toBeCloseTo(start + actionOpenSeconds(model.action!));
+  expect(close?.time).toBeCloseTo(start + actionOpenSeconds(model.gun!.action!));
 });

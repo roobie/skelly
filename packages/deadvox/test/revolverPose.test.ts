@@ -19,8 +19,8 @@ const loadModel = (model: ModelDef) => {
 };
 
 it('flat revolver nodes ride the crane without accumulating motion, then return to their exported rests', async () => {
-  const model = [...content.registry.models.values()].find((definition) => definition.revolver)!;
-  const data = model.revolver!;
+  const model = [...content.registry.models.values()].find((definition) => definition.gun?.revolver)!;
+  const data = model.gun!.revolver!;
   const gltf = await loadModel(model);
   const paths = actionPartPaths(gltf.scene, undefined, gltf.parser, data);
   const held = cloneHeldModel(prepareModel(model, gltf.scene).held, paths);
@@ -62,7 +62,9 @@ it('keeps the loading cartridge at the palm grip through the real revolver trans
   const definitions = [...registry.items.values()];
   const gunDef = definitions.find((definition) => definition.firearm?.revolver && definition.model)!;
   const model = registry.models.get(gunDef.model!)!;
-  const ammoDef = definitions.find((definition) => definition.ammo?.calibre === model.calibre && definition.model)!;
+  const ammoDef = definitions.find(
+    (definition) => definition.ammo?.calibre === model.gun?.calibre && definition.model,
+  )!;
   const ammoModel = registry.models.get(ammoDef.model!)!;
   const carrier = definitions.find((definition) => definition.wearable?.slot === 'back' && definition.container)!;
   const figure = [...registry.figures.values()].find((definition) => definition.palette)!;
@@ -70,7 +72,7 @@ it('keeps the loading cartridge at the palm grip through the real revolver trans
   const roundFile = await loadModel(ammoModel);
   const gunPrepared = prepareModel(model, gunFile.scene);
   const roundPrepared = prepareModel(ammoModel, roundFile.scene);
-  const paths = actionPartPaths(gunFile.scene, undefined, gunFile.parser, model.revolver);
+  const paths = actionPartPaths(gunFile.scene, undefined, gunFile.parser, model.gun?.revolver);
   const models = {
     version: 0,
     heldLook: () => {
@@ -123,7 +125,7 @@ it('keeps the loading cartridge at the palm grip through the real revolver trans
         expect(grip.distanceTo(new Vector3(0, tuning.palmBelow, -tuning.palmBack))).toBeLessThan(1e-8);
         if (progress === tuning.approachEnd) {
           const chamber = frames[0]!.revolver!.chamber!;
-          const point = revolverChamberPoint(model.revolver!, chamber, chamber, 1);
+          const point = revolverChamberPoint(model.gun!.revolver!, chamber, chamber, 1);
           const gunRoot = scene.getObjectByName('revolver-load-probe')!;
           const mouth = heldModelFrame(gunRoot).localToWorld(new Vector3(...point));
           expect(roundWorld.distanceTo(mouth)).toBeLessThan(1e-8);

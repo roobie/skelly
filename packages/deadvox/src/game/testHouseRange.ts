@@ -18,7 +18,7 @@ export const testHouseRangeSupply = (registry: Registry): RangeSupply[] => {
   const firearms = items.filter((item) => item.firearm !== undefined);
   const calibres = new Set(
     firearms
-      .map((item) => firearmModelForType(item.id, registry)?.calibre)
+      .map((item) => firearmModelForType(item.id, registry)?.gun?.calibre)
       .filter((calibre): calibre is string => calibre !== undefined),
   );
   const stock = new Set(items.filter(isTestHouseRangeStockItem).map(({ id }) => id));

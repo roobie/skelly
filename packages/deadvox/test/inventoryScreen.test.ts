@@ -580,8 +580,9 @@ describe('inventory screen Lit rendering', () => {
     const foregrip = test.inv.create('foregrip');
     const pocketOwner = test.inv.worn.legs;
     const model = registry.models.get('rifle_assault')!;
-    const slot = model.attachmentSlots!.find(
-      (candidate) => candidate.mount === 'rail-bottom' && model.compatibility?.[candidate.id]?.includes('foregrip'),
+    const slot = model.gun!.attachmentSlots!.find(
+      (candidate) =>
+        candidate.mount === 'rail-bottom' && model.gun!.compatibility?.[candidate.id]?.includes('foregrip'),
     );
     if (!(pocketOwner && slot && test.inv.consume(test.beans))) {
       throw new Error('Fixture could not prepare the foregrip and held-firearm path');
@@ -650,7 +651,7 @@ describe('inventory screen Lit rendering', () => {
       throw new Error('Fixture firearms could not be placed');
     }
 
-    const slotIds = registry.models.get('rifle_assault')!.attachmentSlots!.map((slot) => slot.id);
+    const slotIds = registry.models.get('rifle_assault')!.gun!.attachmentSlots!.map((slot) => slot.id);
     for (const firearm of [groundFirearm, heldFirearm]) {
       screen.selected = firearm;
       screen.update();

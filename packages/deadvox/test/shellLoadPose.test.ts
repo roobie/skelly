@@ -22,7 +22,7 @@ it('the firing hand follows the exported bolt knob rather than moving the suppor
     bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
     '',
   );
-  const paths = actionPartPaths(gltf.scene, model.action, gltf.parser);
+  const paths = actionPartPaths(gltf.scene, model.gun?.action, gltf.parser);
   const prepared = prepareModel(model, gltf.scene);
   for (const side of SIDES) {
     const inventory = new Inventory(registry);
@@ -48,7 +48,7 @@ it('the firing hand follows the exported bolt knob rather than moving the suppor
     try {
       held.update(camera, undefined, 0, { firearms: [] });
       expect(mechanics.cock(gun.uid, 0)).toBeUndefined();
-      for (const dt of [model.action!.hand.unlockSimSeconds!, model.action!.hand.rearwardSimSeconds]) {
+      for (const dt of [model.gun!.action!.hand.unlockSimSeconds!, model.gun!.action!.hand.rearwardSimSeconds]) {
         expect(queue.tick(dt).failed).toEqual([]);
         mechanics.advanceTo(dt);
         const before = inventory.snapshotState();
@@ -70,10 +70,12 @@ const loadPoseContent = (kind: 'pump' | 'bolt') => {
   const definitions = [...registry.items.values()];
   const pump = definitions.find((definition) => definition.firearm?.[kind] && definition.model);
   const sourceModel = pump?.model ? registry.models.get(pump.model) : undefined;
-  const ammo = definitions.find((definition) => definition.ammo?.calibre === sourceModel?.calibre && definition.model);
+  const ammo = definitions.find(
+    (definition) => definition.ammo?.calibre === sourceModel?.gun?.calibre && definition.model,
+  );
   const carrier = definitions.find((definition) => definition.wearable?.slot === 'back' && definition.container);
   const figure = [...registry.figures.values()].find((definition) => definition.palette);
-  if (!(pump && sourceModel?.action && sourceModel.internalMagazine && ammo && carrier && figure)) {
+  if (!(pump && sourceModel?.gun?.action && sourceModel.gun.internalMagazine && ammo && carrier && figure)) {
     throw new Error('Missing load-pose fixture capabilities');
   }
   const model = structuredClone(sourceModel);

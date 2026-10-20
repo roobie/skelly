@@ -107,7 +107,7 @@ const makeModelExport = (
       modelEntry: {
         id: asset.id,
         file: asset.file as DeadvoxModelFile,
-        calibre: cartridge.id,
+        gun: { calibre: cartridge.id },
       },
     },
   };

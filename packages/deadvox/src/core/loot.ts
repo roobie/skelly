@@ -104,13 +104,13 @@ const installedLootTypes = (
   item: ItemDef,
   overrides: Readonly<Record<string, string>>,
 ): (string | undefined)[] => {
-  const attachments = registry.models.get(item.model ?? '')?.attachments ?? [];
+  const attachments = registry.models.get(item.model ?? '')?.gun?.attachments ?? [];
   const children = attachments
     .filter((attachment) => overrides[attachment.mountedAt] === undefined)
     .map(
       (attachment) =>
         [...registry.items.values()].find(
-          (entry) => registry.models.get(entry.model ?? '')?.attachment?.id === attachment.id,
+          (entry) => registry.models.get(entry.model ?? '')?.gun?.attachment?.id === attachment.id,
         )?.id,
     );
   if (item.light?.power && overrides.battery === undefined) {

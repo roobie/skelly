@@ -15,7 +15,7 @@ const NO_GRIP = { x: 0, y: 0 };
 
 /** The rotation a rack adds while the hand holds the handle back. */
 const midRack = (model: ModelDef, side: HandSide) => {
-  const { hand } = model.action!;
+  const { hand } = model.gun!.action!;
   const frame = {
     uid: 1,
     mode: 'hand' as const,
@@ -43,7 +43,7 @@ describe('a rack turns a held rifle for its off hand', () => {
     // The AK's handle is on the gun's right, the AR's on top.
     expect(rollTowardOffHand(AK, 'right')).toBeGreaterThan(rollTowardOffHand(AR, 'right'));
     expect(rollTowardOffHand(AK, 'left')).toBeLessThan(rollTowardOffHand(AR, 'left'));
-    const mirrored = { ...AK, chargingHandleDegrees: -(AK.chargingHandleDegrees ?? 0) };
+    const mirrored = { ...AK, gun: { ...AK.gun, chargingHandleDegrees: -(AK.gun?.chargingHandleDegrees ?? 0) } };
     const [pitch, yaw, roll] = midRack(AK, 'left');
     const [rightPitch, rightYaw, rightRoll] = midRack(mirrored, 'right');
     expect([pitch, -yaw, -roll]).toEqual([

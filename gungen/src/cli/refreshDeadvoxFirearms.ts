@@ -2,7 +2,6 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
-import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { isBoltAssembly } from '../gun/boltCartridge.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from '../gun/exportGlb.ts';
 import { boltCompanionExports } from './boltCompanionExports.ts';
@@ -11,17 +10,9 @@ import { exportFileText } from './exportFile.ts';
 const MODEL_FILE = /\/([^/]+)\.glb$/;
 const root = resolve(import.meta.dirname, '../../..');
 const base = resolve(root, 'packages/deadvox/src/content/base');
-const data = JSON.parse(compileJsonnetFile(resolve(base, 'models-firearms.libsonnet'))) as {
-  models: (DeadvoxModelEntry & { chargingHandleDegrees?: number })[];
-};
 const entries = resolve(base, 'gungen');
 mkdirSync(entries, { recursive: true });
 const store = (entry: DeadvoxModelEntry, glb: Uint8Array) => {
-  const old = data.models.find(({ id }) => id === entry.id);
-  const merged = {
-    ...entry,
-    ...(old?.chargingHandleDegrees === undefined ? {} : { chargingHandleDegrees: old.chargingHandleDegrees }),
-  };
   const formatted = execFileSync(
     process.execPath,
     [
@@ -29,7 +20,7 @@ const store = (entry: DeadvoxModelEntry, glb: Uint8Array) => {
       'format',
       `--stdin-file-path=packages/deadvox/src/content/base/gungen/${entry.id}.model.json`,
     ],
-    { cwd: root, encoding: 'utf8', input: JSON.stringify(merged) },
+    { cwd: root, encoding: 'utf8', input: JSON.stringify(entry) },
   );
   writeFileSync(resolve(entries, `${entry.id}.model.json`), formatted);
   writeFileSync(resolve(base, entry.file), glb);

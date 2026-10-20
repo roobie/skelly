@@ -13,7 +13,7 @@ export const isLongGun = (def: ItemDef | undefined): boolean => Boolean(def?.fir
 /** The firearm's attachment slots: its exported mounts, then the sling mount on a long gun. */
 export const firearmSlotIds = (registry: Registry, def: ItemDef): string[] => {
   const model = def.model === undefined ? undefined : registry.models.get(def.model);
-  return [...(model?.attachmentSlots?.map(({ id }) => id) ?? []), ...(isLongGun(def) ? [SLING_SLOT] : [])];
+  return [...(model?.gun?.attachmentSlots?.map(({ id }) => id) ?? []), ...(isLongGun(def) ? [SLING_SLOT] : [])];
 };
 
 export const slingFitted = (item: { readonly slots?: Readonly<Record<string, unknown>> | undefined }): boolean =>
@@ -27,7 +27,7 @@ const canonicalPair = (a: AttachmentChoice, b: AttachmentChoice): readonly [Atta
 
 export const attachmentIdFor = (registry: Registry, item: Item): string | undefined => {
   const modelId = registry.items.get(item.type)?.model;
-  return modelId === undefined ? undefined : registry.models.get(modelId)?.attachment?.id;
+  return modelId === undefined ? undefined : registry.models.get(modelId)?.gun?.attachment?.id;
 };
 
 /** Whether the exported model certifies these two installed attachment choices together. */
@@ -40,7 +40,7 @@ export const compatibilityPairCertifies = (
     return false;
   }
   const expected = canonicalPair(a, b);
-  const pairs = model.compatibilityPairs;
+  const pairs = model.gun?.compatibilityPairs;
   return (
     pairs?.some((pair) => {
       const actual = canonicalPair(pair[0], pair[1]);
@@ -53,7 +53,7 @@ export const isExportedSingleFit = (
   model: ModelDef | undefined,
   slotId: string,
   attachmentId: string | undefined,
-): boolean => Boolean(attachmentId && model?.compatibility?.[slotId]?.includes(attachmentId));
+): boolean => Boolean(attachmentId && model?.gun?.compatibility?.[slotId]?.includes(attachmentId));
 
 export const railFootprint = (
   registry: Registry,
@@ -61,9 +61,10 @@ export const railFootprint = (
   slotId: string,
   child: Item,
 ): { railId: string; min: number; max: number } | undefined => {
-  const slot = firearmModel?.attachmentSlots?.find(({ id }) => id === slotId);
+  const slot = firearmModel?.gun?.attachmentSlots?.find(({ id }) => id === slotId);
   const attachmentModelId = registry.items.get(child.type)?.model;
-  const attachment = attachmentModelId === undefined ? undefined : registry.models.get(attachmentModelId)?.attachment;
+  const attachment =
+    attachmentModelId === undefined ? undefined : registry.models.get(attachmentModelId)?.gun?.attachment;
   const span = attachment?.properties.railSpanNotches;
   if (!(slot?.railId && slot.notchIndex !== undefined && span)) {
     return undefined;
@@ -77,7 +78,7 @@ export const footprintFitsRail = (
   footprint: { railId: string; min: number; max: number },
 ): boolean => {
   const notches = new Set(
-    firearmModel?.attachmentSlots
+    firearmModel?.gun?.attachmentSlots
       ?.filter((slot) => slot.railId === footprint.railId)
       .map((slot) => slot.notchIndex)
       .filter((notch): notch is number => notch !== undefined),

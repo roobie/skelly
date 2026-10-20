@@ -23,7 +23,7 @@ export const mountedOptic = (
   for (const child of Object.values(firearm.slots ?? {})) {
     const item = registry.items.get(child.type);
     const model = item?.model === undefined ? undefined : registry.models.get(item.model);
-    if (item && model?.attachment?.kind === 'optic') {
+    if (item && model?.gun?.attachment?.kind === 'optic') {
       return { uid: child.uid, item, model };
     }
   }
@@ -46,7 +46,8 @@ export const opticFieldOfView = (verticalFovDegrees: number, magnification: numb
 };
 
 /** Resolves authored view tuning against the optic model's exported physical magnification data. */
-export const opticViewSettings = (item: ItemDef, { attachment }: ModelDef): OpticViewSettings | undefined => {
+export const opticViewSettings = (item: ItemDef, { gun }: ModelDef): OpticViewSettings | undefined => {
+  const attachment = gun?.attachment;
   if (attachment?.kind !== 'optic') {
     return undefined;
   }

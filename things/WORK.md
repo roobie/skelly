@@ -22,9 +22,9 @@ Why each boundary matters, and where it is checked:
   `packageEdges`. Deadvox must not import the engine, so the game's dependency graph stays free
   of the engine's geometry (see `things/WORK.md`, "Decisions").
 - Neutral fields have one definition in `packages/thing-core/src/schema.ts`,
-  `NeutralModelSchema`. Deadvox composes them with firearm fields in
-  `packages/deadvox/src/core/schema.ts`, `ModelSchema`; pack isolation still needs the
-  named-block boundary.
+  `NeutralModelSchema`. Deadvox composes them with the gun pack's named block in
+  `packages/deadvox/src/core/schema.ts`, `ModelSchema`; `GunModelSchema` owns the
+  firearm and attachment contract.
 - Gungen's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
   "gungen exports satisfy deadvox model validation".
 
@@ -107,8 +107,9 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
 ## Phases
 
 1. **Neutral schema and material table.**
-   - Complete the envelope integration with firearm and attachment fields in the gun
-     pack's named block; migrate the exporters, authored content and fixtures together.
+   - The neutral envelope and gun block are integrated through
+     `packages/deadvox/src/core/schema.ts`, `ModelSchema`. The export contract is checked
+     directly in `test/gungen-deadvox-contract.test.mjs`, "gungen exports satisfy deadvox model validation".
    - Finish the material-table integration: material colours and densities come from
      `packages/thing-core/src/materials.ts`, `MATERIALS`, while gun role assignments and
      appearance tuning still need content authoring. Deadvox must read shared material
@@ -117,7 +118,6 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
      `packages/engine/src/assembly/schema.ts`, `eyeReliefU`; `packages/engine/src/export/exportTypes.ts`,
      `RailPortMetadata` and `archetypeFinishes`. "Variant" names both an appearance variant
      and a template's calibre choice, so one of them is renamed.
-   - Point the contract test at the shared schema.
    - Exit: one definition of each neutral field and of each material.
 2. **Export package and physical model.**
    - Create the export package and move `packages/engine/src/export/` into it. Drop the

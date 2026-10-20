@@ -3,16 +3,18 @@ import { buildRegistry } from '../src/core/content.ts';
 import { insideLensAperture, type LensAperture, opticFieldOfView, opticViewSettings } from '../src/core/opticView.ts';
 import type { ItemDef, ModelDef } from '../src/core/schema.ts';
 
-const modelFor = (properties: NonNullable<ModelDef['attachment']>['properties']): ModelDef => ({
+const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachment']>['properties']): ModelDef => ({
   id: 'optic_fixture_model',
   file: 'assets/models/optic_fixture_model.glb',
-  attachment: {
-    id: 'optic_fixture',
-    kind: 'optic',
-    massKg: 1,
-    mount: 'rail-top',
-    mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
-    properties: { ...properties, railSpanNotches: { minOffset: 0, maxOffset: 0 } },
+  gun: {
+    attachment: {
+      id: 'optic_fixture',
+      kind: 'optic',
+      massKg: 1,
+      mount: 'rail-top',
+      mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
+      properties: { ...properties, railSpanNotches: { minOffset: 0, maxOffset: 0 } },
+    },
   },
 });
 
@@ -30,7 +32,7 @@ const itemFor = (opticMagnification?: number): ItemDef => ({
 });
 
 const registryFor = (
-  properties: NonNullable<ModelDef['attachment']>['properties'],
+  properties: NonNullable<NonNullable<ModelDef['gun']>['attachment']>['properties'],
   opticMagnification?: number,
   obtainable = false,
 ) =>

@@ -453,12 +453,12 @@ export class HeldItems {
     this.placeHandAndHeldItem(side, arm, transform, firearmPose);
     if (item && itemDefinition?.firearm) {
       const opticSettings = this.mountedOpticSettings(item, handling.opticZoom);
-      const opticSight = Boolean(aimingDownSights && modelDefinition?.sight?.kind === 'optic' && opticSettings);
+      const opticSight = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && opticSettings);
       const heldModel = this.shown.get(item.uid);
       if (heldModel) {
         heldModel.visible = !opticSight;
       }
-      const ocularDiameter = modelDefinition?.sight?.ocularDiameterMetres;
+      const ocularDiameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
       const apertureFill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
         ?.adsApertureFill;
       this.updateOpticWindow({
@@ -799,8 +799,8 @@ export class HeldItems {
     const item = this.inventory.itemByUid(uid);
     const modelId = item && defOf(this.inventory.registry, item.type).model;
     const definition = modelId ? this.inventory.registry.models.get(modelId) : undefined;
-    if (definition?.revolver && item?.firearm?.cylinder) {
-      poseRevolverParts(parts, definition.revolver, item.firearm.cylinder, frame);
+    if (definition?.gun?.revolver && item?.firearm?.cylinder) {
+      poseRevolverParts(parts, definition.gun.revolver, item.firearm.cylinder, frame);
       this.updateRevolver(item, definition, frame);
       return;
     }
@@ -945,7 +945,7 @@ export class HeldItems {
         return defOf(this.inventory.registry, chamber.roundType).model;
       }
       return [...this.inventory.registry.models.values()].find(
-        (candidate) => candidate.calibre === model.calibre && candidate.id.startsWith('case_'),
+        (candidate) => candidate.gun?.calibre === model.gun?.calibre && candidate.id.startsWith('case_'),
       )?.id;
     });
     const key = `${this.models?.version}:${roundModels.join(',')}`;
@@ -969,7 +969,7 @@ export class HeldItems {
 
   private updateRevolver(item: Item, model: ModelDef, frame: HeldFirearmPose | undefined): void {
     const cylinder = item.firearm!.cylinder!;
-    const data = model.revolver!;
+    const data = model.gun!.revolver!;
     const target = frame?.revolver?.chamber ?? cylinder.aligned;
     const progress = Math.min(1, (frame?.elapsed ?? 0) / (frame?.duration ?? 1));
     const opening = revolverOpenAmount(cylinder.open, frame?.revolver?.step, progress);
@@ -990,7 +990,7 @@ export class HeldItems {
     for (const item of Object.values(this.inventory.hands)) {
       const modelId = item && defOf(this.inventory.registry, item.type).model;
       const model = modelId ? this.inventory.registry.models.get(modelId) : undefined;
-      if (item?.firearm?.cylinder && model?.revolver) {
+      if (item?.firearm?.cylinder && model?.gun?.revolver) {
         this.revolverLoadingHand(
           item,
           model,
@@ -1010,7 +1010,7 @@ export class HeldItems {
     const side = this.inventory.hands.right?.uid === item.uid ? 'left' : 'right';
     const cylinder = item.firearm!.cylinder!;
     const target = frame?.revolver?.chamber ?? cylinder.aligned;
-    const point = revolverChamberPoint(model.revolver!, target, target, cylinder.open ? 1 : 0);
+    const point = revolverChamberPoint(model.gun!.revolver!, target, target, cylinder.open ? 1 : 0);
     const port = modelToView(model, point.map((value, index) => value - model.grip!.at[index]!) as Vec3);
     const arm = this.arms.get(side);
     held.updateWorldMatrix(true, false);
@@ -1036,7 +1036,7 @@ export class HeldItems {
     const side = this.inventory.hands.right?.uid === uid ? 'left' : 'right';
     const arm = this.arms.get(side);
     const base = this.handBases.get(side);
-    const part = model.action?.parts.forend;
+    const part = model.gun?.action?.parts.forend;
     if (arm && base) {
       arm.position.set(...base);
       if (part) {
@@ -1048,7 +1048,7 @@ export class HeldItems {
       frame?.mode === 'load' && arm && base
         ? shellLoadPose(base, heldAnchorOffset(model, 'loading_port'), side, {
             ...frame,
-            topFeed: Object.values(model.action?.parts ?? {}).some((mover) => mover.turn),
+            topFeed: Object.values(model.gun?.action?.parts ?? {}).some((mover) => mover.turn),
           })
         : undefined;
     if (feed) {
@@ -1081,7 +1081,7 @@ export class HeldItems {
       // The round follows the feeding wrist until seated, without becoming a second inventory item.
       shell.position.set(...feed.shell);
       const model = this.pumpModels.get(uid);
-      if (model && Object.values(model.action?.parts ?? {}).some((part) => part.turn)) {
+      if (model && Object.values(model.gun?.action?.parts ?? {}).some((part) => part.turn)) {
         const direction = new Vector3(...heldAnchorOffset(model, 'loading_port')).sub(shell.position);
         if (direction.lengthSq() > 0) {
           shell.quaternion.setFromUnitVectors(new Vector3(1, 0, 0), direction.normalize());
@@ -1441,7 +1441,7 @@ export class HeldItems {
   private syncOffhandArm(side: HandSide, heldAt: Vec3, modelId: string | undefined, held: Group): void {
     const otherSide: HandSide = side === 'right' ? 'left' : 'right';
     const model = modelId ? this.inventory.registry.models.get(modelId) : undefined;
-    if (model?.internalMagazine && model.anchors?.support) {
+    if (model?.gun?.internalMagazine && model.anchors?.support) {
       const support = heldAnchorOffset(model, model.anchors.support_wrist ? 'support_wrist' : 'support');
       const offhandGrip: Vec3 = support.map((value, index) => value + heldAt[index]!) as Vec3;
       this.addArm(otherSide, offhandGrip, held, heldAt);
@@ -1464,7 +1464,7 @@ export class HeldItems {
     const model = look && this.models?.heldLook(look);
     if (model) {
       applyItemEmissive(model.root, item, def, this.inventory.registry.models.get(def.model!));
-      const [top] = this.inventory.registry.models.get(def.model!)?.rounds ?? [];
+      const [top] = this.inventory.registry.models.get(def.model!)?.gun?.rounds ?? [];
       if (top) {
         const seat = new Object3D();
         seat.position.set(...top.at);
@@ -1482,13 +1482,13 @@ export class HeldItems {
     definition: ModelDef,
     model: NonNullable<ReturnType<ModelLibrary['heldLook']>>,
   ): void {
-    const { action } = definition;
+    const action = definition.gun?.action;
     if (model.slots.magazine) {
       this.magazineSlots.set(uid, model.slots.magazine);
     }
-    if (action || definition.revolver) {
+    if (action || definition.gun?.revolver) {
       this.firearmParts.set(uid, { ...(action ? { action } : {}), parts: model.parts });
-      if (definition.internalMagazine) {
+      if (definition.gun?.internalMagazine) {
         this.pumpModels.set(uid, definition);
       }
     }

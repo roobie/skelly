@@ -43,45 +43,52 @@ describe('optional action model metadata', () => {
     const { registry, issues } = build({
       ...baseModel,
       anchors: { ejection: [-0.05, 0.02, 0.03] },
-      action,
+      gun: { action },
     });
     expect(issues).toEqual([]);
-    expect(registry.models.get('lamp')?.action).toEqual({ ...action, roundsPerSimMinute: 10 });
+    expect(registry.models.get('lamp')?.gun?.action).toEqual({ ...action, roundsPerSimMinute: 10 });
     expect(registry.models.get('lamp')?.anchors?.ejection).toEqual([-0.05, 0.02, 0.03]);
   });
 
   it('admits a hand-only integral magazine but rejects modes without timelines and box round columns', () => {
     const model = {
       ...baseModel,
-      calibre: '12-gauge-00-buck',
       anchors: Object.fromEntries([['loading_port', [0, -0.04, 0]]]),
-      internalMagazine: { capacity: 4 },
-      action: {
-        parts: {
-          carrier: { node: 'bolt-carrier:bolt-carrier', axis: [-1, 0, 0], strokeMetres: 0.063_25, modes: ['hand'] },
+      gun: {
+        calibre: '12-gauge-00-buck',
+        internalMagazine: { capacity: 4 },
+        action: {
+          parts: {
+            carrier: { node: 'bolt-carrier:bolt-carrier', axis: [-1, 0, 0], strokeMetres: 0.063_25, modes: ['hand'] },
+          },
+          hand: cycle,
+          ejectAt: 0.76,
+          ejectDirection,
+          holdOpen: false,
         },
-        hand: cycle,
-        ejectAt: 0.76,
-        ejectDirection,
-        holdOpen: false,
       },
     };
     expect(build(model).issues).toEqual([]);
     expect(
       build({
         ...model,
-        action: { ...model.action, parts: { carrier: { ...model.action.parts.carrier, modes: ['fire'] } } },
+        gun: {
+          ...model.gun,
+          action: { ...model.gun.action, parts: { carrier: { ...model.gun.action.parts.carrier, modes: ['fire'] } } },
+        },
       }).issues.map(({ message }) => message),
     ).toContain('moving part modes must reference a declared timeline');
     expect(
-      build({ ...model, capacity: 1, rounds: [{ at: [0, 0, 0], tilt: 0 }] }).issues.map(({ message }) => message),
-    ).toContain('internal magazine metadata needs calibre/loading_port and cannot carry a box round column');
+      build({ ...model, gun: { ...model.gun, capacity: 1, rounds: [{ at: [0, 0, 0], tilt: 0 }] } }).issues.map(
+        ({ message }) => message,
+      ),
+    ).toContain('internal magazine metadata needs calibre and cannot carry a box round column');
   });
 
   it('leaves action fields optional for existing model entries', () => {
     const { registry, issues } = build(baseModel);
     expect(issues).toEqual([]);
-    expect(registry.models.get('lamp')?.action).toBeUndefined();
+    expect(registry.models.get('lamp')?.gun?.action).toBeUndefined();
     expect(registry.models.get('lamp')?.anchors?.ejection).toBeUndefined();
   });
 
@@ -102,9 +109,12 @@ describe('optional action model metadata', () => {
       holdOpen: false,
       roundsPerSimMinute: 600,
     };
-    const invalidDirection = build({ ...baseModel, action: { ...baseAction, ejectDirection: [0, 0, 2] } });
-    expect(invalidDirection.issues.map(({ path }) => path)).toContain('models[0].action.ejectDirection');
-    const invalidCycle = build({ ...baseModel, action: { ...baseAction, fire: { ...cycle, forwardSimSeconds: 0.2 } } });
-    expect(invalidCycle.issues.map(({ path }) => path)).toContain('models[0].action.fire');
+    const invalidDirection = build({ ...baseModel, gun: { action: { ...baseAction, ejectDirection: [0, 0, 2] } } });
+    expect(invalidDirection.issues.map(({ path }) => path)).toContain('models[0].gun.action.ejectDirection');
+    const invalidCycle = build({
+      ...baseModel,
+      gun: { action: { ...baseAction, fire: { ...cycle, forwardSimSeconds: 0.2 } } },
+    });
+    expect(invalidCycle.issues.map(({ path }) => path)).toContain('models[0].gun.action.fire');
   });
 });

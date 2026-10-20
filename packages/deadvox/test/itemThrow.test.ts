@@ -89,7 +89,7 @@ describe('held-item throws', () => {
     registry.items.set('rifle', { id: 'rifle', weight: 4000, size: [1, 4], model: 'rifle_model' } as never);
     registry.items.set('magazine', { id: 'magazine', weight: 200, size: [1, 2], model: 'magazine_model' } as never);
     registry.models.set('rifle_model', {
-      slots: { magazine: { at: [0, 0, 0], turn: [0, 0, 0] } },
+      gun: { slots: { magazine: { at: [0, 0, 0], turn: [0, 0, 0] } } },
     } as never);
     const magazine = testItem('magazine');
     const rifle = { ...testItem('rifle'), slots: { magazine } } as Item;

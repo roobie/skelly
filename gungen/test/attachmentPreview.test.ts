@@ -202,7 +202,7 @@ describe('viewer attachment previews', () => {
         variant: design.template,
         ...(design.finish ? { finish: design.finish } : {}),
       });
-      const attachments = exported.modelEntry.attachments ?? [];
+      const attachments = exported.modelEntry.gun.attachments ?? [];
       expect(attachments.length).toBeGreaterThan(0);
       for (const attachment of attachments) {
         const pair = attachmentMaterialPair(json, assembly.name, attachment);
@@ -243,10 +243,12 @@ describe('viewer attachment previews', () => {
     if (!exported.ok) {
       throw new Error(JSON.stringify(exported.error));
     }
-    const nodeName = exported.modelEntry.attachments?.find(({ id }) => id === 'real-suppressor')?.node;
+    const nodeName = exported.modelEntry.gun.attachments?.find(({ id }) => id === 'real-suppressor')?.node;
     const node = readGlb(exported.glb).json.nodes.find(({ name }) => name === nodeName);
     if (!node) {
-      throw new Error(`Export omitted the fitted suppressor node: ${JSON.stringify(exported.modelEntry.attachments)}`);
+      throw new Error(
+        `Export omitted the fitted suppressor node: ${JSON.stringify(exported.modelEntry.gun.attachments)}`,
+      );
     }
 
     const units = preview.report.resolved.domain.units.metresPerUnit;

@@ -112,19 +112,19 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "grip": { "at": [0.0885, 0, 0.0312], "turn": [-90, 0, 0] },
       "id": "pistol_full"
     },
-    import 'gungen/rifle_assault.model.json',
-    import 'gungen/rifle_ak.model.json',
-    { "calibre": "7.62x39", "file": "assets/models/round-7_d_62x39.glb", "id": "round_7_d_62x39" },
-    { "calibre": "7.62x39", "file": "assets/models/case-7_d_62x39.glb", "id": "case_7_d_62x39" },
-    { "calibre": "5.56x45", "file": "assets/models/round-5_d_56x45.glb", "id": "round_5_d_56x45" },
-    { "calibre": "5.56x45", "file": "assets/models/case-5_d_56x45.glb", "id": "case_5_d_56x45" },
+    (import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } },
+    (import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } },
+    { gun: { calibre: '7.62x39' }, file: 'assets/models/round-7_d_62x39.glb', id: 'round_7_d_62x39' },
+    { gun: { calibre: '7.62x39' }, file: 'assets/models/case-7_d_62x39.glb', id: 'case_7_d_62x39' },
+    { gun: { calibre: '5.56x45' }, file: 'assets/models/round-5_d_56x45.glb', id: 'round_5_d_56x45' },
+    { gun: { calibre: '5.56x45' }, file: 'assets/models/case-5_d_56x45.glb', id: 'case_5_d_56x45' },
     {
-      "calibre": "12-gauge-00-buck",
+      gun: { calibre: '12-gauge-00-buck' },
       "file": "assets/models/round-12_h_gauge_h_00_h_buck.glb",
       "id": "round_12_h_gauge_h_00_h_buck"
     },
     {
-      "calibre": "12-gauge-00-buck",
+      gun: { calibre: '12-gauge-00-buck' },
       "file": "assets/models/case-12_h_gauge_h_00_h_buck.glb",
       "id": "case_12_h_gauge_h_00_h_buck"
     },

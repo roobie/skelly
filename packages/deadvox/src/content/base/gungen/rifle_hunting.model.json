@@ -2,157 +2,159 @@
   "id": "rifle_hunting",
   "file": "assets/models/rifle_hunting.glb",
   "grip": { "at": [-0.215625, -0.048875, 0], "turn": [0, 0, 0] },
-  "sight": {
-    "kind": "iron",
-    "eye": [0.07475, 0.023, 0],
-    "direction": [1, 0, 1.2246467991473532e-16],
-    "up": [1.4997597826618576e-32, 1, -1.2246467991473532e-16],
-    "eyeReliefMetres": 0.276
-  },
-  "muzzleDirection": [1, 0, 1.2246467991473532e-16],
   "anchors": {
     "support": [0.14145, -0.031929, 0],
     "muzzle": [0.552, 0, 0],
     "ejection": [-0.069, 0, 0.014375],
     "loading_port": [-0.084812, 0.014375, 0]
   },
-  "calibre": "308-winchester",
-  "action": {
-    "parts": {
-      "carrier": {
-        "node": "bolt-carrier:bolt-carrier",
-        "axis": [-1, 0, -1.2246467991473532e-16],
-        "strokeMetres": 0.077625,
-        "modes": ["hand"],
-        "turn": {
-          "pivot": [-0.069, 0, 0],
-          "axis": [-1, 0, -1.2246467991473532e-16],
-          "angleRadians": 1.0471975511965976
-        }
-      },
-      "arm": {
-        "node": "bolt-handle-arm:bolt-handle-arm",
-        "axis": [-1.0000000000000002, 8.971491981735573e-17, -1.6653345369377348e-16],
-        "strokeMetres": 0.077625,
-        "modes": ["hand"],
-        "turn": {
-          "pivot": [-0.069, 0, 0],
-          "axis": [-1.0000000000000002, 8.971491981735573e-17, -1.6653345369377348e-16],
-          "angleRadians": 1.0471975511965976
-        }
-      },
-      "knob": {
-        "node": "bolt-handle-knob:bolt-handle-knob",
-        "axis": [-1.0000000000000004, 8.829059521605212e-17, -2.889981336085089e-16],
-        "strokeMetres": 0.077625,
-        "modes": ["hand"],
-        "turn": {
-          "pivot": [-0.069, 0, 0],
-          "axis": [-1.0000000000000004, 8.829059521605212e-17, -2.889981336085089e-16],
-          "angleRadians": 1.0471975511965976
-        }
-      }
-    },
-    "hand": {
-      "durationSimSeconds": 1.9,
-      "rearwardSimSeconds": 0.45,
-      "dwellSimSeconds": 0.15,
-      "forwardSimSeconds": 0.45,
-      "unlockSimSeconds": 0.25,
-      "lockSimSeconds": 0.25
-    },
-    "ejectAt": 0.4074074074074074,
-    "ejectDirection": [0.12038585308576918, 0.24077170617153837, 0.9630868246861535],
-    "holdOpen": false
-  },
-  "internalMagazine": { "capacity": 4 },
-  "attachments": [],
-  "attachmentSlots": [
-    {
-      "id": "barrel.muzzle.0",
-      "mount": "muzzle",
-      "position": [0.552, 0, 0],
+  "gun": {
+    "sight": {
+      "kind": "iron",
+      "eye": [0.07475, 0.023, 0],
       "direction": [1, 0, 1.2246467991473532e-16],
-      "up": [0, 1, 0]
+      "up": [1.4997597826618576e-32, 1, -1.2246467991473532e-16],
+      "eyeReliefMetres": 0.276
     },
-    {
-      "id": "receiver.rail.0",
-      "mount": "rail-top",
-      "railId": "receiver.rail",
-      "notchIndex": 0,
-      "position": [-0.161, 0.014375, 0],
-      "direction": [0, 1, 0],
-      "up": [1, 0, 0]
+    "muzzleDirection": [1, 0, 1.2246467991473532e-16],
+    "calibre": "308-winchester",
+    "action": {
+      "parts": {
+        "carrier": {
+          "node": "bolt-carrier:bolt-carrier",
+          "axis": [-1, 0, -1.2246467991473532e-16],
+          "strokeMetres": 0.077625,
+          "modes": ["hand"],
+          "turn": {
+            "pivot": [-0.069, 0, 0],
+            "axis": [-1, 0, -1.2246467991473532e-16],
+            "angleRadians": 1.0471975511965976
+          }
+        },
+        "arm": {
+          "node": "bolt-handle-arm:bolt-handle-arm",
+          "axis": [-1.0000000000000002, 8.971491981735573e-17, -1.6653345369377348e-16],
+          "strokeMetres": 0.077625,
+          "modes": ["hand"],
+          "turn": {
+            "pivot": [-0.069, 0, 0],
+            "axis": [-1.0000000000000002, 8.971491981735573e-17, -1.6653345369377348e-16],
+            "angleRadians": 1.0471975511965976
+          }
+        },
+        "knob": {
+          "node": "bolt-handle-knob:bolt-handle-knob",
+          "axis": [-1.0000000000000004, 8.829059521605212e-17, -2.889981336085089e-16],
+          "strokeMetres": 0.077625,
+          "modes": ["hand"],
+          "turn": {
+            "pivot": [-0.069, 0, 0],
+            "axis": [-1.0000000000000004, 8.829059521605212e-17, -2.889981336085089e-16],
+            "angleRadians": 1.0471975511965976
+          }
+        }
+      },
+      "hand": {
+        "durationSimSeconds": 1.9,
+        "rearwardSimSeconds": 0.45,
+        "dwellSimSeconds": 0.15,
+        "forwardSimSeconds": 0.45,
+        "unlockSimSeconds": 0.25,
+        "lockSimSeconds": 0.25
+      },
+      "ejectAt": 0.4074074074074074,
+      "ejectDirection": [0.12038585308576918, 0.24077170617153837, 0.9630868246861535],
+      "holdOpen": false
     },
-    {
-      "id": "receiver.rail.1",
-      "mount": "rail-top",
-      "railId": "receiver.rail",
-      "notchIndex": 1,
-      "position": [-0.138, 0.014375, 0],
-      "direction": [0, 1, 0],
-      "up": [1, 0, 0]
+    "internalMagazine": { "capacity": 4 },
+    "attachments": [],
+    "attachmentSlots": [
+      {
+        "id": "barrel.muzzle.0",
+        "mount": "muzzle",
+        "position": [0.552, 0, 0],
+        "direction": [1, 0, 1.2246467991473532e-16],
+        "up": [0, 1, 0]
+      },
+      {
+        "id": "receiver.rail.0",
+        "mount": "rail-top",
+        "railId": "receiver.rail",
+        "notchIndex": 0,
+        "position": [-0.161, 0.014375, 0],
+        "direction": [0, 1, 0],
+        "up": [1, 0, 0]
+      },
+      {
+        "id": "receiver.rail.1",
+        "mount": "rail-top",
+        "railId": "receiver.rail",
+        "notchIndex": 1,
+        "position": [-0.138, 0.014375, 0],
+        "direction": [0, 1, 0],
+        "up": [1, 0, 0]
+      },
+      {
+        "id": "receiver.rail.2",
+        "mount": "rail-top",
+        "railId": "receiver.rail",
+        "notchIndex": 2,
+        "position": [-0.115, 0.014375, 0],
+        "direction": [0, 1, 0],
+        "up": [1, 0, 0]
+      },
+      {
+        "id": "receiver.rail.3",
+        "mount": "rail-top",
+        "railId": "receiver.rail",
+        "notchIndex": 3,
+        "position": [-0.092, 0.014375, 0],
+        "direction": [0, 1, 0],
+        "up": [1, 0, 0]
+      },
+      {
+        "id": "receiver.rail.4",
+        "mount": "rail-top",
+        "railId": "receiver.rail",
+        "notchIndex": 4,
+        "position": [-0.069, 0.014375, 0],
+        "direction": [0, 1, 0],
+        "up": [1, 0, 0]
+      },
+      {
+        "id": "receiver.rail.5",
+        "mount": "rail-top",
+        "railId": "receiver.rail",
+        "notchIndex": 5,
+        "position": [-0.046, 0.014375, 0],
+        "direction": [0, 1, 0],
+        "up": [1, 0, 0]
+      },
+      {
+        "id": "receiver.rail.6",
+        "mount": "rail-top",
+        "railId": "receiver.rail",
+        "notchIndex": 6,
+        "position": [-0.023, 0.014375, 0],
+        "direction": [0, 1, 0],
+        "up": [1, 0, 0]
+      }
+    ],
+    "compatibility": {
+      "barrel.muzzle.0": ["real-suppressor", "improvised-suppressor"],
+      "receiver.rail.0": [],
+      "receiver.rail.1": [],
+      "receiver.rail.2": [],
+      "receiver.rail.3": ["optic-lpvo-1-6x", "optic-hunting-3-9x"],
+      "receiver.rail.4": [],
+      "receiver.rail.5": [],
+      "receiver.rail.6": []
     },
-    {
-      "id": "receiver.rail.2",
-      "mount": "rail-top",
-      "railId": "receiver.rail",
-      "notchIndex": 2,
-      "position": [-0.115, 0.014375, 0],
-      "direction": [0, 1, 0],
-      "up": [1, 0, 0]
-    },
-    {
-      "id": "receiver.rail.3",
-      "mount": "rail-top",
-      "railId": "receiver.rail",
-      "notchIndex": 3,
-      "position": [-0.092, 0.014375, 0],
-      "direction": [0, 1, 0],
-      "up": [1, 0, 0]
-    },
-    {
-      "id": "receiver.rail.4",
-      "mount": "rail-top",
-      "railId": "receiver.rail",
-      "notchIndex": 4,
-      "position": [-0.069, 0.014375, 0],
-      "direction": [0, 1, 0],
-      "up": [1, 0, 0]
-    },
-    {
-      "id": "receiver.rail.5",
-      "mount": "rail-top",
-      "railId": "receiver.rail",
-      "notchIndex": 5,
-      "position": [-0.046, 0.014375, 0],
-      "direction": [0, 1, 0],
-      "up": [1, 0, 0]
-    },
-    {
-      "id": "receiver.rail.6",
-      "mount": "rail-top",
-      "railId": "receiver.rail",
-      "notchIndex": 6,
-      "position": [-0.023, 0.014375, 0],
-      "direction": [0, 1, 0],
-      "up": [1, 0, 0]
-    }
-  ],
-  "compatibility": {
-    "barrel.muzzle.0": ["real-suppressor", "improvised-suppressor"],
-    "receiver.rail.0": [],
-    "receiver.rail.1": [],
-    "receiver.rail.2": [],
-    "receiver.rail.3": ["optic-lpvo-1-6x", "optic-hunting-3-9x"],
-    "receiver.rail.4": [],
-    "receiver.rail.5": [],
-    "receiver.rail.6": []
-  },
-  "compatibilityPairs": [
-    [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-hunting-3-9x"]],
-    [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
-    [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-hunting-3-9x"]],
-    [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]]
-  ]
+    "compatibilityPairs": [
+      [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-hunting-3-9x"]],
+      [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+      [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-hunting-3-9x"]],
+      [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]]
+    ]
+  }
 }

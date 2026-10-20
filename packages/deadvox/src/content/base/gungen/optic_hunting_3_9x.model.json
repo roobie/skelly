@@ -1,24 +1,35 @@
 {
   "id": "optic_hunting_3_9x",
   "file": "assets/models/optic_hunting_3_9x.glb",
-  "attachment": {
-    "id": "optic-hunting-3-9x",
-    "kind": "optic",
-    "massKg": 0.17393058603090866,
-    "mount": "rail-top",
-    "properties": {
-      "reticleKind": "crosshair",
-      "magnification": { "min": 3, "max": 9 },
-      "railSpanNotches": { "minOffset": -3, "maxOffset": 3 }
-    },
-    "sight": {
+  "gun": {
+    "attachment": {
+      "id": "optic-hunting-3-9x",
       "kind": "optic",
-      "eye": [-0.1495, 0.025875, 0],
-      "direction": [1, 0, 0],
-      "up": [0, 1, 0],
-      "eyeReliefMetres": 0.092,
-      "ocularDiameterMetres": 0.031625
-    },
-    "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] }
+      "massKg": 0.17393058603090866,
+      "mount": "rail-top",
+      "properties": {
+        "reticleKind": "crosshair",
+        "magnification": {
+          "min": 3,
+          "max": 9
+        },
+        "railSpanNotches": {
+          "minOffset": -3,
+          "maxOffset": 3
+        }
+      },
+      "sight": {
+        "kind": "optic",
+        "eye": [-0.1495, 0.025875, 0],
+        "direction": [1, 0, 0],
+        "up": [0, 1, 0],
+        "eyeReliefMetres": 0.092,
+        "ocularDiameterMetres": 0.031625
+      },
+      "mountFrame": {
+        "normal": [0, -1, 0],
+        "up": [1, 0, 0]
+      }
+    }
   }
 }

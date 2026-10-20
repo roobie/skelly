@@ -173,6 +173,10 @@
       "output": "packages/deadvox/src/content/base/map-kits.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/models-attachments.jsonnet",
+      "output": "packages/deadvox/src/content/base/models-attachments.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/models-firearms.jsonnet",
       "output": "packages/deadvox/src/content/base/models-firearms.json"
     },

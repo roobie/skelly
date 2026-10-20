@@ -1156,8 +1156,8 @@ const attachmentRangesDoNotOverlap = (
   );
 };
 
-const ModelSchema = pipe(
-  modelSchema({
+export const GunModelSchema = pipe(
+  strictObject({
     /** Cartridge-data id (not a display designation); punctuation is normalized only in model slugs. */
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
@@ -1223,10 +1223,17 @@ const ModelSchema = pipe(
     'optic sight metadata needs an ocular opening diameter',
   ),
   check(
-    ({ internalMagazine, calibre, anchors, capacity, rounds }) =>
-      internalMagazine === undefined ||
-      (calibre !== undefined && anchors?.loading_port !== undefined && capacity === undefined && rounds === undefined),
-    'internal magazine metadata needs calibre/loading_port and cannot carry a box round column',
+    ({ internalMagazine, calibre, capacity, rounds }) =>
+      internalMagazine === undefined || (calibre !== undefined && capacity === undefined && rounds === undefined),
+    'internal magazine metadata needs calibre and cannot carry a box round column',
+  ),
+);
+
+export const ModelSchema = pipe(
+  modelSchema({ gun: optional(GunModelSchema) }),
+  check(
+    ({ gun, anchors }) => gun?.internalMagazine === undefined || anchors?.loading_port !== undefined,
+    'internal magazine metadata needs a loading_port anchor',
   ),
 );
 
@@ -3067,6 +3074,7 @@ export type FixedLootOverrideDef = InferOutput<typeof FixedLootOverride>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
+export type GunModelDef = InferOutput<typeof GunModelSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SoundRecipe = InferOutput<typeof SoundRecipeSchema>;

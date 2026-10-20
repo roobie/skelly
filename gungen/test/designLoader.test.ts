@@ -266,7 +266,7 @@ describe('loadDesign: finish validation', () => {
     });
     expect(exported.ok).toBe(true);
     if (exported.ok) {
-      expect(exported.modelEntry.calibre).toBeUndefined();
+      expect(exported.modelEntry.gun.calibre).toBeUndefined();
     }
   });
 

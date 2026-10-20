@@ -2125,7 +2125,7 @@ try {
     if (!definition?.model) {
       throw new Error('No pump firearm fixture is available');
     }
-    const calibre = registry.models.get(definition.model)?.calibre;
+    const calibre = registry.models.get(definition.model)?.gun?.calibre;
     const cartridge = [...registry.items.values()].find((item) => item.ammo?.calibre === calibre);
     if (!cartridge) {
       throw new Error('No compatible firearm cartridge fixture is available');
@@ -2563,7 +2563,7 @@ try {
     const optic = Object.values(previewFirearm.slots ?? {}).find((item) => {
       const definition = r.inventory.registry.items.get(item.type);
       const model = definition?.model === undefined ? undefined : r.inventory.registry.models.get(definition.model);
-      return model?.attachment?.kind === 'optic';
+      return model?.gun?.attachment?.kind === 'optic';
     });
     if (!optic) {
       throw new Error('Fixture firearm has no mounted optic');
@@ -2571,14 +2571,14 @@ try {
     const definition = r.inventory.registry.items.get(optic.type);
     const model = r.inventory.registry.models.get(definition.model);
     const expected = {
-      magnification: definition.opticMagnification ?? model.attachment.properties.magnification?.min ?? 1,
-      reticleKind: model.attachment.properties.reticleKind,
+      magnification: definition.opticMagnification ?? model.gun.attachment.properties.magnification?.min ?? 1,
+      reticleKind: model.gun.attachment.properties.reticleKind,
     };
     const frame = r.view.held.opticLensFrame;
     return {
       frame: { magnification: frame.magnification, reticleKind: frame.reticleKind },
       expected,
-      range: model.attachment.properties.magnification,
+      range: model.gun.attachment.properties.magnification,
       step: definition.opticZoom?.step,
     };
   }, firearm.uid);

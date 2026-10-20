@@ -645,7 +645,7 @@ const createPumpReplayFixture = (shells: number) => {
   const runtime = createRuntime();
   const { inventory } = runtime;
   const { registry: content } = inventory;
-  const { calibre } = content.models.get(content.items.get('pump_shotgun')!.model!)!;
+  const { calibre } = content.models.get(content.items.get('pump_shotgun')!.model!)!.gun!;
   const shell = [...content.items.keys()].sort().find((id) => content.items.get(id)!.ammo?.calibre === calibre)!;
   const pump = inventory.create('pump_shotgun');
   const feet = runtime.player.body.pos;

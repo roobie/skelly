@@ -128,7 +128,7 @@ it('sizes a bolt design action and integral well from its selected calibre', () 
     const id = `optic_${type.replaceAll('-', '_')}`;
     return { id, file: `assets/models/${id}.glb` as const };
   });
-  const compatible = new Set(Object.values(exported.modelEntry.compatibility ?? {}).flat());
+  const compatible = new Set(Object.values(exported.modelEntry.gun.compatibility ?? {}).flat());
   const expectedOptics = optics.filter(({ id }) => compatible.has(id.replaceAll('_', '-')));
   expect(expectedOptics.length).toBeGreaterThan(0);
   expect(expectedOptics.length).toBeLessThan(optics.length);
@@ -214,7 +214,7 @@ it('removes a design-excluded attachment from both single and pair certificates'
   if (!baseline.ok) {
     throw new Error(baseline.message);
   }
-  const excluded = baseline.modelEntry.compatibilityPairs?.[0]?.[0][1];
+  const excluded = baseline.modelEntry.gun.compatibilityPairs?.[0]?.[0][1];
   if (!excluded) {
     throw new Error('Exclusion fixture needs an accepted attachment pair');
   }
@@ -222,8 +222,10 @@ it('removes a design-excluded attachment from both single and pair certificates'
   if (!restricted.ok) {
     throw new Error(restricted.message);
   }
-  expect(Object.values(restricted.modelEntry.compatibility ?? {}).flat()).not.toContain(excluded);
-  expect(restricted.modelEntry.compatibilityPairs?.some((pair) => pair.some(([, id]) => id === excluded))).toBe(false);
+  expect(Object.values(restricted.modelEntry.gun.compatibility ?? {}).flat()).not.toContain(excluded);
+  expect(restricted.modelEntry.gun.compatibilityPairs?.some((pair) => pair.some(([, id]) => id === excluded))).toBe(
+    false,
+  );
 });
 
 it('exports integral capacity from the well, iron or fitted-optic sights, and a validated phased action', () => {
@@ -236,12 +238,14 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
   }
   const model = out.modelEntry;
   const resolved = resolve(hunting.assembly, gunDomain);
-  expect(model.internalMagazine?.capacity).toBeDefined();
-  expect(model.internalMagazine?.capacity).toBe(internalMagazineCapacity(resolved, BOLT_CARTRIDGE));
-  expect(model.slots?.magazine).toBeUndefined();
-  expect(Object.values(model.compatibility ?? {}).some((allowed) => allowed.includes('optic-hunting-3-9x'))).toBe(true);
-  expect(model.sight?.kind).toBe('iron');
-  expect(Object.values(model.compatibility ?? {}).flat()).not.toContain('optic-digital-thermal');
+  expect(model.gun.internalMagazine?.capacity).toBeDefined();
+  expect(model.gun.internalMagazine?.capacity).toBe(internalMagazineCapacity(resolved, BOLT_CARTRIDGE));
+  expect(model.gun.slots?.magazine).toBeUndefined();
+  expect(Object.values(model.gun.compatibility ?? {}).some((allowed) => allowed.includes('optic-hunting-3-9x'))).toBe(
+    true,
+  );
+  expect(model.gun.sight?.kind).toBe('iron');
+  expect(Object.values(model.gun.compatibility ?? {}).flat()).not.toContain('optic-digital-thermal');
   expect(model.anchors?.loading_port).toBeDefined();
   const optic = exportGunGlb(
     scoped,
@@ -252,9 +256,9 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
   if (!optic.ok) {
     throw new Error(JSON.stringify(optic.error));
   }
-  expect(optic.modelEntry.sight?.kind).toBe('optic');
+  expect(optic.modelEntry.gun.sight?.kind).toBe('optic');
   expect(buildRegistry([{ source: 'fixture', data: { models: [model, optic.modelEntry] } }]).issues).toEqual([]);
-  const { hand } = model.action!;
+  const { hand } = model.gun.action!;
   expect(
     hand.unlockSimSeconds! +
       hand.rearwardSimSeconds +
@@ -264,7 +268,7 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
   ).toBeLessThanOrEqual(hand.durationSimSeconds);
   for (const phase of ['unlockSimSeconds', 'lockSimSeconds'] as const) {
     const bad = structuredClone(model);
-    delete bad.action!.hand[phase];
+    delete bad.gun.action!.hand[phase];
     expect(buildRegistry([{ source: 'fixture', data: { models: [bad] } }]).issues.length).toBeGreaterThan(0);
   }
 });

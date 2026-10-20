@@ -44,10 +44,10 @@ export const handlingRotation = (
   if (!(model && frame)) {
     return [0, 0, 0];
   }
-  if (model.revolver && frame.revolver) {
+  if (model.gun?.revolver && frame.revolver) {
     return revolverTurn(side, frame);
   }
-  if (model.internalMagazine) {
+  if (model.gun?.internalMagazine) {
     return [0, 0, rackCant(model, side, frame, grip)];
   }
   // +1 when the off hand is on the left.
@@ -57,9 +57,9 @@ export const handlingRotation = (
     const turn = magazineMotion(frame.elapsed, frame.duration, frame.magazine.removeShare).reach;
     return [turn * pitch, toward * turn * yaw, -toward * turn * roll];
   }
-  if (frame.mode === 'hand' && model.action) {
-    const turn = rackGrip(model.action, frame.elapsed, frame.duration).reach;
-    const handleAway = (toward * (model.chargingHandleDegrees ?? 0) * Math.PI) / 180;
+  if (frame.mode === 'hand' && model.gun?.action) {
+    const turn = rackGrip(model.gun.action, frame.elapsed, frame.duration).reach;
+    const handleAway = (toward * (model.gun.chargingHandleDegrees ?? 0) * Math.PI) / 180;
     const handleRoll = Math.max(0, roll + RACK_ROLL_PER_HANDLE_RADIAN * handleAway);
     return [turn * pitch, -toward * turn * yaw, toward * turn * handleRoll];
   }
