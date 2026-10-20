@@ -209,6 +209,8 @@ local yard(block) = { role: 'trim', block: block };
     ] },
     { id: 'equipment_locker', rolls: [1, 2], entries: [
       { item: 'utility_vest', weight: 2, condition: [0.4, 0.8] },
+      { item: 'stab_vest', weight: 1, condition: [0.4, 0.8] },
+      { item: 'riot_helmet', weight: 1, condition: [0.4, 0.8] },
       { item: 'flashlight', weight: 2 }, { item: 'portable_radio', weight: 1 },
       { item: 'bandage', weight: 1 }, { nothing: true, weight: 4 },
     ] },

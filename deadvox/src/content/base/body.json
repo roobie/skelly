@@ -103,7 +103,7 @@
         "leftLeg": ["legs", "feet"],
         "rightArm": ["torso", "hands"],
         "rightLeg": ["legs", "feet"],
-        "torso": ["torso"]
+        "torso": ["vest", "torso"]
       },
       "exposureRefusal": "You're burning",
       "fatigueRisePerGameHour": 4,

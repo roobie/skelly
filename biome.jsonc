@@ -107,6 +107,7 @@
         "testPool.ts",
         "tools/jsonnet/**",
         "deadvox/tools/publish-playtest.mjs",
+        "deadvox/tools/police-item-models.mjs",
         "deadvox/tools/perf-baseline.mjs",
         "deadvox/tools/perf-baseline.test.mjs"
       ],

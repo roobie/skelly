@@ -30,6 +30,7 @@
     wearSlotLabels: {
       head: 'Head',
       torso: 'Torso',
+      vest: 'Vest',
       legs: 'Legs',
       back: 'Back',
       waist: 'Waist',

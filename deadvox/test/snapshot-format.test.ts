@@ -256,20 +256,44 @@ it('an active burn keeps its threshold, accumulated damage and tail through the 
   expect(restored.sim.body.snapshotState()).toEqual(source.sim.body.snapshotState());
 });
 
-it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, the shoulder included', async () => {
-  const source = createRuntime(undefined, 'left');
+it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, including shoulder and vest', async () => {
+  const fixture = buildRegistry([
+    {
+      source: 'vest-fixture.json',
+      data: {
+        items: [
+          {
+            id: 'fixture_save_vest',
+            name: 'Fixture vest',
+            category: 'clothing',
+            weight: 1,
+            size: [1, 1],
+            wearable: { slot: 'vest', encumbrance: 0 },
+          },
+        ],
+      },
+    },
+  ]);
+  expect(fixture.issues).toEqual([]);
+  const content = { ...registry, items: new Map([...registry.items, ...fixture.registry.items]) };
+  const source = createRuntime(undefined, 'left', undefined, { registry: content });
+  expect(source.inventory.add(source.inventory.create('fixture_save_vest'), { kind: 'worn' })).toBe(true);
   const shotgun = source.inventory.create('pump_shotgun');
   source.inventory.fitSlot(shotgun, SLING_SLOT, source.inventory.create('weapon_sling'));
   if (!source.inventory.add(shotgun, { kind: 'worn' })) {
     throw new Error('Could not sling the shotgun for the shoulder fixture');
   }
   const saved = capture(source);
-  const decoded = await decodeSave(await encodeFixture(saved), { version: formatVersion, contentLookup });
-  const restored = createRuntime(decoded.snapshot, 'right');
+  const decoded = await decodeSave(await encodeFixture(saved), {
+    version: formatVersion,
+    contentLookup: (kind, id) => (kind === 'item' && content.items.has(id)) || contentLookup(kind, id),
+  });
+  const restored = createRuntime(decoded.snapshot, 'right', undefined, { registry: content });
   expect(restored.session.character.handedness).toBe('left');
   expect(restored.inventory.character).toBe(restored.session.character);
   expect(restored.inventory.snapshotState()).toEqual(saved.character.inventory);
   expect(restored.inventory.worn.shoulder?.slots?.[SLING_SLOT]).toBeDefined();
+  expect(restored.inventory.worn.vest?.type).toBe('fixture_save_vest');
 });
 
 it.each([undefined, 'ambidextrous'])(

@@ -467,6 +467,7 @@ const inventoryCore = obj({
   worn: obj({
     head: opt(lazy(() => itemSchema)),
     torso: opt(lazy(() => itemSchema)),
+    vest: opt(lazy(() => itemSchema)),
     legs: opt(lazy(() => itemSchema)),
     back: opt(lazy(() => itemSchema)),
     waist: opt(lazy(() => itemSchema)),

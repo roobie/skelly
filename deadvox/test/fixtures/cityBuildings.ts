@@ -1,6 +1,6 @@
 import type { CityGrid, CityPlan } from '../../src/core/cityPlan.ts';
 import type { Registry } from '../../src/core/content.ts';
-import { lootSpawnPoint, lootTypeIssue } from '../../src/core/loot.ts';
+import { admittedCandidates, lootSpawnPoint } from '../../src/core/loot.ts';
 import { Rng } from '../../src/core/random.ts';
 import type { MapAssemblyDef } from '../../src/core/schema.ts';
 import { lootSourcesOf } from '../../src/core/site.ts';
@@ -62,16 +62,18 @@ export const buildingLootEvidence = (registry: Registry, template: CompiledTempl
             STAIR_BODY_HALF_WIDTH + 0.5,
       );
       const point = lootSpawnPoint(source);
-      const items = point.supply.kind === 'table' ? tableItems(registry, point.supply.table) : [];
+      const candidates = point.supply.kind === 'table' ? tableItems(registry, point.supply.table) : [];
+      const items = admittedCandidates(
+        registry,
+        point,
+        candidates.map((type) => ({ type, weight: 1 })),
+      ).map(({ type }) => type);
       return {
         label: `${template.id}: ${piece.furniture}`,
         stocked: point.supply.kind === 'fixed',
         onStorey: template.access?.storeys.some(({ floor }) => floor === feet) ?? false,
         accessible,
         items,
-        issues: items
-          .map((item) => lootTypeIssue(registry, item, point.context))
-          .filter((issue) => issue !== undefined),
       };
     }),
   };

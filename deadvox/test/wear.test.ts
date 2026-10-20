@@ -10,13 +10,26 @@ import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixtur
 
 const registry = baseRegistry();
 
+const armour = {
+  id: 'test_vest',
+  name: 'Test vest',
+  category: 'clothing',
+  weight: 100,
+  size: [1, 1],
+  wearable: { slot: 'vest', encumbrance: 0, wearPerDamage: 0.01, protects: { cut: 0.75, acid: 0.5 } },
+};
 const wearables = 'items-wearables.json';
 const hitBuild = buildRegistry([
   { source: wearables, data: JSON.parse(readFileSync(join('src/content/base', wearables), 'utf8')) as unknown },
   {
+    source: 'models-items.json',
+    data: JSON.parse(readFileSync('src/content/base/models-items.json', 'utf8')) as unknown,
+  },
+  {
     source: 'test-headwear.json',
     data: {
       items: [
+        armour,
         {
           id: 'test_cap',
           name: 'Test cap',
@@ -74,6 +87,120 @@ const puddle = {
 } as const;
 
 describe('item wear', () => {
+  it('rejects a protection share for an impervious kind', () => {
+    const result = buildRegistry([
+      {
+        source: 'conflict.json',
+        data: {
+          items: [
+            {
+              ...armour,
+              wearable: { ...armour.wearable, imperviousTo: ['cut'] },
+            },
+          ],
+        },
+      },
+    ]);
+    expect(result.issues.some((issue) => issue.message.includes('must not also be impervious'))).toBe(true);
+  });
+
+  it('meets the vest before the jacket on the torso but not on the arm', () => {
+    const {
+      inventory,
+      items: [vest, jacket],
+    } = wearing('test_vest', 'jacket');
+    wearOnPlayerHit(inventory, tuning, { region: 'torso', damage: 1, kind: 'blunt' });
+    expect(vest!.condition).toBeLessThan(1);
+    expect(jacket!.condition).toBe(1);
+    const afterTorso = vest!.condition;
+    wearOnPlayerHit(inventory, tuning, { region: 'leftArm', damage: 1, kind: 'blunt' });
+    expect(jacket!.condition).toBeLessThan(1);
+    expect(vest!.condition).toBe(afterTorso);
+  });
+
+  it.each(['cut', 'blunt'] as const)('reduces flesh damage only by the met item’s share for %s', (kind) => {
+    const { inventory } = wearing('test_vest');
+    const protectedSim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
+    const bare = new Simulation({ seed: 1 });
+    const initial = bare.body.health;
+    protectedSim.hit(8, 'fixture', 'torso', { kind });
+    bare.hit(8, 'fixture', 'torso', { kind });
+    const share = kind === 'cut' ? armour.wearable.protects.cut : 0;
+    expect(initial - bare.body.health).toBeGreaterThan(0);
+    expect(initial - protectedSim.body.health).toBeCloseTo((initial - bare.body.health) * (1 - share));
+  });
+
+  it('uses reduced damage before choosing the bleeding tier', () => {
+    const { inventory } = wearing('test_vest');
+    const bodyTuning = {
+      ...tuning,
+      bleeding: {
+        ...tuning.bleeding,
+        tiers: [
+          {
+            ...tuning.bleeding.tiers[0]!,
+            minDamage: 5,
+            chancePerDamage: { blunt: 1, cut: 1, pierce: 1, acid: 1 },
+          },
+        ],
+      },
+    };
+    const protectedSim = new Simulation({ seed: 1, bodyTuning, ...playerWearHooks(inventory, bodyTuning) });
+    const bare = new Simulation({ seed: 1, bodyTuning });
+    bare.hit(8, 'fixture', 'torso', { kind: 'cut' });
+    protectedSim.hit(8, 'fixture', 'torso', { kind: 'cut' });
+    expect(bare.body.wounds.torso).not.toBeNull();
+    expect(protectedSim.body.wounds.torso).toBeNull();
+  });
+
+  it('a ruined vest lets the whole hit through but still hides the jacket', () => {
+    const {
+      inventory,
+      items: [vest, jacket],
+    } = wearing('test_vest', 'jacket');
+    inventory.changeCondition(vest!.uid, -1);
+    const sim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
+    const initial = sim.body.health;
+    sim.hit(8, 'fixture', 'torso', { kind: 'cut' });
+    expect(initial - sim.body.health).toBeCloseTo(8);
+    expect(inventory.worn.vest).toBe(vest);
+    expect(jacket!.condition).toBe(1);
+  });
+
+  it('wears protective armour by the full unreduced blow, even the blow that ruins it', () => {
+    const {
+      inventory,
+      items: [vest],
+    } = wearing('test_vest');
+    const sim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
+    sim.hit(8, 'fixture', 'torso', { kind: 'cut' });
+    expect(vest!.condition).toBeCloseTo(1 - 8 * armour.wearable.wearPerDamage * tuning.outerWearMultiplier.cut);
+    inventory.changeCondition(vest!.uid, -vest!.condition + 0.01);
+    const initial = sim.body.health;
+    sim.hit(8, 'fixture', 'torso', { kind: 'cut' });
+    expect(vest!.condition).toBe(0);
+    expect(initial - sim.body.health).toBeCloseTo(8 * (1 - armour.wearable.protects.cut));
+  });
+
+  it('protects against lingering acid after leaving contact', () => {
+    const { inventory } = wearing('test_vest');
+    const protectedSim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
+    const bare = new Simulation({ seed: 1 });
+    for (const sim of [protectedSim, bare]) {
+      sim.expose({ ...puddle, region: 'torso' });
+      sim.frame(simSeconds(1));
+      sim.leaveExposure(puddle.id);
+    }
+    const readers = [protectedSim.events.reader(), bare.events.reader()];
+    protectedSim.frame(tuning.linger.acid!.simSeconds);
+    bare.frame(tuning.linger.acid!.simSeconds);
+    const [protectedDamage, bareDamage] = readers.map((reader) =>
+      reader.read().reduce((sum, event) => sum + (event.kind === 'damage' ? event.amount : 0), 0),
+    );
+    expect(bareDamage).toBeGreaterThan(0);
+    expect(protectedDamage).toBeCloseTo(bareDamage! * (1 - armour.wearable.protects.acid));
+  });
+
   it('subtracts a melee weapon’s content rate and clamps its condition at ruin', () => {
     const inventory = new Inventory(registry);
     const weapon = inventory.create('crowbar');

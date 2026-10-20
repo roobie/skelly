@@ -97,7 +97,7 @@
       "weight": 900,
       "size": [3, 3],
       "wearable": {
-        "slot": "torso",
+        "slot": "vest",
         "encumbrance": 6,
         "warmth": 5,
         "wearPerDamage": 0.002
@@ -109,6 +109,36 @@
           { "name": "pouch 3", "grid": [1, 2], "handlingSimSeconds": 0.5 },
           { "name": "pouch 4", "grid": [1, 2], "handlingSimSeconds": 0.5 }
         ]
+      }
+    },
+    {
+      "id": "stab_vest",
+      "name": "Stab vest",
+      "model": "stab_vest",
+      "category": "clothing",
+      "weight": 2500,
+      "size": [3, 3],
+      "wearable": {
+        "slot": "vest",
+        "encumbrance": 8,
+        "warmth": 3,
+        "wearPerDamage": 0.001,
+        "protects": { "cut": 0.8, "pierce": 0.7, "blunt": 0.1, "acid": 0 }
+      }
+    },
+    {
+      "id": "riot_helmet",
+      "name": "Riot helmet",
+      "model": "riot_helmet",
+      "category": "clothing",
+      "weight": 1400,
+      "size": [2, 2],
+      "wearable": {
+        "slot": "head",
+        "encumbrance": 3,
+        "warmth": 1,
+        "wearPerDamage": 0.0015,
+        "protects": { "blunt": 0.6, "cut": 0.6, "pierce": 0.5, "acid": 0.3 }
       }
     },
     {

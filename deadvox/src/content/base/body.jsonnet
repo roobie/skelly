@@ -17,7 +17,7 @@ local normalSleep = 100 / normalSleepGameHours;
     // Footwear and gloves are each limb's last layer, so a blow meets them only on a bare limb.
     coverage: {
       head: ['head'],
-      torso: ['torso'],
+      torso: ['vest', 'torso'],
       leftArm: ['torso', 'hands'],
       rightArm: ['torso', 'hands'],
       leftLeg: ['legs', 'feet'],

@@ -407,10 +407,27 @@ try {
   const floorItem = page.locator('#inventory .inv-grid[data-target^="pile:"] .inv-item[title^="Bandage,"]');
   const pocketTarget = page.locator('#inventory .inv-grid[data-target="pocket:1:0"]');
   assert.equal(await floorItem.count(), 1, 'spawned bandage is in the floor pile');
-  const [youBox, pocketBox] = await Promise.all([
-    page.locator('#inventory [data-pane="you"]').boundingBox(),
-    pocketTarget.boundingBox(),
-  ]);
+  const youPane = page.locator('#inventory [data-pane="you"]');
+  const initialYouBox = await youPane.boundingBox();
+  const initialPocketBox = await pocketTarget.boundingBox();
+  assert(initialYouBox && initialPocketBox, 'character pane and first pocket have layout boxes before scrolling');
+  const revealDistance = initialPocketBox.y + initialPocketBox.height - (initialYouBox.y + initialYouBox.height);
+  if (revealDistance > 0) {
+    await moveCursorTo({
+      x: initialYouBox.x + initialYouBox.width / 2,
+      y: initialYouBox.y + initialYouBox.height / 2,
+    });
+    await page.evaluate((deltaY) => {
+      document
+        .querySelector('#view')
+        .dispatchEvent(new WheelEvent('wheel', { deltaY, deltaMode: 0, bubbles: true, cancelable: true }));
+    }, revealDistance + 16);
+    await page.waitForFunction(() => {
+      const pane = document.querySelector('#inventory [data-pane="you"]');
+      return pane.scrollTop > 0;
+    });
+  }
+  const [youBox, pocketBox] = await Promise.all([youPane.boundingBox(), pocketTarget.boundingBox()]);
   assert(youBox && pocketBox, 'character pane and first pocket have layout boxes');
   assert.ok(
     pocketBox.x >= youBox.x &&

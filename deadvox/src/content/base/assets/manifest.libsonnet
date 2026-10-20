@@ -523,6 +523,8 @@
         "assets/models/glass_lens.glb",
         "assets/models/small_spring.glb",
         "assets/models/cloth_bundle.glb",
+        "assets/models/stab_vest.glb",
+        "assets/models/riot_helmet.glb",
         "assets/models/thread_spool.glb",
         "assets/models/fuse.glb",
         "assets/models/cord_coil.glb",
@@ -543,7 +545,7 @@
         "assets/models/folded_note.glb",
         "assets/models/notebook.glb"
       ],
-      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps, loose and folded paper and a notebook; no external asset source or texture is used."
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used."
     },
     {
       "title": "Heartbeat Sounds",

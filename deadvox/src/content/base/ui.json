@@ -44,6 +44,7 @@
         "legs": "Legs",
         "shoulder": "Shoulder",
         "torso": "Torso",
+        "vest": "Vest",
         "waist": "Waist"
       }
     }

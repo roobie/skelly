@@ -47,6 +47,10 @@ export const playerWearHooks = (inventory: Inventory, tuning: BodyTuningDef) => 
     wearOnPlayerHit(inventory, tuning, { region, damage, kind, touch }),
   impervious: (region: BodyRegion, kind: DamageKind, touch?: Touch) =>
     imperviousTo(inventory, wornItemMet(inventory, tuning, region, touch), kind),
+  protectionShare: (region: BodyRegion, kind: DamageKind, touch?: Touch) => {
+    const item = wornItemMet(inventory, tuning, region, touch);
+    return item && item.condition > 0 ? (defOf(inventory.registry, item.type).wearable?.protects?.[kind] ?? 0) : 0;
+  },
 });
 
 export const wearMeleeWeaponOnHit = (inventory: Inventory, uid: number): void => {

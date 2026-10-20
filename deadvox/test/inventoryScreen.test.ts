@@ -153,6 +153,7 @@ function setup(contentRegistry = registry) {
     slotLabels: {
       head: 'fixture head',
       torso: 'fixture torso',
+      vest: 'fixture vest',
       legs: 'fixture legs',
       back: 'fixture back',
       waist: 'fixture waist',
