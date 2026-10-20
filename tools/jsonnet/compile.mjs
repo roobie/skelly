@@ -8,6 +8,7 @@ import { compileJsonnetFile, REPOSITORY_ROOT } from './index.mjs';
 const BIOME_EXECUTABLE = resolve(REPOSITORY_ROOT, 'node_modules/@biomejs/biome/bin/biome');
 const OUTPUT_MANIFEST = resolve(REPOSITORY_ROOT, 'tools/jsonnet/outputs.json');
 const SOURCE_ROOTS = [
+  'packages/thing-core/src',
   'packages/deadvox/maps',
   'packages/deadvox/src/content/base',
   'packages/deadvox/src/config',

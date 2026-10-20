@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@skelly/engine": "*",
+    "@skelly/thing-core": "*",
     "@skelly/tool-ui": "*",
     "three": "^0.186.0"
   },

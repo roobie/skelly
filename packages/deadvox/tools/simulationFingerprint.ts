@@ -259,6 +259,7 @@ function sourceRelativePath(projectRoot: string, sourceRoot: string, file: strin
   const roots = [
     { root: sourceRoot, prefix: 'src/' },
     { root: resolve(projectRoot, '../mobgen/src'), prefix: 'mobgen/' },
+    { root: resolve(projectRoot, '../thing-core/src'), prefix: 'thing-core/' },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
   ];
   for (const { root, prefix } of roots) {
@@ -331,7 +332,7 @@ async function resolveTrackableModule(
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
     throw new Error(
-      `Runtime dependency ${specifier} resolves outside src/, sibling mobgen/src/, and node_modules: ${resolvedId}`,
+      `Runtime dependency ${specifier} resolves outside src/, sibling mobgen/src/, sibling thing-core/src/, and node_modules: ${resolvedId}`,
     );
   }
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {

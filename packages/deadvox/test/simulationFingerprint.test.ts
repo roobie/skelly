@@ -21,7 +21,10 @@ type Sources = Map<string, string>;
 function hostFor(sources: Sources): SimulationModuleGraphHost {
   return {
     resolve(specifier, importer) {
-      const base = isAbsolute(specifier) ? specifier : resolve(dirname(importer ?? root), specifier);
+      let base = isAbsolute(specifier) ? specifier : resolve(dirname(importer ?? root), specifier);
+      if (specifier === '@skelly/thing-core/schema') {
+        base = resolve(root, '../thing-core/src/schema.ts');
+      }
       for (const candidate of [base, `${base}.ts`, `${base}.tsx`, `${base}.js`]) {
         if (sources.has(candidate)) {
           return Promise.resolve(candidate);
@@ -330,6 +333,18 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('mobgen/mob/amalgamTemplate.ts')).toBe(true);
     expect(graph.sources.has('mobgen/mob/amalgam.ts')).toBe(true);
     await expect(access(resolve(projectRoot, '../mobgen/src/mob/amalgamTemplate.ts'))).resolves.toBeUndefined();
+  });
+
+  it('fingerprints shared model-schema changes imported by the simulation', async () => {
+    const entry = `${root}/src/core/sim.ts`;
+    const schema = resolve(root, '../thing-core/src/schema.ts');
+    const sources = new Map([
+      [entry, "import { validate } from '@skelly/thing-core/schema'; export { validate };"],
+      [schema, 'export const validate = () => true;'],
+    ]);
+    const before = await hash(sources, ...entries);
+    sources.set(schema, 'export const validate = () => false;');
+    expect(await hash(sources, ...entries)).not.toBe(before);
   });
 
   it('includes runtime-resolved source files, not unrelated UI files or type-only imports', async () => {

@@ -25,8 +25,8 @@ of the root package.
   this code needs a home deadvox doesn't load. With one writer, every tool's exports load
   the same way, and a second format has an obvious home.
 
-Both tools depend on the core and the export package, and never on each other. Only `thing-core` exists, as a
-README with no code; `WORK.md`, "Phases" orders the work that creates each package.
+Both tools depend on the core and the export package, and never on each other.
+`WORK.md`, "Phases" orders the work that creates and integrates them.
 
 ## Why
 

@@ -5,6 +5,7 @@
   "type": "module",
   "workspaces": [
     "packages/engine",
+    "packages/thing-core",
     "packages/tool-ui",
     "gungen",
     "packages/deadvox",

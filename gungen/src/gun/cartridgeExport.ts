@@ -7,6 +7,7 @@ import type {
   Palette,
 } from '@skelly/engine/export/exportTypes.ts';
 import type { RevolvedSolid, Solid } from '@skelly/engine/shapes/solid.ts';
+import { materialColours } from '@skelly/thing-core/materials';
 import { cartridgeModelAsset } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { type RoundProfiles, roundProfiles } from '../ammo/roundProfile.ts';
@@ -41,12 +42,7 @@ const AMMO_PALETTE: Palette = {
   familyColors: { 'cartridge-model': [0.62, 0.56, 0.43] },
   specialColors: { case: [0.69, 0.51, 0.29], bullet: [0.7, 0.34, 0.19], primer: [0.49, 0.4, 0.23] },
   fallbackColor: [0.62, 0.56, 0.43],
-  materials: {
-    brass: [0.69, 0.51, 0.29],
-    copper: [0.7, 0.34, 0.19],
-    lead: [0.38, 0.4, 0.42],
-    steel: [0.29, 0.32, 0.31],
-  },
+  materials: materialColours,
 };
 const MM_DOMAIN: Domain['units'] = { metresPerUnit: 0.001, grid: 0.001, bevel: 0 };
 

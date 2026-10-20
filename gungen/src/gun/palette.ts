@@ -3,6 +3,7 @@ import {
   resolveAppearance as resolveCoreAppearance,
 } from '@skelly/engine/export/appearance.ts';
 import type { Palette, SrgbColor } from '@skelly/engine/export/exportTypes.ts';
+import { materialColours } from '@skelly/thing-core/materials';
 import {
   ANTI_MATERIEL_FAMILY_COLORS,
   ANTI_MATERIEL_FINISH,
@@ -187,18 +188,6 @@ const ROLE_MATERIALS = Object.fromEntries(
 const ROLE_SHADES = Object.fromEntries(
   roles.map((role) => [role, [SHADE[role]!, SHADE[role]!, SHADE[role]!]]),
 ) as Record<string, SrgbColor>;
-const MATERIAL_HEX: Record<string, number> = {
-  'wood-walnut': 0x75_43_24,
-  'wood-birch': 0xc1_9a_65,
-  'polymer-black': 0x24_29_2b,
-  'polymer-od-green': 0x4b_58_36,
-  'polymer-fde': 0xb1_91_62,
-  'steel-blued': 0x3e_49_59,
-  'steel-parkerized': 0x4b_4f_4c,
-  'steel-stainless': 0xb4_b8_b8,
-  'alu-anodized-black': 0x27_2c_31,
-  'rubber-black': 0x18_1a_1b,
-};
 export const GUN_FINISH_SLOTS = ['metal', 'furniture', 'accent'] as const;
 
 const finish = (furniture: string, metal: string, accent = 'rubber-black') => ({ furniture, metal, accent });
@@ -232,7 +221,7 @@ export const GUN_PALETTE: Palette = createPalette({
     'stock-wrist': 0xa9_7c_c8,
   }),
   fallbackColor: hexToSrgb(0x88_88_88),
-  materials: fromHex(MATERIAL_HEX),
+  materials: materialColours,
   roleSlots: ROLE_SLOTS,
   roleMaterials: ROLE_MATERIALS,
   roleShades: ROLE_SHADES,

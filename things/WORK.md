@@ -21,8 +21,10 @@ Why each boundary matters, and where it is checked:
 - Import edges between packages are enforced by `packages/engine/test/engineImportBoundary.test.ts`,
   `packageEdges`. Deadvox must not import the engine, so the game's dependency graph stays free
   of the engine's geometry (see `things/WORK.md`, "Decisions").
-- Deadvox's model schema mixes neutral and firearm fields, which is why the neutral envelope
-  moves into `thing-core`: `packages/deadvox/src/core/schema.ts`, `ModelSchema`.
+- Neutral fields have one definition in `packages/thing-core/src/schema.ts`,
+  `NeutralModelSchema`. Deadvox composes them with firearm fields in
+  `packages/deadvox/src/core/schema.ts`, `ModelSchema`; pack isolation still needs the
+  named-block boundary.
 - Gungen's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
   "gungen exports satisfy deadvox model validation".
 
@@ -105,11 +107,12 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
 ## Phases
 
 1. **Neutral schema and material table.**
-   - Define the envelope in `thing-core` and build deadvox's model schema on it, with
-     firearm and attachment fields in the gun pack's named block.
-   - Move gungen's palettes and densities into the material table: `gungen/src/gun/palette.ts`,
-     `GUN_PALETTE`; `gungen/src/gun/cartridgeExport.ts`, `AMMO_PALETTE`;
-     `gungen/src/gun/attachmentMass.ts`.
+   - Complete the envelope integration with firearm and attachment fields in the gun
+     pack's named block; migrate the exporters, authored content and fixtures together.
+   - Finish the material-table integration: material colours and densities come from
+     `packages/thing-core/src/materials.ts`, `MATERIALS`, while gun role assignments and
+     appearance tuning still need content authoring. Deadvox must read shared material
+     metadata rather than only the baked GLB appearance.
    - Give the engine's gun-shaped names neutral ones, or move them into the gun pack:
      `packages/engine/src/assembly/schema.ts`, `eyeReliefU`; `packages/engine/src/export/exportTypes.ts`,
      `RailPortMetadata` and `archetypeFinishes`. "Variant" names both an appearance variant
