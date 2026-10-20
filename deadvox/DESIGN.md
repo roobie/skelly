@@ -554,11 +554,10 @@ an anchor, an event outside its lot or over the host's blocks or furniture, and 
 container stock that fits no pocket of its furniture; the
 seeded build and furnishing throw rather than drop it, because a silently dropped
 promise would leave the lab unwinnable. Certified promised stock means the item is
-there and fits its container, nothing more. No check proves that the street reaches
-the stop, or that the stop's door reaches the anchor, past locks or otherwise; reach is
-left to authoring and play. The stops are few and hand-placed, so review and play can
-own reach, but an edit that cuts a promised item off fails no check, and saying so
-keeps that risk in view. Each stop has its own role, and the player
+there and fits its container, nothing more. Reach is proved only for stock a scenario
+resource names, as the police armoury's rack is (below). Other stops are few and
+hand-placed, so review and play own their reach, but an edit that cuts one of them off
+fails no check, and saying so keeps that risk in view. Each stop has its own role, and the player
 may visit them in any order, so finding the stock rewards exploring rather than
 following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
 `src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
@@ -583,6 +582,16 @@ the sewer, whose exploration already carries enough. The key route and the
 blowtorch route must remain independent alternatives; neither should require the
 other. See `src/content/base/rural-police.jsonnet`, `templates` and `loot`, and
 `src/content/base/gauntlet-start.libsonnet`, `start` and `mapPieces`.
+
+The armoury's gun is a proved resource through the key route alone: the certificate
+walks from the start up the officer's ladder, takes the key, comes back down and
+reaches the rack through the station and the armoury door the key opens. Without that
+proof, a layout edit that cuts the key's route would go unnoticed until play. The
+blowtorch is no part of the guarantee: its route is a bonus whose source is a secret.
+A ladder on an outside wall holds the climber flush against the wall, so the climb
+check accepts that pose where the wall runs the whole climb. See
+`src/content/base/scenarios.jsonnet`, `resources`; `src/core/scenarioCertificate.ts`,
+`lotResource`; and `src/core/climbCertificate.ts`, `wallBacked`.
 
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
@@ -647,8 +656,7 @@ only there. See
 One owned assembly supplies the service facade and underground campus, so the
 playable world and visual inspection cannot diverge into separate geometry.
 Fixed resources and promised core stock are present whatever incidental loot rolls.
-For promised stock that is presence, not reach: a key or route between the street
-and the stock is authored and proven in play.
+Promised stock alone is presence; a resource adds reach from the start.
 Public documentary leads must be independently useful and spatially separate;
 reading one cannot authorize another. Named civic buildings keep the clues part of
 plausible places, while reserved destination landmarks keep the written directions
@@ -699,9 +707,11 @@ corridor may pass under a building but not through it. See
 `src/content/base/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
 `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
 
-Fixed resources require an initially accessible route, rather than a key or tool
-whose acquisition depends on itself. An unlocked door is reversible; a locked
-door is not assumed open simply because its key exists somewhere. Independent
+A resource's route passes a lock only with a key the proof takes on its way from
+the start, never a key or tool whose acquisition depends on the resource itself. An
+unlocked door is reversible; a locked door is not assumed open simply because its
+key exists somewhere. A held key opens its locks for every later route, so keyed
+resources are proved after everything else. Independent
 public clue access must survive missing either lead; possession and reading
 never authorize the route. These are construction guarantees, not proof of clue
 interpretation or survival balance. Those judgments remain the integrated play
