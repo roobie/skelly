@@ -26,7 +26,6 @@ const app = text
         </ul>
         <section class="mode" aria-labelledby="mode-play">
           <h2 id="mode-play">${text.playHeading}</h2>
-          <p>${text.gauntletHint}</p>
           <a class="playtest-action" href="{{PLAY_URL}}">${text.gauntletLink}</a>
         </section>
         <section class="mode" aria-labelledby="mode-beginner">
