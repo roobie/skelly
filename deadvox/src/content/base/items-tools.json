@@ -53,7 +53,7 @@
       "description": "A gas torch that cuts steel. It runs on a gas cartridge.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "blowtorch",
       "name": "Blowtorch",
@@ -77,7 +77,7 @@
       "description": "Fuel for a blowtorch.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "gas_canister",
       "name": "Gas cartridge",
