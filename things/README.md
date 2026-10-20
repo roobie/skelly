@@ -3,6 +3,7 @@ read_if:
   - you work in `things/`
   - you wonder why gungen is being replaced, or where a modeling primitive belongs
   - you decide which tool or package a new model-authoring feature goes in
+  - you decide where mass, export or model-entry writing code goes
 ---
 
 # things
@@ -19,8 +20,12 @@ of the root package.
   food, the compass and so on) on top of the core.
 - `packages/gun-authoring-tool`: authors and curates guns on top of the core; the successor
   to `gungen/`.
+- An export package above the core: writes the GLB, the model entry and the per-part masses
+  for both tools. Mass derivation needs the engine's shapes, and deadvox loads the core, so
+  this code needs a home deadvox doesn't load. With one writer, every tool's exports load
+  the same way, and a second format has an obvious home.
 
-Both tools depend on the core and never on each other. Only `thing-core` exists, as a
+Both tools depend on the core and the export package, and never on each other. Only `thing-core` exists, as a
 README with no code; `WORK.md`, "Phases" orders the work that creates each package.
 
 ## Why
@@ -39,4 +44,9 @@ Removal waits on the gun-authoring tool reproducing every gungen export; `things
 - Gun-specific logic (archetypes, bore, sights, action, attachment fit, firearm model-entry
   fields) lives in the gun tool, never in the core.
 - The core stays free of rendering libraries so either tool, and tests, can use it headless.
+- Every model entry carries each part's mass and centre of mass, worked out by the tools.
+  Deadvox sums them and never loads shapes, so the engine stays out of the game, and any
+  assembly gets a total and a centre of mass: removing or swapping a part is a subtraction,
+  and a cut part is scaled by the share it keeps or exported as its own variant. Exact mass
+  for a part the game reshapes is given up; nothing calls for it.
 - Every export must validate and load in deadvox; `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility" names the contract.
