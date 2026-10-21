@@ -6,3 +6,4 @@ local item(id, source) = { id: id, kind: 'item', source: source };
   item('fuse', 'fuse'),
   item('desk_lamp', 'dead_desk_lamp'),
 ] + [item(package.id, package.id) for package in import '../packages.libsonnet']
++ [item(part.id, part.id) for part in import '../shamblerParts.libsonnet']
