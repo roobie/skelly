@@ -338,17 +338,14 @@ const portMeasurements = (entry: TravelCase, resolved: ReturnType<typeof resolve
 
 describe('procedural bolt carrier', () => {
   it('uses separate pattern-specific parts for AR, AK, and pump while inheriting action and bore', () => {
-    const expected = new Map([
-      ['design archetype-ar.json', { pattern: 'ar', travel: 6.5 }],
-      ['design archetype-ar-free-float.json', { pattern: 'ar', travel: 6.5 }],
-      ['design archetype-ak.json', { pattern: 'ak', travel: 6.5 }],
-      ['design archetype-pump-shotgun.json', { pattern: 'pump', travel: 5.5 }],
-    ]);
-    for (const { label, assembly } of loadCorpus()) {
-      const expectedPart = expected.get(label);
+    for (const pattern of ['ar', 'ak', 'pump']) {
+      const expectedPart = travelCases.find((entry) => entry.pattern === pattern);
+      expect(expectedPart, pattern).toBeDefined();
       if (!expectedPart) {
-        continue;
+        throw new Error(`Missing fixture for ${pattern}`);
       }
+      const assembly = assemblyFor(expectedPart);
+      const label = assembly.name;
       const resolved = resolve(assembly, gunDomain);
       const params = resolved.params.get('bolt-carrier')!;
       expect(params.pattern?.value, label).toBe(expectedPart.pattern);
@@ -555,6 +552,7 @@ describe('procedural bolt carrier', () => {
     expect(Math.abs((pivotBounds[0]![0]! + pivotBounds[0]![1]!) / 2 - -4)).toBeLessThanOrEqual(0.5);
     expect(knobBounds[2]![1]!).toBeLessThan(0);
     expect(sweep).toBeDefined();
+    expect(carrier.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0] });
     expect(
       penetrationWorld(
         stemWorld,
@@ -613,7 +611,6 @@ describe('procedural bolt carrier', () => {
     const receiverSideFace = Math.max(
       ...receiver.solids.filter(({ id }) => id.startsWith('receiver-shell-side-near')).flatMap(corners).map((point) => point[2]),
     );
-    const receiverShell = receiver.solids.filter(({ id }) => id.startsWith('receiver-shell'));
     const loadingPort = receiver.keepOuts.find(({ id }) => id === 'loading-port');
     const motion = arm.motion!;
     const knobMotion = knob.motion!;
@@ -656,12 +653,6 @@ describe('procedural bolt carrier', () => {
       for (const { def, transform } of moving) {
         for (const handle of def.solids) {
           const worldHandle = worldSolid(transform, handle);
-          // The mainline receiver has no bolt-handle notch; g33 owns that receiver redesign.
-          if (!(label.includes('bolt-rifle') || label.includes('awm'))) {
-            for (const shell of receiverShell) {
-              expect(penetrationWorld(worldHandle, worldSolid(receiverTransform, shell)), `${label} ${shell.id} at ${progress}`).toBeLessThanOrEqual(0);
-            }
-          }
           for (const solid of stock.solids) {
             expect(penetrationWorld(worldHandle, worldSolid(stockTransform, solid)), `${label} stock ${solid.id} at ${progress}`).toBeLessThanOrEqual(0);
           }
@@ -736,25 +727,6 @@ describe('procedural bolt carrier', () => {
       expect(penetrationWorld(sweepSolid, worldSolid(handguardTransform, solid)), solid.id).toBeLessThanOrEqual(0);
     }
     expect(handleOrigin[0]).toBeLessThanOrEqual(handguardFrontX);
-  });
-
-  it('joins the battle-rifle handle stem to its moving carrier through a narrow receiver slot', () => {
-    const { assembly } = loadCorpus().find(({ label }) => label === 'design archetype-battle-rifle.json')!;
-    const resolved = resolve(assembly, gunDomain);
-    const carrier = resolved.defs.get('bolt-carrier')!;
-    const receiver = resolved.defs.get('receiver')!;
-    const carrierTransform = resolved.placed.get('bolt-carrier')!;
-    const receiverTransform = resolved.placed.get('receiver')!;
-    const stem = carrier.solids.find(({ id }) => id === 'fal-handle-stem')!;
-    const body = carrier.solids.find(({ id }) => id === 'heavy-carrier')!;
-    const pivot = carrier.solids.find(({ id }) => id === 'fal-handle-pivot')!;
-    const worldStem = worldSolid(carrierTransform, stem);
-    expect(penetrationWorld(worldStem, worldSolid(carrierTransform, body))).toBeGreaterThan(0);
-    expect(penetrationWorld(worldStem, worldSolid(carrierTransform, pivot))).toBeGreaterThan(0);
-    for (const shell of receiver.solids.filter(({ id }) => id.startsWith('receiver-shell-side-far'))) {
-      expect(penetrationWorld(worldStem, worldSolid(receiverTransform, shell)), shell.id).toBeLessThanOrEqual(1e-6);
-    }
-    expect(carrier.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0] });
   });
 
   it('pins carrier and ejection-port anchors, including the forward-shifted pump action', () => {

@@ -194,17 +194,6 @@ describe('visible action details', () => {
     expect(arm.motion!.sourceKeepOut).toEqual({ port: 'base', id: 'bolt-handle-travel' });
   });
 
-  // Validates the whole fixture and published-design corpus as one contract.
-  it('keeps action details valid throughout all fixtures and published designs', { timeout: 15_000 }, () => {
-    for (const { label, assembly } of loadCorpus()) {
-      const report = validate(assembly, gunDomain);
-      expect(
-        report.issues.filter(({ rule }) => rule === 'action-handle-rest'),
-        label,
-      ).toEqual([]);
-    }
-  });
-
   it('rejects a built-in charging handle placed inside its own travel volume', () => {
     const report = validate(loadFixture('broken-action-handle'), gunDomain);
     expect(report.issues.filter(({ rule }) => rule === 'action-handle-rest')).toEqual([

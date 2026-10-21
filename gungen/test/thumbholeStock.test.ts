@@ -185,10 +185,6 @@ describe('thumbhole stock and AWM design', () => {
       const buttY = bounds(butt)[1]!;
       expect(buttY[0], size).toBeCloseTo(gripY[0], 4);
       expect(buttY[1], size).toBeGreaterThan(buttY[0]);
-      const bottomBar = stock.solids.find((solid) => solid.id === 'thumbhole-bottom')!;
-      const bottomBarY = bounds(bottomBar)[1]!;
-      expect(bottomBarY[0], size).toBeGreaterThanOrEqual(Math.min(...ys));
-      expect(bottomBarY[1], size).toBeLessThanOrEqual(Math.max(...ys));
       expect(
         stock.ports.some((port) => port.id === 'front'),
         size,

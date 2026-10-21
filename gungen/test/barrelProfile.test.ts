@@ -73,8 +73,10 @@ describe('octagonal barrel and gas-system geometry', () => {
   });
 
   // Rebuilds and validates the published designs and passing fixtures.
-  it('keeps every curated design and passing fixture valid with octagonal barrels', { timeout: 25_000 }, () => {
-    for (const { label, assembly } of loadCorpus()) {
+  it('keeps every curated design and passing fixture valid', { timeout: 25_000 }, () => {
+    const corpus = loadCorpus();
+    expect(corpus.length).toBeGreaterThan(0);
+    for (const { label, assembly } of corpus) {
       const report = validate(assembly, gunDomain);
       expect(report.issues, label).toEqual([]);
     }

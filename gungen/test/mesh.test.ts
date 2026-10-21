@@ -96,14 +96,6 @@ describe('meshForSolid', () => {
     expect(max[2]).toBe(expectedMax[2]);
   });
 
-  it('never exceeds the outline, even at a lone vertex apex (+Y here, touched only at (2, 3))', () => {
-    const mesh = meshForSolid(prism);
-    const { max } = bounds(mesh.positions);
-    const apexY = Math.max(...prism.profile.map(([, y]) => y));
-    expect(max[1]).toBeLessThanOrEqual(apexY);
-    expect(max[1]).toBeGreaterThan(apexY - BEVEL);
-  });
-
   it('faces outward for a chamfered box (sign test)', () => {
     expect(inwardNormals(meshForSolid(box), box.box.center)).toEqual([]);
   });

@@ -4,9 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import { parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
+import { srgbToHex } from '@skelly/thing-export/appearance.ts';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { readGlb } from './glbReader.ts';
 
 const read = (dir: string, name: string): string =>
@@ -62,8 +64,13 @@ describe('export CLI core', () => {
       }
       return glb.json.meshes[stock.mesh]!.primitives.map(({ material }) => glb.json.materials[material]!.name!);
     };
-    expect(stockMaterials(awm.glb)).toContain('#4b5836');
-    expect(stockMaterials(ak.glb)).toContain('#754324');
+    for (const [profile, bytes] of [
+      ['awm', awm.glb],
+      ['ak', ak.glb],
+    ] as const) {
+      const appearance = resolveAppearance(GUN_PALETTE, 'stock', 'butt', { archetype: profile, slot: 'furniture' });
+      expect(stockMaterials(bytes)).toContain(`#${srgbToHex(appearance.color).toString(16).padStart(6, '0')}`);
+    }
   });
 
   // Exports generated and authored designs through the command-line path.
@@ -89,8 +96,11 @@ describe('export CLI core', () => {
       // the wood by its semantic slot, not incidental primitive ordering.
       const primitive = glb.json.meshes[stock!.mesh!]!.primitives.find((p) => p.extras?.slot === 'furniture');
       expect(primitive).toBeDefined();
-      expect(primitive?.extras).toMatchObject({ material: 'wood-walnut', slot: 'furniture' });
-      expect(glb.json.materials[primitive!.material]!.name).toBe('#754324');
+      const appearance = resolveAppearance(GUN_PALETTE, 'stock', 'butt', { archetype: template, slot: 'furniture' });
+      expect(primitive?.extras).toMatchObject({ material: appearance.material, slot: 'furniture' });
+      expect(glb.json.materials[primitive!.material]!.name).toBe(
+        `#${srgbToHex(appearance.color).toString(16).padStart(6, '0')}`,
+      );
     }
   });
 
