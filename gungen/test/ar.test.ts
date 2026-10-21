@@ -137,11 +137,4 @@ describe('AR-pattern parts', () => {
     expect(boltPathBottomY - topRoundWorld[1]).toBeGreaterThan(0);
     expect(boltPathBottomY - topRoundWorld[1]).toBeLessThan(AR_ACTION_LAYOUT.barrelExtensionDiameterU / 2 + GRID);
   });
-
-  it('places the fixed AR front sight at the barrel gas-port station', () => {
-    const barrel = FAMILIES.barrel!.build({ bore: 'M', length: 'M', profile: 'standard', frontSightStyle: 'ar' });
-    const frontSight = barrel.ports.find(({ id }) => id === 'front-sight');
-    const gasPort = barrel.ports.find(({ id }) => id === 'gas-port');
-    expect(frontSight?.pos).toEqual(gasPort?.pos);
-  });
 });

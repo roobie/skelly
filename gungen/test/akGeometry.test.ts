@@ -18,10 +18,16 @@ const akCorpus = loadCorpus().filter(({ assembly }) =>
   Object.values(assembly.parts).some(({ family }) => family === 'ak-receiver'),
 );
 
+const validated = new Map<(typeof akCorpus)[number]['assembly'], Resolved>();
 const resolvedOf = (label: string, assembly: (typeof akCorpus)[number]['assembly']) => {
+  const cached = validated.get(assembly);
+  if (cached) {
+    return cached;
+  }
   const report = validate(assembly, gunDomain);
   // biome-ignore lint/suspicious/noMisplacedAssertion: helper is called only by tests
   expect(report.issues, label).toEqual([]);
+  validated.set(assembly, report.resolved);
   return report.resolved;
 };
 

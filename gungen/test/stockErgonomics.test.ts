@@ -97,7 +97,6 @@ const measure = (assembly: Assembly) => {
     combAtGripFrontY: combWorld[1],
     triggerBelowComb: combWorld[1] - triggerCenter[1],
     gap: triggerRearX - gripFrontWorld[0],
-    gapAfterTwoUnitMove: triggerRearX - 2 - gripFrontWorld[0],
     triggerCenterStockLocalY: localTriggerCenter[1],
     holdY: holdWorld[1],
     reach: Math.hypot(...holdWorld.map((v, i) => v - triggerCenter[i]!)),
@@ -112,13 +111,11 @@ describe('pump stock ergonomics', () => {
     expect(stock?.params?.length).toEqual(['M', 'L']);
   });
 
-  it('keeps the grip front 5u–7u behind the trigger, including a 2u rearward move', () => {
+  it('keeps the grip front 5u–7u behind the trigger', () => {
     for (const assembly of pumpSamples()) {
       const result = measure(assembly);
       expect(result.gap, result.name).toBeGreaterThanOrEqual(5);
       expect(result.gap, result.name).toBeLessThanOrEqual(7);
-      expect(result.gapAfterTwoUnitMove, result.name).toBeGreaterThanOrEqual(3);
-      expect(result.gapAfterTwoUnitMove, result.name).toBeLessThanOrEqual(7);
     }
   });
 

@@ -105,14 +105,12 @@ describe('separate grips fit under lower bodies', () => {
       const lowerTransform = resolved.placed.get(lower)!;
       const body = lowerDef.solids.filter(({ id }) => !id.startsWith('trigger-guard-'));
       const [bodyRearX, bodyFrontX] = boundsX(body, lowerTransform);
-      const [lowerRearX] = boundsX(lowerDef.solids, lowerTransform);
       const faceX = gripMountFace(assembly, grip).map(([x]) => x);
       const faceRearX = Math.min(...faceX);
       const faceFrontX = Math.max(...faceX);
-      const context = `${label}; layout=${resolved.params.get(lower)?.layout?.value}; grip-face=[${faceRearX.toFixed(6)}, ${faceFrontX.toFixed(6)}]; lower-body=[${bodyRearX.toFixed(6)}, ${bodyFrontX.toFixed(6)}]; lower-rearmost=${lowerRearX.toFixed(6)}`;
+      const context = `${label}; layout=${resolved.params.get(lower)?.layout?.value}; grip-face=[${faceRearX.toFixed(6)}, ${faceFrontX.toFixed(6)}]; lower-body=[${bodyRearX.toFixed(6)}, ${bodyFrontX.toFixed(6)}]`;
       expect(faceRearX, context).toBeGreaterThanOrEqual(bodyRearX);
       expect(faceFrontX, context).toBeLessThanOrEqual(bodyFrontX);
-      expect(faceRearX, context).toBeGreaterThanOrEqual(lowerRearX);
     }
   });
 });

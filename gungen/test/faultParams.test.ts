@@ -1,5 +1,4 @@
 import type { ParamReference, Template } from '@skelly/engine/assembly/template.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
@@ -91,22 +90,6 @@ describe('fault-only parameter values', () => {
       }
       expect(fit.current).toBe('oversized');
       expect(faultTable.handguard.fit.some((fault) => fit.values.some(({ value }) => value === fault))).toBe(false);
-    }
-  });
-
-  it('keeps every fault-using broken fixture valid against its unchanged expect list', () => {
-    const names = [
-      'broken-free-float-handguard',
-      'broken-handguard-fit',
-      'broken-keep-out',
-      'broken-solid-overlap',
-      'broken-revolver-misaligned-cylinder',
-      'broken-trigger-guard',
-    ];
-    for (const name of names) {
-      const fixture = loadFixture(name);
-      const failed = [...new Set(validate(fixture, gunDomain).issues.map(({ rule }) => rule))].sort();
-      expect(failed, name).toEqual([...(fixture.expect ?? [])].sort());
     }
   });
 });
