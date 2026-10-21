@@ -17,6 +17,8 @@ describe('barrel-fitted handguards', () => {
       }
       const max = (solids: typeof barrel.solids, axis: number) =>
         Math.max(...solids.map((solid) => localSolidBounds(solid)[1][axis]!));
+      expect(top.box.half[1]).toBeGreaterThan(0);
+      expect(side.box.half[2]).toBeGreaterThan(0);
       expect(top.box.center[1] - top.box.half[1]).toBeGreaterThanOrEqual(max(barrel.solids, 1));
       expect(side.box.center[2] - side.box.half[2]).toBeGreaterThanOrEqual(max(barrel.solids, 2));
       expect(top.box.center[1] + top.box.half[1]).toBeLessThanOrEqual(max(receiver.solids, 1));

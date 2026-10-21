@@ -236,6 +236,7 @@ if (ammoMeshes) {
   label.id = 'ammo-info';
   label.textContent = ammoCartridge?.designation ?? '';
   if (ammoCartridge?.kind === 'shotshell') {
+    label.dataset.closure = ammoCartridge.closure.value ?? 'unknown';
     const proxy =
       ammoCartridge.closure.value === null
         ? 'Roll-crimp visual proxy (source closure unknown).'
