@@ -121,11 +121,10 @@ describe('bloom clip per tone mapper', () => {
     expect(bloomClipFor(AUTO_TONE)).toBe(BLOOM_CLIP_BY_TONE.neutral);
     expect(bloomClipFor(AUTO_TONE, 0)).toBe(BLOOM_CLIP_BY_TONE.neutral);
     expect(bloomClipFor(AUTO_TONE, 1)).toBe(BLOOM_CLIP_BY_TONE.aces);
-    expect(bloomClipFor(AUTO_TONE, 0.5)).toBeCloseTo((BLOOM_CLIP_BY_TONE.neutral + BLOOM_CLIP_BY_TONE.aces) / 2, 12);
-    expect(bloomClipFor(AUTO_TONE, 0.85)).toBeCloseTo(
-      BLOOM_CLIP_BY_TONE.neutral + (BLOOM_CLIP_BY_TONE.aces - BLOOM_CLIP_BY_TONE.neutral) * 0.85,
-      12,
-    );
+    const neutral = BLOOM_CLIP_BY_TONE.neutral!;
+    const aces = BLOOM_CLIP_BY_TONE.aces!;
+    expect(bloomClipFor(AUTO_TONE, 0.5)).toBeCloseTo((neutral + aces) / 2, 12);
+    expect(bloomClipFor(AUTO_TONE, 0.85)).toBeCloseTo(neutral + (aces - neutral) * 0.85, 12);
     expect(bloomClipFor(AUTO_TONE, -3)).toBe(BLOOM_CLIP_BY_TONE.neutral);
     expect(bloomClipFor(AUTO_TONE, 9)).toBe(BLOOM_CLIP_BY_TONE.aces);
     // The fixed tone mappers ignore the weight.
