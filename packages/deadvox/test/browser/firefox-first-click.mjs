@@ -128,6 +128,15 @@ try {
     { timeout: 10_000 },
   );
   await page.waitForFunction((time) => globalThis.firefoxNativeSim.time > time, before, { timeout: 20_000 });
+  const gesture = await page.evaluate(() => globalThis.__startGesture);
+  assert.equal(gesture.pointerDownTarget, gesture.clickTarget);
+  assert.ok(gesture.startTarget, 'the start control exists at the gesture');
+  assert.equal(gesture.pointerDownTarget, gesture.startTarget);
+  assert.equal(gesture.lockRequests.length, 1, 'one initial gesture makes one native lock request');
+  assert.equal(gesture.lockRequests[0].target, 'main#view');
+  assert.equal(gesture.lockRequests[0].userActivationActive, true);
+  assert.ok(gesture.lockChanges.includes('main#view'));
+  assert.ok(gesture.audioResumeCalls.some((call) => call.afterTrustedStartGesture && call.userActivationActive));
   const gateCode = await page.evaluate(
     `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
@@ -172,15 +181,6 @@ try {
   assert.ok(gateEvents.every((event) => event.trusted));
   assert.ok(gateEvents.some((event) => event.type === 'keydown' && event.prevented));
   assert.equal(page.context().pages().length, 1, 'debug gate opens no Help page or window');
-  const gesture = await page.evaluate(() => globalThis.__startGesture);
-  assert.equal(gesture.pointerDownTarget, gesture.clickTarget);
-  assert.ok(gesture.startTarget, 'the start control exists at the gesture');
-  assert.equal(gesture.pointerDownTarget, gesture.startTarget);
-  assert.equal(gesture.lockRequests.length, 1, 'one initial gesture makes one native lock request');
-  assert.equal(gesture.lockRequests[0].target, 'main#view');
-  assert.equal(gesture.lockRequests[0].userActivationActive, true);
-  assert.ok(gesture.lockChanges.includes('main#view'));
-  assert.ok(gesture.audioResumeCalls.some((call) => call.afterTrustedStartGesture && call.userActivationActive));
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
   process.stdout.write(
