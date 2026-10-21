@@ -96,12 +96,7 @@ import { mountTutorial } from '../ui/tutorial.ts';
 import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { GameAudio } from './audio.ts';
-import {
-  createRefusalPresenter,
-  firearmShotEmission,
-  handlingMoveCompleteCue,
-  handlingMoveStartCue,
-} from './audioPresentation.ts';
+import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
@@ -2861,11 +2856,6 @@ export const startPlay = (
     if (!fired) {
       return false;
     }
-    if (registry.items.get(item.type)?.firearm?.pump || item.firearm?.cylinder) {
-      return true;
-    }
-    const shot = firearmShotEmission(registry, item, firearms.noiseFactorFor(item));
-    session.playPlayerSound(shot.event, time, shot);
     return true;
   };
 

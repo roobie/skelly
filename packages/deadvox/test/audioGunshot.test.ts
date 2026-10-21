@@ -69,6 +69,9 @@ class FakeAudioContext {
   sources: ReturnType<typeof makeSource>[] = [];
   gainNodes: ReturnType<typeof makeGain>[] = [];
   panners: Array<ReturnType<typeof makeNode> & { setPosition: (x: number, y: number, z: number) => unknown }> = [];
+  filters: Array<
+    ReturnType<typeof makeNode> & { type: string; frequency: { value: number }; gain: { value: number } }
+  > = [];
   peakConnectedSources = 0;
   decodeAudioData = vi.fn((data: ArrayBuffer) => {
     const { heartbeatFile } = data as ArrayBuffer & { heartbeatFile?: string };
@@ -92,7 +95,9 @@ class FakeAudioContext {
   }
 
   createBiquadFilter() {
-    return { ...makeNode(), type: 'lowpass', frequency: { value: 0 } };
+    const filter = { ...makeNode(), type: 'lowpass', frequency: { value: 0 }, gain: { value: 0 } };
+    this.filters.push(filter);
+    return filter;
   }
 
   createPanner() {
@@ -176,6 +181,38 @@ afterEach(() => {
 });
 
 describe('game audio playback', () => {
+  it.each([true, false])('applies authored bass shaping before spatial routing (headLocked=%s)', async (headLocked) => {
+    const profile = {
+      id: 'fixture_bass_report',
+      variants: ['assets/audio/gunshot-akm-01.ogg'],
+      gain: 0.7,
+      lowShelf: { frequencyHz: 175, gainDb: 4 },
+      pitchJitter: [1, 1],
+      gainJitter: [1, 1],
+      minIntervalSimSeconds: 0,
+      category: 'world',
+      noise: { enabled: false, radiusMetres: 1 },
+    };
+    const { registry, issues } = buildRegistry([
+      { source: '../content/base/fixture.json', data: { sounds: [profile] } },
+    ]);
+    expect(issues).toEqual([]);
+    const { play, context } = setup(() => false, registry);
+    play(profile.id, [0, 0, 0], 1, { listenerRelative: headLocked });
+    await flush();
+    const source = context.sources[0]!;
+    const shelf = context.filters.find(({ type }) => type === 'lowshelf')!;
+    expect(shelf).toBeDefined();
+    expect(shelf.frequency.value).toBe(profile.lowShelf.frequencyHz);
+    expect(shelf.gain.value).toBe(profile.lowShelf.gainDb);
+    expect(source.connect).toHaveBeenCalledWith(shelf);
+    const output = shelf.connect.mock.calls[0]![0] as ReturnType<typeof makeGain>;
+    expect(output.gain.value).toBe(profile.gain);
+    expect(context.panners).toHaveLength(headLocked ? 0 : 1);
+    source.onended!();
+    expect(shelf.disconnect).toHaveBeenCalledOnce();
+  });
+
   it('schedules player-only heartbeat beats at simulated tempo without admitting sound events', async () => {
     const { audio, context, fetchBuffer } = setup();
     const sourceGain = (source: ReturnType<typeof makeSource>) =>

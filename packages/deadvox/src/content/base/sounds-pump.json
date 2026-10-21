@@ -1,0 +1,21 @@
+{
+  "sounds": [
+    {
+      "category": "world",
+      "gain": 0.84999999999999998,
+      "gainJitter": [1, 1],
+      "id": "shotgun_blast",
+      "lowShelf": {
+        "frequencyHz": 240,
+        "gainDb": 7
+      },
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 100
+      },
+      "pitchJitter": [0.85999999999999999, 0.90000000000000002],
+      "variants": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"]
+    }
+  ]
+}
