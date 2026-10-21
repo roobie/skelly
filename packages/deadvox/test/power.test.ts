@@ -213,7 +213,9 @@ describe('PowerNetwork', () => {
       const from = boundaries[i - 1]!;
       const to = boundaries[i]!;
       const { phase } = dayPhaseAt(powerCycle, (from + to) / 2);
-      const milliseconds = Math.round(to * POWER_UNITS.time) - Math.round(from * POWER_UNITS.time);
+      const milliseconds =
+        Math.round(to * POWER_UNITS.gameMillisecondsPerGameSecond) -
+        Math.round(from * POWER_UNITS.gameMillisecondsPerGameSecond);
       expected += milliseconds * panel.outputWatts[phase] * POWER_UNITS.rate * store.chargeEfficiency;
     }
     const power = network(

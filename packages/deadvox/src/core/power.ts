@@ -83,11 +83,11 @@ interface Transfer {
   readonly limit: number;
 }
 
-const DAY_MILLISECONDS = SECONDS_PER_DAY * POWER_UNITS.time;
+const DAY_MILLISECONDS = SECONDS_PER_DAY * POWER_UNITS.gameMillisecondsPerGameSecond;
 
 /** The game millisecond since simulation time 0 nearest a simulation time. */
 export const gameMillisecondsAt = (clock: ClockSettings, at: number): number =>
-  Math.round(at * clock.ratio * POWER_UNITS.time);
+  Math.round(at * clock.ratio * POWER_UNITS.gameMillisecondsPerGameSecond);
 
 const specOf = (def: PowerDeviceDef): Spec => {
   const { rate, amount, efficiency } = POWER_UNITS;
@@ -209,13 +209,16 @@ export class PowerNetwork {
 
   constructor(environment: PowerEnvironment, state: unknown) {
     const { registry, tuning, cycle, clock } = environment;
-    const start = unitCount(clock.start, POWER_UNITS.time);
+    const start = unitCount(clock.start, POWER_UNITS.gameMillisecondsPerGameSecond);
     if (!(Number.isFinite(clock.ratio) && clock.ratio > 0 && start !== undefined && start >= 0)) {
       throw new Error('Invalid power clock');
     }
     this.clock = { ...clock };
     this.startGameMilliseconds = start;
-    const tick = unitCount(parse(PowerTuningSchema, tuning).tickSimSeconds, clock.ratio * POWER_UNITS.time);
+    const tick = unitCount(
+      parse(PowerTuningSchema, tuning).tickSimSeconds,
+      clock.ratio * POWER_UNITS.gameMillisecondsPerGameSecond,
+    );
     if (!tick) {
       throw new Error('Invalid power tuning');
     }
@@ -236,7 +239,10 @@ export class PowerNetwork {
     const day = dayPhaseAt(cycle, 0);
     const boundaries = new Map<number, DayPhase>();
     for (const timeOfDay of [0, day.dawn, day.sunrise, day.sunset, day.nightfall].sort((a, b) => a - b)) {
-      boundaries.set(Math.round(timeOfDay * POWER_UNITS.time), dayPhaseAt(cycle, timeOfDay).phase);
+      boundaries.set(
+        Math.round(timeOfDay * POWER_UNITS.gameMillisecondsPerGameSecond),
+        dayPhaseAt(cycle, timeOfDay).phase,
+      );
     }
     this.phases = [...boundaries].map(([gameMilliseconds, phase]) => ({ gameMilliseconds, phase }));
   }
@@ -323,7 +329,7 @@ export class PowerNetwork {
   }
 
   private simAt(gameMilliseconds: number): SimTimestamp {
-    return simTimestamp(gameMilliseconds / (this.clock.ratio * POWER_UNITS.time));
+    return simTimestamp(gameMilliseconds / (this.clock.ratio * POWER_UNITS.gameMillisecondsPerGameSecond));
   }
 
   private solar(): { phase: DayPhase; next: number } {

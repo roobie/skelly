@@ -24,8 +24,7 @@ export const POWER_UNITS = {
   amount: 3_600_000_000,
   /** Efficiency to parts per million. */
   efficiency: 1_000_000,
-  /** Game seconds to game milliseconds. */
-  time: 1000,
+  gameMillisecondsPerGameSecond: 1000,
 } as const;
 
 /** The whole number of units an authored value makes, or undefined when it is not exact. */
