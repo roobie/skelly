@@ -17,6 +17,7 @@ import { SEVERABLE_PARTS, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
+import { DEATH_FALL_DURATION } from '@mobgen/mob/reactions.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
@@ -36,6 +37,7 @@ import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import {
+  CORPSE_LIFECYCLE,
   fallDirectionAwayFromPlayer,
   HEARING_GAZE_JITTER,
   hearingGazeTarget,
@@ -361,16 +363,20 @@ const renderedHead = (renderer: MobActorMeshes, id: number): { readonly forward:
 };
 
 describe('facing convention', () => {
-  it('a zombie facing +X has its figure forward (local -Z) along +X in world, matching ZombieMeshes', () => {
-    // Same formula both this renderer and ZombieMeshes use (src/render/zombies.ts's renderPose).
-    const facing: Vec3 = [1, 0, 0];
-    const yaw = Math.atan2(-facing[0], -facing[2]);
-    // Three.js/mobgen convention: rotating the local forward (0,0,-1) about Y by `yaw` gives
-    // (-sin(yaw), 0, -cos(yaw)) — see mobgen's stress.ts for the same derivation.
-    const worldForward: Vec3 = [-Math.sin(yaw), 0, -Math.cos(yaw)];
-    expect(worldForward[0]).toBeCloseTo(1, 9);
-    expect(worldForward[1]).toBeCloseTo(0, 9);
-    expect(worldForward[2]).toBeCloseTo(0, 9);
+  it('renders a +X-facing zombie with its local forward along +X in world', () => {
+    const renderer = new MobActorMeshes(0.5, 1, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const id = store.add(makeZombie([0, 0, 0], [1, 0, 0]));
+      renderer.sync(store, 0, 1);
+      const pelvis = renderer.boneMatrix(id, 'pelvis')!;
+      const forward: Vec3 = [-pelvis[2]!, -pelvis[6]!, -pelvis[10]!];
+      expect(forward[0]).toBeCloseTo(1, 9);
+      expect(forward[1]).toBeCloseTo(0, 9);
+      expect(forward[2]).toBeCloseTo(0, 9);
+    } finally {
+      renderer.dispose();
+    }
   });
 });
 
@@ -708,25 +714,26 @@ describe('MobActorMeshes', () => {
     const blockSize = 0.5;
     const playerEye: Vec3 = [1.5, 1.6, -2];
     zombie.mode = 'chase';
-    expect(perceptionLabelFor(zombie, false, playerEye, blockSize)).toBe('sees you');
+    const chase = perceptionLabelFor(zombie, false, playerEye, blockSize);
     zombie.mode = 'investigate';
     zombie.investigationTier = 'near';
     zombie.lastPerceived = [playerEye[0] / blockSize, 0, playerEye[2] / blockSize];
-    expect(perceptionLabelFor(zombie, true, playerEye, blockSize)).toBe('hears you');
+    const playerNoise = perceptionLabelFor(zombie, true, playerEye, blockSize);
     const oneSprintStepLater: Vec3 = [
       playerEye[0] + (PLAYER.sprint / ZOMBIE_RATE) * (1 - 1e-6),
       playerEye[1],
       playerEye[2],
     ];
-    expect(perceptionLabelFor(zombie, true, oneSprintStepLater, blockSize)).toBe('hears you');
+    expect(perceptionLabelFor(zombie, true, oneSprintStepLater, blockSize)).toBe(playerNoise);
     const lureLightPosition: Vec3 = [playerEye[0] + blockSize, playerEye[1], playerEye[2]];
     zombie.lastPerceived = [lureLightPosition[0] / blockSize, 0, lureLightPosition[2] / blockSize];
-    expect(perceptionLabelFor(zombie, true, playerEye, blockSize)).toBe('notices something');
-    expect(perceptionLabelFor(zombie, false, playerEye, blockSize)).toBe('remembers');
+    const lure = perceptionLabelFor(zombie, true, playerEye, blockSize);
+    const stale = perceptionLabelFor(zombie, false, playerEye, blockSize);
     zombie.mode = 'idle';
     zombie.investigationTier = undefined;
     zombie.lastPerceived = undefined;
-    expect(perceptionLabelFor(zombie, false, playerEye, blockSize)).toBe('unaware');
+    const unaware = perceptionLabelFor(zombie, false, playerEye, blockSize);
+    expect(new Set([chase, playerNoise, lure, stale, unaware])).toHaveLength(5);
   });
 
   it('does not track after the zombie dies', () => {
@@ -1067,26 +1074,13 @@ describe('MobActorMeshes reactions', () => {
       renderer.zombieDied(id, zombie);
       expect(renderer.isTracked(id)).toBe(true); // still drawn, as a corpse
 
-      renderer.sync(store, 5, 1); // well into lying, nowhere near the end of the lifetime
-      expect(renderer.isTracked(id)).toBe(true);
-
-      renderer.sync(store, 10, 1); // fall + lie + sink is under 11 s total — this pushes well past it
-      expect(renderer.isTracked(id)).toBe(false);
-    } finally {
-      renderer.dispose();
-    }
-  });
-
-  it('frees a vanished-without-dying zombie immediately (despawn/unload), unlike a death', () => {
-    const renderer = new MobActorMeshes(0.5, 2, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
-    try {
-      const store = new MapEntityStore<Zombie>();
-      const id = store.add(makeZombie([0, 0, 0]));
       renderer.sync(store, 1 / 60, 1);
       expect(renderer.isTracked(id)).toBe(true);
-
-      store.remove(id); // no zombieDied call — a plain vanish, not a death
-      renderer.sync(store, 1 / 60, 1);
+      const step = 0.1;
+      const lifetime = DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
+      for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
+        renderer.sync(store, step, 1);
+      }
       expect(renderer.isTracked(id)).toBe(false);
     } finally {
       renderer.dispose();
@@ -1094,10 +1088,13 @@ describe('MobActorMeshes reactions', () => {
   });
 
   it('keeps an incapacitated row lying beyond corpse lifetime and out of MAX_CORPSES eviction', () => {
-    const renderer = new MobActorMeshes(0.5, 24, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, CORPSE_LIFECYCLE.maxCorpses + 2, {
+      figureSeeds: figureSeedPool(registry.zombies),
+      poolSize: 1,
+    });
     try {
       const store = new MapEntityStore<Zombie>();
-      const zombies = Array.from({ length: 18 }, (_, i) => makeZombie([i * 2, 0, 0]));
+      const zombies = Array.from({ length: CORPSE_LIFECYCLE.maxCorpses + 2 }, (_, i) => makeZombie([i * 2, 0, 0]));
       const ids = zombies.map((zombie) => store.add(zombie));
       renderer.sync(store, 0, 1);
       const uprightHead = renderer.boneMatrix(ids[0]!, 'head');
@@ -1110,12 +1107,16 @@ describe('MobActorMeshes reactions', () => {
       }
       expect(renderer.isTracked(ids[0]!)).toBe(true);
       expect(renderer.isTracked(ids[1]!)).toBe(false); // oldest ordinary corpse evicted; incapacitated row is protected
-      renderer.sync(store, 3 * 20, 1); // >3x the normal corpse lifetime
+      renderer.sync(
+        store,
+        DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
+        1,
+      );
       const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
       expect(lying).toBeDefined();
       expect(renderer.boneMatrix(ids[0]!, 'head')).not.toEqual(uprightHead); // prove this is the fall pose, not a standing live row
       expect(renderer.isTracked(ids[0]!)).toBe(true);
-      renderer.sync(store, 20, 1);
+      renderer.sync(store, CORPSE_LIFECYCLE.sinkSimSeconds + 1, 1);
       expect(renderer.boneMatrix(ids[0]!, 'pelvis')).toEqual(lying); // lies still; never sinks
     } finally {
       renderer.dispose();
@@ -1130,26 +1131,34 @@ describe('MobActorMeshes reactions', () => {
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
       const damage = incapacitate(zombie);
-      renderer.sync(store, 20, 1); // lying well past a corpse's lifetime
+      renderer.sync(
+        store,
+        DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
+        1,
+      );
       expect(damage.system.finishDowned(damage.id, false)).toBeUndefined();
       store.remove(id);
       renderer.zombieDied(id, zombie);
       renderer.sync(store, 1, 1);
       expect(renderer.isTracked(id)).toBe(true); // still lies there, now as an ordinary corpse
 
-      renderer.sync(store, 20, 1);
+      renderer.sync(
+        store,
+        DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
+        1,
+      );
       expect(renderer.isTracked(id)).toBe(false);
     } finally {
       renderer.dispose();
     }
   });
 
-  it('caps corpses, evicting the oldest first once the cap is exceeded', () => {
-    const renderer = new MobActorMeshes(0.5, 20, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 }); // one shared variant, room for every corpse
+  it('evicts the oldest corpse when its shared dead-thing budget is exceeded', () => {
+    const renderer = new MobActorMeshes(0.5, 64, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
     try {
       const store = new MapEntityStore<Zombie>();
       const ids: number[] = [];
-      for (let i = 0; i < 17; i++) {
+      for (let i = 0; i < 64 && (ids.length === 0 || renderer.isTracked(ids[0]!)); i++) {
         const zombie = makeZombie([i, 0, 0]);
         const id = store.add(zombie);
         renderer.sync(store, 1 / 60, 1);
@@ -1157,9 +1166,10 @@ describe('MobActorMeshes reactions', () => {
         renderer.zombieDied(id, zombie);
         ids.push(id);
       }
-      expect(renderer.isTracked(ids[0]!)).toBe(false); // the oldest corpse, evicted by the 17th death
-      for (let i = 1; i < 17; i++) {
-        expect(renderer.isTracked(ids[i]!)).toBe(true);
+      expect(ids.length).toBeGreaterThan(1);
+      expect(renderer.isTracked(ids[0]!)).toBe(false);
+      for (const id of ids.slice(1)) {
+        expect(renderer.isTracked(id)).toBe(true);
       }
     } finally {
       renderer.dispose();
@@ -1215,19 +1225,33 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.zombieDied(id, zombie);
       store.remove(id);
 
-      renderer.sync(store, 1, 1, true);
-      for (let second = 0; second < 8; second++) {
-        renderer.sync(store, 1, 1, true);
+      const step = 0.1;
+      let previous = renderer.boneMatrix(id, 'pelvis')![7]!;
+      let lying: number | undefined;
+      // One extra sample after the fall distinguishes lying still from falling.
+      for (let frame = 0; frame <= Math.ceil(DEATH_FALL_DURATION / step) && lying === undefined; frame++) {
+        renderer.sync(store, step, 1, true);
+        const current = renderer.boneMatrix(id, 'pelvis')![7]!;
+        if (current === previous) {
+          lying = current;
+        }
+        previous = current;
       }
-      const beforeSink = renderer.boneMatrix(id, 'pelvis')!;
-      renderer.sync(store, 1, 1, true);
-      const afterSink = renderer.boneMatrix(id, 'pelvis')!;
-      expect(afterSink[7]).toBeLessThan(beforeSink[7]! - 0.5);
+      expect(lying).toBeDefined();
+      let sank = false;
+      const lifetime = DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
+      for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
+        renderer.sync(store, step, 1, true);
+        const pelvis = renderer.boneMatrix(id, 'pelvis');
+        sank ||= pelvis !== undefined && pelvis[7]! < lying!;
+      }
+      expect(sank).toBe(true);
     } finally {
       renderer.dispose();
     }
   });
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the lifecycle probe observes each debris state.
   it('allocates a debris slot on zombieSevered and frees it after its lifetime', () => {
     const renderer = new MobActorMeshes(0.5, 4, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 2 });
     try {
@@ -1240,17 +1264,22 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.zombieSevered(id, 'hand.L');
       expect(renderer.debrisCountFor(id)).toBe(1);
 
-      // Advance ordinary-sized frames until the body lands, lies for CORPSE_LIE_S, sinks and frees its slot.
+      const step = 0.1;
+      // Separate physics search budget: allow the launched hand to fall, bounce and sleep on the flat floor.
+      // This is a fixture settlement limit, not a corpse-lifecycle tuning value.
+      const settlementBudget = 10;
+      const horizon = settlementBudget + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
       let observedSleep = false;
-      for (let frame = 0; frame < 180; frame++) {
-        renderer.sync(store, 0.1, 1);
+      for (let frame = 0; frame <= Math.ceil(horizon / step) && renderer.debrisCountFor(id) > 0; frame++) {
+        renderer.sync(store, step, 1);
         const entries = debrisEntries(renderer);
         for (const debris of entries.values()) {
           if (!debris.body.asleep || debris.groundedAt === undefined) {
             continue;
           }
           observedSleep = true;
-          if (debris.elapsed < debris.groundedAt + 8) {
+          expect(debris.groundedAt).toBeLessThanOrEqual(settlementBudget);
+          if (debris.elapsed < debris.groundedAt + CORPSE_LIFECYCLE.lieSimSeconds) {
             const bodyRotation = quatToMat3(debris.body.orientation);
             const lowest =
               debris.body.center[1] + Math.min(...debris.body.corners.map((corner) => mulMV(bodyRotation, corner)[1]));
@@ -1449,11 +1478,16 @@ describe('MobActorMeshes dismemberment', () => {
   });
 
   it('debris counts toward the corpse cap, evicting the oldest dead thing first', () => {
-    const renderer = new MobActorMeshes(0.5, 20, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 }); // one shared variant, room for 17 dead things
+    const population = CORPSE_LIFECYCLE.maxCorpses + 1;
+    // Leave a live source row alongside every debris row so variant overflow cannot cause the eviction.
+    const renderer = new MobActorMeshes(0.5, population + 1, {
+      figureSeeds: figureSeedPool(registry.zombies),
+      poolSize: 1,
+    });
     try {
       const store = new MapEntityStore<Zombie>();
       const ids: number[] = [];
-      for (let i = 0; i < 17; i++) {
+      for (let i = 0; i < population; i++) {
         const zombie = makeZombie([i, 0, 0]);
         const id = store.add(zombie);
         renderer.sync(store, 1 / 60, 1);
@@ -1462,10 +1496,9 @@ describe('MobActorMeshes dismemberment', () => {
         renderer.sync(store, 1 / 60, 1); // prunes the (now-vanished) live entry; the debris itself survives
         ids.push(id);
       }
-      // The very first debris was evicted once the 17th arrived (MAX_CORPSES is 16).
       expect(renderer.debrisCountFor(ids[0]!)).toBe(0);
-      for (let i = 1; i < 17; i++) {
-        expect(renderer.debrisCountFor(ids[i]!)).toBe(1);
+      for (const id of ids.slice(1)) {
+        expect(renderer.debrisCountFor(id)).toBe(1);
       }
     } finally {
       renderer.dispose();

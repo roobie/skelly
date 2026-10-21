@@ -244,7 +244,10 @@ describe('made-light point pool', () => {
       eyeHeightMetres: 1.3,
     });
     expect(mountedSource?.carried).toBe(true);
-    mountedLight.slots!.battery!.charges = 0;
+    const drainRate = fixtureRegistry.items.get(mountedLight.type)!.light!.power!.chargePerGameHour;
+    expect(
+      drainLight(fixtureRegistry, mountedLight, gameSeconds(chargeOf(fixtureRegistry, mountedLight)! / drainRate)),
+    ).toBeDefined();
     expect(
       lightSenseSourceFor({
         registry: fixtureRegistry,

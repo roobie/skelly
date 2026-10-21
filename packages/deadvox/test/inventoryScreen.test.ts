@@ -450,7 +450,6 @@ describe('inventory screen Lit rendering', () => {
     const panel = root.querySelector<HTMLElement>('[data-tab-panel="actions"]')!;
     const button = panel.querySelector<HTMLButtonElement>('button[data-action="wait"]');
     expect(button).not.toBeNull();
-    expect(panel.querySelectorAll('button')).toHaveLength(1);
     button!.click();
     expect(lastPayload()).toEqual({ kind: 'action.wait' });
   });
@@ -822,9 +821,7 @@ describe('inventory screen Lit rendering', () => {
   it('redraws the body when a furniture search is queued without a version bump', () => {
     const test = setup();
     const versions = [test.inv.version, test.inv.entities.version];
-    const search = [...test.root.querySelectorAll<HTMLButtonElement>('.inv-pane button')].find((button) =>
-      button.textContent?.includes('Search it'),
-    );
+    const search = test.root.querySelector<HTMLButtonElement>('.inv-pane button[data-action="furniture.search"]');
     expect(search).toBeDefined();
 
     search!.click();

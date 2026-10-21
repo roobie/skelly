@@ -73,10 +73,9 @@ describe('HUD options', () => {
     }
   });
 
-  it('keeps every current HUD element enabled in debug mode', () => {
-    expect(hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true }, true)).toEqual(
-      Object.fromEntries(HUD_OPTION_KEYS.map((key) => [key, true])),
-    );
+  it('overrides hidden HUD options in debug mode', () => {
+    const hidden = { ...Object.fromEntries(HUD_OPTION_KEYS.map((key) => [key, false])), shown: false } as HudSettings;
+    expect(hudVisibility(hidden, true)).toEqual(Object.fromEntries(HUD_OPTION_KEYS.map((key) => [key, true])));
   });
 
   it('hides the interaction hint while a modal screen is open and leaves the other elements alone', () => {

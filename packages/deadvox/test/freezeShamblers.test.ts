@@ -150,17 +150,22 @@ describe('debug shambler freeze', () => {
   });
 
   it('skips cooldown, idle/search, wander, and stumble timers for frozen time', () => {
+    const source = makeSystem([100, 1, 100]);
+    source.add(SHAMBLER, [0, 1, 0], [0, 0, -1]);
+    const state = structuredClone(source.snapshotState());
+    Object.assign(state.zombies[0]!.zombie, {
+      attackWait: 1,
+      idleSoundTimer: 2,
+      modeTimer: 3,
+      searchTimer: 4,
+      wanderClock: 5,
+      stumbleFactor: 0.4,
+      stumbleElapsed: 0.6,
+      stumbleDuration: 1.2,
+    });
     const system = makeSystem([100, 1, 100]);
-    const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, -1]);
-    const zombie = system.store.get(id)!;
-    zombie.attackWait = 1;
-    zombie.idleSoundTimer = 2;
-    zombie.modeTimer = 3;
-    zombie.searchTimer = 4;
-    zombie.wanderClock = 5;
-    zombie.stumbleFactor = 0.4;
-    zombie.stumbleElapsed = 0.6;
-    zombie.stumbleDuration = 1.2;
+    system.restoreState(state, (typeId) => (typeId === SHAMBLER.id ? SHAMBLER : undefined));
+    const zombie = system.store.get(1)!;
     const before = [
       zombie.attackWait,
       zombie.idleSoundTimer,
