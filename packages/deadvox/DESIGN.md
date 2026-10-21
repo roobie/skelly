@@ -1088,8 +1088,17 @@ and leaves the empty can where eating occurred. See `src/core/schema.ts`,
 Can vessels are inventory atoms because opening and eating retain one vessel,
 not a disassemblable set of parts. Sharing filled-package geometry must not impose
 its mass on an empty vessel; shell and food tuning must remain independent. See `src/content/base/models-items.jsonnet`, `models`,
-`src/content/base/items-food.libsonnet`, `canShellGrams`, and
+`src/content/base/items-food.libsonnet`, `canShellGrams`,
+`packages/thing-authoring-tool/cans.libsonnet`, `shellMassKg`, and
 `src/core/items.ts`, `typeWeightGrams` and `weightOf`.
+
+An opened vessel must read as opened even after its food is gone, so the lid
+stays attached and raised rather than relying on a food surface or an item name.
+The dedicated opener needs the silhouette of a hand tool rather than a storage
+bundle. These are visual distinctions, not extra inventory parts or mass sources.
+See `packages/thing-authoring-tool/cans.libsonnet`, `items`, and
+`packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
+`packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
 Crafting, repair, disassembly, and reading gather required items from reachable
 hands, worn storage, piles, and furniture when the action starts. Gathering is
