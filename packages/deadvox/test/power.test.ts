@@ -291,10 +291,22 @@ describe('PowerNetwork', () => {
 
   it('rejects invalid saved resources, unknown mechanisms and duplicated cable ownership', () => {
     const state = powerState();
-    expect(() => network({ ...state, devices: [{ ...state.devices[0]!, fuelLitres: -1 }] })).toThrow();
+    expect(() =>
+      network({
+        ...state,
+        devices: state.devices.map((device) => (device.id === 'generator' ? { ...device, fuelLitres: -1 } : device)),
+      }),
+    ).toThrow();
     expect(() => network({ ...state, links: [...state.links, state.links[0]!] })).toThrow();
-    expect(() => network({ ...state, devices: [{ ...state.devices[0]!, type: 'missing' }] })).toThrow();
-    const invalid = powerDefinitions.map((def) => (def.kind === 'battery' ? { ...def, chargeEfficiency: 0 } : def));
+    expect(() =>
+      network({
+        ...state,
+        devices: state.devices.map((device) => (device.id === 'generator' ? { ...device, type: 'missing' } : device)),
+      }),
+    ).toThrow();
+    const invalid = powerDefinitions.map((def) =>
+      def.kind === 'battery' && def.id === 'first' ? { ...def, chargeEfficiency: 0 } : def,
+    );
     expect(validateContent({ source: 'power-fixture', data: { powerDevices: invalid } }).length).toBeGreaterThan(0);
     expect(
       validateContent({
