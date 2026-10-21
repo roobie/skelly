@@ -123,9 +123,17 @@ body:not(.menu-pointer-locked) .fact-detail:hover > .fact-detail-copy {
   font-size: 0.75rem;
 }
 #tutorial-actions {
-  display: flex;
+  display: grid;
   gap: 0.5rem;
   margin-bottom: 1rem;
+}
+.tutorial-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.tutorial-action-note {
+  margin: 0;
 }
 #tutorial-actions:empty {
   display: none;

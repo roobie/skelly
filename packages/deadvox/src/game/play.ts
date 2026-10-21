@@ -3622,7 +3622,11 @@ export const startPlay = (
       lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
       paused: mainMenuOpen && started,
     });
-    drawTutorial?.();
+    drawTutorial?.({
+      inventory,
+      inventoryOpen: screen.isOpen,
+      lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
+    });
   };
 
   const affordanceForFrame = (visible: Readonly<HudOptionsState>) =>

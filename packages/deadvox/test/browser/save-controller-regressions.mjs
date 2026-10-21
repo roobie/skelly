@@ -3,6 +3,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node test contract
 // biome-ignore-all lint/style/noProcessEnv: browser executable and runtime are configured by the test runner
 // biome-ignore-all lint/correctness/noUndeclaredVariables: page.evaluate callbacks run in the browser context
+// biome-ignore-all lint/correctness/noUnresolvedImports: page imports resolve through the fixture's Vite server
 
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
@@ -109,6 +110,188 @@ try {
         'practice never creates a persistence owner',
       );
       await page.locator('#go').waitFor({ state: 'visible' });
+      const binding = await page.evaluate(async () => {
+        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const id = 'movement.forward';
+        const original = inputBindings.chords(id);
+        const cap = document.querySelector(`[data-tutorial-action="${id}"] kbd`);
+        if (!cap || cap.textContent !== inputBindings.label(id)) {
+          throw new Error('Practice hint must show the live binding');
+        }
+        const previous = cap.textContent;
+        const replacement = ['KeyY', 'KeyU', 'KeyI', 'KeyO'].find(
+          (code) => inputBindings.rebind(id, [{ code }]) === undefined && inputBindings.label(id) !== previous,
+        );
+        if (!replacement) {
+          throw new Error('Fixture needs an available alternate binding');
+        }
+        return { id, original, previous };
+      });
+      await page.waitForFunction(async ({ id, previous }) => {
+        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const cap = document.querySelector(`[data-tutorial-action="${id}"] kbd`);
+        return cap?.textContent === inputBindings.label(id) && cap.textContent !== previous;
+      }, binding);
+      await page.getByRole('button', { name: 'Practice controls', exact: true }).press('Enter');
+      assert.equal(
+        await page.evaluate(async () => {
+          const { controlsCardRows, filterControlsCardRows } = await import('/src/game/controls.ts');
+          const search = document.querySelector('#controls-search');
+          const expected = filterControlsCardRows(controlsCardRows(), search.value).map(({ id }) => id);
+          const actual = [...document.querySelectorAll('#controls [data-input-action]')].map(
+            (row) => row.dataset.inputAction,
+          );
+          return (
+            search === document.activeElement &&
+            search.value.trim() !== '' &&
+            expected.length > 0 &&
+            expected.length < controlsCardRows().length &&
+            JSON.stringify(actual) === JSON.stringify(expected) &&
+            expected.includes('movement.forward')
+          );
+        }),
+        true,
+        'practice opens the shared controls card on the movement topic',
+      );
+      await page.evaluate(async ({ id, original }) => {
+        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        if (inputBindings.rebind(id, original) !== undefined) {
+          throw new Error('Binding restoration failed');
+        }
+      }, binding);
+      const canHints = await page.evaluate(async () => {
+        const { Tutorial } = await import('/src/game/tutorial.ts');
+        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { Inventory } = await import('/src/core/inventory.ts');
+        const { HandlingQueue } = await import('/src/core/handling.ts');
+        const { Unpacking } = await import('/src/game/unpacking.ts');
+        const { toHands } = await import('/src/core/options.ts');
+        const { dominantSide } = await import('/src/core/character.ts');
+        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        // Own fixture inventory: no injected progress or inventory changes in the playing session.
+        const inventory = new Inventory(gauntletWitness.engine.registry);
+        const bag = inventory.create('hiking_backpack');
+        const can = inventory.create('canned_beans');
+        const opener = inventory.create('can_opener');
+        const side = dominantSide(inventory.character);
+        if (
+          !(
+            inventory.add(bag, { kind: 'worn' }) &&
+            inventory.add(opener, { kind: 'pocket', owner: bag, pocket: 0 }) &&
+            inventory.add(can, { kind: 'hand', side })
+          )
+        ) {
+          throw new Error('Can fixture must fit');
+        }
+        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        lootTutorial.observe({
+          position: [8, 0, 0],
+          yaw: 1,
+          crouching: false,
+          doorOpen: true,
+          searched: false,
+          looted: false,
+          wielded: false,
+          lightOn: false,
+          paused: false,
+        });
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        tutorial.observe({
+          position: [8, 0, 0],
+          yaw: 1,
+          crouching: false,
+          doorOpen: true,
+          searched: true,
+          looted: true,
+          wielded: true,
+          lightOn: false,
+          paused: false,
+        });
+        const queue = new HandlingQueue(inventory);
+        const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
+        gauntletWitness.manual = true;
+        try {
+          const draw = mountTutorial(
+            tutorial,
+            () => undefined,
+            () => undefined,
+          );
+          const actions = () =>
+            [...document.querySelectorAll('#tutorial-objective [data-tutorial-action]')].map(
+              (node) => node.dataset.tutorialAction,
+            );
+          mountTutorial(
+            lootTutorial,
+            () => undefined,
+            () => undefined,
+          )({
+            inventory,
+            inventoryOpen: true,
+            lightOn: false,
+          });
+          const loot = actions();
+          const lootCaps = Object.fromEntries(
+            [...document.querySelectorAll('#tutorial-objective [data-tutorial-action]')].map((node) => [
+              node.dataset.tutorialAction,
+              node.querySelector('kbd')?.textContent,
+            ]),
+          );
+          draw({ inventory, inventoryOpen: false, lightOn: false });
+          const sealed = actions();
+          if (unpacking.activate(can) !== undefined || queue.tick(queue.remaining).failed.length > 0) {
+            throw new Error('Ordinary can activation must complete');
+          }
+          draw({ inventory, inventoryOpen: true, lightOn: false });
+          const opened = actions();
+          const food = [...inventory.items()].find(({ item }) => item.type === 'beans')?.item;
+          if (
+            !food ||
+            toHands(inventory, queue, food, [0, 0, 0]) !== undefined ||
+            queue.tick(queue.remaining).failed.length > 0
+          ) {
+            throw new Error('Opened food must be recoverable through ordinary Hands');
+          }
+          draw({ inventory, inventoryOpen: false, lightOn: false });
+          const panel = document.querySelector('#tutorial-actions');
+          const buttonRow = panel?.querySelector(':scope > .tutorial-action-buttons');
+          const note = panel?.querySelector(':scope > .tutorial-action-note');
+          return {
+            loot,
+            lootCaps,
+            labels: Object.fromEntries(loot.map((id) => [id, inputBindings.label(id)])),
+            sealed,
+            opened,
+            eating: actions(),
+            stage: tutorial.stage,
+            noteOnOwnLine: note?.parentElement === panel && !buttonRow?.contains(note),
+          };
+        } finally {
+          gauntletWitness.manual = false;
+        }
+      });
+      const lootActions = [
+        'inventory.previous',
+        'inventory.next',
+        'inventory.best-pocket',
+        'inventory.hands',
+        'inventory.wear',
+        'inventory.search',
+        'inventory.quick-action-gate',
+        'hand.use-dominant',
+      ];
+      assert(
+        lootActions.every((id) => canHints.loot.includes(id)),
+        'open inventory covers each loot action',
+      );
+      assert(
+        lootActions.every((id) => canHints.lootCaps[id] === canHints.labels[id]),
+        'open inventory loot actions use their live registry labels',
+      );
+      assert(canHints.sealed.includes('hand.use-dominant'), 'sealed can points to hand activation');
+      assert(canHints.opened.includes('inventory.hands'), 'unpacked food points to taking it into hand');
+      assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
+      assert.equal(canHints.stage, 'eat', 'opening and wielding alone are not consumption');
+      assert.equal(canHints.noteOnOwnLine, true, 'practice note is separate from the action buttons');
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
       await page.evaluate(() => {
@@ -118,7 +301,6 @@ try {
       });
       await page.waitForFunction(() => !document.querySelector('#death').hidden);
       const after = await page.evaluate(async (namespace) => {
-        // biome-ignore lint/correctness/noUnresolvedImports: this module is resolved by the page's Vite server.
         const { SaveStorage } = await import('/src/game/saveStorage.ts');
         const storage = new SaveStorage({ backend: 'indexeddb' });
         try {
