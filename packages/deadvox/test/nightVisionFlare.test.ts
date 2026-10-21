@@ -4,6 +4,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import type { NightVision } from '../src/core/schema.ts';
+import { realSeconds } from '../src/core/time.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool } from '../src/render/lightPool.ts';
 import { type FlareSource, flareSources, nightVisionFlare } from '../src/render/nightVisionFlare.ts';
@@ -15,7 +16,13 @@ const VIEW: NightVision = {
   tint: '#00ff00',
   grain: 0,
   edge: { darkening: 1, inner: 0.2, outer: 0.4 },
-  flare: { strength: 0.5, distanceMetres: 2, blastIntensity: 10, recoverSeconds: 0.5, haloRadius: 0.1 },
+  flare: {
+    strength: 0.5,
+    distanceMetres: 2,
+    blastIntensity: 10,
+    recoverRealSeconds: realSeconds(0.5),
+    haloRadius: 0.1,
+  },
 };
 const open: SolidAt = () => false;
 
@@ -90,7 +97,7 @@ describe('night-vision flare', () => {
     const peak = flareOf([ahead(camera, 0, -2)], { camera }).washout;
     expect(peak).toBeGreaterThan(0);
 
-    const step = VIEW.flare.recoverSeconds / 4;
+    const step = VIEW.flare.recoverRealSeconds / 4;
     let shown = peak;
     for (let i = 0; i < 12; i++) {
       const next = flareOf([], { camera, dt: step, last: shown }).washout;

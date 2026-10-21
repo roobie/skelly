@@ -9,6 +9,7 @@ import {
 } from 'three';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import type { NightVision } from '../../src/core/schema.ts';
+import { realSeconds } from '../../src/core/time.ts';
 import { createMoodOutputPass, setNightFlareUniforms } from '../../src/render/moodOutput.ts';
 import { NO_FLARE } from '../../src/render/nightVisionFlare.ts';
 
@@ -18,7 +19,7 @@ const VIEW: NightVision = {
   tint: '#40ff60',
   grain: 0,
   edge: { darkening: 0.9, inner: 0.4, outer: 0.5 },
-  flare: { strength: 1, distanceMetres: 1, blastIntensity: 1, recoverSeconds: 1, haloRadius: 0.1 },
+  flare: { strength: 1, distanceMetres: 1, blastIntensity: 1, recoverRealSeconds: realSeconds(1), haloRadius: 0.1 },
 };
 const HALO = { x: 0.5, y: 0.5 };
 const CROP = { from: 0.3, to: 0.7 };

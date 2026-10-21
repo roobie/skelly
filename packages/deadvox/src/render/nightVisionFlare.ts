@@ -116,5 +116,5 @@ export const nightVisionFlare = ({
   }
   halos.sort((a, b) => b.strength - a.strength).splice(NIGHT_VISION_HALOS);
   const now = 1 - Math.exp(-flare.strength * total);
-  return { washout: Math.max(now, last * Math.exp(-dt / flare.recoverSeconds)), halos };
+  return { washout: Math.max(now, last * Math.exp(-dt / flare.recoverRealSeconds)), halos };
 };

@@ -378,7 +378,7 @@
             "blastIntensity": 40,
             "distanceMetres": 3,
             "haloRadius": 0.12,
-            "recoverSeconds": 0.59999999999999998,
+            "recoverRealSeconds": 0.59999999999999998,
             "strength": 0.14999999999999999
           },
           "gain": 6,

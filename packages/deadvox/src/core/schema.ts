@@ -617,8 +617,8 @@ const NightVisionFlareSchema = strictObject({
   distanceMetres: Positive,
   /** A blast fireball's brightness to the goggles at the moment of the blast. */
   blastIntensity: NonNegative,
-  /** Time constant of the after-image, in real seconds. */
-  recoverSeconds: Positive,
+  /** Time constant of the after-image. */
+  recoverRealSeconds: PositiveRealSeconds,
   /** A halo's radius at a light, as a share of the picture's size. */
   haloRadius: pipe(Positive, maxValue(1, 'must be at most 1')),
 });
