@@ -481,8 +481,18 @@ const cancelStows = (queue: HandlingQueue, jobs: readonly MoveJob[]): void => {
   }
 };
 
+const carriedStowTarget = (inv: Inventory, item: Item): Target | undefined =>
+  slingTarget(inv, item) ?? bestPocket(inv, item)?.target;
+
+/**
+ * A wielded item is one the player wants to keep, so a held item is stowed on the player first.
+ * Only without room there may a direct move to the hand swap it into the source container.
+ */
+const stowsHeldFirst = (inv: Inventory, displaced: readonly Item[]): boolean =>
+  displaced.length > 0 && displaced.every((held) => carriedStowTarget(inv, held));
+
 const plannedStowTarget = (inv: Inventory, item: Item, feet: Vec3): Target | undefined => {
-  const carried = slingTarget(inv, item) ?? bestPocket(inv, item)?.target;
+  const carried = carriedStowTarget(inv, item);
   if (carried) {
     return carried;
   }
@@ -538,17 +548,22 @@ const wieldTwoHanded = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   const preferred = dominantSide(inv.character);
   const secondary = offSide(inv.character);
   const target: Target = { kind: 'hand', side: preferred };
-  const direct = queue.enqueue(item, target);
-  if (direct.ok || direct.reason === 'Already queued') {
-    return direct.ok ? undefined : direct.reason;
-  }
-  if (inv.hands[preferred] === item && inv.hands[secondary] === item) {
-    return undefined;
-  }
   const displaced = [...new Set([inv.hands[preferred], inv.hands[secondary]])].filter(
     (held): held is Item => held !== undefined && held !== item,
   );
-  return displaced.length > 0 ? stowTwoHandDisplacements({ inv, queue, item, feet, displaced, target }) : direct.reason;
+  if (!stowsHeldFirst(inv, displaced)) {
+    const direct = queue.enqueue(item, target);
+    if (direct.ok || direct.reason === 'Already queued') {
+      return direct.ok ? undefined : direct.reason;
+    }
+    if (inv.hands[preferred] === item && inv.hands[secondary] === item) {
+      return undefined;
+    }
+    if (displaced.length === 0) {
+      return direct.reason;
+    }
+  }
+  return stowTwoHandDisplacements({ inv, queue, item, feet, displaced, target });
 };
 
 /** Ordinary to-hands behavior, including moving an occupied hand away first. */
@@ -558,11 +573,10 @@ export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   }
   const preferred = dominantSide(inv.character);
   const secondary = offSide(inv.character);
-  for (const side of [preferred, secondary]) {
-    const result = queue.enqueue(item, { kind: 'hand', side });
-    if (result.ok) {
-      return undefined;
-    }
+  const occupant = inv.hands[preferred];
+  const direct = () => [preferred, secondary].some((hand) => queue.enqueue(item, { kind: 'hand', side: hand }).ok);
+  if (!stowsHeldFirst(inv, occupant && occupant !== item ? [occupant] : []) && direct()) {
+    return undefined;
   }
   const held = inv.hands[preferred] ?? inv.hands[secondary];
   if (!held || held === item) {

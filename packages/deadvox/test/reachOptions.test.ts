@@ -490,6 +490,66 @@ describe('handling move admission', () => {
     expect(t.queue.busy).toBe(false);
   });
 
+  it.each([
+    { held: 'fixture_tool', wielded: 'fixture_other_tool' },
+    { held: 'fixture_tool', wielded: 'fixture_pole' },
+    { held: 'fixture_pole', wielded: 'fixture_tool' },
+  ])('wielding $wielded from a container stows held $held on the player, not in the container', (pair) => {
+    const { registry: fixtureRegistry, issues } = buildRegistry([
+      playerInventorySource(),
+      {
+        source: 'wield-from-container.json',
+        data: {
+          items: [
+            { id: 'fixture_tool', name: 'Tool', category: 'tool', weight: 1, size: [1, 1] },
+            { id: 'fixture_other_tool', name: 'Other tool', category: 'tool', weight: 1, size: [1, 1] },
+            { id: 'fixture_pole', name: 'Pole', category: 'tool', weight: 1, size: [1, 3], twoHanded: true },
+            {
+              id: 'fixture_pack',
+              name: 'Pack',
+              category: 'bag',
+              weight: 1,
+              size: [2, 2],
+              wearable: { slot: 'back', encumbrance: 0 },
+              container: { pockets: [{ grid: [3, 3], handlingSimSeconds: 1 }] },
+            },
+          ],
+          furniture: [
+            {
+              id: 'fixture_cabinet',
+              name: 'Cabinet',
+              size: [1, 1, 1],
+              color: '#ffffff',
+              container: { pockets: [{ grid: [4, 4], handlingSimSeconds: 1 }] },
+            },
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const t = setup(undefined, fixtureRegistry);
+    const leading = dominantSide(t.inventory.character);
+    const pack = t.add('fixture_pack', { kind: 'worn' });
+    const held = t.add(pair.held, { kind: 'hand', side: leading });
+    const cabinet = t.inventory.entities.add({
+      type: 'fixture_cabinet',
+      pos: [1, 0, 0],
+      size: [1, 1, 1],
+      facing: 'n',
+    })!;
+    t.inventory.entities.markSearched(cabinet);
+    const wielded = t.add(pair.wielded, { kind: 'furniture', entity: cabinet, pocket: 0 });
+
+    expect(toHands(t.inventory, t.queue, wielded, [0, 0, 0])).toBeUndefined();
+    for (const job of [...t.queue.jobs]) {
+      t.queue.tick(job.duration);
+    }
+
+    expect(t.inventory.locate(held)).toMatchObject({ kind: 'pocket', owner: pack });
+    expect(t.inventory.hands[leading]).toBe(wielded);
+    expect(t.queue.busy).toBe(false);
+  });
+
   it.each(['right', 'left'] as const)(
     '%s-dominant deferred toHands take re-plans after freeing its occupied slot',
     (handedness) => {
