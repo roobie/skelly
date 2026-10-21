@@ -2183,42 +2183,42 @@
       }
     },
     {
-      "file": "assets/models/round-7_d_62x39.glb",
+      "file": "assets/models/round_7_d_62x39.glb",
       "gun": {
         "calibre": "7.62x39"
       },
       "id": "round_7_d_62x39"
     },
     {
-      "file": "assets/models/case-7_d_62x39.glb",
+      "file": "assets/models/case_7_d_62x39.glb",
       "gun": {
         "calibre": "7.62x39"
       },
       "id": "case_7_d_62x39"
     },
     {
-      "file": "assets/models/round-5_d_56x45.glb",
+      "file": "assets/models/round_5_d_56x45.glb",
       "gun": {
         "calibre": "5.56x45"
       },
       "id": "round_5_d_56x45"
     },
     {
-      "file": "assets/models/case-5_d_56x45.glb",
+      "file": "assets/models/case_5_d_56x45.glb",
       "gun": {
         "calibre": "5.56x45"
       },
       "id": "case_5_d_56x45"
     },
     {
-      "file": "assets/models/round-12_h_gauge_h_00_h_buck.glb",
+      "file": "assets/models/round_12_h_gauge_h_00_h_buck.glb",
       "gun": {
         "calibre": "12-gauge-00-buck"
       },
       "id": "round_12_h_gauge_h_00_h_buck"
     },
     {
-      "file": "assets/models/case-12_h_gauge_h_00_h_buck.glb",
+      "file": "assets/models/case_12_h_gauge_h_00_h_buck.glb",
       "gun": {
         "calibre": "12-gauge-00-buck"
       },
@@ -2336,14 +2336,14 @@
       }
     },
     {
-      "file": "assets/models/round-357_h_magnum.glb",
+      "file": "assets/models/round_357_h_magnum.glb",
       "gun": {
         "calibre": "357-magnum"
       },
       "id": "round_357_h_magnum"
     },
     {
-      "file": "assets/models/case-357_h_magnum.glb",
+      "file": "assets/models/case_357_h_magnum.glb",
       "gun": {
         "calibre": "357-magnum"
       },
@@ -2748,14 +2748,14 @@
       }
     },
     {
-      "file": "assets/models/round-308_h_winchester.glb",
+      "file": "assets/models/round_308_h_winchester.glb",
       "gun": {
         "calibre": "308-winchester"
       },
       "id": "round_308_h_winchester"
     },
     {
-      "file": "assets/models/case-308_h_winchester.glb",
+      "file": "assets/models/case_308_h_winchester.glb",
       "gun": {
         "calibre": "308-winchester"
       },

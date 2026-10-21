@@ -4,6 +4,7 @@ read_if:
   - you change the shared manual-action model contract consumed by Deadvox
   - you regenerate the hunting rifle, its civilian cartridge or its optional scope
   - you change the sporter's bore-registered action, furniture joint or silhouette tuning
+  - you change the structured Deadvox export recipe or its companion choices
 ---
 
 # Turn-bolt export
@@ -40,8 +41,8 @@ Pump tubes and integral rifle wells use the same neutral model record because lo
 
 ## Regeneration and acceptance
 
-Generated model records stay separate from authored handling constructors so an asset refresh cannot flatten tunable content. Refresh companions must follow the exported calibre and certified attachment compatibility rather than assuming the shipped hunting equipment; see `src/cli/boltCompanionExports.ts`, `boltCompanionExports`. The refresh path preserves Deadvox-owned model fields; see `src/cli/refreshDeadvoxFirearms.ts`. Content compilation shares the source boundary so the manifest and bundled entries cannot silently diverge.
+Exporter-written records stay separate from authored handling constructors so refreshes cannot flatten tunable content. Companion choices belong in the consumption recipe rather than an inference from a gun: the boundary must be inspectable even when equipment changes. See `exports/deadvox.jsonnet`, `src/cli/exportRecipe.ts`, `loadExportRecipe`, and `src/cli/refreshDeadvox.ts`. Credits import that recipe so provenance cannot silently describe a different set of outputs.
 
 Export storage must not change time semantics, so standalone model records use the pack's temporal catalogue rather than a second allowlist; see `packages/deadvox/src/core/temporalFields.ts`, `TEMPORAL_FIELDS`, and `packages/deadvox/tools/time-lint.mjs`, `temporalCatalogueFindings`.
 
-Acceptance includes Deadvox validation and model preparation, not just a successful Gungen export. The property checks are in `test/boltExport.test.ts` and `packages/deadvox/test/models.test.ts`; synchronization of credited guns, ammunition and standalone optics is checked by `test/gungen-deadvox-contract.test.mjs` because each can silently drift from its source.
+Acceptance includes Deadvox validation and model preparation, not just a successful Gungen export. See `test/boltExport.test.ts` and `packages/deadvox/test/models.test.ts`. The recipe-wide check in `test/gungen-deadvox-contract.test.mjs` compares exporter-written records, not compiled overlays, so gameplay-owned fields never need a parallel omission list.

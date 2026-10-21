@@ -31,5 +31,6 @@ export type CartridgeModelKind = 'round' | 'case';
 /** Stable model id/file pair for a cartridge component. */
 export const cartridgeModelAsset = (kind: CartridgeModelKind, calibre: string): GlbAssetIdentity => {
   const slug = calibreSlug(calibre);
-  return { id: `${kind}_${slug}`, file: `assets/models/${kind}-${slug}.glb` };
+  const id = `${kind}_${slug}`;
+  return { id, file: `assets/models/${id}.glb` };
 };

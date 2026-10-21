@@ -16,6 +16,7 @@ const SOURCE_ROOTS = [
   'gungen/src/gun',
   'gungen/cartridges',
   'gungen/designs',
+  'gungen/exports',
   'packages/mobgen/src/mob',
   'site',
 ];

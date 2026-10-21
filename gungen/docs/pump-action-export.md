@@ -4,6 +4,7 @@ read_if:
   - you change the hand-driven action data a pump exports to Deadvox
   - you decide whether to add an automatic-shotgun handle
   - you re-export or inspect the pump shotgun model
+  - you change the structured Deadvox export recipe or its pump entry
 ---
 
 # Hunting-cabin pump: action and export
@@ -16,6 +17,6 @@ The integral capacity record is shape-neutral so both a pump tube and a rifle we
 
 Deadvox owns playable firearm handling. Gungen exports only the data needed to describe the hand-driven action and its geometry; it does not imply that exported ammunition is already consumed or that the model simulates loading and firing. The maintained export and preparation contracts are exercised by `test/pumpExport.test.ts` and Deadvox's firearm-model tests. If automatic shotguns are added, they use an AK-like stick/paddle handle; pump shotguns stay handle-free, as tracked by #649.
 
-The curated design carries its own calibre, so exporting its model does not require a separate calibre override. The generated entry replaces the pump's entry in `packages/deadvox/src/content/base/models-firearms.json`; the asset credits point to the curated project design. See `designs/archetype-pump-shotgun.json` and `test/gungen-deadvox-contract.test.mjs`.
+The curated design owns its calibre so a refresh cannot accidentally substitute a different shell. The consumption recipe keeps the pump and its ammunition choices explicit, while exporter-written records stay separate from authored gameplay overlays. See `exports/deadvox.jsonnet`, `src/cli/exportRecipe.ts`, `loadExportRecipe`, and `src/cli/refreshDeadvox.ts`. Synchronization is checked by `test/gungen-deadvox-contract.test.mjs`; credits import the same recipe rather than keeping another export list.
 
 The barrel's muzzle exports as a smoothbore muzzle slot: only devices built for smoothbores certify there. See `attachments.md`, "Muzzle devices".

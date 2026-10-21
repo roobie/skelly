@@ -11,7 +11,8 @@ import { buildAmmoMeshes } from '../src/viewer/ammoLayer.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 import { readGlb } from './glbReader.ts';
 
-const shell = loadCartridgeFile('12-gauge-00-buck.json') as Shotshell;
+const source = loadCartridgeFile('12-gauge-00-buck.json') as Shotshell;
+const shell: Shotshell = { ...source, id: 'fixture-shell', closure: { ...source.closure, value: null } };
 const exported = () => {
   const result = exportCartridgeModels(shell);
   if (!result.ok) {
@@ -42,7 +43,7 @@ describe('shotshell cartridge export', () => {
       const assetId = shell.id.replaceAll('-', '_h_');
       expect(model.modelEntry).toMatchObject({
         id: `${kind}_${assetId}`,
-        file: `assets/models/${kind}-${assetId}.glb`,
+        file: `assets/models/${kind}_${assetId}.glb`,
         gun: { calibre: shell.id },
       });
       const bounds = new Box3().setFromObject(scene);
@@ -61,7 +62,10 @@ describe('shotshell cartridge export', () => {
 
   it('leaves the fired mouth open but closes the loaded roll proxy with an inset card', async () => {
     const models = exported();
-    const ray = new Raycaster(new Vector3(0.1, 0, 0), new Vector3(-1, 0, 0));
+    const ray = new Raycaster(
+      new Vector3(Math.max(shell.length.loaded.value!, shell.length.nominal.value!) / 1000 + 1, 0, 0),
+      new Vector3(-1, 0, 0),
+    );
     const hits: number[] = [];
     const scenes = await Promise.all([models.round, models.case].map((model) => parse(model.glb)));
     for (const { scene } of scenes) {

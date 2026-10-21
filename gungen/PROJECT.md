@@ -8,6 +8,8 @@ read_if:
   - you change physical inputs or their ownership
   - you author or key a gun part's mass
   - you change Gungen's test or cross-project integration policy
+  - you change the structured Deadvox export recipe or refresh boundary
+  - you diagnose platform-dependent export comparisons
 ---
 
 # gungen — low-poly firearm designer
@@ -44,7 +46,9 @@ Seed sweeps exercise generated assemblies across templates and choices that focu
 
 Attachments are separate geometry and identity so a fitted choice can be replaced without changing the host firearm's appearance or geometry. Compatibility is certified by the firearm domain and fails closed when a pair is absent; see `docs/attachments.md` and `src/gun/attachmentCompatibility.ts#attachmentCompatibilityPairs`.
 
-A Gungen change to a gun Deadvox ships refreshes Deadvox's copy, its GLB and model entry, in the same PR: a stale copy still validates and loads, so the two drift apart silently. Each exported design records the inputs its export needs, such as its `calibre`, so `../test/gungen-deadvox-contract.test.mjs` can re-export every gun the Deadvox asset manifest credits to a Gungen design and fail on any difference in Gungen's export. Follow the shared authoring boundary in `../docs/jsonnet.md`, "Source boundaries".
+A Gungen change to any export Deadvox consumes refreshes its GLB and model entry in the same PR: a stale copy can still validate and load, so drift otherwise stays silent. The authored consumption boundary is `exports/deadvox.jsonnet`; explicit companion choices keep a gun's refresh from silently selecting other items. See `src/cli/exportRecipe.ts`, `loadExportRecipe`, and `src/cli/refreshDeadvox.ts`.
+
+Exporter-written records stay separate from Deadvox's authored overlays so refreshes cannot flatten gameplay tuning. Synchronization compares those records rather than maintaining a second list of fields to omit. Platform floating-point roundoff is not authored content drift, so numeric comparison tolerates it; see `../test/gungen-deadvox-contract.test.mjs`, `exportDifference`. Asset credits import the recipe so provenance cannot omit or retain a different set of exports; see `packages/deadvox/src/content/base/assets/manifest.libsonnet`, `recipe`. Follow `../docs/jsonnet.md`, "Source boundaries".
 
 The hunting rifle's civilian identity, integral loading, separate scope and phased turn-bolt contract are governed by `docs/bolt-action-export.md`. Geometry is exported before playable handling so Deadvox consumes fitted dimensions rather than inventing them.
 
