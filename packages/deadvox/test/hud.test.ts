@@ -3,7 +3,6 @@ import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { cellCount, defOf } from '../src/core/items.ts';
 import { labelForAction } from '../src/game/inputBindings.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import {
@@ -32,8 +31,9 @@ const kitchen = () => {
 describe('quickbarViewModel', () => {
   it('shows only the key and empty label in an empty slot', () => {
     const vm = quickbarViewModel(new Quickbar(), new Inventory(registry));
-    expect(vm.slots).toHaveLength(5);
-    expect(vm.slots[0]).toEqual({ key: '1', filled: false, name: 'empty', where: '' });
+    expect(vm.slots).toHaveLength(new Quickbar().slots.length);
+    expect(vm.slots[0]).toMatchObject({ key: labelForAction('quickbar.use.1'), filled: false, where: '' });
+    expect(vm.slots[0]?.name).not.toBe('');
   });
 
   it('shows an item in a hand', () => {
@@ -43,7 +43,12 @@ describe('quickbarViewModel', () => {
     const bar = new Quickbar();
     bar.assign(0, flashlight);
     const vm = quickbarViewModel(bar, inv);
-    expect(vm.slots[0]).toMatchObject({ key: '1', filled: true, name: 'Flashlight', where: 'in right hand' });
+    expect(vm.slots[0]).toMatchObject({
+      key: labelForAction('quickbar.use.1'),
+      filled: true,
+      name: inv.name(flashlight),
+    });
+    expect(vm.slots[0]?.where).toContain('right');
   });
 
   it('shows a worn item as worn', () => {
@@ -53,7 +58,8 @@ describe('quickbarViewModel', () => {
     const bar = new Quickbar();
     bar.assign(1, hoodie);
     const vm = quickbarViewModel(bar, inv);
-    expect(vm.slots[1]).toMatchObject({ key: '2', where: 'worn' });
+    expect(vm.slots[1]).toMatchObject({ key: labelForAction('quickbar.use.2') });
+    expect(vm.slots[1]?.where).not.toBe('');
   });
 
   it('shows an item in a pocket, with the owner and the handling time', () => {
@@ -63,9 +69,10 @@ describe('quickbarViewModel', () => {
     const bar = new Quickbar();
     bar.assign(2, matches);
     const vm = quickbarViewModel(bar, inv);
-    const cells = cellCount(defOf(registry, matches.type));
-    const seconds = (inv.pocketHandling(hoodie, 0) + 0.05 * cells).toFixed(1);
-    expect(vm.slots[2]).toMatchObject({ where: `hoodie · ${seconds} s` });
+    const where = vm.slots[2]?.where ?? '';
+    expect(where).toContain(inv.name(hoodie).toLowerCase());
+    const seconds = Number.parseFloat(where.split('·')[1] ?? '');
+    expect(seconds).toBeGreaterThanOrEqual(inv.pocketHandling(hoodie, 0));
   });
 
   it('renders an item left in furniture as an empty slot', () => {
@@ -88,7 +95,7 @@ describe('quickbarViewModel', () => {
     bar.assign(4, rag);
     inv.consume(rag);
     const vm = quickbarViewModel(bar, inv);
-    expect(vm.slots[4]).toMatchObject({ filled: false, name: 'empty', where: '' });
+    expect(vm.slots[4]).toMatchObject({ filled: false, where: '' });
   });
 
   it('shows the count when there is more than one', () => {

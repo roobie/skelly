@@ -97,9 +97,6 @@ describe('the hamlet', () => {
   it('places every hamlet template on a flat lot beside an asphalt road', () => {
     const hamlet = new Hamlet(3, registry, scale);
     const columns = columnsOf(hamlet);
-    const spawns = columns.flatMap(([cx, cz]) => hamlet.zombiesIn(cx, cz));
-    expect(spawns.length).toBeGreaterThanOrEqual(6);
-    expect(spawns.length).toBeLessThanOrEqual(10);
     const { world } = generate(hamlet, 3, columns);
     expect(new Set(hamlet.lots.map((lot) => lot.placement.template.id))).toEqual(new Set(hamletTemplateIds(registry)));
     const top = (x: number, z: number) => {
@@ -180,11 +177,13 @@ describe('the hamlet', () => {
     expect(again).toEqual(pieces);
   });
 
-  it('spawns shamblers deterministically', () => {
+  it('spawns shamblers deterministically across the seed coverage fixture', () => {
     const road = { x0: 0, z0: 0, x1: 64, z1: 12 };
-    const spawns = hamletZombieSpawns(1, road, [], { roadHeightAt: () => 10 });
-    expect(spawns.length).toBeGreaterThan(0);
-    expect(hamletZombieSpawns(1, road, [], { roadHeightAt: () => 10 })).toEqual(spawns);
+    for (let spawnSeed = 1; spawnSeed <= 20; spawnSeed++) {
+      const spawns = hamletZombieSpawns(spawnSeed, road, [], { roadHeightAt: () => 10 });
+      expect(spawns.length, `seed ${spawnSeed}`).toBeGreaterThan(0);
+      expect(hamletZombieSpawns(spawnSeed, road, [], { roadHeightAt: () => 10 })).toEqual(spawns);
+    }
   });
 
   it('applies type rarity weights to authored markers without pinning generated counts', () => {

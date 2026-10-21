@@ -431,26 +431,24 @@ describe('keyboard registry', () => {
   });
   it('gates the third-person view behind F2 and toggles it in both directions', () => {
     const binding = new BindingRegistry(INPUT_BINDINGS, storage());
-    expect(binding.binding('debug.third-person-toggle')).toMatchObject({
-      defaults: [{ code: 'Numpad0' }],
-      gate: 'debug.gate',
-      debug: true,
-    });
+    expect(binding.binding('debug.third-person-toggle')).toMatchObject({ gate: 'debug.gate', debug: true });
+    const gate = binding.chords('debug.gate')[0]!;
+    const toggle = binding.chords('debug.third-person-toggle')[0]!;
 
     const keyboard = new KeyboardInput(binding);
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
     keyboard.context = () => ({ context: 'play', debug: false });
-    expect(keyboard.press(event('Numpad0'))).toBe(false);
-    keyboard.release(event('Numpad0'));
+    expect(keyboard.press(event(toggle.code, toggle))).toBe(false);
+    keyboard.release(event(toggle.code, toggle));
     expect(commands).toEqual([]);
 
     keyboard.context = () => ({ context: 'play', debug: true });
-    expect(keyboard.press(event('F2'))).toBe(true);
+    expect(keyboard.press(event(gate.code, gate))).toBe(true);
     expect(keyboard.held('debug.gate')).toBe(true);
-    expect(keyboard.press(event('Numpad0'))).toBe(true);
-    keyboard.release(event('Numpad0'));
-    expect(keyboard.press(event('Numpad0'))).toBe(true);
+    expect(keyboard.press(event(toggle.code, toggle))).toBe(true);
+    keyboard.release(event(toggle.code, toggle));
+    expect(keyboard.press(event(toggle.code, toggle))).toBe(true);
     expect(commands.filter(({ action }) => action === 'debug.third-person-toggle').map(({ phase }) => phase)).toEqual([
       'down',
       'up',
