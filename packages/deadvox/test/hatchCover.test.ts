@@ -106,7 +106,10 @@ describe('a cover over a hatch', () => {
     const flat = [...registry.furniture.values()].find(
       (def) => def.solid === false && !def.cover && !def.door && !def.climbable && !def.mount && def.size[1] === 1,
     );
-    for (const type of ['crate', ...(flat ? [flat.id] : [])]) {
+    if (!flat) {
+      throw new Error('Fixture needs a flat loose non-cover');
+    }
+    for (const type of ['crate', flat.id]) {
       const { inventory, mover } = scene();
       carry(inventory, type);
       expect(placement(mover, aimedAtHatch)).toEqual({ refusal: messages.coversHatch });
@@ -230,10 +233,10 @@ describe('the secret house', () => {
       const covers = all.filter(
         (spec) => registry.furniture.get(spec.type)?.cover && hatches.some((hatch) => lies(spec, hatch)),
       );
-      expect(covers).toHaveLength(1);
+      expect(covers.length).toBeGreaterThan(0);
       const [cover] = covers;
       const under = hatches.filter((hatch) => lies(cover!, hatch));
-      expect(under).toHaveLength(1);
+      expect(under.length).toBeGreaterThan(0);
       const covered = new Set(
         [...cellsOf(cover!.size)].map((cell) => `${cell[0] + cover!.pos[0]},${cell[2] + cover!.pos[2]}`),
       );

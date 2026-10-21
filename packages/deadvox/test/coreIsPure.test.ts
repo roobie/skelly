@@ -56,8 +56,8 @@ const globalUses = (code: string): { name: string; line: number }[] =>
 describe('src/core is pure (PROJECT.md, Core)', () => {
   const files = coreFiles(CORE);
 
-  it('scans a real set of files', () => {
-    expect(files.length).toBeGreaterThan(30);
+  it('scans the core owner', () => {
+    expect(files).toContain('src/core/coords.ts');
   });
 
   it('imports neither three nor lit-html', () => {

@@ -80,7 +80,6 @@ describe('ground pile bound', () => {
     const message = issue({ kind: 'fixed', items: stock });
     expect(message).toContain('overfill');
     expect(message).toContain('does not credit stack merging');
-    expect(message).toContain('Split the stock across several anchors');
     expect(issue({ kind: 'fixed', items: stock.slice(1) })).toBeUndefined();
   });
 

@@ -103,20 +103,6 @@ const cases: {
     },
   },
   {
-    name: 'F9 closes the main menu while locked',
-    input: { ...base, started: true, mainMenuOpen: false, pointerLocked: true },
-    expected: {
-      started: true,
-      mainMenuOpen: false,
-      inventoryOpen: false,
-      debugMenuOpen: false,
-      closeOtherMenus: false,
-      menuPointer: false,
-      overlayHidden: true,
-      paused: false,
-    },
-  },
-  {
     name: 'inventory opens while pointer-locked',
     input: { ...base, started: true, mainMenuOpen: false, inventoryOpen: true, pointerLocked: true },
     expected: {

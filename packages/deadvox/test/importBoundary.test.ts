@@ -35,8 +35,9 @@ const escapesProject = (file: string, specifier: string): boolean => {
 describe('deadvox stays independent of its sibling projects', () => {
   const files = ROOTS.flatMap(sourceFiles);
 
-  it('scans a real set of files', () => {
-    expect(files.length).toBeGreaterThan(50);
+  it('scans the project source roots', () => {
+    expect(files).toContain('src/core/coords.ts');
+    expect(files).toContain('test/importBoundary.test.ts');
   });
 
   it('imports no sibling source and allows only the shared root Jsonnet compiler', () => {

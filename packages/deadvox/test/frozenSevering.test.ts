@@ -47,6 +47,7 @@ describe('melee while debug-frozen', () => {
   it('severs an arm and advances its debris while the living actor pose remains frozen', () => {
     const armKill = {
       ...SHAMBLER,
+      figureSeeds: [1],
       regions: { ...SHAMBLER.regions, rightArm: FISTS_MELEE.damage },
       dismember: { chance: 0, headOnKillChance: 0 },
     };
@@ -77,7 +78,6 @@ describe('melee while debug-frozen', () => {
       });
       const id = system.add(armKill, [0, 1, 0], [0, 0, -1]);
       const zombie = system.store.get(id)!;
-      zombie.figureSeed = 1;
       renderer.sync(system.store, 1 / 60, 1);
       system.setFrozen(true);
       const ray = regionRay(zombie);

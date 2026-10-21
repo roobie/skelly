@@ -125,11 +125,12 @@ describe('quickbarKey', () => {
     expect(quickbarKey(bar, inv)).not.toBe(before);
   });
 
-  it('changes when the inventory version changes', () => {
+  it('changes when an inventory mutation changes its version', () => {
     const inv = new Inventory(registry);
-    const before = quickbarKey(new Quickbar(), inv);
-    inv.version += 1;
-    expect(quickbarKey(new Quickbar(), inv)).not.toBe(before);
+    const bar = new Quickbar();
+    const before = quickbarKey(bar, inv);
+    expect(inv.add(inv.create('rag'), { kind: 'hand', side: 'right' })).toBe(true);
+    expect(quickbarKey(bar, inv)).not.toBe(before);
   });
 });
 

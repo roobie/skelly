@@ -196,8 +196,8 @@ describe('look URL parameters', () => {
     expect(parse('fog=0.34').fogginess).toBe(0.3);
     expect(parse('fog=7').fogginess).toBe(1);
     expect(parse('fog=-1').fogginess).toBe(0);
-    expect(parse('fog=').fogginess).toBe(0.2);
-    expect(parse('fog=abc').fogginess).toBe(0.2);
+    expect(parse('fog=').fogginess).toBe(DEFAULT_FOGGINESS);
+    expect(parse('fog=abc').fogginess).toBe(DEFAULT_FOGGINESS);
   });
 
   it('keeps colour decode on unless srgb=0', () => {
