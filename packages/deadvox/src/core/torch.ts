@@ -22,9 +22,11 @@ export const swapCanister = (
     return "It doesn't take that cartridge";
   }
   const old = tool.slots?.canister;
-  const target = old && spent(old);
   if (old) {
     old.charges = chargeOf(inventory.registry, old) ?? 0;
+  }
+  const target = old && spent(old);
+  if (old) {
     const refusal = putDownRefusal(inventory, old, target);
     if (refusal) {
       return refusal;

@@ -338,9 +338,11 @@ export const swapBattery = (
   const oldBattery = light.slots?.battery;
   const old = oldBattery ? (chargeOf(registry, oldBattery) ?? 0) : 0;
   const kept = oldBattery && old > 0 ? oldBattery : undefined;
-  const target = kept && spent(kept);
   if (kept) {
     kept.charges = old;
+  }
+  const target = kept && spent(kept);
+  if (kept) {
     const refusal = putDownRefusal(inventory, kept, target);
     if (refusal) {
       return refusal;

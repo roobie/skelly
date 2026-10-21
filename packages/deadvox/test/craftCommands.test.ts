@@ -87,6 +87,28 @@ describe('live craft commands', () => {
     expect(r.sim.actions.job?.jobType).toBe('craft');
   });
 
+  it('a finished repair puts nothing down, so it completes with no ground nearby', () => {
+    const r = make();
+    const target = r.inventory.create('crowbar', 1, 0.5);
+    for (const item of [
+      target,
+      r.inventory.create('scrap_metal'),
+      r.inventory.create('duct_tape'),
+      r.inventory.create('repair_kit'),
+    ]) {
+      if (!r.inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
+        throw new Error('repair fixture item did not fit');
+      }
+    }
+    expect(r.commands.start('repair_crowbar')).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    r.inventory.landing = () => undefined;
+    // The long action calls the owner's finish when its time is up; waiting out the repair adds no coverage.
+    r.sim.actions.craft!.finish(work.uid);
+    expect(target.condition).toBeGreaterThan(0.5);
+    expect(work.work).toBeUndefined();
+  });
+
   it('sleep replacing a stopped craft owns Continue instead of the held work', () => {
     const r = make();
     expect(r.commands.start('torch')).toBeUndefined();

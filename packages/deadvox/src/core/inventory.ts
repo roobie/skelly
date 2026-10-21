@@ -872,7 +872,7 @@ export class Inventory {
       const landed = this.landing(spot);
       return landed ? [landed] : [];
     });
-    if (landings.length === 0) {
+    if (outputs.length > 0 && landings.length === 0) {
       throw new Error(NO_LANDING_REFUSAL);
     }
     for (const item of outputs) {

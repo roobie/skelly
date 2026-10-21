@@ -245,6 +245,28 @@ describe('flashlight', () => {
     expect(batteries.count).toBe(3);
   });
 
+  it('plans where the old battery lands with the charge it comes out with', () => {
+    const { inventory, light } = lit();
+    const old = light.slots!.battery!;
+    const batteries = inventory.create('aa_battery', 3);
+    inventory.add(batteries, { kind: 'hand', side: 'left' });
+    // The feet pile has room only by merging into fresh batteries; the old one's charge, once written, won't merge.
+    const feetPile: Target = { kind: 'pile', pos: [0, 0, 0] };
+    expect(inventory.add(inventory.create('aa_battery'), feetPile)).toBe(true);
+    while (inventory.add(inventory.create('flashlight'), feetPile)) {
+      // Fill the pile until it refuses.
+    }
+    const partCharged = () => Object.assign(inventory.create('aa_battery'), { charges: chargeOf(registry, old)! / 2 });
+    while (inventory.add(partCharged(), feetPile)) {
+      // Fill the cells left between the lights.
+    }
+    const spent = (item: Item) => freshDropTarget(inventory, item, [0, 0, 0]);
+    expect(swapBattery(inventory, light, batteries, spent)).toBeUndefined();
+    const at = inventory.locate(old);
+    expect(at?.kind).toBe('pile');
+    expect(at?.kind === 'pile' && at.pile.pos).not.toEqual([0, 0, 0]);
+  });
+
   it('refuses a swap when the piles nearby are full, rather than losing the old battery', () => {
     const { inventory, light, old, batteries } = halfSpent();
     const pile: Target = { kind: 'pile', pos: [0, 0, 0] };

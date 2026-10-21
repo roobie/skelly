@@ -1804,8 +1804,9 @@ in hand, and the old battery or cartridge stays fitted. One rule and one message
 cover every way of putting an item down, and since nothing is lost, letting items
 fall, adding diagonal cells for a player standing on a corner, or a pocket for
 the spent part can still be chosen later without undoing anything. Ground with no
-room left refuses with its own message. An unpack still goes into a pocket with
-room, and a dead battery is thrown away, so neither needs a landing.
+room left refuses with its own message. A finished repair puts nothing down, an
+unpack still goes into a pocket with room, and a dead battery is thrown away, so
+none of them needs a landing.
 
 See `src/core/inventory.ts`, `Inventory.landing` and `Inventory.dropLanding`;
 `src/core/options.ts`, `dropTarget` and `freshDropTarget`; and
