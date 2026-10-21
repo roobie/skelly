@@ -51,6 +51,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     setPainDesaturation: vi.fn(),
     setDrugVignette: vi.fn(),
     setNightVision: vi.fn(),
+    setNightVisionFlare: vi.fn(),
     setSky: vi.fn(),
   };
   const shadows = { restore: vi.fn(), attachTorches: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
@@ -185,6 +186,7 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
       post: false,
       restore: vi.fn(),
       render: vi.fn((draw: () => void) => draw()),
+      setNightVisionFlare: vi.fn(),
       setSky: vi.fn(),
     },
     shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },

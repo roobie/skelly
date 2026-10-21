@@ -59,6 +59,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.food.consumeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.analgesic.takeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.light.power.swapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'items.light.nightVision.flare.recoverRealSeconds',
+    clock: 'Real',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'items.tool.fuel.swapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.unpack.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.ammo.loadSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
