@@ -8,13 +8,6 @@
       },
       "hold": "upright",
       "id": "canned_beans",
-      "parts": {
-        "package": {
-          "centreOfMass": [0, 0.055928062313458364, 0],
-          "massKg": 0.45000000000000001,
-          "node": "package:vessel"
-        }
-      },
       "roll": 0
     },
     {
@@ -25,13 +18,6 @@
       },
       "hold": "upright",
       "id": "canned_soup",
-      "parts": {
-        "package": {
-          "centreOfMass": [0, 0.06092612064541375, 0],
-          "massKg": 0.42999999999999999,
-          "node": "package:vessel"
-        }
-      },
       "roll": 0
     },
     {

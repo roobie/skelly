@@ -408,12 +408,14 @@ describe('static reachability', () => {
     }
   });
 
-  it('follows nested unpack contents from placed loot into both reachability sets', () => {
+  it('follows unpacking and empty vessels without making retained food loose stock', () => {
     const registry = fresh();
     for (const [id, unpack] of [
       ['fixture_outer_box', { item: 'fixture_inner_box', count: 1, simSeconds: simSeconds(1) }],
       ['fixture_inner_box', { item: 'fixture_unpacked_payload', count: 1, simSeconds: simSeconds(1) }],
       ['fixture_unpacked_payload', undefined],
+      ['fixture_empty_vessel', undefined],
+      ['fixture_retained_food', undefined],
     ] as const) {
       registry.items.set(id, {
         id,
@@ -423,8 +425,15 @@ describe('static reachability', () => {
         weight: 1,
         size: [1, 1],
         ...(unpack ? { unpack } : {}),
+        ...(id === 'fixture_retained_food'
+          ? { food: { calories: 1, water: 0, consumeSimSeconds: simSeconds(1) } }
+          : {}),
       });
     }
+    registry.items.set('fixture_unpacked_payload', {
+      ...registry.items.get('fixture_unpacked_payload')!,
+      serving: { food: 'fixture_retained_food', empty: 'fixture_empty_vessel' },
+    });
     const junk = registry.loot.get('junk')!;
     registry.loot.set('junk', {
       ...junk,
@@ -432,7 +441,8 @@ describe('static reachability', () => {
     });
 
     const result = checkReachability(registry);
-    for (const id of ['fixture_outer_box', 'fixture_inner_box', 'fixture_unpacked_payload']) {
+    expect(result.components.has('fixture_retained_food')).toBe(false);
+    for (const id of ['fixture_outer_box', 'fixture_inner_box', 'fixture_unpacked_payload', 'fixture_empty_vessel']) {
       expect(result.found.has(id)).toBe(true);
       expect(result.components.has(id)).toBe(true);
       expect(result.toolReachable.has(id)).toBe(true);

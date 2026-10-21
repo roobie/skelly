@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { ADMISSION_ENTRIES } from '../tools/bundleStampPlugin.ts';
 import {
   collectSimulationSourceGraph,
+  FEASIBILITY_ENTRIES,
   fingerprintAfterHotChange,
   fingerprintSimulationSourceMap,
   fingerprintSimulationSources,
@@ -325,6 +326,30 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/core/authoredTerrain.d.mts')).toBe(false);
     // A vehicle piece's solid blocks come from its fitted parts, so that geometry decides collision.
     expect(graph.sources.has('src/vehicles/solid.ts')).toBe(true);
+  });
+
+  it('classifies the isolated feasibility graph separately from production and rejects WASM until explicitly owned', async () => {
+    const host = await actualSimulationHost();
+    const graph = await collectSimulationSourceGraph(FEASIBILITY_ENTRIES, projectRoot, host);
+    const modules = await sourceFilesUnder('src/vehicles/feasibility');
+    const erasedContracts = 'src/vehicles/feasibility/contract.ts';
+    expect(modules.filter((path) => !graph.sources.has(path) && path !== erasedContracts)).toEqual([]);
+    expect(graph.sources.has('src/config/vehicleFeasibility.json')).toBe(true);
+    expect(graph.sources.has('src/vehicles/feasibility/movingBody.ts')).toBe(true);
+    const entry = `${root}/src/core/sim.ts`;
+    const wasm = `${root}/src/core/candidate.wasm`;
+    await expect(
+      collectSimulationSourceGraph(
+        entries,
+        root,
+        hostFor(
+          new Map([
+            [entry, "import './candidate.wasm';"],
+            [wasm, 'fixture bytes'],
+          ]),
+        ),
+      ),
+    ).rejects.toThrow(UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR);
   });
 
   it('fingerprints pure mobgen modules imported by the simulation', async () => {

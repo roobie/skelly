@@ -5,8 +5,8 @@ import { dominantSide, offSide } from '../core/character.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
-import { consumption } from '../core/options.ts';
 import type { ItemDef } from '../core/schema.ts';
+import { openingTargetForHand } from './canOpening.ts';
 
 type PrimaryItemAction =
   | 'melee'
@@ -15,6 +15,7 @@ type PrimaryItemAction =
   | 'firearm'
   | 'key'
   | 'unpack'
+  | 'open-can'
   | 'pin'
   | 'read'
   | 'use'
@@ -23,7 +24,18 @@ type PrimaryItemAction =
 
 export type PrimaryActionSelection =
   | {
-      kind: 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'pin' | 'read' | 'use' | 'magazine';
+      kind:
+        | 'melee'
+        | 'light'
+        | 'ignite'
+        | 'firearm'
+        | 'key'
+        | 'unpack'
+        | 'open-can'
+        | 'pin'
+        | 'read'
+        | 'use'
+        | 'magazine';
       hand: HandSide;
       item: Item;
     }
@@ -49,7 +61,11 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   {
     kind: 'use',
     supports: (definition) =>
-      consumption(definition) !== undefined || definition.category === 'medical' || definition.treatment !== undefined,
+      definition.serving !== undefined ||
+      definition.food !== undefined ||
+      definition.analgesic !== undefined ||
+      definition.category === 'medical' ||
+      definition.treatment !== undefined,
   },
 ];
 
@@ -69,6 +85,7 @@ export const ignitionTargetForHand = (inventory: Inventory, hand: HandSide): Ite
 export const selectPrimaryAction = (
   inventory: Inventory,
   hand: HandSide = dominantSide(inventory.character),
+  selectedAction?: string,
 ): PrimaryActionSelection => {
   const { registry, hands, character } = inventory;
   const item = hands[hand];
@@ -85,7 +102,9 @@ export const selectPrimaryAction = (
 
   const definition = defOf(registry, item.type);
   // A magazine's capacity lives in its model, so its item actions are found through the registry.
-  const kind = magazineSpec(registry, item.type) ? 'magazine' : primaryActionForDefinition(definition);
+  const own = magazineSpec(registry, item.type) ? 'magazine' : primaryActionForDefinition(definition);
+  const kind =
+    selectedAction === 'open-can' || (own === 'none' && openingTargetForHand(inventory, hand)) ? 'open-can' : own;
   if (kind === 'melee' && item.condition <= 0) {
     return { kind: 'none', item };
   }

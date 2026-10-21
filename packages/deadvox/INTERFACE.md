@@ -46,6 +46,8 @@ A bound key in a hint or label is drawn as a key cap, a small bordered capital, 
 
 The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. The outline must not become a glowing substitute for seeing the object: it receives the scene's surface lighting, without emission or a minimum visibility floor. Its edge normals bisect the adjacent faces, so an edge cannot receive direct light when neither adjoining face faces the light. This keeps its yellow cue responsive to lamps and flashlights as well as the sky, rather than treating a sky-intensity estimate as surface brightness. See `src/render/interactionMarker.ts`, `markInteractionTarget`, and `src/render/furniture.ts`, `markerEdges`.
 
+The held-item action list is meta presentation: the held geometry cannot express which of several valid operations a click will perform. It shares the interaction-hint visibility policy but stays in the lower left so a choice does not cover the target. See `src/game/survival.ts`, `Survival.wieldedItemActionHint`, and `src/game/play.ts`, `promptText`.
+
 The optional stats readout is a tuning surface for viewing felt pain and its components during play. It is a development-style meta readout, not a bodily cue; this exception keeps the scale available for tuning without putting an unbounded number in player-facing cues.
 
 ## Combat and feedback
