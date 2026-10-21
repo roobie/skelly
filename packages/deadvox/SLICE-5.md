@@ -134,9 +134,9 @@ this plan retains only the cross-system obligations.
   invalidation without changing that grain; fluid fire is not required.
 - **Smoke effects:** smoke is a visual, sight-blocking field, so visible smoke has
   a sensory consequence rather than being decoration. Smoke inhalation levels are
-  deferred: they need a shared body-effect model for fire and firearm discharge,
-  not a fire-only health shortcut. Transported harmful volumes and ventilation are
-  not prerequisites for this slice.
+  deferred to #1074; reconsider them when a shared body-effect model exists for
+  fire and firearm discharge, avoiding a fire-only health shortcut. Transported
+  harmful volumes and ventilation are not prerequisites for this slice.
 - **Fire suppression:** include direct extinguishing, so players can act on a
   burning shelter rather than only remove fuel or retreat. Application resources
   and persistence need proof; detailed water/heat transport is not required.
@@ -144,8 +144,9 @@ this plan retains only the cross-system obligations.
   so covering windows changes exposure through an understandable source-visibility
   rule. Illuminated surfaces and diffuse glow recognition are outside this choice.
 - **Light reach:** affect nearby and background actors only. Regional light
-  effects are deferred to keep distant horde influence and its persistence outside
-  the base-light loop; local attention must not depend on rendering residency.
+  effects are deferred to #1075; reconsider them when regional horde influence and
+  its persistence enter scope, rather than expanding the base-light loop. Neither
+  is admitted by this plan; local attention must not depend on rendering residency.
 
 ### Settled bear-trap rules — issue #107
 
