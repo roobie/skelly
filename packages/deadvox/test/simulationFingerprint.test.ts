@@ -58,6 +58,7 @@ const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
+  'src/core/powerGraph.ts': 'Test-only electricity topology; no game runtime imports it.',
   'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
   'src/core/scenarioRoute.ts':
     'Test-only route-proof support; cityLots.ts imports only its types, and its value user scenarioCertificate.ts is test-only.',

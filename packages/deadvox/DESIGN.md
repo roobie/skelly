@@ -2066,8 +2066,10 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
     day), batteries (store energy), and consumers (lights, fridges, radios,
     workbench tools).
   - **Edges:** wires.
-  - Connected components are recomputed only when wiring changes. Each power
-    tick balances supply, storage and demand for each network.
+  - Topology is independent of energy balance so rate changes do not rebuild
+    networks. Derived membership stays out of snapshots to avoid restoring stale
+    networks; see `src/core/powerGraph.ts`, `PowerGraph`. Each power tick balances
+    supply, storage and demand for each network.
   - When a base catches up after being unloaded, the calculation is closed
     form: when the fuel ran out, then when the batteries emptied.
 - **Fire** is a world system: burn rate per material, spread to neighbouring
