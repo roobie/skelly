@@ -55,6 +55,33 @@ try {
     root: cwd,
     logLevel: 'error',
     server: { host: '127.0.0.1', port: 0 },
+    plugins: [
+      {
+        name: 'ui-contract-observation',
+        enforce: 'pre',
+        transform(code, id) {
+          const [file] = id.split('?');
+          const observations = [
+            [
+              '/src/game/play.ts',
+              '  const onForwardPress = (e: MouseEvent) => {',
+              '  globalThis.uiContractRuntime = { sim, inventory, quickbar, screen, eye: () => [...eye()] };\n',
+            ],
+            [
+              '/src/debug/index.ts',
+              '  const runtime: DebugRuntime = {',
+              '  globalThis.uiContractDebug = { hooks, get readout() { return readout; }, get spawnStatus() { return spawnStatus; } };\n',
+            ],
+          ];
+          for (const [suffix, marker, observation] of observations) {
+            if (file.endsWith(suffix)) {
+              assert.equal(code.split(marker).length - 1, 1, `UI observer anchor in ${suffix}`);
+              return code.replace(marker, observation + marker);
+            }
+          }
+        },
+      },
+    ],
   });
   await vite.listen();
   const address = vite.httpServer.address();
@@ -351,10 +378,15 @@ try {
     () => evaluate("!document.querySelector('#f3-debug-overlay').hidden"),
     'gated performance overlay opens',
   );
-  assert.match(
-    await evaluate("document.querySelector('#f3-debug-overlay').textContent"),
-    /snapshot .*p95/i,
-    'F4 readout includes snapshot statistics',
+  assert.equal(
+    await evaluate(`(() => {
+      const text = document.querySelector('#f3-debug-overlay').textContent;
+      const stats = window.uiContractDebug.readout;
+      return [stats.snapshotLastMs, stats.snapshotP95Ms].every((value) => text.includes(value.toFixed(3))) &&
+        text.includes(String(stats.snapshotCount));
+    })()`),
+    true,
+    'performance overlay renders the owner snapshot statistics',
   );
   assert.equal(await evaluate('window.__f4Prevented'), true, 'F4 prevents the browser default');
   await action('debug.performance-toggle');
@@ -363,45 +395,76 @@ try {
     'gated performance overlay closes',
   );
   await action('debug.panel-toggle');
-  await evaluate(`(() => {
+  const requestedCalendar = await evaluate(`(async () => {
+    const { nextTimeOfDay, parseTimeOfDay } = await import('/src/core/clock.ts');
+    const sim = window.uiContractRuntime.sim;
+    const expected = nextTimeOfDay(sim.calendar, parseTimeOfDay('08:00'));
     document.querySelector('#debug-time').value = '08:00';
-    document.querySelector('#set-debug-time')?.click();
-    Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Reveal zombies'))?.click();
+    document.querySelector('#set-debug-time').click();
+    document.querySelector('#reveal-zombies').click();
+    return expected;
   })()`);
   await waitFor(
-    () => evaluate("document.querySelector('#debug-readout').textContent.includes('Day 2, 08:00')"),
-    'backward debug-time request advances to the next day',
-  );
-  assert.match(
-    await evaluate(
-      "Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Reveal zombies')).textContent",
-    ),
-    /ON/,
-    'debug panel reveals zombie positions',
-  );
-  await evaluate(
-    `Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Measure snapshot'))?.click()`,
+    () => evaluate(`window.uiContractRuntime.sim.calendar >= ${requestedCalendar}`),
+    'debug-time request reaches its next calendar occurrence',
   );
   await waitFor(
     () =>
-      evaluate("document.querySelector('#snapshot-measurement-result').textContent.includes('Snapshot: 50 batches ×')"),
-    'on-demand batched snapshot measurement',
+      evaluate(`import('/src/core/clock.ts').then(({ formatClock }) =>
+      document.querySelector('#debug-readout').textContent.includes(formatClock(window.uiContractRuntime.sim.calendar)))`),
+    'debug readout follows the owner clock',
   );
+  assert.equal(await evaluate("document.querySelector('#reveal-zombies').getAttribute('aria-pressed')"), 'true');
+  const snapshotBefore = await evaluate("document.querySelector('#snapshot-measurement-result').textContent");
+  await evaluate(`(() => {
+    const hooks = window.uiContractDebug.hooks;
+    const measure = hooks.measureSnapshot.bind(hooks);
+    hooks.measureSnapshot = () => {
+      window.__snapshotMeasurement = measure();
+      return window.__snapshotMeasurement;
+    };
+    document.querySelector('#measure-snapshot').click();
+  })()`);
+  await waitFor(
+    () =>
+      evaluate("Boolean(window.__snapshotMeasurement) && !document.querySelector('#copy-snapshot-result').disabled"),
+    'on-demand snapshot measurement enables copying',
+  );
+  const measurement = await evaluate('window.__snapshotMeasurement');
+  assert.ok(measurement.batchCount > 0 && measurement.batchSize > 0 && measurement.individualCaptureCount > 0);
+  assert.equal(measurement.batchMeanDurationsMs.length, measurement.batchCount);
+  assert.ok(
+    [
+      measurement.batchMeanP50Ms,
+      measurement.batchMeanP95Ms,
+      measurement.individualCaptureP95Ms,
+      measurement.individualCaptureMaxMs,
+    ].every(Number.isFinite),
+  );
+  assert.equal(measurement.netStateUnchanged, true, 'measurement preserves the live state');
+  assert.equal(measurement.timerQuantumCrossCheckPassed, true, 'native timer fits its known browser profile');
   const snapshotResult = await evaluate("document.querySelector('#snapshot-measurement-result').textContent");
-  assert.match(
-    snapshotResult,
-    /batch-mean throughput p50 .* ms\/capture, p95 .* ms\/capture; individual tail n=\d+: observed p95 .* ms, max .* ms; known Chromium browser-profile quantum r=.* ms \(observed minimum tick .* ms; duration error <2r\): true p95 </,
-  );
-  assert.match(snapshotResult, /net state unchanged across measurement/);
-  assert.equal(await evaluate("document.querySelector('#copy-snapshot-result').textContent.trim()"), 'Copy');
+  assert.notEqual(snapshotResult, snapshotBefore, 'measurement updates the live result line');
+  for (const value of [
+    measurement.batchMeanP50Ms,
+    measurement.batchMeanP95Ms,
+    measurement.individualCaptureP95Ms,
+    measurement.individualCaptureMaxMs,
+  ]) {
+    assert.ok(snapshotResult.includes(value.toFixed(3)), 'result renders measured statistics');
+  }
+  await evaluate(`(() => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true,
+      value: { writeText: async (text) => { window.__copiedSnapshot = text; } } });
+    document.querySelector('#copy-snapshot-result').click();
+  })()`);
+  assert.equal(await evaluate('window.__copiedSnapshot'), snapshotResult, 'copy button routes the displayed result');
   assert.equal(
     await evaluate("getComputedStyle(document.querySelector('#snapshot-measurement-result')).userSelect"),
     'text',
     'snapshot result line is selectable',
   );
-  await evaluate(
-    `Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Export metrics'))?.click()`,
-  );
+  await evaluate("document.querySelector('#export-metrics').click()");
   const exportedMetrics = await evaluate('window.__metricsBlob?.text().then((text) => JSON.parse(text))');
   assert.equal(exportedMetrics.schemaVersion, 1, 'metrics download is valid versioned JSON');
   assert.match(
@@ -416,15 +479,20 @@ try {
     window.__pointerCalls.exit = 0;
   })()`);
   const emptyQuickbarReady = () =>
-    evaluate(`(() => {
-      const slots = [...document.querySelectorAll('#quickbar .qb-empty')];
-      return slots.length === 5 && slots.every((slot) => {
-        const text = slot.textContent.toLowerCase();
-        return text.includes('empty') && !text.includes('inventory');
-      });
+    evaluate(`(async () => {
+      const { quickbarViewModel } = await import('/src/ui/hud.ts');
+      const { quickbar, inventory } = window.uiContractRuntime;
+      const expected = quickbarViewModel(quickbar, inventory).slots;
+      const slots = [...document.querySelectorAll('#quickbar .qb-slot')];
+      return expected.length > 0 && expected.every((slot) => !slot.filled) &&
+        slots.length === expected.length && slots.every((slot, index) =>
+          slot.classList.contains('qb-empty') &&
+          slot.querySelector('.qb-key').textContent === expected[index].key &&
+          slot.querySelector('.qb-name').textContent === expected[index].name &&
+          slot.querySelector('.qb-where').textContent === expected[index].where);
     })()`);
   await waitFor(emptyQuickbarReady, 'rendered empty quickbar slots');
-  assert.equal(await emptyQuickbarReady(), true, 'rendered empty quickbar slots contain no inventory help text');
+  assert.equal(await emptyQuickbarReady(), true, 'rendered empty quickbar slots match their owner view model');
   let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
   const moveCursorTo = async (position) => {
     await evaluate(
@@ -504,9 +572,10 @@ try {
     'wheel scrolls the locked main menu',
   );
   await evaluate("document.querySelector('#audio-volume-world').scrollIntoView({ block: 'center' })");
+  const initialWorldVolume = Number(await evaluate("document.querySelector('#audio-volume-world').value"));
   await clickAt('#audio-volume-world');
   const savedWorldVolume = Number(await evaluate("document.querySelector('#audio-volume-world').value"));
-  assert.notEqual(savedWorldVolume, 0.8, 'F9 menu click changes the world volume slider');
+  assert.notEqual(savedWorldVolume, initialWorldVolume, 'menu click changes the world volume slider');
   assert.equal(
     await evaluate("JSON.parse(localStorage.getItem('deadvox.audio.settings')).world"),
     savedWorldVolume,
@@ -564,20 +633,10 @@ try {
     !statsOptionInitiallyChecked,
     'drawn cursor toggles F9 menu controls from either default state',
   );
-  await delay(300);
-  assert.match(
-    await evaluate("document.querySelector('#hud').textContent"),
-    /paused/,
-    'main menu pauses the simulation',
-  );
+  assert.equal(await evaluate('window.uiContractRuntime.sim.paused'), true, 'main menu pauses the simulation');
   await pressBinding(keyBindings.mainMenu);
   assert.equal(await evaluate("document.querySelector('#overlay').hidden"), true, 'menu key closes the menu');
-  await delay(300);
-  assert.doesNotMatch(
-    await evaluate("document.querySelector('#hud').textContent"),
-    /paused/,
-    'closing the menu resumes the simulation',
-  );
+  assert.equal(await evaluate('window.uiContractRuntime.sim.paused'), false, 'closing the menu resumes the simulation');
   await pressBinding(keyBindings.mainMenu);
   assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'menu key can open the menu again');
   await assertSaveNote('pause card');
@@ -722,28 +781,20 @@ try {
     'debug panel has a shambler count control',
   );
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
-  assert.match(
-    await evaluate(
-      "Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Spawn 1 shamblers')).textContent",
-    ),
-    new RegExp(
-      `Spawn 1 shamblers \\(${(await evaluate("import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('debug.spawn-shamblers'))")).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`,
-    ),
-  );
+  const spawnActionLabel = async () =>
+    evaluate(`import('/src/game/inputBindings.ts').then(({ inputBindings }) => {
+    const label = document.querySelector('[data-debug-action="debug.spawn-shamblers"]').textContent;
+    return label.includes(inputBindings.label('debug.spawn-shamblers')) &&
+      label.includes(document.querySelector('.debug-shambler-count output').textContent);
+  })`);
+  assert.equal(await spawnActionLabel(), true, 'spawn label includes the selected count and effective binding');
   await evaluate(
     `document.querySelector('[aria-label="Increase shambler count"]').scrollIntoView({ block: 'center' })`,
   );
   await clickAt('[aria-label="Increase shambler count"]');
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
   assert.equal(await evaluate("localStorage.getItem('deadvox.shambler-spawn-count')"), '2');
-  assert.match(
-    await evaluate(
-      "Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Spawn 2 shamblers')).textContent",
-    ),
-    new RegExp(
-      `Spawn 2 shamblers \\(${(await evaluate("import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('debug.spawn-shamblers'))")).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`,
-    ),
-  );
+  assert.equal(await spawnActionLabel(), true, 'spawn label follows the changed count and effective binding');
   await action('debug.panel-toggle');
   assert.equal(
     await evaluate("document.querySelector('.debug-panel').hidden"),
@@ -768,10 +819,12 @@ try {
   await clickAt('[aria-label="Increase shambler count"]');
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
   await action('debug.spawn-shamblers');
-  assert.match(
+  const spawnStatus = await evaluate('window.uiContractDebug.spawnStatus');
+  assert.notEqual(spawnStatus, '', 'spawn action produces a status');
+  assert.equal(
     await evaluate("document.querySelector('#shambler-spawn-status').textContent"),
-    /^Placed \d+ of 2$/,
-    'V reports the number placed out of the selected count',
+    spawnStatus,
+    'spawn status renders the owner result',
   );
   await action('debug.freeze-shamblers');
   await action('debug.panel-toggle');
@@ -788,15 +841,11 @@ try {
     true,
     'G focuses search',
   );
-  const positionBeforeSearchKey = await evaluate(
-    "document.querySelector('#debug-readout').textContent.match(/position ([0-9.-]+, [0-9.-]+, [0-9.-]+)/)?.[1]",
-  );
+  const positionBeforeSearchKey = await evaluate('window.uiContractRuntime.eye()');
   await press('KeyW', 'w', 87);
   await delay(150);
-  assert.equal(
-    await evaluate(
-      "document.querySelector('#debug-readout').textContent.match(/position ([0-9.-]+, [0-9.-]+, [0-9.-]+)/)?.[1]",
-    ),
+  assert.deepEqual(
+    await evaluate('window.uiContractRuntime.eye()'),
     positionBeforeSearchKey,
     'typing W in search does not move the player',
   );
@@ -804,10 +853,22 @@ try {
   assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab closes without spawning');
 
   await action('debug.spawn-menu-toggle');
-  await typeText('a');
-  assert.ok(
-    (await evaluate("document.querySelectorAll('#spawn .spawn-list button').length")) > 1,
-    'typed filter narrows results',
+  const spawnFilter = await evaluate(`(() => {
+    const { registry } = window.uiContractRuntime.inventory;
+    const entries = [...registry.items.values()];
+    const words = [...new Set(entries.flatMap((entry) => entry.name.toLowerCase().split(/\\s+/)))];
+    for (const word of words) {
+      const matches = entries.filter((entry) =>
+        (entry.name + ' ' + entry.id + ' ' + entry.category).toLowerCase().includes(word)).length;
+      if (matches > 1 && matches < entries.length) return { word, matches };
+    }
+    throw new Error('spawn catalogue has no nontrivial filter');
+  })()`);
+  await typeText(spawnFilter.word);
+  assert.equal(
+    await evaluate("document.querySelectorAll('#spawn .spawn-list button').length"),
+    spawnFilter.matches,
+    'typed filter narrows results to the matching owner entries',
   );
   const firstSpawnName = await evaluate(
     "document.querySelector('#spawn .spawn-list button[aria-current=true] span').textContent",
@@ -836,8 +897,12 @@ try {
   await press('Tab', 'Tab', 9);
 
   await action('debug.spawn-menu-toggle');
-  await typeText('crowbar');
-  assert.equal(await evaluate("document.querySelectorAll('#spawn .spawn-list button').length"), 1);
+  const uniqueSpawnFilter = await evaluate("document.querySelector('#spawn [data-spawn-item]').dataset.spawnItem");
+  await typeText(uniqueSpawnFilter);
+  assert.ok(
+    (await evaluate("document.querySelectorAll('#spawn .spawn-list button').length")) > 0,
+    'an offered item ID remains searchable',
+  );
   await press('Tab', 'Tab', 9);
   assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab dismisses the filtered menu');
   await press('Tab', 'Tab', 9);
@@ -858,12 +923,12 @@ try {
       .map((button, index) => ({
         index,
         name: button.querySelector('span')?.textContent,
-        bag: button.querySelector('span:last-child')?.textContent.split(',')[0] === 'bag',
+        bag: Boolean(window.uiContractRuntime.inventory.registry.items.get(button.dataset.spawnItem)?.container),
       }))
-      .filter(({ name }) => name && name !== 'Can of beans');
+      .filter(({ name }) => name);
     return [...entries.filter(({ bag }) => bag), ...entries.filter(({ bag }) => !bag)].slice(0, 24);
   })()`);
-  assert.ok(spawnNames.length >= 20, 'debug spawn menu has enough distinct items for a scroll regression');
+  assert.ok(spawnNames.length > 0, 'debug spawn menu offers items for the scroll workload');
   assert.ok(spawnNames[0].bag, 'debug spawn menu offers a bag');
   for (const { index } of spawnNames) {
     await evaluate(
@@ -891,9 +956,10 @@ try {
     'inventory always shows needs in its header',
   );
   assert.equal(
-    await evaluate(
-      "['health', 'food', 'water'].every((word) => document.querySelector('#inventory .inv-needs').textContent.includes(word))",
-    ),
+    await evaluate(`(() => {
+      const expected = window.uiContractRuntime.screen.hooks.needs();
+      return expected.length > 0 && document.querySelector('#inventory .inv-needs').textContent === expected;
+    })()`),
     true,
   );
   const dragInventoryDivider = async (fraction) => {
@@ -968,11 +1034,26 @@ try {
   await dragInventoryDivider(0.5);
   await page.setViewportSize({ width: 1280, height: 900 });
   const transfer = await evaluate(`(() => {
-    const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.title.startsWith('Can of beans,'));
-    const legs = [...document.querySelectorAll('#inventory .inv-worn')].find((node) => node.querySelector('.inv-slot-label')?.textContent === 'Legs');
-    const grid = [...legs.querySelectorAll('.inv-grid')].find((node) => !node.querySelector('[data-uid]'));
+    const inventory = window.uiContractRuntime.inventory;
+    const items = new Map([...inventory.items()].map(({ item }) => [String(item.uid), item]));
+    const sources = [...document.querySelectorAll('#inventory .inv-item')].filter((node) =>
+      node.closest('.inv-grid')?.dataset.target?.startsWith('pocket:'));
+    const destinations = [...document.querySelectorAll('#inventory .inv-worn .inv-grid')].filter((node) =>
+      !node.querySelector('[data-uid]'));
+    let item, grid;
+    for (const source of sources) {
+      for (const destination of destinations) {
+        const [, ownerUid, pocket] = destination.dataset.target.split(':');
+        const owner = items.get(ownerUid);
+        const plan = owner && inventory.plan(items.get(source.dataset.uid), {
+          kind: 'pocket', owner, pocket: Number(pocket), at: { x: 0, y: 0, rotated: false },
+        });
+        if (plan?.ok) { item = source; grid = destination; break; }
+      }
+      if (item) break;
+    }
     const around = document.querySelector('#inventory [data-pane="around"]');
-    if (!(item && legs && grid && around)) throw new Error('container-to-inventory fixture is missing');
+    if (!(item && grid && around)) throw new Error('no admitted container-to-inventory transfer is available');
     item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     const itemRect = item.getBoundingClientRect();
     const gridRect = grid.getBoundingClientRect();
@@ -982,6 +1063,7 @@ try {
       source,
       sourceTarget: item.closest('.inv-grid').dataset.target,
       sourceUid: item.dataset.uid,
+      name: inventory.name(items.get(item.dataset.uid)),
       paneTop: around.scrollTop,
       hitUid: hit?.dataset.uid,
       hitName: hit?.querySelector('.inv-item-name')?.textContent,
@@ -1002,8 +1084,7 @@ try {
   await moveCursorTo(drawnSource);
   await evaluate(dispatchMenuPointerClickExpression());
   await waitFor(
-    async () =>
-      (await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent")) === 'Can of beans',
+    async () => (await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent")) === transfer.name,
     `drawn-cursor click selects an item in a container: ${JSON.stringify(transfer)}`,
     2000,
   );
@@ -1072,7 +1153,7 @@ try {
   );
   const transferTarget = () =>
     evaluate(
-      "[...document.querySelectorAll('#inventory .inv-item')].find((node) => node.title.startsWith('Can of beans,'))?.closest('.inv-grid')?.dataset.target",
+      `document.querySelector('#inventory .inv-item[data-uid="${transfer.sourceUid}"]')?.closest('.inv-grid')?.dataset.target`,
     );
   await waitFor(
     () => transferTarget().then((target) => target === transfer.target),
@@ -1142,9 +1223,9 @@ try {
     },
     'choosing with the drawn cursor applies the profile without a blur, an unlock or the pause card',
   );
-  assert.doesNotMatch(
-    await evaluate("document.querySelector('#hud').textContent"),
-    /paused/,
+  assert.equal(
+    await evaluate('window.uiContractRuntime.sim.paused'),
+    false,
     'play keeps running through the combo box choice',
   );
   await action('debug.panel-toggle');

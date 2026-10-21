@@ -22,6 +22,8 @@ read_if:
 
 Tests leave mutable development data unasserted so they do not freeze work in progress (`AGENTS.md`, "Tests"). This register records manual checks and the trigger for pinning a value.
 
+Native browser checks retain integration boundaries without freezing shipped tuning or copy: owner-derived expectations let content change while still detecting broken presentation and input routing. See `packages/deadvox/tools/ui-browser-contract.mjs`, `emptyQuickbarReady`, and `packages/deadvox/test/browser/full-auto.mjs`, `tuning`.
+
 When you remove or skip a drifting assertion, add a row here in the same PR. Remove its row when the value becomes a stable assertion.
 
 A "Pin when" names an item or an issue, so a merge can tell when its row is due. Rows due at v1.0 beta cite #1023, the one open `blocker` issue labelled `gate:v1.0-beta`, so the beta gate cannot close while their values are unpinned (`docs/PROCESS.md`, "Playtest discoveries").
