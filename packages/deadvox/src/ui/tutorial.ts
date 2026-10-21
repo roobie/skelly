@@ -25,6 +25,12 @@ const stageTopics: Record<Tutorial['stage'], string> = {
 const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn }: TutorialPresentation) => {
   const action = (id: string, label: string) => html`<span data-tutorial-action=${id}>${label} ${keyCap(id)}</span>`;
   const inventoryAction = action('ui.inventory-toggle', inventoryOpen ? 'Close inventory' : 'Inventory');
+  const quickAction = html`
+    <span data-tutorial-action="inventory.quick-action-gate">
+      Quick action ${keyCap('inventory.quick-action-gate')} +
+      <span data-tutorial-action="hand.use-dominant">${keyCap('hand.use-dominant')}</span>
+    </span>
+  `;
   const wield = (label: string) =>
     inventoryOpen
       ? html`${label}: ${action('inventory.hands', 'Wield selected item')}`
@@ -50,7 +56,13 @@ const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn
     move: html`${action('movement.forward', 'Forward')} · ${action('movement.back', 'Back')} · ${action('movement.left', 'Left')} · ${action('movement.right', 'Right')} · ${action('pointer.look', 'Look')}`,
     door: action('world.interact', 'Open station door'),
     loot: inventoryOpen
-      ? html`${action('inventory.search', 'Search supplies')} · ${action('inventory.best-pocket', 'Take selected item')}`
+      ? html`
+          ${action('inventory.previous', 'Select previous')} · ${action('inventory.next', 'Select next')} ·
+          ${action('inventory.best-pocket', 'Take selected')} · ${action('inventory.hands', 'Wield selected')} ·
+          ${action('inventory.wear', 'Wear or remove')}
+          <br />
+          ${action('inventory.search', 'Search supplies')} · ${quickAction}
+        `
       : inventoryAction,
     hands: wield('Can of beans'),
     eat: stage === 'eat' ? eatHint() : '',

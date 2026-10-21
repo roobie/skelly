@@ -167,6 +167,7 @@ try {
         const { Unpacking } = await import('/src/game/unpacking.ts');
         const { toHands } = await import('/src/core/options.ts');
         const { dominantSide } = await import('/src/core/character.ts');
+        const { inputBindings } = await import('/src/game/inputBindings.ts');
         // Own fixture inventory: no injected progress or inventory changes in the playing session.
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const bag = inventory.create('hiking_backpack');
@@ -182,6 +183,18 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
+        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        lootTutorial.observe({
+          position: [8, 0, 0],
+          yaw: 1,
+          crouching: false,
+          doorOpen: true,
+          searched: false,
+          looted: false,
+          wielded: false,
+          lightOn: false,
+          paused: false,
+        });
         const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
         tutorial.observe({
           position: [8, 0, 0],
@@ -207,6 +220,22 @@ try {
             [...document.querySelectorAll('#tutorial-objective [data-tutorial-action]')].map(
               (node) => node.dataset.tutorialAction,
             );
+          mountTutorial(
+            lootTutorial,
+            () => undefined,
+            () => undefined,
+          )({
+            inventory,
+            inventoryOpen: true,
+            lightOn: false,
+          });
+          const loot = actions();
+          const lootCaps = Object.fromEntries(
+            [...document.querySelectorAll('#tutorial-objective [data-tutorial-action]')].map((node) => [
+              node.dataset.tutorialAction,
+              node.querySelector('kbd')?.textContent,
+            ]),
+          );
           draw({ inventory, inventoryOpen: false, lightOn: false });
           const sealed = actions();
           if (unpacking.activate(can) !== undefined || queue.tick(queue.remaining).failed.length > 0) {
@@ -223,11 +252,37 @@ try {
             throw new Error('Opened food must be recoverable through ordinary Hands');
           }
           draw({ inventory, inventoryOpen: false, lightOn: false });
-          return { sealed, opened, eating: actions(), stage: tutorial.stage };
+          return {
+            loot,
+            lootCaps,
+            labels: Object.fromEntries(loot.map((id) => [id, inputBindings.label(id)])),
+            sealed,
+            opened,
+            eating: actions(),
+            stage: tutorial.stage,
+          };
         } finally {
           gauntletWitness.manual = false;
         }
       });
+      const lootActions = [
+        'inventory.previous',
+        'inventory.next',
+        'inventory.best-pocket',
+        'inventory.hands',
+        'inventory.wear',
+        'inventory.search',
+        'inventory.quick-action-gate',
+        'hand.use-dominant',
+      ];
+      assert(
+        lootActions.every((id) => canHints.loot.includes(id)),
+        'open inventory covers each loot action',
+      );
+      assert(
+        lootActions.every((id) => canHints.lootCaps[id] === canHints.labels[id]),
+        'open inventory loot actions use their live registry labels',
+      );
       assert(canHints.sealed.includes('hand.use-dominant'), 'sealed can points to hand activation');
       assert(canHints.opened.includes('inventory.hands'), 'unpacked food points to taking it into hand');
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
