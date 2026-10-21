@@ -1,0 +1,76 @@
+{
+  "footprintMetres": [6, 3],
+  "heightMetres": 4,
+  "loads": [
+    {
+      "id": "unloaded",
+      "massKg": 0,
+      "offsetMetres": [0, 0, 0],
+      "rigid": true
+    },
+    {
+      "id": "low-central",
+      "massKg": 250,
+      "offsetMetres": [0, 0.5, 0],
+      "rigid": true
+    },
+    {
+      "id": "high-offset",
+      "massKg": 250,
+      "offsetMetres": [0.75, 2, 0],
+      "rigid": true
+    }
+  ],
+  "maxAllocationsPerTick": 256,
+  "maxBroadphasePairsPerBody": 68,
+  "maxCcdIterationsPerBody": 16,
+  "maxCompoundBoxes": 16,
+  "maxContactsPerBody": 32,
+  "maxLedgeMetres": 0.10000000000000001,
+  "maxMovingBodies": 4,
+  "maxNarrowphaseTestsPerBody": 1088,
+  "maxNearbyStaticColliders": 64,
+  "maxSavedBytesPerBody": 1048576,
+  "maxSlopeGradient": 0.25,
+  "maxSubstepsPerTick": 1,
+  "maxSupportedDropMetres": 0.10000000000000001,
+  "maxTerrainCellsPerBody": 128,
+  "maxTicksPerDispatch": 32,
+  "probe": {
+    "coarseAtTick": 401,
+    "durationTicks": 1200,
+    "eventPeriodTicks": 13,
+    "groundHeightMetres": 0,
+    "halfHeightMetres": 0.5,
+    "id": "harness-moving-body",
+    "nearAtTick": 803,
+    "pendingQuantaAtSave": 333,
+    "phasePeriodTicks": 7,
+    "positionMetres": [0, 0.5, 0],
+    "resource": 100,
+    "saveAtTick": 517,
+    "velocityMetresPerSecond": [1, 0, 0],
+    "warmupTicks": 120
+  },
+  "proposal": true,
+  "proposedVehicleCpuP99Milliseconds": 2,
+  "proposedVehicleMemoryBytes": 16777216,
+  "quantaPerTick": 1000,
+  "schedulesQuanta": {
+    "irregular": [0, 333, 1667, 48000],
+    "restored": [17000, 0, 999, 1]
+  },
+  "speedMetresPerSecond": 25,
+  "spinRadiansPerSecond": 1.5,
+  "tickHz": 120,
+  "tolerances": {
+    "crossEngineBits": 0,
+    "nearCatchupMetres": 0.01,
+    "passiveEnergyRelative": 0.0001,
+    "penetrationMetres": 0.0040000000000000001,
+    "skinMetres": 0.002,
+    "supportGapMetres": 0.0040000000000000001
+  },
+  "units": "metres-kilograms-seconds",
+  "unsafeDropMetres": 2
+}
