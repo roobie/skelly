@@ -1076,8 +1076,10 @@ describe('MobActorMeshes reactions', () => {
 
       renderer.sync(store, 1 / 60, 1);
       expect(renderer.isTracked(id)).toBe(true);
-      for (let frame = 0; frame < 300 && renderer.isTracked(id); frame++) {
-        renderer.sync(store, 0.1, 1);
+      const step = 0.1;
+      const lifetime = DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
+      for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
+        renderer.sync(store, step, 1);
       }
       expect(renderer.isTracked(id)).toBe(false);
     } finally {
@@ -1223,10 +1225,12 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.zombieDied(id, zombie);
       store.remove(id);
 
+      const step = 0.1;
       let previous = renderer.boneMatrix(id, 'pelvis')![7]!;
       let lying: number | undefined;
-      for (let frame = 0; frame < 300 && lying === undefined; frame++) {
-        renderer.sync(store, 0.1, 1, true);
+      // One extra sample after the fall distinguishes lying still from falling.
+      for (let frame = 0; frame <= Math.ceil(DEATH_FALL_DURATION / step) && lying === undefined; frame++) {
+        renderer.sync(store, step, 1, true);
         const current = renderer.boneMatrix(id, 'pelvis')![7]!;
         if (current === previous) {
           lying = current;
@@ -1235,8 +1239,9 @@ describe('MobActorMeshes dismemberment', () => {
       }
       expect(lying).toBeDefined();
       let sank = false;
-      for (let frame = 0; frame < 300 && renderer.isTracked(id); frame++) {
-        renderer.sync(store, 0.1, 1, true);
+      const lifetime = DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
+      for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
+        renderer.sync(store, step, 1, true);
         const pelvis = renderer.boneMatrix(id, 'pelvis');
         sank ||= pelvis !== undefined && pelvis[7]! < lying!;
       }
@@ -1259,15 +1264,21 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.zombieSevered(id, 'hand.L');
       expect(renderer.debrisCountFor(id)).toBe(1);
 
+      const step = 0.1;
+      // Separate physics search budget: allow the launched hand to fall, bounce and sleep on the flat floor.
+      // This is a fixture settlement limit, not a corpse-lifecycle tuning value.
+      const settlementBudget = 10;
+      const horizon = settlementBudget + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
       let observedSleep = false;
-      for (let frame = 0; frame < 1000 && renderer.debrisCountFor(id) > 0; frame++) {
-        renderer.sync(store, 0.1, 1);
+      for (let frame = 0; frame <= Math.ceil(horizon / step) && renderer.debrisCountFor(id) > 0; frame++) {
+        renderer.sync(store, step, 1);
         const entries = debrisEntries(renderer);
         for (const debris of entries.values()) {
           if (!debris.body.asleep || debris.groundedAt === undefined) {
             continue;
           }
           observedSleep = true;
+          expect(debris.groundedAt).toBeLessThanOrEqual(settlementBudget);
           if (debris.elapsed < debris.groundedAt + CORPSE_LIFECYCLE.lieSimSeconds) {
             const bodyRotation = quatToMat3(debris.body.orientation);
             const lowest =
@@ -1467,11 +1478,16 @@ describe('MobActorMeshes dismemberment', () => {
   });
 
   it('debris counts toward the corpse cap, evicting the oldest dead thing first', () => {
-    const renderer = new MobActorMeshes(0.5, 20, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 }); // one shared variant, room for 17 dead things
+    const population = CORPSE_LIFECYCLE.maxCorpses + 1;
+    // Leave a live source row alongside every debris row so variant overflow cannot cause the eviction.
+    const renderer = new MobActorMeshes(0.5, population + 1, {
+      figureSeeds: figureSeedPool(registry.zombies),
+      poolSize: 1,
+    });
     try {
       const store = new MapEntityStore<Zombie>();
       const ids: number[] = [];
-      for (let i = 0; i < 17; i++) {
+      for (let i = 0; i < population; i++) {
         const zombie = makeZombie([i, 0, 0]);
         const id = store.add(zombie);
         renderer.sync(store, 1 / 60, 1);
@@ -1480,10 +1496,9 @@ describe('MobActorMeshes dismemberment', () => {
         renderer.sync(store, 1 / 60, 1); // prunes the (now-vanished) live entry; the debris itself survives
         ids.push(id);
       }
-      // The very first debris was evicted once the 17th arrived (MAX_CORPSES is 16).
       expect(renderer.debrisCountFor(ids[0]!)).toBe(0);
-      for (let i = 1; i < 17; i++) {
-        expect(renderer.debrisCountFor(ids[i]!)).toBe(1);
+      for (const id of ids.slice(1)) {
+        expect(renderer.debrisCountFor(id)).toBe(1);
       }
     } finally {
       renderer.dispose();
