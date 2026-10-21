@@ -7,7 +7,7 @@
         "usage": []
       },
       "id": "opened_beans",
-      "model": "canned_beans",
+      "model": "opened_beans",
       "name": "Opened can of beans",
       "serving": {
         "empty": "empty_can",
@@ -23,7 +23,7 @@
         "usage": []
       },
       "id": "opened_soup",
-      "model": "canned_soup",
+      "model": "opened_soup",
       "name": "Opened can of soup",
       "serving": {
         "empty": "empty_can",
@@ -39,7 +39,7 @@
         "usage": []
       },
       "id": "empty_can",
-      "model": "canned_beans",
+      "model": "empty_can",
       "name": "Empty can",
       "size": [1, 2],
       "weight": 100
