@@ -3,6 +3,7 @@ import type { Vec3 } from '../core/coords.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import type { NightVision } from '../core/schema.ts';
 import { type LightPool, NIGHT_VISION_HALOS } from './lightPool.ts';
+import type { Mood } from './mood.ts';
 
 /** A light the goggles may look into: its position in metres and its brightness. */
 export interface FlareSource {
@@ -52,6 +53,43 @@ export const flareSources = (
     sources.push({ position, brightness: blastIntensity * remaining });
   }
   return sources;
+};
+
+/** Shared frame path: collect live sources only while the goggles are shown, preserving recovery between frames. */
+export const createNightVisionFlareUpdate = ({
+  mood,
+  pool,
+  fireballs,
+  camera,
+  isSolid,
+  blockSize,
+}: {
+  readonly mood: Pick<Mood, 'setNightVisionFlare'> | undefined;
+  readonly pool: Pick<LightPool, 'lights' | 'flareSkipped'>;
+  readonly fireballs: () => Iterable<{ readonly position: Vector3; readonly remaining: number }>;
+  readonly camera: Camera;
+  readonly isSolid: SolidAt;
+  readonly blockSize: number;
+}): ((view: NightVision | undefined, dt: number) => void) => {
+  let last = 0;
+  return (view, dt) => {
+    if (!(mood && view)) {
+      last = 0;
+      mood?.setNightVisionFlare(NO_FLARE);
+      return;
+    }
+    const flare = nightVisionFlare({
+      sources: flareSources(pool, fireballs(), view.flare.blastIntensity),
+      camera,
+      view,
+      isSolid,
+      blockSize,
+      dt,
+      last,
+    });
+    last = flare.washout;
+    mood.setNightVisionFlare(flare);
+  };
 };
 
 const inCamera = new Vector3();

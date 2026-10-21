@@ -1,18 +1,13 @@
-// Opt-in: the benchmarks render through the game's mood pass (bloom, grade, film, height fog, shadows) with
-// a fixed look, so frame times with and without post-processing can be compared. `&post=1` on a bench URL
-// turns it on; without it the benchmarks draw with `renderer.render` and three.js's own defaults, as they
-// always did, so older results still compare. The flag is carried from run to run by each bench's nextUrl.
-// Its URL parameter is read here, not in run.ts or shamblers.ts, because the site launcher offers only the
-// parameters those read (test/site-launcher.test.mjs); this is a benchmark option, like the debug look
-// parameters, not something to launch from the site page.
-
 import { requireDayCycle } from '../core/content.ts';
-import { AUTO_TONE, DEFAULT_SHADOWS, type LookState, type MoodState } from '../core/mood.ts';
+import { lookDefaultsOf } from '../core/lookDefaults.ts';
+import { AUTO_TONE, DEFAULT_SHADOWS, type LookState, lookOf, type MoodState, moodOf } from '../core/mood.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather } from '../core/weather.ts';
 import type { GameConfig } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
+import type { LightPool } from '../render/lightPool.ts';
 import { applyLook } from '../render/look.ts';
+import { createNightVisionFlareUpdate } from '../render/nightVisionFlare.ts';
 
 // The benchmark's own look, fixed so results stay comparable whatever the game's default look is: every
 // effect on, which is the full cost of the mood pass.
@@ -40,12 +35,7 @@ export const benchNightVisionFromUrl = (params: URLSearchParams): boolean => par
 export const postUrlPart = (post: boolean, nightVision = false): string =>
   `${post ? '&post=1' : ''}${nightVision ? '&nightVision=1' : ''}`;
 
-/**
- * What a bench calls instead of `renderer.render(scene, camera)` each frame. With `post` it applies the
- * bench look once and returns a draw through the mood pass at `hour` (no weather beyond the default
- * fogginess, no held items); without, the plain render. The distance fog and far plane stay the bench's own.
- * The optional callback samples scene counters before post-processing overwrites renderer.info.
- */
+/** Scene counters before post-processing overwrites renderer.info. */
 interface BenchSceneRenderStats {
   readonly calls: number;
   readonly triangles: number;
@@ -55,6 +45,8 @@ export interface BenchDrawOptions {
   readonly post: boolean;
   readonly nightVision: boolean;
   readonly skyAngle: number;
+  readonly playLook?: boolean;
+  readonly lightPool?: LightPool;
   readonly reportSceneRender?: (stats: BenchSceneRenderStats) => void;
 }
 
@@ -67,14 +59,15 @@ export const benchDraw = (engine: RenderedEngine, options: BenchDrawOptions): ((
   const report = (): void => {
     reportSceneRender?.({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles });
   };
-  if (!post) {
+  if (!(post || nightVision || options.playLook)) {
     return () => {
       renderer.render(scene, camera);
       report();
     };
   }
-  applyLook(renderer, engine.meshes, BENCH_LOOK);
-  mood.restore(BENCH_MOOD);
+  const defaults = lookDefaultsOf(engine.registry);
+  applyLook(renderer, engine.meshes, post ? BENCH_LOOK : lookOf(defaults));
+  mood.restore(post ? BENCH_MOOD : moodOf(defaults));
   const nightVisionView = engine.registry.items.get('night_vision_goggles')?.light?.nightVision;
   if (nightVision && !nightVisionView) {
     throw new Error('Missing benchmark night-vision goggles content');
@@ -89,7 +82,22 @@ export const benchDraw = (engine: RenderedEngine, options: BenchDrawOptions): ((
   );
   mood.setSky(sky);
   const sunStrength = sunShadowStrength(sky.lightIntensity);
+  const updateFlare = options.lightPool
+    ? createNightVisionFlareUpdate({
+        mood,
+        pool: options.lightPool,
+        fireballs: () => [],
+        camera,
+        isSolid: engine.isSolid,
+        blockSize: engine.config.scale.blockSize,
+      })
+    : undefined;
+  let last = performance.now();
   return () => {
+    const now = performance.now();
+    camera.updateMatrixWorld();
+    updateFlare?.(nightVision ? nightVisionView : undefined, (now - last) / 1000);
+    last = now;
     shadows.update(sunStrength, camera.position);
     mood.render(report);
   };

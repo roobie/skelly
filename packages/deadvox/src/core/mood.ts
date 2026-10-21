@@ -43,9 +43,8 @@ export const TONE_KEYS = ['none', 'agx', 'aces', 'neutral', AUTO_TONE] as const;
 /**
  * The game's default look, authored as the `look` content section. Play applies it at start-up
  * (render/playView.ts) with no URL parameters; the debug controls and URL record only deviations from
- * it. `bloomClip` is not content: null follows the tone mapper. The benchmark does not apply it: it
- * keeps three.js's own defaults (no tone mapping, exposure 1, colours undecoded) and the mood pass
- * off. The height-fog mist is not here: it follows the weather's fogginess (core/weather.ts).
+ * it. `bloomClip` is not content: null follows the tone mapper. Height-fog mist follows the
+ * weather's fogginess (core/weather.ts).
  */
 export type LookDefaults = Omit<LookState & MoodState, 'bloomClip'>;
 
