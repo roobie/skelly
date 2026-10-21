@@ -24,7 +24,7 @@ const TUTORIAL_LINK_PATTERN = /<a[^>]*class="tutorial-action"[^>]*>/;
 const BEGINNER_LINK_PATTERN = /<a[^>]*class="beginner-action"[^>]*>/;
 const ROUND1_STATIC_URL = playtestRound(1).url;
 const ROUND1_LANGUAGE_PATTERN = /lang=\$\{language\}/;
-const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title/;
+const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title|\bid=["']deadvox-playtest["']/;
 const LINKS_CARD_PATTERN = /<section class="card" aria-labelledby="links-title">([\s\S]*?)<\/section>/;
 const ENGLISH_DOCUMENT_LANGUAGE_PATTERN = /<html lang="en">/;
 const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
