@@ -1,8 +1,10 @@
 import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
+import { applyPoint, scale, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
-import { ModelPointSchema } from '@skelly/thing-core/schema';
+import { ModelPointSchema, type NeutralModel, NeutralModelSchema } from '@skelly/thing-core/schema';
 import { singlePart } from '@skelly/thing-core/single-part';
 import type { Palette } from '@skelly/thing-export/exportTypes.ts';
 import {
@@ -15,6 +17,7 @@ import {
   minValue,
   nonEmpty,
   number,
+  optional,
   parse,
   picklist,
   pipe,
@@ -26,6 +29,7 @@ import content from '../items.json' with { type: 'json' };
 import { coil } from './families/coil.ts';
 import { fuse } from './families/fuse.ts';
 import { arm, base, shade } from './families/lamp.ts';
+import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
 import { spool } from './families/spool.ts';
 
@@ -60,6 +64,19 @@ const ItemSchema = strictObject({
     check((parts) => new Set(parts.map(({ id }) => id)).size === parts.length, 'duplicate part id'),
   ),
   connections: array(strictObject({ from: name, to: name })),
+  handling: optional(
+    strictObject({
+      part: name,
+      solid: name,
+      fraction: pipe(
+        ModelPointSchema,
+        check((point) => point.every((value) => value >= 0 && value <= 1), 'grip fraction outside solid'),
+      ),
+      turn: ModelPointSchema,
+      hold: NeutralModelSchema.entries.hold,
+      roll: NeutralModelSchema.entries.roll,
+    }),
+  ),
 });
 const CatalogueSchema = strictObject({
   units: strictObject({ metresPerUnit: positive, grid: positive, bevel: pipe(number(), finite(), minValue(0)) }),
@@ -73,7 +90,7 @@ const CatalogueSchema = strictObject({
 });
 export type ToolItem = InferOutput<typeof ItemSchema>;
 type ToolPart = ToolItem['parts'][number];
-const builders = { ring, spool, coil, fuse, cylinder: base, arm, shade } satisfies Record<
+const builders = { ring, spool, coil, fuse, cylinder: base, arm, shade, carton, vessel } satisfies Record<
   string,
   (params: Readonly<Record<string, string>>) => readonly Solid[]
 >;
@@ -152,5 +169,21 @@ export const buildItem = (item: ToolItem) => {
   if (report.issues.length > 0) {
     throw new Error(`${item.id}: ${JSON.stringify(report.issues)}`);
   }
-  return { report, masses };
+  let handling: Pick<NeutralModel, 'grip' | 'hold' | 'roll'> = {};
+  if (item.handling) {
+    const datum = item.handling;
+    const solid = report.resolved.defs.get(datum.part)?.solids.find(({ id }) => id === datum.solid);
+    const placed = report.resolved.placed.get(datum.part);
+    if (!(solid && placed)) {
+      throw new Error(`${item.id}: missing handling geometry ${datum.part}/${datum.solid}`);
+    }
+    const [min, max] = localSolidBounds(solid);
+    const point = min.map((value, axis) => value + datum.fraction[axis]! * (max[axis]! - value)) as unknown as Vec3;
+    handling = {
+      grip: { at: scale(applyPoint(placed, point), catalogue.units.metresPerUnit), turn: datum.turn },
+      hold: datum.hold,
+      roll: datum.roll,
+    };
+  }
+  return { report, masses, handling };
 };

@@ -16,6 +16,11 @@ select mechanisms while content owns dimensions, material choices and authored m
 unsupported selections are errors rather than substitutes. See `src/catalogue.ts`,
 `loadCatalogue`, and `src/families/`.
 
+Handling datums refer to a named solid rather than duplicate its dimensions, so resizing
+a handle or moving its part also moves the hand. Pose corrections stay authored beside
+the geometry because the consumer's held frame need not match the tool's upright frame.
+See `src/catalogue.ts`, `buildItem`, and `packages.libsonnet`.
+
 The preview draws the same engine report the exporter consumes, so visual inspection is
 not a second model implementation. See `src/main.ts` and `packages/tool-ui/src/scene.ts`,
 `buildLayers`. The page is `index.html`; the deployed viewer path is `/thing-authoring-tool/`.
