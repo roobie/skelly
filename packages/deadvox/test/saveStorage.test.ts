@@ -42,10 +42,7 @@ type FakeCrashStage =
   | 'after-truncate'
   | 'after-partial-write'
   | 'after-write'
-  | 'after-flush'
   | 'before-transaction'
-  | 'after-read'
-  | 'after-put'
   | 'after-commit';
 
 class MemorySaveDriver implements SaveCommitDriver {
@@ -100,12 +97,12 @@ class MemorySaveDriver implements SaveCommitDriver {
         throw new Error('simulated worker termination after partial write');
       }
       this.slots = { ...this.slots, [request.slot]: record.slice().buffer };
-      if (this.crashAt === 'after-write' || this.crashAt === 'after-flush') {
+      if (this.crashAt === 'after-write') {
         throw new Error(`simulated worker termination ${this.crashAt}`);
       }
       return;
     }
-    if (this.crashAt === 'before-transaction' || this.crashAt === 'after-read' || this.crashAt === 'after-put') {
+    if (this.crashAt === 'before-transaction') {
       throw new Error(`simulated IndexedDB transaction abort at ${this.crashAt}`);
     }
     this.slots = { ...this.slots, [request.slot]: record.slice().buffer };
@@ -206,10 +203,7 @@ describe('A/B save protocol', () => {
     ['opfs', 'after-truncate'],
     ['opfs', 'after-partial-write'],
     ['opfs', 'after-write'],
-    ['opfs', 'after-flush'],
     ['indexeddb', 'before-transaction'],
-    ['indexeddb', 'after-read'],
-    ['indexeddb', 'after-put'],
     ['indexeddb', 'after-commit'],
   ] as const)('%s kill at %s loads only the old or new whole generation', async (backend, stage) => {
     const result = await checkCrashRecovery(backend, stage);

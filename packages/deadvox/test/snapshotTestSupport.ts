@@ -469,7 +469,7 @@ export const advance = (runtime: Runtime, frames: number, interruptAt = -1) => {
 };
 
 const IDLE_GROANER_DISTANCE = 20;
-export const prepareAudioContinuation = (runtime: Runtime): void => {
+export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   const playerPos = [...runtime.player.body.pos] as [number, number, number];
   const firstZombie = runtime.zombies.store.entries().next().value as
     | [number, import('../src/core/zombies.ts').Zombie]
@@ -477,7 +477,18 @@ export const prepareAudioContinuation = (runtime: Runtime): void => {
   if (!firstZombie) {
     throw new Error('Hamlet continuation requires a live shambler');
   }
-  const [, listener] = firstZombie;
+  const playerNoise = runtime.emitPlayerSound('player_strain', runtime.sim.time);
+  if (!(playerNoise && runtime.playerAudio.vocalNoise)) {
+    throw new Error('Could not seed player vocal noise');
+  }
+  const groaner = runtime.zombies.add(registry.zombies.get('shambler')!, [
+    playerPos[0] + IDLE_GROANER_DISTANCE,
+    playerPos[1],
+    playerPos[2],
+  ]);
+  // Admit deliberately timed audio actors through restoration, never through live actor fields.
+  const saved = structuredClone(capture(runtime));
+  const listener = saved.world.zombies.zombies.find(({ id }) => id === firstZombie[0])!.zombie;
   listener.body.pos = [playerPos[0] + 0.25, playerPos[1], playerPos[2]];
   listener.body.vel = [0, 0, 0];
   listener.body.onGround = true;
@@ -486,25 +497,14 @@ export const prepareAudioContinuation = (runtime: Runtime): void => {
   listener.modeTimer = 100;
   listener.idleSoundTimer = 100;
   listener.lastVocalNoiseId = 0;
-
-  const playerNoise = runtime.emitPlayerSound('player_strain', runtime.sim.time);
-  if (!(playerNoise && runtime.playerAudio.vocalNoise)) {
-    throw new Error('Could not seed player vocal noise');
-  }
-  runtime.playerAudio.vocalNoise.expiresAt -= 0.25;
-
-  const groaner = runtime.zombies.add(registry.zombies.get('shambler')!, [
-    playerPos[0] + IDLE_GROANER_DISTANCE,
-    playerPos[1],
-    playerPos[2],
-  ]);
-  const idle = runtime.zombies.store.get(groaner)!;
+  saved.character.playerAudio.vocalNoise!.expiresAt = runtime.sim.time + 0.25;
+  const idle = saved.world.zombies.zombies.find(({ id }) => id === groaner)!.zombie;
   idle.body.onGround = true;
   idle.mode = 'idle';
   idle.modeTimer = 100;
   idle.idleSoundTimer = 0.02;
-  idle.lastVocalNoiseId = runtime.playerAudio.vocalNoiseId;
-  runtime.heardSounds.length = 0;
+  idle.lastVocalNoiseId = saved.character.playerAudio.vocalNoiseId;
+  return createRuntime(saved, runtime.restAnchorUid !== undefined, runtime.columns);
 };
 
 export const formatVersion: SaveVersionComponents = {

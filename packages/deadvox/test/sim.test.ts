@@ -341,6 +341,8 @@ describe('Simulation', () => {
     expect(realPlain).toBeCloseTo(HOUR, 0);
     expect(realFast).toBeLessThan(HOUR / 10);
     expect(fast.time).toBeCloseTo(plain.time, 9);
+    expect(fast.calendar).toBeCloseTo(plain.calendar, 6);
+    expect(fast.scheduler.tickCounts().get('needs')!).toBeLessThan(plain.scheduler.tickCounts().get('needs')!);
     expect(fast.calendar - calendarAt(BASE_CLOCK, 0)).toBeCloseTo(BASE_CLOCK.ratio * fast.time, 6);
     expect(plain.calendar - calendarAt(BASE_CLOCK, 0)).toBeCloseTo(BASE_CLOCK.ratio * plain.time, 6);
     // Needs lag by at most one grown step: 30 s, 4 game minutes.
@@ -492,16 +494,6 @@ describe('Simulation', () => {
       sim.paused = false;
       runUntil(sim, until);
       expect(sim.time).toBeCloseTo(until, 6);
-    });
-
-    it('lands the same simulation state as playing the span at 1x', () => {
-      const plain = new Simulation({ seed: 1 });
-      runUntil(plain, HOUR);
-      const skipped = new Simulation({ seed: 1 });
-      skipped.compress();
-      runUntil(skipped, skipTarget(skipped.clock, skipped.time, 1));
-      expect(skipped.calendar).toBeCloseTo(plain.calendar, 6);
-      expect(skipped.scheduler.tickCounts().get('needs')!).toBeLessThan(plain.scheduler.tickCounts().get('needs')!);
     });
 
     it('reaches +23 h in a few real seconds with bounded per-frame work, landing exactly on target', () => {
