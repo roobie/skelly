@@ -14,17 +14,24 @@ const formattedJson = (value: unknown, file: string): string => {
   );
 };
 export const modelEntryJson = (entry: NeutralModel): string => formattedJson(entry, `${entry.id}.model.json`);
-export const writeRecipeExports = (recipe: readonly RecipeExport[], base: string, directory: string): void => {
+export const writeRecipeExports = (
+  recipe: readonly RecipeExport[],
+  base: string,
+  directory: string,
+  { index = false }: { readonly index?: boolean } = {},
+): void => {
   const outputs = recipe.map(({ generate }) => generate());
   mkdirSync(resolve(base, directory), { recursive: true });
   mkdirSync(resolve(base, 'assets/models'), { recursive: true });
-  writeFileSync(
-    resolve(base, directory, 'index.json'),
-    formattedJson(
-      outputs.map(({ modelEntry }) => modelEntry),
-      'index.json',
-    ),
-  );
+  if (index) {
+    writeFileSync(
+      resolve(base, directory, 'index.json'),
+      formattedJson(
+        outputs.map(({ modelEntry }) => modelEntry),
+        'index.json',
+      ),
+    );
+  }
   for (const { modelEntry, glb } of outputs) {
     writeFileSync(resolve(base, directory, `${modelEntry.id}.model.json`), modelEntryJson(modelEntry));
     writeFileSync(resolve(base, modelEntry.file), glb);
