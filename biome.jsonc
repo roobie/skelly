@@ -112,7 +112,8 @@
         "packages/deadvox/tools/police-item-models.mjs",
         "packages/deadvox/tools/military-item-models.mjs",
         "packages/deadvox/tools/perf-baseline.mjs",
-        "packages/deadvox/tools/perf-baseline.test.mjs"
+        "packages/deadvox/tools/perf-baseline.test.mjs",
+        "packages/deadvox/tools/perf-baseline-trace.mjs"
       ],
       "linter": { "rules": { "correctness": { "noNodejsModules": "off" } } }
     },
@@ -143,7 +144,7 @@
       }
     },
     {
-      "includes": ["packages/deadvox/tools/perf-baseline.mjs"],
+      "includes": ["packages/deadvox/tools/perf-baseline.mjs", "packages/deadvox/tools/perf-baseline-trace.mjs"],
       "linter": { "rules": { "suspicious": { "noConsole": "off" }, "performance": { "noAwaitInLoops": "off" } } }
     },
     {

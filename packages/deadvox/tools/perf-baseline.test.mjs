@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { install } from './perf-baseline-browser.mjs';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
+import { startTrace } from './perf-baseline-trace.mjs';
 
-test('non-post scene draws count submitted zombies without a composer', () => {
+test('query-free scene draws retain actor evidence without opening GPU timers', () => {
   const previous = globalThis.perfBaseline;
   const group = { userData: {} };
   const zombie = { parent: group, userData: {} };
@@ -17,7 +21,7 @@ test('non-post scene draws count submitted zombies without a composer', () => {
     blitFramebuffer: () => undefined,
     clear: () => undefined,
     createQuery: () => ({}),
-    beginQuery: () => undefined,
+    beginQuery: () => assert.fail('query-free mode opened a GPU timer'),
     endQuery: () => undefined,
   };
   const renderer = {
@@ -38,9 +42,11 @@ test('non-post scene draws count submitted zombies without a composer', () => {
     const perf = globalThis.perfBaseline;
     perf.attach({ engine, view: { zombieMeshes: { group }, playerMeshes: { group: { userData: {} } } } });
     perf.enabled = true;
+    perf.mode = 'off';
     perf.frame(() => renderer.render(scene), 0);
     assert.ok(perf.records[0].zombieDraws > 0);
     assert.ok(perf.records[0].actorDraws > 0);
+    assert.deepEqual(perf.records[0].segments, []);
   } finally {
     globalThis.perfBaseline = previous;
   }
@@ -98,10 +104,74 @@ test('unresolved or disjoint timing cannot become a baseline', () => {
   }
 });
 
-test('CPU-only JSON represents GPU measurement as absent rather than zero', () => {
-  const result = summarize([frame(0), frame(20)], 'cpu');
-  assert.equal(result.wholeFrameGpuMs, null);
-  assert.deepEqual(result.passes, {});
+test('query-free JSON represents GPU measurement as absent rather than zero', () => {
+  for (const mode of ['cpu', 'off']) {
+    const result = summarize([frame(0), frame(20)], mode);
+    assert.equal(result.wholeFrameGpuMs, null);
+    assert.deepEqual(result.passes, {});
+  }
+});
+
+test('browser trace waits for completion and preserves streamed bytes before closing the handle', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'perf-trace-'));
+  const path = join(directory, 'trace.json');
+  const session = new EventEmitter();
+  const calls = [];
+  const chunks = [
+    { data: '{"traceEvents":', eof: false },
+    { data: Buffer.from('[]}').toString('base64'), base64Encoded: true, eof: true },
+  ];
+  session.send = async (method, args) => {
+    calls.push([method, args]);
+    if (method === 'Tracing.end') {
+      queueMicrotask(() => session.emit('Tracing.tracingComplete', { stream: 'fixture-stream' }));
+    }
+    if (method === 'IO.read') {
+      return chunks.shift();
+    }
+    if (method === 'IO.close') {
+      assert.deepEqual(JSON.parse(await readFile(path, 'utf8')), { traceEvents: [] });
+    }
+  };
+  try {
+    const stop = await startTrace(session, path, ['fixture-category']);
+    await stop();
+    assert.deepEqual(
+      calls.map(([method]) => method),
+      ['Tracing.start', 'Tracing.end', 'IO.read', 'IO.read', 'IO.close'],
+    );
+    assert.deepEqual(calls[0][1], { categories: 'fixture-category', transferMode: 'ReturnAsStream' });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('lost trace data closes its stream without publishing an artifact', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'perf-trace-loss-'));
+  const path = join(directory, 'trace.json');
+  const calls = [];
+  let complete;
+  const session = {
+    once: (_name, listener) => {
+      complete = listener;
+    },
+    send: (method) => {
+      calls.push(method);
+      if (method === 'Tracing.end') {
+        complete({ stream: 'trace-stream', dataLossOccurred: true });
+      }
+      return Promise.resolve();
+    },
+  };
+  try {
+    const stop = await startTrace(session, path, ['test-category']);
+    await assert.rejects(stop(), { message: 'Incomplete Chrome trace' });
+    assert.equal(calls.at(-1), 'IO.close');
+    assert.ok(!calls.includes('IO.read'));
+    await assert.rejects(readFile(path), { code: 'ENOENT' });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 
 test('CPU attribution counts descendants once and keeps GC and native gaps separate', () => {

@@ -17,8 +17,9 @@ export function summarize(records, mode) {
   if (records.length < 2) {
     throw new Error('Need at least two warm frames');
   }
+  const queriesOff = mode === 'cpu' || mode === 'off';
   const gpu = records.map((record) => {
-    if (record.disjoint || (mode !== 'cpu' && record.segments.length === 0)) {
+    if (record.disjoint || (!queriesOff && record.segments.length === 0)) {
       throw new Error('Invalid GPU frame');
     }
     const values = {};
@@ -40,8 +41,9 @@ export function summarize(records, mode) {
       over16Point7Share: intervals.filter((ms) => ms > 16.7).length / intervals.length,
       over18Share: intervals.filter((ms) => ms > 18).length / intervals.length,
     },
-    wholeFrameGpuMs:
-      mode === 'cpu' ? null : distribution(gpu.map((frame) => Object.values(frame).reduce((a, b) => a + b, 0))),
+    wholeFrameGpuMs: queriesOff
+      ? null
+      : distribution(gpu.map((frame) => Object.values(frame).reduce((a, b) => a + b, 0))),
     passes: Object.fromEntries(passNames.map((name) => [name, distribution(gpu.map((frame) => frame[name] ?? 0))])),
     actorDrawFrames: records.filter((record) => record.actorDraws > 0).length,
     zombieDrawFrames: records.filter((record) => record.zombieDraws > 0).length,

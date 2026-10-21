@@ -12,6 +12,14 @@
     {
       "cpuProfile": true,
       "driver": "orbit",
+      "id": "gauntlet-default-start",
+      "path": "/?site=gauntlet&seed=1&debug=1&radius=96&time=19:30&storeys=1",
+      "yawAmplitudeDegrees": 0,
+      "yawCycles": 1
+    },
+    {
+      "cpuProfile": true,
+      "driver": "orbit",
       "id": "gauntlet-horde",
       "liftMetres": 3,
       "path": "/?site=gauntlet&seed=73&debug=1&radius=96&time=12:00",
@@ -29,6 +37,23 @@
   ],
   "sampleFrames": 240,
   "timeoutMs": 240000,
+  "traceCategories": [
+    "-*",
+    "toplevel",
+    "benchmark",
+    "cc",
+    "gpu",
+    "viz",
+    "blink",
+    "blink.user_timing",
+    "devtools.timeline",
+    "renderer.scheduler",
+    "disabled-by-default-devtools.timeline",
+    "disabled-by-default-gpu.service",
+    "disabled-by-default-gpu.device",
+    "disabled-by-default-viz.gpu_composite",
+    "disabled-by-default-cc.debug.scheduler.frames"
+  ],
   "viewport": {
     "height": 832,
     "width": 1672
