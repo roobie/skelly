@@ -7,6 +7,7 @@
 // knowing anything about bones or clothes.
 
 import type { Body } from './body.ts';
+import { type LodCompatibilityIssue, lodCompatibilityIssues } from './lodCompatibility.ts';
 import type { BoneMesh } from './mesh.ts';
 import { meshBones } from './mesh.ts';
 import { pick, type Rng, range, seededRng } from './random.ts';
@@ -248,6 +249,7 @@ export const recommendedProfileFor = (genome: Genome, voxelSize = genome.voxelSi
 export interface LodRealization {
   readonly genome: Genome;
   readonly realized: Realized;
+  readonly compatibilityIssues: readonly LodCompatibilityIssue[];
 }
 
 /** Re-voxelize a full-detail validated genome at a coarser size; never searches for a coarse-valid genome. */
@@ -264,7 +266,7 @@ export const realizeLod = (validated: ValidGeneration, voxelSize: number): LodRe
   }
   const genome = { ...validated.genome, voxelSize };
   const realized = realize(genome, { profile: 'silhouette', reference: validated.realized });
-  return { genome, realized };
+  return { genome, realized, compatibilityIssues: lodCompatibilityIssues(validated.realized, realized) };
 };
 
 export interface ValidSearchOptions {

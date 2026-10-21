@@ -1,6 +1,7 @@
 ---
 read_if:
   - "you're changing mobgen's core, authoring or body-plan boundaries"
+  - "you're admitting coarse geometry to a shared full-skeleton animation or severing path"
   - "you're changing the crawler's body-plan or gait constraints"
   - "you're changing the dog shambler's body-plan or gait constraints"
   - "you're reviewing the amalgam's visual quality pass in #378"
@@ -20,7 +21,7 @@ Mobgen keeps body construction independent of feasibility rules and rendering so
 - Templates include bodies beyond human proportions. Shared rules must use declared supports and template-defined mass rather than assuming humanoid feet or density-true anatomy. See `src/core/template.ts`, `src/core/rules.ts` and `src/core/templateMass.ts`.
 - One bone owns each voxel so part topology remains useful for severing; rigid ownership accepts visible seams at bent joints. Thin anatomy can vanish under sampling, so preserving skeletal connection matters more than retaining every sub-voxel feature. Ordinary bodies keep in-place joint repair because coarse-foot and far-LOD contracts depend on its grid snapping; overlap reservation handles compound contacts. See `src/core/voxelize.ts`, `repairJointAdjacencyInPlace`, `repairOverlappingJointAdjacency`, `src/core/mesh.ts`, `meshBones`, and `src/mob/dismember.ts`, `severedBoneSet`.
 - Facial proportions should survive a change in voxel resolution. Dimensions follow body scale while the voxel grid controls sampling, so coarse LOD may lose small details without changing the intended metric shape. See `src/mob/humanoid.ts`, `buildFaceLayout`, and `src/core/generate.ts`, `realizeLod`.
-- Full validation remains the default for gameplay detail. Silhouette validation is an explicit far-LOD choice: coarse ownership and voxel counts are poor proxies for draw cost, while a stable outline and triangle budget preserve what matters at distance. See `src/core/generate.ts`, `realizeLod`, `recommendedProfileFor`, and `src/core/rules.ts`, `SILHOUETTE_RULES`.
+- Full validation remains the default for gameplay detail. Silhouette validation measures coarse outline and draw cost, not suitability for independent animation or severing. Shared-pose consumers must also preserve the reference's rest skeleton, owned parts and joint faces: an outline can survive while an intact limb or its stump identity disappears. See `src/core/generate.ts`, `realizeLod`, `recommendedProfileFor`, `src/core/rules.ts`, `SILHOUETTE_RULES`, and `src/core/lodCompatibility.ts`, `lodCompatibilityIssues`.
 - Actor mass is a template choice, not a consequence of voxel density; stylized creatures need not share realistic density. See `src/core/templateMass.ts`, `templatePartMassProperties`.
 - Keep the look stylized and voxel-coloured rather than anatomically or medically exact, and model only what serves the game rather than building a general character creator. The intended read is sickly and fleshy, not swamp-like; extra colour variation must justify the mesh fragmentation it can cause. See `src/mob/humanoid.ts`, `src/core/voxelize.ts`, `voxelize`, `src/core/mesh.ts`, `meshBones`, and `src/mob/templates.ts`.
 
