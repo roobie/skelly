@@ -15,7 +15,9 @@ TOOLCHAIN = '1.90.0'
 
 
 def run(*args, cwd=OUT):
-    subprocess.run(args, cwd=cwd, check=True, env={**os.environ, 'RUSTFLAGS': ''})
+    environment = {key: value for key, value in os.environ.items() if not key.startswith('GIT_')}
+    environment.update(RUSTFLAGS='', CARGO_ENCODED_RUSTFLAGS='')
+    subprocess.run(args, cwd=cwd, check=True, env=environment)
 
 
 def main():
@@ -24,6 +26,7 @@ def main():
     if not source.exists():
         run('git', 'clone', 'https://github.com/dimforge/rapier.js.git', str(source))
     run('git', 'checkout', '--detach', REVISION, cwd=source)
+    run('git', 'diff', '--exit-code', REVISION, '--', 'src', 'src.ts', cwd=source)
     run('rustup', 'toolchain', 'install', TOOLCHAIN, '--profile', 'minimal', '--target', 'wasm32-unknown-unknown')
     if not shutil.which('wasm-bindgen') or subprocess.check_output(['wasm-bindgen', '--version'], text=True).strip() != 'wasm-bindgen 0.2.100':
         run('cargo', f'+{TOOLCHAIN}', 'install', 'wasm-bindgen-cli', '--version', '0.2.100', '--locked')
