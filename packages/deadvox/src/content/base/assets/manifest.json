@@ -65,7 +65,13 @@
         "assets/models/shotshell_box.glb",
         "assets/models/ammo_can.glb",
         "assets/models/jerry_can.glb",
-        "assets/models/gas_canister.glb"
+        "assets/models/gas_canister.glb",
+        "assets/models/shambler_torso.glb",
+        "assets/models/shambler_head.glb",
+        "assets/models/shambler_left_arm.glb",
+        "assets/models/shambler_right_arm.glb",
+        "assets/models/shambler_left_leg.glb",
+        "assets/models/shambler_right_leg.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",
