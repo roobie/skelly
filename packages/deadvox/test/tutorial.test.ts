@@ -31,7 +31,7 @@ const fixture = () => {
 };
 
 describe('practice objectives', () => {
-  it('advances only on completed outcomes and returns to start after the final pause', () => {
+  it('offers the optional branch before essentials-only completion', () => {
     const { tutorial, state, complete, observe } = fixture();
     observe();
     expect(tutorial.stage).toBe('move');
@@ -77,8 +77,40 @@ describe('practice objectives', () => {
     state.paused = true;
     observe();
     observe();
+    expect(tutorial.stage).toBe('choice');
+    expect(complete).not.toHaveBeenCalled();
+    tutorial.finish();
+    tutorial.finish();
     expect(complete).toHaveBeenCalledOnce();
     expect(new URL(tutorialUrl('https://example.org/deadvox/?tutorial=1', false)).search).toBe('');
+  });
+
+  it('accepting weapons keeps the disposable runtime and cannot finish incomplete weapons through pause', () => {
+    const { tutorial, state, complete, observe } = fixture();
+    tutorial.chooseWeapons();
+    expect(tutorial.stage).toBe('move');
+    Object.assign(state, {
+      position: [11, 1, 11],
+      yaw: 1,
+      doorOpen: true,
+      searched: true,
+      looted: true,
+      crouching: true,
+      lightOn: true,
+    });
+    tutorial.consumed('beans');
+    tutorial.consumed('water_bottle');
+    observe();
+    state.lightOn = false;
+    state.paused = true;
+    observe();
+    expect(tutorial.stage).toBe('choice');
+    tutorial.chooseWeapons();
+    expect(tutorial.stage).toBe('revolver');
+    observe();
+    tutorial.finish();
+    expect(complete).not.toHaveBeenCalled();
+    expect(tutorial.stage).toBe('revolver');
   });
 
   it('remembers out-of-order supplies instead of requiring already consumed items again', () => {

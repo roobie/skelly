@@ -932,6 +932,13 @@ export const startPlay = (
     },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onConsumed: (type) => tutorial?.consumed(type),
+    onHandlingOutcome: (item, outcome) => tutorial?.weapons.handling(item, outcome, registry),
+    onDischarge: (item, sighted) => tutorial?.weapons.discharged(item, sighted, registry),
+    onCompletedSwing: (isFist) => {
+      if (tutorial?.stage === 'melee' && isFist) {
+        tutorial.weapons.melee = true;
+      }
+    },
     onFirearmEjection: (effect) =>
       caseEffects.spawn({ ...effect, landingPosition: caseLandingWorldPosition(effect.landingPosition, s) }),
     onFirearmCaseLanded: (seed, item, instanceIndex) => {
@@ -1014,7 +1021,7 @@ export const startPlay = (
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
   });
   const { compression } = sim;
-  const unpacking = new Unpacking(inventory, queue, feet);
+  const unpacking = new Unpacking(inventory, queue, feet, (type) => tutorial?.weapons.unpackedAmmo(type));
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
     input.pitch = session.restoredLook.pitch;
@@ -1224,12 +1231,15 @@ export const startPlay = (
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
-    describe: (item) => [
-      ...survival.describe(item),
-      ...firearms.describe(item),
-      ...magazines.describe(item),
-      ...pinDescription(session.fuses.state(item)),
-    ],
+    describe: (item) => {
+      tutorial?.weapons.inspected(item, registry);
+      return [
+        ...survival.describe(item),
+        ...firearms.describe(item),
+        ...magazines.describe(item),
+        ...pinDescription(session.fuses.state(item)),
+      ];
+    },
     workOptions: (uid) => session.crafting.options(uid),
     character: () => session.character,
     body: () => sim.body,
@@ -3611,6 +3621,11 @@ export const startPlay = (
   };
 
   const updateTutorial = () => {
+    for (const item of Object.values(inventory.hands)) {
+      if (item) {
+        tutorial?.weapons.wielded(item, registry);
+      }
+    }
     tutorial?.observe({
       position: body.pos,
       yaw: input.yaw,

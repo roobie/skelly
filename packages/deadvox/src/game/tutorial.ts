@@ -1,5 +1,6 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { Rect } from '../core/site.ts';
+import { TutorialWeapons } from './tutorialWeapons.ts';
 
 export interface TutorialObservation {
   position: Vec3;
@@ -18,6 +19,22 @@ export class Tutorial {
   private readonly achieved = new Set<string>();
   private lightWasOn = false;
   private completed = false;
+  private weaponsChosen = false;
+  private essentialsPaused = false;
+  readonly weapons = new TutorialWeapons();
+
+  chooseWeapons(): void {
+    if (this.stage === 'choice') {
+      this.weaponsChosen = true;
+    }
+  }
+
+  finish(): void {
+    if (!this.completed && (this.stage === 'choice' || this.stage === 'complete')) {
+      this.completed = true;
+      this.onComplete();
+    }
+  }
 
   private readonly spawn: Vec3;
   private readonly startingYaw: number;
@@ -56,13 +73,26 @@ export class Tutorial {
         state.position[2] >= this.exit.z0 &&
         state.position[2] < this.exit.z1,
     );
-    if (this.stage === 'pause' && state.paused && !this.completed) {
-      this.completed = true;
-      this.onComplete();
+    if (this.stage === 'pause' && state.paused) {
+      this.essentialsPaused = true;
     }
   }
 
-  get stage(): 'move' | 'door' | 'loot' | 'hands' | 'eat' | 'drink' | 'light' | 'escape' | 'pause' {
+  get stage():
+    | 'move'
+    | 'door'
+    | 'loot'
+    | 'hands'
+    | 'eat'
+    | 'drink'
+    | 'light'
+    | 'escape'
+    | 'pause'
+    | 'choice'
+    | 'revolver'
+    | 'pump'
+    | 'melee'
+    | 'complete' {
     const outcomes: [Tutorial['stage'], boolean][] = [
       ['move', this.achieved.has('move') && this.achieved.has('look')],
       ['door', this.achieved.has('door')],
@@ -73,7 +103,23 @@ export class Tutorial {
       ['light', this.achieved.has('light')],
       ['escape', this.achieved.has('escape') && this.achieved.has('crouch')],
     ];
-    return outcomes.find(([, achieved]) => !achieved)?.[0] ?? 'pause';
+    const essentials = outcomes.find(([, achieved]) => !achieved)?.[0];
+    if (essentials) {
+      return essentials;
+    }
+    if (!this.essentialsPaused) {
+      return 'pause';
+    }
+    if (!this.weaponsChosen) {
+      return 'choice';
+    }
+    if (this.weapons.lesson('revolver')) {
+      return 'revolver';
+    }
+    if (this.weapons.lesson('pump')) {
+      return 'pump';
+    }
+    return this.weapons.melee ? 'complete' : 'melee';
   }
 }
 

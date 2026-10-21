@@ -20,9 +20,15 @@ const stageTopics: Record<Tutorial['stage'], string> = {
   light: 'hand',
   escape: 'crouch',
   pause: 'main menu',
+  choice: 'ready',
+  revolver: 'reload',
+  pump: 'reload',
+  melee: 'ready',
+  complete: 'main menu',
 };
 
-const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn }: TutorialPresentation) => {
+const stageHint = (tutorial: Tutorial, { inventory, inventoryOpen, lightOn }: TutorialPresentation) => {
+  const { stage } = tutorial;
   const action = (id: string, label: string) => html`<span data-tutorial-action=${id}>${label} ${keyCap(id)}</span>`;
   const inventoryAction = action('ui.inventory-toggle', inventoryOpen ? 'Close inventory' : 'Inventory');
   const quickAction = html`
@@ -52,6 +58,27 @@ const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn
     }
     return held('canned_beans') ? use('canned_beans', 'Open can') : wield('Can of beans');
   };
+  const gunHint = (kind: 'revolver' | 'pump') => {
+    const lesson = tutorial.weapons.lesson(kind);
+    const gun = kind === 'revolver' ? 'Revolver' : 'Pump shotgun';
+    if (inventoryOpen) {
+      return html`${gun} — Ammunition details · ${action('inventory.hands', lesson === 'unpack' ? 'Wield ammunition box' : 'Wield selected item')} · ${action('inventory.best-pocket', 'Carry loose ammunition')} · ${action('inventory.wear', 'Wear backpack')} · ${inventoryAction}`;
+    }
+    const fire = html`${action('stance.ready', 'Ready')} · ${action('hand.use-dominant', 'Fire dominant hand')} · ${action('hand.use-off', 'Fire off hand')}`;
+    const load = action('firearm.reload', 'Load — hold / stop — release');
+    const rack = action('firearm.reload', kind === 'pump' ? 'Pump — double press' : 'Close cylinder — double press');
+    const lessons = {
+      unpack: html`${wield('Boxed ammunition — Wield')} · ${action('hand.use-dominant', 'Unpack dominant hand')} · ${action('hand.use-off', 'Unpack off hand')}`,
+      wield: wield(gun),
+      inspect: html`${gun} — Ammunition details · ${inventoryAction}`,
+      partial: html`${gun} — Partial load · ${inventoryAction} · ${load} · ${rack}`,
+      ready: html`${gun} — Ready fire · ${fire} · ${action('aim.ads-toggle', 'Sights off')}`,
+      reload: html`${gun} — Reload after firing · ${load} · ${rack} · ${fire}`,
+      sighted: html`${gun} — Sighted fire · ${action('aim.ads-toggle', 'Sights')} · ${rack} · ${fire}`,
+      unload: html`${gun} — Unload live rounds · ${load} · ${action('firearm.reload', 'Unload — press, then hold')} · ${rack}`,
+    };
+    return lesson ? lessons[lesson] : '';
+  };
   const hints = {
     move: html`${action('movement.forward', 'Forward')} · ${action('movement.back', 'Back')} · ${action('movement.left', 'Left')} · ${action('movement.right', 'Right')} · ${action('pointer.look', 'Look')}`,
     door: action('world.interact', 'Open station door'),
@@ -72,6 +99,13 @@ const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn
       : wield('Flashlight — On / off'),
     escape: html`${action('player.crouch-toggle', 'Crouch')} · Exit path`,
     pause: action('ui.main-menu-toggle', 'Main menu'),
+    choice: html`Essentials complete · Optional weapons practice`,
+    revolver: gunHint('revolver'),
+    pump: gunHint('pump'),
+    melee: inventoryOpen
+      ? html`Empty hands · ${action('inventory.drop', 'Put down selected item')} · ${action('inventory.best-pocket', 'Stow selected item')} · ${inventoryAction}`
+      : html`Empty hands · ${inventoryAction} · ${action('stance.ready', 'En garde')} · ${action('hand.use-dominant', 'Punch')}`,
+    complete: html`Weapons practice complete · ${action('ui.main-menu-toggle', 'Main menu')}`,
   };
   return hints[stage];
 };
@@ -89,7 +123,7 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
   return (state: TutorialPresentation) => {
     render(
       html`
-      <p class="tutorial-copy" data-tutorial-stage=${tutorial.stage}>${stageHint(tutorial.stage, state)}</p>
+      <p class="tutorial-copy" data-tutorial-stage=${tutorial.stage}>${stageHint(tutorial, state)}</p>
       <p class="tutorial-copy tutorial-note">Unsaved practice</p>
     `,
       box,
@@ -97,10 +131,19 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
     render(
       html`
       <div class="tutorial-action-buttons">
+        ${tutorial.stage === 'choice' ? html`<button type="button" data-tutorial-choice="weapons" @click=${() => tutorial.chooseWeapons()}>Weapons practice</button>` : ''}
+        ${tutorial.stage === 'choice' || tutorial.stage === 'complete' ? html`<button type="button" data-tutorial-choice="finish" @click=${() => tutorial.finish()}>Finish practice</button>` : ''}
         <button type="button" @click=${openControls}>Practice controls</button>
         <button type="button" @click=${restart}>Restart practice</button>
         <button type="button" @click=${exit}>Exit practice</button>
       </div>
+      ${
+        tutorial.stage === 'revolver' || tutorial.stage === 'pump'
+          ? html`<p class="tutorial-action-note">Range — north-west dirt path · Range supplies — Backpack / boxed ammunition</p>
+            <p class="tutorial-action-note">Loose ammunition must be carried; a revolver needs a free loading hand. Release loading before capacity for a partial load.</p>
+            <p class="tutorial-action-note">Pumping chambers a shell from the tube; unloading ejects live rounds. Ammunition is finite; Restart practice replaces the whole attempt.</p>`
+          : ''
+      }
       ${
         tutorial.stage === 'eat' || tutorial.stage === 'hands'
           ? html`<p class="tutorial-action-note">A carried can opener enables opening a sealed can in hand. Opened food goes to a pocket or the ground, not into the hand.</p>`

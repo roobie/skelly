@@ -292,6 +292,155 @@ try {
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
       assert.equal(canHints.stage, 'eat', 'opening and wielding alone are not consumption');
       assert.equal(canHints.noteOnOwnLine, true, 'practice note is separate from the action buttons');
+      const weaponsHints = await page.evaluate(async () => {
+        const { Tutorial } = await import('/src/game/tutorial.ts');
+        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { Inventory } = await import('/src/core/inventory.ts');
+        const { HandlingQueue } = await import('/src/core/handling.ts');
+        const { FirearmMechanics } = await import('/src/game/firearmHandling.ts');
+        const { InventoryScreen } = await import('/src/ui/inventoryScreen.ts');
+        const { bindReach } = await import('/src/core/reach.ts');
+        const { CORE_CONTENT_IDS } = await import('/src/core/contentIds.ts');
+        const { Unpacking } = await import('/src/game/unpacking.ts');
+        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const inventory = new Inventory(gauntletWitness.engine.registry);
+        const queue = new HandlingQueue(inventory);
+        let finished = false;
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 7, x1: 9, z0: 0, z1: 2 }, () => {
+          finished = true;
+        });
+        tutorial.consumed('beans');
+        tutorial.consumed('water_bottle');
+        const state = {
+          position: [8, 0, 1],
+          yaw: 1,
+          crouching: true,
+          doorOpen: true,
+          searched: true,
+          looted: true,
+          wielded: true,
+          lightOn: true,
+          paused: false,
+        };
+        tutorial.observe(state);
+        tutorial.observe({ ...state, lightOn: false, paused: true });
+        const presentation = { inventory, inventoryOpen: true, lightOn: false };
+        const id = 'firearm.reload';
+        const original = inputBindings.chords(id);
+        gauntletWitness.manual = true;
+        try {
+          const draw = mountTutorial(
+            tutorial,
+            () => undefined,
+            () => undefined,
+          );
+          draw(presentation);
+          const offered =
+            tutorial.stage === 'choice' &&
+            !finished &&
+            Boolean(document.querySelector('[data-tutorial-choice="finish"]'));
+          document.querySelector('[data-tutorial-choice="weapons"]').click();
+          const branched = tutorial.stage === 'revolver' && !finished;
+          const bag = inventory.create('hiking_backpack');
+          const box = inventory.create('cartridge_box_357_h_magnum');
+          if (!(inventory.add(bag, { kind: 'worn' }) && inventory.add(box, { kind: 'hand', side: 'right' }))) {
+            throw new Error('Weapons fixture must fit');
+          }
+          const unpack = new Unpacking(
+            inventory,
+            queue,
+            () => [0, 1, 0],
+            (type) => tutorial.weapons.unpackedAmmo(type),
+          );
+          if (unpack.activate(box) !== undefined || queue.tick(queue.remaining).failed.length > 0) {
+            throw new Error('Ammunition unpack must complete');
+          }
+          const gun = inventory.create('revolver_357');
+          if (!inventory.add(gun, { kind: 'hand', side: 'right' })) {
+            throw new Error('Gun must fit');
+          }
+          tutorial.weapons.wielded(gun, inventory.registry);
+          draw(presentation);
+          const inspect = Boolean(document.querySelector('[data-tutorial-action="ui.inventory-toggle"]'));
+          const firearms = new FirearmMechanics(inventory, queue, {
+            blockSize: 0.5,
+            pose: () => undefined,
+            onEjection: () => undefined,
+          });
+          const openedDetails = (() => {
+            const details = firearms.describe(gun);
+            const inventoryRoot = document.createElement('div');
+            document.body.append(inventoryRoot);
+            const screen = new InventoryScreen(inventoryRoot, inventory, queue, {
+              feet: () => [0, 1, 0],
+              reach: bindReach({
+                inventory,
+                position: [0, 1, 0],
+                blockSize: 0.5,
+                clock: gauntletWitness.session.reach().player.clock,
+              }),
+              nearby: () => [],
+              containers: () => [],
+              distance: () => 0,
+              entityDistance: () => 0,
+              dispatch: () => undefined,
+              searching: () => false,
+              notice: () => undefined,
+              describe: (item) => {
+                tutorial.weapons.inspected(item, inventory.registry);
+                return firearms.describe(item);
+              },
+              workOptions: () => [],
+              character: () => gauntletWitness.session.character,
+              body: () => gauntletWitness.session.sim.body,
+              needs: () => '',
+              slotLabels: inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi).wearSlotLabels,
+            });
+            let presented = false;
+            try {
+              screen.open();
+              inventoryRoot
+                .querySelector(`[data-uid="${gun.uid}"]`)
+                .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }));
+              globalThis.dispatchEvent(new PointerEvent('pointerup', { button: 0, pointerType: 'mouse' }));
+              const pane = inventoryRoot.querySelector('[data-pane="details"]');
+              presented =
+                pane.dataset.selectedUid === String(gun.uid) &&
+                details.length > 0 &&
+                details.every((line) => pane.textContent.includes(line));
+            } finally {
+              screen.close();
+              inventoryRoot.remove();
+            }
+            return presented;
+          })();
+          presentation.inventoryOpen = false;
+          draw(presentation);
+          const before = document.querySelector(`[data-tutorial-action="${id}"] kbd`)?.textContent;
+          const replacement = ['KeyY', 'KeyU', 'KeyO'].find(
+            (code) => inputBindings.rebind(id, [{ code }]) === undefined && inputBindings.label(id) !== before,
+          );
+          if (!replacement) {
+            throw new Error('Reload fixture needs an alternate binding');
+          }
+          draw(presentation);
+          const rebound = document.querySelector(`[data-tutorial-action="${id}"] kbd`)?.textContent;
+          return {
+            offered,
+            branched,
+            inspect,
+            details: openedDetails,
+            rebound: rebound === inputBindings.label(id) && rebound !== before,
+          };
+        } finally {
+          inputBindings.rebind(id, original);
+          gauntletWitness.manual = false;
+        }
+      });
+      assert(
+        Object.values(weaponsHints).every(Boolean),
+        'optional weapons branch retains completion, ammunition details and live reload keycaps',
+      );
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
       await page.evaluate(() => {
