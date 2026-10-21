@@ -12,8 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
-      env:
-        HOME: /root
+      options: --user pwuser
     timeout-minutes: ${{ inputs.shard == 'control-check' && 100 || 30 }}
     defaults:
       run:
