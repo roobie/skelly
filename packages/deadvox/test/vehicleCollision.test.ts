@@ -1,3 +1,4 @@
+import { Mesh } from 'three';
 import { expect, it } from 'vitest';
 import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -8,6 +9,8 @@ import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { createPlayerBody, physicsFor, steer } from '../src/game/player.ts';
+import { SKY_ANCHOR_ATTRIBUTE } from '../src/render/skyAnchor.ts';
+import { vehicleModel } from '../src/render/workshopVehicle.ts';
 import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -108,6 +111,20 @@ it('stands a player dropped on the bonnet below the box top and stops a jump at 
     stepBody(side, 1 / 60, solid, physics);
   }
   expect(side.pos[0] + side.halfWidth).toBeLessThanOrEqual(car.pos[0]);
+});
+
+it('anchors vehicle interior meshes to the same sky field as shaped building furniture', () => {
+  const entities = new BlockEntities(base);
+  const car = entities.add({ type: intact.id, pos: [0, 0, 0], size: [...intact.size], facing: 'n' })!;
+  const meshes: Mesh[] = [];
+  vehicleModel(car, intact.vehicle!, intact.size[1]).traverse((object) => {
+    if (object instanceof Mesh) {
+      meshes.push(object);
+    }
+  });
+  expect(meshes.length).toBeGreaterThan(0);
+  expect(meshes.every(({ geometry }) => geometry.getAttribute(SKY_ANCHOR_ATTRIBUTE) !== undefined)).toBe(true);
+  expect(meshes.every(({ material }) => !Array.isArray(material) && material.defines?.SKY_ANCHOR === '')).toBe(true);
 });
 
 it('lets a pick through the air above the bonnet miss the car and a pick at the cabin hit it', () => {
