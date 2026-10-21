@@ -1799,9 +1799,16 @@ light stands in for the infrared lamp: dim, green and seen only from close up. W
 they are worn, switched on and charged, the whole view brightens and turns green with
 grain, and its edges darken to the goggles' narrowed field of view, so seeing in the
 dark costs sight at the sides. A spectator sees none of it. It sits in the mood pass
-with the drug vignette rather than in a pass of its own. Bright lights flaring through
-the goggles, the rest of that cost, belongs to #1021. See `src/core/lights.ts`,
-`wornNightVision`, and `src/render/moodOutput.ts`, `createMoodOutputPass`.
+with the drug vignette rather than in a pass of its own. Bright light in the goggles'
+view flares through them, with a halo where each light is and the whole view paling,
+and leaves them blind for a moment: goggles that make the dark readable are blinded by
+real light, the rest of that cost. A wall hides a light's flare, and the flare stays in
+the picture, so the simulation never depends on it. A torch carried in hand flares too,
+because the goggles and a light in hand are a trade; a light that stays lit when put
+down, set down ahead, is how to use both. The goggles' own lamp never flares, being
+what they see by, and beams don't flare directly, because they point away from the eye.
+See `src/core/lights.ts`, `wornNightVision`, `src/render/moodOutput.ts`,
+`createMoodOutputPass`, and `src/render/nightVisionFlare.ts`, `nightVisionFlare`.
 
 ## Dropped items land
 

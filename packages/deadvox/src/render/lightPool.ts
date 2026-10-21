@@ -7,6 +7,8 @@ import type { HeldItems } from './hands.ts';
 const CARRIED_POINT_LIGHTS = 4;
 const DROPPED_POINT_LIGHTS = 4;
 export const POINT_LIGHT_POOL_SIZE = CARRIED_POINT_LIGHTS + DROPPED_POINT_LIGHTS;
+/** Fixed shader budget for the night-vision flare's halos at once (`src/render/nightVisionFlare.ts`). */
+export const NIGHT_VISION_HALOS = 4;
 
 interface LightPoolContext {
   held: Pick<HeldItems, 'lightPositionOf'>;
@@ -25,6 +27,8 @@ function handPriority(location: Location): number {
 export class LightPool {
   readonly group = new Group();
   readonly lights: readonly PointLight[];
+  /** Per slot: the goggles' own lamp, which they see by rather than look into, so it never flares them. */
+  readonly flareSkipped: boolean[] = Array.from({ length: POINT_LIGHT_POOL_SIZE }, () => false);
   private readonly handLights: readonly PointLight[];
   private readonly positions = Array.from({ length: POINT_LIGHT_POOL_SIZE }, () => new Vector3());
 
@@ -113,6 +117,7 @@ export class LightPool {
       light.color.set(spec.color);
       light.distance = spec.radius;
       light.intensity = spec.intensity * daylightScale;
+      this.flareSkipped[index] = spec.nightVision !== undefined;
       this.syncHandLight(index, light);
     }
   }

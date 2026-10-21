@@ -43,6 +43,7 @@ import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
 import { ModelLibrary } from './models.ts';
+import { flareSources, NO_FLARE, nightVisionFlare } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import { applySky } from './sky.ts';
@@ -71,10 +72,12 @@ export interface PlayCameraFrame {
 }
 
 /** The drug vignette and night vision belong to the player's eyes, so a spectator gets neither. */
-const setViewEffects = (mood: Engine['mood'], frame: PlayCameraFrame): void => {
+const setViewEffects = (mood: Engine['mood'], frame: PlayCameraFrame): NightVision | undefined => {
   const player = frame.spectator === undefined;
+  const nightVision = player ? frame.nightVision : undefined;
   mood?.setDrugVignette(player ? (frame.drugVignette ?? 0) : 0);
-  mood?.setNightVision(player ? frame.nightVision : undefined);
+  mood?.setNightVision(nightVision);
+  return nightVision;
 };
 
 export interface PlayWorldFrame {
@@ -298,6 +301,28 @@ export const createPlayView = (
     camera.rotation.copy(cameraRotation(spectator?.pitch ?? pitch, spectator?.yaw ?? yaw, cameraRoll));
   };
 
+  let nightVision: NightVision | undefined;
+  let flareShown = 0;
+  /** After the pool has its lights for this frame; nothing is computed while the view isn't shown. */
+  const updateFlare = (dt: number): void => {
+    if (!(mood && nightVision)) {
+      flareShown = 0;
+      mood?.setNightVisionFlare(NO_FLARE);
+      return;
+    }
+    const flare = nightVisionFlare({
+      sources: flareSources(lightPool, blastFlashes.fireballs(), nightVision.flare.blastIntensity),
+      camera,
+      view: nightVision,
+      isSolid: engine.isSolid,
+      blockSize: s,
+      dt,
+      last: flareShown,
+    });
+    flareShown = flare.washout;
+    mood.setNightVisionFlare(flare);
+  };
+
   /** Steps the hit and pain cues; a paused game starts no new pain pulse, and the one under way fades out. */
   const stepBodyCues = (dt: number, paused: boolean, spectator: boolean, painTier: PlayCameraFrame['painTier']) => {
     const pain = painCue.step(dt, paused ? undefined : painTier);
@@ -426,7 +451,7 @@ export const createPlayView = (
         updateFirstPersonCamera({ target, stepOffset: offset, spectator, yaw, pitch });
       }
       damage.style.opacity = String(Math.max(feedback.vignetteOpacity, sightImpaired ? 0.2 : 0));
-      setViewEffects(engine.mood, frame);
+      nightVision = setViewEffects(engine.mood, frame);
     },
     updateHeld: (
       dt: number,
@@ -448,6 +473,7 @@ export const createPlayView = (
       held.update(camera, pose, recoil, { ...handling, lift });
       flashlight.update({ registry, lit: light, held, camera, inventory });
       lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: cameraDaylightScale });
+      updateFlare(dt);
     },
     render: (): number | null => {
       if (!renderer) {

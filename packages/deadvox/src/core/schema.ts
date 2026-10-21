@@ -609,6 +609,20 @@ export const BeamSpillSchema = strictObject({
 });
 export type BeamSpill = InferOutput<typeof BeamSpillSchema>;
 
+/** How bright light in view flares through the goggles (`src/render/nightVisionFlare.ts`, `nightVisionFlare`). */
+const NightVisionFlareSchema = strictObject({
+  /** How hard the summed sources wash the view out; 0 turns the flare off. */
+  strength: NonNegative,
+  /** Metres at which a source's flare falls to half. */
+  distanceMetres: Positive,
+  /** A blast fireball's brightness to the goggles at the moment of the blast. */
+  blastIntensity: NonNegative,
+  /** Time constant of the after-image. */
+  recoverRealSeconds: PositiveRealSeconds,
+  /** A halo's radius at a light, as a share of the picture's size. */
+  haloRadius: pipe(Positive, maxValue(1, 'must be at most 1')),
+});
+
 const NightVisionSchema = strictObject({
   /** Multiplies the scene's linear light before tone mapping. */
   gain: Positive,
@@ -624,6 +638,7 @@ const NightVisionSchema = strictObject({
     strictObject({ darkening: Fraction, inner: Fraction, outer: Fraction }),
     check((edge) => edge.inner < edge.outer, 'inner must be less than outer'),
   ),
+  flare: NightVisionFlareSchema,
 });
 export type NightVision = InferOutput<typeof NightVisionSchema>;
 
