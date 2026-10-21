@@ -1748,8 +1748,8 @@ than overwriting a result awaiting publication. See `src/game/streamer.ts`,
 
 Inside those application regions, an uncertified column uses a capped version of
 the existing estimate rather than blackout: cold discovery must not make an open
-surface appear sealed. The cap is provisional visual tuning for BR's first look,
-not proof that the geometry is open. Once lighting has been published, keep that
+surface appear sealed. The cap is the accepted look for that uncertainty, not
+proof that the geometry is open. Once lighting has been published, keep that
 committed estimate while geometry edits are revalidated: replacing a dark room with
 the uncertainty cap would flash it bright when a door opens. The accepted replacement
 swaps atomically; a late result for superseded geometry still cannot publish.

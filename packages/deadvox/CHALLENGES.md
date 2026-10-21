@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're assessing the risks or proof needed for the v1 scope
-  - you're judging lighting arrival and edit transitions, residency limits or the frame-service gate
+  - you're judging lighting arrival and edit transitions, residency limits or frame rate on weak GPUs
   - you're choosing when to tackle a simulation, performance or world-generation constraint
 ---
 
