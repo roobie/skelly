@@ -80,10 +80,10 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "gas_canister",
+      "model": "gas_canister",
       "name": "Gas cartridge",
       "size": [1, 2],
-      "stack": 2,
-      "weight": 350
+      "stack": 2
     },
     {
       "category": "tool",

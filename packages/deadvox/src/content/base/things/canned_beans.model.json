@@ -1,0 +1,8 @@
+{
+  "id": "canned_beans",
+  "file": "assets/models/canned_beans.glb",
+  "parts": { "package": { "node": "package:vessel", "massKg": 0.45, "centreOfMass": [0, 0.055928062313458364, 0] } },
+  "grip": { "at": [0, 0.0565, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -85,14 +85,14 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "cartridge_box_357_h_magnum",
+      "model": "cartridge_box_357_h_magnum",
       "name": ".357 Magnum box",
       "size": [2, 2],
       "unpack": {
         "count": 50,
         "item": "cartridge_357_h_magnum",
         "simSeconds": 1.5
-      },
-      "weight": 825
+      }
     },
     {
       "category": "material",

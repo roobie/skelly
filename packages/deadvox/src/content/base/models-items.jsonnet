@@ -1,5 +1,20 @@
 {
   "models": [
+    import 'things/canned_beans.model.json',
+    import 'things/canned_soup.model.json',
+    import 'things/crackers.model.json',
+    import 'things/chocolate_bar.model.json',
+    import 'things/soda_can.model.json',
+    import 'things/water_bottle.model.json',
+    import 'things/juice_carton.model.json',
+    import 'things/cartridge_box_308_h_winchester.model.json',
+    import 'things/cartridge_box_5_d_56x45.model.json',
+    import 'things/cartridge_box_7_d_62x39.model.json',
+    import 'things/cartridge_box_357_h_magnum.model.json',
+    import 'things/shotshell_box.model.json',
+    import 'things/ammo_can.model.json',
+    import 'things/jerry_can.model.json',
+    import 'things/gas_canister.model.json',
     {
       "id": "hand_saw",
       "file": "assets/models/hand_saw.glb",
