@@ -223,6 +223,8 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 
 ### 5. Holding ground
 
+The scope, open decision gates and reviewable build order are in [SLICE-5.md](SLICE-5.md).
+
 - Construction: walls, floors, doors, barricades and furniture, by crafting.
 - Doors and locks, and zombies bashing doors (brutes arrive here).
 - Electricity: generators, batteries, solar panels, wires, lights and
