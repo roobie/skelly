@@ -192,32 +192,25 @@ const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
   return targets.find(({ plan }) => plan.ok && plan.merge)?.target ?? targets.find(({ plan }) => plan.ok)?.target;
 };
 
-/** Dominant-hand items stow; other carried items drop exactly at the feet. */
+/** Dominant-hand items stow; other carried items drop as an ordinary drop does. */
 export const quickMove = (item: Item, view: ReachSnapshot): MoveOption => {
   const inv = view.player.inventory;
   const at = inv.locate(item);
-  let target: Target = { kind: 'pile', pos: view.feet };
-  if (at && ((at.kind === 'hand' && at.side === dominantSide(inv.character)) || inv.placeOf(at) !== undefined)) {
-    const wear: Target = { kind: 'worn' };
-    const sling = slingTarget(inv, item);
-    if (sling) {
-      target = sling;
-    } else if (at.kind === 'pile' && item.pockets && inv.plan(item, wear).ok) {
-      target = wear;
-    } else {
-      const pocket = inventoryPocket(inv, item);
-      if (!pocket) {
-        return {
-          kind: 'move',
-          label: 'Quick move',
-          target,
-          plan: { ok: false, reason: "It doesn't fit in your inventory" },
-        };
-      }
-      target = pocket;
-    }
+  if (!(at && ((at.kind === 'hand' && at.side === dominantSide(inv.character)) || inv.placeOf(at) !== undefined))) {
+    return { kind: 'move', label: 'Quick move', ...dropTarget(inv, item, view.feet) };
   }
-  return { kind: 'move', label: 'Quick move', target, plan: inv.plan(item, target) };
+  const wear: Target = { kind: 'worn' };
+  const target =
+    slingTarget(inv, item) ??
+    (at.kind === 'pile' && item.pockets && inv.plan(item, wear).ok ? wear : inventoryPocket(inv, item));
+  return target
+    ? { kind: 'move', label: 'Quick move', target, plan: inv.plan(item, target) }
+    : {
+        kind: 'move',
+        label: 'Quick move',
+        target: { kind: 'pile', pos: view.feet },
+        plan: { ok: false, reason: "It doesn't fit in your inventory" },
+      };
 };
 
 const refuseUse = (reason: string): UseOption => ({ kind: 'use', label: 'Use', plan: { ok: false, reason } });

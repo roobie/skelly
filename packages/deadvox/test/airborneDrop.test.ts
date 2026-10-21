@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { dominantSide } from '../src/core/character.ts';
 import { worldSolid } from '../src/core/collision.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { planDisassembly } from '../src/core/disassembly.ts';
-import { WORK_IN_PROGRESS } from '../src/core/inventory.ts';
+import { type Target, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
-import { dropTarget, toHands } from '../src/core/options.ts';
+import { dropTarget, playerPockets, quickMove, toHands } from '../src/core/options.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { IDLE } from '../src/game/session.ts';
 import { advance, createRuntime, fixtureZombieColumn, type Runtime, registry, scale } from './snapshotTestSupport.ts';
@@ -69,13 +70,41 @@ const onSurface = (runtime: Runtime, item: Item): [open: boolean, supported: boo
   return [!solid(pos[0], pos[1], pos[2]), solid(pos[0], pos[1] - 1, pos[2])];
 };
 
+/** An item that can be taken apart, put in a pocket of a bag the player wears. */
+const pocketedForDisassembly = ({ inventory }: Runtime): Item => {
+  const bag = [...registry.items.values()].find((def) => def.wearable && def.container?.pockets.length)!;
+  if (!inventory.add(inventory.create(bag.id), { kind: 'worn' })) {
+    throw new Error('The player could not put on a bag');
+  }
+  const pockets = playerPockets(inventory).map(({ owner, pocket }): Target => ({ kind: 'pocket', owner, pocket }));
+  for (const def of registry.items.values()) {
+    const candidate = def.disassembly && !def.container ? inventory.create(def.id) : undefined;
+    if (candidate && pockets.some((pocket) => inventory.add(candidate, pocket))) {
+      return candidate;
+    }
+  }
+  throw new Error('No pocket takes an item that can be taken apart');
+};
+
+const finishHandling = (runtime: Runtime): void => {
+  for (let frame = 0; runtime.handling.busy; frame += 1) {
+    if (frame > 3000) {
+      throw new Error('The handling queue never finished');
+    }
+    advance(runtime, 1);
+  }
+};
+
 describe('airborne drop', () => {
-  it('lands a drop made mid-air on the ground below, even out of reach', () => {
+  it('lands an off-hand quick move made mid-air on the ground below, even out of reach', () => {
     const runtime = highFall();
     const { inventory } = runtime;
-    const item = inventory.hands.left ?? inventory.hands.right!;
-    const drop = dropTarget(inventory, item, runtime.session.feet());
-    expect(inventory.move(item, drop.target).ok).toBe(true);
+    const item = inventory.hands[dominantSide(inventory.character) === 'right' ? 'left' : 'right'];
+    if (!item) {
+      throw new Error('The high fall fixture holds nothing in the off hand');
+    }
+    const { target } = quickMove(item, runtime.session.reach());
+    expect(inventory.move(item, target).ok).toBe(true);
     expect(onSurface(runtime, item)).toEqual([true, true]);
   });
 
@@ -93,12 +122,7 @@ describe('airborne drop', () => {
     const { inventory, handling } = runtime;
     const held = [inventory.hands.right, inventory.hands.left].filter((item): item is Item => item !== undefined);
     expect(toHands(inventory, handling, gun!, runtime.session.feet())).toBeUndefined();
-    for (let frame = 0; handling.busy; frame += 1) {
-      if (frame > 3000) {
-        throw new Error('The two-handed wield never finished');
-      }
-      advance(runtime, 1);
-    }
+    finishHandling(runtime);
     const putDown = held.filter((item) => inventory.locate(item)?.kind === 'pile');
     expect(putDown.length).toBeGreaterThan(0);
     expect(putDown.map((item) => onSurface(runtime, item))).toEqual(putDown.map(() => [true, true]));
@@ -106,22 +130,19 @@ describe('airborne drop', () => {
 
   it('lands the input of a work item cancelled mid-air on the ground below', () => {
     const runtime = highFall();
-    const { inventory, session } = runtime;
-    const feet = session.feet();
+    const { inventory, session, sim } = runtime;
     for (const held of [inventory.hands.right, inventory.hands.left]) {
-      if (held && !inventory.move(held, { kind: 'pile', pos: feet }).ok) {
+      if (held && !inventory.move(held, dropTarget(inventory, held, session.feet()).target).ok) {
         throw new Error('Could not empty the hands to start work');
       }
     }
-    const def = [...registry.items.values()].find((candidate) => candidate.disassembly && !candidate.container)!;
-    const source = inventory.create(def.id);
-    if (!inventory.add(source, { kind: 'pile', pos: feet })) {
-      throw new Error('Could not lay the item to take apart at the feet');
-    }
+    const source = pocketedForDisassembly(runtime);
     const plan = planDisassembly(source, session.reach(), session.character);
-    const work = plan && inventory.beginWork(plan);
-    expect(work).toBeDefined();
-    inventory.releaseWork(work!, false, session.feet());
-    expect(onSurface(runtime, source)).toEqual([true, true]);
+    expect(plan).toBeDefined();
+    expect(sim.actions.beginCraft(plan!)).toBeUndefined();
+    const work = inventory.hands.right ?? inventory.hands.left;
+    expect(work?.work).toBeDefined();
+    expect(sim.actions.cancelCraft(work!.uid)).toBeUndefined();
+    expect(onSurface(runtime, source!)).toEqual([true, true]);
   });
 });

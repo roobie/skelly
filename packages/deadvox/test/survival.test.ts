@@ -211,7 +211,7 @@ describe('flashlight', () => {
     drainLight(registry, light, gameHours(2)); // half left
     const batteries = inventory.create('aa_battery', 3);
     inventory.add(batteries, { kind: 'hand', side: 'left' });
-    const feet: Target = { kind: 'pile', pos: [0, 0, 0] };
+    const feet = (): Target => ({ kind: 'pile', pos: [0, 0, 0] });
     expect(swapBattery(inventory, light, batteries, feet)).toBeUndefined();
     expect(batteries.count).toBe(2);
     expect(chargeOf(registry, light)).toBe(1);
