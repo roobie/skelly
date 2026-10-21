@@ -23,6 +23,14 @@ issue's bounded diagnosis and before/after/restored-before evidence, not a retry
 timeout. See `packages/deadvox/test/browser/save-storage.mjs`, `navigationOnly`, and
 `test/browser-ci-manifest.mjs`, `quarantinedScripts`.
 
+Asynchronous save checks must poll the resolved result, not the truthiness of the promise:
+a false first observation must not certify quiescence. Separate browser capture and storage
+durations from host phase timings, because renderer dispatch delay can precede the work
+being measured. Keep these observations bounded and retain document identity across Back
+so destination activity cannot be mistaken for restored-world work. See
+`packages/deadvox/test/browser/save-storage.mjs`, `pollNavigation`, `navigationPhase` and
+`instrumentNavigationSave`.
+
 The required aggregate fails closed on unsuccessful or unobservable attempts in the same run: a later green rerun must not hide an earlier failure. See `tools/browser-ci-result.mjs`, `assertBrowserResult` and `checkBrowserWorkflow`, and `.github/workflows/deadvox.yml`.
 
 Diagnostic artifacts keep source, run, attempt and layout evidence distinct, so siblings and reruns cannot overwrite one another. Native-input, render-free, pixel and operator-review checks answer different questions and remain separate. The primary-action logic and pixel checks are separate because software rendering must not consume the logic contract's time bound; see `packages/deadvox/test/browser/primary-action.mjs` and `packages/deadvox/test/browser/primary-action-pixel.mjs`.

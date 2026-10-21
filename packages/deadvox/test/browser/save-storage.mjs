@@ -41,6 +41,7 @@ if (!['chromium', 'firefox'].includes(browserName)) {
   throw new Error(`Expected browser name chromium or firefox, got ${browserName}`);
 }
 const { firefox } = await loadPlaywright();
+const { expect } = await import('playwright/test');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
 let vite;
@@ -76,10 +77,28 @@ const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
     globalThis.clearTimeout(timer);
   }
 };
+const navigationPhase = async (label, action) => {
+  const startedRealMs = performance.now();
+  process.stdout.write(`SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'start', at: Date.now() })}\n`);
+  try {
+    const result = await withTimeout(label, action());
+    process.stdout.write(
+      `SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'end', elapsedRealMs: performance.now() - startedRealMs, at: Date.now() })}\n`,
+    );
+    return result;
+  } catch (error) {
+    process.stderr.write(
+      `SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'error', elapsedRealMs: performance.now() - startedRealMs, at: Date.now(), error: String(error) })}\n`,
+    );
+    throw error;
+  }
+};
 let browser;
 let firefoxServer;
 try {
-  const address = await withTimeout('Vite startup', startWebServer());
+  const address = await (navigationOnly
+    ? navigationPhase('Vite startup', startWebServer)
+    : withTimeout('Vite startup', startWebServer()));
   assert(address && typeof address !== 'string');
   const testUrl =
     autosaveOnly || navigationOnly
@@ -119,6 +138,24 @@ try {
       if (typeof navigator.locks?.request !== 'function') {
         return;
       }
+      globalThis.__saveNavigationTiming = (entry) => {
+        if (globalThis !== globalThis.top) {
+          return;
+        }
+        const events = JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]');
+        events.push({ ...entry, at: Date.now(), document: performance.timeOrigin });
+        sessionStorage.setItem('save-navigation-timings', JSON.stringify(events.slice(-64)));
+      };
+      const lifecycle = (event) => {
+        globalThis.__saveNavigationTiming({
+          operation: event.type,
+          persisted: event.persisted,
+          visibilityState: document.visibilityState,
+        });
+      };
+      document.addEventListener('visibilitychange', lifecycle);
+      globalThis.addEventListener('pagehide', lifecycle);
+      globalThis.addEventListener('pageshow', lifecycle);
       globalThis.__d144LifecycleEvent = 'none';
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
@@ -231,13 +268,16 @@ try {
   };
   const navigatePage = async (label, action) => {
     const state = navigationDiagnostics.get(page);
-    const source = await page
-      .evaluate(() => {
+    const readSource = () =>
+      page.evaluate(() => {
         const controller = globalThis.deadvoxSaveTest?.controller;
         const save = globalThis.deadvoxSaveTest?.saveState?.();
         return {
           url: location.href,
           readyState: document.readyState,
+          saveTimings: globalThis.__saveNavigationTiming
+            ? JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]')
+            : undefined,
           navigation: performance.getEntriesByType('navigation')[0]?.toJSON(),
           moduleLoads: performance
             .getEntriesByType('resource')
@@ -254,12 +294,15 @@ try {
               }
             : null,
         };
-      })
-      .catch((error) => ({ url: page.url(), error: String(error) }));
+      });
+    const source = await (navigationOnly
+      ? navigationPhase(`${label} source diagnostics`, readSource)
+      : readSource()
+    ).catch((error) => ({ url: page.url(), error: String(error) }));
     const navigation = { label, source };
     state.navigationByGeneration.set(state.generation, navigation);
     process.stdout.write(`${browserName}: ${label} from ${JSON.stringify(source)}\n`);
-    return action();
+    return navigationOnly ? navigationPhase(label, action) : action();
   };
   const recordRequestFailure = (trackedPage, request) => {
     const failure = request.failure()?.errorText;
@@ -279,6 +322,61 @@ try {
     pageErrors.push(`${request.url()} failed: ${failure}`);
   };
   trackPageNavigation(page);
+  const pollNavigation = (predicate) =>
+    expect.poll(() => page.evaluate(predicate), { timeout: STAGE_TIMEOUT_MS }).toBe(true);
+  const waitForNavigationIdle = () =>
+    pollNavigation(async () => {
+      const { controller } = globalThis.deadvoxSaveTest;
+      const locks = await navigator.locks.query();
+      const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
+      const idle = !controller.writing && controller.queued === undefined && !activeSaveLock;
+      if (idle) {
+        globalThis.__saveNavigationTiming({
+          operation: 'quiescence',
+          writing: controller.writing,
+          queued: controller.queued !== undefined,
+          locks,
+        });
+      }
+      return idle;
+    });
+  const instrumentNavigationSave = () =>
+    page.evaluate(() => {
+      const { controller, storage } = globalThis.deadvoxSaveTest;
+      const report = (operation, event, startedRealMs, detail) => {
+        globalThis.__saveNavigationTiming({
+          operation,
+          event,
+          elapsedRealMs: performance.now() - startedRealMs,
+          detail,
+        });
+      };
+      const capture = controller.capture.bind(controller);
+      controller.capture = (reason) => {
+        const startedRealMs = performance.now();
+        report('capture', 'start', startedRealMs, reason);
+        try {
+          return capture(reason);
+        } finally {
+          report('capture', 'end', startedRealMs, reason);
+        }
+      };
+      for (const method of ['save', 'load']) {
+        const original = storage[method].bind(storage);
+        storage[method] = async (...args) => {
+          const startedRealMs = performance.now();
+          report(`storage.${method}`, 'start', startedRealMs);
+          try {
+            const result = await original(...args);
+            report(`storage.${method}`, 'end', startedRealMs);
+            return result;
+          } catch (error) {
+            report(`storage.${method}`, 'error', startedRealMs, String(error));
+            throw error;
+          }
+        };
+      }
+    });
   if (!autosaveOnly && !navigationOnly) {
     await page.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
     await page.waitForSelector('#ready', { timeout: STAGE_TIMEOUT_MS });
@@ -838,70 +936,62 @@ try {
       }
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
-    await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(
-      () => {
-        const marker = document.querySelector('.debug-frozen');
-        return marker !== null && !marker.hidden;
-      },
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
+    await navigationPhase('new world entry', async () => {
+      await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
+      await page.waitForFunction(
+        () => {
+          const marker = document.querySelector('.debug-frozen');
+          return marker !== null && !marker.hidden;
+        },
+        undefined,
+        { timeout: STAGE_TIMEOUT_MS },
+      );
+    });
+    await navigationPhase('checkpoint instrumentation', instrumentNavigationSave);
+    await navigationPhase('checkpoint capture', () =>
+      page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep()),
     );
-    await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
-    await page.waitForFunction(
-      async () => {
+    await navigationPhase('checkpoint commit and quiescence', async () => {
+      await pollNavigation(async () => {
         const { storage, namespace, controller } = globalThis.deadvoxSaveTest;
         const record = await storage.load(namespace);
         if (record) {
           sessionStorage.setItem('d144-generation-before-reload', String(record.generation));
         }
         return !controller.writing && controller.queued === undefined && Boolean(record);
-      },
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
-    );
-    await page.waitForFunction(
-      async () => {
-        const { controller } = globalThis.deadvoxSaveTest;
-        const locks = await navigator.locks.query();
-        const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
-        return !controller.writing && controller.queued === undefined && !activeSaveLock;
-      },
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
-    );
-    await navigatePage('navigation-only reload after checkpoint', () =>
-      page.reload({ timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' }),
-    );
-    await page.waitForFunction(
-      () =>
-        globalThis.deadvoxSaveTest?.controller.ready &&
-        globalThis.deadvoxSaveTest.controller.restored !== undefined &&
-        document.querySelector('#continue')?.disabled === false,
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
-    );
-    await page.click('#continue', { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
-      timeout: STAGE_TIMEOUT_MS,
+      });
+      await waitForNavigationIdle();
     });
-    await page.waitForFunction(
-      async () => {
-        const { controller } = globalThis.deadvoxSaveTest;
-        const locks = await navigator.locks.query();
-        const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
-        return !controller.writing && controller.queued === undefined && !activeSaveLock;
-      },
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
+    await navigationPhase('reload and save discovery', async () => {
+      await navigatePage('navigation-only reload after checkpoint', () =>
+        page.reload({ timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' }),
+      );
+      await page.waitForFunction(
+        () =>
+          globalThis.deadvoxSaveTest?.controller.ready &&
+          globalThis.deadvoxSaveTest.controller.restored !== undefined &&
+          document.querySelector('#continue')?.disabled === false,
+        undefined,
+        { timeout: STAGE_TIMEOUT_MS },
+      );
+    });
+    await navigationPhase('Continue entry', async () => {
+      await page.click('#continue', { timeout: STAGE_TIMEOUT_MS });
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+    });
+    await navigationPhase('Continue quiescence', waitForNavigationIdle);
+    await navigationPhase('restored-world instrumentation', instrumentNavigationSave);
+    const beforeNavigation = await navigationPhase('pre-navigation lock query', () =>
+      page.evaluate(async () => ({
+        writing: globalThis.deadvoxSaveTest.controller.writing,
+        locks: await navigator.locks.query(),
+        namespace: globalThis.deadvoxSaveTest.controller.namespace,
+        generation: globalThis.deadvoxSaveTest.controller.currentRecord?.generation,
+        savedGeneration: globalThis.deadvoxSaveTest.controller.savedGeneration,
+      })),
     );
-    const beforeNavigation = await page.evaluate(async () => ({
-      writing: globalThis.deadvoxSaveTest.controller.writing,
-      locks: await navigator.locks.query(),
-      namespace: globalThis.deadvoxSaveTest.controller.namespace,
-      generation: globalThis.deadvoxSaveTest.controller.currentRecord?.generation,
-      savedGeneration: globalThis.deadvoxSaveTest.controller.savedGeneration,
-    }));
     process.stdout.write(`${browserName}: pre-navigation save state ${JSON.stringify(beforeNavigation)}\n`);
     assert.equal(beforeNavigation.writing, false);
     assert.equal(
@@ -943,63 +1033,65 @@ try {
     }
     const pumpUrl = new URL(appUrl);
     pumpUrl.searchParams.set('loadout', 'pump');
-    await navigatePage('navigation-only goto pump loadout', () =>
-      page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),
+    await navigationPhase('destination save discovery', async () => {
+      await navigatePage('navigation-only goto pump loadout', () =>
+        page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),
+      );
+      await page.waitForFunction(() => sessionStorage.getItem('d144-lock-snapshot') !== null, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+    });
+    const result = await navigationPhase('destination lock snapshot', () =>
+      page.evaluate(async () => {
+        const locks = await navigator.locks.query();
+        const controller = globalThis.deadvoxSaveTest?.controller;
+        return {
+          pagehide: JSON.parse(sessionStorage.getItem('d144-pagehide') ?? 'null'),
+          writerRequested: sessionStorage.getItem('d144-writer-requested'),
+          writerTrigger: sessionStorage.getItem('d144-writer-trigger'),
+          lockSnapshot: JSON.parse(sessionStorage.getItem('d144-lock-snapshot') ?? 'null'),
+          heldWriter: sessionStorage.getItem('d144-held-writer'),
+          ready: controller?.ready ?? null,
+          hasSavedWorld: controller ? controller.restored !== undefined : null,
+          storageUnavailable: controller?.storageUnavailable ?? null,
+          continueDisabled: document.querySelector('#continue')?.disabled,
+          held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
+          pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
+          warnings: globalThis.__d144LockWarnings ?? [],
+          namespace: controller?.namespace,
+          generation: controller?.currentRecord?.generation,
+          savedGeneration: controller?.savedGeneration,
+          statusText: controller?.statusText,
+          failure: controller?.failure,
+          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons ?? null,
+          saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
+        };
+      }),
     );
-    await page.waitForFunction(() => sessionStorage.getItem('d144-lock-snapshot') !== null, undefined, {
-      timeout: STAGE_TIMEOUT_MS,
-    });
-    const result = await page.evaluate(async () => {
-      const locks = await navigator.locks.query();
-      const controller = globalThis.deadvoxSaveTest?.controller;
-      return {
-        pagehide: JSON.parse(sessionStorage.getItem('d144-pagehide') ?? 'null'),
-        writerRequested: sessionStorage.getItem('d144-writer-requested'),
-        writerTrigger: sessionStorage.getItem('d144-writer-trigger'),
-        lockSnapshot: JSON.parse(sessionStorage.getItem('d144-lock-snapshot') ?? 'null'),
-        heldWriter: sessionStorage.getItem('d144-held-writer'),
-        ready: controller?.ready ?? null,
-        hasSavedWorld: controller ? controller.restored !== undefined : null,
-        storageUnavailable: controller?.storageUnavailable ?? null,
-        continueDisabled: document.querySelector('#continue')?.disabled,
-        held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
-        pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
-        warnings: globalThis.__d144LockWarnings ?? [],
-        namespace: controller?.namespace,
-        generation: controller?.currentRecord?.generation,
-        savedGeneration: controller?.savedGeneration,
-        statusText: controller?.statusText,
-        failure: controller?.failure,
-        notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons ?? null,
-      };
-    });
     process.stdout.write(`${browserName}: in-tab loadout navigation ${JSON.stringify(result)}\n`);
     let restored;
     if (browserName === 'chromium' && result.pagehide?.persisted === true) {
-      await navigatePage('navigation-only browser Back', () =>
-        page.goBack({ waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS }),
-      );
-      await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') !== null, undefined, {
-        timeout: STAGE_TIMEOUT_MS,
+      await navigationPhase('Back pageshow and quiescence', async () => {
+        await navigatePage('navigation-only browser Back', () =>
+          page.goBack({ waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS }),
+        );
+        await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') !== null, undefined, {
+          timeout: STAGE_TIMEOUT_MS,
+        });
+        await waitForNavigationIdle();
       });
-      await page.waitForFunction(
-        async () => {
-          const locks = await navigator.locks.query();
-          const controller = globalThis.deadvoxSaveTest?.controller;
-          const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
-          return controller && !controller.writing && controller.queued === undefined && !activeSaveLock;
-        },
-        undefined,
-        { timeout: STAGE_TIMEOUT_MS },
+      restored = await navigationPhase('Back committed record read', () =>
+        page.evaluate(async () => ({
+          locks: await navigator.locks.query(),
+          pageshowPersisted: sessionStorage.getItem('d144-pageshow') === 'true',
+          saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
+          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
+          controllerEntered: globalThis.deadvoxSaveTest?.controller?.isEntered ?? null,
+          pageIsLeaving: globalThis.deadvoxSaveTest?.controller?.pageIsLeaving ?? null,
+          visibilityState: document.visibilityState,
+          generation: (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
+        })),
       );
-      restored = await page.evaluate(async () => ({
-        locks: await navigator.locks.query(),
-        pageshowPersisted: sessionStorage.getItem('d144-pageshow') === 'true',
-        controllerEntered: globalThis.deadvoxSaveTest?.controller?.isEntered ?? null,
-        pageIsLeaving: globalThis.deadvoxSaveTest?.controller?.pageIsLeaving ?? null,
-        visibilityState: document.visibilityState,
-        generation: (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
-      }));
       process.stdout.write(`${browserName}: restored after navigation ${JSON.stringify(restored)}\n`);
     }
     if (browserName === 'chromium') {
@@ -1024,31 +1116,27 @@ try {
         'restoring a cached page does not leave a save lock held',
       );
       assert.equal(restored?.visibilityState, 'visible', 'Back restores the real page to the foreground');
-      await page.evaluate(() => {
-        Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
-        document.dispatchEvent(new Event('visibilitychange'));
-      });
-      await page.waitForFunction(
-        async () => {
-          const { controller } = globalThis.deadvoxSaveTest;
-          const locks = await navigator.locks.query();
-          const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
-          return !controller.writing && controller.queued === undefined && !activeSaveLock;
-        },
-        undefined,
-        { timeout: STAGE_TIMEOUT_MS },
+      await navigationPhase('post-Back visibility capture', () =>
+        page.evaluate(() => {
+          Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+          document.dispatchEvent(new Event('visibilitychange'));
+        }),
       );
-      const postBackSave = await page.evaluate(async () => {
-        const { controller, storage, namespace } = globalThis.deadvoxSaveTest;
-        const record = await storage.load(namespace);
-        return {
-          pageIsLeaving: controller.pageIsLeaving,
-          statusText: controller.statusText,
-          captures: JSON.parse(sessionStorage.getItem('d144-captures') ?? '[]'),
-          writes: JSON.parse(sessionStorage.getItem('d144-writes') ?? '[]'),
-          generation: record?.generation,
-        };
-      });
+      await navigationPhase('post-Back commit and quiescence', waitForNavigationIdle);
+      const postBackSave = await navigationPhase('post-Back committed record read', () =>
+        page.evaluate(async () => {
+          const { controller, storage, namespace } = globalThis.deadvoxSaveTest;
+          const record = await storage.load(namespace);
+          return {
+            pageIsLeaving: controller.pageIsLeaving,
+            statusText: controller.statusText,
+            saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
+            captures: JSON.parse(sessionStorage.getItem('d144-captures') ?? '[]'),
+            writes: JSON.parse(sessionStorage.getItem('d144-writes') ?? '[]'),
+            generation: record?.generation,
+          };
+        }),
+      );
       process.stdout.write(`${browserName}: post-Back capture ${JSON.stringify(postBackSave)}\n`);
       await page.evaluate(() =>
         Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }),
