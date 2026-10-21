@@ -1749,8 +1749,8 @@ than overwriting a result awaiting publication. See `src/game/streamer.ts`,
 
 Inside those application regions, an uncertified column uses a capped version of
 the existing estimate rather than blackout: cold discovery must not make an open
-surface appear sealed. The cap is provisional visual tuning for BR's first look,
-not proof that the geometry is open. Once lighting has been published, keep that
+surface appear sealed. The cap is the accepted look for that uncertainty, not
+proof that the geometry is open. Once lighting has been published, keep that
 committed estimate while geometry edits are revalidated: replacing a dark room with
 the uncertainty cap would flash it bright when a door opens. The accepted replacement
 swaps atomically; a late result for superseded geometry still cannot publish.
@@ -1764,10 +1764,11 @@ could remain permanently dark. Solve halos and spatial lookup cells do not expan
 eligibility. Arbitrary construction and caves remain outside this discovery scope.
 
 Worker execution protects rendering from dense transport work, but copying, submission,
-publication and texture uploads still consume the main frame. The #569 spike needs
-both a first look and measured admission/completion evidence; background execution
-alone is not a frame-gate pass. Lighting readiness is derived presentation, never
-simulation or save state. Interior-source propagation remains separate work.
+publication and texture uploads still consume the main frame, so background execution
+alone does not show that a weak GPU holds its frame rate; #680 owns that. Building
+interiors are accepted as lit; vehicle interiors read too dark and belong to #1016.
+Lighting readiness is derived presentation, never simulation or save state.
+Interior-source propagation remains separate work.
 
 Keep a carried item's glow attached to the item in hand, on the ground, and in
 flight. Rendering and zombie sensing are separate: visual beam shape affects
@@ -1802,11 +1803,11 @@ they drop. See `src/core/inventory.ts`, `Inventory.landing` and
 ## Held-item throws
 
 A released item joins its target pile immediately, keeping inventory as its
-sole owner and preserving ordinary fuse and save behavior. While the transient
-arc plays, the pile renderer hides that item; the arc uses the same current
-projection as the visible pile, excluding other active arc hides and following
-scatter poses as well as model readiness. This presentation-only hide avoids a
-second item owner; #678 tracks impact-time ownership. Mass limits range; #368 is
+sole owner and preserving ordinary fuse and save behavior. The flight is
+presentation only: the pile renderer hides the item while its arc plays, and the
+arc follows the pile's visible pose so the landing does not jump. No second owner
+exists while an item is in flight, so saves and fuses see only the pile; behavior
+during flight is new work on a new issue. Mass limits range; #368 is
 the trigger for deciding whether atmospheric drag adds another limit. A throw
 adds no hit damage or landing lure; explosive effects belong to the grenade.
 See `src/game/throwCharge.ts`, `ThrowCharge.place`;
