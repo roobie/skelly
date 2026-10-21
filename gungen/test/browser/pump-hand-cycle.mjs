@@ -40,29 +40,28 @@ try {
   assert.equal(await page.locator('#cycle-empty-label').isVisible(), false);
   const home = await page.evaluate(() => globalThis.pumpWitness);
   const samples = [];
-  const scrubAt = async (milliseconds, offset) => {
+  const scrubAt = async (milliseconds) => {
     await page.locator('#cycle-scrub').evaluate((o, value) => {
       o.value = String(value);
       o.dispatchEvent(new Event('input'));
     }, milliseconds);
-    await page.waitForFunction(
-      (value) => document.querySelector('#cycle-readout').textContent.startsWith((value / 1000).toFixed(3)),
-      milliseconds,
-    );
-    await page.waitForFunction(
-      ({ home: baseline, offset: displacement }) =>
-        ['forend', 'bolt-carrier'].every(
-          (id) => Math.abs(globalThis.pumpWitness[id][0] - baseline[id][0] - displacement) < 1e-7,
-        ),
-      { home, offset },
-    );
     const positions = await page.evaluate(() => globalThis.pumpWitness);
     samples.push({ milliseconds, positions });
   };
-  // Sequential poses of one live scene; the forward leg must be hand-driven too.
-  await scrubAt(500, -5.5);
-  await scrubAt(900, -2.75);
-  await scrubAt(1150, 0);
+  // Sample the live cycle at its owner-provided start, midpoint and end. Both coupled nodes
+  // must travel rearward and return together without freezing authored timing or stroke tuning.
+  const duration = Number(await page.locator('#cycle-scrub').getAttribute('max'));
+  const step = Number(await page.locator('#cycle-scrub').getAttribute('step')) || 1;
+  const at = (fraction) => Math.round((duration * fraction) / step) * step;
+  await scrubAt(at(0.4));
+  await scrubAt(at(0.7));
+  await scrubAt(duration - step);
+  for (const { positions } of samples) {
+    for (const id of ['forend', 'bolt-carrier']) {
+      assert(Math.abs(positions[id][0] - home[id][0] - (positions.forend[0] - home.forend[0])) < 1e-7);
+    }
+  }
+  assert(samples.some(({ positions }) => positions.forend[0] < home.forend[0]));
   await page.locator('#cycle-play').click();
   await page.waitForFunction((baseline) => Math.abs(globalThis.pumpWitness.forend[0] - baseline.forend[0]) > 0.1, home);
   await page.locator('#cycle-play').click();

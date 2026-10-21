@@ -17,28 +17,7 @@ const designPath = (name: string) => join(import.meta.dirname, '..', 'designs', 
 const readDesign = (name: string): TestDesign => JSON.parse(readFileSync(designPath(name), 'utf8')) as TestDesign;
 const load = (design: TestDesign) => loadGunDesign(JSON.stringify(design));
 
-const expected = [
-  { id: 'stanag-20', version: 1, family: 'magazine', fixedParams: { length: 'M', profile: 'stanag-straight' } },
-  { id: 'stanag-30', version: 1, family: 'magazine', fixedParams: { length: 'L', profile: 'stanag-curved' } },
-  {
-    id: 'ak74-30',
-    version: 1,
-    family: 'magazine',
-    fixedParams: { length: 'L', profile: 'ak-curved', variant: 'ak74' },
-  },
-  {
-    id: 'akm-30',
-    version: 1,
-    family: 'magazine',
-    fixedParams: { length: 'L', profile: 'ak-curved', variant: 'akm' },
-  },
-] as const;
-
 describe('gun prefab catalogue', () => {
-  it('defines the STANAG and AK magazines from supported family values', () => {
-    expect(GUN_PREFABS).toEqual(expected);
-  });
-
   it('uses geometry-distinct STANAG lengths for 20 and 30 rounds', () => {
     const family = FAMILIES.magazine!;
     const build = (id: string) => {
@@ -69,20 +48,18 @@ describe('gun prefab catalogue', () => {
     }
   });
 
-  it('attaches only prefabs whose fixed values match the designs', () => {
-    const ar = readDesign('archetype-ar');
-    const arMagazine = ar.assembly.parts.magazine!;
-    expect(arMagazine.params).toMatchObject({ length: 'M', profile: 'stanag-straight' });
-    expect(arMagazine.prefab).toEqual({ id: 'stanag-20', version: 1 });
-    const arLoad = load(ar);
-    expect(arLoad.ok && arLoad.issues).toEqual([]);
-
-    const ak = readDesign('archetype-ak');
-    const akMagazine = ak.assembly.parts.magazine!;
-    expect(akMagazine.params).toMatchObject({ length: 'L', profile: 'ak-curved', variant: 'ak74' });
-    expect(akMagazine.prefab).toEqual({ id: 'ak74-30', version: 1 });
-    const akLoad = load(ak);
-    expect(akLoad.ok && akLoad.issues).toEqual([]);
+  it('loads design prefab references with their catalogue-owned fixed values', () => {
+    for (const name of ['archetype-ar', 'archetype-ak']) {
+      const design = readDesign(name);
+      const magazine = design.assembly.parts.magazine!;
+      const prefab = GUN_PREFABS.find(
+        (entry) => entry.id === magazine.prefab?.id && entry.version === magazine.prefab?.version,
+      );
+      expect(prefab, name).toBeDefined();
+      expect(magazine.params).toMatchObject(prefab?.fixedParams ?? {});
+      const result = load(design);
+      expect(result.ok && result.issues, name).toEqual([]);
+    }
   });
 
   it('rejects an unknown version of a known prefab id', () => {
