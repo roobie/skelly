@@ -7,6 +7,10 @@ read_if:
 
 Practice is a separate authored place, not a guided replacement world. Guaranteed supplies and a compact route let a newcomer learn ordinary interactions without depending on random scavenging. Use `src/content/base/tutorial.jsonnet` and `src/core/authoredSite.ts`, `AuthoredSite`.
 
+The essentials route stays short so entry remains cheap. Combat and ammunition practice, covering both revolver and pump shotgun, injury recovery, and light and power belong in optional modules: growth must not lengthen everyone's first session.
+
+Action labels show live bindings because outcome nouns alone leave newcomers without the means to act. Fixed pointer actions use their catalogue labels rather than implying rebinding support. Help opens the shared controls card on the relevant topic, keeping one binding catalogue that follows rebinding instead of a second manual that can drift. See `src/ui/tutorial.ts`, `mountTutorial`, and `src/game/controls.ts`, `mountControlsCard`.
+
 Short contextual objectives observe completed outcomes rather than pressed buttons. This prevents an attempted, refused or cancelled action from being taught as success. Outcomes are retained even when performed early so lesson order cannot strand a player who already ate the supplies. Completed bean consumption also satisfies the hands prerequisite: quickbar use handles pocket food without leaving it wielded, and requiring the vanished beans afterward would punish a successful ordinary interaction. The observer cannot execute actions; see `src/game/tutorial.ts`, `Tutorial`, and `src/ui/tutorial.ts`, `mountTutorial`.
 
 Avoidance teaches that fighting is optional. The threat has ordinary senses and damage, and the route offers separation and cover instead of immunity, scripted injury or a required kill. A bandage supports recovery without making injury a graduation requirement. Restart and exit remain available in the pause menu because practice supplies can be lost or exhausted.
