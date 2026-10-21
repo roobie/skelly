@@ -10,6 +10,9 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user pwuser
     timeout-minutes: ${{ inputs.shard == 'control-check' && 100 || 30 }}
     defaults:
       run:
@@ -18,6 +21,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Trust the checked-out repository
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Cache go-jsonnet
         uses: actions/cache@v4
         with:
@@ -127,6 +132,14 @@ jobs:
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         timeout-minutes: 3
         run: npx playwright install firefox chromium
+      - name: Install feasibility agreement browsers
+        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        timeout-minutes: 3
+        run: npx playwright install chromium firefox webkit
+      - name: Vehicle feasibility agreement (Node, Chromium, Firefox, WebKit)
+        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        timeout-minutes: 1
+        run: node test/browser/vehicle-feasibility.mjs
       - name: Isolated expression Wasm cross-engine contract
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         timeout-minutes: 1

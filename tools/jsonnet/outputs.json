@@ -45,6 +45,10 @@
       "output": "packages/deadvox/src/config/perf-baseline.json"
     },
     {
+      "source": "packages/deadvox/src/config/vehicleFeasibility.jsonnet",
+      "output": "packages/deadvox/src/config/vehicleFeasibility.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/assets/manifest.jsonnet",
       "output": "packages/deadvox/src/content/base/assets/manifest.json"
     },
