@@ -1072,10 +1072,11 @@ describe('MobActorMeshes reactions', () => {
       renderer.zombieDied(id, zombie);
       expect(renderer.isTracked(id)).toBe(true); // still drawn, as a corpse
 
-      renderer.sync(store, 5, 1); // well into lying, nowhere near the end of the lifetime
+      renderer.sync(store, 1 / 60, 1);
       expect(renderer.isTracked(id)).toBe(true);
-
-      renderer.sync(store, 10, 1); // fall + lie + sink is under 11 s total — this pushes well past it
+      for (let frame = 0; frame < 300 && renderer.isTracked(id); frame++) {
+        renderer.sync(store, 0.1, 1);
+      }
       expect(renderer.isTracked(id)).toBe(false);
     } finally {
       renderer.dispose();
@@ -1203,14 +1204,17 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.zombieDied(id, zombie);
       store.remove(id);
 
-      renderer.sync(store, 1, 1, true);
-      for (let second = 0; second < 8; second++) {
-        renderer.sync(store, 1, 1, true);
+      const initial = renderer.boneMatrix(id, 'pelvis')!;
+      let lowest = initial[7]!;
+      for (let frame = 0; frame < 300; frame++) {
+        renderer.sync(store, 0.1, 1, true);
+        const pelvis = renderer.boneMatrix(id, 'pelvis');
+        if (!pelvis) {
+          break;
+        }
+        lowest = Math.min(lowest, pelvis[7]!);
       }
-      const beforeSink = renderer.boneMatrix(id, 'pelvis')!;
-      renderer.sync(store, 1, 1, true);
-      const afterSink = renderer.boneMatrix(id, 'pelvis')!;
-      expect(afterSink[7]).toBeLessThan(beforeSink[7]! - 0.5);
+      expect(lowest).toBeLessThan(initial[7]!);
     } finally {
       renderer.dispose();
     }

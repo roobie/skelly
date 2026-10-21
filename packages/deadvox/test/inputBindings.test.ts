@@ -429,7 +429,7 @@ describe('keyboard registry', () => {
     expect(bindings.rebind('hud.toggle', [{ code: 'KeyJ' }])).toBeUndefined();
     expect(bindings.label('hud.toggle')).toBe('J');
   });
-  it('gates the third-person view behind F2 and toggles it in both directions', () => {
+  it('gates the third-person view and toggles it in both directions', () => {
     const binding = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(binding.binding('debug.third-person-toggle')).toMatchObject({ gate: 'debug.gate', debug: true });
     const gate = binding.chords('debug.gate')[0]!;
@@ -455,39 +455,45 @@ describe('keyboard registry', () => {
       'down',
     ]);
   });
-  it('shares L between the worn-light hold and the F2-gated debug key without a clash', () => {
-    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+  it('routes a shared worn-light and gated debug chord without a clash', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    const light = bindings.chords('light.worn-toggle')[0]!;
+    const gate = bindings.chords('debug.gate')[0]!;
+    const debug = bindings.chords('debug.fog-decrease')[0]!;
+    const keyboard = new KeyboardInput(bindings);
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
     keyboard.context = () => ({ context: 'play', debug: true });
     const downs = () => commands.filter(({ phase }) => phase === 'down').map(({ action }) => action);
 
-    expect(keyboard.press(event('KeyL'))).toBe(true);
-    keyboard.release(event('KeyL'));
+    expect(keyboard.press(event(light.code, light))).toBe(true);
+    keyboard.release(event(light.code, light));
     expect(downs()).toContain('light.worn-toggle');
     expect(downs()).not.toContain('debug.fog-decrease');
 
     commands.length = 0;
-    expect(keyboard.press(event('F2'))).toBe(true);
-    expect(keyboard.press(event('KeyL'))).toBe(true);
+    expect(keyboard.press(event(gate.code, gate))).toBe(true);
+    expect(keyboard.press(event(debug.code, debug))).toBe(true);
     expect(downs()).toContain('debug.fog-decrease');
     expect(downs()).not.toContain('light.worn-toggle');
   });
-  it('gates the review map behind F2+M and moves game freeze off M', () => {
+  it('gates the review map and keeps game freeze on a separate effective chord', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
-    expect(bindings.binding('debug.review-map-toggle')?.defaults[0]?.code).toBe('KeyM');
     expect(bindings.binding('debug.review-map-toggle')?.gate).toBe('debug.gate');
-    expect(bindings.binding('debug.freeze-game')?.defaults[0]?.code).not.toBe('KeyM');
+    expect(bindings.chords('debug.freeze-game')).not.toEqual(bindings.chords('debug.review-map-toggle'));
   });
   it('lets the review-map toggle close the map without exposing other debug bindings', () => {
-    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    const gate = bindings.chords('debug.gate')[0]!;
+    const reviewMap = bindings.chords('debug.review-map-toggle')[0]!;
+    const keyboard = new KeyboardInput(bindings);
     keyboard.context = () => ({ context: 'review-map', debug: true });
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
 
-    expect(keyboard.press(event('F2'))).toBe(true);
+    expect(keyboard.press(event(gate.code, gate))).toBe(true);
     expect(keyboard.held('debug.gate')).toBe(true);
-    expect(keyboard.press(event('KeyM'))).toBe(true);
+    expect(keyboard.press(event(reviewMap.code, reviewMap))).toBe(true);
     expect(commands.map(({ action, phase }) => [action, phase])).toEqual([
       ['debug.gate', 'down'],
       ['debug.review-map-toggle', 'down'],
