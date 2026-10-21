@@ -19,7 +19,8 @@ import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
 import { newInstance, type Paint, VOXEL } from '../vehicles/model.ts';
 import { fittedGrid } from '../vehicles/solid.ts';
-import { GLASS, type MeshBuffers, meshGrid, type Rgb } from '../vehicles/voxels.ts';
+import { GLASS, type MeshBuffers, meshGrid, type Rgb, voxelKey } from '../vehicles/voxels.ts';
+import { addSkyOpeningAnchors } from './skyAnchor.ts';
 
 /** A furniture def's procedural variant of a vehicle: its blueprint, paint, dirt and absent parts. */
 export type VehicleLook = NonNullable<FurnitureDef['vehicle']>;
@@ -53,7 +54,11 @@ interface Display {
   readonly clearGeometry: BufferGeometry | undefined;
 }
 
-const geometryOf = (buffers: MeshBuffers, lattice: readonly [number, number, number]): BufferGeometry | undefined => {
+const geometryOf = (
+  buffers: MeshBuffers,
+  lattice: readonly [number, number, number],
+  materialAt: (cell: readonly [number, number, number]) => string | undefined,
+): BufferGeometry | undefined => {
   if (buffers.quads === 0) {
     return undefined;
   }
@@ -65,6 +70,12 @@ const geometryOf = (buffers: MeshBuffers, lattice: readonly [number, number, num
   geometry.scale(VOXEL, VOXEL, VOXEL);
   const [length, , width] = lattice;
   geometry.translate((-length * 4 * VOXEL) / 2, 0, (-width * 4 * VOXEL) / 2);
+  addSkyOpeningAnchors(geometry, {
+    size: lattice.map((cells) => cells * 4 * VOXEL) as [number, number, number],
+    cellSize: VOXEL,
+    materialAt,
+    isOpening: (material) => material === GLASS,
+  });
   geometry.computeBoundingSphere();
   return geometry;
 };
@@ -82,10 +93,11 @@ const displayOf = (look: VehicleLook): Display => {
       (material) => material === GLASS,
     );
     const { lattice } = BLUEPRINTS[look.blueprint]!;
+    const materialAt = (cell: readonly [number, number, number]) => grid.get(voxelKey(...cell));
     display = {
       solidBaseY: baseY * VOXEL,
-      solidGeometry: geometryOf(solid, lattice),
-      clearGeometry: geometryOf(clear, lattice),
+      solidGeometry: geometryOf(solid, lattice, materialAt),
+      clearGeometry: geometryOf(clear, lattice, materialAt),
     };
     displays.set(key, display);
   }
@@ -93,6 +105,7 @@ const displayOf = (look: VehicleLook): Display => {
 };
 
 const solidMaterial = new MeshLambertMaterial({ vertexColors: true });
+solidMaterial.defines = { SKY_ANCHOR: '' };
 const glassMaterial = new MeshPhongMaterial({
   vertexColors: true,
   transparent: true,
@@ -101,6 +114,7 @@ const glassMaterial = new MeshPhongMaterial({
   specular: 0x9a_aa_b4,
   depthWrite: false,
 });
+glassMaterial.defines = { SKY_ANCHOR: '' };
 
 const liftMaterial = new MeshLambertMaterial({ color: '#277e78' });
 const armMaterial = new MeshLambertMaterial({ color: '#e4b62f' });
