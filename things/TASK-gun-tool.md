@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you scope or implement the gun-tool and gungen-retirement phases of issue #509
+  - "you scope or implement the gun-tool and gungen-retirement phases of issue #509"
   - you review the gun-tool consumption contract or transfer gungen issue ownership
 ---
 
@@ -60,8 +60,8 @@ Every round also preserves `test/things-deadvox-contract.test.mjs`, the Deadvox 
 and load contract, and the dependency rules in
 `packages/engine/test/engineImportBoundary.test.ts`, `packageEdges`. Neither tool imports
 the other; Deadvox does not acquire an authoring dependency. Changes to consumed outputs
-include the refresh in the same PR. Local checks follow `AGENTS.md`, "Before pushing:
-tiered checks"; the exits below name additional evidence, not substitutes for those checks.
+include the refresh in the same PR. Local checks follow `AGENTS.md`, "Before pushing: tiered checks";
+the exits below name additional evidence, not substitutes for those checks.
 
 ## Phase 5: consumption proof
 
