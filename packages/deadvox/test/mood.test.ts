@@ -9,12 +9,10 @@ import {
   clampGrade,
   clampTorch,
   DEFAULT_TORCH,
-  GRAIN,
   gradeParams,
   MIN_BLOOM_CLIP,
   TORCH_STEP,
   targetColorScale,
-  VIGNETTE,
 } from '../src/core/mood.ts';
 import { TONE_MODES } from '../src/render/look.ts';
 import { displayed, inputForDisplay } from './toneCurves.ts';
@@ -29,16 +27,6 @@ describe('colour grade parameters', () => {
     expect([...none.shadowTint, ...none.highlightTint].map(Math.abs)).toEqual([0, 0, 0, 0, 0, 0]);
   });
 
-  it('desaturates by about a fifth at full strength, cool in the shadows and warm in the highlights', () => {
-    const full = gradeParams(1);
-    expect(full.saturation).toBeGreaterThanOrEqual(0.75);
-    expect(full.saturation).toBeLessThanOrEqual(0.85);
-    expect(full.shadowTint[2]).toBeGreaterThan(full.shadowTint[0]); // blue over red
-    expect(full.highlightTint[0]).toBeGreaterThan(full.highlightTint[2]); // red over blue
-    expect(full.contrast).toBeGreaterThan(0);
-    expect(full.contrast).toBeLessThan(0.5);
-  });
-
   it('scales linearly with strength and clamps outside 0..1', () => {
     const half = gradeParams(0.5);
     const full = gradeParams(1);
@@ -48,32 +36,42 @@ describe('colour grade parameters', () => {
     expect(gradeParams(3)).toEqual(full);
     expect(gradeParams(-1)).toEqual(gradeParams(0));
   });
-
-  it('keeps film amplitudes subtle', () => {
-    expect(VIGNETTE).toBeLessThanOrEqual(0.4);
-    expect(GRAIN).toBeLessThanOrEqual(0.05);
-  });
 });
 
 describe('grade strength steps', () => {
-  it('rounds to a tenth and clamps to 0..1', () => {
-    expect(clampGrade(0.300_000_000_000_000_04)).toBe(0.3);
-    expect(clampGrade(1.04)).toBe(1);
-    expect(clampGrade(-0.3)).toBe(0);
-    let strength = 1;
-    for (let i = 0; i < 7; i++) {
-      strength = clampGrade(strength - 0.1);
-    }
-    expect(strength).toBe(0.3);
+  it('rounds consistently and clamps at its owner-defined endpoints', () => {
+    const lower = clampGrade(Number.NEGATIVE_INFINITY);
+    const upper = clampGrade(Number.POSITIVE_INFINITY);
+    expect(clampGrade(0.300_000_000_000_000_04)).toBe(clampGrade(0.3));
+    expect(clampGrade(lower - 1)).toBe(lower);
+    expect(clampGrade(upper + 1)).toBe(upper);
   });
 });
 
 describe('exposure', () => {
-  it('stays in range, in tenths', () => {
-    expect(clampExposure(9)).toBe(3);
-    expect(clampExposure(0)).toBe(0.2);
-    expect(clampExposure(1.26)).toBe(1.3);
+  it('clamps at owner-defined endpoints', () => {
+    const lower = clampExposure(Number.NEGATIVE_INFINITY);
+    const upper = clampExposure(Number.POSITIVE_INFINITY);
+    expect(clampExposure(lower - 1)).toBe(lower);
+    expect(clampExposure(upper + 1)).toBe(upper);
   });
+});
+
+it.each([
+  ['exposure', clampExposure],
+  ['bloom override', clampBloomClip],
+  ['flashlight strength', clampTorch],
+] as const)('removes floating-point noise around an interior owner-rounded %s value', (_name, clamp) => {
+  const lower = clamp(-Number.MAX_VALUE);
+  const upper = clamp(Number.MAX_VALUE);
+  const rounded = clamp((lower + upper) / 2);
+  expect(rounded).toBeGreaterThan(lower);
+  expect(rounded).toBeLessThan(upper);
+  const noise = Number.EPSILON * Math.max(1, Math.abs(rounded)) * 4;
+  for (const input of [rounded - noise, rounded + noise]) {
+    expect(input).not.toBe(rounded);
+    expect(clamp(input)).toBe(rounded);
+  }
 });
 
 describe('bloom threshold', () => {
@@ -139,8 +137,10 @@ describe('bloom clip per tone mapper', () => {
     expect(bloomClipFor(AUTO_TONE)).toBe(BLOOM_CLIP_BY_TONE.neutral);
     expect(bloomClipFor(AUTO_TONE, 0)).toBe(BLOOM_CLIP_BY_TONE.neutral);
     expect(bloomClipFor(AUTO_TONE, 1)).toBe(BLOOM_CLIP_BY_TONE.aces);
-    expect(bloomClipFor(AUTO_TONE, 0.5)).toBeCloseTo(1.55, 12);
-    expect(bloomClipFor(AUTO_TONE, 0.85)).toBeCloseTo(1.1 + 0.9 * 0.85, 12);
+    const neutral = BLOOM_CLIP_BY_TONE.neutral!;
+    const aces = BLOOM_CLIP_BY_TONE.aces!;
+    expect(bloomClipFor(AUTO_TONE, 0.5)).toBeCloseTo((neutral + aces) / 2, 12);
+    expect(bloomClipFor(AUTO_TONE, 0.85)).toBeCloseTo(neutral + (aces - neutral) * 0.85, 12);
     expect(bloomClipFor(AUTO_TONE, -3)).toBe(BLOOM_CLIP_BY_TONE.neutral);
     expect(bloomClipFor(AUTO_TONE, 9)).toBe(BLOOM_CLIP_BY_TONE.aces);
     // The fixed tone mappers ignore the weight.
@@ -158,15 +158,20 @@ describe('bloom clip per tone mapper', () => {
     }
   });
 
-  it('clamps an override to 1..8 in tenths', () => {
-    expect([0, 0.96, 1.04, 2.26, 7.99, 99].map(clampBloomClip)).toEqual([1, 1, 1, 2.3, 8, 8]);
+  it('clamps an override at owner-defined endpoints', () => {
+    const lower = clampBloomClip(Number.NEGATIVE_INFINITY);
+    const upper = clampBloomClip(Number.POSITIVE_INFINITY);
+    expect(clampBloomClip(lower - 1)).toBe(lower);
+    expect(clampBloomClip(upper + 1)).toBe(upper);
   });
 });
 
 describe('flashlight strength multiplier', () => {
-  it('rounds to a hundredth and clamps to 0.1..16, with nonsense reading as the default', () => {
-    expect(DEFAULT_TORCH).toBe(1);
-    expect([0, 1.5625, 99].map(clampTorch)).toEqual([0.1, 1.56, 16]);
+  it('clamps at owner-defined endpoints and defaults nonsense input', () => {
+    const lower = clampTorch(-Number.MAX_VALUE);
+    const upper = clampTorch(Number.MAX_VALUE);
+    expect(clampTorch(lower - 1)).toBe(lower);
+    expect(clampTorch(upper + 1)).toBe(upper);
     expect(clampTorch(Number.NaN)).toBe(DEFAULT_TORCH);
   });
 

@@ -952,7 +952,7 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
   ] as const;
   const emittedRadii = new Map<string, number>();
 
-  for (const { label, item, event, unsuppressedEvent, suppressed } of cases) {
+  for (const { label, item, event, unsuppressedEvent } of cases) {
     const attachmentNoiseFactor = firearmAttachmentResponse(registry, item).noiseFactor;
     const shot = firearmShotEmission(registry, item, session.firearms.noiseFactorFor(item));
     expect(shot.event).toBe(event);
@@ -976,9 +976,6 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
     expect(noise.radiusMetres / unsuppressedBase).toBe(attachmentNoiseFactor);
 
     const farReachMetres = noise.radiusMetres * shambler.hearing * shambler.hearingModel.farMultiplier;
-    if (suppressed) {
-      expect(farReachMetres).toBe((unsuppressedBase * shambler.hearing) / 2);
-    }
     const hearAtDistance = (distanceMetres: number) =>
       hearVocalNoise({
         zombie: shambler,

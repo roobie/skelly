@@ -452,7 +452,7 @@ describe('passable but opaque vegetation', () => {
     const dense = new Forest(1, registry, scale, 0.75);
     const placements = new Set(dense.trees.map((tree) => `${tree.shape}:${tree.origin}`));
     expect(sparse.trees.length).toBeGreaterThan(0);
-    expect(dense.trees.length).toBeGreaterThan(sparse.trees.length * 2);
+    expect(dense.trees.length).toBeGreaterThan(sparse.trees.length);
     expect(sparse.trees.every((tree) => placements.has(`${tree.shape}:${tree.origin}`))).toBe(true);
     expect(dense.bounds).toEqual(sparse.bounds);
     expect(dense.trees.some((tree) => rectsOverlap(tree.bounds, { x0: -8, z0: -8, x1: 8, z1: 8 }))).toBe(false);

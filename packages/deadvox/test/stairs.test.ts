@@ -4,7 +4,7 @@ import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { CONTACT_SKIN, stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { TemplateDef } from '../src/core/schema.ts';
+import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, placedPoint, type Turn } from '../src/core/templates.ts';
@@ -13,96 +13,125 @@ import { generateColumn } from '../src/core/worldgen.ts';
 import { createPlayerBody, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
-const registry = baseRegistry();
-const house = () => compileTemplate(registry, registry.templates.get('stairs_house')!);
+const base = baseRegistry();
+const definition = (): TemplateDef => ({
+  id: 'fixture_stairs',
+  lootContext: { tier: 'Tier1', usage: ['Residential'] },
+  size: [16, 15, 12],
+  palette: { '.': 'air', p: 'planks' },
+  layers: Array.from({ length: 15 }, (_layer, y) =>
+    Array.from({ length: 12 }, (_row, z) =>
+      Array.from({ length: 16 }, (_cell, x) => {
+        if ([0, 8, 14].includes(y)) {
+          return 'p';
+        }
+        if (z === 0 && [2, 3].includes(x) && [1, 2, 3, 4, 9, 10, 11, 12].includes(y)) {
+          return '.';
+        }
+        return x === 0 || x === 15 || z === 0 || z === 11 ? 'p' : '.';
+      }).join(''),
+    ),
+  ),
+  access: {
+    ground: 'upper',
+    entrance: [3, 9, 2],
+    storeys: [
+      { id: 'lower', floor: 1 },
+      { id: 'upper', floor: 9 },
+    ],
+    stairs: [{ from: 'lower', to: 'upper', lower: [2, 1, 4], upper: [11, 9, 4], width: 2, block: 'planks' }],
+  },
+});
+// The same flight serves as an above-ground stair or a cellar by choosing its ground storey.
+const house = () => {
+  const def = definition();
+  def.access!.ground = 'lower';
+  def.access!.entrance = [3, 1, 2];
+  return compileTemplate(base, def);
+};
+const registry = { ...base, templates: new Map([[definition().id, definition()]]) };
+const layoutFixture = (): SiteLayoutDef => ({
+  id: 'fixture_layout',
+  lootContext: definition().lootContext,
+  demo: true,
+  bounds: { x0: 32, x1: 96, z0: 32, z1: 96 },
+  ground: 17,
+  buildings: [{ template: definition().id, position: [59.5, 17, 59.5], rotation: 0 }],
+  player: { position: [40, 17.5, 40], bearing: 0 },
+  terrain: [],
+  tracks: [],
+  woodlands: [],
+  shamblers: [],
+});
 const set = (template: ReturnType<typeof house>, [x, y, z]: Vec3, id: number) => {
   template.blocks[x + template.size[0] * (z + template.size[2] * y)] = id;
 };
 const planks = registry.blockIds.get('planks')!;
-describe('explicit storeys and ordinary-block flights', () => {
-  it('admits both authorable examples including the openable bedroom door', () => {
-    expect(house().pieces.some((piece) => piece.furniture === 'wood_door')).toBe(true);
+const hasIssue = (template: ReturnType<typeof house>, text: string) =>
+  templateSpatialIssues(registry, template).some(([, message]) => message.includes(text));
+
+describe('explicit storeys and ordinary-block flights on owned geometry', () => {
+  it('admits the fixture with either ground storey', () => {
+    expect(templateSpatialIssues(registry, house())).toEqual([]);
+    expect(templateSpatialIssues(registry, compileTemplate(registry, definition()))).toEqual([]);
+    expect(authoredLayoutIssues(layoutFixture(), registry)).toEqual([]);
   });
-  it("rejects an upper-floor opening under reachable storey floor outside every flight's footprint and headroom", () => {
+  it('rejects an upper-floor opening outside flight headroom under reachable floor space', () => {
     const template = house();
-    const stair = template.access!.stairs[0]!;
-    const [sx, , sz] = template.size;
-    set(template, [sx - 3, stair.upper[1] - 1, sz - 3], 0);
-    expect(
-      templateSpatialIssues(registry, template).some(([, message]) => message.includes('upper-storey floor opening')),
-    ).toBe(true);
+    set(template, [13, 8, 9], 0);
+    expect(hasIssue(template, 'upper-storey floor opening')).toBe(true);
   });
   it('allows an upper-storey notch outside reachable standing floor space', () => {
     const template = house();
-    const stair = template.access!.stairs[0]!;
-    const [sx, , sz] = template.size;
-    set(template, [sx - 1, stair.upper[1] - 1, sz - 1], 0);
+    set(template, [15, 8, 11], 0);
     expect(templateSpatialIssues(registry, template)).toEqual([]);
   });
   it('rejects a flight whose rise does not match its straight one-block treads', () => {
     const template = house();
-    const access = structuredClone(template.access!);
-    access.stairs[0]!.upper[0] -= 1;
-    expect(
-      templateSpatialIssues(registry, { ...template, access }).some(([, message]) =>
-        message.includes('one-block rises'),
-      ),
-    ).toBe(true);
+    template.access!.stairs[0]!.upper[0] -= 1;
+    expect(hasIssue(template, 'one-block rises')).toBe(true);
   });
   it.each([
-    [1, 0, 4],
-    [11, 8, 4],
-  ] as Vec3[])('rejects a missing landing support cell at [%i,%i,%i]', (x, y, z) => {
+    [1, 0, 3],
+    [11, 8, 3],
+  ] as Vec3[])('rejects missing landing support at [%i,%i,%i]', (x, y, z) => {
     const template = house();
     set(template, [x, y, z], 0);
-    expect(
-      templateSpatialIssues(registry, template).some(([, message]) => message.includes('supported landings')),
-    ).toBe(true);
+    expect(hasIssue(template, 'supported landings')).toBe(true);
   });
-  it('rejects headroom blocked at an intermediate tread even when the endpoints are clear', () => {
+  it('rejects headroom blocked at an intermediate tread even with clear endpoints', () => {
     const template = house();
-    set(template, [6, 10, 4], planks);
-    expect(templateSpatialIssues(registry, template).some(([, message]) => message.includes('headroom'))).toBe(true);
+    set(template, [6, 10, 3], planks);
+    expect(hasIssue(template, 'headroom')).toBe(true);
   });
-  it('preserves an authored 2.5 m room roof and rejects a ceiling inside standing clearance', () => {
-    const authored = structuredClone(registry.templates.get('stairs_house')!) as TemplateDef;
-    authored.id = 'authored_ceiling';
-    authored.layers.splice(13, 1);
-    authored.size = [16, 15, 16];
-    const ordinary = compileTemplate(registry, authored);
-    expect(templateSpatialIssues(registry, ordinary)).toEqual([]);
-    for (const x of [10, 11]) {
-      for (const z of [4, 5]) {
-        expect(ordinary.blocks[x + 16 * (z + 16 * 14)]).toBe(planks);
+  it('preserves the fixture roof and rejects a ceiling inside standing clearance', () => {
+    const template = house();
+    expect(templateSpatialIssues(registry, template)).toEqual([]);
+    expect(template.blocks[10 + 16 * (3 + 12 * 14)]).toBe(planks);
+    for (let x = 1; x < 15; x++) {
+      for (let z = 1; z < 11; z++) {
+        set(template, [x, 12, z], planks);
       }
     }
-    authored.layers.splice(11, 2);
-    authored.size = [16, 13, 16];
-    expect(templateSpatialIssues(registry, compileTemplate(registry, authored))).toContainEqual([
-      '.access.stairs[0]',
-      'flight needs standing and step-up headroom; blocked cell [8,12,4]',
-    ]);
+    expect(hasIssue(template, 'headroom')).toBe(true);
   });
-  it('rejects an entrance disconnected from the outside when the doorway is walled up', () => {
-    const authored = structuredClone(registry.templates.get('stairs_house')!) as TemplateDef;
-    authored.id = 'sealed_entrance';
-    for (const y of [1, 2, 3, 4]) {
-      authored.layers[y]![0] = 'wwwwwwwwwwwwwwww';
+  it('rejects an entrance disconnected from the outside by a sealed doorway', () => {
+    const template = house();
+    for (let y = 1; y <= 4; y++) {
+      for (const x of [2, 3]) {
+        set(template, [x, y, 0], planks);
+      }
     }
-    const template = compileTemplate(registry, authored);
-    expect(templateSpatialIssues(registry, template)).toContainEqual([
-      '.access.entrance',
-      'entrance must reach a standing opening at the footprint edge on the ground storey',
-    ]);
+    expect(hasIssue(template, 'footprint edge')).toBe(true);
   });
   it('rejects upstairs floor space isolated behind a non-openable wall', () => {
     const template = house();
-    for (let y = 9; y < 13; y++) {
-      for (const x of [6, 7]) {
-        set(template, [x, y, 9], planks);
+    for (let y = 9; y < 14; y++) {
+      for (let x = 1; x < 15; x++) {
+        set(template, [x, y, 7], planks);
       }
     }
-    expect(templateSpatialIssues(registry, template).some(([, message]) => message.includes('unreachable'))).toBe(true);
+    expect(hasIssue(template, 'unreachable')).toBe(true);
   });
   it('does not invent a physical blocker for passable furniture at the entrance', () => {
     const furniture = new Map(registry.furniture);
@@ -110,45 +139,40 @@ describe('explicit storeys and ordinary-block flights', () => {
     const template = house();
     const pieces = [
       ...template.pieces,
-      { furniture: 'crate', facing: 'n' as const, pos: [1, 1, 1] as Vec3, size: [2, 2, 2] as Vec3 },
+      { furniture: 'crate', facing: 'n' as const, pos: [2, 1, 1] as Vec3, size: [2, 2, 2] as Vec3 },
     ];
     expect(templateSpatialIssues({ ...registry, furniture }, { ...template, pieces })).toEqual([]);
   });
-  it('rejects an entrance without standing-body clearance', () => {
+  it('rejects an entrance without standing-body clearance rather than moving it sideways', () => {
     const template = house();
-    // The body clips this cell at the half-grid entrance, but could stand a half-step east.
-    // Reachability alone must not silently move an invalid spawn out of its obstruction.
     template.access!.entrance = [2.5, 1, 2];
     set(template, [1, 2, 1], planks);
     expect(templateSpatialIssues(registry, template).some(([path]) => path === '.access.entrance')).toBe(true);
   });
-  it('rejects a missing ground-floor id rather than silently moving the cellar origin', () => {
+  it('rejects a missing ground-storey id rather than moving the cellar origin', () => {
     const template = house();
-    expect(
-      templateSpatialIssues(registry, { ...template, access: { ...template.access!, ground: 'missing' } }).some(
-        ([, message]) => message.includes('unique ids/heights'),
-      ),
-    ).toBe(true);
+    template.access!.ground = 'missing';
+    expect(hasIssue(template, 'unique ids/heights')).toBe(true);
   });
-  it('rejects stress-test repetition of an explicitly planned building', () => {
-    const layout = structuredClone(registry.layouts.get('stair_demo')!);
+  it('rejects stress-test repetition of explicitly planned storeys', () => {
+    const layout = layoutFixture();
     layout.buildings[0]!.storeys = 2;
     expect(
       authoredLayoutIssues(layout, registry).some(([, message]) => message.includes('cannot be stress-test stacked')),
     ).toBe(true);
   });
   it('rejects a cellar whose lowest layer is below the world floor', () => {
-    const layout = structuredClone(registry.layouts.get('stair_demo')!);
-    layout.buildings[1]!.position[1] = -47;
+    const layout = layoutFixture();
+    layout.buildings[0]!.position[1] = -47;
     expect(
       authoredLayoutIssues(layout, registry).some(([, message]) => message.includes('below the world floor')),
     ).toBe(true);
   });
-  it('walks both ways using actual player step physics without jumps or noclip', () => {
+  it('walks both ways using player step physics without jumps or noclip', () => {
     const template = house();
-    const solid = (x: number, y: number, z: number) => (template.blocks[x + 16 * (z + 16 * y)] ?? 0) !== 0;
+    const solid = (x: number, y: number, z: number) => (template.blocks[x + 16 * (z + 12 * y)] ?? 0) !== 0;
     const scale = makeScale(0.5);
-    const body = createPlayerBody(scale, 2, 1 + CONTACT_SKIN, 5);
+    const body = createPlayerBody(scale, 2, 1 + CONTACT_SKIN, 4);
     body.onGround = true;
     for (let tick = 0; tick < 150; tick++) {
       body.vel[0] = 3.6;
@@ -169,15 +193,8 @@ describe('explicit storeys and ordinary-block flights', () => {
   });
   it.each([0, 1, 2, 3] as const)('carves and restamps the cellar across chunk seams at turn %i', (turn: Turn) => {
     const scale = makeScale(0.5);
-    const layout = structuredClone(registry.layouts.get('stair_demo')!);
-    layout.buildings = [
-      {
-        template: 'stairs_cabin',
-        lootContext: registry.templates.get('stairs_cabin')!.lootContext,
-        position: [59.5, 17, 59.5],
-        rotation: (turn * 90) as 0 | 90 | 180 | 270,
-      },
-    ];
+    const layout = layoutFixture();
+    layout.buildings[0]!.rotation = (turn * 90) as 0 | 90 | 180 | 270;
     const site = new AuthoredSite(1, registry, scale, layout);
     const placement = site.placements[0]!;
     expect(placement.origin[1]).toBe(26);
@@ -195,7 +212,15 @@ describe('explicit storeys and ordinary-block flights', () => {
       surface: site.surface,
       stamp: (chunk: Parameters<typeof site.stamp>[0]) => site.stamp(chunk),
     };
-    const point = placedPoint(placement, [11, 1, 11]);
+    const points = (
+      [
+        [1.5, 1, 1.5],
+        [13.5, 1, 1.5],
+        [1.5, 1, 9.5],
+        [13.5, 1, 9.5],
+      ] as Vec3[]
+    ).map((point) => placedPoint(placement, point).map(Math.floor) as Vec3);
+    expect(new Set(points.map(([x, , z]) => `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`)).size).toBe(4);
     const columns = [Math.floor(placement.origin[0] / CHUNK), Math.floor(placement.origin[2] / CHUNK)];
     for (let cx = columns[0]!; cx <= columns[0]! + 1; cx++) {
       for (let cz = columns[1]!; cz <= columns[1]! + 1; cz++) {
@@ -204,13 +229,16 @@ describe('explicit storeys and ordinary-block flights', () => {
         }
       }
     }
-    expect(world.getBlock(...(point.map(Math.floor) as Vec3))).toBe(0);
-    expect(world.getBlock(Math.floor(point[0]), point[1] - 1, Math.floor(point[2]))).toBe(
-      registry.blockIds.get('stone'),
-    );
+    for (const point of points) {
+      expect(world.getBlock(...point)).toBe(0);
+      expect(world.getBlock(point[0], point[1] - 1, point[2])).toBe(planks);
+      world.setBlock(...point, terrain.blocks.rock);
+    }
     for (const chunk of world.chunks.values()) {
       site.stamp(chunk);
     }
-    expect(world.getBlock(...(point.map(Math.floor) as Vec3))).toBe(0);
+    for (const point of points) {
+      expect(world.getBlock(...point)).toBe(0);
+    }
   });
 });

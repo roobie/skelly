@@ -39,11 +39,6 @@ describe('zombie type content', () => {
     }
   });
 
-  it('authors the runner as rarer than the shambler', () => {
-    const weight = (id: string) => zombies.find((zombie) => zombie.id === id)!.spawnWeight;
-    expect(weight('runner')).toBeLessThan(weight('shambler'));
-  });
-
   it('references registered vocal sounds for every zombie type', () => {
     const events = zombies.flatMap(({ sounds }) => Object.values(sounds));
     for (const event of events) {

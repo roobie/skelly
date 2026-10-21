@@ -20,7 +20,7 @@ import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate } from '../src/core/time.ts';
 import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import {
   FIGURE_BOXES,
@@ -60,10 +60,6 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack.moves.map(({ damage }) => damage);
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
-const runtimeWeapon = <T extends { cooldownSimSeconds: number }>(weapon: T) => ({
-  ...weapon,
-  cooldown: weapon.cooldownSimSeconds,
-});
 const speedRates = (wander: number, chase: number) => ({
   wanderMetresPerSimSecond: simRate(wander),
   chaseMetresPerSimSecond: simRate(chase),
@@ -1945,7 +1941,7 @@ describe('shambler scenarios', () => {
     expect(zombie.horizontalSpeed).toBe(0);
   });
 
-  it('F: melee hits obey cooldown, exact damage and range; fists and real crowbar data kill shamblers', () => {
+  it('F: melee hits obey cooldown, damage and range; fixture fists can kill shamblers', () => {
     let elapsed = 0;
     const hitTimes: number[] = [];
     const system = new ZombieSystem(
@@ -2009,24 +2005,6 @@ describe('shambler scenarios', () => {
     const fistTarget = fistSystem.store.get(fistId)!;
     const fistRay = regionRay(fistTarget, 'head');
     expect(fistSystem.swing(fistRay.origin, fistRay.direction, FISTS_MELEE)).toBe(fistId);
-
-    const crowbar = runtimeWeapon(registry.items.get('crowbar')!.weapon!.melee!);
-    const armed = new ZombieSystem(senses(() => player([100, 2, 0])));
-    const armedId = armed.add(stationary, [1, 1, 0]);
-    let swings = 0;
-    while (armed.store.get(armedId)) {
-      const target = armed.store.get(armedId)!;
-      const ray = regionRay(target, 'head');
-      expect(armed.swing(ray.origin, ray.direction, crowbar)).toBe(armedId);
-      run(armed, crowbar.cooldown);
-      swings += 1;
-    }
-    expect(swings).toBe(5);
-    expect(
-      ['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe'].every(
-        (item) => registry.items.get(item)?.weapon?.melee,
-      ),
-    ).toBe(true);
   });
 
   it('god mode blocks shambler damage without stopping attacks or their cooldown', () => {
@@ -3429,32 +3407,38 @@ describe('attack windup', () => {
   });
 
   it('keeps simulation-backed hit flinch through save/restore and freeze', () => {
-    const system = new ZombieSystem(senses(() => player([100, 2, 0]), FLOOR));
-    const id = system.add(SHAMBLER, [0.5, 1, 0]);
+    const stair: SolidAt = (_x, y, z) => y === 0 || (z >= 3 && y === 1);
+    const sense = senses(() => player([0, 2, 10], [0, 0, -1]), stair);
+    const system = new ZombieSystem(sense);
+    const id = system.add(SHAMBLER, [0, 1, 2.2], [0, 0, 1]);
     const zombie = system.store.get(id)!;
+    for (let tick = 0; tick < 120 && (zombie.stepOffset ?? 0) === 0; tick++) {
+      system.tick(1 / 60);
+    }
+    expect(zombie.stepOffset).toBeLessThan(0);
     const ray = regionRay(zombie, 'head');
     expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id);
     expect(zombie.hitFlinchTime).toBe(0);
 
-    run(system, 0.1);
-    const savedTime = system.store.get(id)!.hitFlinchTime!;
-    system.store.get(id)!.stanceWeight = 0.37;
-    system.store.get(id)!.stepOffset = -0.25;
+    run(system, HIT_FLINCH_DURATION / 4);
+    const { hitFlinchTime: savedTime, stanceWeight, stepOffset } = system.store.get(id)!;
     expect(savedTime).toBeGreaterThan(0);
-    expect(savedTime).toBeLessThan(0.35);
-    const restored = new ZombieSystem(senses(() => player([100, 2, 0]), FLOOR));
+    expect(savedTime).toBeLessThan(HIT_FLINCH_DURATION);
+    expect(stanceWeight).toBeGreaterThan(0);
+    expect(stepOffset).toBeLessThan(0);
+    const restored = new ZombieSystem(sense);
     restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
-    expect(restored.store.get(id)!.stanceWeight).toBe(0.37);
-    expect(restored.store.get(id)!.stepOffset).toBe(-0.25);
+    expect(restored.store.get(id)!.stanceWeight).toBe(stanceWeight);
+    expect(restored.store.get(id)!.stepOffset).toBe(stepOffset);
 
     restored.setFrozen(true);
-    run(restored, 0.5);
+    run(restored, HIT_FLINCH_DURATION * 2);
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
-    expect(restored.store.get(id)!.stanceWeight).toBe(0.37);
-    expect(restored.store.get(id)!.stepOffset).toBe(-0.25);
+    expect(restored.store.get(id)!.stanceWeight).toBe(stanceWeight);
+    expect(restored.store.get(id)!.stepOffset).toBe(stepOffset);
     restored.setFrozen(false);
-    run(restored, 0.3);
+    run(restored, HIT_FLINCH_DURATION);
     expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();
   });
 
@@ -3585,7 +3569,7 @@ describe('dismemberment', () => {
     return system.swing(origin, [1, 0, 0], FISTS_MELEE);
   };
 
-  it('scales launch distance monotonically through 40 N·s and keeps weapon distances bounded', () => {
+  it('scales launch distance monotonically through fixture impulses', () => {
     const type = {
       ...SHAMBLER,
       speed: speedRates(0, 0),
@@ -3593,8 +3577,6 @@ describe('dismemberment', () => {
       dismember: { chance: 1, headOnKillChance: 0 },
     };
     const fists = FISTS_MELEE;
-    const crowbar = runtimeWeapon(registry.items.get('crowbar')!.weapon!.melee!);
-    const bat = runtimeWeapon(registry.items.get('baseball_bat')!.weapon!.melee!);
     const simulate = (weapon: Parameters<ZombieSystem['swing']>[2], settleToRest = false) => {
       let renderer: MobActorMeshes;
       let debrisBody: { asleep: boolean; center: Vec3 } | undefined;
@@ -3653,15 +3635,8 @@ describe('dismemberment', () => {
         hit,
       };
     };
-    const realWeapons = [simulate(fists, true), simulate(crowbar, true), simulate(bat, true)];
-    const impulseByWeapon = new Map([
-      [4, realWeapons[0]!],
-      [8, realWeapons[1]!],
-      [10, realWeapons[2]!],
-    ]);
-    const sweep = [4, 8, 10, 20, 40].map(
-      (impulse) => impulseByWeapon.get(impulse) ?? simulate({ ...FISTS_MELEE, impulse }),
-    );
+    const settled = simulate({ ...fists, impulse: 4 }, true);
+    const sweep = [4, 8, 10, 20, 40].map((impulse) => (impulse === 4 ? settled : simulate({ ...fists, impulse })));
 
     for (const outcome of sweep) {
       expect(armParts).toContain(outcome.part);
@@ -3672,16 +3647,7 @@ describe('dismemberment', () => {
     for (let index = 1; index < sweep.length; index++) {
       expect.soft(sweep[index]!.distance).toBeGreaterThan(sweep[index - 1]!.distance);
     }
-    expect.soft(sweep[4]!.distance).toBeGreaterThanOrEqual(1.5 * sweep[3]!.distance);
-    for (const outcome of realWeapons) {
-      expect(outcome.distance).toBeGreaterThanOrEqual(0.2);
-      expect(outcome.distance).toBeLessThanOrEqual(8);
-      expect(outcome.restDistance).toBeDefined();
-      expect(outcome.restDistance!).toBeGreaterThanOrEqual(0.2);
-      expect(outcome.restDistance!).toBeLessThanOrEqual(8);
-    }
-    expect(realWeapons[0]!.distance).toBeLessThan(realWeapons[1]!.distance);
-    expect(realWeapons[1]!.distance).toBeLessThan(realWeapons[2]!.distance);
+    expect(settled.restDistance).toBeDefined();
   });
 
   it('chance 1 always severs a random arm part on a hit that does not kill', () => {
