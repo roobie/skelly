@@ -1,16 +1,6 @@
 {
   "sounds": [
     {
-      "id": "shotgun_blast",
-      "variants": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"],
-      "gain": 1,
-      "pitchJitter": [1, 1],
-      "gainJitter": [1, 1],
-      "minIntervalSimSeconds": 0,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 100 }
-    },
-    {
       "id": "shotgun_rack_back",
       "variants": ["assets/audio/shotgun-rack-back.ogg"],
       "gain": 0.65,

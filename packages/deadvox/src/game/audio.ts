@@ -98,6 +98,25 @@ interface SourceStartOptions {
   listenerRelative: boolean;
 }
 
+const connectSample = (
+  context: AudioContext,
+  source: AudioBufferSourceNode,
+  gain: GainNode,
+  sound: SoundDef,
+): AudioNode[] => {
+  if (!sound.lowShelf) {
+    source.connect(gain);
+    return [source, gain];
+  }
+  const body = context.createBiquadFilter();
+  body.type = 'lowshelf';
+  body.frequency.value = sound.lowShelf.frequencyHz;
+  body.gain.value = sound.lowShelf.gainDb;
+  source.connect(body);
+  body.connect(gain);
+  return [source, body, gain];
+};
+
 /** Thin Web Audio adapter; sound choices and occlusion calculations live in pure core modules. */
 export class GameAudio {
   private readonly buffers = new Map<string, AudioBuffer>();
@@ -532,8 +551,7 @@ export class GameAudio {
     source.buffer = buffer;
     source.playbackRate.value = pick.pitch;
     gain.gain.value = pick.gain;
-    source.connect(gain);
-    const connectedNodes: AudioNode[] = [source, gain];
+    const connectedNodes = connectSample(context, source, gain, sound);
 
     const category = nodes.categories.get(sound.category)!;
     const listenerBlocks: Vec3 = this.listenerPosition.map((v) => v / this.blockSize) as Vec3;
