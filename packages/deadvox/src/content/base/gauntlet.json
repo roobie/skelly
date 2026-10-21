@@ -1805,6 +1805,10 @@
       "color": "#7a5534",
       "door": {
         "barredFrom": "front",
+        "breach": {
+          "minimumStrength": 4.5,
+          "toughness": 150
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "wood",
         "methods": {
@@ -1961,6 +1965,10 @@
     {
       "color": "#626d70",
       "door": {
+        "breach": {
+          "minimumStrength": 4.5,
+          "toughness": 150
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "wood",
         "methods": {

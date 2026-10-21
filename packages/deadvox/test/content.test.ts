@@ -204,7 +204,12 @@ describe('content', () => {
               name: 'Wood door',
               size: [2, 4, 1],
               color: '#7a5534',
-              door: { material: 'wood', methods: {}, handlingSimSeconds: 0.5 },
+              door: {
+                material: 'wood',
+                methods: {},
+                handlingSimSeconds: 0.5,
+                breach: { minimumStrength: 1, toughness: 1 },
+              },
             },
           ],
           templates: [
@@ -1797,7 +1802,13 @@ describe('content references', () => {
             name: 'Fixture door',
             size: [1, 1, 1],
             color: '#333333',
-            door: { material: 'wood', methods: {}, handlingSimSeconds: 0.4, openNoise: { sound: 'door_open' } },
+            door: {
+              material: 'wood',
+              methods: {},
+              handlingSimSeconds: 0.4,
+              openNoise: { sound: 'door_open' },
+              breach: { minimumStrength: 1, toughness: 1 },
+            },
           },
         ],
       },
@@ -2134,6 +2145,7 @@ describe('content references', () => {
             door: {
               handlingSimSeconds: 0.4,
               material: 'wood',
+              breach: { minimumStrength: 1, toughness: 1 },
               methods: {
                 pry: {
                   quality: 'prying',
@@ -2156,6 +2168,7 @@ describe('content references', () => {
             figureSeeds: [1],
             spawnWeight: 1,
             canJumpObstacles: true,
+            strength: 1,
             sounds: zombieSounds,
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
@@ -2405,7 +2418,12 @@ describe('templates', () => {
             name: 'Door',
             size: [1, 1, 1],
             color: '#7a5534',
-            door: { material: 'wood', methods: {}, handlingSimSeconds: 0.5 },
+            door: {
+              material: 'wood',
+              methods: {},
+              handlingSimSeconds: 0.5,
+              breach: { minimumStrength: 1, toughness: 1 },
+            },
           },
         ],
       },
