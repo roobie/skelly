@@ -848,7 +848,12 @@ const ItemSchema = strictObject({
   ammo: optional(AmmoSchema),
   /** Sealed, non-container payload: held primary activation opens one package. */
   unpack: optional(
-    strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')), simSeconds: PositiveSimSeconds }),
+    strictObject({
+      item: Id,
+      count: pipe(Count, minValue(1, 'must be at least 1')),
+      simSeconds: PositiveSimSeconds,
+      qualities: optional(record(Id, QualityLevel)),
+    }),
   ),
   /** An authored yield for a finished item; never inferred from recipe alternatives. */
   disassembly: optional(DisassemblySchema),

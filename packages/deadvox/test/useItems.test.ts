@@ -7,7 +7,9 @@ import type { Item } from '../src/core/items.ts';
 import { chargeOf, toggleLight } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
+import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
@@ -16,10 +18,56 @@ import { playerInventorySource } from './fixtures/playerInventory.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
-const EAT_TIME = registry.items.get('canned_beans')!.food!.consumeSimSeconds;
 const APPLE_EAT_TIME = registry.items.get('apple')!.food!.consumeSimSeconds;
 const FOOD_POISONING = registry.items.get('apple')!.food!.poisonHealth!;
 const TAKE_TIME = 2;
+
+const sealedCanRegistry = (): Registry => {
+  const items = new Map(registry.items);
+  items.set('fixture_opened_can_contents', {
+    id: 'fixture_opened_can_contents',
+    economy: { usage: [], tiers: [] },
+    name: 'Fixture can contents',
+    category: 'food',
+    weight: 1,
+    size: [1, 1],
+    food: { calories: 1, water: 0, consumeSimSeconds: simSeconds(1) },
+  });
+  items.set('fixture_sealed_can', {
+    id: 'fixture_sealed_can',
+    economy: { usage: [], tiers: [] },
+    name: 'Fixture sealed can',
+    category: 'food',
+    weight: 1,
+    size: [1, 1],
+    unpack: {
+      item: 'fixture_opened_can_contents',
+      count: 1,
+      simSeconds: simSeconds(1),
+      qualities: { opening: 1 },
+    },
+  });
+  items.set('fixture_can_tool', {
+    id: 'fixture_can_tool',
+    economy: { usage: [], tiers: [] },
+    name: 'Fixture can tool',
+    category: 'tool',
+    weight: 1,
+    size: [1, 1],
+    tool: { qualities: { opening: 1 } },
+  });
+  items.set('fixture_tool_belt', {
+    id: 'fixture_tool_belt',
+    economy: { usage: [], tiers: [] },
+    name: 'Fixture tool belt',
+    category: 'clothing',
+    weight: 1,
+    size: [1, 1],
+    wearable: { slot: 'waist', encumbrance: 0 },
+    container: { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(0) }] },
+  });
+  return { ...registry, items };
+};
 
 // The test's own painkillers: the component, not the category, makes an item one, so each route is held to that.
 const pillOf = (id: string, category: string) => ({
@@ -149,19 +197,33 @@ describe('using what you hold', () => {
     expect(readTypes).toEqual([readableType]);
   });
 
-  it('eats from your hands after a few seconds', () => {
-    const { sim, inventory, queue, survival, hold } = setup();
-    const beans = hold('canned_beans');
-    expect(survival.use(beans)).toBeUndefined();
-    queue.tick(EAT_TIME - 0.1);
-    expect(inventory.hands.right).toBe(beans);
-    queue.tick(0.2);
-    expect(inventory.hands.right).toBeUndefined();
-    const meal = registry.items.get('canned_beans')!.food!;
-    expect(sim.needs.calories).toBeCloseTo(
-      sim.body.spawnNeeds.calories + (meal.calories / sim.body.nourishmentScale.kcal) * 100,
-      9,
-    );
+  it('cannot eat a sealed can until a tool in a worn pocket opens it', () => {
+    const { sim, inventory, queue, survival, hold } = setup(sealedCanRegistry());
+    const sealed = hold('fixture_sealed_can');
+    const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
+    const before = inventory.snapshotState();
+
+    expect(survival.use(sealed)).toBeDefined();
+    expect(unpacking.activate(sealed)).toBeDefined();
+    expect(inventory.snapshotState()).toEqual(before);
+    expect(queue.jobs).toEqual([]);
+
+    const belt = inventory.create('fixture_tool_belt');
+    const tool = inventory.create('fixture_can_tool');
+    if (!(inventory.add(belt, { kind: 'worn' }) && inventory.add(tool, { kind: 'pocket', owner: belt, pocket: 0 }))) {
+      throw new Error('Could not equip the fixture tool');
+    }
+    expect(unpacking.activate(sealed)).toBeUndefined();
+    expect(queue.jobs).toHaveLength(1);
+    queue.tick(1);
+
+    const opened = [...inventory.items()].find(({ item }) => item.type === 'fixture_opened_can_contents')?.item;
+    if (!(opened && inventory.move(opened, { kind: 'hand', side: 'right' }).ok)) {
+      throw new Error('Opened can contents did not reach the hand');
+    }
+    expect(survival.use(opened)).toBeUndefined();
+    queue.tick(1);
+    expect(sim.needs.calories).toBeGreaterThan(sim.body.spawnNeeds.calories);
   });
 
   it('needs the food in your hands, and rotten food makes you sick', () => {

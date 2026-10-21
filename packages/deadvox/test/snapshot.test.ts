@@ -520,10 +520,10 @@ describe('snapshot state components', () => {
   it('restores after eating the quickbar-bound item without a dangling UID', () => {
     const runtime = createRuntime();
     const { inventory, quickbar, survival, handling, player } = runtime;
-    const beans = inventory.hands.right!.pockets![0]![0]!.item;
+    const beans = inventory.create('beans');
     const feet = player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
     expect(inventory.move(inventory.hands.left!, { kind: 'pile', pos: feet }).ok).toBe(true);
-    expect(inventory.move(beans, { kind: 'hand', side: 'left' }).ok).toBe(true);
+    expect(inventory.add(beans, { kind: 'hand', side: 'left' })).toBe(true);
     quickbar.assign(0, beans);
     expect(survival.use(beans)).toBeUndefined();
     handling.tick(3.1);

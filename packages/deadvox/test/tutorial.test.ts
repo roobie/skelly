@@ -55,7 +55,7 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('eat');
     tutorial.consumed('unrelated_fixture_food');
     expect(tutorial.stage).toBe('eat');
-    tutorial.consumed('canned_beans');
+    tutorial.consumed('beans');
     expect(tutorial.stage).toBe('drink');
     tutorial.consumed('water_bottle');
     expect(tutorial.stage).toBe('light');
@@ -94,11 +94,11 @@ describe('practice objectives', () => {
     });
     const jeans = inventory.create('jeans');
     expect(inventory.add(jeans, { kind: 'worn' })).toBe(true);
-    for (const type of ['canned_beans', 'canned_beans']) {
+    for (const type of ['beans', 'beans']) {
       const item = inventory.create(type);
       expect(inventory.add(item, { kind: 'pocket', owner: jeans, pocket: 0 })).toBe(true);
       expect(survival.useFromQuickbar(item)).toBeUndefined();
-      state.wielded = Object.values(inventory.hands).some((held) => held?.type === 'canned_beans');
+      state.wielded = Object.values(inventory.hands).some((held) => held?.type === 'beans');
       observe();
       expect(tutorial.stage).toBe('move');
       queue.tick(queue.remaining);
