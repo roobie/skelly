@@ -144,7 +144,7 @@ local items = [
     category: 'tool',
     weight: 100,
     size: [1, 1],
-    tool: { qualities: { opening: 1 } },
+    tool: { qualities: { opening: 5 } },
   },
   {
     id: 'baseball_bat',

@@ -2,6 +2,47 @@
   "items": [
     {
       "category": "food",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "opened_beans",
+      "model": "canned_beans",
+      "name": "Opened can of beans",
+      "serving": {
+        "empty": "empty_can",
+        "food": "beans"
+      },
+      "size": [1, 2]
+    },
+    {
+      "category": "food",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "opened_soup",
+      "model": "canned_soup",
+      "name": "Opened can of soup",
+      "serving": {
+        "empty": "empty_can",
+        "food": "soup"
+      },
+      "size": [1, 2]
+    },
+    {
+      "category": "tool",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "empty_can",
+      "model": "canned_beans",
+      "name": "Empty can",
+      "size": [1, 2]
+    },
+    {
+      "category": "food",
       "description": "Dented but sealed.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -13,11 +54,12 @@
       "size": [1, 2],
       "unpack": {
         "count": 1,
-        "item": "beans",
+        "inPlace": true,
+        "item": "opened_beans",
         "qualities": {
           "opening": 1
         },
-        "simSeconds": 3
+        "simSeconds": 15
       }
     },
     {
@@ -48,11 +90,12 @@
       "size": [1, 2],
       "unpack": {
         "count": 1,
-        "item": "soup",
+        "inPlace": true,
+        "item": "opened_soup",
         "qualities": {
           "opening": 1
         },
-        "simSeconds": 3
+        "simSeconds": 15
       }
     },
     {

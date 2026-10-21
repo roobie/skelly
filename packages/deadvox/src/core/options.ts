@@ -2,7 +2,7 @@
 
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
-import type { ItemDef } from './content.ts';
+import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandlingQueue, MoveJob } from './handling.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
@@ -56,8 +56,15 @@ export const doorOptions = (
 };
 
 /** How one of `def` is consumed: eaten, drunk or, for a painkiller, taken. Undefined for anything else. */
-export const consumption = (def: ReturnType<typeof defOf>): { label: string; simSeconds: number } | undefined => {
+export const consumption = (
+  def: ReturnType<typeof defOf>,
+  registry: Registry,
+): { label: string; simSeconds: number } | undefined => {
   const name = def.name.toLowerCase();
+  if (def.serving) {
+    const food = defOf(registry, def.serving.food).food!;
+    return { label: `Eat from the ${name}`, simSeconds: food.consumeSimSeconds };
+  }
   if (def.analgesic) {
     return { label: `Take one ${name}`, simSeconds: def.analgesic.takeSimSeconds };
   }
@@ -341,7 +348,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
       plan: { ok: true, time: 0 },
     };
   }
-  const consumed = consumption(def);
+  const consumed = consumption(def, inv.registry);
   if (consumed) {
     return { kind: 'use', label: consumed.label, operation: 'consume', plan: { ok: true, time: consumed.simSeconds } };
   }

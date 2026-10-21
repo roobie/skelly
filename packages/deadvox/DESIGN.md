@@ -1069,6 +1069,22 @@ action. Continue preserves the physical fist sequence. See
 `selectPrimaryAction` in `src/game/primaryAction.ts` and `PlayerCombat` in
 `src/core/playerCombat.ts`.
 
+Can opening requires a prepared held pair because tools in storage are not in
+use. Either member can initiate opening, and opening quality determines work
+rate so improvised tools need not be as effective as a dedicated opener. The
+player chooses when opening competes with the tool's ordinary action, avoiding
+surprise weapon use. See `src/game/canOpening.ts`, `openingTargetForHand`,
+`src/game/itemActions.ts`, `ItemActionSelection`, and `src/game/unpacking.ts`,
+`Unpacking`.
+
+An opened can retains a serving, not loose food. Its content-declared serving
+names the food and the vessel left after eating; this bounded full/empty model
+avoids a general pouring or refilling system. There are no spills. Keeping the
+same owned item through both transitions prevents food from escaping to storage
+and leaves the empty can where eating occurred. See `src/core/schema.ts`,
+`ItemSchema`, `src/game/unpacking.ts`, `Unpacking.complete`, and
+`src/game/survival.ts`, `Survival.finishConsuming`.
+
 Crafting, repair, disassembly, and reading gather required items from reachable
 hands, worn storage, piles, and furniture when the action starts. Gathering is
 part of the compressed action and keeps both hands busy. Inspecting an item

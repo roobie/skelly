@@ -197,7 +197,7 @@ describe('using what you hold', () => {
     expect(readTypes).toEqual([readableType]);
   });
 
-  it('cannot eat a sealed can until a tool in a worn pocket opens it', () => {
+  it('cannot eat a sealed can and only a tool in the other hand enables opening', () => {
     const { sim, inventory, queue, survival, hold } = setup(sealedCanRegistry());
     const sealed = hold('fixture_sealed_can');
     const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
@@ -213,6 +213,8 @@ describe('using what you hold', () => {
     if (!(inventory.add(belt, { kind: 'worn' }) && inventory.add(tool, { kind: 'pocket', owner: belt, pocket: 0 }))) {
       throw new Error('Could not equip the fixture tool');
     }
+    expect(unpacking.activate(sealed)).toBeDefined();
+    expect(inventory.move(tool, { kind: 'hand', side: 'left' }).ok).toBe(true);
     expect(unpacking.activate(sealed)).toBeUndefined();
     expect(queue.jobs).toHaveLength(1);
     queue.tick(1);

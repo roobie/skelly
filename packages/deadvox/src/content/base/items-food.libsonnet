@@ -5,13 +5,25 @@ local drinks(calories, water) = { calories: calories, water: water, consumeSimSe
 {
   items: [
     {
+      id: 'opened_beans', name: 'Opened can of beans', category: 'food',
+      model: 'canned_beans', size: [1, 2], serving: { food: 'beans', empty: 'empty_can' },
+    },
+    {
+      id: 'opened_soup', name: 'Opened can of soup', category: 'food',
+      model: 'canned_soup', size: [1, 2], serving: { food: 'soup', empty: 'empty_can' },
+    },
+    {
+      id: 'empty_can', name: 'Empty can', category: 'tool',
+      model: 'canned_beans', size: [1, 2],
+    },
+    {
       id: 'canned_beans',
       name: 'Can of beans',
       category: 'food',
       model: 'canned_beans',
       size: [1, 2],
       description: 'Dented but sealed.',
-      unpack: { item: 'beans', count: 1, simSeconds: 3, qualities: { opening: 1 } },
+      unpack: { item: 'opened_beans', count: 1, simSeconds: 15, qualities: { opening: 1 }, inPlace: true },
     },
     {
       id: 'beans',
@@ -27,7 +39,7 @@ local drinks(calories, water) = { calories: calories, water: water, consumeSimSe
       category: 'food',
       model: 'canned_soup',
       size: [1, 2],
-      unpack: { item: 'soup', count: 1, simSeconds: 3, qualities: { opening: 1 } },
+      unpack: { item: 'opened_soup', count: 1, simSeconds: 15, qualities: { opening: 1 }, inPlace: true },
     },
     {
       id: 'soup',

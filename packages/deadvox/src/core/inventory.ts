@@ -1461,6 +1461,11 @@ export class Inventory {
     return spot ? { ok: true, time: 0, at: spot } : refuse('No room');
   }
 
+  transform(item: Item, type: string): void {
+    item.type = type;
+    this.version += 1;
+  }
+
   /** Uses up `count` of an item wherever it is: eaten, burnt, loaded into something. */
   consume(item: Item, count = 1): boolean {
     const at = this.locate(item);
