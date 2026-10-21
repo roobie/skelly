@@ -54,7 +54,7 @@ import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
-import { dropTarget } from '../core/options.ts';
+import { freshDropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import { pryPlan } from '../core/prying.ts';
@@ -933,7 +933,7 @@ export const createSession = (options: SessionOptions) => {
 
   const survival = new Survival(sim, inventory, queue, {
     reach,
-    feet: (item) => dropTarget(inventory, item, feet()).target,
+    feet: (item) => freshDropTarget(inventory, item, feet()),
     notice: options.notice,
     read: options.onRead,
     consumed: options.onConsumed,

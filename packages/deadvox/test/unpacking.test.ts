@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { NO_LANDING_REFUSAL } from '../src/core/itemThrow.ts';
 import { options, toHands } from '../src/core/options.ts';
 import { reach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
@@ -93,6 +94,16 @@ describe('sealed ammunition package activation', () => {
     expect(spilled[0]?.count).toBe(payloadCount - freePlaces);
     expect(shells.count + spilled[0]!.count).toBe(initialCount + payloadCount);
     expect(f.inventory.itemByUid(f.box.uid)).toBeUndefined();
+  });
+
+  it('unpack with no ground nearby and no pocket room refuses for want of a landing and keeps the box', () => {
+    const f = fixture(true);
+    expect(f.inventory.add(f.inventory.create('aa_battery'), { kind: 'pocket', owner: f.bag, pocket: 0 })).toBe(true);
+    f.inventory.landing = () => undefined;
+    expect(f.unpacking.activate(f.box)).toBeUndefined();
+    expect(f.queue.tick(BOX_UNPACK_SECONDS).failed.map(({ reason }) => reason)).toEqual([NO_LANDING_REFUSAL]);
+    expect(f.inventory.hands.right).toBe(f.box);
+    expect([...f.inventory.items()].filter(({ item }) => item.type === shellType)).toEqual([]);
   });
 
   it('cancelling the opening job preserves the whole box and allocators and produces no loose shells', () => {

@@ -1,8 +1,9 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
-import { dropSpots, type Inventory, type Target } from '../core/inventory.ts';
+import type { Inventory, Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import { playerPockets } from '../core/options.ts';
+import { putDownRefusal } from '../core/itemThrow.ts';
+import { freshDropTarget, playerPockets } from '../core/options.ts';
 
 export const UNPACK_ACTION = 'item.unpack';
 
@@ -52,15 +53,12 @@ export class Unpacking {
     const shell = this.inventory.create(payload.item, payload.count, 1);
     // Admission guarantees one stack. Reserve enough ordinary spill capacity for the entire
     // payload before consuming the package; filling pockets can only reduce that spill.
-    const spill = dropSpots(this.feet())
-      .flatMap((spot): Target[] => {
-        const pos = this.inventory.landing(spot);
-        return pos ? [{ kind: 'pile', pos }] : [];
-      })
-      .find((target) => this.inventory.planAdd(shell, target).ok);
+    const landed = freshDropTarget(this.inventory, shell, this.feet());
+    const refusal = putDownRefusal(this.inventory, shell, landed);
+    const spill = refusal ? undefined : landed;
     const pocket = this.pocketFor(shell);
     if (!(spill || pocket)) {
-      return 'No room for the unpacked contents nearby';
+      return refusal;
     }
     if (!this.inventory.consume(box, 1)) {
       return 'Package is no longer held';
