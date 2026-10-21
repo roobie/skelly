@@ -50,7 +50,6 @@
         "assets/models/thread_spool.glb",
         "assets/models/cord_coil.glb",
         "assets/models/fuse.glb",
-        "assets/models/desk_lamp.glb",
         "assets/models/canned_beans.glb",
         "assets/models/canned_soup.glb",
         "assets/models/crackers.glb",
@@ -65,7 +64,9 @@
         "assets/models/shotshell_box.glb",
         "assets/models/ammo_can.glb",
         "assets/models/jerry_can.glb",
-        "assets/models/gas_canister.glb"
+        "assets/models/gas_canister.glb",
+        "assets/models/frag_grenade.glb",
+        "assets/models/dead_desk_lamp.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",

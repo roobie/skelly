@@ -15,6 +15,7 @@
     import 'things/ammo_can.model.json',
     import 'things/jerry_can.model.json',
     import 'things/gas_canister.model.json',
+    import 'things/frag_grenade.model.json',
     {
       "id": "hand_saw",
       "file": "assets/models/hand_saw.glb",
@@ -53,7 +54,7 @@
     { "id": "pliers", "file": "assets/models/pliers.glb" },
     { "id": "sewing_kit", "file": "assets/models/sewing_kit.glb" },
     { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
-    import 'things/desk_lamp.model.json',
+    import 'things/dead_desk_lamp.model.json',
     { "id": "table_fan", "file": "assets/models/table_fan.glb" },
     { "id": "cracked_phone", "file": "assets/models/cracked_phone.glb" },
     { "id": "broken_clock", "file": "assets/models/broken_clock.glb" },

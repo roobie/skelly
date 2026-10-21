@@ -20,11 +20,6 @@
     "source": "fuse"
   },
   {
-    "id": "desk_lamp",
-    "kind": "item",
-    "source": "dead_desk_lamp"
-  },
-  {
     "id": "canned_beans",
     "kind": "item",
     "source": "canned_beans"
@@ -98,5 +93,15 @@
     "id": "gas_canister",
     "kind": "item",
     "source": "gas_canister"
+  },
+  {
+    "id": "frag_grenade",
+    "kind": "item",
+    "source": "frag_grenade"
+  },
+  {
+    "id": "dead_desk_lamp",
+    "kind": "item",
+    "source": "dead_desk_lamp"
   }
 ]
