@@ -12,6 +12,14 @@
     {
       "cpuProfile": true,
       "driver": "orbit",
+      "id": "gauntlet-default-start",
+      "path": "/?site=gauntlet&seed=1&debug=1&radius=96&time=19:30&storeys=1",
+      "yawAmplitudeDegrees": 0,
+      "yawCycles": 1
+    },
+    {
+      "cpuProfile": true,
+      "driver": "orbit",
       "id": "gauntlet-horde",
       "liftMetres": 3,
       "path": "/?site=gauntlet&seed=73&debug=1&radius=96&time=12:00",

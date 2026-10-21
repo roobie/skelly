@@ -14,6 +14,14 @@
       driver: 'sky',
     },
     {
+      id: 'gauntlet-default-start',
+      path: '/?site=gauntlet&seed=1&debug=1&radius=96&time=19:30&storeys=1',
+      driver: 'orbit',
+      yawAmplitudeDegrees: 0,
+      yawCycles: 1,
+      cpuProfile: true,
+    },
+    {
       id: 'gauntlet-horde',
       path: '/?site=gauntlet&seed=73&debug=1&radius=96&time=12:00',
       driver: 'orbit',
