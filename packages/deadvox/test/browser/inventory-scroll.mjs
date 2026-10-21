@@ -85,6 +85,7 @@ const content = [
           },
         },
         { id: 'scroll_token', name: 'Scroll token', category: 'tool', weight: 1, size: [1, 1] },
+        { id: 'scroll_wide_token', name: 'Scroll wide token', category: 'tool', weight: 1, size: [3, 1] },
         { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
       ].map((item) => ({ economy: { usage: [], tiers: [] }, ...item })),
     },
@@ -169,6 +170,18 @@ const populatePiles = () => {
   if (!inventory.add(inventory.create('scroll_bag'), { kind: 'pile', pos: [0, 0, 0] })) throw Error('floor container fixture failed');
   screen.update();
 };
+const floorWrapTargets = [
+  [10, 0, 0],
+  [11, 0, 0],
+];
+const populateFloorWrapPiles = () => {
+  for (const pos of floorWrapTargets) {
+    if (!inventory.add(inventory.create('scroll_wide_token'), { kind: 'pile', pos })) {
+      throw Error('floor-wrap fixture failed');
+    }
+  }
+  screen.update();
+};
 let needsText = 'health 100% · stamina 100%';
 const dispatches = [];
 let capToken;
@@ -206,6 +219,8 @@ target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu, bodyRegions: BODY_REGIONS,
   containerMaxWidthCells: registry.inventory.get('player')?.containerMaxWidthCells,
   populatePiles,
+  populateFloorWrapPiles,
+  floorWrapTargets,
   // Base items upright and turned, plus wide-glyph names that overflow small and tall footprints whatever the base
   // names are. A name's visible start is what validate predicts its cell shows.
   gridNames: [
@@ -863,11 +878,55 @@ try {
     balancedLayout.pileState,
     'responsive floor packing leaves saved pile positions unchanged',
   );
-  assert.ok(
-    wideLayout.floorWidth !== balancedLayout.floorWidth && wideLayout.floorColumns !== balancedLayout.floorColumns,
-    `floor pile display packing follows its available width: ${JSON.stringify({ balancedLayout, wideLayout })}`,
+  await page.setViewportSize({ width: 800, height: 540 });
+  await nextFrames();
+  await dragSplitter(1);
+  await page.evaluate(() => globalThis.scrollFixture.populateFloorWrapPiles());
+  const floorWrapLayout = await page.evaluate(() => {
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    const grids = globalThis.scrollFixture.floorWrapTargets.map((pos) =>
+      document.querySelector(`#inventory [data-target="pile:${pos.join(',')}"]`),
+    );
+    if (!(around && grids.every(Boolean))) {
+      throw new Error('floor-wrap fixture grids are missing');
+    }
+    const sections = grids.map((grid) => grid.closest('[data-around-section="floor"]'));
+    if (!sections.every(Boolean)) {
+      throw new Error('floor-wrap fixture sections are missing');
+    }
+    const cellWidths = grids.map((grid) =>
+      getComputedStyle(grid).gridTemplateColumns.trim().split(' ').map(Number.parseFloat),
+    );
+    const gridBoxes = grids.map((grid) => grid.getBoundingClientRect());
+    const sectionBoxes = sections.map((section) => section.getBoundingClientRect());
+    const gap = Number.parseFloat(getComputedStyle(around).gap);
+    return {
+      targets: grids.map((grid) => grid.dataset.target),
+      cellWidths,
+      cells: grids.map((grid) => Number.parseFloat(getComputedStyle(grid).backgroundSize)),
+      wraps: sectionBoxes[1].top >= sectionBoxes[0].bottom,
+      exceedsRow: gridBoxes[0].width + gap + gridBoxes[1].width > around.clientWidth,
+    };
+  });
+  assert.ok(floorWrapLayout.exceedsRow, `fixture grids exceed their shared row: ${JSON.stringify(floorWrapLayout)}`);
+  assert.equal(
+    floorWrapLayout.wraps,
+    true,
+    `the second floor grid starts on a new row: ${JSON.stringify(floorWrapLayout)}`,
   );
-  await dragSplitter(0.5);
+  for (const [tracks, cell] of floorWrapLayout.cellWidths.map((widths, index) => [
+    widths,
+    floorWrapLayout.cells[index],
+  ])) {
+    assert.ok(
+      tracks.every((width) => Math.abs(width - cell) <= 1),
+      `floor grid cells keep their width: ${JSON.stringify(floorWrapLayout)}`,
+    );
+  }
+  if (process.argv[3]) {
+    await page.locator(`#inventory [data-target="${floorWrapLayout.targets[0]}"]`).scrollIntoViewIfNeeded();
+    await page.locator('#inventory [data-pane="around"]').screenshot({ path: process.argv[3] });
+  }
   await page.setViewportSize({ width: 960, height: 540 });
   const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
   assert.ok(
@@ -984,9 +1043,6 @@ try {
       const afterRedraw = await page.locator(selector).evaluate((pane) => pane.scrollTop);
       const result = { engine, selector, locked, ...size, ...observed, afterRedraw };
       process.stdout.write(`${JSON.stringify(result)}\n`);
-      if (process.argv[3] && !locked && selector.includes('"around"')) {
-        await page.screenshot({ path: process.argv[3] });
-      }
       if (
         !(observed.top > 0 && observed.pageY === 0 && observed.gameplayWheels === 0 && afterRedraw === observed.top)
       ) {
