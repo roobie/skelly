@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { applyBenchWeathering, benchDraw, benchPostFromUrl, postUrlPart } from '../src/bench/post.ts';
-import { benchRunFromUrl } from '../src/bench/run.ts';
+import {
+  applyBenchWeathering,
+  benchDraw,
+  benchNightVisionFromUrl,
+  benchPostFromUrl,
+  postUrlPart,
+} from '../src/bench/post.ts';
+import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID } from '../src/core/weather.ts';
 import type { StartupContent } from '../src/game/bundledContent.ts';
@@ -28,11 +34,18 @@ describe('benchmark post-processing option', () => {
     expect(benchPostFromUrl(params('bench=1&post=0'))).toBe(false);
     expect(benchPostFromUrl(params('bench=1&post=true'))).toBe(false);
     expect(benchPostFromUrl(params('bench=1&post=1'))).toBe(true);
+    expect(benchNightVisionFromUrl(params('bench=1'))).toBe(false);
+    expect(benchNightVisionFromUrl(params('bench=1&nightVision=1'))).toBe(true);
   });
 
   it('is carried in the next-run URL fragment only when on', () => {
-    expect(postUrlPart(true)).toBe('&post=1');
-    expect(postUrlPart(false)).toBe('');
+    expect(postUrlPart(true, false)).toBe('&post=1');
+    expect(postUrlPart(false, false)).toBe('');
+  });
+
+  it('carries night vision to the next benchmark run', () => {
+    const run = benchRunFromUrl(params('bench=1&nightVision=1'), { layouts: new Map(), scenarios: new Map() });
+    expect(benchNightVisionFromUrl(params(nextUrl(run, 1)))).toBe(true);
   });
 
   it('is read by both benchmark modes', () => {
@@ -54,6 +67,7 @@ describe('benchmark post-processing option', () => {
       mood: {
         restore: vi.fn(),
         setSky: vi.fn(),
+        setNightVision: vi.fn(),
         render(afterScene: () => void) {
           info.render = { calls: 87, triangles: 54_321 };
           afterScene();
@@ -63,8 +77,13 @@ describe('benchmark post-processing option', () => {
       shadows: { restore: vi.fn(), update: vi.fn() },
     } as unknown as RenderedEngine;
 
-    benchDraw(engine, true, 23, (stats) => {
-      captured = stats;
+    benchDraw(engine, {
+      post: true,
+      nightVision: false,
+      skyAngle: 23,
+      reportSceneRender: (stats) => {
+        captured = stats;
+      },
     })();
 
     expect(captured).toEqual({ calls: 87, triangles: 54_321 });

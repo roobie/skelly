@@ -78,9 +78,14 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
   applySky(engine.sky, skyAt(hourOfDay(startTime), dayCycle));
   let sceneDraws = 0;
   let sceneTriangles = 0;
-  const drawFrame = benchDraw(engine, run.post, hourOfDay(startTime), (stats) => {
-    sceneDraws = stats.calls;
-    sceneTriangles = stats.triangles;
+  const drawFrame = benchDraw(engine, {
+    post: run.post,
+    nightVision: false,
+    skyAngle: hourOfDay(startTime),
+    reportSceneRender: (stats) => {
+      sceneDraws = stats.calls;
+      sceneTriangles = stats.triangles;
+    },
   });
   streamer.onColumn = (cx, cz) => {
     for (const { spec } of engine.site?.furnitureIn(cx, cz) ?? []) {
