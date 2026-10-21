@@ -179,12 +179,18 @@ const severedBoneIds = (variant: Variant, parts: readonly string[]): ReadonlySet
   );
 // Corpse lifecycle: death fall (mobgen's own DEATH_FALL_DURATION), then lies still, then sinks out of
 // view — see MobActorMeshes' own doc comment on why a corpse keeps its slot the whole time.
-const CORPSE_LIE_S = 8;
-const CORPSE_SINK_S = 1.5;
-const CORPSE_SINK_DEPTH_M = 1.5; // comfortably below any visible geometry by the end of the sink
+export const CORPSE_LIFECYCLE = {
+  lieSimSeconds: 8,
+  sinkSimSeconds: 1.5,
+  sinkDepthMetres: 1.5,
+  maxCorpses: 16,
+} as const;
+const CORPSE_LIE_S = CORPSE_LIFECYCLE.lieSimSeconds;
+const CORPSE_SINK_S = CORPSE_LIFECYCLE.sinkSimSeconds;
+const CORPSE_SINK_DEPTH_M = CORPSE_LIFECYCLE.sinkDepthMetres;
 const CORPSE_LIFETIME_S = DEATH_FALL_DURATION + CORPSE_LIE_S + CORPSE_SINK_S;
 // Global cap across every variant, corpses AND debris together — see zombieDied's and zombieSevered's eviction.
-const MAX_CORPSES = 16;
+const MAX_CORPSES = CORPSE_LIFECYCLE.maxCorpses;
 const MAX_LAUNCH_SPIN_RADPS = 20; // presentation cap; BR's call.
 
 /** Which way a corpse should topple: away from the player if a position is available (in reach at the
