@@ -42,7 +42,8 @@
         "/src/spikes/expressions/luau.ts",
         "/src/spikes/expressions/benchmark.ts",
         "/test/expressionWasmCases.ts",
-        "/src/vehicles/feasibility/runner.ts"
+        "/src/vehicles/feasibility/runner.ts",
+        "/tools/rapier-f64/candidate.ts"
       ],
       "entry": [
         "index.html!",
@@ -58,6 +59,7 @@
         "tools/police-item-models.mjs",
         "tools/military-item-models.mjs",
         "tools/probe-wasm-expressions.mjs",
+        "tools/rapier-f64/candidate.ts",
         "src/spikes/expressions/benchmark.ts",
         "tools/bench-rigid-body.mjs",
         "tools/bench-zombie-swings.mjs",

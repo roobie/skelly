@@ -113,7 +113,8 @@
         "packages/deadvox/tools/military-item-models.mjs",
         "packages/deadvox/tools/perf-baseline.mjs",
         "packages/deadvox/tools/perf-baseline.test.mjs",
-        "packages/deadvox/tools/perf-baseline-trace.mjs"
+        "packages/deadvox/tools/perf-baseline-trace.mjs",
+        "packages/deadvox/tools/rapier-f64/local.mjs"
       ],
       "linter": { "rules": { "correctness": { "noNodejsModules": "off" } } }
     },
