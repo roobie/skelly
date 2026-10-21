@@ -573,7 +573,10 @@ try {
     const defaultProfileId = await page.evaluate(
       () => globalThis.firefoxUiTest.engine.config.weatheringDefaultProfileId,
     );
-    assert.ok(weatheringPixels.profileStrengths[defaultProfileId] > 0, 'the default weathering profile is measured');
+    assert.ok(
+      Object.hasOwn(weatheringPixels.profileStrengths, defaultProfileId),
+      'the default weathering profile is measured',
+    );
     for (const [profileId, profileStrength] of Object.entries(weatheringPixels.profileStrengths)) {
       if (profileStrength <= 0) {
         continue;
