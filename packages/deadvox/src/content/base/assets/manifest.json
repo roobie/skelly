@@ -72,6 +72,20 @@
       "url": "https://github.com/roobie/skelly/blob/main/packages/thing-authoring-tool/exports/deadvox.jsonnet"
     },
     {
+      "author": "Skelly contributors",
+      "changes": "Original texture-free primitive meshes authored in metres. Hollow cans retain an attached raised lid; the hand opener has paired grips, cutting and feed wheels and a winding key. Geometry supplies no gameplay mass.",
+      "download": null,
+      "files": [
+        "assets/models/opened_beans.glb",
+        "assets/models/opened_soup.glb",
+        "assets/models/empty_can.glb",
+        "assets/models/can_opener.glb"
+      ],
+      "licence": "CC0-1.0",
+      "title": "Project-built opened cans and hand can opener",
+      "url": "https://github.com/roobie/skelly/blob/main/packages/deadvox/tools/can-item-models.mjs"
+    },
+    {
       "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
       "changes": "K_22P near take, single-shot slices 0.82–1.90 s and 7.42–8.50 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade.",
       "download": "Prepared SFX Library.7z",

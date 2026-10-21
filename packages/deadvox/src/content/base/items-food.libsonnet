@@ -9,15 +9,15 @@ local soupGrams = 330;
   items: [
     {
       id: 'opened_beans', name: 'Opened can of beans', category: 'food',
-      model: 'canned_beans', weight: canShellGrams, size: [1, 2], serving: { food: 'beans', empty: 'empty_can' },
+      model: 'opened_beans', weight: canShellGrams, size: [1, 2], serving: { food: 'beans', empty: 'empty_can' },
     },
     {
       id: 'opened_soup', name: 'Opened can of soup', category: 'food',
-      model: 'canned_soup', weight: canShellGrams, size: [1, 2], serving: { food: 'soup', empty: 'empty_can' },
+      model: 'opened_soup', weight: canShellGrams, size: [1, 2], serving: { food: 'soup', empty: 'empty_can' },
     },
     {
       id: 'empty_can', name: 'Empty can', category: 'tool',
-      model: 'canned_beans', weight: canShellGrams, size: [1, 2],
+      model: 'empty_can', weight: canShellGrams, size: [1, 2],
     },
     {
       id: 'canned_beans',

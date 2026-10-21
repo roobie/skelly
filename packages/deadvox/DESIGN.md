@@ -1091,6 +1091,12 @@ its mass on an empty vessel; shell and food tuning must remain independent. See 
 `src/content/base/items-food.libsonnet`, `canShellGrams`, and
 `src/core/items.ts`, `typeWeightGrams` and `weightOf`.
 
+An opened vessel must read as opened even after its food is gone, so the lid
+stays attached and raised rather than relying on a food surface or an item name.
+The dedicated opener needs the silhouette of a hand tool rather than a storage
+bundle. These are visual distinctions, not extra inventory parts or mass sources.
+See `packages/deadvox/tools/can-item-models.mjs`, `can` and `opener`.
+
 Crafting, repair, disassembly, and reading gather required items from reachable
 hands, worn storage, piles, and furniture when the action starts. Gathering is
 part of the compressed action and keeps both hands busy. Inspecting an item

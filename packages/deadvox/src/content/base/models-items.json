@@ -21,6 +21,42 @@
       "roll": 0
     },
     {
+      "file": "assets/models/opened_beans.glb",
+      "grip": {
+        "at": [0, 0.056500000000000002, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "opened_beans"
+    },
+    {
+      "file": "assets/models/opened_soup.glb",
+      "grip": {
+        "at": [0, 0.061499999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "opened_soup"
+    },
+    {
+      "file": "assets/models/empty_can.glb",
+      "grip": {
+        "at": [0, 0.056500000000000002, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "empty_can"
+    },
+    {
+      "file": "assets/models/can_opener.glb",
+      "grip": {
+        "at": [-0.040000000000000001, 0.014999999999999999, 0]
+      },
+      "hold": "upright",
+      "id": "can_opener",
+      "roll": 90
+    },
+    {
       "file": "assets/models/crackers.glb",
       "grip": {
         "at": [0, 0.10000000000000001, 0],

@@ -140,6 +140,7 @@ local items = [
   },
   {
     id: 'can_opener',
+    model: 'can_opener',
     name: 'Can opener',
     category: 'tool',
     weight: 100,

@@ -23,6 +23,15 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       changes: 'Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.',
     },
     {
+      title: 'Project-built opened cans and hand can opener',
+      url: 'https://github.com/roobie/skelly/blob/main/packages/deadvox/tools/can-item-models.mjs',
+      author: 'Skelly contributors',
+      licence: 'CC0-1.0',
+      download: null,
+      files: ['assets/models/opened_beans.glb', 'assets/models/opened_soup.glb', 'assets/models/empty_can.glb', 'assets/models/can_opener.glb'],
+      changes: 'Original texture-free primitive meshes authored in metres. Hollow cans retain an attached raised lid; the hand opener has paired grips, cutting and feed wheels and a winding key. Geometry supplies no gameplay mass.',
+    },
+    {
       "title": "The Free Firearm Sound Library — Winchester Model 12",
       "url": "https://opengameart.org/content/the-free-firearm-sound-library",
       "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
