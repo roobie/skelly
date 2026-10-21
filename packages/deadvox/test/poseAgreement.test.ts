@@ -202,10 +202,14 @@ describe('rendered and hit shambler poses', () => {
 
   it('cross-fades stance in fixed steps without overshoot', () => {
     let weight = 0;
-    for (let frame = 0; frame < 30; frame++) {
+    let previous = weight;
+    for (let frame = 0; frame < 120 && weight < 1; frame++) {
       weight = advanceStanceWeight(weight, 1, 1 / 60);
+      expect(weight).toBeGreaterThanOrEqual(previous);
+      expect(weight).toBeLessThanOrEqual(1);
+      previous = weight;
     }
-    expect(weight).toBeCloseTo(1, 6);
+    expect(weight).toBe(1);
     expect(advanceStanceWeight(0.98, 1, 1)).toBe(1);
     expect(advanceStanceWeight(1, 1, 1 / 60)).toBe(1);
     expect(advanceStanceWeight(0, 0, 1 / 60)).toBe(0);
