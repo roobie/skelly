@@ -418,12 +418,17 @@ describe('feet at body.pos.y (mobgen pose convention)', () => {
 describe('MobActorMeshes', () => {
   it('queues exact pose texture contents through admission, offscreen movement, severing, death and row reuse', () => {
     const canvas = new EventTarget() as HTMLCanvasElement;
-    const renderer = new MobActorMeshes(0.5, 2, {
+    const renderer = new MobActorMeshes(0.5, 3, {
       figureSeeds: figureSeedPool(registry.zombies),
       poolSize: 1,
       canvas,
     });
-    const { texture } = renderer as unknown as { texture: DataTexture };
+    const { texture, states, corpses, debris } = renderer as unknown as {
+      texture: DataTexture;
+      states: Map<number, { globalRow: number }>;
+      corpses: Map<number, { globalRow: number }>;
+      debris: Map<string, { globalRow: number }>;
+    };
     const data = texture.image.data as Float32Array;
     const bits = new Uint32Array(data.buffer, data.byteOffset, data.length);
     const uploaded = new Uint32Array(bits.length);
@@ -470,14 +475,18 @@ describe('MobActorMeshes', () => {
       upload();
       expect(uploaded).not.toEqual(before);
       renderer.zombieSevered(id, 'hand.L', undefined, zombie);
+      expect(debris.size).toBeGreaterThan(0);
       renderer.zombieDied(id, zombie);
+      expect(corpses.has(id)).toBe(true);
+      const releasedRows = new Set([...corpses.values(), ...debris.values()].map(({ globalRow }) => globalRow));
       store.remove(id);
       renderer.sync(store, 1 / 60);
       upload();
       renderer.sync(store, CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + DEATH_FALL_DURATION);
       upload();
-      store.add(makeZombie([8, 0, -5]));
+      const replacement = store.add(makeZombie([8, 0, -5]));
       renderer.sync(store, 1 / 60);
+      expect(releasedRows.has(states.get(replacement)!.globalRow)).toBe(true);
       upload();
       expect(partialUploads).toBeGreaterThan(0);
       canvas.dispatchEvent(new Event('webglcontextlost'));

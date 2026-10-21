@@ -1930,11 +1930,9 @@ export class MobActorMeshes implements ZombieRenderer {
     { id, zombie }: { id: EntityId; zombie: Zombie },
     gazeDt: number,
     presentationSimSeconds: number,
-  ): boolean {
-    let anyDirty = false;
+  ): void {
     if (!zombie.incapacitated && this.corpses.get(id)?.incapacitated) {
       this.freeCorpse(id);
-      anyDirty = true;
     }
     if (zombie.incapacitated) {
       this.removeTentacle(id);
@@ -1947,13 +1945,13 @@ export class MobActorMeshes implements ZombieRenderer {
           this.zombieIncapacitated(id, zombie);
         }
       }
-      return anyDirty;
+      return;
     }
     let state = this.states.get(id);
     if (!state) {
       state = this.addZombie(id, zombie);
       if (!state) {
-        return anyDirty; // this variant is full — not drawn (see this module's header comment)
+        return; // this variant is full — not drawn (see this module's header comment)
       }
     }
     state.lastSeenFrame = this.frameCounter;
@@ -1968,7 +1966,6 @@ export class MobActorMeshes implements ZombieRenderer {
       presentationSimSeconds,
     });
     this.updateTentacle(id, zombie, placement, state.lastPose);
-    return true;
   }
 
   // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with its base implementation.
@@ -2067,10 +2064,8 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   /** Corpses are driven entirely by their own `elapsed`, not by the store (the sim has already forgotten
-   * them) — advance, re-pose/pack, and free once their whole lifetime (fall + lie + sink) has passed.
-   * Returns whether any corpse was (re)packed this frame, i.e. whether the texture needs uploading. */
-  private advanceCorpses(realDt: number): boolean {
-    let anyDirty = false;
+   * them) — advance, re-pose/pack, and free once their whole lifetime (fall + lie + sink) has passed. */
+  private advanceCorpses(realDt: number): void {
     for (const [id, corpse] of this.corpses) {
       const wasFalling = corpse.incapacitated && corpse.elapsed < DEATH_FALL_DURATION;
       corpse.elapsed += realDt;
@@ -2078,7 +2073,6 @@ export class MobActorMeshes implements ZombieRenderer {
         corpse.elapsed = Math.min(corpse.elapsed, DEATH_FALL_DURATION);
         if (wasFalling || corpse.elapsed < DEATH_FALL_DURATION) {
           this.packCorpse(corpse);
-          anyDirty = true;
         }
         continue;
       }
@@ -2087,15 +2081,12 @@ export class MobActorMeshes implements ZombieRenderer {
         continue;
       }
       this.packCorpse(corpse);
-      anyDirty = true;
     }
-    return anyDirty;
   }
 
   /** Steps each debris rigid body against `rigidWorld()`. Lying and sinking begin only after the solver
    * sleeps the body. */
-  private advanceDebris(realDt: number): boolean {
-    let anyDirty = false;
+  private advanceDebris(realDt: number): void {
     const world = this.rigidWorld();
     for (const [key, d] of this.debris) {
       d.elapsed += realDt;
@@ -2110,9 +2101,7 @@ export class MobActorMeshes implements ZombieRenderer {
         continue;
       }
       this.packDebris(d);
-      anyDirty = true;
     }
-    return anyDirty;
   }
 
   /** Adds `headYawRad` as an extra yaw on the head bone, innermost (applied before whatever sway/tilt
