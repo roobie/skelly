@@ -80,7 +80,7 @@ admitting an override needs the pack dependencies of #637 round 1; see
 `packages/deadvox/src/core/content.ts`, `merge` lets any later pack replace an entry whole, so
 "Conflicts" binds mod authors without the loader enforcing it. Once d476 lands, a
 whole-entry mod that replaces another pack's entry loads only if it depends on that pack
-and declares the override. Nothing needs migrating before v1.0 beta.
+and declares the override. Nothing needs migrating before v1.0 beta (#1023).
 
 ## Consequences
 

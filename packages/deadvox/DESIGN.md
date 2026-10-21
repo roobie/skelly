@@ -2166,7 +2166,7 @@ This also gives later persistence and save-pack identity work an explicit owner;
 see `src/game/browserMods.ts`, `readMod` and `evaluateMods`.
 
 A save records the base pack's identity, and a save made with different base content
-is refused rather than migrated until v1.0 beta
+is refused rather than migrated until v1.0 beta (#1023)
 (`../../AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
 Browser mods join the ordered save-pack identity so changing a selection cannot
 silently resume a different world. Selection persistence is atomic so a storage
