@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you continue phase 4 of the things suite or review g76-1
+  - you continue phase 4 of the things suite or review its packaged-goods family
 ---
 
 # Remaining families
@@ -47,4 +47,5 @@ need source migration in phase 4 even when they are not missing models.
 
 `compass` keeps its dedicated held display; a ground model must not replace it.
 `work_in_progress` is a zero-mass crafting placeholder, not a usable item family.
-Inventory pictures await BR's design decision and are outside g76-1.
+Inventory pictures follow `packages/deadvox/INTERFACE.md`, "Item pictures", and are
+outside this family's models.
