@@ -699,6 +699,7 @@ export const createSession = (options: SessionOptions) => {
   };
   const reach = bindReach(reachPlayer);
   inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, isSolid);
+  inventory.dropFeet = feet;
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
   const chest = (): Vec3 => [
     body.pos[0],

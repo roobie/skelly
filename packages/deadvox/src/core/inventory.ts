@@ -208,6 +208,8 @@ export class Inventory {
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
   /** Where a pile put down in a block comes to rest, or undefined with nowhere to land; the game sets it. */
   landing: (pos: Vec3) => Vec3 | undefined = (pos) => pos;
+  /** The block a drop is made from, at the player's feet; the game sets it. */
+  dropFeet: () => Vec3 | undefined = () => undefined;
   /** Where the actor stands, in blocks; the game sets it. Undefined means no side is known. */
   actorPosition: () => Vec3 | undefined = () => undefined;
   /** What holds a hand from outside the inventory, such as a ladder; the game sets it. */
@@ -620,7 +622,7 @@ export class Inventory {
     }
     const source = this.placeOf(from);
     const destination = this.targetPlace(target);
-    if (!(this.reachable(source) && this.reachable(destination))) {
+    if (!(this.reachable(source) && (this.reachable(destination) || this.dropLanding(target)))) {
       return refuse('Too far away');
     }
     if (!(this.searched(source) && this.searched(destination))) {
@@ -867,7 +869,10 @@ export class Inventory {
     const grids = new Map<string, Placed[]>();
     for (const item of outputs) {
       let found = false;
-      for (const pos of dropSpots(feet)) {
+      for (const pos of dropSpots(feet).flatMap((spot) => {
+        const landed = this.landing(spot);
+        return landed ? [landed] : [];
+      })) {
         const key = pileKey(pos);
         const placed = grids.get(key) ?? this.pilePlacements(pos).filter(({ item: existing }) => existing !== work);
         grids.set(key, placed);
@@ -1027,6 +1032,19 @@ export class Inventory {
       return true;
     }
     return place.kind === 'pile' ? this.canReach(place.pile.pos) : this.canReachEntity(place.entity);
+  }
+
+  /** A drop falls to where it lands, even out of reach, so the drop and the throw behave the same. */
+  private dropLanding(target: Target): boolean {
+    const feet = this.dropFeet();
+    if (!feet || target.kind !== 'pile') {
+      return false;
+    }
+    const key = pileKey(target.pos);
+    return dropSpots(feet).some((spot) => {
+      const pos = this.landing(spot);
+      return pos !== undefined && pileKey(pos) === key;
+    });
   }
 
   private searched(place: Place | undefined): boolean {
