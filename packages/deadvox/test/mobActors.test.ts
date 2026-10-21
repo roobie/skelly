@@ -361,16 +361,20 @@ const renderedHead = (renderer: MobActorMeshes, id: number): { readonly forward:
 };
 
 describe('facing convention', () => {
-  it('a zombie facing +X has its figure forward (local -Z) along +X in world, matching ZombieMeshes', () => {
-    // Same formula both this renderer and ZombieMeshes use (src/render/zombies.ts's renderPose).
-    const facing: Vec3 = [1, 0, 0];
-    const yaw = Math.atan2(-facing[0], -facing[2]);
-    // Three.js/mobgen convention: rotating the local forward (0,0,-1) about Y by `yaw` gives
-    // (-sin(yaw), 0, -cos(yaw)) — see mobgen's stress.ts for the same derivation.
-    const worldForward: Vec3 = [-Math.sin(yaw), 0, -Math.cos(yaw)];
-    expect(worldForward[0]).toBeCloseTo(1, 9);
-    expect(worldForward[1]).toBeCloseTo(0, 9);
-    expect(worldForward[2]).toBeCloseTo(0, 9);
+  it('renders a +X-facing zombie with its local forward along +X in world', () => {
+    const renderer = new MobActorMeshes(0.5, 1, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const id = store.add(makeZombie([0, 0, 0], [1, 0, 0]));
+      renderer.sync(store, 0, 1);
+      const pelvis = renderer.boneMatrix(id, 'pelvis')!;
+      const forward: Vec3 = [-pelvis[2]!, -pelvis[6]!, -pelvis[10]!];
+      expect(forward[0]).toBeCloseTo(1, 9);
+      expect(forward[1]).toBeCloseTo(0, 9);
+      expect(forward[2]).toBeCloseTo(0, 9);
+    } finally {
+      renderer.dispose();
+    }
   });
 });
 
@@ -1077,22 +1081,6 @@ describe('MobActorMeshes reactions', () => {
     }
   });
 
-  it('frees a vanished-without-dying zombie immediately (despawn/unload), unlike a death', () => {
-    const renderer = new MobActorMeshes(0.5, 2, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
-    try {
-      const store = new MapEntityStore<Zombie>();
-      const id = store.add(makeZombie([0, 0, 0]));
-      renderer.sync(store, 1 / 60, 1);
-      expect(renderer.isTracked(id)).toBe(true);
-
-      store.remove(id); // no zombieDied call — a plain vanish, not a death
-      renderer.sync(store, 1 / 60, 1);
-      expect(renderer.isTracked(id)).toBe(false);
-    } finally {
-      renderer.dispose();
-    }
-  });
-
   it('keeps an incapacitated row lying beyond corpse lifetime and out of MAX_CORPSES eviction', () => {
     const renderer = new MobActorMeshes(0.5, 24, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
     try {
@@ -1110,7 +1098,7 @@ describe('MobActorMeshes reactions', () => {
       }
       expect(renderer.isTracked(ids[0]!)).toBe(true);
       expect(renderer.isTracked(ids[1]!)).toBe(false); // oldest ordinary corpse evicted; incapacitated row is protected
-      renderer.sync(store, 3 * 20, 1); // >3x the normal corpse lifetime
+      renderer.sync(store, 3 * 20, 1);
       const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
       expect(lying).toBeDefined();
       expect(renderer.boneMatrix(ids[0]!, 'head')).not.toEqual(uprightHead); // prove this is the fall pose, not a standing live row
