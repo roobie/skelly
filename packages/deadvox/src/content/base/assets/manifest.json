@@ -69,7 +69,16 @@
         "assets/models/opened_beans.glb",
         "assets/models/opened_soup.glb",
         "assets/models/empty_can.glb",
-        "assets/models/can_opener.glb"
+        "assets/models/can_opener.glb",
+        "assets/models/beans.glb",
+        "assets/models/soup.glb",
+        "assets/models/apple.glb",
+        "assets/models/bandage.glb",
+        "assets/models/antiseptic.glb",
+        "assets/models/antibiotics.glb",
+        "assets/models/painkillers.glb",
+        "assets/models/codeine.glb",
+        "assets/models/morphine.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",
