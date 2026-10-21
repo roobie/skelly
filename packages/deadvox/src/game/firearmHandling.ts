@@ -249,6 +249,8 @@ interface CaseLanding {
   readonly verticalDrop: boolean;
 }
 
+export type FirearmOutcome = 'load' | 'close' | 'cycle' | 'live-ejected' | 'case-ejected';
+
 export class FirearmMechanics {
   /** Numeric ownership references only. Chamber/cycle data lives on the inventory item. */
   private readonly active = new Set<number>();
@@ -262,7 +264,8 @@ export class FirearmMechanics {
   private readonly onEjection: (effect: FirearmShotEffect) => void;
   private readonly onCaseLanded: (seed: number, item: Item, instanceIndex: number) => void;
   /** Simulation: resolves the shot's hits. It runs before `onTrajectory`, which is presentation only. */
-  private readonly onShot: (shot: PelletShot, time: number, firearm: Item) => void;
+  private readonly onShot: (shot: PelletShot, time: number, firearm: Item, sighted: boolean) => void;
+  private readonly onHandlingOutcome: (item: Item, outcome: FirearmOutcome) => void;
   private readonly onTrajectory: (trajectory: FirearmTrajectory, time: number) => void;
   private readonly onSound: (event: SoundId, position: Vec3 | undefined, time: number) => void;
   private readonly onCommittedShot: (
@@ -290,6 +293,7 @@ export class FirearmMechanics {
       onEjection,
       onCaseLanded = () => undefined,
       onShot = () => undefined,
+      onHandlingOutcome = () => undefined,
       onTrajectory = () => undefined,
       onSound = () => undefined,
       onCommittedShot = () => undefined,
@@ -302,7 +306,8 @@ export class FirearmMechanics {
       pose: (uid: number) => FirearmPoseInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
       onCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
-      onShot?: (shot: PelletShot, time: number, firearm: Item) => void;
+      onShot?: (shot: PelletShot, time: number, firearm: Item, sighted: boolean) => void;
+      onHandlingOutcome?: (item: Item, outcome: FirearmOutcome) => void;
       onTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
       onSound?: (event: SoundId, position: Vec3 | undefined, time: number) => void;
       onCommittedShot?: (
@@ -325,6 +330,7 @@ export class FirearmMechanics {
     this.onEjection = onEjection;
     this.onCaseLanded = onCaseLanded;
     this.onShot = onShot;
+    this.onHandlingOutcome = onHandlingOutcome;
     this.onTrajectory = onTrajectory;
     this.onSound = onSound;
     this.onCommittedShot = onCommittedShot;
@@ -353,6 +359,13 @@ export class FirearmMechanics {
       sound: (event, time) => this.onSound(event, undefined, time),
       eject: (gun, chamber, type, time) => this.ejectRevolver(gun, chamber, type, time),
       caseType: (gun) => spentCaseItemId(firearmHandlingFor(gun, inventory.registry).calibre),
+      completed: (gun, step) => {
+        if (step === 'load' || step === 'close') {
+          this.onHandlingOutcome(gun, step);
+        } else if (step === 'eject' || step === 'pick') {
+          this.onHandlingOutcome(gun, 'cycle');
+        }
+      },
     });
     queue.registerAction(COCK_ACTION, (params): string | undefined => {
       const item = typeof params.uid === 'number' ? inventory.itemByUid(params.uid) : undefined;
@@ -378,6 +391,7 @@ export class FirearmMechanics {
         return 'I no longer have that round';
       }
       gun.firearm!.tube!.push(ammo.type);
+      this.onHandlingOutcome(gun, 'load');
       return undefined;
     });
     queue.registerAction(MAGAZINE_ACTION, (params) => this.completeMagazineChange(params.uid, params.magazineUid));
@@ -720,7 +734,7 @@ export class FirearmMechanics {
       ? data.dispersionRadians
       : defOf(this.inventory.registry, item.type).firearm!.revolver!.doubleActionDispersionRadians;
     const direction = coneDirection(shotBasis, spread, Rng.stream(input.seed, `firearm-dispersion:${shotKey}`));
-    this.onShot(projectileShot(ammo, shotOrigin, [direction]), input.simTime, item);
+    this.onShot(projectileShot(ammo, shotOrigin, [direction]), input.simTime, item, Boolean(input.aimingDownSights));
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: [direction] }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, 'singleShot', item.uid);
     return true;
@@ -756,7 +770,7 @@ export class FirearmMechanics {
       : projectileShot(ammo, shotOrigin, [
           coneDirection(shotBasis, data.dispersionRadians, Rng.stream(input.seed, `firearm-dispersion:${shotKey}`)),
         ]);
-    this.onShot(pellets, input.simTime, item);
+    this.onShot(pellets, input.simTime, item, Boolean(input.aimingDownSights));
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: pellets.directions }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
     wearFirearmAttachments(this.inventory.registry, item);
@@ -800,7 +814,7 @@ export class FirearmMechanics {
       data.dispersionRadians,
       Rng.stream(input.seed, `firearm-dispersion:${shotKey}`),
     );
-    this.onShot(projectileShot(ammo, shotOrigin, [direction]), input.simTime, item);
+    this.onShot(projectileShot(ammo, shotOrigin, [direction]), input.simTime, item, Boolean(input.aimingDownSights));
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: [direction] }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
     wearFirearmAttachments(this.inventory.registry, item);
@@ -1439,10 +1453,17 @@ export class FirearmMechanics {
           state.actionOpen = false;
         }
       }
-      state.cycle = undefined;
-      this.retire(item);
+      this.finishCycle(item, cycle);
     }
     return undefined;
+  }
+
+  private finishCycle(item: Item, cycle: FirearmCycleState): void {
+    item.firearm!.cycle = undefined;
+    if (cycle.mode === 'hand') {
+      this.onHandlingOutcome(item, 'cycle');
+    }
+    this.retire(item);
   }
 
   /** A full hand cycle's return stroke: the pump's slide forward, or a bolt's close after its open. */
@@ -1574,6 +1595,7 @@ export class FirearmMechanics {
     state.chamber = 'empty';
     state.roundType = undefined;
     state.cycle!.ejected = true;
+    this.onHandlingOutcome(item, 'live-ejected');
     if (!landing) {
       return undefined;
     }
@@ -1628,6 +1650,7 @@ export class FirearmMechanics {
     const data = firearmHandlingFor(item, this.inventory.registry);
     const { model } = data;
     const cylinder = item.firearm!.cylinder!;
+    this.onHandlingOutcome(item, cylinder.chambers[chamber]!.state === 'round' ? 'live-ejected' : 'case-ejected');
     const point = revolverChamberPoint(model.gun!.revolver!, chamber, cylinder.aligned, 1);
     const local = modelToView(model, point.map((value, index) => value - model.grip!.at[index]!) as Vec3);
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';

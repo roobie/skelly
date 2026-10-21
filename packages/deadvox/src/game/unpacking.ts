@@ -12,11 +12,18 @@ export class Unpacking {
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly feet: () => Vec3;
+  private readonly onUnpacked: (type: string) => void;
 
-  constructor(inventory: Inventory, queue: HandlingQueue, feet: () => Vec3) {
+  constructor(
+    inventory: Inventory,
+    queue: HandlingQueue,
+    feet: () => Vec3,
+    onUnpacked: (type: string) => void = () => undefined,
+  ) {
     this.inventory = inventory;
     this.queue = queue;
     this.feet = feet;
+    this.onUnpacked = onUnpacked;
     queue.registerAction(UNPACK_ACTION, (params) => this.complete(params.uid));
   }
 
@@ -74,6 +81,7 @@ export class Unpacking {
       return 'Package is no longer held';
     }
     this.deliver(shell, { pocket, spill });
+    this.onUnpacked(payload.item);
     return undefined;
   }
 
