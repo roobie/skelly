@@ -10,6 +10,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.63.0-noble
     timeout-minutes: ${{ inputs.shard == 'control-check' && 100 || 30 }}
     defaults:
       run:
