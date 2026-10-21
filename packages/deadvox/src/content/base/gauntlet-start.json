@@ -9085,7 +9085,8 @@
       },
       "palette": {
         "X": {
-          "furniture": "crate_overturned"
+          "furniture": "crate",
+          "tip": "top"
         }
       },
       "ports": [],
@@ -9105,8 +9106,9 @@
       },
       "palette": {
         "L": {
-          "furniture": "shelf_fallen",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "back"
         }
       },
       "ports": [],
@@ -9126,8 +9128,9 @@
       },
       "palette": {
         "W": {
-          "furniture": "wardrobe_fallen",
-          "loot": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe",
+          "tip": "back"
         }
       },
       "ports": [],
@@ -9211,7 +9214,8 @@
       "palette": {
         "i": {
           "facing": "e",
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         }
       },
       "ports": [],
@@ -9231,7 +9235,8 @@
       },
       "palette": {
         "j": {
-          "furniture": "chair_on_back"
+          "furniture": "chair",
+          "tip": "back"
         }
       },
       "ports": [],

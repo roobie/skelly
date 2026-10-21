@@ -42,7 +42,7 @@ local creeper = {
 };
 local crate = {
   id: 'lab_yard_overturned_crate', size: [2, 3, 2], lootContext: context,
-  palette: { g: { ground: true }, F: { furniture: 'crate_overturned' } },
+  palette: { g: { ground: true }, F: { furniture: 'crate', tip: 'top' } },
   layers: [['gg', 'gg'], ['FF', 'FF'], ['FF', 'FF']],
 };
 local weedBays = [[13, 40, 8], [19, 40, 16], [7, 40, 30], [18, 40, 34], [12, 40, 43], [24, 40, 51], [43, 40, 53], [56, 40, 44], [61, 40, 35], [53, 40, 24], [54, 40, 7], [34, 40, 12]];

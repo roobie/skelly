@@ -1959,287 +1959,6 @@
       "solidFill": 0.01
     },
     {
-      "color": "#8b7355",
-      "id": "chair_on_back",
-      "name": "Chair on its back",
-      "shape": [
-        {
-          "position": [0.12, 0.71999999999999997, 0],
-          "size": [0.16, 0.16, 0.92000000000000004]
-        },
-        {
-          "position": [0.71999999999999997, 0.71999999999999997, 0],
-          "size": [0.16, 0.16, 0.92000000000000004]
-        },
-        {
-          "position": [0.12, 0.12, 0],
-          "size": [0.16, 0.16, 0.92000000000000004]
-        },
-        {
-          "position": [0.71999999999999997, 0.12, 0],
-          "size": [0.16, 0.16, 0.92000000000000004]
-        },
-        {
-          "position": [0.059999999999999998, 0.059999999999999998, 0.90000000000000002],
-          "size": [0.88, 0.88, 0.17999999999999999]
-        },
-        {
-          "position": [0.059999999999999998, 0.059999999999999998, 1.0600000000000001],
-          "size": [0.88, 0.11, 0.88]
-        }
-      ],
-      "size": [1, 1, 2],
-      "solidFill": 0.01
-    },
-    {
-      "color": "#8b7355",
-      "id": "chair_on_side",
-      "name": "Chair on its side",
-      "shape": [
-        {
-          "position": [1.0800000000000001, 0.12, 0.12],
-          "size": [0.92000000000000004, 0.16, 0.16]
-        },
-        {
-          "position": [1.0800000000000001, 0.71999999999999997, 0.12],
-          "size": [0.92000000000000004, 0.16, 0.16]
-        },
-        {
-          "position": [1.0800000000000001, 0.12, 0.71999999999999997],
-          "size": [0.92000000000000004, 0.16, 0.16]
-        },
-        {
-          "position": [1.0800000000000001, 0.71999999999999997, 0.71999999999999997],
-          "size": [0.92000000000000004, 0.16, 0.16]
-        },
-        {
-          "position": [0.92000000000000004, 0.059999999999999998, 0.059999999999999998],
-          "size": [0.17999999999999999, 0.88, 0.88]
-        },
-        {
-          "position": [0.059999999999999998, 0.059999999999999998, 0.82999999999999996],
-          "size": [0.88, 0.88, 0.11]
-        }
-      ],
-      "size": [2, 1, 1],
-      "solidFill": 0.01
-    },
-    {
-      "color": "#9a7b4f",
-      "id": "crate_overturned",
-      "name": "Overturned crate",
-      "shape": [
-        {
-          "position": [0.10000000000000001, 0.16, 0.10000000000000001],
-          "size": [1.8, 1.79, 1.8]
-        },
-        {
-          "position": [0, 0.16, 0],
-          "size": [0.20000000000000001, 1.8400000000000001, 0.20000000000000001]
-        },
-        {
-          "position": [1.8, 0.16, 0],
-          "size": [0.20000000000000001, 1.8400000000000001, 0.20000000000000001]
-        },
-        {
-          "position": [0, 0.16, 1.8],
-          "size": [0.20000000000000001, 1.8400000000000001, 0.20000000000000001]
-        },
-        {
-          "position": [1.8, 0.16, 1.8],
-          "size": [0.20000000000000001, 1.8400000000000001, 0.20000000000000001]
-        },
-        {
-          "position": [0.20000000000000001, 1.3999999999999999, 0],
-          "size": [1.6000000000000001, 0.5, 0.10000000000000001]
-        },
-        {
-          "position": [0.20000000000000001, 0.78000000000000003, 0],
-          "size": [1.6000000000000001, 0.5, 0.10000000000000001]
-        },
-        {
-          "position": [0.20000000000000001, 0.16, 0],
-          "size": [1.6000000000000001, 0.5, 0.10000000000000001]
-        },
-        {
-          "position": [0.20000000000000001, 1.3999999999999999, 1.8999999999999999],
-          "size": [1.6000000000000001, 0.5, 0.10000000000000001]
-        },
-        {
-          "position": [0.20000000000000001, 0.78000000000000003, 1.8999999999999999],
-          "size": [1.6000000000000001, 0.5, 0.10000000000000001]
-        },
-        {
-          "position": [0.20000000000000001, 0.16, 1.8999999999999999],
-          "size": [1.6000000000000001, 0.5, 0.10000000000000001]
-        },
-        {
-          "position": [0, 1.3999999999999999, 0.20000000000000001],
-          "size": [0.10000000000000001, 0.5, 1.6000000000000001]
-        },
-        {
-          "position": [0, 0.78000000000000003, 0.20000000000000001],
-          "size": [0.10000000000000001, 0.5, 1.6000000000000001]
-        },
-        {
-          "position": [0, 0.16, 0.20000000000000001],
-          "size": [0.10000000000000001, 0.5, 1.6000000000000001]
-        },
-        {
-          "position": [1.8999999999999999, 1.3999999999999999, 0.20000000000000001],
-          "size": [0.10000000000000001, 0.5, 1.6000000000000001]
-        },
-        {
-          "position": [1.8999999999999999, 0.78000000000000003, 0.20000000000000001],
-          "size": [0.10000000000000001, 0.5, 1.6000000000000001]
-        },
-        {
-          "position": [1.8999999999999999, 0.16, 0.20000000000000001],
-          "size": [0.10000000000000001, 0.5, 1.6000000000000001]
-        },
-        {
-          "position": [0, 0, 0],
-          "size": [2, 0.16, 2]
-        }
-      ],
-      "size": [2, 2, 2],
-      "solidFill": 0.01
-    },
-    {
-      "color": "#8d7355",
-      "container": {
-        "pockets": [
-          {
-            "grid": [9, 18],
-            "handlingSimSeconds": 0.80000000000000004
-          }
-        ]
-      },
-      "id": "shelf_fallen",
-      "name": "Fallen shelf",
-      "shape": [
-        {
-          "position": [0, 0, 0],
-          "size": [0.12, 1, 4]
-        },
-        {
-          "position": [1.8799999999999999, 0, 0],
-          "size": [0.12, 1, 4]
-        },
-        {
-          "position": [0.12, 0, 0],
-          "size": [1.76, 0.12, 3.8999999999999999]
-        },
-        {
-          "position": [0, 0, 3.8799999999999999],
-          "size": [2, 1, 0.12]
-        },
-        {
-          "position": [0.12, 0.12, 0.10000000000000001],
-          "size": [1.76, 0.88, 0.10000000000000001]
-        },
-        {
-          "position": [0.12, 0.12, 1],
-          "size": [1.76, 0.88, 0.10000000000000001]
-        },
-        {
-          "position": [0.12, 0.12, 1.8999999999999999],
-          "size": [1.76, 0.88, 0.10000000000000001]
-        },
-        {
-          "position": [0.12, 0.12, 2.7999999999999998],
-          "size": [1.76, 0.88, 0.10000000000000001]
-        }
-      ],
-      "size": [2, 1, 4],
-      "solidFill": 0.01
-    },
-    {
-      "color": "#8d7355",
-      "container": {
-        "pockets": [
-          {
-            "grid": [9, 18],
-            "handlingSimSeconds": 0.80000000000000004
-          }
-        ]
-      },
-      "id": "shelf_on_side",
-      "name": "Shelf on its side",
-      "shape": [
-        {
-          "position": [0, 0, 0],
-          "size": [4, 0.12, 1]
-        },
-        {
-          "position": [0, 1.8799999999999999, 0],
-          "size": [4, 0.12, 1]
-        },
-        {
-          "position": [0.10000000000000001, 0.12, 0.88],
-          "size": [3.8999999999999999, 1.76, 0.12]
-        },
-        {
-          "position": [0, 0, 0],
-          "size": [0.12, 2, 1]
-        },
-        {
-          "position": [3.7999999999999998, 0.12, 0],
-          "size": [0.10000000000000001, 1.76, 0.88]
-        },
-        {
-          "position": [2.8999999999999999, 0.12, 0],
-          "size": [0.10000000000000001, 1.76, 0.88]
-        },
-        {
-          "position": [2, 0.12, 0],
-          "size": [0.10000000000000001, 1.76, 0.88]
-        },
-        {
-          "position": [1.1000000000000001, 0.12, 0],
-          "size": [0.10000000000000001, 1.76, 0.88]
-        }
-      ],
-      "size": [4, 2, 1],
-      "solidFill": 0.01
-    },
-    {
-      "appearance": {
-        "kind": "cabinet",
-        "surface": "wood"
-      },
-      "color": "#6e5037",
-      "container": {
-        "pockets": [
-          {
-            "grid": [9, 18],
-            "handlingSimSeconds": 1.2
-          }
-        ]
-      },
-      "id": "wardrobe_fallen",
-      "name": "Fallen wardrobe",
-      "size": [2, 1, 4]
-    },
-    {
-      "appearance": {
-        "kind": "cabinet",
-        "surface": "wood"
-      },
-      "color": "#6e5037",
-      "container": {
-        "pockets": [
-          {
-            "grid": [9, 18],
-            "handlingSimSeconds": 1.2
-          }
-        ]
-      },
-      "id": "wardrobe_on_side",
-      "name": "Wardrobe on its side",
-      "size": [4, 2, 1]
-    },
-    {
       "color": "#626d70",
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
@@ -2289,31 +2008,6 @@
         }
       ],
       "size": [2, 4, 1]
-    },
-    {
-      "color": "#89979a",
-      "id": "gauntlet_fallen_fence_panel",
-      "name": "Fallen fence panel",
-      "shape": [
-        {
-          "position": [0, 0, 0],
-          "size": [0.40000000000000002, 0.40000000000000002, 3]
-        },
-        {
-          "position": [3.6000000000000001, 0, 0],
-          "size": [0.40000000000000002, 0.40000000000000002, 3]
-        },
-        {
-          "position": [0.40000000000000002, 0.050000000000000003, 0.69999999999999996],
-          "size": [3.2000000000000002, 0.29999999999999999, 0.40000000000000002]
-        },
-        {
-          "position": [0.40000000000000002, 0.050000000000000003, 2],
-          "size": [3.2000000000000002, 0.29999999999999999, 0.40000000000000002]
-        }
-      ],
-      "size": [4, 1, 3],
-      "solidFill": 0.01
     },
     {
       "color": "#4d5048",
@@ -14768,18 +14462,22 @@
         },
         "a": {
           "facing": "e",
-          "furniture": "wardrobe_fallen",
-          "loot": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe",
+          "tip": "back"
         },
         "b": {
-          "furniture": "shelf_on_side",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "left"
         },
         "c": {
-          "furniture": "chair_on_back"
+          "furniture": "chair",
+          "tip": "back"
         },
         "d": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "e": {
           "furniture": "crate",
@@ -15028,23 +14726,28 @@
           "spawn": "shambler"
         },
         "a": {
-          "furniture": "wardrobe_on_side",
-          "loot": "gauntlet_searched"
+          "furniture": "wardrobe",
+          "loot": "gauntlet_searched",
+          "tip": "left"
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "back"
         },
         "c": {
-          "furniture": "crate_overturned"
+          "furniture": "crate",
+          "loot": "junk",
+          "tip": "top"
         },
         "d": {
           "furniture": "desk",
           "loot": "gauntlet_searched"
         },
         "e": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "p": {
           "material": "floor",
@@ -15803,18 +15506,22 @@
         },
         "a": {
           "facing": "e",
-          "furniture": "wardrobe_fallen",
-          "loot": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe",
+          "tip": "back"
         },
         "b": {
-          "furniture": "shelf_on_side",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "left"
         },
         "c": {
-          "furniture": "chair_on_back"
+          "furniture": "chair",
+          "tip": "back"
         },
         "d": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "e": {
           "furniture": "crate",
@@ -16063,23 +15770,28 @@
           "spawn": "shambler"
         },
         "a": {
-          "furniture": "wardrobe_on_side",
-          "loot": "gauntlet_searched"
+          "furniture": "wardrobe",
+          "loot": "gauntlet_searched",
+          "tip": "left"
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "back"
         },
         "c": {
-          "furniture": "crate_overturned"
+          "furniture": "crate",
+          "loot": "junk",
+          "tip": "top"
         },
         "d": {
           "furniture": "desk",
           "loot": "gauntlet_searched"
         },
         "e": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "p": {
           "material": "floor",
@@ -17096,18 +16808,22 @@
         },
         "a": {
           "facing": "e",
-          "furniture": "wardrobe_fallen",
-          "loot": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe",
+          "tip": "back"
         },
         "b": {
-          "furniture": "shelf_on_side",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "left"
         },
         "c": {
-          "furniture": "chair_on_back"
+          "furniture": "chair",
+          "tip": "back"
         },
         "d": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "e": {
           "furniture": "crate",
@@ -17616,23 +17332,28 @@
           "spawn": "shambler"
         },
         "a": {
-          "furniture": "wardrobe_on_side",
-          "loot": "gauntlet_searched"
+          "furniture": "wardrobe",
+          "loot": "gauntlet_searched",
+          "tip": "left"
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "back"
         },
         "c": {
-          "furniture": "crate_overturned"
+          "furniture": "crate",
+          "loot": "junk",
+          "tip": "top"
         },
         "d": {
           "furniture": "desk",
           "loot": "gauntlet_searched"
         },
         "e": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "p": {
           "material": "floor",
@@ -20305,16 +20026,20 @@
           "spawn": "shambler"
         },
         "a": {
-          "furniture": "wardrobe_on_side",
-          "loot": "gauntlet_searched"
+          "furniture": "wardrobe",
+          "loot": "gauntlet_searched",
+          "tip": "left"
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "back"
         },
         "c": {
-          "furniture": "crate_overturned"
+          "furniture": "crate",
+          "loot": "junk",
+          "tip": "top"
         },
         "d": {
           "furniture": "desk",
@@ -20327,7 +20052,8 @@
           "loot": "gauntlet_searched"
         },
         "e": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "p": {
           "material": "floor",
@@ -21095,18 +20821,22 @@
         },
         "a": {
           "facing": "e",
-          "furniture": "wardrobe_fallen",
-          "loot": "wardrobe"
+          "furniture": "wardrobe",
+          "loot": "wardrobe",
+          "tip": "back"
         },
         "b": {
-          "furniture": "shelf_on_side",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "left"
         },
         "c": {
-          "furniture": "chair_on_back"
+          "furniture": "chair",
+          "tip": "back"
         },
         "d": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "e": {
           "furniture": "crate",
@@ -21358,23 +21088,28 @@
           "spawn": "shambler"
         },
         "a": {
-          "furniture": "wardrobe_on_side",
-          "loot": "gauntlet_searched"
+          "furniture": "wardrobe",
+          "loot": "gauntlet_searched",
+          "tip": "left"
         },
         "b": {
           "facing": "e",
-          "furniture": "shelf_fallen",
-          "loot": "shelf"
+          "furniture": "shelf",
+          "loot": "shelf",
+          "tip": "back"
         },
         "c": {
-          "furniture": "crate_overturned"
+          "furniture": "crate",
+          "loot": "junk",
+          "tip": "top"
         },
         "d": {
           "furniture": "desk",
           "loot": "gauntlet_searched"
         },
         "e": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "f": {
           "furniture": "rug"
@@ -29411,8 +29146,9 @@
           "role": "shell"
         },
         "F": {
-          "furniture": "shelf_fallen",
-          "loot": "d41_empty"
+          "furniture": "shelf",
+          "loot": "d41_empty",
+          "tip": "back"
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -31344,7 +31080,8 @@
       },
       "palette": {
         "F": {
-          "furniture": "crate_overturned"
+          "furniture": "crate",
+          "tip": "top"
         },
         "g": {
           "ground": true
@@ -35225,7 +34962,8 @@
           "role": "shell"
         },
         "p": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "r": {
           "facing": "s",
@@ -36878,7 +36616,8 @@
           "ground": true
         },
         "F": {
-          "furniture": "gauntlet_fallen_fence_panel"
+          "furniture": "gauntlet_yard_fence",
+          "tip": "back"
         }
       },
       "ports": [],
@@ -36980,7 +36719,8 @@
           "role": "opening"
         },
         "c": {
-          "furniture": "chair_on_back"
+          "furniture": "chair",
+          "tip": "back"
         }
       },
       "ports": [],
@@ -37004,7 +36744,8 @@
           "role": "opening"
         },
         "c": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         }
       },
       "ports": [],

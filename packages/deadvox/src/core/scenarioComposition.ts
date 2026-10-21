@@ -217,7 +217,7 @@ const eventCells = (registry: Registry, template: CompiledTemplate): readonly Ve
   }
   for (const piece of template.pieces) {
     const furniture = registry.furniture.get(piece.furniture)!;
-    for (const offset of cellsOf(pieceSize(furniture.size, piece.facing))) {
+    for (const offset of cellsOf(pieceSize(furniture.size, piece.facing, piece.tip))) {
       add(piece.pos.map((value, axis) => value + offset[axis]!) as Vec3);
     }
   }
@@ -251,7 +251,7 @@ const eventIssues = (registry: Registry, scenario: ScenarioDef): Issue[] => {
     const hostFurniture = new Set(
       host.pieces.flatMap((piece) => {
         const furniture = registry.furniture.get(piece.furniture)!;
-        return [...cellsOf(pieceSize(furniture.size, piece.facing))].map((offset) =>
+        return [...cellsOf(pieceSize(furniture.size, piece.facing, piece.tip))].map((offset) =>
           piece.pos.map((value, axis) => value + offset[axis]!).join(','),
         );
       }),
