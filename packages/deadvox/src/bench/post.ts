@@ -33,8 +33,12 @@ export const applyBenchWeathering = (config: GameConfig): void => {
 
 export const benchPostFromUrl = (params: URLSearchParams): boolean => params.get('post') === '1';
 
-/** The URL fragment that keeps the flag on for the next run of a bench. */
-export const postUrlPart = (post: boolean): string => (post ? '&post=1' : '');
+/** Enables the goggles' registry-authored night-vision view for a benchmark. */
+export const benchNightVisionFromUrl = (params: URLSearchParams): boolean => params.get('nightVision') === '1';
+
+/** The URL fragments that keep the post options on for the next run of a bench. */
+export const postUrlPart = (post: boolean, nightVision = false): string =>
+  `${post ? '&post=1' : ''}${nightVision ? '&nightVision=1' : ''}`;
 
 /**
  * What a bench calls instead of `renderer.render(scene, camera)` each frame. With `post` it applies the
@@ -42,18 +46,21 @@ export const postUrlPart = (post: boolean): string => (post ? '&post=1' : '');
  * fogginess, no held items); without, the plain render. The distance fog and far plane stay the bench's own.
  * The optional callback samples scene counters before post-processing overwrites renderer.info.
  */
-export interface BenchSceneRenderStats {
+interface BenchSceneRenderStats {
   readonly calls: number;
   readonly triangles: number;
 }
 
+export interface BenchDrawOptions {
+  readonly post: boolean;
+  readonly nightVision: boolean;
+  readonly skyAngle: number;
+  readonly reportSceneRender?: (stats: BenchSceneRenderStats) => void;
+}
+
 /** Renderer counters sampled immediately after the scene pass, before post-processing overwrites them. */
-export const benchDraw = (
-  engine: RenderedEngine,
-  post: boolean,
-  hour: number,
-  reportSceneRender?: (stats: BenchSceneRenderStats) => void,
-): (() => void) => {
+export const benchDraw = (engine: RenderedEngine, options: BenchDrawOptions): (() => void) => {
+  const { post, nightVision, reportSceneRender } = options;
   const { renderer, scene, camera, mood, shadows } = engine;
   // renderer.info auto-resets on each WebGLRenderer.render. Mood invokes this from its DrawPass,
   // immediately after the scene RenderPass; reading after mood.render() would see only the final post pass.
@@ -68,9 +75,18 @@ export const benchDraw = (
   }
   applyLook(renderer, engine.meshes, BENCH_LOOK);
   mood.restore(BENCH_MOOD);
+  const nightVisionView = engine.registry.items.get('night_vision_goggles')?.light?.nightVision;
+  if (nightVision && !nightVisionView) {
+    throw new Error('Missing benchmark night-vision goggles content');
+  }
+  mood.setNightVision(nightVision ? nightVisionView : undefined);
   shadows.restore(DEFAULT_SHADOWS);
   const dayCycle = requireDayCycle(engine.registry);
-  const sky = skyInWeather(skyAt(hour, dayCycle), { fogginess: dayCycle.weather.defaultFogginess }, dayCycle.weather);
+  const sky = skyInWeather(
+    skyAt(options.skyAngle, dayCycle),
+    { fogginess: dayCycle.weather.defaultFogginess },
+    dayCycle.weather,
+  );
   mood.setSky(sky);
   const sunStrength = sunShadowStrength(sky.lightIntensity);
   return () => {

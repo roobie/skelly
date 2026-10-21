@@ -36,7 +36,7 @@ import {
   type RunResult,
   saveRecord,
 } from './plan.ts';
-import { benchDraw, benchPostFromUrl, postUrlPart } from './post.ts';
+import { benchDraw, benchNightVisionFromUrl, benchPostFromUrl, postUrlPart } from './post.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, mean, sampleStats } from './stats.ts';
@@ -53,6 +53,8 @@ export interface BenchRun {
   time?: string;
   /** Draw through the mood pass with the default look (`&post=1`, bench/post.ts). */
   post: boolean;
+  /** Apply the goggles' registry-authored night-vision view (`&nightVision=1`, bench/post.ts). */
+  nightVision: boolean;
   /** Detailed shambler population to keep active through every phase; undefined rejects a malformed URL. */
   shamblers: number | undefined;
 }
@@ -83,6 +85,7 @@ export const benchRunFromUrl = (
     index: Number.isInteger(index) && index >= 0 && index < plan.length ? index : 0,
     quick: params.has('quick'),
     post: benchPostFromUrl(params),
+    nightVision: benchNightVisionFromUrl(params),
     shamblers: shamblerValues?.length === 1 ? shamblerValues[0]! : undefined,
     ...siteFromUrl(params, 'testHouse', registry),
     ...(parseTimeOfDay(time) === undefined ? {} : { time }),
@@ -125,7 +128,7 @@ export const nextUrl = (run: BenchRun, seed: number): string => {
     (run.site === 'forest' && run.density !== null ? `&density=${run.density}` : '');
   const time = run.time === undefined ? '' : `&time=${run.time}`;
   const shamblers = `&shamblers=${run.shamblers ?? 0}`;
-  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${shamblers}${postUrlPart(run.post)}${quick}`;
+  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${shamblers}${postUrlPart(run.post, run.nightVision)}${quick}`;
 };
 
 export const forestWorkload = (registry: Pick<Registry, 'siteGeneration'>, seed: number, density: number | null) => {
@@ -180,7 +183,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const daylightScale = flashlightDaylightScale(skyAt(hour, dayCycle));
   const gl = renderer.getContext();
   const pixel = new Uint8Array(4);
-  const drawScene = benchDraw(engine, run.post, hour);
+  const drawScene = benchDraw(engine, { post: run.post, nightVision: run.nightVision, skyAngle: hour });
   const draw = () => {
     lightFixture.update(camera, daylightScale);
     drawScene();
