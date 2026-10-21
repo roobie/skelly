@@ -3,6 +3,7 @@ read_if:
   - you're implementing or reviewing electricity balance, blackout history or power saves
   - you're integrating appliances with power catch-up or changing electrical content
   - you're checking the reasons for electricity priorities, storage losses or restart behaviour
+  - you're designing solar panel quality and condition for d587
 ---
 
 # Electricity
@@ -40,6 +41,11 @@ numerical sampling. The world's day cycle remains the authority so solar cannot
 drift onto a separate electrical clock. Smooth curves, weather and panel
 orientation remain open. See `src/core/dayPhase.ts`, `dayPhaseAt`, and
 `src/core/power.ts`, `PowerNetwork.solar`.
+
+The approved per-phase output is authored in `src/content/base/power.jsonnet`,
+`solar_panel`. When d587 introduces panel quality and condition, output must rise
+with quality and fall with damage. Better and less damaged panels should be worth
+seeking out and repairing, so quality and condition carry a power payoff.
 
 Elapsed time settles resource and phase boundaries before changing rates so a
 load or wiring change cannot rewrite earlier service. Appliance owners receive
