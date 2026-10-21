@@ -3629,7 +3629,8 @@ describe('dismemberment', () => {
         hit,
       };
     };
-    const sweep = [4, 8, 10, 20, 40].map((impulse) => simulate({ ...fists, impulse }));
+    const settled = simulate({ ...fists, impulse: 4 }, true);
+    const sweep = [4, 8, 10, 20, 40].map((impulse) => (impulse === 4 ? settled : simulate({ ...fists, impulse })));
 
     for (const outcome of sweep) {
       expect(armParts).toContain(outcome.part);
@@ -3640,6 +3641,7 @@ describe('dismemberment', () => {
     for (let index = 1; index < sweep.length; index++) {
       expect.soft(sweep[index]!.distance).toBeGreaterThan(sweep[index - 1]!.distance);
     }
+    expect(settled.restDistance).toBeDefined();
   });
 
   it('chance 1 always severs a random arm part on a hit that does not kill', () => {
