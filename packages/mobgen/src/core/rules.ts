@@ -374,6 +374,25 @@ export const silhouetteSize = (voxels: Voxels): SilhouetteSize => {
   return { width: (maxI - minI) * voxels.size, height: (maxJ - minJ) * voxels.size };
 };
 
+export const silhouetteDimensionIssues = (
+  actual: SilhouetteSize,
+  reference: SilhouetteSize,
+  coarseSize: number,
+  referenceSize: number,
+): Issue[] => {
+  const widthDelta = Math.abs(actual.width - reference.width);
+  const heightDelta = Math.abs(actual.height - reference.height);
+  const allowance = coarseSize + referenceSize + 1e-9;
+  return widthDelta <= allowance && heightDelta <= allowance
+    ? []
+    : [
+        {
+          rule: 'silhouette',
+          message: `Silhouette changed by ${widthDelta.toFixed(3)}m wide and ${heightDelta.toFixed(3)}m high (maximum: ${coarseSize.toFixed(3)}m coarse cell + ${referenceSize.toFixed(3)}m reference-cell quantization).`,
+        },
+      ];
+};
+
 /** Coarse X width and Y height stay within one coarse cell, plus one reference-cell quantization allowance. */
 const silhouette: Rule = {
   id: 'silhouette',
@@ -381,19 +400,7 @@ const silhouette: Rule = {
     if (!referenceSilhouette || referenceVoxelSize === undefined) {
       return [{ rule: 'silhouette', message: 'A full-detail reference silhouette and resolution are required.' }];
     }
-    const actual = silhouetteSize(voxels);
-    const widthDelta = Math.abs(actual.width - referenceSilhouette.width);
-    const heightDelta = Math.abs(actual.height - referenceSilhouette.height);
-    const allowance = voxels.size + referenceVoxelSize + 1e-9;
-    if (widthDelta <= allowance && heightDelta <= allowance) {
-      return [];
-    }
-    return [
-      {
-        rule: 'silhouette',
-        message: `Silhouette changed by ${widthDelta.toFixed(3)}m wide and ${heightDelta.toFixed(3)}m high (maximum: ${voxels.size.toFixed(3)}m coarse cell + ${referenceVoxelSize.toFixed(3)}m reference-cell quantization).`,
-      },
-    ];
+    return silhouetteDimensionIssues(silhouetteSize(voxels), referenceSilhouette, voxels.size, referenceVoxelSize);
   },
 };
 

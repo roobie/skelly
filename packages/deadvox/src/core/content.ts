@@ -1387,6 +1387,16 @@ const checkSkillAndUiReferences = (registry: Registry, report: Report): void => 
   }
 };
 
+const checkActorLod = (registry: Registry, report: Report): void => {
+  for (const graphics of registry.graphics.values()) {
+    for (const zombie of registry.zombies.values()) {
+      if (!graphics.actorLod.families[zombie.model]) {
+        report('graphics', graphics.id, '.actorLod.families', `missing actor LOD policy for model "${zombie.model}"`);
+      }
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1418,6 +1428,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkKeys(registry, report);
   checkZombies(registry, report);
+  checkActorLod(registry, report);
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);
   for (const layout of registry.layouts.values()) {

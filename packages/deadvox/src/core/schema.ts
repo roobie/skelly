@@ -37,6 +37,7 @@ import {
 } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { solidBlocks } from '../vehicles/solid.ts';
+import { ActorLodPolicySchema } from './actorLod.ts';
 import { hasSegment } from './authoredTerrain.mjs';
 import {
   BODY_REGIONS,
@@ -2996,6 +2997,7 @@ const RecipeSchema = strictObject({
 
 const GraphicsTuningSchema = strictObject({
   id: Id,
+  actorLod: ActorLodPolicySchema,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   ...GraphicsOptionsSchema.entries,
 });

@@ -7,11 +7,19 @@
 // knowing anything about bones or clothes.
 
 import type { Body } from './body.ts';
+import type { Issue } from './issue.ts';
 import { type LodCompatibilityIssue, lodCompatibilityIssues } from './lodCompatibility.ts';
 import type { BoneMesh } from './mesh.ts';
 import { meshBones } from './mesh.ts';
 import { pick, type Rng, range, seededRng } from './random.ts';
-import { type Budgets, type RuleBudgets, silhouetteSize, type ValidationProfile } from './rules.ts';
+import {
+  type Budgets,
+  type RuleBudgets,
+  silhouetteDimensionIssues,
+  silhouetteSize,
+  type ValidationProfile,
+} from './rules.ts';
+import { simplifyBoneMeshes } from './simplifyBones.ts';
 import { type BodyPlan, type Genome, type ParamSpec, type Template, templateByName, type Wound } from './template.ts';
 import { type Report, validate } from './validate.ts';
 import { type Voxels, voxelize } from './voxelize.ts';
@@ -267,6 +275,52 @@ export const realizeLod = (validated: ValidGeneration, voxelSize: number): LodRe
   const genome = { ...validated.genome, voxelSize };
   const realized = realize(genome, { profile: 'silhouette', reference: validated.realized });
   return { genome, realized, compatibilityIssues: lodCompatibilityIssues(validated.realized, realized) };
+};
+
+export interface BoneLodRealization {
+  readonly meshes: ReadonlyMap<number, BoneMesh>;
+  readonly triangles: number;
+  readonly compatibilityIssues: readonly LodCompatibilityIssue[];
+  readonly report: { readonly ok: boolean; readonly issues: readonly Issue[] };
+}
+
+const meshSilhouette = (meshes: ReadonlyMap<number, BoneMesh>) => {
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  for (const mesh of meshes.values()) {
+    for (const index of mesh.indices) {
+      minX = Math.min(minX, mesh.positions[index * 3]!);
+      maxX = Math.max(maxX, mesh.positions[index * 3]!);
+      minY = Math.min(minY, mesh.positions[index * 3 + 1]!);
+      maxY = Math.max(maxY, mesh.positions[index * 3 + 1]!);
+    }
+  }
+  return { width: maxX - minX, height: maxY - minY };
+};
+
+/** Unlike re-voxelization, bone-local simplification cannot steal a thin part's ownership. */
+export const realizeBoneLod = (reference: Realized, edgeLength: number): BoneLodRealization => {
+  if (!reference.report.ok || reference.profile !== 'full') {
+    throw new Error('LOD source must have passed full-detail validation');
+  }
+  const meshes = simplifyBoneMeshes(reference, edgeLength);
+  const compatibilityIssues = lodCompatibilityIssues(reference, { body: reference.body, meshes });
+  const triangles = [...meshes.values()].reduce((sum, mesh) => sum + mesh.indices.length / 3, 0);
+  const issues: Issue[] = [
+    ...compatibilityIssues.map((issue) => ({ rule: 'lod-compatibility', message: issue.kind, bones: [issue.bone] })),
+    ...silhouetteDimensionIssues(
+      meshSilhouette(meshes),
+      meshSilhouette(reference.meshes),
+      edgeLength,
+      reference.voxels.size,
+    ),
+  ];
+  if (triangles <= 0 || triangles > FAR_LOD_HALF_BLOCK_TRIANGLE_CAP) {
+    issues.push({ rule: 'triangles', message: 'Simplified body is outside the far-LOD draw budget' });
+  }
+  return { meshes, triangles, compatibilityIssues, report: { ok: issues.length === 0, issues } };
 };
 
 export interface ValidSearchOptions {

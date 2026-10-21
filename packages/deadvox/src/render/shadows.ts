@@ -148,6 +148,7 @@ export class Shadows {
   private strength = 0;
   private sunDue = false;
   private stale = true;
+  private actorGeometryVersion = -1;
   private sinceDraw = 0;
   private readonly drawnAt = new Vector3();
   private readonly drawnToSun = new Vector3();
@@ -248,6 +249,14 @@ export class Shadows {
 
   stepDistance(): void {
     this.setDistance(nextShadowDistance(this.state.distance));
+  }
+
+  setActorGeometryVersion(version: number): void {
+    if (version !== this.actorGeometryVersion) {
+      this.actorGeometryVersion = version;
+      this.stale = true;
+      this.sunDue = this.state.sun && this.strength > 0;
+    }
   }
 
   /**

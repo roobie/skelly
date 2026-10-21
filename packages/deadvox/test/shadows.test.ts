@@ -282,6 +282,18 @@ describe('Shadows', () => {
     expect(idle.torch).toBe(false);
   });
 
+  it('invalidates an idle map after actor geometry is finalized but before the first draw', () => {
+    const { shadows, frame, draws, light, renderer, scene, camera } = setup();
+    frame(1);
+    shadows.update(1, new Vector3(0, 1.6, 0));
+    const before = draws.length;
+    shadows.setActorGeometryVersion(1);
+    renderer.shadowMap.render([], scene, camera);
+    expect(draws.slice(before).map((draw) => draw.light)).toContain(light);
+    shadows.setActorGeometryVersion(1);
+    expect(frame(1)).not.toContain(light);
+  });
+
   it('covers the set distance with a box that reaches back towards the sun', () => {
     const { shadows, light } = setup();
     const camera = light.shadow.camera as OrthographicCamera;

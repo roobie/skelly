@@ -2599,6 +2599,20 @@ try {
     true,
     'fixture firearm is ready before firing',
   );
+  await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    const actors = r.view.zombieMeshes;
+    const prepare = actors.prepareDraws.bind(actors);
+    r.actorLodOpticFrames = [];
+    actors.prepareDraws = (lens) => {
+      const version = prepare(lens);
+      const power = lens?.magnification ?? null;
+      if (r.actorLodOpticFrames.at(-1)?.power !== power) {
+        r.actorLodOpticFrames.push({ power, far: actors.lodStats.far });
+      }
+      return version;
+    };
+  });
   await page.mouse.click(640, 450, { button: 'middle' });
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
@@ -2645,6 +2659,18 @@ try {
     selectedPower,
   );
   assert.notEqual(selectedPower, opticView.frame.magnification, 'the wheel changes the actual ADS lens frame');
+  await page.waitForFunction(
+    (power) => globalThis.primaryActionTest.actorLodOpticFrames.some((frame) => frame.power === power),
+    selectedPower,
+  );
+  const scopedLodFrames = await page.evaluate(() =>
+    globalThis.primaryActionTest.actorLodOpticFrames.filter((frame) => frame.power > 1),
+  );
+  assert(scopedLodFrames.length > 0, 'the real ADS/wheel flow reaches magnified actor preparation');
+  assert(
+    scopedLodFrames.every((frame) => frame.far === 0),
+    'the first frame at each magnified power has no coarse bodies',
+  );
   await page.mouse.click(640, 450);
   await page.evaluate(() => globalThis.primaryActionTest.session.frame(0.1));
   await page.waitForFunction(() => globalThis.primaryActionTest.caseEffects.activeCount > 0);

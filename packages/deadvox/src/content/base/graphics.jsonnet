@@ -5,6 +5,18 @@ local toggle(label, default=false) = { label: label, default: default, options: 
   graphics: [{
     id: 'core',
     readyRadiusM: 64,
+    actorLod: {
+      enabled: true,
+      enterFarM: 40,
+      returnNearM: 36,
+      families: {
+        shambler: { eligible: true, edgeLengthM: 0.25 },
+        runner: { eligible: true, edgeLengthM: 0.25 },
+        brute: { eligible: true, edgeLengthM: 0.25 },
+        crawler: { eligible: false, reason: 'Crawler alignment is an owned follow-up to d573.' },
+        amalgam: { eligible: false, reason: 'Compound bodies and carved tissue require a separate representation.' },
+      },
+    },
     renderScale: scale('Scene render scale', 0.5) + {
       adaptive: {
         enabled: true,

@@ -2,6 +2,7 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
+import type { ActorLodPolicy } from '../core/actorLod.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { requireDayCycle } from '../core/content.ts';
@@ -151,6 +152,11 @@ type PlayViewEngine = Readonly<
   >
 >;
 
+const actorLodPolicy = (policy: ActorLodPolicy, debug: boolean): ActorLodPolicy => ({
+  ...policy,
+  enabled: policy.enabled && !(debug && new URLSearchParams(globalThis.location?.search ?? '').get('actorlod') === '0'),
+});
+
 export const createPlayView = (
   engine: PlayViewEngine,
   inventory: Inventory,
@@ -242,6 +248,7 @@ export const createPlayView = (
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           figureSeeds: figureSeedPool(registry.zombies),
+          lodPolicy: actorLodPolicy(registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.actorLod, config.debug),
           includeAmalgam: true,
           amalgamType: amalgamTypeOf(registry.zombies),
           onFleshLanded: (centre) => gore.landed(centre),
@@ -465,6 +472,10 @@ export const createPlayView = (
       updateFlare(nightVision, dt);
     },
     render: (): number | null => {
+      const actorVersion = zombieMeshes.prepareDraws?.(thirdPerson ? undefined : held.opticLensFrame);
+      if (actorVersion !== undefined) {
+        shadows?.setActorGeometryVersion(actorVersion);
+      }
       if (!renderer) {
         return null;
       }

@@ -17,7 +17,7 @@ read_if:
   - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
-  - you're evaluating distant-body LOD admission, coarse generation or crawler exemptions
+  - you're changing distant-body LOD, per-bone admission, optics or crawler exemptions
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
   - you're changing how the amalgam's flesh meets terrain, the player or shots
   - you're measuring or reducing amalgam collision cost against its per-tick budget (#574)
@@ -132,6 +132,8 @@ measuring rendering, simulation and workers together rather than relying on the
 execution host. Compare the forest workload there when evaluating foliage
 performance changes. See
 [CHALLENGES.md](CHALLENGES.md) for active performance constraints.
+
+Terrain stays exact throughout the chosen view distance. Do not substitute coarse terrain or shorten that distance to meet the frame budget: the player must keep the same cover, passages and visible world. Rendering changes may avoid redundant work, but must not change that geometry. See `src/render/chunks.ts`, `ChunkMeshes`.
 
 Render scale adapts by default, so slower machines trade sharpness for frame
 rate and faster ones keep the full image. The trade must not depend on enabling
@@ -2338,9 +2340,6 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   `src/render/hands.ts`, `HeldItems.render`. Light from torches, lamps and hot
   zombies through the grid is planned for Slice 4a, with
   the interior light "Light" describes.
-- **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
-  The targets are 96–128 m near detail and 512 m or more of far terrain; to be
-  measured.
 - **Zombie bodies:** each mobgen model/seed variant owns a block of pose rows,
   one per drawn actor. Missing per-actor rows leave the shared bone texture
   unable to place that actor's mesh in the world. Each live actor with an
@@ -2353,34 +2352,35 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   `MobActorMeshes.syncZombie`, `test/runnerRenderContinuity.test.ts`,
   `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
 
-  Distance-body LOD remains deferred under d573 until coarse geometry preserves
-  independently animated parts and their severing boundaries within the draw cap.
-  Silhouette validation alone cannot protect that identity: a coarse cell can
-  belong to a neighbouring bone, hiding a part or losing the joint face that
-  should show its stump. Admission uses the full reference, never another seed;
-  see `packages/mobgen/src/core/generate.ts`, `realizeLod`, and
+  Distant living bodies use independently simplified bone meshes from their own
+  full reference, never another seed. Fixed coincident joint faces and part
+  endpoints protect animation and severing identity where coarse voxel ownership
+  can erase an intact limb. Admission still requires the shared rest skeleton,
+  every reference-owned part and joint contact, the silhouette check and the
+  unchanged draw cap; failures stay full detail. See
+  `packages/mobgen/src/core/simplifyBones.ts`, `simplifyBoneMeshes`,
+  `packages/mobgen/src/core/generate.ts`, `realizeBoneLod`, and
   `packages/mobgen/src/core/lodCompatibility.ts`, `lodCompatibilityIssues`.
-  Try finer coarse voxelization before per-bone simplification because it reuses
-  the generation path; if no candidate meets admission within the cap, per-bone
-  simplification needs its own round rather than a weaker gate or larger budget.
 
-  Crawlers stay full detail. Their grid-dependent grounding changes the rest
-  skeleton, so exemption protects prone contact and stump identity without
-  changing the authoritative figure. Crawler LOD remains an owned follow-up to
-  d573; exemption does not resolve alignment. See
+  Content owns the switch distances, per-model-family simplification size and
+  eligibility, not a hand-maintained seed list. A hard switch accepts a visible
+  pop to avoid duplicate geometry; hysteresis prevents distance-edge flicker.
+  Coarse bodies cast coarse shadows. An active magnified lens promotes every
+  actor to full detail before the frame's first draw, shadows included, because
+  magnification makes distant anatomy inspectable. Draw buckets share canonical
+  pose rows so switching cannot change simulation, hit shapes, injury or gait.
+  Shadow invalidation prevents a cached map retaining the other tier. See
+  `src/content/base/graphics.jsonnet`, `actorLod`, `src/render/mobActors.ts`,
+  `MobActorMeshes.prepareDraws`, `src/render/playView.ts`, `createPlayView`,
+  `src/core/opticView.ts`, `OpticLensFrame`, and `src/render/shadows.ts`,
+  `Shadows.setActorGeometryVersion`.
+
+  Carved bodies, incapacitated bodies, corpses, debris and compound bodies stay
+  full detail because their geometry has separate ownership. Crawlers are also
+  explicitly exempt: prone alignment remains a separate d573 follow-up rather
+  than a reason to alter the authoritative figure or weaken admission. See
+  `src/content/base/graphics.jsonnet`, `actorLod`, and
   `packages/mobgen/src/mob/humanoid.ts`, `translateCrawlerBodyToGround`.
-
-  When d573 admits far geometry, content must own the switch distances,
-  per-model-family voxel size and eligibility policy; variant admission must
-  follow validation rather than a hand-maintained seed list. The approved
-  distance policy is a hard switch with hysteresis, accepting a visible pop to
-  avoid duplicate geometry and flicker. Coarse bodies cast coarse shadows.
-  An active magnified lens promotes every actor to full detail for the whole
-  frame, including shadows, before its first draw: magnification makes distant
-  anatomy inspectable. The lens condition belongs to `src/render/opticLens.ts`,
-  `OpticLensFrame`. Simulation, hit shapes, AI, carving, corpses and debris remain
-  exact; only eligible ordinary living geometry may change. Draw-list selection
-  and shadow invalidation remain d573 implementation work, not an active feature.
 - **Sun shadows:** Favor a stable edge near the player over sharp shadows far
   beyond them. The remaining jaggedness is accepted; do not pursue further
   refinement without a new decision. See `sunShadowTexelSize` and

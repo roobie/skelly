@@ -1,6 +1,33 @@
 {
   "graphics": [
     {
+      "actorLod": {
+        "enabled": true,
+        "enterFarM": 40,
+        "families": {
+          "amalgam": {
+            "eligible": false,
+            "reason": "Compound bodies and carved tissue require a separate representation."
+          },
+          "brute": {
+            "edgeLengthM": 0.25,
+            "eligible": true
+          },
+          "crawler": {
+            "eligible": false,
+            "reason": "Crawler alignment is an owned follow-up to d573."
+          },
+          "runner": {
+            "edgeLengthM": 0.25,
+            "eligible": true
+          },
+          "shambler": {
+            "edgeLengthM": 0.25,
+            "eligible": true
+          }
+        },
+        "returnNearM": 36
+      },
       "bloomScale": {
         "default": 1,
         "label": "Bloom render scale",

@@ -46,7 +46,7 @@
 // zeroed) and is driven by the core rigid-body stepper, reusing the corpse cap/eviction/lifecycle machinery
 // (a debris row counts toward MAX_CORPSES exactly like a corpse does).
 
-import type { Realized } from '@mobgen/core/generate.ts';
+import { type Realized, realizeBoneLod } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { type Mat3, mat3ToQuat, mulMM, mulMV, quatToMat3, rotY, type Transform, transpose } from '@mobgen/core/math.ts';
 import {
@@ -103,9 +103,11 @@ import {
   SphereGeometry,
   Vector3,
 } from 'three';
+import { type ActorLodPolicy, selectActorFar } from '../core/actorLod.ts';
 import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
+import type { OpticLensFrame } from '../core/opticView.ts';
 import {
   angularVelocity,
   applyImpulseAtClampedPoint,
@@ -144,6 +146,7 @@ export interface ZombieRenderer {
     backgroundAlpha?: number,
     simulationTime?: number,
   ) => void;
+  prepareDraws?: (lens?: OpticLensFrame) => number;
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
   setPlayerEyePosition?: (position: Vec3) => void;
@@ -247,15 +250,17 @@ interface Variant {
   readonly geometry: BufferGeometry;
   readonly mesh: InstancedMesh;
   readonly crowdSlotAttr: InstancedBufferAttribute;
+  readonly ownerRows: Float32Array;
+  readonly farGeometry: BufferGeometry | undefined;
+  readonly farMesh: InstancedMesh | undefined;
+  readonly farSlotAttr: InstancedBufferAttribute | undefined;
   /** Reused every frame for every zombie of this variant: each place-and-pack fully consumes it before
    * returning, so nothing overlaps (see mobgen's stressActors.ts for the identical reasoning). */
   readonly scratch: MutableTransform[];
   /** Local slot numbers (0..capacity-1) not currently assigned to a live zombie, corpse, *or debris* of
    * this variant. */
   readonly freeLocalSlots: number[];
-  /** Dense, compacted (swap-removed) list of the zombie/corpse/debris keys currently drawn by this
-   * variant's InstancedMesh — liveIds[k] is instance k. A corpse or a piece of debris stays in this list
-   * exactly like a live zombie (see MobActorMeshes' own doc comment); only freeSlot ever removes an entry. */
+  /** Canonical row ownership, independent of compact near/far draw indices. */
   readonly liveIds: SlotKey[];
   readonly idToInstanceIndex: Map<SlotKey, number>;
 }
@@ -278,6 +283,10 @@ interface ZombieRenderState extends SlotHolder {
   lastPose: Pose | undefined;
   lastPlacement: CrowdPlacement | undefined;
   lastSeenFrame: number;
+  far?: boolean;
+  lodCenter?: Vector3;
+  lodAllowed?: boolean;
+  skippedPose?: { zombie: Zombie; frame: Parameters<MobActorMeshes['packZombiePose']>[3] } | undefined;
 }
 
 interface TentacleMeshes {
@@ -420,6 +429,7 @@ interface Debris extends SlotHolder {
 }
 
 export interface MobActorMeshesOptions {
+  readonly lodPolicy?: ActorLodPolicy;
   readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
   /** The authored figure seeds to build variants for (`figureSeedPool` of the registry's zombie types). */
@@ -524,6 +534,19 @@ const buildActorVariants = (
 export class MobActorMeshes implements ZombieRenderer {
   readonly group = new Group();
   private readonly blockSize: number;
+  private readonly lodPolicy: ActorLodPolicy | undefined;
+  private magnified = false;
+  private geometryVersion = 0;
+  readonly lodReports: {
+    model: string;
+    seed: number;
+    eligible: boolean;
+    nearVertices: number;
+    farVertices: number;
+    triangles: number;
+    reason: string;
+  }[] = [];
+  readonly lodStats = { near: 0, far: 0, eligible: 0, exempt: 0, selectorMs: 0, generationMs: 0 };
   private readonly reveal: ColumnReveal | undefined;
   private readonly capacity: number;
   private readonly variants: readonly Variant[];
@@ -572,6 +595,7 @@ export class MobActorMeshes implements ZombieRenderer {
   constructor(blockSize: number, requestedCapacity: number | undefined, options: MobActorMeshesOptions) {
     const capacity = requestedCapacity ?? DEFAULT_CAPACITY;
     this.blockSize = blockSize;
+    this.lodPolicy = options.lodPolicy;
     this.reveal = options.reveal;
     this.capacity = capacity;
     this.tentacleGeometry = options.includeAmalgam ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
@@ -670,6 +694,7 @@ export class MobActorMeshes implements ZombieRenderer {
       const crowdSlotAttr = new InstancedBufferAttribute(new Float32Array(capacity), 1);
       mesh.geometry.setAttribute('crowdSlot', crowdSlotAttr);
       this.group.add(mesh);
+      const farDraw = this.buildFarVariant(v, mesh, capacity);
 
       const freeLocalSlots: number[] = [];
       for (let k = capacity - 1; k >= 0; k--) {
@@ -727,6 +752,8 @@ export class MobActorMeshes implements ZombieRenderer {
         geometry,
         mesh,
         crowdSlotAttr,
+        ownerRows: new Float32Array(capacity),
+        ...farDraw,
         scratch: allocateBoneTransforms(v.realized.body.bones.length),
         freeLocalSlots,
         liveIds: [],
@@ -737,6 +764,49 @@ export class MobActorMeshes implements ZombieRenderer {
     this.variantIndexBySeed = new Map(
       this.variants.map((variant, index) => [`${variant.model}:${variant.figureSeed}`, index]),
     );
+  }
+
+  private buildFarVariant(
+    { model, figureSeed: seed, realized }: { model: string; figureSeed: number; realized: Realized },
+    nearMesh: InstancedMesh,
+    capacity: number,
+  ): Pick<Variant, 'farGeometry' | 'farMesh' | 'farSlotAttr'> {
+    const start = performance.now();
+    const family = this.lodPolicy?.families[model];
+    if (this.lodPolicy && !family) {
+      throw new Error(`Missing actor LOD policy for model ${model}`);
+    }
+    const far = family?.eligible ? realizeBoneLod(realized, family.edgeLengthM) : undefined;
+    const farGeometry = far?.report.ok
+      ? mergeBoneMeshes(far.meshes, realized.body.materials, realized.voxels)
+      : undefined;
+    const farMesh = farGeometry ? new InstancedMesh(farGeometry, this.material, capacity) : undefined;
+    const farSlotAttr = farMesh ? new InstancedBufferAttribute(new Float32Array(capacity), 1) : undefined;
+    if (farMesh && farSlotAttr) {
+      farMesh.customDepthMaterial = this.depthMaterial;
+      castsAndReceives(farMesh);
+      farMesh.count = 0;
+      farMesh.frustumCulled = false;
+      farMesh.instanceMatrix.array.set(nearMesh.instanceMatrix.array);
+      farMesh.instanceMatrix.needsUpdate = true;
+      farMesh.geometry.setAttribute('crowdSlot', farSlotAttr);
+      this.group.add(farMesh);
+    }
+    this.lodReports.push({
+      model,
+      seed,
+      eligible: far?.report.ok ?? false,
+      nearVertices: nearMesh.geometry.getAttribute('position').count,
+      farVertices: farGeometry?.getAttribute('position').count ?? 0,
+      triangles: far?.triangles ?? 0,
+      reason:
+        family && !family.eligible
+          ? family.reason
+          : (far?.report.issues.map((issue) => `${issue.rule}: ${issue.message}`).join('; ') ??
+            'LOD policy not supplied'),
+    });
+    this.lodStats.generationMs += performance.now() - start;
+    return { farGeometry, farMesh, farSlotAttr };
   }
 
   setCamera(camera: Camera): void {
@@ -1017,9 +1087,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const instanceIndex = variant.liveIds.length;
     variant.liveIds.push(id);
     variant.idToInstanceIndex.set(id, instanceIndex);
-    variant.crowdSlotAttr.setX(instanceIndex, globalRow);
-    variant.crowdSlotAttr.needsUpdate = true;
-    variant.mesh.count = variant.liveIds.length;
+    variant.ownerRows[instanceIndex] = globalRow;
     const state: ZombieRenderState = {
       id,
       lookAtState: LOOK_AT_REST,
@@ -1152,7 +1220,7 @@ export class MobActorMeshes implements ZombieRenderer {
       variant.liveIds[entry.instanceIndex] = movedKey;
       variant.idToInstanceIndex.set(movedKey, entry.instanceIndex);
       moved.instanceIndex = entry.instanceIndex;
-      variant.crowdSlotAttr.setX(entry.instanceIndex, this.rowFor(movedKey, moved.globalRow));
+      variant.ownerRows[entry.instanceIndex] = this.rowFor(movedKey, moved.globalRow);
     }
     if (typeof key === 'number') {
       this.removeWound(key);
@@ -1160,8 +1228,7 @@ export class MobActorMeshes implements ZombieRenderer {
     variant.liveIds.pop();
     variant.idToInstanceIndex.delete(key);
     variant.freeLocalSlots.push(entry.localSlot);
-    variant.mesh.count = variant.liveIds.length;
-    variant.crowdSlotAttr.needsUpdate = true;
+    this.rebuildDrawLists(this.magnified);
   }
 
   /** The bone-texture row an instance in a shared variant mesh reads: hidden while its own wound mesh draws it. */
@@ -1194,8 +1261,7 @@ export class MobActorMeshes implements ZombieRenderer {
     castsAndReceives(mesh);
     this.group.add(mesh);
     this.wounds.set(id, { mesh, cells: carved.length });
-    variant.crowdSlotAttr.setX(holder.instanceIndex, this.hiddenRow);
-    variant.crowdSlotAttr.needsUpdate = true;
+    variant.ownerRows[holder.instanceIndex] = this.hiddenRow;
   }
 
   private removeWound(id: EntityId): void {
@@ -1570,9 +1636,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const key = `debris:${id}:${part}:${order}`;
     variant.liveIds.push(key);
     variant.idToInstanceIndex.set(key, instanceIndex);
-    variant.crowdSlotAttr.setX(instanceIndex, globalRow);
-    variant.crowdSlotAttr.needsUpdate = true;
-    variant.mesh.count = variant.liveIds.length;
+    variant.ownerRows[instanceIndex] = globalRow;
     this.debris.set(key, {
       variantIndex: state.variantIndex,
       localSlot,
@@ -1919,8 +1983,12 @@ export class MobActorMeshes implements ZombieRenderer {
     },
   ): void {
     const bounds = this.zombiePoseBounds(zombie, frame.placement);
+    state.lodCenter = bounds.center;
+    state.lodAllowed = zombie.carved.length === 0 && !zombie.incapacitated;
+    state.skippedPose = undefined;
     if (this.shouldSkipPose(bounds.center, bounds.radius) && state.lastPose) {
       this.packCachedPose(state, variant, zombie, frame.placement);
+      state.skippedPose = { zombie, frame };
       return;
     }
     this.packPose(state, variant, zombie, frame);
@@ -1978,6 +2046,7 @@ export class MobActorMeshes implements ZombieRenderer {
     simulationTime?: number,
   ): void {
     this.frameCounter += 1;
+    this.lodStats.selectorMs = 0;
     if (this.camera) {
       this.camera.getWorldPosition(this.cameraPosition);
       this.frustumMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
@@ -2008,7 +2077,92 @@ export class MobActorMeshes implements ZombieRenderer {
     this.advanceDebris(realDt);
     this.fleshChunks.update(realDt, this.rigidWorld());
     this.applyReveal();
+    this.rebuildDrawLists(this.magnified);
     this.textureUpdates.flush();
+  }
+
+  prepareDraws(lens?: OpticLensFrame): number {
+    const magnified = lens !== undefined && lens.magnification > 1;
+    if (magnified && !this.magnified) {
+      this.geometryVersion += 1;
+    }
+    this.magnified = magnified;
+    if (magnified) {
+      for (const state of this.states.values()) {
+        if (state.skippedPose) {
+          const { zombie, frame } = state.skippedPose;
+          this.packPose(state, this.variants[state.variantIndex]!, zombie, frame);
+          state.skippedPose = undefined;
+        }
+      }
+      this.textureUpdates.flush();
+    }
+    this.rebuildDrawLists(magnified);
+    return this.geometryVersion;
+  }
+
+  private rebuildDrawLists(forceNear: boolean): void {
+    const start = performance.now();
+    this.camera?.getWorldPosition(this.cameraPosition);
+    Object.assign(this.lodStats, { near: 0, far: 0, eligible: 0, exempt: 0 });
+    for (const variant of this.variants) {
+      this.rebuildVariantDraws(variant, forceNear);
+    }
+    this.lodStats.selectorMs += performance.now() - start;
+  }
+
+  private selectFar(variant: Variant, key: SlotKey, forceNear: boolean): boolean {
+    const state = typeof key === 'number' ? this.states.get(key) : undefined;
+    const eligible = Boolean(state?.lodAllowed && variant.farMesh);
+    this.lodStats[eligible ? 'eligible' : 'exempt'] += 1;
+    const far = Boolean(
+      eligible &&
+        this.lodPolicy &&
+        state?.lodCenter &&
+        this.camera &&
+        selectActorFar(state.far, state.lodCenter.distanceTo(this.cameraPosition), this.lodPolicy, forceNear),
+    );
+    if (state) {
+      state.far = far;
+    }
+    return far;
+  }
+
+  private rebuildVariantDraws(variant: Variant, forceNear: boolean): void {
+    let near = 0;
+    let far = 0;
+    let changed = false;
+    for (const [ownerIndex, key] of variant.liveIds.entries()) {
+      const row = variant.ownerRows[ownerIndex]!;
+      if (row === this.hiddenRow) {
+        continue;
+      }
+      if (this.selectFar(variant, key, forceNear)) {
+        changed = this.setDrawRow(variant.farSlotAttr!, far, row) || changed;
+        far += 1;
+      } else {
+        changed = this.setDrawRow(variant.crowdSlotAttr, near, row) || changed;
+        near += 1;
+      }
+    }
+    if (changed || variant.mesh.count !== near || (variant.farMesh?.count ?? 0) !== far) {
+      this.geometryVersion += 1;
+    }
+    variant.mesh.count = near;
+    if (variant.farMesh) {
+      variant.farMesh.count = far;
+    }
+    this.lodStats.near += near;
+    this.lodStats.far += far;
+  }
+
+  private setDrawRow(attribute: InstancedBufferAttribute, index: number, row: number): boolean {
+    if (attribute.getX(index) === row) {
+      return false;
+    }
+    attribute.setX(index, row);
+    attribute.needsUpdate = true;
+    return true;
   }
 
   // Slot compaction can rewrite a moved actor's row, so gate only after all insertion and pruning.
@@ -2034,10 +2188,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const allowed = this.reveal!.isRevealed(x, z);
     const variant = this.variants[holder.variantIndex]!;
     const row = allowed ? this.rowFor(key, holder.globalRow) : this.hiddenRow;
-    if (variant.crowdSlotAttr.getX(holder.instanceIndex) !== row) {
-      variant.crowdSlotAttr.setX(holder.instanceIndex, row);
-      variant.crowdSlotAttr.needsUpdate = true;
-    }
+    variant.ownerRows[holder.instanceIndex] = row;
     if (typeof key !== 'number') {
       return;
     }
@@ -2125,6 +2276,9 @@ export class MobActorMeshes implements ZombieRenderer {
     this.material.dispose();
     for (const variant of this.variants) {
       variant.geometry.dispose();
+      variant.mesh.dispose();
+      variant.farGeometry?.dispose();
+      variant.farMesh?.dispose();
     }
   }
 }

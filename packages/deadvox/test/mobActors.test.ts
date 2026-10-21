@@ -19,7 +19,7 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { DEATH_FALL_DURATION } from '@mobgen/mob/reactions.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
-import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
+import { Color, type DataTexture, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { amalgamFigureForType } from '../src/core/amalgamFigure.ts';
@@ -416,6 +416,72 @@ describe('feet at body.pos.y (mobgen pose convention)', () => {
 });
 
 describe('MobActorMeshes', () => {
+  it('draws a rejected variant full even beyond the far distance', () => {
+    const policy = registry.graphics.get('core')!.actorLod;
+    const renderer = new MobActorMeshes(0.5, 1, { figureSeeds: SHAMBLER_FIGURE_SEEDS, lodPolicy: policy });
+    const report = renderer.lodReports.find((entry) => !entry.eligible)!;
+    expect(report).toBeDefined();
+    const type = [...registry.zombies.values()].find((definition) => definition.model === report.model)!;
+    const store = new MapEntityStore<Zombie>();
+    const zombie = makeZombie([0, 0, policy.enterFarM * 4], undefined, [], { type, figureSeed: report.seed });
+    store.add(zombie);
+    const camera = new PerspectiveCamera();
+    camera.updateMatrixWorld();
+    renderer.setCamera(camera);
+    try {
+      renderer.sync(store);
+      renderer.prepareDraws();
+      expect(renderer.lodStats.far).toBe(0);
+      expect(renderer.lodStats.near).toBe(1);
+      expect(renderer.lodStats.exempt).toBe(1);
+      expect((renderer.group.children as InstancedMesh[]).filter((mesh) => mesh.count > 0)).toHaveLength(1);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('promotes on the first magnified frame without changing rows and reselects reused slots', () => {
+    const policy = registry.graphics.get('core')!.actorLod;
+    const renderer = new MobActorMeshes(0.5, 1, { figureSeeds: SHAMBLER_FIGURE_SEEDS, lodPolicy: policy });
+    const report = renderer.lodReports.find((entry) => entry.eligible)!;
+    expect(report).toBeDefined();
+    const type = [...registry.zombies.values()].find((definition) => definition.model === report.model)!;
+    const store = new MapEntityStore<Zombie>();
+    const zombie = makeZombie([0, 0, policy.enterFarM * 4], undefined, [], { type, figureSeed: report.seed });
+    const before = structuredClone(zombie);
+    const id = store.add(zombie);
+    const camera = new PerspectiveCamera();
+    camera.updateMatrixWorld();
+    renderer.setCamera(camera);
+    const internals = renderer as unknown as { states: Map<number, { globalRow: number }> };
+    const lens = { center: [0.5, 0.5] as const, radius: [0.1, 0.1] as const, magnification: 1 };
+    try {
+      renderer.sync(store);
+      const row = internals.states.get(id)!.globalRow;
+      const ordinary = renderer.prepareDraws(lens);
+      expect(renderer.lodStats.far).toBe(1);
+      const promoted = renderer.prepareDraws({ ...lens, magnification: 2 });
+      expect(promoted).toBeGreaterThan(ordinary);
+      expect(renderer.lodStats.far).toBe(0);
+      expect(renderer.lodStats.near).toBe(1);
+      expect(internals.states.get(id)!.globalRow).toBe(row);
+      expect((renderer.group.children as InstancedMesh[]).filter((mesh) => mesh.count > 0)).toHaveLength(1);
+      renderer.prepareDraws();
+      expect(renderer.lodStats.far).toBe(1);
+      expect(zombie).toEqual(before);
+      store.remove(id);
+      renderer.sync(store);
+      const replacement = makeZombie([0, 0, 0], undefined, [], { type, figureSeed: report.seed });
+      const replacementId = store.add(replacement);
+      renderer.sync(store);
+      renderer.prepareDraws();
+      expect(internals.states.get(replacementId)!.globalRow).toBe(row);
+      expect(renderer.lodStats.far).toBe(0);
+      expect(renderer.lodStats.near).toBe(1);
+    } finally {
+      renderer.dispose();
+    }
+  });
   it('queues exact pose texture contents through admission, offscreen movement, severing, death and row reuse', () => {
     const canvas = new EventTarget() as HTMLCanvasElement;
     const renderer = new MobActorMeshes(0.5, 3, {
@@ -514,7 +580,7 @@ describe('MobActorMeshes', () => {
     const internal = renderer as unknown as {
       hiddenRow: number;
       states: Map<number, { variantIndex: number; instanceIndex: number; globalRow: number }>;
-      variants: readonly { crowdSlotAttr: InstancedBufferAttribute }[];
+      variants: readonly { ownerRows: Float32Array }[];
     };
     try {
       for (const allowed of [false, true, false]) {
@@ -523,8 +589,9 @@ describe('MobActorMeshes', () => {
         boxes.sync(store);
         const state = internal.states.get(id)!;
         expect(state).toBeDefined();
-        // Both the colour and custom-depth shaders consume this same per-instance row.
-        const row = internal.variants[state.variantIndex]!.crowdSlotAttr.getX(state.instanceIndex);
+        const row = internal.variants[state.variantIndex]!.ownerRows[state.instanceIndex];
+        const draws = renderer.group.children as InstancedMesh[];
+        expect(draws.some((mesh) => mesh.count > 0)).toBe(allowed);
         expect(row).toBe(allowed ? state.globalRow : internal.hiddenRow);
         const boxInstances = boxes.group.children as InstancedMesh[];
         expect(boxInstances.some((mesh) => mesh.count > 0)).toBe(allowed);
@@ -1037,14 +1104,14 @@ describe('MobActorMeshes', () => {
       const internals = renderer as unknown as {
         wounds: Map<number, { mesh: InstancedMesh }>;
         states: Map<number, { variantIndex: number; instanceIndex: number }>;
-        variants: readonly { crowdSlotAttr: InstancedBufferAttribute }[];
+        variants: readonly { ownerRows: Float32Array }[];
         hiddenRow: number;
         fleshChunks: { count: number };
       };
       const wound = internals.wounds.get(id)!;
       const state = internals.states.get(id)!;
       expect(renderer.group.children).toContain(wound.mesh);
-      expect(internals.variants[state.variantIndex]!.crowdSlotAttr.getX(state.instanceIndex)).toBe(internals.hiddenRow);
+      expect(internals.variants[state.variantIndex]!.ownerRows[state.instanceIndex]).toBe(internals.hiddenRow);
       expect(internals.fleshChunks.count).toBe(1);
       const neighbours = wound.mesh.geometry.getAttribute('neighbourBone');
       const colors = wound.mesh.geometry.getAttribute('color');
