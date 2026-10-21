@@ -10,17 +10,17 @@ The experiment is not a production solver selection. Keep candidate-specific ini
 
 ## Numeric eligibility
 
-Rapier remains a diagnostic candidate. Its deterministic build uses single-precision arithmetic, conflicting with “compute with doubles” in `docs/decisions/0008-deterministic-world.md`, "Decision". That ADR's reason is cross-engine agreement, including lockstep and replay, not merely the width of a JavaScript wrapper. Agreement must therefore be measured independently of precision; a passing diagnostic run does not grant a precision exception. BR owns production eligibility under the unchanged ADR. Dependency age exemption does not imply numeric exemption.
+Rapier remains diagnostic until d568-2 decides a precision contract. Its deterministic build uses single-precision arithmetic, while `docs/decisions/0008-deterministic-world.md`, "Decision" retains its doubles rule. f32 may be evaluated for production only against that contract's cross-engine, save and replay gates within the admitted envelope. That ADR's reason is cross-engine agreement, including lockstep and replay, not merely the width of a JavaScript wrapper; an f32 solver may satisfy that reason, so evidence rather than its number type judges it. Dependency age exemption does not imply numeric exemption.
 
 The package artifact is pinned by `package-lock.json`, `packages`. Its upstream build provenance and precision evidence belong in the admission report; cross-engine agreement of that artifact remains a candidate-round gate. Do not infer agreement from the library name or a simulation source hash.
 
 ## Harness boundaries
 
-`src/vehicles/feasibility/runner.ts`, `TickDispatch`, accepts integer simulated-time quanta, retains pending work and snapshots its sub-tick phase. Compression changes dispatch throughput only. A caller converting wall time owns the conversion; this experiment does not provide a production wall-time clock.
+Schedule partitioning, compression and restoration must not alter the experiment's continuation; see `src/vehicles/feasibility/runner.ts`, `TickDispatch`. Wall-time conversion remains a caller concern, so this experiment does not supply a production wall-time clock.
 
-`src/vehicles/feasibility/trace.ts`, `trace`, encodes numeric bits little-endian and covers opaque adapter continuation bytes as well as visible state and ordered events. Raw fields decide agreement even if hashes collide. Unsafe edges have invariants only: finite state, no ground crossing and identical continuation across engines and saves; the spike chooses no boundary behaviour.
+Agreement evidence must expose distinctions that a digest can conceal and must preserve the information needed to continue safely; see `src/vehicles/feasibility/trace.ts`, `trace`. Unsafe edges have invariants only, so the spike chooses no boundary behaviour.
 
-`test/browser/vehicle-feasibility.mjs` runs the same module under Node and the supported browser engines and preserves raw traces, identities, work and timing artifacts. Timings are evidence, not reference-class performance acceptance. The moving body has no collision work; zero collision counters cannot establish a bound for either road candidate. Candidate adapters must instrument hidden work rather than inherit those zeros.
+Cross-engine evidence needs the same module and inspectable artifacts in Node and each supported browser; see `test/browser/vehicle-feasibility.mjs`, `engines`. Timings are evidence, not reference-class performance acceptance. The moving body cannot establish either road candidate's collision bound; candidate adapters must instrument their hidden work.
 
 ## Missing production seams
 
