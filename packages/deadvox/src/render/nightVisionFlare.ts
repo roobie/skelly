@@ -11,7 +11,7 @@ export interface FlareSource {
 }
 
 /** A halo at a light's place on the picture (0 to 1 across and up) and how far it mixes towards white. */
-export interface FlareHalo {
+interface FlareHalo {
   readonly x: number;
   readonly y: number;
   readonly strength: number;
