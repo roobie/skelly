@@ -10,7 +10,7 @@
     {
       "id": "inventory_management",
       "name": "Inventory Management (IM)",
-      "training": { "activities": { "handling": { "practice": 10 } } },
+      "training": { "activities": { "handling": { "practice": 2.5 } } },
       "inventory": { "handlingFactorFloor": 0, "handlingFactorHalfLifeLevels": 1.1 }
     },
     {

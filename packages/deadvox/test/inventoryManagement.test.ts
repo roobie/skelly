@@ -7,6 +7,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf } from '../src/core/items.ts';
 import { reachTuning } from '../src/core/reach.ts';
+import { skillActivityPractice } from '../src/core/skillTraining.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
@@ -152,11 +153,12 @@ describe('Inventory Management skill', () => {
     if (!completed.ok) {
       throw new Error(completed.reason);
     }
+    const training = skillActivityPractice(registry, 'inventory_management', 'handling');
+    const expected = Character.restoreState(registry, initial);
+    expected.awardPractice('inventory_management', training.practice, training.tier);
     queue.tick(completed.job.duration);
-    const trained =
-      session.character.skills.inventory_management! > initial.skills.inventory_management! ||
-      session.character.practice.inventory_management! > initial.practice.inventory_management!;
-    expect(trained).toBe(true);
+    expect(session.character.skills.inventory_management).toBe(expected.skills.inventory_management);
+    expect(session.character.practice.inventory_management).toBe(expected.practice.inventory_management);
 
     const actor = new Character(registry);
     while (actor.skills.inventory_management! < SKILL_LEVEL_MAX) {
