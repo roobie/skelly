@@ -11,6 +11,7 @@ import { craftActionHooks } from '../src/core/craftWork.ts';
 import { disassemblyOutputs } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
+import { NO_LANDING_REFUSAL } from '../src/core/itemThrow.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -176,6 +177,18 @@ describe('live craft commands', () => {
     const before = r.inventory.snapshotState();
     expect(r.sim.actions.cancelCraft(work.uid)).toBeDefined();
     expect(r.inventory.snapshotState()).toEqual(before);
+  });
+  it('releasing a craft with no ground nearby refuses for want of a landing and keeps the work in hand', () => {
+    const r = make();
+    const result = r.commands.preview('torch')!;
+    if (!('plan' in result)) {
+      throw new Error(result.missing.reason);
+    }
+    const work = r.inventory.beginWork(result.plan)!;
+    r.inventory.landing = () => undefined;
+    expect(r.sim.actions.cancelCraft(work.uid)).toBe(NO_LANDING_REFUSAL);
+    expect(r.inventory.hands.right).toBe(work);
+    expect(work.work).toBeDefined();
   });
   it('refuses occupied hands without creating work or moving any inputs', () => {
     const r = make();

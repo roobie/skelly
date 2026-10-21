@@ -44,8 +44,8 @@ const shouldDouse = (spec: LightSpec, location: LightLocation, path: string, spr
 };
 
 export interface SurvivalHooks {
-  /** Where a spent battery with charge left, or a spent canister, is dropped. */
-  feet: (item: Item) => Target;
+  /** Where a spent battery with charge left, or a spent canister, is dropped; undefined with no ground nearby. */
+  feet: (item: Item) => Target | undefined;
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
   /** Presents validated authored text and, for books, its action owner. */

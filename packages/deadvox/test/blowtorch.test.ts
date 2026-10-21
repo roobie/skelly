@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { Inventory, type Target } from '../src/core/inventory.ts';
+import { NO_GROUND_ROOM_REFUSAL, NO_LANDING_REFUSAL } from '../src/core/itemThrow.ts';
 import { chargeOf } from '../src/core/lights.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { swapCanister } from '../src/core/torch.ts';
@@ -135,6 +136,36 @@ it('swapping in a cartridge returns the old one whatever its fill', () => {
     ['gas_canister', 0],
   ]);
   expect(swapCanister(inventory, torch, torch, feet)).toBeTypeOf('string');
+});
+
+const fittedTorch = () => {
+  const inventory = new Inventory(registry);
+  const torch = inventory.create('blowtorch');
+  const old = inventory.create('gas_canister');
+  inventory.fitSlot(torch, 'canister', old);
+  const fresh = inventory.create('gas_canister');
+  if (!inventory.add(fresh, { kind: 'hand', side: 'left' })) {
+    throw new Error('Could not hold the fixture cartridge');
+  }
+  return { inventory, torch, old, fresh };
+};
+
+it('a cartridge swap with no ground for the old one to land on refuses and keeps it fitted', () => {
+  const { inventory, torch, old, fresh } = fittedTorch();
+  expect(swapCanister(inventory, torch, fresh, () => undefined)).toBe(NO_LANDING_REFUSAL);
+  expect(torch.slots!.canister).toBe(old);
+  expect(inventory.locate(fresh)?.kind).toBe('hand');
+});
+
+it('a cartridge swap into full piles refuses rather than losing the old one', () => {
+  const { inventory, torch, old, fresh } = fittedTorch();
+  const pile: Target = { kind: 'pile', pos: [0, 0, 0] };
+  while (inventory.add(inventory.create('blowtorch'), pile)) {
+    // Fill the pile until it refuses.
+  }
+  expect(swapCanister(inventory, torch, fresh, () => pile)).toBe(NO_GROUND_ROOM_REFUSAL);
+  expect(torch.slots!.canister).toBe(old);
+  expect(inventory.locate(fresh)?.kind).toBe('hand');
 });
 
 it('a half-used cartridge keeps its fill through a save round-trip', async () => {

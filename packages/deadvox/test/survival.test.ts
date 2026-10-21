@@ -5,8 +5,11 @@ import { SECONDS_PER_HOUR, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
+import type { Item } from '../src/core/items.ts';
+import { NO_GROUND_ROOM_REFUSAL, NO_LANDING_REFUSAL } from '../src/core/itemThrow.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
 import { canSprint, consume, type Needs, stepNeeds, stepStamina } from '../src/core/needs.ts';
+import { freshDropTarget } from '../src/core/options.ts';
 import { gameHours, gameSeconds } from '../src/core/time.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
@@ -222,6 +225,35 @@ describe('flashlight', () => {
     expect(swapBattery(inventory, light, batteries, feet)).toBeUndefined();
     expect(inventory.pileAt([0, 0, 0])!.items).toHaveLength(1); // the dead one is thrown away
     expect(swapBattery(inventory, light, light, feet)).toBe("It doesn't take that battery");
+  });
+
+  const halfSpent = () => {
+    const { inventory, light } = lit();
+    drainLight(registry, light, gameHours(2));
+    const old = light.slots!.battery!;
+    const batteries = inventory.create('aa_battery', 3);
+    inventory.add(batteries, { kind: 'hand', side: 'left' });
+    return { inventory, light, old, batteries };
+  };
+
+  it('refuses a swap when the old battery has no ground to land on, and keeps it fitted', () => {
+    const { inventory, light, old, batteries } = halfSpent();
+    inventory.landing = () => undefined;
+    const spent = (item: Item) => freshDropTarget(inventory, item, [0, 0, 0]);
+    expect(swapBattery(inventory, light, batteries, spent)).toBe(NO_LANDING_REFUSAL);
+    expect(light.slots!.battery).toBe(old);
+    expect(batteries.count).toBe(3);
+  });
+
+  it('refuses a swap when the piles nearby are full, rather than losing the old battery', () => {
+    const { inventory, light, old, batteries } = halfSpent();
+    const pile: Target = { kind: 'pile', pos: [0, 0, 0] };
+    while (inventory.add(inventory.create('flashlight'), pile)) {
+      // Fill the pile until it refuses.
+    }
+    expect(swapBattery(inventory, light, batteries, () => pile)).toBe(NO_GROUND_ROOM_REFUSAL);
+    expect(light.slots!.battery).toBe(old);
+    expect(batteries.count).toBe(3);
   });
 });
 

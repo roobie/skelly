@@ -47,6 +47,7 @@ import {
   stackRoom,
   weightOf,
 } from './items.ts';
+import { NO_GROUND_ROOM_REFUSAL, NO_LANDING_REFUSAL } from './itemThrow.ts';
 import { itemIds, itemRoots, savedItemTree, type TreeLocation, walkItemTree } from './itemTree.ts';
 import type { Rolled } from './loot.ts';
 import { magazineWellCalibre, slotsReason } from './magazine.ts';
@@ -867,12 +868,16 @@ export class Inventory {
   private workDrops(work: Item, outputs: readonly Item[], feet: Vec3): { item: Item; pos: Vec3; spot: Spot }[] {
     const drops: { item: Item; pos: Vec3; spot: Spot }[] = [];
     const grids = new Map<string, Placed[]>();
+    const landings = dropSpots(feet).flatMap((spot) => {
+      const landed = this.landing(spot);
+      return landed ? [landed] : [];
+    });
+    if (landings.length === 0) {
+      throw new Error(NO_LANDING_REFUSAL);
+    }
     for (const item of outputs) {
       let found = false;
-      for (const pos of dropSpots(feet).flatMap((spot) => {
-        const landed = this.landing(spot);
-        return landed ? [landed] : [];
-      })) {
+      for (const pos of landings) {
         const key = pileKey(pos);
         const placed = grids.get(key) ?? this.pilePlacements(pos).filter(({ item: existing }) => existing !== work);
         grids.set(key, placed);
@@ -886,7 +891,7 @@ export class Inventory {
         }
       }
       if (!found) {
-        throw new Error('No room nearby to put the inputs or result down');
+        throw new Error(NO_GROUND_ROOM_REFUSAL);
       }
     }
     return drops;
