@@ -3,6 +3,7 @@ read_if:
   - you're planning or implementing Holding ground construction, electricity or fire
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
   - you're integrating base appliances, door bashing or unattended simulation
+  - you're implementing bear traps, data-driven events or the playtest wave
 ---
 
 # Slice 5 — Holding ground
@@ -18,11 +19,12 @@ The candidate loop is to claim a shelter, scavenge construction and electrical
 supplies, improve its defences, connect useful appliances, and choose how much
 light to expose at night. Leave it working, return to consequential resource use,
 and decide whether to defend, repair or abandon it after a breach or fire.
-The playtest is a scenario with a scripted wave after a content-selected number
-of days, so preparation and defence receive a deliberate pressure test. This does
-not select an authored shelter-and-supply route or a general event engine. The
-value of staying must compete with the cost of attracting attention, supplying
-machines and risking stored goods.
+The playtest is a scenario with a scripted wave after three elapsed scenario days,
+so preparation and defence receive a deliberate pressure test. Data-driven event
+rules author the wave; this does not select an authored shelter-and-supply route.
+The day is a content tunable, not an engine constant. The value of staying must
+compete with the cost of attracting attention, supplying machines and risking
+stored goods.
 
 ## Scope and boundaries
 
@@ -68,22 +70,23 @@ not silently turn an inside-openable leaf into an immovable wall. See
 
 - **#107, traps:** admitted, starting with a bear trap, to give base defence a
   placed mechanical hazard. Broader alarm sets and heavy payloads are not required.
-  The bear-trap gates below must close before its implementation; admission does
-  not decide awareness, safe handling or outcomes outside the near-player block.
+  Its handling and horizon rules below are bear-trap specific, not defaults for
+  every future trap.
 - **#276, heavy attacks and stagger:** charged player attacks are admitted to give
   deliberate attack commitment a place in defence; hit-induced shambler stagger is
   admitted so hits can interrupt an approaching threat. Neither is inferred from
   door strength or changes settled tier-2 brute knockback.
-- **#313, scripted dynamic events:** the scenario's scripted wave is required;
-  whether authors get explicit commands alone or general data-driven rules remains
-  open. Appliances and the wave do not authorise a script language or position
-  triggers. The event gate below decides the mechanism, not the wave's admission.
+- **#313, scripted dynamic events:** data-driven trigger/condition/effect rules
+  are admitted and author the required scenario wave. Reusable rules let authors
+  express orchestration without a new code path for every scenario. This does not
+  admit a script language; position-trigger permission remains a separate gate.
 
 ## Implementation rules and remaining gates
 
 Settled rules below are not questions for BR. Each remaining question is a separate
-decision within the named item. Options are alternatives, not recommendations. Debt grades compare ongoing coupling and
-future replacement cost, not implementation time; negative space says what remains
+decision within the named item. Options are alternatives, not recommendations.
+Debt grades compare ongoing coupling and future replacement cost, not implementation
+time; negative space says what remains
 unbuilt. Unanswered gates block only their dependent work.
 
 ### Settled construction rules — decision item d576
@@ -144,84 +147,63 @@ this plan retains only the cross-system obligations.
   effects are deferred to keep distant horde influence and its persistence outside
   the base-light loop; local attention must not depend on rendering residency.
 
-### Bear-trap gates — issue #107
+### Settled bear-trap rules — issue #107
 
-Mechanism-based triggering remains settled by #107. These cards concern only the
-first bear trap, not a general trap catalogue. Options are not recommendations.
-All tunable durations, risks, yields and severity values belong to content under
-`PILLARS.md`, "Content forward compatibility" (repo root).
+Mechanism-based triggering remains settled by #107. These rules concern the bear
+trap, not a general trap catalogue. Tunable durations, yields and injury values
+belong to content under `PILLARS.md`, "Content forward compatibility" (repo root).
 
-- **Trap awareness.** Context: avoidance changes whether a visible bear trap can
-  defend a doorway. Question: Do zombies recognise and avoid an armed bear trap?
-  A: no deliberate recognition — low AI debt; leaves trap-aware navigation open.
-  B: visible-trap recognition using authored actor perception — medium perception
-  and pathfinding debt; leaves learning and hidden-trap discovery open.
-- **Disarming time.** Context: making a trap safe can occupy the player's hands.
-  Question: Is bear-trap disarming immediate or a resumable timed action?
-  A: immediate — low action-state debt; leaves time pressure while disarming open.
-  B: resumable content-duration action — medium ownership/save debt; leaves staged
-  dismantling open. Tool requirements and failure risk are separate cards.
-- **Disarming risk.** Context: safe handling need not follow from its duration.
-  Question: Can an otherwise valid bear-trap disarm attempt spring the trap?
-  A: no — low resolution debt; leaves handling accidents open.
-  B: content-defined seeded failure chance — medium resolution/replay debt; leaves
-  a skill progression system open. Any failure uses the selected self-trigger
-  outcome; save/load must not reroll an attempt.
-- **Disarming tools.** Context: scavenged equipment can gate safe handling.
-  Question: Does bear-trap disarming require a tool quality?
-  A: bare hands allowed — low reach/validation debt; leaves equipment gating open.
-  B: content-declared tool quality required — medium reach/revalidation debt;
-  leaves specialised tool catalogues open. This does not decide time or risk.
-- **Trap recovery.** Context: a safely disarmed trap needs an ownership-preserving
-  recovery result. Question: Does recovery return a reusable bear trap or salvage?
-  A: intact reusable trap — low item-transfer debt; leaves wear and breakage open.
-  B: content-defined parts — medium yield/escrow debt; leaves intact reuse open.
-  Either result transfers once through ordinary item ownership.
-- **Self-trigger severity.** Context: the owner's feet are not exempt from the
-  mechanism. Question: Does a player-triggered bear trap restrain only or also injure?
-  A: restraint until released — medium movement/action debt; leaves trap injury open.
-  B: restraint plus content-defined injury — medium body-effect/persistence debt;
-  leaves lasting limb complications open. Neither choice makes the owner immune.
-- **Offscreen firing.** Context: defending an unattended base must not depend on
-  streaming. Question: Outside the near-player block, does the coarse bear-trap
-  model resolve contacts or preserve the armed trap without contacts?
-  A: deterministic coarse contacts and spent-state outcomes — higher encounter
-  ledger debt; leaves fine combat choreography open.
-  B: preserve armed state without coarse contacts — lower simulation debt; leaves
-  far-away trap defence unmodelled. Both must simulate contacts inside the block,
-  loaded or not, and obey `docs/decisions/0008-deterministic-world.md`, "Decision".
+- **Trap awareness:** zombies do not deliberately recognise or avoid bear traps,
+  so the first mechanical defence does not require trap-aware navigation.
+- **Disarming time:** disarming is a non-resumable timed action, so making the
+  trap safe requires an uninterrupted commitment. Interruption discards progress;
+  another attempt starts its full content-defined duration, not the remaining time.
+- **Disarming risk:** a valid disarm attempt never springs the bear trap, so safe
+  handling does not introduce chance without a skill model. Revisit this rule when
+  #107 gains a trap/device skill; that skill is not admitted by this plan.
+- **Disarming tools:** bare hands are allowed, so the first bear trap does not
+  require a specialised tool hunt. Revisit the requirement when #107's handling
+  design expands to equipment-dependent traps; no tool gate is implied for this one.
+- **Trap recovery:** recover a reusable bear trap, transferring it once through
+  ordinary item ownership, so a safely recovered defence can be redeployed. This
+  does not prescribe other traps' recovery: they may be salvage-only.
+- **Self-trigger severity:** a player-triggered bear trap restrains and injures,
+  so the owner's placement remains a physical hazard rather than a safe exception.
+  Injury values are content-owned; lasting limb complications are not required.
+- **Offscreen firing:** outside the near-player block, preserve armed state without
+  resolving coarse contacts, avoiding a far-away trap encounter ledger. Far-away
+  trap defence is therefore unmodelled. Revisit this rule when #107 expands to
+  coarse unattended-defence encounters. Inside the block, simulate contacts whether
+  loaded or not; rendering residency never decides firing. Follow
+  `docs/decisions/0008-deterministic-world.md`, "Decision".
 
-### Event and playtest gates
+### Settled event and playtest rules
 
-- **Event authoring.** Context: the required scripted wave needs an authoring path,
-  but does not itself require a general event engine. Question: Keep explicit
-  appliance commands or admit data-driven trigger/condition/effect rules (#313)?
-  A: explicit commands — low coupling debt, with extension cost for each new
-  orchestration mechanism; leaves general authored events open. Examples: an
-  appliance control issues a door-open command; a scenario schedule issues a
-  one-shot spawn-wave command after X elapsed days; a control starts a processor.
-  The scenario schedule is a bounded mechanism with content-owned timing, not a
-  hard-coded scenario ID or general rule interpreter.
-  B: data-driven trigger/condition/effect rules — medium interpreter, validation
-  and saved-rule-state debt; leaves script-language tooling open. Examples: a
-  control-use trigger opens a linked door if powered; an elapsed-days trigger,
-  conditioned on an unfired scenario flag, spawns the playtest wave and marks it
-  fired; a fuel-empty trigger switches off a linked lamp.
-  Neither option admits a script language. If general rules are admitted, a separate
-  position-trigger permission card must precede any position-trigger implementation;
-  the elapsed-time wave does not need that permission. No option is recommended.
-- **Wave day.** Context: the scenario needs a shipped preparation window, not an
-  engine constant. Question: After how many elapsed scenario days should the
-  playtest wave arrive?
-  A: 3 — low content debt; leaves a long preparation window untested and risks
-  players reaching the wave before using the appliance loop.
-  B: 5 — low content debt; leaves both shortest and longest preparation extremes
-  untested and requires a longer session than A.
-  C: 7 — low content debt; leaves early-pressure response untested and increases
-  the participation burden. No option is recommended. Store the selected value in
-  scenario content under `PILLARS.md`, "Content forward compatibility" (repo root).
-  The day choice can be carded independently of event authoring; wave implementation
-  depends on that answer, while its required scope does not.
+- **Event authoring (#313):** use data-driven trigger/condition/effect rules, so
+  authors can compose events without scenario-specific engine branches. The wave
+  uses elapsed scenario time and a persisted one-shot condition; firing records
+  completion so save/load cannot duplicate the wave. A script language is not
+  admitted. Position-trigger permission remains open below and does not block the
+  elapsed-time wave.
+- **Wave day:** ship the wave after three elapsed scenario days. The bounded
+  preparation window suits the small playable content volume without making
+  participants wait through days with little to do. Raise the content value as
+  content growth warrants a longer preparation loop; this is author tuning, not
+  automatic code-based scaling. Keep the day in scenario content under
+  `PILLARS.md`, "Content forward compatibility" (repo root).
+
+### Remaining event gate — issue #313
+
+- **Position triggers.** Context: general event rules are admitted, but elapsed
+  time does not require tracking where the player walks. Question: May authored
+  event rules trigger on the player's entry into a defined area?
+  A: exclude position triggers — low coupling debt; leaves location-driven events
+  open while elapsed-time and explicit-interaction rules remain available.
+  B: allow authored area-entry triggers — medium spatial-query, boundary and saved
+  trigger-state debt; leaves arbitrary scripted spatial predicates and NPC-entry
+  triggers open. Prove deterministic entry detection across save/load and horizon
+  transitions before use. Neither option is recommended; this gate blocks only
+  position-trigger implementation, not the scenario wave.
 
 ## Reviewable build order
 
@@ -261,9 +243,11 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    including collision-safe displacement, rather than silently upgrading the cellar
    guard. Add #276 charged player attacks and hit-induced shambler stagger; prove
    charge interruption/save timing and hit-response timing separately from brute
-   displacement. After the bear-trap gates close, add #107's bear trap and prove
-   mechanism contacts, handling/recovery ownership, player triggering and selected
-   coarse outcomes across save/load. BR approves breach, combat and trap readability.
+   displacement. Add #107's bear trap with no zombie avoidance, uninterrupted timed
+   disarming without tools or accidental firing, reusable recovery, and player
+   restraint/injury. Prove interruption discards disarm progress, ownership survives
+   recovery, and the horizon preserves armed state without coarse contacts across
+   save/load. BR approves breach, combat and trap readability.
 6. **Fire, smoke and light.** Prove per-cell ignition and spread, material exhaustion,
    direct extinguishing, sight-blocking smoke, obstruction and light invalidation.
    Molotovs and wood cutting must enter the same fire owner; sufficient torch fuel
@@ -271,9 +255,11 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    lamps expose light consistently to rendering and attention. Show a window cover
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
-7. **Scenario wave, region integration and play acceptance.** After event authoring
-   is decided, implement the scripted scenario wave with its selected day in content.
-   Prove one-shot scheduling across save/load and horizon transitions without stream
+7. **Event rules, scenario wave and region integration.** Implement and validate
+   #313's data-driven trigger/condition/effect mechanism and persist its one-shot
+   state before authoring the wave. Use elapsed scenario time with the three-day
+   value in content; position-trigger permission is not a dependency. Prove one-shot
+   scheduling across save/load and horizon transitions without stream
    arrival deciding whether it fires. Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
    and nearby/background light attention. Exercise preparation, the wave and recovery
@@ -286,8 +272,9 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
 
 Persist construction edits, instance identity and owned contents, interrupted work,
 partial door damage, wire endpoints, resource amounts, process progress and rate
-boundaries, authoritative fire/smoke/attention state, trap state selected by its
-gates, charged-action and stagger timing, and the wave's one-shot scheduling state.
+boundaries, authoritative fire/smoke/attention state, trap armed/restraint/injury
+state, charged-action and stagger timing, and event rules' authoritative one-shot
+state. Disarm progress is not resumable after interruption.
 Derived connected components, occupancy and rendered lighting are rebuilt from
 truth, not independently editable saved totals. Extend `src/core/blockEntities.ts`,
 `BlockEntityState`, and `src/core/saveState.ts`, `SaveSnapshot`, at their ownership
