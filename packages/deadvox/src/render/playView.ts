@@ -239,6 +239,7 @@ export const createPlayView = (
   const zombieMeshes: ZombieRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
+          canvas: engine.renderer?.domElement,
           reveal: meshes,
           figureSeeds: figureSeedPool(registry.zombies),
           includeAmalgam: true,
