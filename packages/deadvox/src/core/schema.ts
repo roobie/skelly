@@ -50,6 +50,7 @@ import {
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { DAY_PHASES } from './dayPhase.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
@@ -2020,6 +2021,30 @@ const ControlSchema = strictObject({
     }),
   ),
 });
+/** A scenario event: once its trigger has passed and every condition holds, its effects apply once. See `SLICE-5.md`, "Settled event and playtest rules". */
+const EventRuleSchema = strictObject({
+  id: Id,
+  trigger: union([strictObject({ kind: literal('elapsed'), afterGameHours: PositiveGameHours })]),
+  conditions: optional(
+    array(union([strictObject({ kind: literal('dayPhase'), phases: pipe(array(picklist(DAY_PHASES)), nonEmpty()) })])),
+    [],
+  ),
+  effects: pipe(
+    array(
+      union([
+        /** A horde of one zombie type appears at `at`, in world cells, and heads for where the player stood. */
+        strictObject({
+          kind: literal('releaseHorde'),
+          zombie: Id,
+          count: pipe(Count, minValue(1), maxValue(64)),
+          at: CellPosition,
+        }),
+      ]),
+    ),
+    nonEmpty('needs an effect'),
+  ),
+});
+export type EventRuleDef = InferOutput<typeof EventRuleSchema>;
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -2125,6 +2150,7 @@ const ScenarioSchema = strictObject({
     upper: CellPosition,
     lower: CellPosition,
   }),
+  eventRules: optional(array(EventRuleSchema), []),
   /** The ordinary buildings' street pressure; authored markers are separate from it. */
   population: strictObject({
     settlementPressure: vBoolean(),

@@ -574,7 +574,7 @@ const horde = obj({
   type: str({ id: true }),
   home: vec3,
   target: vec3,
-  mode: enumeration(['home', 'roam', 'noise']),
+  mode: enumeration(['home', 'roam', 'noise', 'release']),
   roamTimer: nonNegative,
   stimulusAt: opt(nonNegative),
   lastNoiseId: nonNegativeInt,
@@ -745,6 +745,7 @@ const scenarioRun = nullable(
       entranceTravel: nullable(finite),
       sewerTravel: nullable(finite),
     }),
+    eventsFiredAtGameTimestamp: record(finite),
   }),
 );
 

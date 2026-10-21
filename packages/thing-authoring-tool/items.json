@@ -753,6 +753,329 @@
     },
     {
       "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "beans",
+      "parts": [
+        {
+          "family": "foodPortion",
+          "finish": {
+            "body": "paint-terracotta",
+            "chunks": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.34999999999999998,
+          "params": {
+            "chunkLength": "0.010999999999999999",
+            "chunkRadius": "0.0030000000000000001",
+            "chunks": "27",
+            "height": "0.0040000000000000001",
+            "radius": "0.037499999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "soup",
+      "parts": [
+        {
+          "family": "foodPortion",
+          "finish": {
+            "body": "paint-terracotta",
+            "chunks": "plastic-green"
+          },
+          "id": "body",
+          "massKg": 0.33000000000000002,
+          "params": {
+            "chunkLength": "0.0060000000000000001",
+            "chunkRadius": "0.002",
+            "chunks": "7",
+            "height": "0.0089999999999999993",
+            "radius": "0.037499999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "apple",
+      "parts": [
+        {
+          "family": "stemmedFruit",
+          "finish": {
+            "body": "plastic-red",
+            "leaf": "plastic-green",
+            "stem": "wood-walnut"
+          },
+          "id": "body",
+          "massKg": 0.17999999999999999,
+          "params": {
+            "height": "0.070999999999999994",
+            "leafLength": "0.021000000000000001",
+            "leafThickness": "0.00080000000000000004",
+            "leafWidth": "0.010999999999999999",
+            "radius": "0.040000000000000001",
+            "stemHeight": "0.017000000000000001",
+            "stemRadius": "0.0016999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "bandage",
+      "parts": [
+        {
+          "family": "woundRoll",
+          "finish": {
+            "body": "plastic-white",
+            "edge": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.02,
+          "params": {
+            "boreRadius": "0.0089999999999999993",
+            "groove": "0.00069999999999999999",
+            "layers": "8",
+            "radius": "0.037499999999999999",
+            "tailLength": "0.035000000000000003",
+            "tailThickness": "0.00080000000000000004",
+            "width": "0.044999999999999998"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "antiseptic",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "paperboard-brown",
+            "cap": "plastic-red",
+            "label": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "bandHeight": "0.044399999999999995",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.01",
+            "capRadius": "0.0184",
+            "height": "0.073999999999999996",
+            "neckHeight": "0.0080000000000000002",
+            "neckRadius": "0.01495",
+            "radius": "0.023",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "antibiotics",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "plastic-white",
+            "cap": "plastic-white",
+            "label": "plastic-blue"
+          },
+          "id": "body",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "bandHeight": "0.032399999999999998",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.016",
+            "capRadius": "0.019",
+            "height": "0.053999999999999999",
+            "neckHeight": "0.0050000000000000001",
+            "neckRadius": "0.0117",
+            "radius": "0.017999999999999999",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "painkillers",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "plastic-white",
+            "cap": "plastic-white",
+            "label": "plastic-red"
+          },
+          "id": "body",
+          "massKg": 0.001,
+          "params": {
+            "bandHeight": "0.026399999999999996",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.016",
+            "capRadius": "0.019",
+            "height": "0.043999999999999997",
+            "neckHeight": "0.0050000000000000001",
+            "neckRadius": "0.0117",
+            "radius": "0.017999999999999999",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "codeine",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "paperboard-brown",
+            "cap": "plastic-blue",
+            "label": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 0.001,
+          "params": {
+            "bandHeight": "0.032399999999999998",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.016",
+            "capRadius": "0.019",
+            "height": "0.053999999999999999",
+            "neckHeight": "0.0050000000000000001",
+            "neckRadius": "0.0117",
+            "radius": "0.017999999999999999",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "morphine",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "glass-grey",
+            "cap": "plastic-blue",
+            "label": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 0.02,
+          "params": {
+            "bandHeight": "0.02",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.0080000000000000002",
+            "capRadius": "0.0050000000000000001",
+            "height": "0.050999999999999997",
+            "neckHeight": "0.0089999999999999993",
+            "neckRadius": "0.0040000000000000001",
+            "radius": "0.0089999999999999993",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.012"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
       "exportMass": "parts",
       "id": "electrical_tape",
       "parts": [

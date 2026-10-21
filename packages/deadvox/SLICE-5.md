@@ -253,12 +253,10 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    lamps expose light consistently to rendering and attention. Show a window cover
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
-7. **Event rules, scenario wave and region integration.** Implement and validate
-   #313's data-driven trigger/condition/effect mechanism and persist its one-shot
-   state before authoring the wave. Use elapsed scenario time with the three-day
-   value in content; position-trigger permission is not a dependency. Prove one-shot
-   scheduling across save/load and horizon transitions without stream
-   arrival deciding whether it fires. Cross the catch-up horizon with a working and
+7. **Event rules, scenario wave and region integration.** #313's rules and their
+   one-shot state are in `DESIGN.md`, "Scenario events". The playtest scenario
+   adopts the wave from `src/content/base/holding-wave.libsonnet`, `rule`, with its
+   own arrival point. Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
    and nearby/background light attention. Exercise preparation, the wave and recovery
    with charged attacks and stagger available; ordinary ambient attention remains

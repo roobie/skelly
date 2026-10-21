@@ -20,6 +20,7 @@ import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
+import { advanceEventRules } from '../core/eventRules.ts';
 import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
 import {
   type FirearmsCombatTuning,
@@ -67,6 +68,7 @@ import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
+import type { EventRuleDef } from '../core/schema.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
@@ -306,7 +308,9 @@ interface SessionDebug {
 
 export interface SessionOptions {
   registry: Registry;
-  scenario?: Readonly<{ id: string; body: string; compression: string }> | undefined;
+  scenario?:
+    | Readonly<{ id: string; body: string; compression: string; eventRules?: readonly EventRuleDef[] }>
+    | undefined;
   objective?: Readonly<Vec3> | undefined;
   discovery?: Readonly<ScenarioDiscovery> | undefined;
   world: World;
@@ -1301,6 +1305,17 @@ export const createSession = (options: SessionOptions) => {
         detonate(item);
       }
       spawner.advance({ calendar: sim.calendar, registry, zombies: zombieSystem });
+      if (scenarioRun) {
+        advanceEventRules({
+          rules: options.scenario?.eventRules ?? [],
+          run: scenarioRun,
+          calendar: sim.calendar,
+          dayPhase: dayPhaseAt(dayCycle, sim.calendar).phase,
+          player: body.pos,
+          registry,
+          zombies: zombieSystem,
+        });
+      }
       zombieSystem.tickActive(dt, time, heldItemUids());
       traps.step(dt, {
         player: body.pos,

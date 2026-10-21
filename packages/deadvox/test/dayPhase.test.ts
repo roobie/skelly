@@ -6,7 +6,7 @@ import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { sunExposedAt } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
-import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
+import { type HordeState, perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -35,7 +35,7 @@ const phaseSamples = () => {
   return [...events.flatMap((time) => [time - 1, time, time + 1]), ...midpoints];
 };
 
-const hordeModeAt = (time: number): 'home' | 'noise' | 'roam' => {
+const hordeModeAt = (time: number): HordeState['mode'] => {
   const state = dayPhaseAt(cycle, time);
   const system = new ZombieSystem({
     player: () => player,
