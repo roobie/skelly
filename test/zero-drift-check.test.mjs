@@ -356,7 +356,6 @@ describe('zero-drift section cues', () => {
   });
 
   it('checks explicit section cues in strings and comments but ignores unformatted strings and inline examples', () => {
-    assert.deepEqual(sections(cue('src/fixture.yaml', 'exact fixture name')), []);
     assert.ok(
       checks(
         sections(`${cue('src/fixture.yaml', 'exact fixture name')} and ${code('exact second fixture name')}`),

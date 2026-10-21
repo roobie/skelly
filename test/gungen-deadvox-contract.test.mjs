@@ -39,12 +39,12 @@ const loadExports = () =>
       }
       return { file, model: result.modelEntry };
     });
+const CURATED_EXPORTS = loadExports();
 
 describe('gungen exports satisfy deadvox model validation', () => {
   it('validates each curated gun model entry, including action metadata', () => {
-    const exportedGuns = loadExports();
-    assert.ok(exportedGuns.length > 0);
-    for (const { file, model } of exportedGuns) {
+    assert.ok(CURATED_EXPORTS.length > 0);
+    for (const { file, model } of CURATED_EXPORTS) {
       assert.ok(model.gun, `${file}: missing gun pack block`);
       const parsed = safeParse(ModelSchema, model);
       assert.ok(parsed.success, `${file}: ${JSON.stringify(parsed.issues)}`);
@@ -138,7 +138,7 @@ describe('gungen exports satisfy deadvox model validation', () => {
   });
 
   it('rejects unknown action fields', () => {
-    const { file, model } = loadExports().find(({ model: entry }) => entry.gun?.action?.fire) ?? {};
+    const { file, model } = CURATED_EXPORTS.find(({ model: entry }) => entry.gun?.action?.fire) ?? {};
     assert.ok(file && model?.gun?.action?.fire);
     const source = `gungen/designs/${file}`;
     assert.deepEqual(buildRegistry([{ source, data: { models: [model] } }]).issues, []);

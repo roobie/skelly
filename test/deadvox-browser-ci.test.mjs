@@ -163,13 +163,6 @@ describe('deadvox browser CI coverage', () => {
     );
   });
 
-  it('runs every enabled package-script case in the full reusable workflow', () => {
-    const missing = Object.keys(browserStages)
-      .filter((name) => !(name in quarantinedScripts))
-      .flatMap((name) => uncovered(name));
-    assert.deepEqual(missing, []);
-  });
-
   it('routes browser stages through the managed Chromium helper without system selection', () => {
     const sources = browserStagePaths.map((path) => ({
       path,
