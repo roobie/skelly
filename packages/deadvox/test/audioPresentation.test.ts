@@ -1,15 +1,20 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry, type SoundDef } from '../src/core/content.ts';
+import type { Registry, SoundDef } from '../src/core/content.ts';
 import type { Item } from '../src/core/items.ts';
+import { makeScale } from '../src/core/scale.ts';
+import type { SoundEmission } from '../src/core/soundPicker.ts';
+import { simSeconds } from '../src/core/time.ts';
+import { World } from '../src/core/world.ts';
 import {
   createRefusalPresenter,
   firearmShotSound,
   HEARTBEAT_TUNING,
   heartbeatForStamina,
 } from '../src/game/audioPresentation.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
+import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
+import { chargedRifle } from './rifleFixture.ts';
 
 describe('heartbeat audio presentation', () => {
   it('uses the tuning anchors at the start stamina and exhaustion', () => {
@@ -74,76 +79,106 @@ const firearm = (type: string, slots: Item['slots'] = {}): Item => ({
   slots,
 });
 
-const FIXTURES = 'src/content/base';
-const baseRegistry = loadBaseRegistry();
+const fixture = (suppressed = false): Registry => {
+  const registry = loadBaseRegistry();
+  const template = registry.items.get('rifle_assault')!;
+  registry.items.set('fixture_carbine', {
+    ...template,
+    id: 'fixture_carbine',
+    firearm: { ...template.firearm!, shotSound: 'fixture_report', suppressedShotSound: 'fixture_quiet_report' },
+  });
+  registry.items.set('fixture_suppressor', { ...registry.items.get('real_suppressor')!, id: 'fixture_suppressor' });
+  for (const id of ['fixture_report', 'fixture_quiet_report']) {
+    const sound: SoundDef = {
+      id,
+      variants: ['assets/audio/fixture-report.ogg'],
+      gain: 1,
+      pitchJitter: [1, 1],
+      gainJitter: [1, 1],
+      minIntervalSimSeconds: simSeconds(0),
+      category: 'world',
+      noise: { enabled: true, radiusMetres: 80 },
+    };
+    registry.sounds.set(id, sound);
+  }
+  return suppressed ? withDefaultAttachment(registry, 'fixture_carbine', 'fixture_suppressor').registry : registry;
+};
 
 describe('firearm audio presentation', () => {
-  it('selects the M4 sound only for the AR and keeps AK and actor selection consistent', () => {
-    const ar = firearm('rifle_assault');
-    const ak = firearm('rifle_ak');
-    expect(firearmShotSound(baseRegistry, ar)).toMatchObject({
-      event: 'gunshot_m4',
-      sourceLabel: ar.type,
+  it('selects fixture reports through nested suppressors and actor perspective', () => {
+    const registry = fixture();
+    expect(firearmShotSound(registry, firearm('fixture_carbine'))).toEqual({
+      event: 'fixture_report',
+      sourceLabel: 'fixture_carbine',
       listenerRelative: true,
     });
-    expect(firearmShotSound(baseRegistry, ak)).toMatchObject({
-      event: 'gunshot',
-      sourceLabel: ak.type,
+    const suppressed = firearm('fixture_carbine', {
+      adapter: firearm('fixture_carbine', { muzzle: firearm('fixture_suppressor') }),
+    });
+    expect(firearmShotSound(registry, suppressed)).toEqual({
+      event: 'fixture_quiet_report',
+      sourceLabel: 'fixture_carbine',
       listenerRelative: true,
     });
-
-    const suppressedAr = firearm('rifle_assault', { muzzle: firearm('real_suppressor') });
-    expect(firearmShotSound(baseRegistry, suppressedAr)).toMatchObject({
-      event: 'gunshot_m4_suppressed',
-      sourceLabel: suppressedAr.type,
-      listenerRelative: true,
-    });
-    expect(firearmShotSound(baseRegistry, suppressedAr, 'actor')).toMatchObject({
-      event: 'gunshot_m4_suppressed',
-      listenerRelative: false,
-    });
+    expect(firearmShotSound(registry, suppressed, 'actor').listenerRelative).toBe(false);
   });
 
-  it('selects a new firearm id from its authored shot sound without a code edit', () => {
-    const { registry, issues } = buildRegistry([
-      ...readdirSync(FIXTURES)
-        .filter((file) => file.endsWith('.json'))
-        .sort()
-        .map((file) => ({
-          source: file,
-          data: JSON.parse(readFileSync(join(FIXTURES, file), 'utf8')) as unknown,
-        })),
-      {
-        source: 'fixture-firearm.json',
-        data: {
-          items: [
-            {
-              id: 'fixture_carbine',
-              economy: { usage: [], tiers: [] },
-              name: 'Fixture carbine',
-              category: 'weapon',
-              weight: 1,
-              size: [1, 1],
-              firearm: { shotSound: 'gunshot_m4', recoilKickRadians: 0.01, dispersionRadians: 0, handling: {} },
-            },
-          ],
-        },
+  it.each([false, true])('routes a committed session shot to its fixture profile (suppressed=%s)', (suppressed) => {
+    const registry = fixture(suppressed);
+    const played: SoundEmission[] = [];
+    const session = createSession({
+      registry,
+      world: new World(),
+      isSolid: () => false,
+      isOpaque: () => false,
+      scale: makeScale(0.5),
+      seed: 73,
+      start: 43_200,
+      spawn: [0, 4, 0],
+      ready: () => false,
+      controls: {
+        active: () => true,
+        intent: () => IDLE,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
       },
-    ]);
-    expect(issues).toEqual([]);
-    expect(firearmShotSound(registry, firearm('fixture_carbine')).event).toBe('gunshot_m4');
-  });
-
-  it('keeps M4 sound selection separate from attachment-based noise scaling', () => {
-    const definitions = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as SoundDef[];
-    const byId = new Map(definitions.map((definition) => [definition.id, definition]));
-    const unsuppressed = firearmShotSound(baseRegistry, firearm('rifle_assault'));
-    const suppressed = firearmShotSound(baseRegistry, firearm('rifle_assault', { muzzle: firearm('real_suppressor') }));
-    const unsuppressedNoise = byId.get(unsuppressed.event)?.noise;
-    const suppressedNoise = byId.get(suppressed.event)?.noise;
-
-    expect(unsuppressedNoise?.enabled).toBe(true);
-    expect(suppressedNoise?.enabled).toBe(true);
-    expect(suppressedNoise!.radiusMetres).toBe(unsuppressedNoise!.radiusMetres);
+      audio: { play: (sound) => played.push(sound) },
+      notice: () => undefined,
+      onRead: () => undefined,
+    });
+    const { rifle } = chargedRifle(session.inventory, session.queue, session.firearms, {
+      type: 'fixture_carbine',
+      magazines: session.magazines,
+    });
+    const reader = session.sim.events.reader();
+    played.length = 0;
+    const noiseScale = session.firearms.noiseFactorFor(rifle);
+    expect(
+      session.firearms.fire({
+        item: rifle,
+        feet: session.feet(),
+        eye: [0, 7, 0],
+        yaw: 0,
+        pitch: 0,
+        aimFrame: { yaw: 0, pitch: 0 },
+        ready: true,
+        sprinting: false,
+        seed: 71,
+        simTime: session.sim.time,
+        blockSize: 0.5,
+      }),
+    ).toBe(true);
+    const event = suppressed ? 'fixture_quiet_report' : 'fixture_report';
+    const report = played.filter((sound) => sound.event === event);
+    expect(report).toHaveLength(1);
+    expect(report[0]).toMatchObject({ listenerRelative: true, position: session.chest(), emittedAsNoise: true });
+    const noise = reader.read().filter((entry) => entry.kind === 'noise' && entry.event === event);
+    expect(noise).toHaveLength(1);
+    expect(noise[0]).toMatchObject({
+      position: session.chest(),
+      radiusMetres: registry.sounds.get(event)!.noise.radiusMetres * noiseScale,
+    });
   });
 });

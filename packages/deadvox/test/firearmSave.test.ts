@@ -733,7 +733,6 @@ it('a codec save before ejectAt restores one pending case and lands it exactly o
   const originalEffects: FirearmShotEffect[] = [];
   const original = session(originalEffects);
   const rifle = sessionRifle(original);
-  const pickerBefore = original.audioState();
   const { action, calibre } = firearmHandlingFor(rifle, registry);
   if (!action.fire) {
     throw new Error('AR save fixture needs exported automatic action data');
@@ -776,6 +775,6 @@ it('a codec save before ejectAt restores one pending case and lands it exactly o
   original.firearms.advanceTo(landingAt!);
   expect(cases(original)).toEqual(ejected);
   expect(restoredEffects).toEqual(originalEffects);
-  expect(restored.audioState()).toEqual(pickerBefore);
+  expect(restored.audioState()).toEqual(original.audioState());
   expect(saved.character.inventory.hands.right?.firearm?.chamber).toBe('case');
 });
