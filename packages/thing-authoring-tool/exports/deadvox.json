@@ -1,0 +1,27 @@
+[
+  {
+    "id": "tape_roll",
+    "kind": "item",
+    "source": "electrical_tape"
+  },
+  {
+    "id": "thread_spool",
+    "kind": "item",
+    "source": "sewing_thread"
+  },
+  {
+    "id": "cord_coil",
+    "kind": "item",
+    "source": "nylon_cord"
+  },
+  {
+    "id": "fuse",
+    "kind": "item",
+    "source": "fuse"
+  },
+  {
+    "id": "desk_lamp",
+    "kind": "item",
+    "source": "dead_desk_lamp"
+  }
+]

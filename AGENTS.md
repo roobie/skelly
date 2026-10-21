@@ -17,7 +17,7 @@ contracts freely when that makes the code simpler; don't add legacy paths, opt-i
 flags, compat shims or migrations to keep old output or old data working, and
 don't require byte-identical exports. What must still work: gungen exports a model
 that deadvox validates and loads. Migration, especially of save games, starts
-mattering at v1.0 beta.
+mattering at v1.0 beta (#1023).
 
 Before writing or changing player-visible text, apply `packages/deadvox/INTERFACE.md`, "Text".
 

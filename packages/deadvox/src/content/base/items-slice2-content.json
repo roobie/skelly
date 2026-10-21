@@ -36,8 +36,7 @@
       "model": "tape_roll",
       "name": "Electrical tape",
       "size": [1, 1],
-      "stack": 6,
-      "weight": 30
+      "stack": 6
     },
     {
       "category": "material",
@@ -182,8 +181,7 @@
       "model": "thread_spool",
       "name": "Sewing thread",
       "size": [1, 1],
-      "stack": 6,
-      "weight": 15
+      "stack": 6
     },
     {
       "category": "material",
@@ -195,8 +193,7 @@
       "model": "fuse",
       "name": "Glass fuse",
       "size": [1, 1],
-      "stack": 10,
-      "weight": 10
+      "stack": 10
     },
     {
       "category": "material",
@@ -208,8 +205,7 @@
       "model": "cord_coil",
       "name": "Nylon cord",
       "size": [1, 2],
-      "stack": 5,
-      "weight": 60
+      "stack": 5
     },
     {
       "category": "tool",
@@ -370,8 +366,7 @@
         }
       ],
       "salvageTimeGameMinutes": 5,
-      "size": [2, 3],
-      "weight": 900
+      "size": [2, 3]
     },
     {
       "category": "misc",

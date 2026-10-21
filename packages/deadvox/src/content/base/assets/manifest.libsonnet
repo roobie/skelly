@@ -1,4 +1,6 @@
 local recipe = import 'gungen/exports/deadvox.jsonnet';
+local things = import 'packages/thing-authoring-tool/exports/deadvox.jsonnet';
+local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
 {
   "sources": [
     {
@@ -7,10 +9,19 @@ local recipe = import 'gungen/exports/deadvox.jsonnet';
       author: 'Skelly contributors',
       licence: 'CC0-1.0',
       download: null,
-      files: ['assets/models/' + row.id + '.glb' for row in recipe],
+      files: exportFiles(recipe),
       changes: 'Original project-built geometry exported from the authored recipe in metres, +x forward and +y up. Cartridge dimensions come from the recipe sources; unsupported internal dimensions remain visual proxies.',
     },
 
+    {
+      title: 'Thing tool authored models',
+      url: 'https://github.com/roobie/skelly/blob/main/packages/thing-authoring-tool/exports/deadvox.jsonnet',
+      author: 'Skelly contributors',
+      licence: 'CC0-1.0',
+      download: null,
+      files: exportFiles(things),
+      changes: 'Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.',
+    },
     {
       "title": "The Free Firearm Sound Library — Winchester Model 12",
       "url": "https://opengameart.org/content/the-free-firearm-sound-library",
@@ -459,7 +470,6 @@ local recipe = import 'gungen/exports/deadvox.jsonnet';
         "assets/models/wire_spool.glb",
         "assets/models/lamp_oil_bottle.glb",
         "assets/models/glass_shards.glb",
-        "assets/models/tape_roll.glb",
         "assets/models/fastener_pack.glb",
         "assets/models/wood_offcut.glb",
         "assets/models/rubber_strip.glb",
@@ -471,13 +481,9 @@ local recipe = import 'gungen/exports/deadvox.jsonnet';
         "assets/models/riot_helmet.glb",
         "assets/models/riot_helmet_view.glb",
         "assets/models/night_vision_goggles.glb",
-        "assets/models/thread_spool.glb",
-        "assets/models/fuse.glb",
-        "assets/models/cord_coil.glb",
         "assets/models/pliers.glb",
         "assets/models/sewing_kit.glb",
         "assets/models/broken_toaster.glb",
-        "assets/models/desk_lamp.glb",
         "assets/models/table_fan.glb",
         "assets/models/cracked_phone.glb",
         "assets/models/broken_clock.glb",

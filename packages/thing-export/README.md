@@ -3,6 +3,7 @@ read_if:
   - you change GLB or model-entry export, physical derivation or export identity
   - you add an authoring tool that exports neutral models
   - you change physical inputs or interpret exported mass and centres of mass
+  - you share export recipes or file writing between authoring tools
 ---
 
 # thing-export
@@ -17,6 +18,15 @@ other's identity. See `src/exportTypes.ts`, `GlbExportInput`. Construction choic
 appearance profiles remain independent: changing a finish must not change an assembly.
 See `packages/engine/src/assembly/template.ts`, `Template.variantParams`, and
 `src/exportTypes.ts`, `AppearanceContext`.
+
+## Recipe ownership
+
+Tools own separate consumption recipes so retiring one cannot delete another tool's inputs.
+The row contract, dispatch validation and output identity are shared to keep unsupported
+selections from becoming silent omissions; see `src/recipe.ts`, `loadRecipe`. Node-only
+file writing is separate from browser-safe geometry and preview code; see `src/files.ts`,
+`writeRecipeExports`. Credits derive their file set from the same recipes through
+`tools/jsonnet/lib/export-files.libsonnet`.
 
 ## Physical model
 

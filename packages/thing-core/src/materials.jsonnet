@@ -22,4 +22,10 @@ local hex(n) = [std.floor(n / 65536) / 255, (std.floor(n / 256) % 256) / 255, (n
   'plastic-black': self['plastic-red'] + { colour: [0.06, 0.06, 0.06] },
   'plastic-white': self['plastic-red'] + { colour: [0.85, 0.85, 0.8] },
   'plastic-yellow': self['plastic-red'] + { colour: [0.85, 0.7, 0.04] },
+  'paint-terracotta': material([0.71, 0.267, 0.196]),
+  'paperboard-tan': material([0.765, 0.659, 0.471]),
+  'cord-olive': material([0.467, 0.443, 0.306]),
+  'glass-grey': material([0.608, 0.682, 0.698]) + { finish: { metallic: 0, roughness: 0.15 } },
+  'steel-grey': material([0.541, 0.573, 0.592]) + { finish: { metallic: 0.55, roughness: 0.65 } },
+  'paint-charcoal': material([0.216, 0.239, 0.255]),
 }

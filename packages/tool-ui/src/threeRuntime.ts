@@ -1,0 +1,36 @@
+// biome-ignore-all lint/style/useNamingConvention: the injected renderer preserves Three's constructor names.
+import {
+  ArrowHelper,
+  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  EdgesGeometry,
+  Group,
+  Line,
+  LineBasicMaterial,
+  LineDashedMaterial,
+  LineSegments,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  Vector3,
+} from 'three';
+
+export const threeRuntime = {
+  ArrowHelper,
+  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  EdgesGeometry,
+  Group,
+  Line,
+  LineBasicMaterial,
+  LineDashedMaterial,
+  LineSegments,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  Vector3,
+};

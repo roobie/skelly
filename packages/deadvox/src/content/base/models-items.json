@@ -32,7 +32,14 @@
     },
     {
       "file": "assets/models/tape_roll.glb",
-      "id": "tape_roll"
+      "id": "tape_roll",
+      "parts": {
+        "electrical_tape": {
+          "centreOfMass": [0, 0.010499999999999999, 0],
+          "massKg": 0.029999999999999999,
+          "node": "electrical_tape:ring"
+        }
+      }
     },
     {
       "file": "assets/models/fastener_pack.glb",
@@ -80,15 +87,36 @@
     },
     {
       "file": "assets/models/thread_spool.glb",
-      "id": "thread_spool"
+      "id": "thread_spool",
+      "parts": {
+        "sewing_thread": {
+          "centreOfMass": [0, 0.025000000000000005, 0],
+          "massKg": 0.014999999999999999,
+          "node": "sewing_thread:spool"
+        }
+      }
     },
     {
       "file": "assets/models/fuse.glb",
-      "id": "fuse"
+      "id": "fuse",
+      "parts": {
+        "fuse": {
+          "centreOfMass": [0, 0.010999999999999998, 0],
+          "massKg": 0.01,
+          "node": "fuse:fuse"
+        }
+      }
     },
     {
       "file": "assets/models/cord_coil.glb",
-      "id": "cord_coil"
+      "id": "cord_coil",
+      "parts": {
+        "nylon_cord": {
+          "centreOfMass": [0, 0.012500000000000004, 0],
+          "massKg": 0.059999999999999998,
+          "node": "nylon_cord:coil"
+        }
+      }
     },
     {
       "file": "assets/models/pliers.glb",
@@ -104,7 +132,24 @@
     },
     {
       "file": "assets/models/desk_lamp.glb",
-      "id": "desk_lamp"
+      "id": "desk_lamp",
+      "parts": {
+        "arm": {
+          "centreOfMass": [0.0064922537076486349, 0.089771328314204618, -9.5479630393850054e-18],
+          "massKg": 0.25,
+          "node": "arm:arm"
+        },
+        "base": {
+          "centreOfMass": [0, 0.0060000000000000001, 0],
+          "massKg": 0.5,
+          "node": "base:base"
+        },
+        "shade": {
+          "centreOfMass": [0.070000000000000007, 0.15968518518518521, -2.0252029474788637e-17],
+          "massKg": 0.14999999999999999,
+          "node": "shade:shade"
+        }
+      }
     },
     {
       "file": "assets/models/table_fan.glb",

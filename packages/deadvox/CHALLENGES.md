@@ -37,7 +37,7 @@ A growing item and recipe catalogue needs reliable references and reachable ingr
 
 ## 7. Saves and migration
 
-A save spans edited terrain, nested items, world entities and clocks; silently restoring it under changed rules can produce a different world. Snapshot owned state, identify the simulation and content that interpret it, and refuse mismatches. Migration becomes required at v1.0 beta; until then, old-format migration is not supported. See [ADR 0002](docs/decisions/0002-saves.md).
+A save spans edited terrain, nested items, world entities and clocks; silently restoring it under changed rules can produce a different world. Snapshot owned state, identify the simulation and content that interpret it, and refuse mismatches. Migration becomes required at v1.0 beta (#1023); until then, old-format migration is not supported. See [ADR 0002](docs/decisions/0002-saves.md).
 
 ## 8. Vehicles on voxels
 

@@ -108,8 +108,24 @@ const packageEdges = (roots: Roots): readonly PackageEdge[] => {
   const engine = join(roots.packages, 'engine');
   const thingCore = join(roots.packages, 'thing-core');
   const thingExport = join(roots.packages, 'thing-export');
+  const thingTool = join(roots.packages, 'thing-authoring-tool');
+  const toolUi = join(roots.packages, 'tool-ui');
   return [
     { from: roots.packages, forbids: (target) => isWithin(roots.gungen, target), problem: 'imports gungen' },
+    { from: roots.gungen, forbids: (target) => isWithin(thingTool, target), problem: 'gungen imports the thing tool' },
+    {
+      from: thingTool,
+      forbids: (target) =>
+        isWithin(roots.packages, target) &&
+        ![engine, thingCore, thingExport, toolUi, thingTool].some((root) => isWithin(root, target)),
+      problem: 'thing tool imports outside its lower layers',
+    },
+    {
+      from: join(roots.packages, 'deadvox'),
+      forbids: (target) => isWithin(thingTool, target),
+      problem: 'deadvox imports the thing tool',
+    },
+    { from: toolUi, forbids: (target) => isWithin(thingTool, target), problem: 'tool-ui imports the thing tool' },
     {
       from: thingCore,
       forbids: (target) =>

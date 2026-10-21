@@ -1,54 +1,25 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  array,
-  check,
-  type InferOutput,
-  nonEmpty,
-  optional,
-  parse,
-  picklist,
-  pipe,
-  regex,
-  strictObject,
-  string,
-  unknown,
-} from 'valibot';
+  recipeAsset as assetFor,
+  loadRecipe,
+  type ModelExport,
+  recipeOptions as optionsFor,
+  type RecipeExport,
+  type RecipeRow as Row,
+} from '@skelly/thing-export/recipe.ts';
+import { nonEmpty, parse, picklist, pipe, strictObject, string } from 'valibot';
 import content from '../../exports/deadvox.json' with { type: 'json' };
 import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import { exportAttachmentGlb } from '../gun/attachmentExport.ts';
 import { ATTACHMENT_IDS } from '../gun/attachments.ts';
 import { exportCartridgeModel } from '../gun/cartridgeExport.ts';
-import type { DeadvoxModelEntry, DeadvoxModelFile } from '../gun/exportGlb.ts';
+import type { DeadvoxModelEntry } from '../gun/exportGlb.ts';
 import { exportMagazineGlb } from '../gun/magazineExport.ts';
 import { GUN_PREFABS } from '../gun/prefabs.ts';
 import { exportFileText } from './exportFile.ts';
 
 const ROOT = resolve(import.meta.dirname, '../../..');
-const RowSchema = strictObject({
-  id: pipe(string(), regex(/^[a-z][a-z0-9_]*$/)),
-  kind: pipe(string(), nonEmpty()),
-  source: pipe(string(), nonEmpty()),
-  options: optional(unknown()),
-});
-const RecipeSchema = pipe(
-  array(RowSchema),
-  nonEmpty(),
-  check((rows) => new Set(rows.map(({ id }) => id)).size === rows.length, 'duplicate export id'),
-);
-type Row = InferOutput<typeof RowSchema>;
-interface ModelExport {
-  readonly modelEntry: DeadvoxModelEntry;
-  readonly glb: Uint8Array;
-}
-export interface RecipeExport {
-  readonly id: string;
-  readonly kind: string;
-  readonly source: string;
-  readonly generate: () => ModelExport;
-}
-const assetFor = ({ id }: Row) => ({ id, file: `assets/models/${id}.glb` as DeadvoxModelFile });
-const optionsFor = (row: Row) => (row.options === undefined ? {} : row.options);
 const cartridgeAt = (source: string, root: string) => {
   const parsed = parseCartridgeJson(readFileSync(resolve(root, source), 'utf8'));
   if (!parsed.ok) {
@@ -122,26 +93,10 @@ const exporters = {
       return result;
     };
   },
-} satisfies Record<string, (row: Row, root: string) => () => ModelExport>;
+} satisfies Record<string, (row: Row, root: string) => () => ModelExport<DeadvoxModelEntry>>;
 
-const contextual = <T>(row: Row, work: () => T): T => {
-  try {
-    return work();
-  } catch (error) {
-    throw new Error(
-      `Export ${row.id} (${row.kind}, ${row.source}): ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error },
-    );
-  }
-};
-
-export const loadExportRecipe = (value: unknown = content, root = ROOT): readonly RecipeExport[] =>
-  parse(RecipeSchema, value).map((row) =>
-    contextual(row, () => {
-      if (!Object.hasOwn(exporters, row.kind)) {
-        throw new Error('unknown export kind');
-      }
-      const generate = exporters[row.kind as keyof typeof exporters](row, root);
-      return { id: row.id, kind: row.kind, source: row.source, generate: () => contextual(row, generate) };
-    }),
+export const loadExportRecipe = (value: unknown = content, root = ROOT): readonly RecipeExport<DeadvoxModelEntry>[] =>
+  loadRecipe(
+    value,
+    Object.fromEntries(Object.entries(exporters).map(([kind, load]) => [kind, (row: Row) => load(row, root)])),
   );

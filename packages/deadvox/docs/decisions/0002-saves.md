@@ -41,7 +41,7 @@ Autosave checkpoints count simulated play time, not wall-clock time or game hour
 
 ## Compatibility
 
-Cross-version restore and migration are not supported before v1.0 beta. A changed simulation, schema, generator or content identity is a different world, not an implicit upgrade. Preserve and refuse mismatched records; before the compatibility milestone, BR chooses between selecting a matching build and migrating old saves.
+Cross-version restore and migration are not supported before v1.0 beta (#1023). A changed simulation, schema, generator or content identity is a different world, not an implicit upgrade. Preserve and refuse mismatched records; before #1023 closes, BR chooses between selecting a matching build and migrating old saves.
 
 Mod state that no longer matches its mod is refused the same way as a pack mismatch, neither dropped nor migrated by the mod. The game and the modding framework own this policy and a mod has no say in it, so one restore rule covers every pack and mod and no mod can change what a save restores.
 

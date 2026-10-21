@@ -8,9 +8,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import process from 'node:process';
+import { modelEntryJson } from '@skelly/thing-export/files.ts';
 import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
 import { exportFileText } from './exportFile.ts';
-import { modelEntryJson } from './modelEntryJson.ts';
 import { readCartridge } from './readCartridge.ts';
 
 const USAGE =
