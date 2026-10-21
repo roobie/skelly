@@ -59,10 +59,11 @@ try {
       element
         ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${typeof element.className === 'string' && element.className ? `.${element.className.trim().replaceAll(' ', '.')}` : ''}`
         : null;
+    let trustedStartGesture = false;
     globalThis.__startGesture = {
       pointerDownTarget: null,
       clickTarget: null,
-      acceptedClickActive: false,
+      startTarget: null,
       audioResumeCalls: [],
       lockRequests: [],
       lockChanges: [],
@@ -71,6 +72,8 @@ try {
     document.addEventListener(
       'pointerdown',
       (event) => {
+        trustedStartGesture ||= Boolean(event.isTrusted && event.target?.closest('#go'));
+        globalThis.__startGesture.startTarget = describe(document.querySelector('#go'));
         globalThis.__startGesture.pointerDownTarget = describe(event.target);
       },
       true,
@@ -78,11 +81,8 @@ try {
     document.addEventListener(
       'click',
       (event) => {
+        trustedStartGesture ||= Boolean(event.isTrusted && event.target?.closest('#go'));
         globalThis.__startGesture.clickTarget ??= describe(event.target);
-        globalThis.__startGesture.acceptedClickActive = Boolean(event.target?.closest('#go') && event.isTrusted);
-        setTimeout(() => {
-          globalThis.__startGesture.acceptedClickActive = false;
-        }, 0);
       },
       true,
     );
@@ -105,7 +105,7 @@ try {
     globalThis.AudioContext = class extends NativeAudioContext {
       resume() {
         globalThis.__startGesture.audioResumeCalls.push({
-          duringAcceptedClick: globalThis.__startGesture.acceptedClickActive,
+          afterTrustedStartGesture: trustedStartGesture,
           userActivationActive: navigator.userActivation?.isActive,
         });
         return super.resume();
@@ -128,6 +128,15 @@ try {
     { timeout: 10_000 },
   );
   await page.waitForFunction((time) => globalThis.firefoxNativeSim.time > time, before, { timeout: 20_000 });
+  const gesture = await page.evaluate(() => globalThis.__startGesture);
+  assert.equal(gesture.pointerDownTarget, gesture.clickTarget);
+  assert.ok(gesture.startTarget, 'the start control exists at the gesture');
+  assert.equal(gesture.pointerDownTarget, gesture.startTarget);
+  assert.equal(gesture.lockRequests.length, 1, 'one initial gesture makes one native lock request');
+  assert.equal(gesture.lockRequests[0].target, 'main#view');
+  assert.equal(gesture.lockRequests[0].userActivationActive, true);
+  assert.ok(gesture.lockChanges.includes('main#view'));
+  assert.ok(gesture.audioResumeCalls.some((call) => call.afterTrustedStartGesture && call.userActivationActive));
   const gateCode = await page.evaluate(
     `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
@@ -172,14 +181,6 @@ try {
   assert.ok(gateEvents.every((event) => event.trusted));
   assert.ok(gateEvents.some((event) => event.type === 'keydown' && event.prevented));
   assert.equal(page.context().pages().length, 1, 'debug gate opens no Help page or window');
-  const gesture = await page.evaluate(() => globalThis.__startGesture);
-  assert.equal(gesture.pointerDownTarget, gesture.clickTarget);
-  assert.equal(gesture.pointerDownTarget, 'p#go.go');
-  assert.equal(gesture.lockRequests.length, 1, 'one initial gesture makes one native lock request');
-  assert.equal(gesture.lockRequests[0].target, 'main#view');
-  assert.equal(gesture.lockRequests[0].userActivationActive, true);
-  assert.ok(gesture.lockChanges.includes('main#view'));
-  assert.ok(gesture.audioResumeCalls.some((call) => call.duringAcceptedClick && call.userActivationActive));
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
   process.stdout.write(
