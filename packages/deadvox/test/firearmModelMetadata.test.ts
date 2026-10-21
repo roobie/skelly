@@ -5,7 +5,7 @@ const source = 'models.json';
 const validate = (model: unknown) => validateContent({ source, data: { models: [model] } });
 const base = {
   id: 'round_7_d_62x39',
-  file: 'assets/models/round-7_d_62x39.glb',
+  file: 'assets/models/round_7_d_62x39.glb',
   parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
 };
 const magazine = {

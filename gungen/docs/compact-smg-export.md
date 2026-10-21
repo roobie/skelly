@@ -5,7 +5,7 @@ read_if:
   - you add the 9x19 cartridge or the compact SMG's Deadvox entry
   - you choose the reference drawing or photos a Gungen design is traced from
   - you separate a traced design's appearance profile from a generator fixture
-  - you change the structured Deadvox export recipe or add shipped variants
+  - you change the structured Deadvox export recipe or choose shipped compact-SMG variants
 ---
 
 # Compact SMG export
@@ -49,8 +49,7 @@ Joins keep the shared receiver frame so struts, tube and lower cannot drift from
 - **Handle lock-back.** The slot has a notch, and the handle has a held-back state in it. Holding the bolt open is part of how this gun is loaded and cleared, so travel alone would be incomplete.
 - **Reference length.** Each stock has its published overall length: 680 mm for the fixed stock ([Swedish Wikipedia MP5 article](https://sv.wikipedia.org/wiki/Heckler_%26_Koch_MP5)), and 700 mm extended and 550 mm collapsed for the telescoping stock (the MP5A3 specification). Both stocks sit on the one receiver the schematic gives. Each stock's profile, such as the butt outline, the strut spacing and the butt plate, is the model's own design within its lengths, because the schematic has no stock.
 - **Rear drum.** The drum is static. Its turning axis cannot be recovered from a side view, and a turning drum would add a mover for a sight that uses one aperture on the eye line.
-- **Muzzle.** The threaded muzzle is the one Deadvox ships, so a suppressor has a muzzle to fit later. The plain stub stays a Gungen export only.
-- **Deadvox variants.** Deadvox ships two entries, one per stock, both with the threaded muzzle, the one a suppressor fits.
+- **Muzzle.** The threaded muzzle provides a suppressor mount; the plain stub retains an unthreaded authoring alternative.
 
 ## Motion
 
@@ -64,7 +63,7 @@ Each mover is certified with the swept-clearance check, not exempted by family; 
 
 The export uses the shared model envelope rather than adding a compact-SMG channel: hand, loading and sight relationships belong to fitted geometry, not invented gameplay coordinates. See `src/gun/exportGlb.ts`, `DeadvoxModelEntry`, and `src/gun/anchorData.ts`, `GUN_ANCHORS`. Distinct stock and muzzle choices keep separate export identities so the playable model needs no configuration-specific channel.
 
-Shipped variants belong in `exports/deadvox.jsonnet` so the consumption boundary cannot silently omit a variant or infer equipment from another gun. Exporter-written records remain separate from authored gameplay overlays; see `src/cli/exportRecipe.ts`, `loadExportRecipe`, and `src/cli/refreshDeadvox.ts`.
+Ship one threaded-muzzle export per stock so both stock configurations remain available and each accepts a suppressor. Keep the plain-muzzle variants Gungen-only. These shipping choices belong in `exports/deadvox.jsonnet` so the consumption boundary cannot silently omit a variant or infer equipment from another gun. Exporter-written records remain separate from authored gameplay overlays; see `src/cli/exportRecipe.ts`, `loadExportRecipe`, and `src/cli/refreshDeadvox.ts`.
 
 ## Content tunables
 

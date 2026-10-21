@@ -4,7 +4,6 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { loadExportRecipe } from '../gungen/src/cli/exportRecipe.ts';
-import { modelEntryJson } from '../gungen/src/cli/modelEntryJson.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
@@ -108,18 +107,15 @@ describe('gungen exports satisfy deadvox model validation', () => {
     }
   });
 
-  it('reproduces the exporter-written model text and GLB of every recipe row', () => {
+  it('reproduces the exporter-written model entry and GLB of every recipe row', () => {
     for (const { id, glb, modelEntry, source } of EXPORTED) {
       const { file } = modelEntry;
       assert.equal(modelEntry.id, id, `${source}: recipe identity was not used`);
       assert.equal(file, `assets/models/${id}.glb`, `${source}: recipe output path was not used`);
-      assert.equal(
-        readFileSync(join(DEADVOX_BASE, 'gungen', `${id}.model.json`), 'utf8'),
-        modelEntryJson(modelEntry),
-        `${id}: ${source}`,
-      );
+      // Node math varies in the last bits for geometric centres as well as linear colours.
+      const committedEntry = JSON.parse(readFileSync(join(DEADVOX_BASE, 'gungen', `${id}.model.json`), 'utf8'));
+      assert.equal(exportDifference(committedEntry, modelEntry), null, `${id}: ${source}`);
       assert.ok(safeParse(ModelSchema, modelEntry).success, `${id}: invalid exported model`);
-      // Node versions round linear colours in the last bit; geometry still compares byte for byte.
       const committedGlb = readFileSync(join(DEADVOX_BASE, file));
       const exportedGlb = Buffer.from(glb);
       assert.equal(exportDifference(glbJson(committedGlb), glbJson(exportedGlb)), null, `${file}: ${source}`);
