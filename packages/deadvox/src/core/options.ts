@@ -391,6 +391,10 @@ const carryTarget = (inv: Inventory, item: Item): Target | undefined => {
 };
 
 const liveTargetFor = (inv: Inventory, target: Target): Target | undefined => {
+  if (target.kind === 'furniture') {
+    const entity = inv.entities.byUid(target.entity.uid);
+    return entity ? { ...target, entity } : undefined;
+  }
   if (target.kind !== 'pocket') {
     return target;
   }
@@ -484,17 +488,33 @@ const cancelStows = (queue: HandlingQueue, jobs: readonly MoveJob[]): void => {
 const carriedStowTarget = (inv: Inventory, item: Item): Target | undefined =>
   slingTarget(inv, item) ?? bestPocket(inv, item)?.target;
 
-/**
- * A wielded item is one the player wants to keep, so a held item is stowed on the player first.
- * Only without room there may a direct move to the hand swap it into the source container.
- */
-const stowsHeldFirst = (inv: Inventory, displaced: readonly Item[]): boolean =>
-  displaced.length > 0 && displaced.every((held) => carriedStowTarget(inv, held));
+/** The container grid a wielded item comes from, as a target that takes any free spot in it. */
+const sourceGrid = (inv: Inventory, item: Item | undefined): Target | undefined => {
+  const from = item && inv.locate(item);
+  switch (from?.kind) {
+    case 'furniture':
+      return { kind: 'furniture', entity: from.entity, pocket: from.pocket };
+    case 'pocket':
+      return { kind: 'pocket', owner: from.owner, pocket: from.pocket };
+    default:
+      return undefined;
+  }
+};
 
-const plannedStowTarget = (inv: Inventory, item: Item, feet: Vec3): Target | undefined => {
-  const carried = carriedStowTarget(inv, item);
-  if (carried) {
-    return carried;
+/**
+ * A wielded item is one the player wants to keep, and so is the held item it displaces:
+ * on the player first, then in the wielded item's container, and only then at the feet.
+ */
+const stowRoom = (inv: Inventory, held: Item, source: Target | undefined): Target | undefined =>
+  carriedStowTarget(inv, held) ?? (source && inv.plan(held, source).ok ? source : undefined);
+
+const stowsHeldFirst = (inv: Inventory, displaced: readonly Item[], source: Target | undefined): boolean =>
+  displaced.length > 0 && displaced.every((held) => stowRoom(inv, held, source));
+
+const plannedStowTarget = (inv: Inventory, item: Item, feet: Vec3, source?: Target): Target | undefined => {
+  const room = stowRoom(inv, item, source);
+  if (room) {
+    return room;
   }
   const drop = dropTarget(inv, item, feet);
   return drop.plan.ok ? drop.target : undefined;
@@ -510,10 +530,11 @@ const stowTwoHandDisplacements = (args: {
 }): string | undefined => {
   const { inv, queue, item, feet, displaced, target } = args;
   const planned = planningCopy(inv);
+  const plannedSource = sourceGrid(planned, planned.itemByUid(item.uid));
   const stows: MoveJob[] = [];
   for (const held of displaced) {
     const plannedHeld = planned.itemByUid(held.uid);
-    const plannedTarget = plannedHeld && plannedStowTarget(planned, plannedHeld, feet);
+    const plannedTarget = plannedHeld && plannedStowTarget(planned, plannedHeld, feet, plannedSource);
     const liveTarget = plannedTarget && liveTargetFor(inv, plannedTarget);
     if (!(plannedHeld && plannedTarget && liveTarget)) {
       cancelStows(queue, stows);
@@ -551,7 +572,7 @@ const wieldTwoHanded = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   const displaced = [...new Set([inv.hands[preferred], inv.hands[secondary]])].filter(
     (held): held is Item => held !== undefined && held !== item,
   );
-  if (!stowsHeldFirst(inv, displaced)) {
+  if (!stowsHeldFirst(inv, displaced, sourceGrid(inv, item))) {
     const direct = queue.enqueue(item, target);
     if (direct.ok || direct.reason === 'Already queued') {
       return direct.ok ? undefined : direct.reason;
@@ -574,15 +595,22 @@ export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   const preferred = dominantSide(inv.character);
   const secondary = offSide(inv.character);
   const occupant = inv.hands[preferred];
-  const direct = () => [preferred, secondary].some((hand) => queue.enqueue(item, { kind: 'hand', side: hand }).ok);
-  if (!stowsHeldFirst(inv, occupant && occupant !== item ? [occupant] : []) && direct()) {
+  const displaced = occupant && occupant !== item ? [occupant] : [];
+  const source = sourceGrid(inv, item);
+  // A direct move into the occupied hand swaps the held item into the wielded item's own spot,
+  // the last room in its container; a free off hand must not stand in for the drop at the feet.
+  const sides = displaced.length > 0 ? [preferred] : [preferred, secondary];
+  if (
+    !stowsHeldFirst(inv, displaced, source) &&
+    sides.some((hand) => queue.enqueue(item, { kind: 'hand', side: hand }).ok)
+  ) {
     return undefined;
   }
   const held = inv.hands[preferred] ?? inv.hands[secondary];
   if (!held || held === item) {
     return inv.plan(item, { kind: 'hand', side: preferred }).ok ? undefined : 'Your hands are full';
   }
-  const away = plannedStowTarget(inv, held, feet);
+  const away = plannedStowTarget(inv, held, feet, source);
   const stow = away ? queue.enqueue(held, away) : dropTarget(inv, held, feet).plan;
   if (!stow.ok) {
     return stow.reason;
