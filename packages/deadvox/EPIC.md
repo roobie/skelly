@@ -232,6 +232,9 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 
 ### 6. Wheels
 
+The proposed decision gates and build order are in [SLICE-6.md](SLICE-6.md).
+Its open choices require BR's answers before dependent implementation.
+
 - Vehicles as grids of parts: building from wrecks, installing and removing
   parts, and repair.
 - Driving with arcade physics: fuel, the vehicle's battery, noise, and damage
