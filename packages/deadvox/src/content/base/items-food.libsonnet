@@ -1,7 +1,7 @@
 // Eating takes longer than drinking; a rotting food spoils at its going-off fraction of life and poisons for its health cost.
 local eats(calories, water) = { calories: calories, water: water, consumeSimSeconds: 3 };
 local drinks(calories, water) = { calories: calories, water: water, consumeSimSeconds: 2 };
-local canShellGrams = 100;
+local canShellGrams = (import 'packages/thing-authoring-tool/cans.libsonnet').shellMassKg * 1000;
 local beansGrams = 350;
 local soupGrams = 330;
 

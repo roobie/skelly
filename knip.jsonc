@@ -54,7 +54,6 @@
         "src/debug/vehicleSpike.ts!",
         "src/soundsPage.ts!",
         "tools/bench-expressions.mjs",
-        "tools/can-item-models.mjs",
         "tools/police-item-models.mjs",
         "tools/military-item-models.mjs",
         "tools/probe-wasm-expressions.mjs",

@@ -1,0 +1,7 @@
+{
+  "id": "opened_soup",
+  "file": "assets/models/opened_soup.glb",
+  "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

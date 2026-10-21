@@ -28,7 +28,9 @@ import {
 import content from '../items.json' with { type: 'json' };
 import { coil } from './families/coil.ts';
 import { fuse } from './families/fuse.ts';
+import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
+import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
 import { spool } from './families/spool.ts';
@@ -58,6 +60,7 @@ const PartSchema = strictObject({
 });
 const ItemSchema = strictObject({
   id: name,
+  exportMass: picklist(['parts', 'inventory-atom']),
   parts: pipe(
     array(PartSchema),
     nonEmpty(),
@@ -90,10 +93,19 @@ const CatalogueSchema = strictObject({
 });
 export type ToolItem = InferOutput<typeof ItemSchema>;
 type ToolPart = ToolItem['parts'][number];
-const builders = { ring, spool, coil, fuse, cylinder: base, arm, shade, carton, vessel } satisfies Record<
-  string,
-  (params: Readonly<Record<string, string>>) => readonly Solid[]
->;
+const builders = {
+  ring,
+  spool,
+  coil,
+  fuse,
+  cylinder: base,
+  arm,
+  shade,
+  carton,
+  vessel,
+  openTin,
+  handOpener,
+} satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {
   if (!Object.hasOwn(builders, part.family)) {
     throw new Error(`Unknown thing family ${part.family}`);

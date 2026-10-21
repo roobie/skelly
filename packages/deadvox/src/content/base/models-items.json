@@ -23,37 +23,48 @@
     {
       "file": "assets/models/opened_beans.glb",
       "grip": {
-        "at": [0, 0.056500000000000002, 0],
+        "at": [0, 0.055, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "opened_beans"
+      "id": "opened_beans",
+      "roll": 0
     },
     {
       "file": "assets/models/opened_soup.glb",
       "grip": {
-        "at": [0, 0.061499999999999999, 0],
+        "at": [0, 0.059999999999999998, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "opened_soup"
+      "id": "opened_soup",
+      "roll": 0
     },
     {
       "file": "assets/models/empty_can.glb",
       "grip": {
-        "at": [0, 0.056500000000000002, 0],
+        "at": [0, 0.055, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "empty_can"
+      "id": "empty_can",
+      "roll": 0
     },
     {
       "file": "assets/models/can_opener.glb",
       "grip": {
-        "at": [-0.040000000000000001, 0.014999999999999999, 0]
+        "at": [-0.080002755588206159, 0.0070000000000000001, -0.0166711916682587],
+        "turn": [0, 0, 0]
       },
       "hold": "upright",
       "id": "can_opener",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.058518256502378914, 0.0088714177205976921, 0.00038065804559504746],
+          "massKg": 0.10000000000000001,
+          "node": "body:handOpener"
+        }
+      },
       "roll": 90
     },
     {
