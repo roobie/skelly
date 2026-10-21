@@ -1591,8 +1591,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   `gungen/src/gun/attachments.ts`, `suppressors`;
   `src/core/firearmAttachments.ts`, `firearmAttachmentResponse` and
   `wearFirearmAttachments`; `src/core/zombies.ts`, `hearVocalNoise`;
-  `src/game/audioPresentation.ts`, `firearmShotEmission`; and
-  `src/game/play.ts`, `fireWeapon`.
+  `src/game/audioPresentation.ts`, `firearmShotSound`; and
+  `src/game/session.ts`, `createSession`.
 - **Player-owned sound playback:** Character- and held-item sounds have the
   player as their source; listener-relative playback makes them move with the
   player, who is the listener. Simulation sound/noise events keep their source
@@ -1604,10 +1604,13 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 - **Recordings of the same kind of gun.** A shot recorded from a real gun of the same
   action and a close cartridge beats a synth or a repitched borrow, because a borrowed
   report makes a gun sound like another one. Where no free recording of the exact
-  cartridge exists, the nearest real one stands in, and its gain and pitch live in
-  content so a tweak after a listen is a content edit. A synth stays only where it
-  already reads as its gun; a suppressed shot keeps its synth until a recording of one
-  exists.
+  cartridge exists, the nearest real one stands in. Loudness, pitch and tonal balance
+  belong to content so listening adjustments need no weapon-specific code. Bass
+  shaping must retain the recorded attack rather than muffling the whole report;
+  see `src/game/audio.ts`, `GameAudio.startSource`, and `src/core/schema.ts`,
+  `SoundSchema`. Keep the original recordings untouched so provenance remains
+  intact. A synth stays only where it already reads as its gun; a suppressed shot
+  keeps its synth until a recording of one exists.
 - **Near takes.** Shots play from the shooter's position, so the close recording
   matches what the shooter hears; distance comes from the game's own playback and
   hearing, not from room tone baked into a take.
