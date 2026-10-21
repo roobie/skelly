@@ -68,6 +68,7 @@ const offsetForBox = ({
   };
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: independently aggregates position and orientation maxima.
 const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
   const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
   const { figure } = posedShambler(input);
@@ -80,6 +81,8 @@ const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
     rotationDeltaDeg: 0,
   };
   let worstHead = { ...worst };
+  let worstRotation = { ...worst };
+  let worstHeadRotation = { ...worst };
   for (const [regionName, boxes] of Object.entries(hit)) {
     const region = regionName as ZombieRegion;
     for (const box of boxes) {
@@ -90,9 +93,15 @@ const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
       if (region === 'head' && current.centreCm > worstHead.centreCm) {
         worstHead = current;
       }
+      if (current.rotationDeltaDeg > worstRotation.rotationDeltaDeg) {
+        worstRotation = current;
+      }
+      if (region === 'head' && current.rotationDeltaDeg > worstHeadRotation.rotationDeltaDeg) {
+        worstHeadRotation = current;
+      }
     }
   }
-  return { worst, worstHead };
+  return { worst, worstHead, worstRotation, worstHeadRotation };
 };
 
 describe('rendered and hit shambler poses', () => {
@@ -123,9 +132,9 @@ describe('rendered and hit shambler poses', () => {
       renderer.sync(system.store, 0, 1, true);
       const mismatch = maxOffset(renderer, id, zombie);
       expect(mismatch.worst.centreCm).toBeLessThan(0.001);
-      expect(mismatch.worst.rotationDeltaDeg).toBeLessThan(0.1);
+      expect(mismatch.worstRotation.rotationDeltaDeg).toBeLessThan(0.1);
       expect(mismatch.worstHead.centreCm).toBeLessThan(0.001);
-      expect(mismatch.worstHead.rotationDeltaDeg).toBeLessThan(0.1);
+      expect(mismatch.worstHeadRotation.rotationDeltaDeg).toBeLessThan(0.1);
     } finally {
       renderer.dispose();
     }
@@ -163,9 +172,9 @@ describe('rendered and hit shambler poses', () => {
       renderer.sync(system.store, 0, 1, true);
       const mismatch = maxOffset(renderer, id, zombie);
       expect(mismatch.worst.centreCm).toBeLessThan(0.001);
-      expect(mismatch.worst.rotationDeltaDeg).toBeLessThan(0.1);
+      expect(mismatch.worstRotation.rotationDeltaDeg).toBeLessThan(0.1);
       expect(mismatch.worstHead.centreCm).toBeLessThan(0.001);
-      expect(mismatch.worstHead.rotationDeltaDeg).toBeLessThan(0.1);
+      expect(mismatch.worstHeadRotation.rotationDeltaDeg).toBeLessThan(0.1);
     } finally {
       renderer.dispose();
     }

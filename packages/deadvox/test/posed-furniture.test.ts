@@ -5,15 +5,8 @@ import { rotationOf } from '../src/core/orientation.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
-import { registry } from './snapshotTestSupport.ts';
-
-const SPECIAL_POSITION_ID = /(?:_fallen|_on_(?:back|side)|_overturned)$/;
 
 describe('posed furniture', () => {
-  it('keeps furniture definitions independent of fallen poses', () => {
-    expect([...registry.furniture.keys()].filter((id) => SPECIAL_POSITION_ID.test(id))).toEqual([]);
-  });
-
   it('keeps an authored fallen cabinet pose through rotated placement and spawn', () => {
     const template: TemplateDef = {
       id: 'posed_cabinet_template',

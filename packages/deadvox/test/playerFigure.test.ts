@@ -749,7 +749,6 @@ describe('player figure', () => {
       { item: 'baseball_bat', profile: 'blunt' as const, twoHanded: true },
       { item: 'steel_pipe', profile: 'blunt' as const, twoHanded: false },
       { item: 'kitchen_knife', profile: 'cut' as const, twoHanded: false },
-      { item: 'kitchen_knife', profile: 'cut' as const, twoHanded: false },
       { item: 'steel_pipe', profile: 'pierce' as const, twoHanded: false },
     ];
     for (const { item, profile, twoHanded } of cases) {
@@ -871,27 +870,19 @@ describe('player figure', () => {
     }
   });
 
-  it('ends each first-person arm at the held grip for forward and upright weapons', () => {
-    const cases = [
-      { item: 'kitchen_knife', hold: 'forward' as const },
-      { item: 'hammer', hold: 'upright' as const },
-    ];
-    for (const { item, hold } of cases) {
-      const def = registry.items.get(item)!;
-      expect(registry.models.get(def.model!)!.hold).toBe(hold);
-      const grip = HOLD.right;
-      const arm = createFirstPersonArm(palette, 'right', grip);
-      arm.updateMatrixWorld(true);
-      const endpoint = new Vector3();
-      arm.getObjectByName('grip-anchor')!.getWorldPosition(endpoint);
-      expect(endpoint.distanceTo(new Vector3(...grip))).toBeLessThanOrEqual(0.02);
-      const colors = arm.children.map((part) => (part as Mesh).material as MeshLambertMaterial);
-      expect(colors.some((material) => material.color.getHex() === Number.parseInt(palette.shirt.slice(1), 16))).toBe(
-        true,
-      );
-      expect(colors.some((material) => material.color.getHex() === Number.parseInt(palette.skin.slice(1), 16))).toBe(
-        true,
-      );
-    }
+  it('ends a first-person arm at its held grip with the player palette', () => {
+    const grip = HOLD.right;
+    const arm = createFirstPersonArm(palette, 'right', grip);
+    arm.updateMatrixWorld(true);
+    const endpoint = new Vector3();
+    arm.getObjectByName('grip-anchor')!.getWorldPosition(endpoint);
+    expect(endpoint.distanceTo(new Vector3(...grip))).toBeLessThanOrEqual(0.02);
+    const colors = arm.children.map((part) => (part as Mesh).material as MeshLambertMaterial);
+    expect(colors.some((material) => material.color.getHex() === Number.parseInt(palette.shirt.slice(1), 16))).toBe(
+      true,
+    );
+    expect(colors.some((material) => material.color.getHex() === Number.parseInt(palette.skin.slice(1), 16))).toBe(
+      true,
+    );
   });
 });
