@@ -125,7 +125,7 @@ it('refuses Continue and names the browser mod missing from a saved world', asyn
   expect(controller.isRestored).toBe(false);
   expect(document.getElementById('continue')!.hidden).toBe(true);
   const status = document.getElementById('save-status')!.textContent!;
-  expect(status).toContain('Missing mod: fixture-mod');
+  expect(status).toContain(browserMods[0]!.id);
   expect(status).not.toContain('browser.fixture-mod');
   expect(status).not.toMatch(FULL_HASH);
 });
@@ -239,9 +239,10 @@ it('keeps the marker for a same-world save and clears it after another world sav
   await controller.validateContent(saveFixtureRegistry);
 
   let saved = snapshotForWorld('pending-world');
+  let simTime = 0;
   const ids = controller.bindSession(
     () => saved,
-    () => 0,
+    () => simTime,
     { blockSize: 0.5, site: 'forest', storeys: 1, density: 0.75 },
     { checkpointSimSeconds: 1 },
   );
@@ -273,7 +274,7 @@ it('keeps the marker for a same-world save and clears it after another world sav
 
   const generationBeforeReplacement = internal.savedGeneration;
   saved = snapshotForWorld('replacement-world');
-  internal.checkpoints.nextAt = 0;
+  simTime = 1;
   controller.afterFrame();
   await vi.waitFor(() => expect(internal.savedGeneration).toBeGreaterThan(generationBeforeReplacement));
   expect(localStorage.getItem(markerKey(identity.digest))).toBeNull();

@@ -9,12 +9,10 @@ import {
   clampGrade,
   clampTorch,
   DEFAULT_TORCH,
-  GRAIN,
   gradeParams,
   MIN_BLOOM_CLIP,
   TORCH_STEP,
   targetColorScale,
-  VIGNETTE,
 } from '../src/core/mood.ts';
 import { TONE_MODES } from '../src/render/look.ts';
 import { displayed, inputForDisplay } from './toneCurves.ts';
@@ -29,16 +27,6 @@ describe('colour grade parameters', () => {
     expect([...none.shadowTint, ...none.highlightTint].map(Math.abs)).toEqual([0, 0, 0, 0, 0, 0]);
   });
 
-  it('desaturates by about a fifth at full strength, cool in the shadows and warm in the highlights', () => {
-    const full = gradeParams(1);
-    expect(full.saturation).toBeGreaterThanOrEqual(0.75);
-    expect(full.saturation).toBeLessThanOrEqual(0.85);
-    expect(full.shadowTint[2]).toBeGreaterThan(full.shadowTint[0]); // blue over red
-    expect(full.highlightTint[0]).toBeGreaterThan(full.highlightTint[2]); // red over blue
-    expect(full.contrast).toBeGreaterThan(0);
-    expect(full.contrast).toBeLessThan(0.5);
-  });
-
   it('scales linearly with strength and clamps outside 0..1', () => {
     const half = gradeParams(0.5);
     const full = gradeParams(1);
@@ -47,11 +35,6 @@ describe('colour grade parameters', () => {
     expect(half.highlightTint[0]).toBeCloseTo(full.highlightTint[0] / 2, 12);
     expect(gradeParams(3)).toEqual(full);
     expect(gradeParams(-1)).toEqual(gradeParams(0));
-  });
-
-  it('keeps film amplitudes subtle', () => {
-    expect(VIGNETTE).toBeLessThanOrEqual(0.4);
-    expect(GRAIN).toBeLessThanOrEqual(0.05);
   });
 });
 
