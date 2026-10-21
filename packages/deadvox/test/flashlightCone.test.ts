@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { compileFunction } from 'node:vm';
 import {
+  Light,
   MathUtils,
   Mesh,
   MeshLambertMaterial,
@@ -10,10 +11,13 @@ import {
   ShaderLib,
   UniformsUtils,
 } from 'three';
+import type { WebGLExtensions } from 'three/src/renderers/webgl/WebGLExtensions.js';
+import { WebGLLights } from 'three/src/renderers/webgl/WebGLLights.js';
 import { safeParse } from 'valibot';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import type { Item } from '../src/core/items.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { type BeamSpill, BeamSpillSchema, type ContentFile } from '../src/core/schema.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -148,7 +152,35 @@ describe('flashlight cone', () => {
     },
   );
 
-  it('keeps each beam spill with its source when shadow sorting reorders the spots', () => {
+  it('switching a casting beam on or off leaves the lights state that keys shader programs unchanged', () => {
+    const { registry, issues } = buildRegistry([source(beam)]);
+    expect(issues).toEqual([]);
+    const inventory = new Inventory(registry);
+    const lamp = inventory.create('fixture_beam');
+    expect(inventory.add(lamp, { kind: 'worn' })).toBe(true);
+    const held = new HeldItems(inventory, undefined, { skin: '#ffffff', shirt: '#ffffff', trousers: '#ffffff' });
+    const scene = new Scene();
+    const torch = new Flashlight(scene, 2);
+    torch.shadowsAllowed = true;
+    // three.js's own light state: WebGLRenderer rebuilds a lit material's program whenever its version moves.
+    const lights = new WebGLLights({ has: () => false } as unknown as WebGLExtensions);
+    const sceneLights = scene.children.filter((child): child is Light => child instanceof Light);
+    const frame = (lit: Item | undefined): number => {
+      torch.update({ registry, inventory, lit, held, camera: new PerspectiveCamera() });
+      lights.setup(sceneLights);
+      return lights.state.version;
+    };
+    const off = frame(undefined);
+    expect(toggleLight(registry, lamp)).toBeUndefined();
+    expect(torch.light.intensity).toBe(0);
+    const on = frame(lamp);
+    expect(torch.light.intensity).toBeGreaterThan(0);
+    expect(toggleLight(registry, lamp)).toBeUndefined();
+    expect([on, frame(undefined)]).toEqual([off, off]);
+    held.dispose();
+  });
+
+  it('keeps each beam spill with its own spot while the beams cast shadows', () => {
     const fixture = source({ ...beam, spill: profile });
     const dim = structuredClone(fixture.data.items[0]!);
     dim.id = 'dim_beam';
@@ -175,11 +207,12 @@ describe('flashlight cone', () => {
     torch.shadowsAllowed = true;
     const uniforms = UniformsUtils.clone(ShaderLib.lambert.uniforms);
     torch.update({ registry, inventory, lit: hand, held, camera: new PerspectiveCamera() });
-    expect(torch.lights.map((light) => light.castShadow)).toEqual([false, true]);
+    expect(torch.lights.map((light) => light.castShadow)).toEqual([true, true]);
+    // The lit hand beam takes the first spot.
     expect(Array.from(uniforms.uFlashlightSpill!.value as Float32Array)).toEqual([
-      Math.fround(profile.radiusRatio ** 2),
-      Math.fround(profile.intensity),
       Math.fround(2.5 ** 2),
+      Math.fround(profile.intensity),
+      Math.fround(profile.radiusRatio ** 2),
       Math.fround(profile.intensity),
     ]);
     expect(ShaderChunk.lights_fragment_begin).toContain('uFlashlightSpill[ i ]');

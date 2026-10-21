@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're changing procedural surface weathering or building appearance
-  - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, or evaluating renderer performance or a look change it makes
+  - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, how lights switch on and off, or evaluating renderer performance or a look change it makes
   - you're changing wide ambient occlusion or its interaction with skylight
   - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
@@ -23,6 +23,8 @@ Distance fog, the clear background and height mist share the camera's diffuse sk
 A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. See `src/render/playView.ts`, `prepareLighting`, and `src/render/flashlight.ts`, `flashlightDaylightScale`.
 
 Item light content owns focused-cone brightness, reach, shape and decay so authors can tune different kinds of beam without renderer constants. Spill is optional: omit it, or author it with `enabled` false, for the exact plain cone with an unwidened shadow camera. Base battery beams author a dim spill switched off, because the plain cone is the look the game ships with; the tunables stay in content so a mod can turn it on. Blend both lobes in one spot and widen its shadow camera so spill cannot bypass occluders or require another shadow pass. Install the spill shader before warm-up and express plain beams through neutral uniforms, so both existing and later-created materials use one program without switch-on recompilation or stale variants. See `src/core/schema.ts`, `BeamSpillSchema`, `src/content/base/items-tools.libsonnet`, `batteryBeam`, and `src/render/flashlight.ts`, `Flashlight`.
+
+Switching a light on or off, or dimming it, changes only uniforms, never which lights exist or cast shadows. three.js keys every lit program on the light and shadow-caster counts, so a changed count rebuilds the program of every visible lit material that warm-up did not compile for it, including those created after warm-up such as held items and mobs, and stalls the frame for up to seconds. Carried point lights are a fixed pool with zero intensity when unused, and every beam casts while beam shadows are on, its depth pass skipped while it is off or faint. See `src/render/lightPool.ts`, `LightPool`, `src/render/flashlight.ts`, `Flashlight.shadowsAllowed`, and `src/render/shadows.ts`, `beamMapDue`.
 
 Retune beam intensity and decay against three targets. A mid-grey surface at 10 m stays readable. Close surfaces stay under the bloom clip and the ACES shoulder, where a bright warm colour skews towards orange. Brightness varies by under 2x between 0.5 m and 2 m, where plain inverse-distance falloff varies 4x. The near-field offset makes the last two hold while keeping the reach, so a lower offset needs a lower intensity and a higher one allows more. See `src/render/lightFalloff.ts`, `NEAR_FIELD_M`, and `test/lightFalloff.test.ts`, which checks the close-up variation.
 
