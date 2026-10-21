@@ -295,9 +295,49 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
 
 type Report = (section: ContentSection, id: string, path: string, message: string) => void;
 
+const vesselHasState = (item: ItemDef, registry: Registry): boolean =>
+  [
+    item.stack,
+    item.container,
+    item.wearable,
+    item.firearm,
+    item.light,
+    item.igniter,
+    item.explosive,
+    item.battery,
+    item.canister,
+    item.model && registry.models.get(item.model)?.gun,
+  ].some(Boolean);
+
+const checkVessels = (item: ItemDef, registry: Registry, report: Report): void => {
+  const transitions = [
+    ...(item.unpack?.inPlace ? [[item.unpack.item, '.unpack.item'] as const] : []),
+    ...(item.serving ? [[item.serving.empty, '.serving.empty'] as const] : []),
+  ];
+  for (const [type, path] of transitions) {
+    const next = registry.items.get(type);
+    if (
+      !next ||
+      vesselHasState(item, registry) ||
+      vesselHasState(next, registry) ||
+      item.twoHanded !== next.twoHanded ||
+      item.size.some((value, index) => value !== next.size[index])
+    ) {
+      report('items', item.id, path, 'in-place vessels require stateless, unstacked items with matching size and grip');
+    }
+  }
+  if (item.serving && !registry.items.get(item.serving.food)?.food) {
+    report('items', item.id, '.serving.food', 'serving must reference edible food');
+  }
+};
+
 const checkUnpacking = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report): void => {
+  checkVessels(item, registry, report);
   if (!item.unpack) {
     return;
+  }
+  if (item.unpack.inPlace && item.unpack.count !== 1) {
+    report('items', item.id, '.unpack.count', 'in-place opening yields one vessel');
   }
   const payload = registry.items.get(item.unpack.item);
   if (!payload) {
@@ -795,6 +835,9 @@ const checkInstalledEconomy = (registry: Registry, item: ItemDef, report: Report
 
 const itemSupplyOutputs = (item: ItemDef): (readonly [string, string])[] => [
   ...(item.unpack ? [['.unpack.item', item.unpack.item] as const] : []),
+  ...(item.serving
+    ? [['.serving.food', item.serving.food] as const, ['.serving.empty', item.serving.empty] as const]
+    : []),
   ...(item.disassembly?.yields ?? []).map((output, i) => [`.disassembly.yields[${i}].item`, output.item] as const),
   ...(item.salvage ?? []).map((output, i) => [`.salvage[${i}].item`, output.item] as const),
 ];

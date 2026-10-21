@@ -261,6 +261,10 @@
       "output": "packages/deadvox/src/content/base/sounds-furniture.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/sounds-pump.jsonnet",
+      "output": "packages/deadvox/src/content/base/sounds-pump.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/sounds-revolver.jsonnet",
       "output": "packages/deadvox/src/content/base/sounds-revolver.json"
     },

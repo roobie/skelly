@@ -1,5 +1,5 @@
 {
-  proposal: true,
+  proposal: false,
   units: 'metres-kilograms-seconds',
   tickHz: 120,
   quantaPerTick: 1000,

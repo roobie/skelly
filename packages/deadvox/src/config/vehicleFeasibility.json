@@ -52,7 +52,7 @@
     "velocityMetresPerSimSecond": [1, 0, 0],
     "warmupTicks": 120
   },
-  "proposal": true,
+  "proposal": false,
   "proposedVehicleCpuP99Milliseconds": 2,
   "proposedVehicleMemoryBytes": 16777216,
   "quantaPerTick": 1000,

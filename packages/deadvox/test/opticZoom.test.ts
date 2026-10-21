@@ -63,7 +63,10 @@ describe('optic wheel zoom', () => {
   it('does not take the wheel outside ADS or without an optic', () => {
     const { zoom, weapon } = fixture();
     const gun = weapon();
+    expect(zoom.wheel(gun, true, -1)).toBe(true);
+    const aimed = zoom.frame(gun, true)!.magnification;
     expect(zoom.wheel(gun, false, -1)).toBe(false);
+    expect(zoom.frame(gun, true)!.magnification).toBe(aimed);
     expect(zoom.frame(gun, false)).toBeUndefined();
     expect(zoom.wheel(undefined, true, -1)).toBe(false);
     const bare: Item = { uid: 100, type: 'fixture_bare_weapon', count: 1, condition: 1 };

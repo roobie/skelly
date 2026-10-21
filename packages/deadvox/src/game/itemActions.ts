@@ -6,6 +6,8 @@ import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
 import type { TreatmentDef } from '../core/schema.ts';
+import { openingTargetForHand } from './canOpening.ts';
+import { selectPrimaryAction } from './primaryAction.ts';
 
 export interface ItemAction {
   readonly id: string;
@@ -15,6 +17,7 @@ export interface ItemAction {
   readonly treatment?: Readonly<{ region: BodyRegion; itemType: string }>;
   /** Unloading a held magazine: R only loads one (`CONTROLS.md`, "Reload, rack, remove"), so stripping is an item action. */
   readonly magazine?: 'strip';
+  readonly opening?: true;
 }
 
 /** What the treatment treats in the wound (`Body.canTreat`): its bleeding tier, else its infection stage. */
@@ -24,6 +27,21 @@ const woundDescription = (body: Body, region: BodyRegion, treatment: TreatmentDe
 };
 
 export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
+  const at = inventory.locate(item);
+  const base = ordinaryItemActions(item, inventory, body);
+  if (at?.kind !== 'hand' || !defOf(inventory.registry, item.type).tool?.qualities.opening) {
+    return base;
+  }
+  const target = openingTargetForHand(inventory, at.side);
+  const own = selectPrimaryAction(inventory, at.side);
+  let actions = base;
+  if (base.length === 0 && own.kind !== 'open-can' && own.kind !== 'none') {
+    actions = [{ id: 'own', label: own.kind === 'melee' ? 'Swing' : 'Use' }];
+  }
+  return target ? [...actions, { id: 'open-can', label: 'Open can', opening: true }] : actions;
+};
+
+const ordinaryItemActions = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
   if (magazineSpec(inventory.registry, item.type)) {
     const label = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.itemActionLabels.stripRound;
     return (item.cartridges?.length ?? 0) > 0 ? [{ id: 'magazine:strip', label, magazine: 'strip' }] : [];
@@ -69,6 +87,9 @@ export class ItemActionSelection {
   private readonly selected = new Map<number, string>();
 
   forItem(item: Pick<Item, 'uid'>, actions: readonly ItemAction[]): ItemAction | undefined {
+    if (this.selected.get(item.uid) === 'open-can' && !actions.some((action) => action.opening)) {
+      return { id: 'open-can', label: 'Open can', opening: true };
+    }
     if (actions.length === 0) {
       this.selected.delete(item.uid);
       return undefined;
@@ -86,7 +107,14 @@ export class ItemActionSelection {
   }
 
   step(item: Pick<Item, 'uid'>, actions: readonly ItemAction[], direction: number): boolean {
-    if (actions.length < 2 || direction === 0) {
+    if (direction === 0) {
+      return false;
+    }
+    if (actions.length === 1 && this.selected.get(item.uid) === 'open-can' && !actions[0]!.opening) {
+      this.selected.set(item.uid, actions[0]!.id);
+      return true;
+    }
+    if (actions.length < 2) {
       return false;
     }
     const current = this.forItem(item, actions)!;

@@ -7,11 +7,11 @@ read_if:
 
 # Vehicle feasibility admission
 
-The experiment is not a production solver selection. Keep candidate-specific initialization behind adapters so rejecting a candidate removes its dependency without changing game saves. The common seam is `src/vehicles/feasibility/contract.ts`, `Candidate`; the deliberately collision-free moving body proves the harness, not road safety. Fixture proposals live in `src/config/vehicleFeasibility.jsonnet`; BR must approve their workload allocation before any performance acceptance.
+The experiment is not a production solver selection. Keep candidate-specific initialization behind adapters so rejecting a candidate removes its dependency without changing game saves. The common seam is `src/vehicles/feasibility/contract.ts`, `Candidate`; the deliberately collision-free moving body proves the harness, not road safety. `src/config/vehicleFeasibility.jsonnet` fixes round 2's working budget envelope; final production acceptance needs measurements. A wrong working target costs one re-run while production budgets and reference-class hardware remain open.
 
 ## Numeric eligibility
 
-Build project-owned double-precision WASM from the official Rapier bindings and the double-precision Rust crate. The world must compute in doubles under `docs/decisions/0008-deterministic-world.md`, "Decision", and upstream publishes no double-precision WASM package. A single-precision production exception is not the selected path. Rapier remains diagnostic until complete cross-engine, save and replay evidence admits the candidate; double arithmetic alone does not establish agreement or road safety.
+Build project-owned double-precision WASM from the official Rapier bindings and the double-precision Rust crate. The world must compute in doubles under `docs/decisions/0008-deterministic-world.md`, "Decision", and upstream publishes no double-precision WASM package; its npm build computes in f32, which is production-ineligible. A single-precision production exception is not the selected path. Rapier remains diagnostic until complete cross-engine, save and replay evidence admits the candidate; double arithmetic alone does not establish agreement or road safety. Dependency age exemption does not imply numeric exemption.
 
 The reproducible build owner is `tools/rapier-f64/build.py`, `main`. Its precision transformation widens physical scalars and buffers while retaining integer handles, indices and byte snapshots; debug colors remain upstream presentation floats. Keeping the upstream solver unchanged avoids owning a solver fork. The comparison build isolates precision from upstream-version changes rather than treating a different npm kernel as a precision control.
 

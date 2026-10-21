@@ -68,7 +68,7 @@ type ItemSlots<Node> = Record<string, Node>;
 export interface Item extends ItemFields<Item> {
   /** Unique per world; never reused. */
   readonly uid: number;
-  readonly type: string;
+  type: string;
 }
 
 /** An item in a grid, at its top-left cell. */
@@ -582,7 +582,9 @@ export const typeWeightGrams = (registry: Registry, type: string): number => {
 
 /** Grams, counting the stack, ammunition and everything in its pockets. */
 export const weightOf = (registry: Registry, item: Item): number =>
-  typeWeightGrams(registry, item.type) * item.count +
+  (typeWeightGrams(registry, item.type) +
+    (defOf(registry, item.type).serving ? typeWeightGrams(registry, defOf(registry, item.type).serving!.food) : 0)) *
+    item.count +
   ammunitionWeight(registry, item) +
   (item.cartridges ?? []).reduce((sum, round) => sum + typeWeightGrams(registry, round), 0) +
   Object.values(item.slots ?? {}).reduce((sum, child) => sum + (child ? weightOf(registry, child) : 0), 0) +

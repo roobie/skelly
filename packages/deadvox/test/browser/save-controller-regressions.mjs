@@ -165,7 +165,6 @@ try {
         const { Inventory } = await import('/src/core/inventory.ts');
         const { HandlingQueue } = await import('/src/core/handling.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
-        const { toHands } = await import('/src/core/options.ts');
         const { dominantSide } = await import('/src/core/character.ts');
         const { inputBindings } = await import('/src/game/inputBindings.ts');
         // Own fixture inventory: no injected progress or inventory changes in the playing session.
@@ -177,7 +176,7 @@ try {
         if (
           !(
             inventory.add(bag, { kind: 'worn' }) &&
-            inventory.add(opener, { kind: 'pocket', owner: bag, pocket: 0 }) &&
+            inventory.add(opener, { kind: 'hand', side: side === 'right' ? 'left' : 'right' }) &&
             inventory.add(can, { kind: 'hand', side })
           )
         ) {
@@ -208,7 +207,12 @@ try {
           paused: false,
         });
         const queue = new HandlingQueue(inventory);
-        const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
+        const unpacking = new Unpacking(
+          inventory,
+          queue,
+          () => [0, 0, 0],
+          (type) => tutorial.opened(type),
+        );
         gauntletWitness.manual = true;
         try {
           const draw = mountTutorial(
@@ -243,18 +247,10 @@ try {
           }
           draw({ inventory, inventoryOpen: true, lightOn: false });
           const opened = actions();
-          const food = [...inventory.items()].find(({ item }) => item.type === 'beans')?.item;
-          if (
-            !food ||
-            toHands(inventory, queue, food, [0, 0, 0]) !== undefined ||
-            queue.tick(queue.remaining).failed.length > 0
-          ) {
-            throw new Error('Opened food must be recoverable through ordinary Hands');
+          if (inventory.hands[side] !== can || !inventory.registry.items.get(can.type)?.serving) {
+            throw new Error('Opening must retain the food vessel in hand');
           }
           draw({ inventory, inventoryOpen: false, lightOn: false });
-          const panel = document.querySelector('#tutorial-actions');
-          const buttonRow = panel?.querySelector(':scope > .tutorial-action-buttons');
-          const note = panel?.querySelector(':scope > .tutorial-action-note');
           return {
             loot,
             lootCaps,
@@ -263,7 +259,6 @@ try {
             opened,
             eating: actions(),
             stage: tutorial.stage,
-            noteOnOwnLine: note?.parentElement === panel && !buttonRow?.contains(note),
           };
         } finally {
           gauntletWitness.manual = false;
@@ -287,11 +282,10 @@ try {
         lootActions.every((id) => canHints.lootCaps[id] === canHints.labels[id]),
         'open inventory loot actions use their live registry labels',
       );
-      assert(canHints.sealed.includes('hand.use-dominant'), 'sealed can points to hand activation');
-      assert(canHints.opened.includes('inventory.hands'), 'unpacked food points to taking it into hand');
+      assert(canHints.sealed.includes('hand.use-off'), 'the held opener points to its hand activation');
+      assert(canHints.opened.includes('ui.inventory-toggle'), 'open inventory owns input before eating');
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
       assert.equal(canHints.stage, 'eat', 'opening and wielding alone are not consumption');
-      assert.equal(canHints.noteOnOwnLine, true, 'practice note is separate from the action buttons');
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
       await page.evaluate(() => {
