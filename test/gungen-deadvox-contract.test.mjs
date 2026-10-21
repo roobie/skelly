@@ -58,6 +58,25 @@ describe('gungen exports satisfy deadvox model validation', () => {
     }
   });
 
+  it('validates and loads every recipe output and resolves its declared part nodes', async () => {
+    assert.ok(EXPORTED.length > 0, 'the consumption recipe must not be empty');
+    await Promise.all(
+      EXPORTED.map(async ({ modelEntry, glb }) => {
+        const { issues } = buildRegistry([{ source: modelEntry.file, data: { models: [modelEntry] } }]);
+        assert.deepEqual(issues, [], `${modelEntry.id}: invalid consumer model`);
+        const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(glb).buffer, '');
+        for (const part of Object.values(modelEntry.parts ?? {})) {
+          if (part.node !== undefined) {
+            assert.doesNotThrow(
+              () => namedNodes(loaded.scene, loaded.parser, [part.node]),
+              `${modelEntry.id}: unresolved part node ${part.node}`,
+            );
+          }
+        }
+      }),
+    );
+  });
+
   it('credits every recipe export in the asset manifest', () => {
     assertRecipeCredits(RECIPE, JSON.parse(readFileSync(join(DEADVOX_BASE, 'assets/manifest.json'), 'utf8')));
   });
