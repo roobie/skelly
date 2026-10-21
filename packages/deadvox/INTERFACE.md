@@ -5,6 +5,7 @@ read_if:
   - you're changing prompts, HUD language, feedback or bodily cues
   - you're changing HUD options, UI layering or choice controls
   - you're changing debug/playtest separation or inventory layout
+  - you're implementing or refining inventory item pictures, lighting or state depiction
 ---
 
 # Deadvox interface
@@ -55,7 +56,7 @@ Bleeding feedback names each region's tier when messages are enabled. A content 
 
 ## Development, playtest and errors
 
-`?debug=1` is a development profile whose tools and readouts may be instructional. A separate playtest profile remains planned, without god mode, spawning, noclip or time controls. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
+`?debug=1` is a development profile whose tools and readouts may be instructional. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
 
 A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
 
@@ -64,6 +65,47 @@ A blocking runtime error halts play, releases pointer lock and prevents further 
 The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `src/ui/style.css`, ":root", and `src/ui/comboBox.ts`, `comboBox`.
 
 Keep the nearby inventory pane wide enough for a content-capped container; selected details yield before useful grids are squeezed. See [inventory-layout](docs/inventory-layout.md).
+
+## Item pictures
+
+The goal is for anyone to identify an item at a glance. Start with pictures in
+inventory tiles alongside names and counts, with a larger picture for the selected
+item, and refine the approach incrementally toward that goal. Pictures connect
+shape and fitted equipment to the object seen in hand or on the ground; names
+still distinguish items that share a model, and text carries exact facts and
+condition that geometry cannot show. Useful grids and their pointer access take
+precedence over a larger illustration. See `src/ui/inventoryScreen.ts`,
+`itemTemplate` and `detailsTemplate`, and `docs/inventory-layout.md`,
+"Clickable inventory layout".
+
+Use runtime-cached stills derived from the item's own model and fitted parts.
+Sharing the likeness avoids a second art obligation for new items and mods, while
+runtime composition avoids baking every fitted combination. Stills avoid
+continuous rendering competition with the moving world, at the cost of cold
+picture generation and cache upkeep. Readiness and appearance changes must not
+leave stale pictures. See `src/render/itemLook.ts`, `itemLook`, and
+`src/render/models.ts`, `ModelLibrary`.
+
+Use neutral reference lighting so recognition remains stable in darkness and
+pictures can be reused without following world-light changes. The picture is an
+abstract reference, not a claim that the object is illuminated in the world. It
+does not grant knowledge of hidden contents; the knowledge boundary in
+`DESIGN.md`, "UI principles", still holds.
+
+An item deliberately authored without a model keeps its text tile without a
+picture. Uneven visual coverage is preferable to blocking new items and mods on
+art or pretending a generic bundle is the item's likeness. This is distinct from
+a declared model failing to load: errors must not be hidden as intentional
+coverage, and temporary loading must not become a permanent absent picture.
+See `src/core/schema.ts`, `ItemSchema`, and `src/render/models.ts`, `ModelLibrary`.
+
+Pictures depict stable instance snapshots, not handling motion. This supports
+recognition of fitted equipment without another animation or action owner.
+State that geometry cannot express remains text; a misleading pose must be
+corrected or omitted, not excused as static. A fitted magazine does not prove
+loaded ammunition. Pictures remain subject to the shared instance-look rule in
+`DESIGN.md`, "Piles and item models": they must not imply fitted parts or handling
+state the owned item lacks. See `src/render/itemLook.ts`, `itemLook`.
 
 ## Title choice
 
@@ -75,6 +117,6 @@ See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#over
 
 ## Open direction
 
-- Add the playtest profile and shape a diegetic first-run introduction from playtest findings.
+- #746: Add the playtest profile without god mode, spawning, noclip or time controls, and shape a diegetic first-run introduction from playtest findings.
 - Make the clock diegetic through a watch.
 - Develop bodily cues one state at a time; retire a HUD line only after its replacement is judged in play.
