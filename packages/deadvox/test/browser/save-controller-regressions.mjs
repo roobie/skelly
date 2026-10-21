@@ -7,11 +7,13 @@
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve as resolvePath } from 'node:path';
+import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gauntletFlow } from './gauntlet-flow.mjs';
 import { pressAction } from './input-actions.mjs';
+import { practicePointerProbe } from './practice-pointer-probe.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
@@ -78,8 +80,14 @@ try {
 
   await test('practice launch, lifecycle and death leave the normal save untouched and exit returns to start', async () => {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+    const probeDirectory = process.env.DEADVOX_PRACTICE_POINTER_PROBE;
+    let probe;
     try {
       const page = await context.newPage();
+      if (probeDirectory) {
+        probe = await practicePointerProbe(page, context, probeDirectory);
+      }
+      const activateExit = (button) => (probeDirectory ? button.click() : button.press('Enter'));
       await page.goto(url);
       await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -133,10 +141,10 @@ try {
         await page.evaluate((namespace) => sessionStorage.getItem(`deadvox.dead-world:${namespace}`), saved.namespace),
         null,
       );
-      // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
+      // #705: native activation remains diagnostic-only until its cause is proven.
       await Promise.all([
         page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
-        page.locator('#death button').press('Enter'),
+        activateExit(page.locator('#death button')),
       ]);
       await page.waitForFunction(
         () => document.querySelector('#tutorial-start') && document.querySelector('#startup-screen').hidden,
@@ -147,12 +155,16 @@ try {
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       await Promise.all([
         page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
-        page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
+        activateExit(page.getByRole('button', { name: 'Exit practice', exact: true })),
       ]);
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
       assert.equal(await page.locator('#continue').isEnabled(), true);
     } finally {
-      await context.close();
+      try {
+        await probe?.finish();
+      } finally {
+        await context.close();
+      }
     }
   });
 

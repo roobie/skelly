@@ -5,6 +5,7 @@ read_if:
   - you're collecting a real-hardware lighting gate from a published preview
   - you're authoring a browser stage or exporting a site in Tiled
   - you investigate a save-lock timeout or browser CI launch failure
+  - you investigate native practice exits or navigation request diagnostics
   - you add or use transient world-space debug geometry
   - you expose content-defined actors through debug spawning
 ---
@@ -48,7 +49,9 @@ Wait for application readiness rather than optional third-party resources. For n
 
 Keep Playwright's managed Chromium launch and isolated browser profiles. Treat system Chrome plus Playwright as unsupported until a root cause is established: the managed launcher mitigates its launch timeouts without explaining them. Firefox pointer-lock refusal (#168) and built IndexedDB Continue (#170) remain quarantined: do not restore either case without a fixed trial plan and before/after/restored-before evidence. See `test/browser/chromium.mjs`, `launchChromium`, and [browser-ci.md](../../docs/browser-ci.md).
 
-Native pointer activation of the practice terminal return and Exit practice transitions is quarantined in #705. The readiness hypothesis did not explain the navigation failure; keyboard activation preserves the save contract but does not fix or prove the pointer path. Investigate native event delivery, pointer lock and drawn-cursor capture before restoring clicks with deterministic before/after/restored-before evidence. The work tracker owns the revisit. See `test/browser/save-controller-regressions.mjs`.
+Native pointer activation of the practice terminal return and Exit practice transitions remains quarantined under #705 because no reproduced failure establishes the cause. Keyboard activation preserves the save contract but does not prove the pointer path. Reinstatement needs deterministic before/after/restored-before evidence, not successful repetitions alone. See `test/browser/save-controller-regressions.mjs`, `probeDirectory`.
+
+Navigation probes must retain request starts, completions and failures alongside pointer and navigation events. An outstanding request is not by itself a stalled destination module: outgoing workers can issue requests across navigation, and successful title readiness can precede worker completion. Keep observation order distinct from document ownership, and compare browser evidence with server receipt and completion before blaming module transformation. See `test/browser/practice-pointer-probe.mjs`, `practicePointerProbe`.
 
 A busy-lock fixture uses an actual exclusive Web Lock in a same-origin blank document; it tests lock recovery without a second world or save worker. It simulates pointer lock and does not establish native-gesture coverage.
 
