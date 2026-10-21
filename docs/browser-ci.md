@@ -10,7 +10,7 @@ GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestr
 
 `test/browser-ci-manifest.mjs`, `browserManifest`, checks that executed browser cases match the reusable workflow and enabled package scripts. Explicit quarantines keep a removed case's reinstatement obligation visible.
 
-Managed-browser containment bounds launch failures without claiming a root cause. The launch cause remains open in #287; see `packages/deadvox/TROUBLESHOOTING.md`.
+Managed-browser containment bounds launch failures without claiming a root cause; the launch cause stays unproven. See `packages/deadvox/TROUBLESHOOTING.md`.
 
 Chromium save navigation is quarantined under #706 because it exceeded the workflow bound
 without enough evidence to identify the slow operation. A successful bfcache restore does not
