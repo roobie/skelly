@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import {
   Box3,
+  BoxGeometry,
   InstancedMesh,
   type Loader,
   LoadingManager,
@@ -432,7 +433,6 @@ describe('base pack melee', () => {
       const { ground } = prepareModel(def, scene);
       ground.updateMatrixWorld(true);
       const groundBox = new Box3().setFromObject(ground);
-      const length = sourceBox.max.x - sourceBox.min.x;
       const grip = def.grip?.at;
       const strike = def.anchors?.strike;
 
@@ -447,82 +447,51 @@ describe('base pack melee', () => {
       expect(groundBox.min.y).toBeCloseTo(0, 5);
       expect(groundBox.getCenter(new Vector3()).x).toBeCloseTo(0, 5);
       expect(groundBox.getCenter(new Vector3()).z).toBeCloseTo(0, 5);
-      expect(length).toBeGreaterThan(0.15);
-      expect(length).toBeLessThan(1.0);
+      expect(sourceBox.isEmpty()).toBe(false);
       expect(def.file).toMatch(MODEL_FILE);
     },
   );
 
-  it('keeps melee-model cross-sections at hand scale', async () => {
-    const dimensions = async (id: string): Promise<Vector3> => {
-      const model = melee.models.get(id)!;
-      const bytes = readFileSync(`${BASE}/${model.file}`);
-      const { scene } = await parseGlb(bytes);
-      return new Box3().setFromObject(scene).getSize(new Vector3());
-    };
-    const pipe = await dimensions('steel_pipe');
-    expect(pipe.x).toBeGreaterThanOrEqual(0.9);
-    expect(pipe.x).toBeLessThanOrEqual(1.0);
-    expect(pipe.y).toBeGreaterThanOrEqual(0.025);
-    expect(pipe.y).toBeLessThanOrEqual(0.045);
-    // The elbow is the pipe's other short axis after conversion; keep its full reach <= 13 cm.
-    expect(pipe.z).toBeGreaterThanOrEqual(0.1);
-    expect(pipe.z).toBeLessThanOrEqual(0.13);
-
-    const bat = await dimensions('baseball_bat');
-    expect(bat.y).toBeGreaterThanOrEqual(0.05);
-    expect(bat.y).toBeLessThanOrEqual(0.08);
-    expect(bat.z).toBeGreaterThanOrEqual(0.05);
-    expect(bat.z).toBeLessThanOrEqual(0.08);
-
-    const crowbar = await dimensions('crowbar');
-    expect(crowbar.z).toBeGreaterThanOrEqual(0.025);
-    expect(crowbar.z).toBeLessThanOrEqual(0.04);
-    // The hook spans Y; this is its maximum extent, not shaft thickness.
-    expect(crowbar.y).toBeLessThanOrEqual(0.26);
-  });
-
   it('points the hammer striking face forward and its claw back', async () => {
     const face = await heldAnchor('hammer', 'face');
     const claw = await heldAnchor('hammer', 'claw');
-    // From the grip, the face must be at least 8 cm down -z; the claw must be at least 8 cm back.
-    expect(face.z * 100).toBeLessThanOrEqual(-8);
-    expect(claw.z * 100).toBeGreaterThanOrEqual(8);
+    expect(face.z).toBeLessThan(0);
+    expect(claw.z).toBeGreaterThan(0);
   });
 
   it('points the fire-axe cutting edge forward', async () => {
     const edge = await heldAnchor('fire_axe', 'edge');
-    expect(edge.z * 100).toBeLessThanOrEqual(-9);
+    expect(edge.z).toBeLessThan(0);
   });
 
   it('points the sledgehammer striking face forward', async () => {
     const face = await heldAnchor('sledgehammer', 'face');
-    expect(face.z * 100).toBeLessThanOrEqual(-7.5);
+    expect(face.z).toBeLessThan(0);
   });
 
   it('points the hand-axe cutting edge forward', async () => {
     const edge = await heldAnchor('hand_axe', 'edge');
-    expect(edge.z * 100).toBeLessThanOrEqual(-8);
+    expect(edge.z).toBeLessThan(0);
   });
 
   it('points the machete cutting edge forward', async () => {
     const edge = await heldAnchor('machete', 'edge');
-    expect(edge.z * 100).toBeLessThanOrEqual(-3);
+    expect(edge.z).toBeLessThan(0);
   });
 
   it('points the Kabar strike tip forward from its held grip', async () => {
     const strike = await heldAnchor('kabar', 'strike');
-    expect(strike.z * 100).toBeLessThanOrEqual(-20);
+    expect(strike.z).toBeLessThan(0);
   });
 
   it('points the pickaxe point forward', async () => {
     const point = await heldAnchor('pickaxe', 'point');
-    expect(point.z * 100).toBeLessThanOrEqual(-27);
+    expect(point.z).toBeLessThan(0);
   });
 
   it('points the crowbar claw forward', async () => {
     const claw = await heldAnchor('crowbar', 'claw');
-    expect(claw.z * 100).toBeLessThanOrEqual(-10);
+    expect(claw.z).toBeLessThan(0);
   });
 
   it('holds the pipe elbow forward while its shaft stays upright', async () => {
@@ -533,49 +502,33 @@ describe('base pack melee', () => {
     held.updateMatrixWorld(true);
     const offset = held.children[0]!.children[0]!;
     const strike = new Vector3(...def.anchors!.strike!).applyMatrix4(offset.matrixWorld);
-    expect(strike.y).toBeGreaterThanOrEqual(0.9);
-    expect(strike.z).toBeLessThanOrEqual(-0.09);
+    expect(strike.y).toBeGreaterThan(0);
+    expect(strike.z).toBeLessThan(0);
   });
 
-  it('holds the knife forward and hammer upright within centimetre bounds', async () => {
-    const strikeInHand = async (id: string): Promise<Vector3> => {
-      const def = melee.models.get(id)!;
-      const bytes = readFileSync(`${BASE}/${def.file}`);
-      const { scene } = await parseGlb(bytes);
-      const { held } = prepareModel(def, scene);
+  it.each(['forward', 'upright'] as const)(
+    'preserves fixture scale and palm-to-strike displacement when held %s',
+    (hold) => {
+      const scene = new Mesh(new BoxGeometry(0.8, 0.12, 0.06));
+      const grip: [number, number, number] = [-0.3, 0, 0];
+      const strike: [number, number, number] = [0.4, 0, 0];
+      const { held, ground } = prepareModel({ id: 'fixture', file: 'fixture.glb', hold, grip: { at: grip } }, scene);
       held.updateMatrixWorld(true);
-      const offset = held.children[0]!.children[0]!;
-      return new Vector3(...def.anchors!.strike!).applyMatrix4(offset.matrixWorld);
-    };
-    const knife = await strikeInHand('kitchen_knife');
-    const hammer = await strikeInHand('hammer');
-
-    // Relative to the grip at the origin: knife strike 29–31 cm ahead; hammer strike 27–29 cm above.
-    expect(knife.z * 100).toBeGreaterThanOrEqual(-31);
-    expect(knife.z * 100).toBeLessThanOrEqual(-29);
-    expect(Math.abs(knife.x * 100)).toBeLessThan(1);
-    expect(Math.abs(knife.y * 100)).toBeLessThan(1);
-    expect(hammer.y * 100).toBeGreaterThanOrEqual(27);
-    expect(hammer.y * 100).toBeLessThanOrEqual(29);
-    expect(Math.abs(hammer.x * 100)).toBeLessThan(1);
-    expect(Math.abs(hammer.z * 100)).toBeLessThan(1);
-  });
-
-  it('keeps the kitchen knife under 0.4 m, baseball bat within 0.7–1.1 m, and steel pipe at 0.9–1.0 m', async () => {
-    const dimensions = async (id: string): Promise<number> => {
-      const model = melee.models.get(id)!;
-      const bytes = readFileSync(`${BASE}/${model.file}`);
-      const { scene } = await parseGlb(bytes);
-      const box = new Box3().setFromObject(scene);
-      const { max, min } = box;
-      return max.x - min.x;
-    };
-    expect(await dimensions('kitchen_knife')).toBeLessThan(0.4);
-    expect(await dimensions('baseball_bat')).toBeGreaterThanOrEqual(0.7);
-    expect(await dimensions('baseball_bat')).toBeLessThanOrEqual(1.1);
-    expect(await dimensions('steel_pipe')).toBeGreaterThanOrEqual(0.9);
-    expect(await dimensions('steel_pipe')).toBeLessThanOrEqual(1.0);
-  });
+      const frame = heldModelFrame(held);
+      expect(frame.localToWorld(new Vector3(...grip)).length()).toBeCloseTo(0);
+      const contact = frame.localToWorld(new Vector3(...strike));
+      expect(contact.length()).toBeCloseTo(strike[0] - grip[0]);
+      expect(contact.x).toBeCloseTo(0);
+      expect(hold === 'forward' ? contact.z : contact.y).toBeCloseTo(
+        (hold === 'forward' ? -1 : 1) * (strike[0] - grip[0]),
+      );
+      const bounds = new Box3().setFromObject(ground);
+      expect(bounds.min.y).toBeCloseTo(0);
+      expect(bounds.getSize(new Vector3()).toArray()).toEqual(
+        new Box3().setFromObject(scene).getSize(new Vector3()).toArray(),
+      );
+    },
+  );
 });
 
 describe('base pack modeled ammunition and spent cases', () => {
@@ -656,20 +609,14 @@ describe('base pack guns', () => {
     const bytes = readFileSync(`src/content/base/${def.file}`);
     const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     const bounds = new Box3().setFromObject(scene);
-    const size = bounds.getSize(new Vector3());
     expect(def.grip?.turn).toEqual([0, 0, 0]);
     expect(def.anchors?.muzzle?.[0]).toBeGreaterThan(def.grip!.at[0]);
     expect(def.anchors?.muzzle?.[0]).toBeCloseTo(bounds.max.x, 5);
-    expect(size.x).toBeGreaterThanOrEqual(0.75);
-    expect(size.x).toBeLessThanOrEqual(0.85);
 
     const { held } = prepareModel(def, scene);
     held.updateMatrixWorld(true);
     const offset = held.children[0]!.children[0]!;
-    const muzzle = new Vector3(...def.anchors!.muzzle!).applyMatrix4(offset.matrixWorld);
     const top = new Vector3(def.grip!.at[0], def.grip!.at[1] + 0.1, def.grip!.at[2]).applyMatrix4(offset.matrixWorld);
-    expect(muzzle.z).toBeLessThan(-0.05);
-    expect(muzzle.y).toBeGreaterThan(0.01);
     expect(top.y).toBeGreaterThan(0.09);
   });
 

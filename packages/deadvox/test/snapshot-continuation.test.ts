@@ -383,8 +383,8 @@ describe('hamlet save/load continuation', () => {
 
   // Two one-column runtimes are compared across active-rest save/load, including full world bytes.
   it('deeply matches N steps with K/save/load/N−K (active rest)', () => {
-    const uninterrupted = createRuntime(undefined, true, continuationColumns);
-    const split = createRuntime(undefined, true, continuationColumns);
+    let uninterrupted = createRuntime(undefined, true, continuationColumns);
+    let split = createRuntime(undefined, true, continuationColumns);
     expect(uninterrupted.columns.length).toBeGreaterThan(0);
     expect(uninterrupted.inventory.entities.all).toSatisfy((entities) =>
       [...entities].some((entity) => entity.searched),
@@ -399,8 +399,8 @@ describe('hamlet save/load continuation', () => {
       runtime.zombies.add(registry.zombies.get('shambler')!, [...runtime.player.body.pos]);
     }
     expect(split.player.body.onGround).toBe(false);
-    prepareAudioContinuation(uninterrupted);
-    prepareAudioContinuation(split);
+    uninterrupted = prepareAudioContinuation(uninterrupted);
+    split = prepareAudioContinuation(split);
     const snapshot = capture(split);
     expect(Object.keys(snapshot.character.playerAudio).sort()).toEqual([
       'airbornePeakY',
@@ -473,11 +473,11 @@ describe('hamlet save/load continuation', () => {
 
   it('detects omission of simulation, world, scheduler, inventory, and audio state', () => {
     const runtimeFrom = (snapshot?: ReturnType<typeof capture>) => createRuntime(snapshot, true, oneColumn);
-    const original = runtimeFrom();
+    let original = runtimeFrom();
     expect(startRest(original, 'rest')).toBeUndefined();
     advance(original, 2);
     original.zombies.add(registry.zombies.get('shambler')!, original.player.body.pos);
-    prepareAudioContinuation(original);
+    original = prepareAudioContinuation(original);
     const saved = capture(original);
     expect(saved.world.diffs.chunks.length).toBeGreaterThan(0);
     const baseline = runtimeFrom(saved);

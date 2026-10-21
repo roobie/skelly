@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
@@ -307,8 +306,15 @@ it.each([undefined, 'ambidextrous'])(
 
 it('a door lock survives the save codec and fresh native entity owner, independently of the source object', async () => {
   const source = createRuntime();
-  const door = [...source.entities.all].find((entity) => registry.furniture.get(entity.type)?.door)!;
-  door.lock = { id: 'test_shed', locked: true }; // authored metadata in this hamlet save fixture
+  const definition = [...registry.furniture.values()].find((entity) => entity.door)!;
+  const door = source.entities.add({
+    type: definition.id,
+    pos: [source.player.body.pos[0] + 8, source.player.body.pos[1], source.player.body.pos[2]],
+    size: definition.size,
+    facing: 'n',
+    lock: { id: 'test_shed', locked: true },
+  })!;
+  expect(door).toBeDefined();
   const snapshot = capture(source);
   expect(source.entities.setLocked(door, false, ['test_shed'])).toBeUndefined();
   const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
@@ -473,6 +479,11 @@ describe('canonical save format', () => {
       }),
     ).toBe('started');
     const initialHealth = zombie.regions.head!;
+    const action = source.session.playerCombat.activeMeleeAction!;
+    const step = 1 / 60;
+    const contactTick = Math.ceil(action.contactAt / step);
+    const endTick = Math.ceil(action.cooldown / step) + 3;
+    expect(contactTick).toBeGreaterThan(0);
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
     const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
@@ -488,15 +499,13 @@ describe('canonical save format', () => {
         right: runtime.inventory.hands.right?.uid ?? null,
         left: runtime.inventory.hands.left?.uid ?? null,
       };
-      for (let tick = 1; tick < 15; tick++) {
-        runtime.session.playerCombat.tick(1 / 60, held);
-        if (tick % 3 === 0) {
-          runtime.zombies.tick(0.05, tick / 20, held);
-        }
+      for (let tick = 1; tick < contactTick; tick++) {
+        runtime.session.playerCombat.tick(step, held);
+        runtime.zombies.tick(step, tick * step, held);
         expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth);
       }
-      runtime.session.playerCombat.tick(1 / 60, held);
-      runtime.zombies.tick(0.05, 0.25, held);
+      runtime.session.playerCombat.tick(step, held);
+      runtime.zombies.tick(step, contactTick * step, held);
       const contactHealth = runtime.zombies.store.get(id)?.regions.head;
       expect(contactHealth).toBeDefined();
       expect(contactHealth!).toBeLessThan(initialHealth);
@@ -505,23 +514,25 @@ describe('canonical save format', () => {
       } else {
         expect(contactHealth).toBe(restoredContactHealth);
       }
-      for (let tick = 0; tick < 48; tick++) {
-        runtime.session.playerCombat.tick(1 / 60, held);
-        if (tick % 3 === 2) {
-          runtime.zombies.tick(0.05, 0.3 + (tick + 1) / 60, held);
-        }
+      for (let tick = contactTick + 1; tick <= endTick; tick++) {
+        runtime.session.playerCombat.tick(step, held);
+        runtime.zombies.tick(step, tick * step, held);
       }
       expect(runtime.zombies.store.get(id)?.regions.head).toBe(restoredContactHealth);
     }
   });
 
   it('persists severed and damaged zombie regions through encode, decode, and restore', async () => {
-    const source = createRuntime();
-    const id = source.zombies.add(registry.zombies.get('shambler')!, [3, 4, 5]);
+    const initial = createRuntime();
+    const id = initial.zombies.add(registry.zombies.get('shambler')!, [3, 4, 5]);
+    const damaged = structuredClone(capture(initial));
+    const { regions } = damaged.world.zombies.zombies.find((entry) => entry.id === id)!.zombie;
+    regions.leftArm = 0;
+    regions.head! /= 2;
+    regions.torso! /= 2;
+    const source = createRuntime(damaged);
     const zombie = source.zombies.store.get(id)!;
-    zombie.regions.leftArm = 0;
-    zombie.regions.head = 37;
-    zombie.regions.torso = 44;
+    expect(zombie.regions).toEqual(regions);
 
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
@@ -529,6 +540,7 @@ describe('canonical save format', () => {
     const loaded = createRuntime(decoded.snapshot);
     const restored = loaded.zombies.store.get(id)!;
 
+    expect(restored.regions).not.toBe(zombie.regions);
     expect(restored.regions).toEqual(zombie.regions);
     expect(capture(loaded)).toEqual(decoded.snapshot);
   });
@@ -547,13 +559,12 @@ describe('canonical save format', () => {
   // One edited hamlet column is encoded, restored, continued and canonically re-encoded.
   it('round-trips an edited hamlet column byte-exactly and continues deterministically from restored bytes', async () => {
     const columns = [fixtureZombieColumn] as const;
-    const source = createRuntime(undefined, true, columns);
+    let source = createRuntime(undefined, true, columns);
     expect(startRest(source, 'rest')).toBeUndefined();
     advance(source, 2);
     source.zombies.add(registry.zombies.get('shambler')!, source.player.body.pos);
-    prepareAudioContinuation(source);
+    source = prepareAudioContinuation(source);
     const snapshot = capture(source);
-    const sourceHash = createHash('sha256').update(jsonCanonical(snapshot)).digest('hex');
     const started = performance.now();
     const bytes = await encodeFixture(snapshot);
     const encodedAt = performance.now();
@@ -571,7 +582,7 @@ describe('canonical save format', () => {
     });
     expect(decoded.snapshot).toEqual(snapshot);
     const loaded = createRuntime(decoded.snapshot, true, columns);
-    expect(createHash('sha256').update(jsonCanonical(decoded.snapshot)).digest('hex')).toBe(sourceHash);
+    expect(jsonCanonical(decoded.snapshot)).toBe(jsonCanonical(snapshot));
     advance(source, 1);
     advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(source));

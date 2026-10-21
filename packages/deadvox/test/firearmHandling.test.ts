@@ -603,8 +603,12 @@ describe('rifle firearm handling', () => {
 
   it('uses the same weapon cadence window to classify automatic follow-up handling', () => {
     const shotKinds: string[] = [];
+    const kicks: number[] = [];
     const { mechanics, rifle } = armed({
-      onCommittedShot: (_seed, _recoilKickRadians, shotKind) => shotKinds.push(shotKind),
+      onCommittedShot: (_seed, recoilKickRadians, shotKind) => {
+        shotKinds.push(shotKind);
+        kicks.push(recoilKickRadians);
+      },
     });
     const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
     const firearmDef = registry.items.get(rifle.type)!.firearm!;
@@ -616,23 +620,9 @@ describe('rifle firearm handling', () => {
 
     expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
     expect(shotKinds).toEqual(['singleShot']);
+    expect(kicks).toEqual([configuredKick]);
     expect(mechanics.handlingShotKind(rifle.uid, 1 + 1.5 / roundsPerSimSecond)).toBe('automaticFollowup');
     expect(mechanics.handlingShotKind(rifle.uid, 1 + 1.5 / roundsPerSimSecond + 1e-6)).toBe('singleShot');
-  });
-
-  it('passes the held firearm’s data-owned kick with each committed shot', () => {
-    const kicks: number[] = [];
-    const { mechanics, rifle } = armed({
-      onCommittedShot: (_seed, recoilKickRadians) => kicks.push(recoilKickRadians),
-    });
-    const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
-    const firearmDef = registry.items.get(rifle.type)!.firearm!;
-    expect(configuredKick).toBe(firearmDef.recoilKickRadians);
-    if (configuredKick === undefined) {
-      throw new Error('Firing fixture needs firearm kick data');
-    }
-    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
-    expect(kicks).toEqual([configuredKick]);
   });
 
   it('keeps earlier case landings pending when automatic fire starts another cycle', () => {
@@ -691,7 +681,7 @@ describe('rifle firearm handling', () => {
       calibre: '12-gauge-00-buck',
       caseModelId: 'case_12_h_gauge_h_00_h_buck',
       roundsPerSimSecond: undefined,
-      action: { hand: { durationSimSeconds: 1.5 } },
+      action: registry.models.get(registry.items.get(pump.type)!.model!)!.gun!.action,
     });
     const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
       blockSize: 0.5,

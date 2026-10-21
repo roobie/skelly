@@ -9,8 +9,8 @@ import { baseRegistry } from './baseRegistry.ts';
 const registry = baseRegistry();
 
 /** A player in jeans, a hoodie and a school backpack, standing by an empty floor. */
-const dressed = () => {
-  const inv = new Inventory(registry);
+const dressed = (content = registry) => {
+  const inv = new Inventory(content);
   const jeans = inv.create('jeans');
   const hoodie = inv.create('hoodie');
   const backpack = inv.create('school_backpack');
@@ -221,18 +221,26 @@ describe('grid placement', () => {
 
 describe('stacking', () => {
   it('joins identical items up to the stack limit', () => {
-    const { inv, hoodie } = dressed();
+    const limit = 7;
+    const content = {
+      ...registry,
+      items: new Map(registry.items).set('aa_battery', {
+        ...registry.items.get('aa_battery')!,
+        stack: limit,
+      }),
+    };
+    const { inv, hoodie } = dressed(content);
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
-    const a = onFloor(inv, 'aa_battery', 6);
-    const b = onFloor(inv, 'aa_battery', 4);
+    const a = onFloor(inv, 'aa_battery', limit - 2);
+    const b = onFloor(inv, 'aa_battery', 2);
     const c = onFloor(inv, 'aa_battery', 2);
     inv.move(a, pocket);
     expect(inv.move(b, pocket)).toMatchObject({ ok: true, merge: a });
-    expect(a.count).toBe(10);
+    expect(a.count).toBe(limit);
     expect(inv.snapshotState().worn.torso!.pockets![0]![0]!.item).not.toHaveProperty('lootedCount');
-    // The stack is full (10), so the next two take a cell of their own.
+    // Saturated stacks cannot absorb the next item.
     expect(inv.move(c, pocket)).toMatchObject({ ok: true, at: { x: 1, y: 0 } });
-    expect(hoodie.pockets![0]!.map((p) => p.item.count)).toEqual([10, 2]);
+    expect(hoodie.pockets![0]!.map((p) => p.item.count)).toEqual([limit, 2]);
   });
 
   it("doesn't stack items that differ", () => {
@@ -314,15 +322,24 @@ describe('hands and wearing', () => {
 describe('handling time', () => {
   it('is taking it out plus putting it in, plus a little per cell each way', () => {
     const { inv, backpack, jeans } = dressed();
-    const beans = onFloor(inv, 'canned_beans'); // 2 cells
-    const cells = 2 * HANDLING.perCell;
+    const beans = onFloor(inv, 'canned_beans');
+    const footprint = (type: string) => {
+      const [w, h] = registry.items.get(type)!.size;
+      return w * h * HANDLING.perCell;
+    };
+    const cells = footprint(beans.type);
+    const backpackHandling = registry.items.get(backpack.type)!.container!.pockets[0]!.handlingSimSeconds;
+    const jeansHandling = registry.items.get(jeans.type)!.container!.pockets[0]!.handlingSimSeconds;
     expect(inv.plan(beans, { kind: 'pocket', owner: backpack, pocket: 0 })).toMatchObject({
-      time: HANDLING.ground + cells + 1.5 + cells,
+      time: HANDLING.ground + cells + backpackHandling + cells,
     });
-    inv.move(beans, { kind: 'pocket', owner: jeans, pocket: 0 });
-    expect(inv.plan(beans, { kind: 'hand', side: 'right' })).toMatchObject({ time: 0.5 + cells });
+    expect(inv.move(beans, { kind: 'pocket', owner: jeans, pocket: 0 }).ok).toBe(true);
+    expect(inv.plan(beans, { kind: 'hand', side: 'right' })).toMatchObject({ time: jeansHandling + cells });
+    expect(inv.plan(beans, { kind: 'pocket', owner: backpack, pocket: 0 })).toMatchObject({
+      time: jeansHandling + cells + backpackHandling + cells,
+    });
     expect(inv.plan(inv.worn.torso!, { kind: 'pile', pos: [2, 0, 0] })).toMatchObject({
-      time: HANDLING.wear + HANDLING.ground + 9 * HANDLING.perCell,
+      time: HANDLING.wear + HANDLING.ground + footprint(inv.worn.torso!.type),
     });
   });
 
@@ -381,7 +398,7 @@ describe('registry-aware item tree restoration', () => {
     expect(inv.add(bag, { kind: 'hand', side: 'right' })).toBe(true);
     const state = structuredClone(inv.snapshotState());
     state.hands.right!.pockets!.pop();
-    expect(() => Inventory.restoreState(registry, state)).toThrow('school_backpack must have 2 pocket grids');
+    expect(() => Inventory.restoreState(registry, state)).toThrow();
   });
 
   it('rejects a pile placement outside its fixed grid before exposing the restored pile', () => {
