@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { APC } from '../src/vehicles/apc.ts';
 import { pairAcross } from '../src/vehicles/authoring.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import {
@@ -50,6 +51,7 @@ const BLUEPRINTS: readonly { readonly blueprint: Blueprint; readonly builds: rea
   { blueprint: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
   { blueprint: PICKUP, builds: [[]] },
   { blueprint: MOTORBIKE, builds: [[]] },
+  { blueprint: APC, builds: [[]] },
 ];
 
 describe.each(BLUEPRINTS)('$blueprint.id built from parts', ({ blueprint, builds }) => {
