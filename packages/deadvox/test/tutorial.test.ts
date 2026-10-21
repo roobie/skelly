@@ -8,7 +8,8 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { Survival } from '../src/game/survival.ts';
-import { Tutorial, type TutorialObservation, tutorialRequested, tutorialUrl } from '../src/game/tutorial.ts';
+import { Tutorial, type TutorialObservation } from '../src/game/tutorial.ts';
+import { tutorialRequested, tutorialUrl } from '../src/game/tutorialUrl.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({

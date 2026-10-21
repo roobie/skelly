@@ -189,7 +189,8 @@ import {
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
 import { TierNotice } from './tierNotice.ts';
-import { Tutorial, tutorialUrl } from './tutorial.ts';
+import { Tutorial } from './tutorial.ts';
+import { tutorialUrl } from './tutorialUrl.ts';
 import { Unpacking } from './unpacking.ts';
 import { WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';

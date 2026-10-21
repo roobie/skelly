@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gauntletFlow } from './gauntlet-flow.mjs';
 import { pressAction } from './input-actions.mjs';
+import { auditModelLoads, instrumentModelLoads, modelLoadAuditPlugin } from './model-load-audit.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
@@ -23,6 +24,9 @@ const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
   transform(code, id) {
+    if (id.endsWith('/src/render/models.ts')) {
+      return instrumentModelLoads(code);
+    }
     if (id.endsWith('/src/game/worldSetup.ts')) {
       // The scenario as it enters kind dispatch, so the fixture holds whichever site the kind builds.
       const marker = 'const scenario = registry.scenarios.get(config.site);';
@@ -54,7 +58,7 @@ const server = await createServer({
   configFile: `${root}/vite.config.ts`,
   logLevel: 'error',
   server: { host: '127.0.0.1', port: 0 },
-  plugins: [observation],
+  plugins: [modelLoadAuditPlugin, observation],
 });
 await server.listen();
 const browser = await launchChromium('save-controller-regressions', { headless: true });
@@ -79,6 +83,7 @@ try {
 
   await test('practice launch, lifecycle and death leave the normal save untouched and exit returns to start', async () => {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+    const modelAudit = await auditModelLoads(context);
     try {
       const page = await context.newPage();
       await page.goto(url);
@@ -483,7 +488,7 @@ try {
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
       assert.equal(await page.locator('#continue').isEnabled(), true);
     } finally {
-      await context.close();
+      await modelAudit.close();
     }
   });
 

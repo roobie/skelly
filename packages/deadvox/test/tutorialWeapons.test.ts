@@ -155,6 +155,42 @@ it('revolver credits committed discharge, not queued or cancelled pulls, then ca
   expect(f.lesson()).toBeUndefined();
 });
 
+it('revolver case picking and full reloading do not replace completed partial-load closure', () => {
+  const f = fixture('revolver');
+  const cylinder = f.gun.firearm!.cylinder!;
+  f.load();
+  for (const _chamber of cylinder.chambers) {
+    f.load();
+  }
+  f.close();
+  expect(f.lesson()).toBe('partial');
+  expect(f.pull()).toBe(true);
+  f.finish();
+  f.load();
+  f.load();
+  expect(cylinder.open).toBe(true);
+  expect(f.lesson()).toBe('partial');
+  f.mechanics.cancelLoad(f.gun.uid);
+  f.load();
+  f.close();
+  expect(cylinder.chambers.every((chamber) => chamber.state === 'round')).toBe(true);
+  expect(f.lesson()).toBe('partial');
+  expect(f.mechanics.removeMagazine(f.gun.uid, f.time())).toBeUndefined();
+  f.finish();
+  f.finish();
+  f.close();
+  expect(f.lesson()).toBe('partial');
+  f.load();
+  f.load();
+  expect(cylinder.open).toBe(true);
+  expect(f.lesson()).toBe('partial');
+  f.mechanics.releaseLoad(f.gun.uid, f.time());
+  expect(f.lesson()).toBe('partial');
+  f.finish();
+  expect(cylinder.open).toBe(false);
+  expect(f.lesson()).toBe('reload');
+});
+
 it('pump requires completed chambering, a post-fire reload and discharge, and live-round ejection', () => {
   const f = fixture('pump');
   expect(f.lesson()).toBe('partial');

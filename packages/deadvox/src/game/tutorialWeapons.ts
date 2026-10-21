@@ -12,6 +12,7 @@ interface Progress {
   caseRemoved: boolean;
   reloaded: boolean;
   liveEjected: boolean;
+  insertedSinceClosure: boolean;
 }
 
 /** Passive, per-instance facts: swapping guns cannot splice together a handling sequence. */
@@ -44,6 +45,7 @@ export class TutorialWeapons {
         caseRemoved: false,
         reloaded: false,
         liveEjected: false,
+        insertedSinceClosure: false,
       };
       this.guns.set(item.uid, progress);
     }
@@ -70,6 +72,9 @@ export class TutorialWeapons {
     if (event === 'case-ejected' && progress.shot) {
       progress.caseRemoved = true;
     }
+    if (event === 'load') {
+      progress.insertedSinceClosure = true;
+    }
     if (event === 'load' && progress.shot && (progress.kind === 'pump' || progress.caseRemoved)) {
       progress.reloaded = true;
     }
@@ -77,11 +82,14 @@ export class TutorialWeapons {
       progress.liveEjected = true;
     }
     if (event === 'close' || event === 'cycle') {
-      this.closed(item, progress, registry);
+      this.closed(item, progress, registry, event);
+    }
+    if (event === 'close') {
+      progress.insertedSinceClosure = false;
     }
   }
 
-  private closed(item: Item, progress: Progress, registry: Registry): void {
+  private closed(item: Item, progress: Progress, registry: Registry, event: FirearmOutcome): void {
     const state = item.firearm;
     const live = state?.cylinder
       ? state.cylinder.chambers.filter((chamber) => chamber.state === 'round').length
@@ -89,7 +97,10 @@ export class TutorialWeapons {
     const capacity =
       state?.cylinder?.chambers.length ??
       registry.models.get(defOf(registry, item.type).model!)!.gun!.internalMagazine!.capacity;
-    if (live > 0 && live < capacity && (progress.kind === 'revolver' || state?.chamber === 'round')) {
+    const partialLoadCompleted = state?.cylinder
+      ? event === 'close' && !state.cylinder.open && progress.insertedSinceClosure
+      : state?.chamber === 'round';
+    if (live > 0 && live < capacity && partialLoadCompleted) {
       progress.facts.add('partial');
     }
     if (live === 0 && progress.liveEjected) {
