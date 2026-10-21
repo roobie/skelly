@@ -30,10 +30,10 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { ChunkMeshes } from '../src/render/chunks.ts';
-import { flashlightCastsShadow } from '../src/render/flashlight.ts';
 import { FrameTimes } from '../src/render/frameTimes.ts';
 import { PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
 import {
+  beamMapDue,
   IDLE_REFRESH_EVERY,
   inFrustum,
   needsMap,
@@ -90,12 +90,11 @@ describe('shadow settings', () => {
     expect(DEFAULT_SHADOWS).toMatchObject({ sun: true, torch: true });
   });
 
-  it('draws the flashlight map only for a beam that is allowed, on and bright enough to show', () => {
-    expect(flashlightCastsShadow(true, CALIBRATED_BEAM_INTENSITY)).toBe(true);
-    expect(flashlightCastsShadow(false, CALIBRATED_BEAM_INTENSITY)).toBe(false);
-    expect(flashlightCastsShadow(true, 0)).toBe(false);
+  it('draws a casting beam map only while the beam is on and bright enough to show', () => {
+    expect(beamMapDue(CALIBRATED_BEAM_INTENSITY)).toBe(true);
+    expect(beamMapDue(0)).toBe(false);
     // Full daylight scales the beam to about 0.01 cd (flashlight.ts), not worth a depth pass.
-    expect(flashlightCastsShadow(true, 0.01)).toBe(false);
+    expect(beamMapDue(0.01)).toBe(false);
   });
 
   it('reads the settings and counts out for the debug readout', () => {
@@ -417,26 +416,56 @@ describe('Shadows', () => {
     expect(draws).toHaveLength(before);
   });
 
-  it('warms every casting-beam count and restores each beam state', () => {
+  it('keeps an off beam casting, allocates its map once with no casters and skips its pass until it is on', () => {
+    const { frame, torch, shadows } = setup();
+    torch.castShadow = true;
+    torch.intensity = 0;
+    frame(0); // the sun's map is allocated here too
+    expect(torch.shadow.map).not.toBeNull();
+    expect(shadows.casters.torch).toBe(0);
+    expect(frame(0)).toEqual([]);
+    torch.intensity = CALIBRATED_BEAM_INTENSITY;
+    expect(frame(0)).toEqual([torch]);
+    expect(shadows.casters.torch).toBe(1);
+  });
+
+  it('shades nothing with the map of a beam gone faint, and redraws it from where the beam is once bright again', () => {
+    const { frame, torch, shadows } = setup();
+    torch.castShadow = true;
+    torch.intensity = CALIBRATED_BEAM_INTENSITY;
+    torch.position.set(0, 1.6, 0);
+    expect(frame(0)).toContain(torch);
+    expect(shadows.casters.torch).toBe(1);
+    expect(torch.shadow.intensity).toBe(1);
+    // Faint but still lighting receivers, which sample the map drawn at the old spot.
+    torch.intensity = 0.01;
+    torch.position.set(0, 1.6, 100);
+    expect(frame(0)).not.toContain(torch);
+    expect(torch.shadow.intensity).toBe(0);
+    torch.intensity = CALIBRATED_BEAM_INTENSITY;
+    expect(frame(0)).toContain(torch);
+    expect(shadows.casters.torch).toBe(0);
+    expect(torch.shadow.intensity).toBe(1);
+  });
+
+  it('warms the shaders with every beam in the casting state the setting gives', () => {
     const { shadows, torch } = setup();
     const worn = new SpotLight();
     shadows.attachTorches([torch, worn]);
-    const seen: number[] = [];
+    const seen: boolean[][] = [];
     const mood = {
       warmUp() {
-        seen.push([torch, worn].filter((light) => light.castShadow).length);
+        seen.push([torch.castShadow, worn.castShadow]);
         return Promise.resolve();
       },
     };
-    torch.castShadow = false;
-    worn.castShadow = true;
     shadows.warmUp(mood, []);
-    expect(seen).toEqual([2, 1, 0]);
-    expect([torch.castShadow, worn.castShadow]).toEqual([false, true]);
-    seen.length = 0;
     shadows.setTorch(false);
     shadows.warmUp(mood, []);
-    expect(seen).toEqual([0]);
+    expect(seen).toEqual([
+      [true, true],
+      [false, false],
+    ]);
   });
 });
 

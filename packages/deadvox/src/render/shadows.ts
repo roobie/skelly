@@ -13,8 +13,10 @@
 // doesn't change shader programs. The sun's shadow is full whenever its light shines, the night
 // stand-in included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
 // `shadow.intensity` to 0 and stops redrawing its map (but a casting light with no map yet always gets
-// one allocated by three's pass, `needsMap`). Beam shadow-count variants are warmed in advance to
-// avoid switch-on stalls.
+// one allocated by three's pass, `needsMap`). The flashlight's beams likewise keep `castShadow` with
+// the setting whether on or off (flashlight.ts, `shadowsAllowed`), and a beam's map is drawn only
+// while it is bright enough to show (`beamMapDue`); otherwise its `shadow.intensity` is 0, so the
+// map it stopped refreshing shades nothing.
 //
 // The sun's map is drawn from the chunk faces that face it, where its light enters a solid, not from
 // three.js's default for a one-sided material, the back faces where light leaves. At an inside corner
@@ -101,6 +103,12 @@ export const snapToTexels = (center: Vector3, toSun: Vector3, texel: number, out
 /** Whether the sun's map must be drawn this frame: what it shows changed, or the idle refresh has come round. */
 export const sunMapDue = (changed: boolean, framesSinceDraw: number): boolean =>
   changed || framesSinceDraw >= IDLE_REFRESH_EVERY;
+
+/** Candela below which a beam is too faint (off, or full daylight) to be worth a shadow map; about 1.4% of the night intensity. */
+const MIN_BEAM_SHADOW_INTENSITY = 0.07;
+
+/** Whether a casting beam's map is drawn this frame: it is on and bright enough to show. */
+export const beamMapDue = (intensity: number): boolean => intensity > MIN_BEAM_SHADOW_INTENSITY;
 
 /** Casters for a light with a frustum: the boxes that meet it. */
 export const inFrustum =
@@ -275,19 +283,11 @@ export class Shadows {
     mood: { warmUp: (scenes: readonly { scene: Scene; camera: Camera }[]) => Promise<unknown> },
     targets: readonly { scene: Scene; camera: Camera }[],
   ): Promise<unknown> {
-    const before = this.torches.map((torch) => torch.castShadow);
-    const maxCasting = this.state.torch ? this.torches.length : 0;
-    // Shader variants depend on the number of casting spots, not their identity.
-    const jobs = Array.from({ length: maxCasting + 1 }, (_, count) => {
-      for (const [index, torch] of this.torches.entries()) {
-        torch.castShadow = index >= this.torches.length - maxCasting + count;
-      }
-      return mood.warmUp(targets);
-    });
-    for (const [index, torch] of this.torches.entries()) {
-      torch.castShadow = before[index]!;
+    // Compile for the casting state the beams will draw in, which may precede the flashlight's first update.
+    for (const torch of this.torches) {
+      torch.castShadow = this.state.torch;
     }
-    return Promise.all(jobs);
+    return mood.warmUp(targets);
   }
 
   /** Sets the sun's box, biases and cast flag from the state, and marks its map stale. */
@@ -336,8 +336,16 @@ export class Shadows {
     }
     this.torchCasters = 0;
     for (const torch of torches) {
-      if (torch.castShadow) {
+      const due = torch.castShadow && beamMapDue(torch.intensity);
+      // A faint beam still lights receivers, which sample its map; a map it no longer refreshes would cast
+      // stale shadows, so it shades nothing until it is redrawn. three.js reads this after this pass.
+      torch.shadow.intensity = due ? 1 : 0;
+      if (due) {
         this.torchCasters += meshes.selectShadowCasters(withinRange(torch.position, torch.distance), BackSide);
+        draw([torch], scene, this.torchView);
+      } else if (needsMap(torch)) {
+        // An off beam still casts, so its programs sample a map; allocate it empty, as for the sun above.
+        meshes.selectShadowCasters(noBoxes, BackSide);
         draw([torch], scene, this.torchView);
       }
     }

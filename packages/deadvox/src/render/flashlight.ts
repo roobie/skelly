@@ -44,12 +44,6 @@ const SHADOW_NORMAL_BIAS = 0.03;
 const SHADOW_RADIUS = 2;
 /** The lens sits just ahead of the eye, so the map starts close in. */
 const SHADOW_NEAR = 0.1;
-/** Candela below which the beam is too faint (full daylight) to be worth a shadow map; about 1.4% of the night intensity. */
-const MIN_SHADOW_INTENSITY = 0.07;
-
-/** Whether the beam draws a shadow map: shadows allowed, and a beam that is on and bright enough to show. */
-export const flashlightCastsShadow = (allowed: boolean, intensity: number): boolean =>
-  allowed && intensity > MIN_SHADOW_INTENSITY;
 
 /** The `torchspill` URL parameter as the constructor's switch: `1` true, `0` false, anything else follows content. */
 export const spillSwitchFromSearch = (search: string): boolean | undefined => {
@@ -104,9 +98,10 @@ export class Flashlight {
   strength = DEFAULT_TORCH;
 
   /**
-   * Whether the beam may cast shadows (the setting; set it each frame before `update`). A light only
-   * draws a map while it is on and bright enough, and the light's `castShadow` follows that, so an off
-   * torch costs no depth pass and no shadow lookups. Warm every casting count to avoid switch-on stalls.
+   * Whether the beams cast shadows (the setting; set it each frame before `update`). Every beam's
+   * `castShadow` follows the setting alone, never on/off or brightness: the casting count is part of
+   * every lit program's key, so switching a beam would rebuild the programs of every material not
+   * warmed for that count, stalling the frame. Shadows.ts skips the depth pass of a beam that is off or too faint.
    */
   shadowsAllowed = false;
 
@@ -136,12 +131,12 @@ export class Flashlight {
           Number(b.item === lit) - Number(a.item === lit) ||
           Number(b.location.kind === 'worn') - Number(a.location.kind === 'worn'),
       );
-    const profiles = new Map<SpotLight, BeamSpill | undefined>();
+    const profiles: (BeamSpill | undefined)[] = [];
     for (const [index, light] of this.lights.entries()) {
+      light.castShadow = this.shadowsAllowed;
       const source = sources[index];
       if (!source) {
         light.intensity = 0;
-        light.castShadow = false;
         continue;
       }
       const def = defOf(registry, source.item.type).light!;
@@ -151,13 +146,12 @@ export class Flashlight {
       }
       light.color.set(def.color);
       light.intensity = def.intensity * this.daylightScale * this.strength;
-      light.castShadow = flashlightCastsShadow(this.shadowsAllowed, light.intensity);
       light.distance = def.radius;
       const angle = MathUtils.degToRad(beam.angleDegrees / 2);
       const authored = beam.spill;
       const spill =
         this.spillOverride === false || !authored || !(this.spillOverride ?? authored.enabled) ? undefined : authored;
-      profiles.set(light, spill);
+      profiles[index] = spill;
       light.shadow.focus = spill ? spillHalfAngle(angle, spill) / angle : 1;
       light.decay = beam.decay;
       light.angle = angle;
@@ -168,12 +162,8 @@ export class Flashlight {
       light.target.updateMatrixWorld();
     }
     if (this.spillOverride !== false) {
-      // WebGLLights sorts shadow-casting spots first, preserving scene order within each partition.
-      setFlashlightSpill(
-        [...this.lights]
-          .sort((a, b) => Number(b.castShadow) - Number(a.castShadow))
-          .map((light) => profiles.get(light)),
-      );
+      // WebGLLights sorts shadow-casting spots first; every beam casts alike, so its uniforms keep scene order.
+      setFlashlightSpill(this.lights.map((_, index) => profiles[index]));
     }
   }
 }
