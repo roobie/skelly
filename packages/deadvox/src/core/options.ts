@@ -104,14 +104,16 @@ export const playerPockets = (
     })),
   );
 
-/** Ordinary drop finds room for either a carried move or a fresh emission, on the ground below each spot. */
-export const dropTarget = (
-  inv: Pick<Inventory, 'locate' | 'planAdd' | 'plan' | 'landing'>,
+type DropInventory = Pick<Inventory, 'locate' | 'planAdd' | 'plan' | 'landing'>;
+
+/** The first spot with room on the ground below it, else the first with ground; undefined with no ground at all. */
+const landedDrop = (
+  inv: DropInventory,
   item: Item,
   feet: Vec3,
-): { target: Target; plan: Plan } => {
+  fresh: boolean,
+): { target: Target; plan: Plan } | undefined => {
   let first: { target: Target; plan: Plan } | undefined;
-  const fresh = inv.locate(item) === undefined;
   for (const spot of dropSpots(feet)) {
     const pos = inv.landing(spot);
     if (!pos) {
@@ -124,8 +126,19 @@ export const dropTarget = (
       return { target, plan };
     }
   }
-  return first ?? { target: { kind: 'pile', pos: feet }, plan: { ok: false, reason: NO_LANDING_REFUSAL } };
+  return first;
 };
+
+/** Ordinary drop finds room for either a carried move or a fresh emission, on the ground below each spot. */
+export const dropTarget = (inv: DropInventory, item: Item, feet: Vec3): { target: Target; plan: Plan } =>
+  landedDrop(inv, item, feet, inv.locate(item) === undefined) ?? {
+    target: { kind: 'pile', pos: feet },
+    plan: { ok: false, reason: NO_LANDING_REFUSAL },
+  };
+
+/** Where a new item, or a part leaving its slot, is put down; undefined when nothing nearby has ground below. */
+export const freshDropTarget = (inv: DropInventory, item: Item, feet: Vec3): Target | undefined =>
+  landedDrop(inv, item, feet, true)?.target;
 
 /** A sling-fitted long gun goes on a free shoulder before any pocket or the ground: the sling is for carrying it. */
 const slingTarget = (inv: Inventory, item: Item): Target | undefined => {

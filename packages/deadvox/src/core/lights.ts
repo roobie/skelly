@@ -11,6 +11,7 @@ import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
 import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
+import { putDownRefusal } from './itemThrow.ts';
 import { isInHeldItemSlotTree, itemRoots } from './itemTree.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { NightVision, SenseDef, WearSlot } from './schema.ts';
@@ -334,13 +335,13 @@ export const fitsLight = (registry: Registry, light: Item, battery: Item): boole
 /**
  * Puts one of `battery` into `light`, in place. The old battery comes out with its
  * charge and goes to `spent` if it has any left; a dead one is thrown away. Returns
- * why it couldn't, or undefined.
+ * why it couldn't, or undefined; a refused swap changes nothing.
  */
 export const swapBattery = (
   inventory: Inventory,
   light: Item,
   battery: Item,
-  spent: (item: Item) => Target,
+  spent: (item: Item) => Target | undefined,
 ): string | undefined => {
   const { registry } = inventory;
   if (!fitsLight(registry, light, battery)) {
@@ -348,6 +349,17 @@ export const swapBattery = (
   }
   const oldBattery = light.slots?.battery;
   const old = oldBattery ? (chargeOf(registry, oldBattery) ?? 0) : 0;
+  const kept = oldBattery && old > 0 ? oldBattery : undefined;
+  if (kept) {
+    kept.charges = old;
+  }
+  const target = kept && spent(kept);
+  if (kept) {
+    const refusal = putDownRefusal(inventory, kept, target);
+    if (refusal) {
+      return refusal;
+    }
+  }
   const replacement = battery.count > 1 ? inventory.create(battery.type, 1, battery.condition) : battery;
   if (battery.charges !== undefined) {
     replacement.charges = battery.charges;
@@ -356,9 +368,8 @@ export const swapBattery = (
     return 'The battery is gone';
   }
   inventory.fitSlot(light, 'battery', replacement);
-  if (oldBattery && old > 0) {
-    oldBattery.charges = old;
-    inventory.add(oldBattery, spent(oldBattery));
+  if (kept && target) {
+    inventory.add(kept, target);
   }
   return undefined;
 };
