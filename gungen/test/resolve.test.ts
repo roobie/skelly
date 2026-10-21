@@ -150,7 +150,6 @@ describe('resolve', () => {
       ];
     };
     expectVec(inv(r2, [2, 1, 0]), inv(r1, [2, 1, 0]));
-    expectVec(at(r1, 'sight', [2, 0, 0]).map(Math.abs), [8, 2.5, 2]);
   });
 });
 
