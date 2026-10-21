@@ -15,6 +15,7 @@ import {
 } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
+import { sweepGroup } from './sweeps.ts';
 
 const CONVEX_ERROR = /convex/i;
 const SELF_INTERSECT_ERROR = /self-intersect/i;
@@ -159,22 +160,45 @@ describe('penetration', () => {
     expect(penetration(unit, closer)).toBeCloseTo(reach - 0.5);
   });
 
-  it('matches the box fast path for 300 deterministic random rotated box pairs', () => {
-    let state = 0x51_a7;
-    const next = () => {
-      state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
-      return state / 0x1_00_00_00_00;
-    };
-    for (let i = 0; i < 300; i++) {
-      const randomObb = (): Obb => ({
-        center: [next() * 8 - 4, next() * 8 - 4, next() * 8 - 4],
-        r: mulMM(mulMM(rotX(next() * 360), rotY(next() * 360)), rotZ(next() * 360)),
-        half: [0.1 + next() * 2, 0.1 + next() * 2, 0.1 + next() * 2],
-      });
-      const a = randomObb();
-      const b = randomObb();
+  const parityCases: readonly [Obb, Obb][] = [
+    [
+      { center: [0, 0, 0], r: mulMM(rotX(25), rotY(40)), half: [1, 0.5, 0.75] },
+      { center: [0.5, 0.25, 0], r: rotZ(35), half: [0.75, 1, 0.5] },
+    ],
+    [
+      { center: [0, 0, 0], r: rotY(45), half: [1, 1, 1] },
+      { center: [4, 0, 0], r: mulMM(rotX(30), rotZ(15)), half: [0.5, 0.75, 1] },
+    ],
+    [
+      { center: [0, 0, 0], r: rotZ(45), half: [1, 0.5, 0.5] },
+      { center: [1.5, 0, 0], r: IDENTITY.r, half: [0.5, 0.5, 0.5] },
+    ],
+  ];
+
+  it('matches the box fast path for representative rotated box pairs', () => {
+    for (const [a, b] of parityCases) {
       expect(penetrationConvex(obbPolyhedron(a), obbPolyhedron(b))).toBeCloseTo(penetration(a, b), 9);
     }
+  });
+
+  sweepGroup('box parity population', () => {
+    it('matches the box fast path for 300 deterministic random rotated box pairs', () => {
+      let state = 0x51_a7;
+      const next = () => {
+        state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+        return state / 0x1_00_00_00_00;
+      };
+      for (let i = 0; i < 300; i++) {
+        const randomObb = (): Obb => ({
+          center: [next() * 8 - 4, next() * 8 - 4, next() * 8 - 4],
+          r: mulMM(mulMM(rotX(next() * 360), rotY(next() * 360)), rotZ(next() * 360)),
+          half: [0.1 + next() * 2, 0.1 + next() * 2, 0.1 + next() * 2],
+        });
+        const a = randomObb();
+        const b = randomObb();
+        expect(penetrationConvex(obbPolyhedron(a), obbPolyhedron(b))).toBeCloseTo(penetration(a, b), 9);
+      }
+    });
   });
 
   it('checks extruded polygons against boxes with signed penetration depth', () => {

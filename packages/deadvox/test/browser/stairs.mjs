@@ -651,6 +651,10 @@ try {
         middle: sampleLuminance([151, 43.5, 121.5]),
       };
     }, png.toString('base64'));
+  const waitForRenderedFrame = async () => {
+    const before = await page.evaluate(() => globalThis.stairsWitness.engine.renderer.info.render.frame);
+    await page.waitForFunction((frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame, before);
+  };
   const lightingCellarProofs = async () => {
     await stage([134, 35.0001, 115]);
     await waitForSkyFields([[81.5, 28, 59]]);
@@ -680,7 +684,14 @@ try {
             ),
         );
       await mouse5();
-      await page.waitForTimeout(700);
+      await page.waitForFunction(() => {
+        const { session, engine } = globalThis.stairsWitness;
+        return (
+          session.inventory.hands.left.on &&
+          engine.scene.children.some((light) => light.isSpotLight && light.intensity > 0)
+        );
+      });
+      await waitForRenderedFrame();
       assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left.on), true);
       const lit = await timePhase('cellar-hand-capture', () => shot('cellar-beam', true));
       await page.evaluate(() => {
@@ -703,6 +714,7 @@ try {
           globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
             .length === 2,
       );
+      await waitForRenderedFrame();
       const both = await timePhase('cellar-combined-capture', () => shot('cellar-both-beams', true));
       await page.evaluate(() => {
         const { session } = globalThis.stairsWitness;
@@ -716,6 +728,7 @@ try {
           globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
             .length === 1,
       );
+      await waitForRenderedFrame();
       const worn = await timePhase('cellar-worn-capture', () => shot('cellar-worn-beam', true));
       const proof = {
         dark: await luminance(dark),
@@ -799,12 +812,12 @@ try {
       await page.evaluate(() => {
         globalThis.stairsWitness.input.pitch = -0.3;
       });
-      await page.waitForTimeout(700);
+      await waitForRenderedFrame();
       const outdoor = await shot('outdoor-normal', true);
       await page.evaluate(() => {
         globalThis.skyProofControl.value = 1;
       });
-      await page.waitForTimeout(200);
+      await waitForRenderedFrame();
       const outdoorReference = await shot('outdoor-sky-one', true);
       await page.evaluate(() => {
         globalThis.skyProofControl.value = 0;
@@ -838,12 +851,12 @@ try {
       await page.evaluate(() => {
         globalThis.stairsWitness.input.pitch = Math.atan2(3.25, 7);
       });
-      await page.waitForTimeout(700);
+      await waitForRenderedFrame();
       const secondWall = await shot('second-slot-wall-normal', true);
       await page.evaluate(() => {
         globalThis.skyProofControl.value = 1;
       });
-      await page.waitForTimeout(200);
+      await waitForRenderedFrame();
       const secondWallReference = await shot('second-slot-wall-sky-one', true);
       await page.evaluate(() => {
         globalThis.skyProofControl.value = 0;

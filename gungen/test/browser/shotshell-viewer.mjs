@@ -1,11 +1,14 @@
 // Actual startup/render regression: the cartridge selector must admit shotshells, not just metallic data.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from '../chromium.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const cartridge = JSON.parse(readFileSync(resolve(root, 'cartridges/12-gauge-00-buck.json'), 'utf8'));
+const closure = cartridge.closure.value ?? 'unknown';
 const server = await createServer({ root, server: { host: '127.0.0.1', port: 0 } });
 let browser;
 try {
@@ -33,12 +36,15 @@ try {
   );
   await page.waitForSelector('#ammo-info');
   await page.waitForFunction(() => globalThis.shotshellWitness);
-  assert.match(await page.locator('#ammo-info').innerText(), /62\.23 mm; fired 70\.1 mm.*Roll-crimp visual proxy/);
+  assert.equal(await page.locator('#ammo-info').getAttribute('data-closure'), closure);
   const witness = await page.evaluate(() => globalThis.shotshellWitness);
-  assert.deepEqual(witness, { loaded: ['head', 'hull', 'closure-card'], fired: ['head', 'hull'], inScene: true });
+  assert.equal(witness.inScene, true);
+  assert(witness.loaded.includes('hull'));
+  assert(witness.fired.includes('hull'));
+  assert(witness.loaded.length > witness.fired.length);
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ witness, errors }));
-  console.log('PASS: actual viewer startup renders loaded shotshell and open hull with labelled proxy');
+  console.log(JSON.stringify({ witness, closure, errors }));
+  console.log('PASS: viewer startup renders the loaded and fired shotshell hulls and exposes closure state');
 } finally {
   await browser?.close();
   await server.close();

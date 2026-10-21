@@ -540,12 +540,12 @@ try {
                   return Promise.resolve(encoder.encode('unexpected second writer'));
                 })
                 .then(
-                  () => '',
-                  (error) => error.message,
+                  () => null,
+                  (error) => ({ message: error.message, cause: error.cause?.name }),
                 ),
             );
-            if (!failure.includes('World is still open or saving in another page') || encodedWhileBusy) {
-              throw new Error(`Queued writer did not fail safely at its deadline: ${failure}`);
+            if (!failure?.message.trim() || failure.cause !== 'AbortError' || encodedWhileBusy) {
+              throw new Error(`Queued writer did not fail safely at its deadline: ${JSON.stringify(failure)}`);
             }
             const locks = await navigator.locks.query();
             if (locks.held.length !== 1 || locks.pending.length > 0) {
@@ -1262,13 +1262,18 @@ try {
       const busy = await page.evaluate(async () => ({
         status: document.querySelector('#save-status').textContent,
         newWorldLabel: document.querySelector('#go').textContent,
+        expectedNewWorldLabel: globalThis.deadvoxSaveTest.controller.titleNewWorldLabel,
+        failure: globalThis.deadvoxSaveTest.controller.failure,
+        storageUnavailable: globalThis.deadvoxSaveTest.controller.storageUnavailable,
         retryVisible: document.querySelector('#save-rescan').checkVisibility(),
         continueDisabled: document.querySelector('#continue').disabled,
         locks: await navigator.locks.query(),
         warnings: globalThis.__d144LockWarnings,
       }));
-      assert.match(busy.status, /World is still open or saving in another page/);
-      assert.match(busy.newWorldLabel, /Play without saving/);
+      assert.ok(busy.failure.trim(), 'the owner reports a save discovery failure');
+      assert.ok(busy.status.includes(busy.failure), 'startup renders the owner’s failure');
+      assert.equal(busy.storageUnavailable, true, 'the timed-out store is unavailable');
+      assert.equal(busy.newWorldLabel, busy.expectedNewWorldLabel);
       assert.equal(busy.retryVisible, true);
       assert.equal(busy.continueDisabled, true);
       assert.equal(busy.locks.held.length, 1);

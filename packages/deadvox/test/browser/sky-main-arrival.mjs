@@ -112,14 +112,27 @@ const treeSources = (git, revision, source) =>
       .map((path) => path.slice(source.length + 1)),
   );
 
+export function mainArrivalGit(root) {
+  // Hooks bind Git to their caller; the reference checkout must remain the command owner.
+  // biome-ignore lint/style/noProcessEnv: preserve caller settings except Git's repository-local bindings.
+  const env = { ...process.env };
+  const localVariables = execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' })
+    .trim()
+    .split('\n');
+  for (const name of localVariables) {
+    delete env[name];
+  }
+  const repository = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8', env }).trim();
+  return (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
+}
+
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
   if (eventPath && ref === 'origin/main') {
     throw new Error('GitHub event has neither a pull-request base nor a branch ref');
   }
-  const repository = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8' }).trim();
-  const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8' }).trim();
+  const git = mainArrivalGit(root);
   let base;
   if (eventPath) {
     git(['fetch', '--no-tags', '--depth=1', 'origin', ref]);

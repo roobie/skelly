@@ -7,11 +7,30 @@ import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FIRING_GRIP } from '../src/gun/parts.ts';
 import { pumpShotgun } from '../src/gun/templates.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = Array.from({ length: 100 }, (_, seed) => seed);
-// Coverage of generate + validate + anchors saturates well before seed 40 for every template, so
-// the validated loop stops there; the cheap generate-only layout check keeps all 100 seeds.
 const VALIDATED_SEEDS = SEEDS.slice(0, 40);
+
+const pumpVariantTemplate = (
+  layout: 'pump' | 'trigger',
+  barrelLength: 'S' | 'M' | 'L',
+  lengthPercent: '75' | '100',
+) => ({
+  ...pumpShotgun,
+  slots: pumpShotgun.slots.map((slot) => {
+    if (slot.id === 'lower') {
+      return { ...slot, params: { ...slot.params, layout } };
+    }
+    if (slot.id === 'barrel') {
+      return { ...slot, params: { ...slot.params, length: barrelLength } };
+    }
+    if (slot.id === 'tube') {
+      return { ...slot, params: { ...slot.params, lengthPercent } };
+    }
+    return slot;
+  }),
+});
 
 const check = (condition: unknown, message: string): void => {
   if (!condition) {
@@ -116,28 +135,39 @@ const countTubeEndGrowth = (tubeEnds: Map<string, Map<string, number>>): number 
 };
 
 describe('pump shotgun variants', () => {
-  it('picks both the pistol-grip and the gripless lower layout across seeds', () => {
-    const layouts = new Set<string>();
-    for (const seed of SEEDS) {
-      const layout = generate(pumpShotgun, gunDomain, seed).parts.lower?.params?.layout;
-      expect(['pump', 'trigger'], `seed ${seed}: lower layout`).toContain(layout);
-      layouts.add(layout!);
+  it('generates valid gripless and pistol-grip builds across barrel and tube choices', () => {
+    const tubeEnds = new Map<string, Map<string, number>>();
+    const cases = [
+      ['S', '100'],
+      ['M', '75'],
+      ['M', '100'],
+      ['L', '75'],
+      ['L', '100'],
+    ] as const;
+    for (const layout of ['pump', 'trigger'] as const) {
+      for (const [barrelLength, lengthPercent] of cases) {
+        const assembly = generate(pumpVariantTemplate(layout, barrelLength, lengthPercent), gunDomain, 0);
+        const report = validate(assembly, gunDomain);
+        expect(report.ok, `${layout}/${barrelLength}/${lengthPercent}: ${JSON.stringify(report.issues)}`).toBe(true);
+        recordPumpVariant(assembly, report, 0, tubeEnds);
+      }
     }
-    expect([...layouts].sort()).toEqual(['pump', 'trigger']);
+    expect(countTubeEndGrowth(tubeEnds)).toBeGreaterThan(0);
   });
 
-  // Generates and validates the selected seed sample for pump variants.
-  it('generates valid gripless and pistol-grip builds with exactly one hold', { timeout: 25_000 }, () => {
-    const layouts = new Set<string>();
-    const tubeEnds = new Map<string, Map<string, number>>();
-    for (const seed of VALIDATED_SEEDS) {
-      const assembly = generate(pumpShotgun, gunDomain, seed);
-      layouts.add(assembly.parts.lower?.params?.layout ?? '');
-      const report = validate(assembly, gunDomain);
-      expect(report.ok, `seed ${seed}: ${JSON.stringify(report.issues)}`).toBe(true);
-      recordPumpVariant(assembly, report, seed, tubeEnds);
-    }
-    expect([...layouts].sort()).toEqual(['pump', 'trigger']);
-    expect(countTubeEndGrowth(tubeEnds)).toBeGreaterThan(0);
+  sweepGroup('seed population', () => {
+    it('picks both the pistol-grip and the gripless lower layout across seeds', () => {
+      const layouts = new Set<string>();
+      for (const seed of SEEDS) {
+        layouts.add(generate(pumpShotgun, gunDomain, seed).parts.lower?.params?.layout ?? '');
+      }
+      expect(layouts).toEqual(new Set(['pump', 'trigger']));
+    });
+
+    it('validates the generated pump population', { timeout: 25_000 }, () => {
+      for (const seed of VALIDATED_SEEDS) {
+        expect(validate(generate(pumpShotgun, gunDomain, seed), gunDomain).ok, `seed ${seed}`).toBe(true);
+      }
+    });
   });
 });
