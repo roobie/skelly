@@ -26,6 +26,7 @@ import {
   string,
 } from 'valibot';
 import content from '../items.json' with { type: 'json' };
+import { head, limb, torso } from './families/body.ts';
 import { coil } from './families/coil.ts';
 import { fuse } from './families/fuse.ts';
 import { arm, base, shade } from './families/lamp.ts';
@@ -90,10 +91,20 @@ const CatalogueSchema = strictObject({
 });
 export type ToolItem = InferOutput<typeof ItemSchema>;
 type ToolPart = ToolItem['parts'][number];
-const builders = { ring, spool, coil, fuse, cylinder: base, arm, shade, carton, vessel } satisfies Record<
-  string,
-  (params: Readonly<Record<string, string>>) => readonly Solid[]
->;
+const builders = {
+  ring,
+  spool,
+  coil,
+  fuse,
+  cylinder: base,
+  arm,
+  shade,
+  carton,
+  vessel,
+  limb,
+  torso,
+  head,
+} satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {
   if (!Object.hasOwn(builders, part.family)) {
     throw new Error(`Unknown thing family ${part.family}`);
