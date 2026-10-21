@@ -152,6 +152,7 @@ function setup(contentRegistry = registry) {
     needs: () => needs,
     slotLabels: {
       head: 'fixture head',
+      eyes: 'fixture eyes',
       torso: 'fixture torso',
       vest: 'fixture vest',
       legs: 'fixture legs',

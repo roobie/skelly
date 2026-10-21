@@ -108,6 +108,7 @@
         "tools/jsonnet/**",
         "packages/deadvox/tools/publish-playtest.mjs",
         "packages/deadvox/tools/police-item-models.mjs",
+        "packages/deadvox/tools/military-item-models.mjs",
         "packages/deadvox/tools/perf-baseline.mjs",
         "packages/deadvox/tools/perf-baseline.test.mjs"
       ],

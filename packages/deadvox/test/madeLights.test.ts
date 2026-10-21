@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { drainBurnLight, toggleLight } from '../src/core/lights.ts';
+import { chargeOf, drainBurnLight, toggleLight, wornNightVision } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Survival } from '../src/game/survival.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -84,6 +84,52 @@ describe('made light burn state', () => {
     expect(survival.use(flashlight)).toBeUndefined();
     expect(flashlight.on).toBe(false);
     expect(survival.lit).toBe(headlamp);
+  });
+
+  it('wears goggles in the eyes slot with a headlamp, and the worn-light control switches both', () => {
+    const { inventory, survival } = setup();
+    const headlamp = inventory.create('headlamp');
+    const goggles = inventory.create('night_vision_goggles');
+    expect(inventory.add(headlamp, { kind: 'worn' })).toBe(true);
+    expect(inventory.add(goggles, { kind: 'worn' })).toBe(true);
+    expect([inventory.worn.head, inventory.worn.eyes]).toEqual([headlamp, goggles]);
+
+    expect(survival.toggleWornLights()).toBeUndefined();
+    expect([headlamp.on, goggles.on]).toEqual([true, true]);
+    expect(survival.toggleWornLights()).toBeUndefined();
+    expect([headlamp.on, goggles.on]).toEqual([false, false]);
+  });
+
+  it('drains the battery of worn goggles while they are on', () => {
+    const { sim, inventory, survival } = setup();
+    const goggles = inventory.create('night_vision_goggles');
+    expect(inventory.add(goggles, { kind: 'worn' })).toBe(true);
+    const full = chargeOf(registry, goggles)!;
+
+    expect(survival.toggleWornLights()).toBeUndefined();
+    sim.scheduler.advance(60);
+    expect(goggles.on).toBe(true);
+    expect(chargeOf(registry, goggles)).toBeLessThan(full);
+  });
+
+  it('gives the night-vision view only while the goggles are worn, on and charged', () => {
+    const { inventory, survival, hold } = setup();
+    const goggles = hold('night_vision_goggles');
+    const view = registry.items.get('night_vision_goggles')!.light!.nightVision;
+    expect(survival.use(goggles)).toBeUndefined();
+    expect(wornNightVision(inventory)).toBeUndefined();
+
+    expect(inventory.move(goggles, { kind: 'worn' }).ok).toBe(true);
+    expect(goggles.on).toBe(true);
+    expect(wornNightVision(inventory)).toBe(view);
+
+    expect(survival.toggleWornLights()).toBeUndefined();
+    expect(goggles.on).toBe(false);
+    expect(wornNightVision(inventory)).toBeUndefined();
+
+    expect(survival.toggleWornLights()).toBeUndefined();
+    goggles.slots!.battery!.charges = 0;
+    expect(wornNightVision(inventory)).toBeUndefined();
   });
 
   it('does not switch a hand light, or anything, when no switchable light is worn', () => {

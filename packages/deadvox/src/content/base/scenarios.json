@@ -946,6 +946,10 @@
                   {
                     "condition": 0.69999999999999996,
                     "item": "magazine_stanag_30"
+                  },
+                  {
+                    "condition": 0.69999999999999996,
+                    "item": "night_vision_goggles"
                   }
                 ]
               }

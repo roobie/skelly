@@ -359,6 +359,50 @@
     },
     {
       "category": "light",
+      "description": "Battery-powered night-vision goggles with an infrared lamp.",
+      "economy": {
+        "tiers": ["Tier2", "Tier3"],
+        "usage": ["Military"]
+      },
+      "id": "night_vision_goggles",
+      "light": {
+        "color": "#7dff86",
+        "intensity": 0.80000000000000004,
+        "nightVision": {
+          "edge": {
+            "darkening": 0.92000000000000004,
+            "inner": 0.28000000000000003,
+            "outer": 0.5
+          },
+          "gain": 6,
+          "grain": 0.080000000000000002,
+          "tint": "#8cff8f"
+        },
+        "power": {
+          "battery": "aa_battery",
+          "chargePerGameHour": 0.14999999999999999,
+          "swapSimSeconds": 2
+        },
+        "radius": 14,
+        "seenFrom": 8,
+        "wornSwitch": true
+      },
+      "model": "night_vision_goggles",
+      "name": "Night-vision goggles",
+      "size": [2, 2],
+      "wearable": {
+        "encumbrance": 0,
+        "figureModel": {
+          "at": [0, 0, 0],
+          "model": "night_vision_goggles",
+          "turn": [0, 180, 0]
+        },
+        "slot": "eyes"
+      },
+      "weight": 550
+    },
+    {
+      "category": "light",
       "description": "Rags and wax wrapped tightly around a stick.",
       "disassembly": {
         "skill": "crafting",

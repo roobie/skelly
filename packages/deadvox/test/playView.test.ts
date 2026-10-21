@@ -50,6 +50,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     render: vi.fn((draw: () => void) => draw()),
     setPainDesaturation: vi.fn(),
     setDrugVignette: vi.fn(),
+    setNightVision: vi.fn(),
     setSky: vi.fn(),
   };
   const shadows = { restore: vi.fn(), attachTorches: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
@@ -624,6 +625,29 @@ describe('play presentation ownership', () => {
     expect(engine.camera.position.toArray()).toEqual([1, 2.12, 3]);
     expect(body).toEqual(before);
     expect(damage.style.opacity).toBe('0');
+    view.dispose();
+  });
+
+  it('passes night vision to the mood for the player and none for a spectator', () => {
+    const { mood, view } = fixture();
+    const nightVision = registry.items.get('night_vision_goggles')!.light!.nightVision!;
+    const damage = { style: { opacity: '' } } as unknown as HTMLElement;
+    const frame = {
+      dt: 0.1,
+      body: { pos: [2, 1, 6] as Vec3, vel: [0, 0, 0] as Vec3, halfWidth: 0.6, height: 3.6, onGround: true },
+      paused: false,
+      noclip: false,
+      yaw: 0,
+      pitch: 0,
+      stridePhase: 0,
+      eye: [2, 4.24, 6] as Vec3,
+      sightImpaired: false,
+      nightVision,
+    };
+    view.updateCamera(frame, damage);
+    expect(mood.setNightVision).toHaveBeenLastCalledWith(nightVision);
+    view.updateCamera({ ...frame, spectator: { position: [2, 4, 6], yaw: 0, pitch: 0 } }, damage);
+    expect(mood.setNightVision).toHaveBeenLastCalledWith(undefined);
     view.dispose();
   });
 });

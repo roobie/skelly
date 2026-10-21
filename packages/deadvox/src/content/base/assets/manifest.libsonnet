@@ -470,6 +470,7 @@ local recipe = import 'gungen/exports/deadvox.jsonnet';
         "assets/models/stab_vest.glb",
         "assets/models/riot_helmet.glb",
         "assets/models/riot_helmet_view.glb",
+        "assets/models/night_vision_goggles.glb",
         "assets/models/thread_spool.glb",
         "assets/models/fuse.glb",
         "assets/models/cord_coil.glb",

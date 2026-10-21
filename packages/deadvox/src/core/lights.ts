@@ -13,7 +13,7 @@ import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { isInHeldItemSlotTree, itemRoots } from './itemTree.ts';
 import { raycast, type SolidAt } from './raycast.ts';
-import type { SenseDef } from './schema.ts';
+import type { NightVision, SenseDef, WearSlot } from './schema.ts';
 import { sunDirection } from './sky.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
@@ -48,6 +48,18 @@ export const lightExposureFor = (
   }
   if (location.kind === 'pile' && definition.light.burning?.drop === 'stay') {
     return 'world';
+  }
+  return undefined;
+};
+
+/** The night-vision view of a worn light that is on and charged, if any (`DESIGN.md`, "Light"). */
+export const wornNightVision = (inventory: Inventory): NightVision | undefined => {
+  const { registry } = inventory;
+  for (const [slot, item] of Object.entries(inventory.worn)) {
+    const nightVision = item && registry.items.get(item.type)?.light?.nightVision;
+    if (nightVision && lightExposureFor(registry, item, { kind: 'worn', slot: slot as WearSlot }, '') !== undefined) {
+      return nightVision;
+    }
   }
   return undefined;
 };

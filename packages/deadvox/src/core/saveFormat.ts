@@ -466,6 +466,7 @@ const inventoryCore = obj({
   hands: obj({ right: opt(lazy(() => itemSchema)), left: opt(lazy(() => itemSchema)) }),
   worn: obj({
     head: opt(lazy(() => itemSchema)),
+    eyes: opt(lazy(() => itemSchema)),
     torso: opt(lazy(() => itemSchema)),
     vest: opt(lazy(() => itemSchema)),
     legs: opt(lazy(() => itemSchema)),

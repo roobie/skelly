@@ -50,6 +50,7 @@ import {
   VIGNETTE,
 } from '../core/mood.ts';
 import type { OpticLensFrame, ReticleKind } from '../core/opticView.ts';
+import type { NightVision } from '../core/schema.ts';
 import type { Sky } from '../core/sky.ts';
 import { AdaptiveScale } from './adaptiveScale.ts';
 import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
@@ -98,6 +99,7 @@ export class Mood {
   private painDesaturation = 0;
   private drugVignette = 0;
   private drugVignetteScaleValue: number;
+  private nightVision: NightVision | undefined;
   private crackOn = false;
   private readonly crackColor = new Color();
   private composer: EffectComposer | undefined;
@@ -219,6 +221,17 @@ export class Mood {
   setDrugVignette(strength: number): void {
     if (strength !== this.drugVignette) {
       this.drugVignette = strength;
+      this.sync();
+    }
+  }
+
+  /**
+   * The view through worn night-vision goggles that are on and charged, or none; cheap enough to call every frame.
+   * It shows only with post on, as the drug vignette does.
+   */
+  setNightVision(view: NightVision | undefined): void {
+    if (view !== this.nightVision) {
+      this.nightVision = view;
       this.sync();
     }
   }
@@ -473,6 +486,14 @@ export class Mood {
     u.uVignette!.value = film ? VIGNETTE : 0;
     u.uGrain!.value = film ? GRAIN : 0;
     u.uDrugVignette!.value = drugVignetteShown(this.drugVignette, this.drugVignetteScaleValue);
+    const night = this.nightVision;
+    // The tint is applied after the transfer function, so it goes in as display (sRGB) values.
+    const tint = night ? new Color(night.tint).getRGB({ r: 0, g: 0, b: 0 }, SRGBColorSpace) : { r: 0, g: 0, b: 0 };
+    u.uNightVision!.value = night ? 1 : 0;
+    u.uNightGain!.value = night?.gain ?? 1;
+    u.uNightTint!.value = [tint.r, tint.g, tint.b];
+    u.uNightGrain!.value = night?.grain ?? 0;
+    u.uNightEdge!.value = night ? [night.edge.darkening, night.edge.inner, night.edge.outer] : [0, 0, 1];
   }
 
   private releaseComposer(): void {
