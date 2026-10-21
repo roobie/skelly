@@ -1,0 +1,31 @@
+---
+read_if:
+  - you're implementing or reviewing the Slice 6 feasibility candidates or their shared harness
+  - you're deciding Rapier numeric eligibility or promoting feasibility code into simulation identity
+---
+
+# Vehicle feasibility admission
+
+The experiment is not a production solver selection. Keep candidate-specific initialization behind adapters so rejecting a candidate removes its dependency without changing game saves. The common seam is `src/vehicles/feasibility/contract.ts`, `Candidate`; the deliberately collision-free moving body proves the harness, not road safety. Fixture proposals live in `src/config/vehicleFeasibility.jsonnet`; BR must approve their workload allocation before any performance acceptance.
+
+## Numeric eligibility
+
+Rapier remains diagnostic until BR decides the precision contract that d568-2 drafts. Its deterministic build uses single-precision arithmetic, while `docs/decisions/0008-deterministic-world.md`, "Decision" retains its doubles rule. f32 may be evaluated for production only against that contract's cross-engine, save and replay gates within the admitted envelope. That ADR's reason is cross-engine agreement, including lockstep and replay, not merely the width of a JavaScript wrapper; an f32 solver may satisfy that reason, so evidence rather than its number type judges it. Dependency age exemption does not imply numeric exemption.
+
+The package artifact is pinned by `package-lock.json`, `packages`. Its upstream build provenance and precision evidence belong in the admission report; cross-engine agreement of that artifact remains a candidate-round gate. Do not infer agreement from the library name or a simulation source hash.
+
+## Harness boundaries
+
+Schedule partitioning, compression and restoration must not alter the experiment's continuation; see `src/vehicles/feasibility/runner.ts`, `TickDispatch`. Wall-time conversion remains a caller concern, so this experiment does not supply a production wall-time clock.
+
+Agreement evidence must expose distinctions that a digest can conceal and must preserve the information needed to continue safely; see `src/vehicles/feasibility/trace.ts`, `trace`. Unsafe edges have invariants only, so the spike chooses no boundary behaviour.
+
+Cross-engine evidence needs the same module and inspectable artifacts in Node and each supported browser; see `test/browser/vehicle-feasibility.mjs`, `engines`. Timings are evidence, not reference-class performance acceptance. The moving body cannot establish either road candidate's collision bound; candidate adapters must instrument their hidden work.
+
+## Missing production seams
+
+The deterministic math module required by `docs/decisions/0008-deterministic-world.md`, "Decision", is a missing core seam, not supplied by the moving body. The owned-road implementer must own its narrow needed operations, exact-rounding implementation and agreement proof before using transcendental math; the wider call-site migration needs a separate lead-assigned owner.
+
+`tools/simulationFingerprint.ts`, `FEASIBILITY_ENTRIES`, explicitly classifies the experiment in a separate source graph. It is neither production identity nor debug-excluded code. `tools/simulationFingerprint.ts`, `collectSimulationSourceGraph`, still rejects WASM. Before a library adapter becomes production-authoritative, the fingerprint owner must add byte-aware binary dependency discovery and hashing, including bindings, package/build configuration and authoritative continuation bytes. The browser runner's artifact digest is diagnostic identity, not that missing integration.
+
+Slice-start consolidation is reused from #159; the lead retains finding assignments and revisit dates. The vehicle seam must not import debris sleep or expiry. `test/vehicleFeasibility.test.ts` protects caller partitioning and continued unforced momentum without changing debris's presentation contract.

@@ -127,6 +127,14 @@ jobs:
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         timeout-minutes: 3
         run: npx playwright install firefox chromium
+      - name: Install feasibility agreement browsers
+        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        timeout-minutes: 3
+        run: npx playwright install chromium firefox webkit
+      - name: Vehicle feasibility agreement (Node, Chromium, Firefox, WebKit)
+        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        timeout-minutes: 1
+        run: node test/browser/vehicle-feasibility.mjs
       - name: Isolated expression Wasm cross-engine contract
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         timeout-minutes: 1
