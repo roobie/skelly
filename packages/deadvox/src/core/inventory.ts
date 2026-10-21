@@ -610,6 +610,9 @@ export class Inventory {
     if (from.kind === 'slot') {
       return refuse('It is fitted to the firearm');
     }
+    if (item.trap) {
+      return refuse(item.trap.state === 'armed' ? 'The trap is set' : 'The trap is shut on a leg');
+    }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);
     }

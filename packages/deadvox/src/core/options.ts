@@ -86,7 +86,7 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read';
+  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read' | 'trap';
   light?: Item;
   battery?: Item;
   tool?: Item;
@@ -335,9 +335,17 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (def.canister) {
     return canisterOption(item, inv);
   }
+  if (def.trap && item.trap) {
+    return item.trap.state === 'armed'
+      ? { kind: 'use', label: 'Disarm', operation: 'trap', plan: { ok: true, time: def.trap.disarmSimSeconds } }
+      : refuseUse("It's shut on a leg");
+  }
   const locationRefusal = useLocationRefusal(item, at, inv);
   if (locationRefusal) {
     return refuseUse(locationRefusal);
+  }
+  if (def.trap) {
+    return { kind: 'use', label: 'Set it', operation: 'trap', plan: { ok: true, time: def.trap.setSimSeconds } };
   }
   if (def.book || def.readable) {
     return {

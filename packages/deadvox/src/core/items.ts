@@ -47,6 +47,8 @@ export interface ItemFields<Node> {
   pinPulled?: true | undefined;
   /** An explosive's fuse left in Sim seconds; present once it has left the hand with the pin out. */
   fuseRemainingSimSeconds?: number;
+  /** A trap lying set on the floor, or shut on a leg (core/bearTrap.ts); absent while it is safe to carry. */
+  trap?: TrapState;
   /**
    * Game-clock timestamp when it was made; absent means before the world began (day 1,
    * 00:00). Food rots from then (core/food.ts).
@@ -62,6 +64,11 @@ export interface ItemFields<Node> {
   slots?: ItemSlots<Node>;
   work?: CraftWork<Node> | undefined;
 }
+
+/** Holding a zombie by id, or the player when `zombie` is absent. */
+export type TrapState =
+  | { state: 'armed' }
+  | { state: 'holding'; zombie?: number; remainingSimSeconds: number };
 
 type ItemSlots<Node> = Record<string, Node>;
 
@@ -101,6 +108,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: item.litAtGameTimestamp }),
     ...(item.pinPulled === undefined ? {} : { pinPulled: item.pinPulled }),
     ...(item.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: item.fuseRemainingSimSeconds }),
+    ...(item.trap === undefined ? {} : { trap: { ...item.trap } }),
     ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
@@ -168,6 +176,23 @@ const assertSavedFuse = (def: ItemDef, state: ItemState): void => {
   }
 };
 
+/** Only a single trap is set or shut, and a hold never outlasts the trap's own. */
+const assertSavedTrap = (def: ItemDef, state: ItemState): void => {
+  const { trap } = state;
+  if (trap === undefined) {
+    return;
+  }
+  const holdValid =
+    trap.state === 'armed' ||
+    (Number.isFinite(trap.remainingSimSeconds) &&
+      trap.remainingSimSeconds > 0 &&
+      trap.remainingSimSeconds <= (def.trap?.holdSimSeconds ?? 0) &&
+      (trap.zombie === undefined || Number.isSafeInteger(trap.zombie)));
+  if (!(def.trap && state.count === 1 && holdValid)) {
+    throw new Error('Invalid saved trap state');
+  }
+};
+
 const assertSavedLootCount = (state: ItemState): void => {
   if (
     state.lootedCount !== undefined &&
@@ -208,6 +233,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
   assertSavedBurnState(def, state);
   assertSavedFuse(def, state);
+  assertSavedTrap(def, state);
   assertSavedLootCount(state);
   const firearm = restoreFirearmState(registry, def, state);
   const magazineReason =
@@ -229,6 +255,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: state.litAtGameTimestamp }),
     ...(state.pinPulled === undefined ? {} : { pinPulled: state.pinPulled }),
     ...(state.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: state.fuseRemainingSimSeconds }),
+    ...(state.trap === undefined ? {} : { trap: { ...state.trap } }),
     ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
