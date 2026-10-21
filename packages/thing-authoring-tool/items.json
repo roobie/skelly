@@ -1,0 +1,201 @@
+{
+  "defaultMaterial": "paint-charcoal",
+  "facets": 48,
+  "items": [
+    {
+      "connections": [],
+      "id": "electrical_tape",
+      "parts": [
+        {
+          "family": "ring",
+          "finish": {
+            "body": "paint-terracotta",
+            "core": "paperboard-tan"
+          },
+          "id": "electrical_tape",
+          "massKg": 0.029999999999999999,
+          "params": {
+            "coreRadius": "0.016",
+            "height": "0.021000000000000001",
+            "innerRadius": "0.012",
+            "outerRadius": "0.040000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "id": "sewing_thread",
+      "parts": [
+        {
+          "family": "spool",
+          "finish": {
+            "core": "paperboard-tan",
+            "winding": "paint-terracotta"
+          },
+          "id": "sewing_thread",
+          "massKg": 0.014999999999999999,
+          "params": {
+            "coreRadius": "0.017999999999999999",
+            "flangeHeight": "0.0080000000000000002",
+            "flangeInset": "0.0040000000000000001",
+            "grooveDepth": "0.0015",
+            "height": "0.050000000000000003",
+            "outerRadius": "0.027",
+            "windingRadius": "0.025999999999999999",
+            "windings": "5"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "id": "nylon_cord",
+      "parts": [
+        {
+          "family": "coil",
+          "finish": {
+            "body": "cord-olive"
+          },
+          "id": "nylon_cord",
+          "massKg": 0.059999999999999998,
+          "params": {
+            "pitch": "0.0060000000000000001",
+            "radius": "0.029000000000000001",
+            "tubeRadius": "0.0035000000000000001",
+            "turns": "4"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "id": "fuse",
+      "parts": [
+        {
+          "family": "fuse",
+          "finish": {
+            "body": "glass-grey",
+            "cap": "steel-grey"
+          },
+          "id": "fuse",
+          "massKg": 0.01,
+          "params": {
+            "capLength": "0.0080000000000000002",
+            "capRadius": "0.010999999999999999",
+            "length": "0.070000000000000007",
+            "radius": "0.0089999999999999993"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [
+        {
+          "from": "base.arm",
+          "to": "arm.base"
+        },
+        {
+          "from": "arm.shade",
+          "to": "shade.arm"
+        }
+      ],
+      "id": "dead_desk_lamp",
+      "parts": [
+        {
+          "family": "cylinder",
+          "finish": {
+            "body": "paint-charcoal"
+          },
+          "id": "base",
+          "massKg": 0.5,
+          "params": {
+            "height": "0.012",
+            "radius": "0.047"
+          },
+          "ports": [
+            {
+              "gender": "female",
+              "id": "arm",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0.012, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
+        },
+        {
+          "family": "arm",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "arm",
+          "massKg": 0.25,
+          "params": {
+            "depth": "0.012",
+            "elbowX": "-0.025000000000000001",
+            "elbowY": "0.085000000000000006",
+            "endX": "0.070000000000000007",
+            "endY": "0.13",
+            "width": "0.01"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "base",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            },
+            {
+              "gender": "female",
+              "id": "shade",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0.070000000000000007, 0.13, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
+        },
+        {
+          "family": "shade",
+          "finish": {
+            "body": "paint-terracotta"
+          },
+          "id": "shade",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "bottomRadius": "0.050000000000000003",
+            "height": "0.040000000000000001",
+            "topRadius": "0.025000000000000001",
+            "wall": "0.0030000000000000001"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "arm",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "units": {
+    "bevel": 0,
+    "grid": 0.001,
+    "metresPerUnit": 1
+  }
+}

@@ -7,6 +7,7 @@ import { type Report, validate } from '@skelly/engine/assembly/validate.ts';
 import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import { worldBox } from '@skelly/engine/shapes/geometry.ts';
 import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '@skelly/engine/shapes/revolve.ts';
+import { createOrbitControls } from '@skelly/tool-ui/orbit';
 import {
   Box3,
   Color,
@@ -24,7 +25,6 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import { actionOpenOffsets, resolveGunAction } from '../gun/actionDescription.ts';
 import { previewFittedAttachments } from '../gun/attachmentPreview.ts';
@@ -249,8 +249,7 @@ grid.position.y = -16;
 scene.add(grid);
 
 const camera = new PerspectiveCamera(40, 1, 0.1, 1000);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+const controls = createOrbitControls(camera, renderer.domElement);
 
 // OrbitControls handles keys only on the browser's delayed key-repeat cadence.
 // Keep the camera's orbit relation intact while applying held arrow keys every frame.

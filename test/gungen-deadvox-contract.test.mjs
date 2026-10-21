@@ -9,6 +9,7 @@ import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
+import { assertExportSynced, assertRecipeCredits, glbJson } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
@@ -18,63 +19,6 @@ const DESIGNS = join(ROOT, 'gungen/designs');
 const DEADVOX_BASE = join(ROOT, 'packages/deadvox/src/content/base');
 const RECIPE = loadExportRecipe();
 const EXPORTED = RECIPE.map((row) => ({ id: row.id, source: row.source, ...row.generate() }));
-const glbJson = (bytes) =>
-  JSON.parse(
-    bytes
-      .subarray(20, 20 + bytes.readUInt32LE(12))
-      .toString()
-      .trim(),
-  );
-const glbBinary = (bytes) => bytes.subarray(28 + bytes.readUInt32LE(12));
-const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
-const arrayDifference = (actual, expected, path) => {
-  if (!(Array.isArray(actual) && Array.isArray(expected))) {
-    return `${path} should be arrays`;
-  }
-  if (actual.length !== expected.length) {
-    return `${path} array lengths differ`;
-  }
-  for (let i = 0; i < actual.length; i += 1) {
-    const difference = exportDifference(actual[i], expected[i], `${path}[${i}]`);
-    if (difference) {
-      return difference;
-    }
-  }
-  return null;
-};
-const recordDifference = (actual, expected, path) => {
-  if (!(isRecord(actual) && isRecord(expected))) {
-    return `${path} should be objects`;
-  }
-  const actualKeys = Object.keys(actual).sort();
-  const expectedKeys = Object.keys(expected).sort();
-  if (actualKeys.length !== expectedKeys.length || actualKeys.some((key, index) => key !== expectedKeys[index])) {
-    return `${path} object keys differ`;
-  }
-  for (const key of expectedKeys) {
-    const difference = exportDifference(actual[key], expected[key], `${path}.${key}`);
-    if (difference) {
-      return difference;
-    }
-  }
-  return null;
-};
-const exportDifference = (actual, expected, path = '$') => {
-  if (typeof actual === 'number' || typeof expected === 'number') {
-    if (typeof actual !== 'number' || typeof expected !== 'number') {
-      return `${path} should be a number`;
-    }
-    const tolerance = 1e-12 * Math.max(1, Math.abs(actual), Math.abs(expected));
-    return Math.abs(actual - expected) > tolerance ? `${path}: ${actual} differs from ${expected}` : null;
-  }
-  if (Array.isArray(actual) || Array.isArray(expected)) {
-    return arrayDifference(actual, expected, path);
-  }
-  if (isRecord(actual) || isRecord(expected)) {
-    return recordDifference(actual, expected, path);
-  }
-  return Object.is(actual, expected) ? null : `${path} differs`;
-};
 const loadExports = () =>
   readdirSync(DESIGNS)
     .filter((file) => file.endsWith('.json') && !file.startsWith('look-'))
@@ -108,19 +52,14 @@ describe('gungen exports satisfy deadvox model validation', () => {
   });
 
   it('reproduces the exporter-written model entry and GLB of every recipe row', () => {
-    for (const { id, glb, modelEntry, source } of EXPORTED) {
-      const { file } = modelEntry;
-      assert.equal(modelEntry.id, id, `${source}: recipe identity was not used`);
-      assert.equal(file, `assets/models/${id}.glb`, `${source}: recipe output path was not used`);
-      // Node math varies in the last bits for geometric centres as well as linear colours.
-      const committedEntry = JSON.parse(readFileSync(join(DEADVOX_BASE, 'gungen', `${id}.model.json`), 'utf8'));
-      assert.equal(exportDifference(committedEntry, modelEntry), null, `${id}: ${source}`);
-      assert.ok(safeParse(ModelSchema, modelEntry).success, `${id}: invalid exported model`);
-      const committedGlb = readFileSync(join(DEADVOX_BASE, file));
-      const exportedGlb = Buffer.from(glb);
-      assert.equal(exportDifference(glbJson(committedGlb), glbJson(exportedGlb)), null, `${file}: ${source}`);
-      assert.ok(glbBinary(committedGlb).equals(glbBinary(exportedGlb)), `${file}: geometry differs from ${source}`);
+    for (const exported of EXPORTED) {
+      assertExportSynced(exported, DEADVOX_BASE, 'gungen');
+      assert.ok(safeParse(ModelSchema, exported.modelEntry).success, `${exported.id}: invalid exported model`);
     }
+  });
+
+  it('credits every recipe export in the asset manifest', () => {
+    assertRecipeCredits(RECIPE, JSON.parse(readFileSync(join(DEADVOX_BASE, 'assets/manifest.json'), 'utf8')));
   });
 
   it('leaves no committed exporter-written model without a recipe row', () => {

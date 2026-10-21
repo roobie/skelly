@@ -1,0 +1,48 @@
+name: thing-authoring-tool
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/thing-authoring-tool/**'
+      - 'packages/thing-core/**'
+      - 'packages/thing-export/**'
+      - 'packages/engine/**'
+      - 'packages/tool-ui/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/thing-authoring-tool.yml'
+      - '!**/*.md'
+  pull_request:
+    paths:
+      - 'packages/thing-authoring-tool/**'
+      - 'packages/thing-core/**'
+      - 'packages/thing-export/**'
+      - 'packages/engine/**'
+      - 'packages/tool-ui/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/thing-authoring-tool.yml'
+      - '!**/*.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/thing-authoring-tool
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ../..
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx vite build

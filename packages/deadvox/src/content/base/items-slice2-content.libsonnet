@@ -22,7 +22,6 @@
       "id": "electrical_tape",
       "name": "Electrical tape",
       "category": "material",
-      "weight": 30,
       "size": [1, 1],
       "stack": 6,
       "model": "tape_roll"
@@ -112,7 +111,6 @@
       "id": "sewing_thread",
       "name": "Sewing thread",
       "category": "material",
-      "weight": 15,
       "size": [1, 1],
       "stack": 6,
       "model": "thread_spool"
@@ -121,7 +119,6 @@
       "id": "fuse",
       "name": "Glass fuse",
       "category": "material",
-      "weight": 10,
       "size": [1, 1],
       "stack": 10,
       "model": "fuse"
@@ -130,7 +127,6 @@
       "id": "nylon_cord",
       "name": "Nylon cord",
       "category": "material",
-      "weight": 60,
       "size": [1, 2],
       "stack": 5,
       "model": "cord_coil"
@@ -199,7 +195,6 @@
       "id": "dead_desk_lamp",
       "name": "Dead desk lamp",
       "category": "misc",
-      "weight": 900,
       "size": [2, 3],
       "model": "desk_lamp",
       "salvageTimeGameMinutes": 5,

@@ -9,6 +9,7 @@ const BIOME_EXECUTABLE = resolve(REPOSITORY_ROOT, 'node_modules/@biomejs/biome/b
 const OUTPUT_MANIFEST = resolve(REPOSITORY_ROOT, 'tools/jsonnet/outputs.json');
 const SOURCE_ROOTS = [
   'packages/thing-core/src',
+  'packages/thing-authoring-tool',
   'packages/deadvox/maps',
   'packages/deadvox/src/content/base',
   'packages/deadvox/src/config',

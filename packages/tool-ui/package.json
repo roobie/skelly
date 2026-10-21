@@ -15,7 +15,10 @@
     "typescript": "^7.0.2"
   },
   "exports": {
-    "./scene": "./src/scene.ts"
+    "./scene": "./src/scene.ts",
+    "./orbit": "./src/orbit.ts",
+    "./preview": "./src/preview.ts",
+    "./three-runtime": "./src/threeRuntime.ts"
   },
   "peerDependencies": {
     "three": "^0.186.0"

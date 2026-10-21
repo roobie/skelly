@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@skelly/engine": "*",
-    "@skelly/thing-core": "*"
+    "@skelly/thing-core": "*",
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

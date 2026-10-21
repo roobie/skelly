@@ -6,13 +6,15 @@
   "exports": {
     "./schema": "./src/schema.ts",
     "./materials": "./src/materials.ts",
-    "./mass": "./src/mass.ts"
+    "./mass": "./src/mass.ts",
+    "./single-part": "./src/singlePart.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
+    "@skelly/engine": "*",
     "valibot": "^1.5.0"
   },
   "devDependencies": {
