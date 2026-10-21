@@ -57,6 +57,12 @@ test('Pages project checks run in their PR workflows', () => {
     { name: 'Gungen', pageStep: 'Check and build gungen', workflow: gungen, job: 'check' },
     { name: 'Deadvox', pageStep: 'Check and build deadvox', workflow: deadvox, job: 'fast' },
     { name: 'Mobgen', pageStep: 'Check and build mobgen', workflow: mobgen, job: 'check' },
+    {
+      name: 'Thing authoring',
+      pageStep: 'Check and build thing-authoring-tool',
+      workflow: readWorkflow('thing-authoring-tool.yml'),
+      job: 'check',
+    },
   ];
 
   for (const { name, pageStep, workflow, job } of projects) {
@@ -108,7 +114,7 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
   const temp = mkdtempSync(join(tmpdir(), 'skelly-pages-assembly-'));
   try {
     cpSync(join(ROOT, 'site'), join(temp, 'site'), { recursive: true });
-    for (const project of ['gungen', 'packages/deadvox', 'packages/mobgen']) {
+    for (const project of ['gungen', 'packages/deadvox', 'packages/mobgen', 'packages/thing-authoring-tool']) {
       const dist = join(temp, project, 'dist');
       mkdirSync(dist, { recursive: true });
       writeFileSync(join(dist, 'index.html'), `<main>${project}</main>`);
@@ -116,7 +122,7 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
 
     execFileSync('bash', ['-euo', 'pipefail', '-c', assembly.run], { cwd: temp });
 
-    for (const project of ['gungen', 'deadvox', 'mobgen']) {
+    for (const project of ['gungen', 'deadvox', 'mobgen', 'thing-authoring-tool']) {
       assert.ok(existsSync(join(temp, '_site', project, 'index.html')), `${project} index is at its Pages path`);
     }
     assert.ok(

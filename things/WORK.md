@@ -5,6 +5,7 @@ read_if:
   - you decide where a shared concept, schema field or tool UI part belongs
   - you move the engine's export layer, the material data or mass out of gungen or the engine
   - you change the recipe defining the gun tool's reproduction exit
+  - you continue the non-gun slice or migrate shared visuals and handling datums
 ---
 
 # WORK
@@ -33,7 +34,6 @@ Why each boundary matters, and where it is checked:
 
 - Which parts of gungen's viewer are generic and which are gun-specific; settled when the gun
   tool phase moves gun code onto the shared packages.
-- Whether `PartFamily` and `ParamSpec` already work as family builders for non-gun things.
 - How validation, collision and the viewer rebuild scale with part count; no benchmark exists,
   so measure before optimising.
 - The smallest benchmark set to add before the thing tool adds load.
@@ -75,9 +75,22 @@ Settled:
   "Rules"; `things/README.md`, "Packages").
 - Every thing is an assembly; `thing-core` gives a single-part thing a short helper that
   wraps its one part. Export, mass and preview then have one path, the setup is written
-  once, and a single-part thing can gain parts later without a rewrite.
+  once, and a single-part thing can gain parts later without a rewrite. See
+  `packages/thing-core/src/singlePart.ts`, `singlePart`.
+- Each thing-tool item has its own row and model entry, even when several items reuse a
+  family builder and geometry. Its authored mass then has one home, with no exception for
+  shared visuals, and a later independent look needs no migration. See
+  `packages/thing-authoring-tool/src/catalogue.ts`, `ToolItem`.
+- The thing tool authors grip, hold and roll against its geometry so reshaping a handle
+  also moves its hand datum; Deadvox keeps gameplay fields rather than a second geometry
+  authority. This governs families with handling datums in the remaining-families phase.
+- Engine family and parameter types serve non-gun parts, so the thing tool needs no
+  parallel assembly schema. See `packages/thing-authoring-tool/src/catalogue.ts`, `buildItem`.
 - The engine ends at assembly; export belongs above the neutral core so material and model
   contracts cannot pull dependencies back into geometry (`packages/engine/README.md`, "Layers").
+- The thing authoring tool owns non-gun family policy above the shared packages, so
+  neither the engine nor the core knows its item kinds. Its home is
+  `packages/thing-authoring-tool/README.md`.
 - The directory structure is fixed before any new feature work.
 - Packages live in the top-level `packages/` directory, each a workspace of the root
   package. Gungen stays at the root until the gun tool phase, so it moves once, under its
@@ -88,12 +101,13 @@ Settled:
   question 2 is answered. Each phase may keep a short-lived task
   file in `things/`, deleted when the phase merges.
 
-Proposed, not settled: the tool rows of the target structure below and every answer to an
-open question. Move an item up here once it is decided.
+Proposed, not settled: the gun-tool row of the target structure below and every answer
+to an open question. Move an item up here once it is decided.
 
 ## Target structure
 
-The engine, `thing-core` and export rows follow "Decisions"; the tool rows are proposed.
+The engine, core, export and thing-tool rows follow "Decisions"; the gun-tool row awaits
+its replacement phase.
 
 | Area | Home |
 |---|---|
@@ -103,7 +117,7 @@ The engine, `thing-core` and export rows follow "Decisions"; the tool rows are p
 | Material table, anchors, neutral model envelope | `thing-core` |
 | GLB and model-entry writing, per-part mass and centre of mass | the export package |
 | Scene, camera, parameter panel, URL state | `packages/tool-ui` |
-| Generic parts and rules | `thing-authoring-tool` |
+| Generic parts and rules | `packages/thing-authoring-tool` |
 | Gun parts, rules, cycling, ammo UI | `gun-authoring-tool` |
 | Gameplay and content fields | `deadvox` |
 
@@ -130,9 +144,13 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    `packages/thing-export/README.md`, "Physical model";
    `gungen/src/gun/physical.jsonnet`, `partMasses`; and
    `packages/deadvox/src/core/items.ts`, `typeWeightGrams`.
-3. **Thing tool, first slice.** One non-gun family end to end: source, build, GLB, model
-   entry, validation and load in deadvox, viewed in the tool. Exit: those models replace
-   their committed binaries.
+3. **Thing tool, first slice — complete.** Tape, thread, cord and fuse atoms plus a
+   multi-part desk lamp share the source-to-preview and export path. The lamp proves that the single-part helper's users
+   can gain parts, and that non-gun parts carry summed mass and a weighted centre without
+   a competing item weight. The remaining-families phase then starts on an exercised path.
+   Reproducible source ownership keeps the shipped binaries from silently diverging; see
+   `packages/thing-authoring-tool/exports/deadvox.jsonnet` and
+   `test/things-deadvox-contract.test.mjs`.
 4. **Thing tool, remaining families.** Family by family, each with source, GLB, entry and
    load test together. The compass keeps its dedicated display renderer.
 5. **Gun tool.** Move gungen's gun and ammo logic onto the shared packages as an authoring

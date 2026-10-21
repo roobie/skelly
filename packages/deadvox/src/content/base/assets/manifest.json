@@ -42,6 +42,21 @@
       "url": "https://github.com/roobie/skelly/blob/main/gungen/exports/deadvox.jsonnet"
     },
     {
+      "author": "Skelly contributors",
+      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "download": null,
+      "files": [
+        "assets/models/tape_roll.glb",
+        "assets/models/thread_spool.glb",
+        "assets/models/cord_coil.glb",
+        "assets/models/fuse.glb",
+        "assets/models/desk_lamp.glb"
+      ],
+      "licence": "CC0-1.0",
+      "title": "Thing tool authored models",
+      "url": "https://github.com/roobie/skelly/blob/main/packages/thing-authoring-tool/exports/deadvox.jsonnet"
+    },
+    {
       "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
       "changes": "K_22P near take, single-shot slices 0.82–1.90 s and 7.42–8.50 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade.",
       "download": "Prepared SFX Library.7z",
@@ -487,7 +502,6 @@
         "assets/models/wire_spool.glb",
         "assets/models/lamp_oil_bottle.glb",
         "assets/models/glass_shards.glb",
-        "assets/models/tape_roll.glb",
         "assets/models/fastener_pack.glb",
         "assets/models/wood_offcut.glb",
         "assets/models/rubber_strip.glb",
@@ -498,13 +512,9 @@
         "assets/models/stab_vest.glb",
         "assets/models/riot_helmet.glb",
         "assets/models/riot_helmet_view.glb",
-        "assets/models/thread_spool.glb",
-        "assets/models/fuse.glb",
-        "assets/models/cord_coil.glb",
         "assets/models/pliers.glb",
         "assets/models/sewing_kit.glb",
         "assets/models/broken_toaster.glb",
-        "assets/models/desk_lamp.glb",
         "assets/models/table_fan.glb",
         "assets/models/cracked_phone.glb",
         "assets/models/broken_clock.glb",

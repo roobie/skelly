@@ -1,0 +1,5 @@
+{
+  "id": "cord_coil",
+  "file": "assets/models/cord_coil.glb",
+  "parts": { "nylon_cord": { "node": "nylon_cord:coil", "massKg": 0.06, "centreOfMass": [0, 0.012500000000000004, 0] } }
+}
