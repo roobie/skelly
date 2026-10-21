@@ -24,7 +24,7 @@ const TUTORIAL_LINK_PATTERN = /<a[^>]*class="tutorial-action"[^>]*>/;
 const BEGINNER_LINK_PATTERN = /<a[^>]*class="beginner-action"[^>]*>/;
 const ROUND1_STATIC_URL = playtestRound(1).url;
 const ROUND1_LANGUAGE_PATTERN = /lang=\$\{language\}/;
-const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title|deadvox-playtest/;
+const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title/;
 const LINKS_CARD_PATTERN = /<section class="card" aria-labelledby="links-title">([\s\S]*?)<\/section>/;
 const ENGLISH_DOCUMENT_LANGUAGE_PATTERN = /<html lang="en">/;
 const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
@@ -394,12 +394,13 @@ describe('site launcher playtest entry', () => {
     assert.equal(playtestRound(2).playQuery, 'site=gauntlet');
   });
 
-  it('keeps the Round 1 link in a separate links card', () => {
+  it('keeps the Round 1 and Round 2 links in a separate links card', () => {
     assert.doesNotMatch(page, UMBRELLA_PLAYTEST_MARKUP_PATTERN);
     const linksCard = page.match(LINKS_CARD_PATTERN);
     assert.ok(linksCard, 'the umbrella launcher has a link-list card');
     assert.ok(linksCard[1].includes('<ul>'), 'the link card presents a list');
     assert.ok(linksCard[1].includes('href="deadvox/playtest/round1/"'));
+    assert.ok(linksCard[1].includes(`href="${playtestRound(2).url}"`));
     assert.match(page, DEADVOX_FORM_PATTERN);
   });
 
