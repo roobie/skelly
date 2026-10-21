@@ -115,9 +115,21 @@ function removeOrphanedOutputs(currentFiles) {
   }
 }
 
-export function compileJsonnetSources({ check = false } = {}) {
+export function compileJsonnetSources({ check = false, within } = {}) {
   const sources = SOURCE_ROOTS.flatMap((root) => jsonnetFiles(resolve(REPOSITORY_ROOT, root))).sort();
   const manifest = createManifest(sources);
+  if (within) {
+    if (check) {
+      throw new Error('A partial Jsonnet compile cannot be checked; the manifest covers the full source set');
+    }
+    const inside = manifest.files.filter(({ source }) =>
+      within.some((directory) => source.startsWith(`${directory}/`)),
+    );
+    if (inside.length === 0) {
+      throw new Error(`No Jsonnet sources under ${within.join(', ')}`);
+    }
+    return compileOutputs(inside);
+  }
   if (check) {
     checkManifest(manifestText(manifest));
     return checkOutputs(manifest.files);

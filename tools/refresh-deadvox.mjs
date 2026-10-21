@@ -1,9 +1,12 @@
 import { resolve } from 'node:path';
-import { loadExportRecipe } from '../gungen/src/cli/exportRecipe.ts';
-import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
 import { writeRecipeExports } from '../packages/thing-export/src/files.ts';
 import { compileJsonnetSources } from './jsonnet/compile.mjs';
 import { REPOSITORY_ROOT } from './jsonnet/index.mjs';
+
+// The recipes and catalogues are static JSON imports, so the tools' own sources compile before their loaders are imported.
+compileJsonnetSources({ within: ['packages/thing-core/src', 'packages/thing-authoring-tool', 'gungen'] });
+const { loadExportRecipe } = await import('../gungen/src/cli/exportRecipe.ts');
+const { loadThingRecipe } = await import('../packages/thing-authoring-tool/src/exports.ts');
 
 const jobs = [
   { directory: 'gungen', recipe: loadExportRecipe() },
@@ -16,4 +19,5 @@ if (new Set(ids).size !== ids.length) {
 for (const { directory, recipe } of jobs) {
   writeRecipeExports(recipe, resolve(REPOSITORY_ROOT, 'packages/deadvox/src/content/base'), directory);
 }
+// Content Jsonnet imports the model files written above, so the full compile runs last.
 compileJsonnetSources();
