@@ -4,7 +4,7 @@ export type Fields = Record<string, number | string | boolean>;
 export interface Fixture {
   id: string;
   positionMetres: number[];
-  velocityMetresPerSecond: number[];
+  velocityMetresPerSimSecond: number[];
   groundHeightMetres: number;
   halfHeightMetres: number;
   resource: number;

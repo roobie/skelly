@@ -14,7 +14,7 @@ class MovingBody implements Adapter {
   constructor(fixture: Fixture, tickHz: number) {
     this.fixture = fixture;
     this.tickHz = tickHz;
-    this.values = [...fixture.positionMetres, ...fixture.velocityMetresPerSecond, 0, 0, fixture.resource, 0];
+    this.values = [...fixture.positionMetres, ...fixture.velocityMetresPerSimSecond, 0, 0, fixture.resource, 0];
     if (this.values.length !== 10 || !this.values.every(Number.isFinite) || !(tickHz > 0)) {
       throw new Error('Invalid moving-body fixture');
     }

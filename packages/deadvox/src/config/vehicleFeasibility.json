@@ -38,7 +38,6 @@
   "maxTicksPerDispatch": 32,
   "probe": {
     "coarseAtTick": 401,
-    "durationTicks": 1200,
     "eventPeriodTicks": 13,
     "groundHeightMetres": 0,
     "halfHeightMetres": 0.5,
@@ -49,7 +48,8 @@
     "positionMetres": [0, 0.5, 0],
     "resource": 100,
     "saveAtTick": 517,
-    "velocityMetresPerSecond": [1, 0, 0],
+    "simTickCount": 1200,
+    "velocityMetresPerSimSecond": [1, 0, 0],
     "warmupTicks": 120
   },
   "proposal": true,
@@ -60,8 +60,8 @@
     "irregular": [0, 333, 1667, 48000],
     "restored": [17000, 0, 999, 1]
   },
-  "speedMetresPerSecond": 25,
-  "spinRadiansPerSecond": 1.5,
+  "speedMetresPerSimSecond": 25,
+  "spinRadiansPerSimSecond": 1.5,
   "tickHz": 120,
   "tolerances": {
     "crossEngineBits": 0,

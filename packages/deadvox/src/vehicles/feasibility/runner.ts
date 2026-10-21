@@ -72,12 +72,12 @@ export interface Run {
   traces: Trace[];
   work: Work;
   workPerTick: Work[];
-  tickMilliseconds: number[];
-  restoreMilliseconds: number[];
-  admissionMilliseconds: number;
-  totalMilliseconds: number;
-  simulatedSeconds: number;
-  simulatedSecondsPerRealSecond: number;
+  tickRealMilliseconds: number[];
+  restoreRealMilliseconds: number[];
+  admissionRealMilliseconds: number;
+  totalRealMilliseconds: number;
+  simSeconds: number;
+  simSecondsPerRealSecond: number;
   dispatch: { pendingQuanta: number; bodyBytes: number };
 }
 
@@ -125,9 +125,9 @@ function admittedDuration(ticks: number): number {
 export function runProbe(
   buildIdentity: string,
   candidate: Candidate = movingBody,
-  options: { restore?: boolean; schedule?: number[]; durationTicks?: number } = {},
+  options: { restore?: boolean; schedule?: number[]; simTickCount?: number } = {},
 ): Run {
-  const durationTicks = admittedDuration(options.durationTicks ?? envelope.probe.durationTicks);
+  const durationTicks = admittedDuration(options.simTickCount ?? envelope.probe.simTickCount);
   const start = performance.now();
   let adapter = candidate.create(envelope.probe, envelope.tickHz);
   const admissionMilliseconds = performance.now() - start;
@@ -202,12 +202,12 @@ export function runProbe(
       traces,
       work,
       workPerTick,
-      tickMilliseconds,
-      restoreMilliseconds,
-      admissionMilliseconds,
-      totalMilliseconds,
-      simulatedSeconds,
-      simulatedSecondsPerRealSecond: simulatedSeconds / (totalMilliseconds / 1000),
+      tickRealMilliseconds: tickMilliseconds,
+      restoreRealMilliseconds: restoreMilliseconds,
+      admissionRealMilliseconds: admissionMilliseconds,
+      totalRealMilliseconds: totalMilliseconds,
+      simSeconds: simulatedSeconds,
+      simSecondsPerRealSecond: simulatedSeconds / (totalMilliseconds / 1000),
       dispatch: { pendingQuanta: final.pendingQuanta, bodyBytes: final.body.byteLength },
     };
   } finally {
@@ -216,12 +216,12 @@ export function runProbe(
 }
 
 export function runSuite(buildIdentity: string, candidate: Candidate = movingBody) {
-  runProbe(buildIdentity, candidate, { durationTicks: envelope.probe.warmupTicks });
+  runProbe(buildIdentity, candidate, { simTickCount: envelope.probe.warmupTicks });
   const regular = runProbe(buildIdentity, candidate);
   const irregular = runProbe(buildIdentity, candidate, { schedule: envelope.schedulesQuanta.irregular });
   const restored = runProbe(buildIdentity, candidate, { restore: true, schedule: envelope.schedulesQuanta.restored });
   const compressed = runProbe(buildIdentity, candidate, {
-    schedule: [envelope.probe.durationTicks * envelope.quantaPerTick],
+    schedule: [envelope.probe.simTickCount * envelope.quantaPerTick],
   });
   const differences = [irregular, restored, compressed].map(
     (run) =>
@@ -229,7 +229,7 @@ export function runSuite(buildIdentity: string, candidate: Candidate = movingBod
       (regular.dispatch.pendingQuanta === run.dispatch.pendingQuanta
         ? null
         : {
-            tick: envelope.probe.durationTicks,
+            tick: envelope.probe.simTickCount,
             field: '$pendingQuanta',
             expected: String(regular.dispatch.pendingQuanta),
             actual: String(run.dispatch.pendingQuanta),

@@ -13,19 +13,19 @@ describe('vehicle feasibility common harness', () => {
     expect(suite.regular.traces.length).toBeGreaterThan(0);
     expect(suite.differences).toEqual([null, null, null]);
     expect(suite.restored.dispatch).toEqual(suite.regular.dispatch);
-    expect(suite.regular.work.drivingSteps).toBe(envelope.probe.durationTicks);
-    expect(suite.restored.restoreMilliseconds).toHaveLength(1);
+    expect(suite.regular.work.drivingSteps).toBe(envelope.probe.simTickCount);
+    expect(suite.restored.restoreRealMilliseconds).toHaveLength(1);
   });
 
   it('retains unforced coasting momentum past debris expiry without importing debris (A2)', () => {
     const body = create();
     try {
       const before = body.observe();
-      for (let tick = 0; tick < envelope.probe.durationTicks; tick++) {
+      for (let tick = 0; tick < envelope.probe.simTickCount; tick++) {
         body.advance({ drive: false });
       }
       const after = body.observe();
-      expect(after.tick).toBe(envelope.probe.durationTicks);
+      expect(after.tick).toBe(envelope.probe.simTickCount);
       expect(after.state.vx).toBe(before.state.vx);
       expect(after.state.x).toBeGreaterThan(before.state.x as number);
     } finally {

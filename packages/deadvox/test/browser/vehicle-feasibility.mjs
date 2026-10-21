@@ -24,10 +24,10 @@ const timingSummary = (samples) => {
   return { p50: percentile(0.5), p95: percentile(0.95), p99: percentile(0.99), max: ordered.at(-1) };
 };
 const summarize = (suite) => ({
-  tickMilliseconds: timingSummary(suite.regular.tickMilliseconds),
-  admissionMilliseconds: suite.regular.admissionMilliseconds,
-  restoreMilliseconds: suite.restored.restoreMilliseconds,
-  compressedSimulatedSecondsPerRealSecond: suite.compressed.simulatedSecondsPerRealSecond,
+  tickRealMilliseconds: timingSummary(suite.regular.tickRealMilliseconds),
+  admissionRealMilliseconds: suite.regular.admissionRealMilliseconds,
+  restoreRealMilliseconds: suite.restored.restoreRealMilliseconds,
+  compressedSimSecondsPerRealSecond: suite.compressed.simSecondsPerRealSecond,
   work: suite.regular.work,
   differences: suite.differences,
 });
