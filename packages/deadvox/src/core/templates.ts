@@ -38,10 +38,16 @@ export const turnFacing = (facing: Facing, turn: Turn): Facing => FACINGS[(FACIN
 
 /** A piece's cells as [x, y, z], seen from the template after its authored pose. */
 export const pieceSize = (size: readonly [number, number, number], facing: Facing, tip?: Tip): Vec3 => {
-  const tipped: Vec3 = tip === 'back' || tip === 'front' ? [size[0], size[2], size[1]]
-    : tip === 'left' || tip === 'right' ? [size[1], size[0], size[2]]
-    : [size[0], size[1], size[2]];
-  return facing === 'e' || facing === 'w' ? [tipped[2], tipped[1], tipped[0]] : tipped;
+  let tipped: Vec3 = [size[0], size[1], size[2]];
+  if (tip === 'back' || tip === 'front') {
+    tipped = [size[0], size[2], size[1]];
+  } else if (tip === 'left' || tip === 'right') {
+    tipped = [size[1], size[0], size[2]];
+  }
+  if (facing === 'e' || facing === 'w') {
+    return [tipped[2], tipped[1], tipped[0]];
+  }
+  return tipped;
 };
 
 /** Every [x, y, z] in a box, in (y, z, x) order: lowest layer first, then rows, then cells. */
@@ -122,7 +128,9 @@ export const templateLockIds = (registry: Registry, template: TemplateDef | MapP
       return [];
     }
     const { id } = entry.lock;
-    return (findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n', entry.tip)).anchors ?? []).map(() => id);
+    return (findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n', entry.tip)).anchors ?? []).map(
+      () => id,
+    );
   });
 
 /** A piece of furniture in a template, in template coordinates. */
