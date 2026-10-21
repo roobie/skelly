@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { build, preview } from 'vite';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { rankProfile, summarize } from './perf-baseline-stats.mjs';
+import { traceCapture } from './perf-baseline-trace.mjs';
 
 const { chromium } = await import('playwright');
 const leadingSlash = /^\//;
@@ -50,11 +51,20 @@ async function captureLook(page, directory, { route, mode, repeat }) {
   await writeFile(resolve(directory, `${route.id}-look.json`), JSON.stringify(look, null, 2));
 }
 
+function validateObservation(route, observation, errors) {
+  if (observation.visibility !== 'visible' || errors.length > 0) {
+    throw new Error(`Invalid run: ${JSON.stringify(errors)}`);
+  }
+  if (route.driver === 'sky' && observation.sky?.status !== 'complete') {
+    throw new Error('Sky route did not complete');
+  }
+}
+
 const options = Object.fromEntries(
   process.argv.slice(2).map((arg) => {
     const at = arg.indexOf('=');
     if (!arg.startsWith('--') || at < 0) {
-      throw new Error('Use --root=deadvox --out=PATH [--route=ID] [--config=PATH] [--executable=PATH]');
+      throw new Error('Use --root=deadvox --out=PATH [--route=ID] [--config=PATH] [--executable=PATH] [--trace=1]');
     }
     return [arg.slice(2, at), arg.slice(at + 1)];
   }),
@@ -69,6 +79,9 @@ const config = JSON.parse(await readFile(options.config ?? resolve(root, 'src/co
 const routes = config.routes.filter((route) => !options.route || route.id === options.route);
 if (routes.length === 0) {
   throw new Error('No matching routes');
+}
+if (options.trace === '1' && routes.some((route) => route.driver === 'sky')) {
+  throw new Error('Trace capture requires an orbit route with a separate warm-up');
 }
 const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 const sourceStatus = execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim();
@@ -150,6 +163,9 @@ try {
     args: ['--use-gl=angle', '--use-angle=gl-egl', '--ignore-gpu-blocklist', '--enable-gpu'],
   });
   result.chromium = browser.version();
+  const browserSession = await browser.newBrowserCDPSession();
+  result.gpu = (await browserSession.send('SystemInfo.getInfo')).gpu;
+  const traceSession = options.trace === '1' ? browserSession : null;
   async function run(route, mode, repeat) {
     console.info(`START ${repeat} ${route.id} ${mode}`);
     const page = await browser.newPage({ viewport: config.viewport, deviceScaleFactor: config.deviceScaleFactor });
@@ -171,6 +187,8 @@ try {
       }
     }, route.spawnCount);
     let cdp;
+    const tracePath = traceSession ? `${route.id}-${mode}-${repeat}.trace.json` : null;
+    const trace = traceCapture(traceSession, resolve(out, tracePath ?? 'unused'), config.traceCategories);
     try {
       await page.goto(new URL(route.path.replace(leadingSlash, ''), origin).href);
       await waitFor(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
@@ -230,7 +248,9 @@ try {
         await waitFor((count) => globalThis.perfBaseline.records.length >= count, config.warmFrames, {
           timeout: config.timeoutMs,
         });
+        await trace.start();
         await page.evaluate(() => {
+          performance.mark('perf-baseline-sample-start');
           const perf = globalThis.perfBaseline;
           perf.records = [];
           perf.resetPath();
@@ -251,8 +271,10 @@ try {
         result.profiles.push({ route: route.id, repeat, path: profilePath, ranking: rankProfile(profile) });
       }
       await page.evaluate(() => {
+        performance.mark('perf-baseline-sample-end');
         globalThis.perfBaseline.enabled = false;
       });
+      await trace.stop();
       await waitFor(
         () => {
           globalThis.perfBaseline.poll();
@@ -276,12 +298,7 @@ try {
       if (observation.sky) {
         observation.sky = JSON.parse(observation.sky);
       }
-      if (observation.visibility !== 'visible' || errors.length > 0) {
-        throw new Error(`Invalid run: ${JSON.stringify(errors)}`);
-      }
-      if (route.driver === 'sky' && observation.sky?.status !== 'complete') {
-        throw new Error('Sky route did not complete');
-      }
+      validateObservation(route, observation, errors);
       const records =
         route.driver === 'sky'
           ? observation.records.filter((record) => record.phase === 'warm')
@@ -298,7 +315,7 @@ try {
       }
       await page.screenshot({ path: resolve(out, `${route.id}-${mode}-${repeat}.png`) });
       await captureLook(page, out, { route, mode, repeat });
-      const evidence = { route: route.id, mode, repeat, identity, errors, ...observation, records, summary };
+      const evidence = { route: route.id, mode, repeat, identity, errors, tracePath, ...observation, records, summary };
       result.runs.push(evidence);
       await writeFile(resolve(out, `${route.id}-${mode}-${repeat}.json`), JSON.stringify(evidence));
       console.info(
@@ -306,7 +323,11 @@ try {
       );
       await writeFile(resolve(out, 'baseline.json'), JSON.stringify(result, null, 2));
     } finally {
-      await page.close();
+      try {
+        await trace.stop();
+      } finally {
+        await page.close();
+      }
     }
   }
   for (let repeat = 1; repeat <= config.repeats; repeat++) {
@@ -321,6 +342,7 @@ try {
   for (const route of routes.filter((workload) => workload.cpuProfile)) {
     await run(route, 'cpu', 1);
   }
+  result.gpuAfter = (await browserSession.send('SystemInfo.getInfo')).gpu;
   result.complete = true;
   await writeFile(resolve(out, 'baseline.json'), JSON.stringify(result, null, 2));
 } finally {

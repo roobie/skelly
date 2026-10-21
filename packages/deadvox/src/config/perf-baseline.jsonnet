@@ -7,6 +7,23 @@
   timeoutMs: 240000,
   queryDrainMs: 30000,
   modes: ['whole', 'passes'],
+  traceCategories: [
+    '-*',
+    'toplevel',
+    'benchmark',
+    'cc',
+    'gpu',
+    'viz',
+    'blink',
+    'blink.user_timing',
+    'devtools.timeline',
+    'renderer.scheduler',
+    'disabled-by-default-devtools.timeline',
+    'disabled-by-default-gpu.service',
+    'disabled-by-default-gpu.device',
+    'disabled-by-default-viz.gpu_composite',
+    'disabled-by-default-cc.debug.scheduler.frames',
+  ],
   routes: [
     {
       id: 'sky',

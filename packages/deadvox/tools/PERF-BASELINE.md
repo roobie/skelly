@@ -2,6 +2,7 @@
 read_if:
   - you're collecting or comparing a real-GPU Deadvox performance baseline
   - you're changing the performance harness or interpreting its evidence
+  - you're tracing browser presentation gaps or comparing query-free frame cadence
   - you're deciding whether a rejected measurement can support a performance claim
   - you're reducing main-thread inventory or collision work without changing simulation rules
 ---
@@ -53,6 +54,34 @@ adaptation because elapsed queries cannot nest. Record the effective scene scale
 results from an older size cannot steer the resized target. Warm-up must allow resolution to
 settle before comparing sustained-load costs; see `packages/deadvox/tools/perf-baseline-browser.mjs`,
 `install`, and `packages/deadvox/src/config/perf-baseline.jsonnet`.
+
+## Browser interval attribution
+
+A short game callback and a short GPU query do not account for the interval between animation
+frames. Browser scheduling, worker callbacks, compositing and presentation can consume or defer
+the rest. Capture a browser-wide trace rather than treating a main-thread CPU profile's
+unattributed samples as waiting. See `packages/deadvox/tools/perf-baseline.mjs`, `run`, and
+`packages/deadvox/tools/perf-baseline-trace.mjs`, `startTrace`. Trace capture is restricted to
+orbit workloads so warm-up and the sampled window have separate boundaries.
+
+Tracing is a separate diagnostic condition: its overhead must not be folded into an untraced
+baseline. Preserve the raw trace and its sample-boundary marks alongside frame records, and
+compare traced and untraced repeats before attributing a gap. Browser-wide capture includes
+other contexts and processes, so inspect process and frame identity before joining events.
+An accelerated WebGL renderer does not establish accelerated compositing: the browser can copy
+the canvas back to software outside the measured game callback. Preserve the browser's GPU
+feature status before and after drawing, as well as WebGL identity, before transferring a result
+to another browser or GPU. See `packages/deadvox/tools/perf-baseline.mjs` for that evidence.
+Trace categories belong to the workload config so repeated captures request the same evidence.
+See `packages/deadvox/src/config/perf-baseline.jsonnet`, `traceCategories`.
+
+Query-free collection must not silently start a CPU profiler: either diagnostic can perturb
+cadence. The `off` sampling mode preserves callback and scene evidence without elapsed GPU
+queries or profiling; GPU cost remains absent rather than zero. See
+`packages/deadvox/tools/perf-baseline-browser.mjs`, `install`, and
+`packages/deadvox/tools/perf-baseline-stats.mjs`, `summarize`. Query-free collection also suspends
+the adapter's GPU-driven resolution feedback, so compare only frames at matching effective
+scene scale. Diagnostic URL overrides and sampling configs are not proposed game defaults.
 
 Raw warm frames accompany each summary, enabling different aggregation without repeating
 the expensive hardware run. Compare repeat spreads as well as pooled results; no automatic

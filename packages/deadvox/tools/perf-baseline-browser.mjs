@@ -127,7 +127,7 @@ export function install(engine) {
     perf.current = record;
     perf.label = null;
     const start = performance.now();
-    if (perf.mode !== 'cpu') {
+    if (perf.mode !== 'cpu' && perf.mode !== 'off') {
       if (perf.mode === 'whole') {
         open('whole');
       } else {
