@@ -7,6 +7,7 @@ import type { Vec3 } from './coords.ts';
 import type { HandlingQueue, MoveJob } from './handling.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
+import { NO_LANDING_REFUSAL } from './itemThrow.ts';
 import { chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { Readable } from './readable.ts';
@@ -103,15 +104,19 @@ export const playerPockets = (
     })),
   );
 
-/** Ordinary drop finds room for either a carried move or a fresh emission. */
+/** Ordinary drop finds room for either a carried move or a fresh emission, on the ground below each spot. */
 export const dropTarget = (
-  inv: Pick<Inventory, 'locate' | 'planAdd' | 'plan'>,
+  inv: Pick<Inventory, 'locate' | 'planAdd' | 'plan' | 'landing'>,
   item: Item,
   feet: Vec3,
 ): { target: Target; plan: Plan } => {
   let first: { target: Target; plan: Plan } | undefined;
   const fresh = inv.locate(item) === undefined;
-  for (const pos of dropSpots(feet)) {
+  for (const spot of dropSpots(feet)) {
+    const pos = inv.landing(spot);
+    if (!pos) {
+      continue;
+    }
     const target: Target = { kind: 'pile', pos };
     const plan = fresh ? inv.planAdd(item, target) : inv.plan(item, target);
     first ??= { target, plan };
@@ -119,7 +124,7 @@ export const dropTarget = (
       return { target, plan };
     }
   }
-  return first!;
+  return first ?? { target: { kind: 'pile', pos: feet }, plan: { ok: false, reason: NO_LANDING_REFUSAL } };
 };
 
 /** A sling-fitted long gun goes on a free shoulder before any pocket or the ground: the sling is for carrying it. */
@@ -187,32 +192,25 @@ const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
   return targets.find(({ plan }) => plan.ok && plan.merge)?.target ?? targets.find(({ plan }) => plan.ok)?.target;
 };
 
-/** Dominant-hand items stow; other carried items drop exactly at the feet. */
+/** Dominant-hand items stow; other carried items drop as an ordinary drop does. */
 export const quickMove = (item: Item, view: ReachSnapshot): MoveOption => {
   const inv = view.player.inventory;
   const at = inv.locate(item);
-  let target: Target = { kind: 'pile', pos: view.feet };
-  if (at && ((at.kind === 'hand' && at.side === dominantSide(inv.character)) || inv.placeOf(at) !== undefined)) {
-    const wear: Target = { kind: 'worn' };
-    const sling = slingTarget(inv, item);
-    if (sling) {
-      target = sling;
-    } else if (at.kind === 'pile' && item.pockets && inv.plan(item, wear).ok) {
-      target = wear;
-    } else {
-      const pocket = inventoryPocket(inv, item);
-      if (!pocket) {
-        return {
-          kind: 'move',
-          label: 'Quick move',
-          target,
-          plan: { ok: false, reason: "It doesn't fit in your inventory" },
-        };
-      }
-      target = pocket;
-    }
+  if (!(at && ((at.kind === 'hand' && at.side === dominantSide(inv.character)) || inv.placeOf(at) !== undefined))) {
+    return { kind: 'move', label: 'Quick move', ...dropTarget(inv, item, view.feet) };
   }
-  return { kind: 'move', label: 'Quick move', target, plan: inv.plan(item, target) };
+  const wear: Target = { kind: 'worn' };
+  const target =
+    slingTarget(inv, item) ??
+    (at.kind === 'pile' && item.pockets && inv.plan(item, wear).ok ? wear : inventoryPocket(inv, item));
+  return target
+    ? { kind: 'move', label: 'Quick move', target, plan: inv.plan(item, target) }
+    : {
+        kind: 'move',
+        label: 'Quick move',
+        target: { kind: 'pile', pos: view.feet },
+        plan: { ok: false, reason: "It doesn't fit in your inventory" },
+      };
 };
 
 const refuseUse = (reason: string): UseOption => ({ kind: 'use', label: 'Use', plan: { ok: false, reason } });
@@ -387,12 +385,19 @@ const liveTargetFor = (inv: Inventory, target: Target): Target | undefined => {
   return owner ? { ...target, owner } : undefined;
 };
 
+/** A copy to plan a sequence of moves on; it lands drops as the live inventory does. */
+const planningCopy = (inv: Inventory): Inventory => {
+  const copy = Inventory.restoreState(inv.registry, inv.snapshotState());
+  copy.landing = inv.landing;
+  return copy;
+};
+
 const queueQuickbarStows = (
   inventory: Inventory,
   queue: HandlingQueue,
   displaced: ReadonlySet<Item>,
 ): { queued: number; unable: Item[] } => {
-  const plannedInventory = Inventory.restoreState(inventory.registry, inventory.snapshotState());
+  const plannedInventory = planningCopy(inventory);
   const unable: Item[] = [];
   let queued = 0;
   for (const held of displaced) {
@@ -481,7 +486,7 @@ const stowTwoHandDisplacements = (args: {
   readonly target: Target;
 }): string | undefined => {
   const { inv, queue, item, feet, displaced, target } = args;
-  const planned = Inventory.restoreState(inv.registry, inv.snapshotState());
+  const planned = planningCopy(inv);
   const stows: MoveJob[] = [];
   for (const held of displaced) {
     const plannedHeld = planned.itemByUid(held.uid);
@@ -550,8 +555,8 @@ export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   if (!held || held === item) {
     return inv.plan(item, { kind: 'hand', side: preferred }).ok ? undefined : 'Your hands are full';
   }
-  const away = slingTarget(inv, held) ?? bestPocket(inv, held)?.target ?? dropTarget(inv, held, feet).target;
-  const stow = queue.enqueue(held, away);
+  const away = plannedStowTarget(inv, held, feet);
+  const stow = away ? queue.enqueue(held, away) : dropTarget(inv, held, feet).plan;
   if (!stow.ok) {
     return stow.reason;
   }

@@ -10,7 +10,12 @@ export const fitsFuelledTool = (inventory: Inventory, tool: Item, canister: Item
  * Puts one of `canister` into `tool`, in place. The old canister comes out to `spent` whatever
  * its fill, since an empty one can be refilled later. Returns why it couldn't, or undefined.
  */
-export const swapCanister = (inventory: Inventory, tool: Item, canister: Item, spent: Target): string | undefined => {
+export const swapCanister = (
+  inventory: Inventory,
+  tool: Item,
+  canister: Item,
+  spent: (item: Item) => Target,
+): string | undefined => {
   if (!fitsFuelledTool(inventory, tool, canister)) {
     return "It doesn't take that cartridge";
   }
@@ -24,7 +29,7 @@ export const swapCanister = (inventory: Inventory, tool: Item, canister: Item, s
   const old = inventory.fitSlot(tool, 'canister', replacement);
   if (old) {
     old.charges = chargeOf(inventory.registry, old) ?? 0;
-    inventory.add(old, spent);
+    inventory.add(old, spent(old));
   }
   return undefined;
 };

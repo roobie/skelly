@@ -47,12 +47,14 @@ import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { settleCell } from '../core/itemThrow.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
+import { dropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import { pryPlan } from '../core/prying.ts';
@@ -697,6 +699,8 @@ export const createSession = (options: SessionOptions) => {
     },
   };
   const reach = bindReach(reachPlayer);
+  inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, isSolid);
+  inventory.dropFeet = feet;
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
   const chest = (): Vec3 => [
     body.pos[0],
@@ -929,7 +933,7 @@ export const createSession = (options: SessionOptions) => {
 
   const survival = new Survival(sim, inventory, queue, {
     reach,
-    feet: () => ({ kind: 'pile', pos: feet() }),
+    feet: (item) => dropTarget(inventory, item, feet()).target,
     notice: options.notice,
     read: options.onRead,
     consumed: options.onConsumed,

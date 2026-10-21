@@ -122,7 +122,7 @@ it('swapping in a cartridge returns the old one whatever its fill', () => {
   const first = inventory.create('gas_canister');
   first.charges = 0;
   const second = inventory.create('gas_canister');
-  const feet: Target = { kind: 'pile', pos: [0, 0, 0] };
+  const feet = (): Target => ({ kind: 'pile', pos: [0, 0, 0] });
   expect(inventory.add(first, { kind: 'hand', side: 'left' })).toBe(true);
   expect(inventory.add(second, { kind: 'hand', side: 'right' })).toBe(true);
 

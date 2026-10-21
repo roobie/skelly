@@ -44,8 +44,8 @@ const shouldDouse = (spec: LightSpec, location: LightLocation, path: string, spr
 };
 
 export interface SurvivalHooks {
-  /** Where a spent battery with charge left is dropped. */
-  feet: () => Target;
+  /** Where a spent battery with charge left, or a spent canister, is dropped. */
+  feet: (item: Item) => Target;
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
   /** Presents validated authored text and, for books, its action owner. */
@@ -131,7 +131,7 @@ export class Survival {
       if (!this.hooks.reach().entries.some((entry) => entry.item === battery)) {
         return 'The battery is no longer in reach';
       }
-      return swapBattery(this.inventory, light, battery, this.hooks.feet());
+      return swapBattery(this.inventory, light, battery, this.hooks.feet);
     });
     this.queue.registerAction('survival.canister', (params) => {
       const tool = this.inventory.itemByUid(numberParam(params, 'toolUid'));
@@ -145,7 +145,7 @@ export class Survival {
       if (!this.hooks.reach().entries.some((entry) => entry.item === canister)) {
         return 'The cartridge is no longer in reach';
       }
-      return swapCanister(this.inventory, tool, canister, this.hooks.feet());
+      return swapCanister(this.inventory, tool, canister, this.hooks.feet);
     });
     sim.scheduler.register({ id: 'lights', rate: 1, maxStep: 30, tick: (dt) => this.tickLights(dt) });
   }

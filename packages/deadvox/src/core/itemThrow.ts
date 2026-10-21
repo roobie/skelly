@@ -48,6 +48,14 @@ export const settleOnWorld = (position: Vec3, blockSize: number, minY: number, i
   return [Math.floor(origin[0]), hit.block[1] + 1, Math.floor(origin[2])];
 };
 
+export const NO_LANDING_REFUSAL = "Can't find a place for it to land";
+
+/** Where a pile put down in a block cell comes to rest; a solid cell has no room to put it in. */
+export const settleCell = (cell: Vec3, blockSize: number, minY: number, isSolid: SolidAt): Vec3 | undefined =>
+  isSolid(cell[0], cell[1], cell[2])
+    ? undefined
+    : settleOnWorld(cell.map((axis) => (axis + 0.5) * blockSize) as Vec3, blockSize, minY, isSolid);
+
 /** Sweeps a thrown item's presentation arc through voxels, then settles it on the first solid below it. */
 export const traceItemLanding = ({
   from,

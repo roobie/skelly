@@ -22,10 +22,15 @@ import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
-import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
+import {
+  hasMetThrowMinimumHold,
+  NO_LANDING_REFUSAL,
+  throwDistanceForItem,
+  traceItemLanding,
+} from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
@@ -2575,7 +2580,8 @@ export const startPlay = (
     if (!item) {
       return;
     }
-    const result = inventory.move(item, { kind: 'pile', pos: feet() });
+    const drop = dropTarget(inventory, item, feet());
+    const result = drop.plan.ok ? inventory.move(item, drop.target) : drop.plan;
     if (!result.ok) {
       showRefusal(`Can't drop it: ${result.reason}`, sim.time);
       return;
@@ -2686,7 +2692,7 @@ export const startPlay = (
     }
     const target = itemLandingTarget(distanceMetres);
     if (!target) {
-      showRefusal("Can't find a place for it to land", sim.time);
+      showRefusal(NO_LANDING_REFUSAL, sim.time);
       return;
     }
     const throwOffset: Vec3 = throwingStance

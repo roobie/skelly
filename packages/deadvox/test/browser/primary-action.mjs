@@ -1798,12 +1798,22 @@ try {
     true,
     'a throw prioritizes the off-hand item and leaves the main-hand item held in stance',
   );
-  await page.evaluate((uid) => {
+  const fullFeet = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.dominant, r.inventory.itemByUid(uid));
     const offHandDrop = r.inventory.create('glowstick');
     r.setHand(r.off, offHandDrop);
     r.hudOptions.handling = true;
+    const feet = r.session.feet();
+    const fillers = [];
+    for (let added = 0; r.inventory.plan(offHandDrop, { kind: 'pile', pos: feet }).ok; added += 1) {
+      const filler = r.inventory.create(offHandDrop.type);
+      if (added > 1000 || !r.inventory.add(filler, { kind: 'pile', pos: feet })) {
+        throw new Error('Could not fill the pile at the feet');
+      }
+      fillers.push(filler.uid);
+    }
+    return { feet, fillers };
   }, throwFixture.uid);
   const holdToDrop = await holdAction(page, 'player.throw');
   const droppedOffHandUid = await page.evaluate(() => {
@@ -1817,6 +1827,20 @@ try {
     droppedOffHandUid,
   );
   await holdToDrop();
+  assert.notDeepEqual(
+    await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return r.inventory.locate(r.inventory.itemByUid(uid)).pile.pos;
+    }, droppedOffHandUid),
+    fullFeet.feet,
+    'the stance drop falls back to the next drop spot when the pile at the feet is full',
+  );
+  await page.evaluate((uids) => {
+    const r = globalThis.primaryActionTest;
+    for (const uid of uids) {
+      r.inventory.consume(r.inventory.itemByUid(uid), r.inventory.itemByUid(uid).count);
+    }
+  }, fullFeet.fillers);
   assert.equal(
     await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;

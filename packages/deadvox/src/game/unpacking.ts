@@ -53,7 +53,10 @@ export class Unpacking {
     // Admission guarantees one stack. Reserve enough ordinary spill capacity for the entire
     // payload before consuming the package; filling pockets can only reduce that spill.
     const spill = dropSpots(this.feet())
-      .map((pos): Target => ({ kind: 'pile', pos }))
+      .flatMap((spot): Target[] => {
+        const pos = this.inventory.landing(spot);
+        return pos ? [{ kind: 'pile', pos }] : [];
+      })
       .find((target) => this.inventory.planAdd(shell, target).ok);
     const pocket = this.pocketFor(shell);
     if (!(spill || pocket)) {

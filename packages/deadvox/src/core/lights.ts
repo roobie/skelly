@@ -324,7 +324,12 @@ export const fitsLight = (registry: Registry, light: Item, battery: Item): boole
  * charge and goes to `spent` if it has any left; a dead one is thrown away. Returns
  * why it couldn't, or undefined.
  */
-export const swapBattery = (inventory: Inventory, light: Item, battery: Item, spent: Target): string | undefined => {
+export const swapBattery = (
+  inventory: Inventory,
+  light: Item,
+  battery: Item,
+  spent: (item: Item) => Target,
+): string | undefined => {
   const { registry } = inventory;
   if (!fitsLight(registry, light, battery)) {
     return "It doesn't take that battery";
@@ -341,7 +346,7 @@ export const swapBattery = (inventory: Inventory, light: Item, battery: Item, sp
   inventory.fitSlot(light, 'battery', replacement);
   if (oldBattery && old > 0) {
     oldBattery.charges = old;
-    inventory.add(oldBattery, spent);
+    inventory.add(oldBattery, spent(oldBattery));
   }
   return undefined;
 };
