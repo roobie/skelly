@@ -2675,13 +2675,14 @@ try {
   await page.mouse.up({ button: 'right' });
   const food = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
-    const item = [...r.inventory.items()].find(
-      ({ item: candidate, location }) =>
-        location.kind === 'pocket' && r.inventory.registry.items.get(candidate.type)?.food,
-    )?.item;
-    if (!item) {
-      throw new Error('Quickbar fixture has no carried pocket food');
+    const source = [...r.inventory.registry.items.values()].find((candidate) => candidate.food && !candidate.unpack);
+    if (!source) {
+      throw new Error('No unpacked food capability for quickbar fixture');
     }
+    const definition = { ...source, id: 'primary_action_quickbar_food', name: 'Quickbar fixture food' };
+    r.inventory.registry.items.set(definition.id, definition);
+    const item = r.inventory.create(definition.id);
+    r.placePocketed(item);
     r.session.quickbar.assign(0, item);
     return { uid: item.uid, count: item.count, heldUid: r.inventory.hands.left?.uid };
   });
