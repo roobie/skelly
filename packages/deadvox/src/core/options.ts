@@ -325,13 +325,13 @@ const trapOption = (
 ): UseOption => {
   if (item.trap) {
     return item.trap.state === 'armed'
-      ? { kind: 'use', label: 'Disarm', operation: 'trap', plan: { ok: true, time: disarmSimSeconds } }
+      ? { kind: 'use', label: 'Disarm', operation: 'trap', plan: swapPlan(disarmSimSeconds) }
       : refuseUse("It's shut on a leg");
   }
   const refusal = useLocationRefusal(item, at, inventory);
   return refusal
     ? refuseUse(refusal)
-    : { kind: 'use', label: 'Set it', operation: 'trap', plan: { ok: true, time: setSimSeconds } };
+    : { kind: 'use', label: 'Set it', operation: 'trap', plan: swapPlan(setSimSeconds) };
 };
 
 /** Eligibility only: effects remain in the domain command owner. */
