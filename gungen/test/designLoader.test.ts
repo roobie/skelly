@@ -1,6 +1,6 @@
 import type { DesignLoadInputs } from '@skelly/engine/assembly/designLoader.ts';
 import { generateValid } from '@skelly/engine/assembly/generate.ts';
-import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import type { Assembly, Domain } from '@skelly/engine/assembly/schema.ts';
 import type { Template } from '@skelly/engine/assembly/template.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
@@ -553,12 +553,40 @@ describe('loadDesign: change policy', () => {
   });
 
   it('prefab lookup uses the registry key, not PartDef.family', () => {
-    // The registry key names the builder recipe; keyed by it, the catalogue entry matches.
-    const family = gunDomain.families.magazine;
-    expect(family).toBeDefined();
-    const entry = { id: 'keyed', version: 1, family: 'magazine', fixedParams: { length: 'M' } };
-    const assembly = withPart({ family: 'magazine', params: { length: 'M' }, prefab: { id: 'keyed', version: 1 } });
-    expect(load(makeDesign({ assembly }), { prefabs: [entry] }).ok).toBe(true);
+    const registryKey = 'fixture-magazine';
+    const returnedFamily = 'returned-magazine';
+    const magazine = gunDomain.families.magazine!;
+    const domain: Domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        [registryKey]: {
+          ...magazine,
+          name: registryKey,
+          build: (params) => ({ ...magazine.build(params), family: returnedFamily }),
+        },
+      },
+    };
+    const template = {
+      ...ar,
+      slots: ar.slots.map((slot) => (slot.id === 'magazine' ? { ...slot, family: registryKey } : slot)),
+    };
+    const assembly = withPart({ family: registryKey, params: { length: 'M' }, prefab: { id: 'keyed', version: 1 } });
+    const design = makeDesign({ assembly });
+    const matching = { id: 'keyed', version: 1, family: registryKey, fixedParams: { length: 'M' } };
+    const admitted = load(design, { domain, template, prefabs: [matching] });
+    expect(admitted.ok && admitted.issues).toEqual([]);
+
+    const resolvedFamilyMatch = load(design, {
+      domain,
+      template,
+      prefabs: [{ ...matching, family: returnedFamily }],
+    });
+    expect(resolvedFamilyMatch.ok && resolvedFamilyMatch.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'prefab-values-mismatch', path: 'assembly.parts.magazine.family' }),
+      ]),
+    );
   });
 });
 

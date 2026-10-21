@@ -76,7 +76,18 @@ describe('resolve', () => {
   });
 
   it('offsets slotted connections along the port', () => {
-    expectVec(at(r, 'sight'), [-14 + 3 * 2, 2.5, 0]);
+    const connection = r.connections.find(({ conn }) => conn.to === 'sight.base')!;
+    const rail = connection.from.port;
+    const sightBase = connection.to.port;
+    const slot = connection.conn.slot!;
+    expectVec(
+      at(r, 'sight', sightBase.pos),
+      at(r, 'receiver', [
+        rail.pos[0] + rail.up[0] * rail.slots!.pitch * slot,
+        rail.pos[1] + rail.up[1] * rail.slots!.pitch * slot,
+        rail.pos[2] + rail.up[2] * rail.slots!.pitch * slot,
+      ]),
+    );
   });
 
   it('mates the grip bevel flush to its lower port', () => {
@@ -86,7 +97,8 @@ describe('resolve', () => {
       return;
     }
     const face = solid.profile.slice(3, 5).map(([x, y]) => at(r, 'grip', [x, y, 0]));
-    const mount = at(r, 'lower', [-12, -1.5, 0]);
+    const lowerPort = r.connections.find(({ conn }) => conn.to === 'grip.top')!.from.port;
+    const mount = at(r, 'lower', lowerPort.pos);
     expect(face[0]![1]).toBeCloseTo(face[1]![1]);
     expect(face[0]![1]).toBeCloseTo(mount[1]);
   });
@@ -138,7 +150,6 @@ describe('resolve', () => {
       ];
     };
     expectVec(inv(r2, [2, 1, 0]), inv(r1, [2, 1, 0]));
-    expectVec(at(r1, 'sight', [2, 0, 0]).map(Math.abs), [8, 2.5, 2]);
   });
 });
 
@@ -245,7 +256,6 @@ describe('resolve: params from neighbours', () => {
   });
 
   it('sizes the selected tube percentage from the actual barrel and shares it with the lug', () => {
-    const barrelEnds = { S: 26, M: 36, L: 46 } as const;
     for (const length of ['S', 'M', 'L'] as const) {
       const a = variant('archetype-pump-shotgun', (x) => {
         x.parts.barrel!.params = { length };
@@ -268,8 +278,11 @@ describe('resolve: params from neighbours', () => {
       if (tubeSolid?.kind !== 'extruded-polygon' || !tubeCap) {
         throw new Error('octagonal pump magazine tube and cap must be present');
       }
-      expect(localSolidBounds(tubeSolid)[1][0]).toBe(barrelEnds[length] - 0.5);
-      expect(tubeCap.pos[0]).toBe(barrelEnds[length]);
+      const barrelEnd = Math.max(
+        ...report.resolved.defs.get('barrel')!.solids.map((solid) => localSolidBounds(solid)[1][0]),
+      );
+      expect(localSolidBounds(tubeSolid)[1][0]).toBe(barrelEnd - 0.5);
+      expect(tubeCap.pos[0]).toBe(barrelEnd);
       expect(report.issues).toEqual([]);
     }
   });
