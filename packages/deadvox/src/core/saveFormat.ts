@@ -665,6 +665,7 @@ const meleeAction = nullable(
     origin: vec3,
     direction: vec3,
     hands: obj({ right: nullable(positiveInt), left: nullable(positiveInt) }),
+    chargeHeldSimSeconds: opt(nonNegative),
     weapon: obj({
       motion: enumeration(MELEE_MOTIONS),
       damage: positive,
@@ -682,6 +683,15 @@ const meleeAction = nullable(
       hitSound: opt(str({ id: true })),
       hitLayerSound: opt(str({ id: true })),
       type: opt(enumeration(MELEE_DAMAGE_KINDS)),
+      charge: opt(
+        obj({
+          fullSimSeconds: positive,
+          curveExponent: positive,
+          damageMultiplier: positive,
+          impulseMultiplier: positive,
+          stamina: nonNegative,
+        }),
+      ),
     }),
   }),
 );

@@ -40,7 +40,7 @@ import {
 } from './physics.ts';
 import { Rng, type RngState } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
-import type { SenseDef } from './schema.ts';
+import type { MeleeCharge, SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { type SolidBricks, testedBricks } from './solidBricks.ts';
 import type { SoundId } from './soundEvents.ts';
@@ -158,6 +158,7 @@ export const pickZombieHitRegion = (choices: readonly ZombieHitRegionChoice[], r
 
 export interface MeleeWeapon extends HitWeapon {
   readonly motion: MeleeMotion;
+  readonly charge?: MeleeCharge | undefined;
 }
 
 interface HitWeapon {

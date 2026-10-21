@@ -69,7 +69,7 @@ const makeSystem = (
     onMeleeResult: (result) => results.push(result.id === undefined ? 'miss' : 'hit'),
     onSound: (event) => sounds.push(event),
   });
-  playerCombats.set(system, new PlayerCombat(system, (uid) => weaponHits.push(uid)));
+  playerCombats.set(system, new PlayerCombat(system, undefined, { onWeaponHit: (uid) => weaponHits.push(uid) }));
   return system;
 };
 

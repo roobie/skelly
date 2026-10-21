@@ -1109,6 +1109,7 @@ export const createSession = (options: SessionOptions) => {
       if (damage <= 0) {
         return;
       }
+      playerCombat.cancelCharge();
       applyZombiePlayerHit(sim, {
         damage,
         sourceName: source?.type.name ?? 'zombie',
@@ -1117,7 +1118,10 @@ export const createSession = (options: SessionOptions) => {
         kind,
       });
     },
-    onAcidPlayerHit: (hit) => applyZombiePlayerHit(sim, hit),
+    onAcidPlayerHit: (hit) => {
+      playerCombat.cancelCharge();
+      applyZombiePlayerHit(sim, hit);
+    },
     onPlayerExposure: (contact) => sim.expose(contact),
     onPlayerLeaveExposure: (source) => sim.leaveExposure(source),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
@@ -1192,15 +1196,18 @@ export const createSession = (options: SessionOptions) => {
       options.zombieEffects?.onDeath?.(id, zombie);
     },
   });
-  const playerCombat = new PlayerCombat(
-    zombieSystem,
-    (uid) => wearMeleeWeaponOnHit(inventory, uid),
-    character,
-    () => {
+  const playerCombat = new PlayerCombat(zombieSystem, character, {
+    onWeaponHit: (uid) => wearMeleeWeaponOnHit(inventory, uid),
+    onLandedHit: () => {
       const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
       character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
     },
-  );
+    payChargeStamina: (wanted) => {
+      const paid = Math.min(wanted, Math.max(0, sim.needs.stamina));
+      spendStamina(sim.needs, paid, bodyTuning.staminaRegenDelaySimSeconds);
+      return paid;
+    },
+  });
   let lastZombieStep = 0;
   let lastBackgroundStep = 0;
   let backgroundSliceIndex = 0;
@@ -1241,6 +1248,7 @@ export const createSession = (options: SessionOptions) => {
       use(dominantRefusal, controls.useDominant);
     }
     if (intent.useOff) {
+      playerCombat.cancelCharge();
       use(ladderHold.refusal(offSide(character)), controls.useOff);
     }
   };
@@ -1543,7 +1551,19 @@ export const createSession = (options: SessionOptions) => {
     controls.consumeDominantUse?.();
     controls.consumeOffUse?.();
     updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()));
-    playerCombat.tick(dt, heldItemUids());
+    // Losing control or another hands action drops a held charge rather than releasing a free strike.
+    if (!moving || handling || throwCharge.active || ladderHold.refusal(dominantSide(character)) !== undefined) {
+      playerCombat.cancelCharge();
+    }
+    playerCombat.tick(dt, heldItemUids(), {
+      held: Boolean(intent.useDominantHeld),
+      aim: {
+        origin: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
+        direction: aimDirection(playerInput.yaw, playerInput.pitch, NEUTRAL_AIM),
+        yaw: playerInput.yaw,
+        pitch: playerInput.pitch,
+      },
+    });
     dispatchPlayerActions(moving, intent);
     return { intent, moving, handling, readyGait };
   };

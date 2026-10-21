@@ -448,39 +448,61 @@ const CanisterSchema = strictObject({
   capacity: Positive,
 });
 
+/** Holding the attack past the wind-up builds a stronger strike. Doc: `docs/charged-attacks.md`. */
+const MeleeChargeSchema = strictObject({
+  /** Sim seconds of holding that reach the full charge; holding longer adds nothing. */
+  fullSimSeconds: PositiveSimSeconds,
+  /** Shapes the build-up: the charge level is the held share of `fullSimSeconds` raised to this power. */
+  curveExponent: Positive,
+  /** Damage multiplier at the full charge; a partial charge scales linearly towards it. */
+  damageMultiplier: Positive,
+  /** Impulse multiplier at the full charge; a partial charge scales linearly towards it. */
+  impulseMultiplier: Positive,
+  /** Extra stamina a full charge costs on release, scaled by the charge level. */
+  stamina: NonNegative,
+});
+export type MeleeCharge = InferOutput<typeof MeleeChargeSchema>;
+
 const WeaponSchema = strictObject({
-  melee: strictObject({
-    motion: picklist(MELEE_MOTIONS),
-    damage: Positive,
-    /** Metres beyond the player's hand; the arm's reach is added when swinging. */
-    reach: Positive,
-    /** Sim seconds between swings. */
-    cooldownSimSeconds: PositiveSimSeconds,
-    stamina: NonNegative,
-    /** Share of the cooldown a swing winds up before contact, capped by `windupCapSimSeconds`. */
-    contactFraction: Fraction,
-    /** The longest wind-up before contact, in sim seconds. */
-    windupCapSimSeconds: PositiveSimSeconds,
-    /** Impulse delivered by a melee hit, in N·s. */
-    impulse: optional(NonNegative),
-    /** Condition lost when this weapon lands a melee hit. */
-    wearPerHit: optional(Fraction),
-    /** Overrides the weapon class's per-hit damage spread. */
-    damageVariance: optional(Fraction),
-    /** Overrides the weapon class's head-hit damage multiplier. */
-    headDamageMultiplier: optional(Positive),
-    /** Overrides the weapon class's limb-hit damage multiplier. */
-    limbDamageMultiplier: optional(Positive),
-    /** Overrides the weapon class's swing-speed multiplier. */
-    speedMultiplier: optional(Positive),
-    /** Swing presentation event; absent uses the shared swing. */
-    swingSound: optional(Id),
-    /** Hit presentation event; absent uses the shared hit. */
-    hitSound: optional(Id),
-    /** Played over the hit, such as a metal ring for a metal weapon. */
-    hitLayerSound: optional(Id),
-    type: picklist(MELEE_DAMAGE_KINDS),
-  }),
+  melee: pipe(
+    strictObject({
+      motion: picklist(MELEE_MOTIONS),
+      damage: Positive,
+      /** Metres beyond the player's hand; the arm's reach is added when swinging. */
+      reach: Positive,
+      /** Sim seconds between swings. */
+      cooldownSimSeconds: PositiveSimSeconds,
+      stamina: NonNegative,
+      /** Share of the cooldown a swing winds up before contact, capped by `windupCapSimSeconds`. */
+      contactFraction: Fraction,
+      /** The longest wind-up before contact, in sim seconds. */
+      windupCapSimSeconds: PositiveSimSeconds,
+      /** Impulse delivered by a melee hit, in N·s. */
+      impulse: optional(NonNegative),
+      /** Condition lost when this weapon lands a melee hit. */
+      wearPerHit: optional(Fraction),
+      /** Overrides the weapon class's per-hit damage spread. */
+      damageVariance: optional(Fraction),
+      /** Overrides the weapon class's head-hit damage multiplier. */
+      headDamageMultiplier: optional(Positive),
+      /** Overrides the weapon class's limb-hit damage multiplier. */
+      limbDamageMultiplier: optional(Positive),
+      /** Overrides the weapon class's swing-speed multiplier. */
+      speedMultiplier: optional(Positive),
+      /** Swing presentation event; absent uses the shared swing. */
+      swingSound: optional(Id),
+      /** Hit presentation event; absent uses the shared hit. */
+      hitSound: optional(Id),
+      /** Played over the hit, such as a metal ring for a metal weapon. */
+      hitLayerSound: optional(Id),
+      type: picklist(MELEE_DAMAGE_KINDS),
+      charge: optional(MeleeChargeSchema),
+    }),
+    check(
+      (melee) => melee.charge === undefined || melee.impulse !== undefined,
+      'a charged melee weapon needs an impulse for the charge to scale',
+    ),
+  ),
 });
 
 /** The bare-handed attack, which no item supplies. */

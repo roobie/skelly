@@ -17,6 +17,14 @@ local melee(type, motion, damage, reach, cooldownSimSeconds, stamina, impulse, w
     windupCapSimSeconds: 0.25,
     type: type,
     motion: motion,
+    // Provisional until #276 is tuned: a full charge costs one more swing's stamina.
+    charge: {
+      fullSimSeconds: 1,
+      curveExponent: 1,
+      damageMultiplier: 1.6,
+      impulseMultiplier: 2,
+      stamina: stamina,
+    },
   },
 };
 
