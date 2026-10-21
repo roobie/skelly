@@ -792,7 +792,7 @@ const ItemSchema = strictObject({
   economy: ItemEconomySchema,
   name: Name,
   category: picklist(ITEM_CATEGORIES),
-  weight: NonNegative,
+  weight: optional(NonNegative),
   /** Cells it takes in a grid, as [w, h]; it can be rotated. */
   size: Area,
   description: optional(string()),

@@ -681,13 +681,11 @@ describe('content', () => {
         {
           id: 'fixture_gun',
           file: 'assets/models/fixture_gun.glb',
-          parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
           gun: { compatibility: { 'barrel.muzzle.0': ['fixture-suppressor'] } },
         },
         {
           id: 'fixture_suppressor',
           file: 'assets/models/fixture_suppressor.glb',
-          parts: { body: { massKg: 0.4, centreOfMass: [0, 0, 0] } },
           gun: {
             attachment: {
               id: 'fixture-suppressor',
@@ -1721,7 +1719,6 @@ describe('content references', () => {
             {
               id: 'glowstick',
               file: 'assets/models/glowstick.glb',
-              parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
             },
           ],
         },
@@ -1873,7 +1870,6 @@ describe('content references', () => {
               economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Fixture rifle',
               category: 'weapon',
-              weight: 1,
               size: [1, 1],
               firearm,
               model: item,

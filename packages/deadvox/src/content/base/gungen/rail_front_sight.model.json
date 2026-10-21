@@ -1,13 +1,6 @@
 {
   "id": "rail_front_sight",
   "file": "assets/models/rail_front_sight.glb",
-  "parts": {
-    "rail-front-sight": {
-      "node": "rail-front-sight:rail-front-sight",
-      "massKg": 0.0257431857421875,
-      "centreOfMass": [0, 0.0036041666666666665, 0]
-    }
-  },
   "gun": {
     "attachment": {
       "id": "rail-front-sight",

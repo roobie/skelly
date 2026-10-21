@@ -8,7 +8,6 @@ import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
 import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { FAMILIES } from './parts.ts';
-import { gunModelParts } from './physical.ts';
 
 export type AttachmentExportResult =
   | { readonly ok: true; readonly glb: Uint8Array; readonly modelEntry: DeadvoxModelEntry }
@@ -61,7 +60,6 @@ export const exportAttachmentGlb = (
     modelEntry: {
       id: asset.id,
       file: asset.file as DeadvoxModelFile,
-      parts: gunModelParts(resolved),
       gun: { attachment: metadata },
     },
   };

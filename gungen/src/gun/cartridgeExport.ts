@@ -8,7 +8,6 @@ import { type RoundProfiles, roundProfiles } from '../ammo/roundProfile.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
 import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { AMMO_PALETTE, GUN_APPEARANCE } from './palette.ts';
-import { gunModelParts } from './physical.ts';
 import { shotshellGeometry, shotshellHullMaterial } from './shotshellGeometry.ts';
 
 interface CartridgeModel {
@@ -89,7 +88,6 @@ const makeModelExport = (
       modelEntry: {
         id: asset.id,
         file: asset.file as DeadvoxModelFile,
-        parts: gunModelParts(resolved),
         gun: { calibre: cartridge.id },
       },
     },

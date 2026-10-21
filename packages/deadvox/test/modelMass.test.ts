@@ -5,16 +5,16 @@ import { ItemFactory, weightOf } from '../src/core/items.ts';
 import { modelBodyMassKg } from '../src/core/modelMass.ts';
 import { type ModelDef, ModelSchema } from '../src/core/schema.ts';
 
-const model: ModelDef = {
+const model = {
   id: 'mass_fixture',
   file: 'assets/models/mass_fixture.glb',
   parts: {
     body: { massKg: 0.4, centreOfMass: [0, 0, 0], node: 'fixture:body' },
     other: { massKg: 0.7, centreOfMass: [1, 0, 0] },
   },
-};
+} satisfies ModelDef;
 
-it('gets a model-backed item stack weight from the sum of its physical parts', () => {
+it('gets an assembly item stack weight from the sum of its physical parts', () => {
   const { registry, issues } = buildRegistry([
     {
       source: 'mass_fixture.json',
@@ -26,7 +26,6 @@ it('gets a model-backed item stack weight from the sum of its physical parts', (
             name: 'Fixture',
             category: 'misc',
             economy: { usage: [], tiers: [] },
-            weight: 1,
             size: [1, 1],
             stack: 5,
             model: model.id,
@@ -46,7 +45,7 @@ it('excludes baked replaceable geometry so fitted child items own that mass', ()
     massKg: 0.3,
     centreOfMass: [0, 0, 0],
     node: 'fixture:magazine',
-  } satisfies ModelDef['parts'][string];
+  } satisfies NonNullable<ModelDef['parts']>[string];
   const suppressor = { ...magazine, node: 'fixture:suppressor', massKg: 0.2 };
   const host = parse(ModelSchema, {
     ...model,
@@ -70,4 +69,51 @@ it('excludes baked replaceable geometry so fitted child items own that mass', ()
     },
   });
   expect(modelBodyMassKg(host)).toBe(Object.values(model.parts).reduce((total, part) => total + part.massKg, 0));
+});
+
+it('keeps each atom authored weight when several items share a visual model', () => {
+  const atom = { id: model.id, file: model.file };
+  const items = [2, 7].map((weight, index) => ({
+    id: `atom_${index}`,
+    name: `Atom ${index}`,
+    category: 'misc',
+    economy: { usage: [], tiers: [] },
+    weight,
+    size: [1, 1],
+    model: atom.id,
+  }));
+  const { registry, issues } = buildRegistry([{ source: 'atoms.json', data: { models: [atom], items } }]);
+  expect(issues).toEqual([]);
+  const factory = new ItemFactory();
+  for (const item of items) {
+    expect(weightOf(registry, factory.create(registry, item.id))).toBe(item.weight);
+  }
+});
+
+it('requires exactly one authored mass source per item', () => {
+  for (const parts of [undefined, model.parts]) {
+    for (const weight of [undefined, 1]) {
+      const { issues } = buildRegistry([
+        {
+          source: 'mass-source.json',
+          data: {
+            models: [{ id: model.id, file: model.file, ...(parts === undefined ? {} : { parts }) }],
+            items: [
+              {
+                id: 'fixture_item',
+                name: 'Fixture',
+                category: 'misc',
+                economy: { usage: [], tiers: [] },
+                size: [1, 1],
+                model: model.id,
+                ...(weight === undefined ? {} : { weight }),
+              },
+            ],
+          },
+        },
+      ]);
+      const valid = (parts !== undefined) !== (weight !== undefined);
+      expect(issues.map(({ path }) => path)).toEqual(valid ? [] : ['items[0].weight']);
+    }
+  }
 });

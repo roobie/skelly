@@ -1,13 +1,6 @@
 {
   "id": "magazine_stanag_30",
   "file": "assets/models/magazine_stanag_30.glb",
-  "parts": {
-    "magazine": {
-      "node": "magazine:magazine",
-      "massKg": 2.437226503188893,
-      "centreOfMass": [0.0044177364152701145, -0.0859429738436256, 6.0040816396839085e-19]
-    }
-  },
   "gun": {
     "calibre": "5.56x45",
     "capacity": 30,

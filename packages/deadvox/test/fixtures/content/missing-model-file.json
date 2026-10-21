@@ -2,8 +2,7 @@
   "models": [
     {
       "id": "lamp",
-      "file": "assets/models/lamp.glb",
-      "parts": { "body": { "massKg": 0.4, "centreOfMass": [0, 0, 0] } }
+      "file": "assets/models/lamp.glb"
     }
   ],
   "items": [

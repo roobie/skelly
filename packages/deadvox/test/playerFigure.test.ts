@@ -652,7 +652,6 @@ describe('player figure', () => {
       const model = {
         id: 'support_fixture',
         file: 'assets/models/support_fixture.glb' as const,
-        parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] as [number, number, number] } },
         grip: { at: [0, 0, 0] as [number, number, number], turn: [0, 0, 0] as [number, number, number] },
         gun: { internalMagazine: { capacity: 1 } },
         anchors: {

@@ -1,13 +1,6 @@
 {
   "id": "optic_high_mag_5_25x",
   "file": "assets/models/optic_high_mag_5_25x.glb",
-  "parts": {
-    "optic-high-mag-5-25x": {
-      "node": "optic-high-mag-5-25x:sight",
-      "massKg": 0.3254916611224242,
-      "centreOfMass": [0.009765961197171213, 0.03601673402845794, 0.0047259561996612475]
-    }
-  },
   "gun": {
     "attachment": {
       "id": "optic-high-mag-5-25x",

@@ -1,13 +1,6 @@
 {
   "id": "optic_holographic",
   "file": "assets/models/optic_holographic.glb",
-  "parts": {
-    "optic-holographic": {
-      "node": "optic-holographic:sight",
-      "massKg": 0.30874713046874996,
-      "centreOfMass": [-0.004018547381546135, 0.022921134663341648, 0]
-    }
-  },
   "gun": {
     "attachment": {
       "id": "optic-holographic",

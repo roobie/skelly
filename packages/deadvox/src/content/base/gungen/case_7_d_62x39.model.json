@@ -1,12 +1,1 @@
-{
-  "id": "case_7_d_62x39",
-  "file": "assets/models/case-7_d_62x39.glb",
-  "parts": {
-    "cartridge": {
-      "node": "cartridge:cartridge-model",
-      "massKg": 0.005980416791464797,
-      "centreOfMass": [0.013124501360492154, 0, 0]
-    }
-  },
-  "gun": { "calibre": "7.62x39" }
-}
+{ "id": "case_7_d_62x39", "file": "assets/models/case-7_d_62x39.glb", "gun": { "calibre": "7.62x39" } }

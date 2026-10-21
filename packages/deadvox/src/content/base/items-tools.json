@@ -569,24 +569,12 @@
       "grip": {
         "at": [0.085000000000000006, 0, 0]
       },
-      "id": "flashlight",
-      "parts": {
-        "body": {
-          "centreOfMass": [0, 0, 0],
-          "massKg": 0.25
-        }
-      }
+      "id": "flashlight"
     },
     {
       "emissiveMaterial": "chemical-light tube",
       "file": "assets/models/glowstick.glb",
-      "id": "glowstick",
-      "parts": {
-        "body": {
-          "centreOfMass": [0, 0, 0],
-          "massKg": 0.029999999999999999
-        }
-      }
+      "id": "glowstick"
     }
   ]
 }

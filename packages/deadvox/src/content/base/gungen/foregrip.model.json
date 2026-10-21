@@ -1,13 +1,6 @@
 {
   "id": "foregrip",
   "file": "assets/models/foregrip.glb",
-  "parts": {
-    "foregrip": {
-      "node": "foregrip:foregrip",
-      "massKg": 0.016938745312499996,
-      "centreOfMass": [0, -0.01646590909090909, 0]
-    }
-  },
   "gun": {
     "attachment": {
       "id": "foregrip",

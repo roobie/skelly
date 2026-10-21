@@ -711,7 +711,6 @@ describe('rifle firearm handling', () => {
             {
               id: 'pistol_full',
               file: 'assets/models/pistol_full.glb',
-              parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
             },
           ],
           items: [

@@ -20,7 +20,6 @@ const fixture = (rememberPerWeapon = true, fixed = false) => {
   const model: ModelDef = {
     id: 'fixture_optic_model',
     file: 'fixture.glb',
-    parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
     gun: {
       attachment: {
         id: 'fixture_optic',

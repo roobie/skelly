@@ -1,13 +1,6 @@
 {
   "id": "tactical_flashlight_mount",
   "file": "assets/models/tactical_flashlight_mount.glb",
-  "parts": {
-    "tactical-flashlight-mount": {
-      "node": "tactical-flashlight-mount:tactical-flashlight-mount",
-      "massKg": 0.015398859374999999,
-      "centreOfMass": [0, 0, 0.01035]
-    }
-  },
   "gun": {
     "attachment": {
       "id": "tactical-flashlight-mount",

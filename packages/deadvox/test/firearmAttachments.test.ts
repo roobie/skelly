@@ -26,22 +26,19 @@ const exportedDefault = (registry: Registry) => {
     const model = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
     return model?.gun?.attachment?.id === attachment.id;
   });
-  if (!(item?.model && registry.models.get(item.model)?.gun?.attachment)) {
+  if (!(item?.model && item.weight !== undefined && registry.models.get(item.model)?.gun?.attachment)) {
     throw new Error('Fixture attachment has no registered standalone model');
   }
-  return { attachment, item, modelId: item.model };
+  return { attachment, item: { ...item, weight: item.weight }, modelId: item.model };
 };
 
 const fixture = (massKg = 0.4) => {
   const registry = freshRegistry();
   const exported = exportedDefault(registry);
-  const model = registry.models.get(exported.modelId)!;
-  registry.models.set(exported.modelId, {
-    ...model,
-    parts: { body: { massKg, centreOfMass: [0, 0, 0] } },
-  });
+  const item = { ...exported.item, weight: massKg * 1000 };
+  registry.items.set(item.id, item);
   const inventory = new Inventory(registry);
-  return { registry, inventory, rifle: inventory.create('rifle_assault'), ...exported };
+  return { registry, inventory, rifle: inventory.create('rifle_assault'), ...exported, item };
 };
 
 const attachmentFixture = (itemType: string) => {
@@ -60,13 +57,7 @@ describe('muzzle load', () => {
     const nearLoad = muzzleLoad(near.registry, near.rifle)!;
 
     const heavy = fixture();
-    const optic = heavy.registry.models.get(heavy.modelId)!;
-    heavy.registry.models.set(heavy.modelId, {
-      ...optic,
-      parts: Object.fromEntries(
-        Object.entries(optic.parts).map(([id, part]) => [id, { ...part, massKg: part.massKg * 2 }]),
-      ),
-    });
+    heavy.registry.items.set(heavy.item.id, { ...heavy.item, weight: heavy.item.weight * 2 });
     const heavyLoad = muzzleLoad(heavy.registry, heavy.rifle)!;
 
     const farther = fixture();
@@ -154,16 +145,10 @@ describe('muzzle load', () => {
     expect(response.swingScale).toBeGreaterThan(1);
   });
 
-  it('derives inventory attachment weight from exported mass in kilograms', () => {
-    const { registry, rifle, modelId } = fixture();
+  it('uses an attachment atom authored weight in assembled inventory', () => {
+    const { registry, rifle, item } = fixture();
     const original = weightOf(registry, rifle);
-    const optic = registry.models.get(modelId)!;
-    registry.models.set(modelId, {
-      ...optic,
-      parts: Object.fromEntries(
-        Object.entries(optic.parts).map(([id, part]) => [id, { ...part, massKg: part.massKg * 2 }]),
-      ),
-    });
+    registry.items.set(item.id, { ...item, weight: item.weight * 2 });
 
     expect(weightOf(registry, rifle)).toBeGreaterThan(original);
   });

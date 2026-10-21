@@ -3,7 +3,7 @@ read_if:
   - you plan or pick up work on the things suite or on retiring gungen
   - you wonder what remains before `gungen/` can be deleted
   - you decide where a shared concept, schema field or tool UI part belongs
-  - you move the engine's export layer, the material data or mass derivation out of gungen or the engine
+  - you move the engine's export layer, the material data or mass out of gungen or the engine
 ---
 
 # WORK
@@ -63,8 +63,16 @@ Settled:
   in a named block of its own (`packages/thing-core/README.md`, "Contract").
 - Materials are one table of content in `thing-core` (`packages/thing-core/README.md`,
   "Contract").
-- Exports carry mass per part, and an export package above `thing-core` writes it with the GLB
-  and the model entry (`things/README.md`, "Rules"; `things/README.md`, "Packages").
+- Atoms have authored mass and assemblies sum their parts; the tools author a closed set of
+  items rather than generate them (`things/README.md`, "Rules").
+- Until gun parts become items in the gun tool phase, their authored masses come from one
+  gungen table keyed by part family and variant
+  (`gungen/PROJECT.md`, "Attachments and export"). A shared part then has one value, and the
+  table already has the shape of the closed item set, so the gun tool phase turns its keys
+  into item ids.
+- An assembly's export carries each part's mass and centre of mass, and an export package
+  above `thing-core` writes them with the GLB and the model entry (`things/README.md`,
+  "Rules"; `things/README.md`, "Packages").
 - The engine ends at assembly; export belongs above the neutral core so material and model
   contracts cannot pull dependencies back into geometry (`packages/engine/README.md`, "Layers").
 - The directory structure is fixed before any new feature work.
@@ -114,18 +122,21 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    `packages/thing-core/src/materials.ts`, `MATERIALS`; and
    `test/gungen-deadvox-contract.test.mjs`, "gungen exports satisfy deadvox model validation".
 2. **Export package and physical model — complete.**
-   Export belongs above the neutral core so physical derivation uses shapes without making
-   the game load them. See `packages/thing-export/README.md`, "Physical model";
-   `packages/thing-core/src/schema.ts`, `ModelPartSchema`; and
-   `packages/deadvox/src/core/modelMass.ts`, `modelBodyMassKg`. The engine ends at assembly,
-   and model-backed item mass comes from exported parts.
+   The engine ends at assembly so the game can consume authored mass and placed centres
+   without loading authoring geometry. Atoms read their item weight; gun bodies sum authored
+   part-table masses and fitted child items keep their own weight. See
+   `packages/thing-export/README.md`, "Physical model";
+   `gungen/src/gun/physical.jsonnet`, `partMasses`; and
+   `packages/deadvox/src/core/items.ts`, `typeWeightGrams`.
 3. **Thing tool, first slice.** One non-gun family end to end: source, build, GLB, model
    entry, validation and load in deadvox, viewed in the tool. Exit: those models replace
    their committed binaries.
 4. **Thing tool, remaining families.** Family by family, each with source, GLB, entry and
    load test together. The compass keeps its dedicated display renderer.
-5. **Gun tool.** Move gungen's gun and ammo logic onto the shared packages. Exit: every
-   gungen export deadvox consumes is reproduced by the gun tool and validates.
+5. **Gun tool.** Move gungen's gun and ammo logic onto the shared packages as an authoring
+   tool: its parts become a closed set of deadvox items, each atom with an authored mass, and
+   a gun is an assembly of them. The gungen part mass table's rows become those items. Exit: every gungen export deadvox consumes is reproduced by
+   the gun tool and validates.
 6. **Retire gungen.** Switch CI, scripts and docs, then delete `gungen/` and its contract test.
 7. **Close out.**
    - Run the closing docs pass.

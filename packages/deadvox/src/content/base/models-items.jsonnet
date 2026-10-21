@@ -1,5 +1,4 @@
-local authored = import 'authored-model-physics.libsonnet';
-local source = {
+{
   "models": [
     {
       "id": "hand_saw",
@@ -51,5 +50,4 @@ local source = {
     { "id": "folded_note", "file": "assets/models/folded_note.glb" },
     { "id": "notebook", "file": "assets/models/notebook.glb" }
   ]
-};
-{ models: [authored(model) for model in source.models] }
+}

@@ -2,6 +2,10 @@ import { modelMassKg } from '@skelly/thing-core/mass';
 import type { ModelDef } from './schema.ts';
 
 export const modelBodyMassKg = (model: ModelDef): number => {
+  const { parts } = model;
+  if (parts === undefined) {
+    throw new Error(`Atom model ${model.id} has no assembly parts`);
+  }
   // Baked replaceable geometry is owned by the fitted child item, even when that slot is empty.
   const replaced = new Set([
     ...(model.gun?.attachments ?? []).map((part) => part.node),
@@ -9,7 +13,7 @@ export const modelBodyMassKg = (model: ModelDef): number => {
   ]);
   return modelMassKg({
     parts: Object.fromEntries(
-      Object.entries(model.parts).filter(([, part]) => part.node === undefined || !replaced.has(part.node)),
+      Object.entries(parts).filter(([, part]) => part.node === undefined || !replaced.has(part.node)),
     ),
   });
 };

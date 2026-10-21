@@ -2,16 +2,9 @@ import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
 import { applyPoint, scale } from '@skelly/engine/foundation/math.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
-import type { MaterialDef } from '@skelly/thing-core/materials';
 import { describe, expect, it } from 'vitest';
-import { modelParts, partProperties } from '../src/physical.ts';
+import { assemblyProperties, modelParts, partProperties } from '../src/physical.ts';
 
-const material = (densityKgPerM3: number): MaterialDef => ({
-  colour: [0, 0, 0],
-  finish: { metallic: 0, roughness: 1 },
-  densityKgPerM3,
-  source: 'fixture',
-});
 const definition = (solids: readonly Solid[]): PartDef => ({
   family: 'shape',
   solids,
@@ -78,40 +71,31 @@ const shapes: readonly { name: string; solid: Solid; volume: number; centre: rea
 describe('physical export', () => {
   it.each(shapes)('integrates $name volume and centre before converting units', ({ solid, volume, centre }) => {
     const unit = 0.1;
-    const density = 2;
-    const fill = 0.5;
-    const result = partProperties(unit, {
-      part: definition([solid]),
-      fillFraction: fill,
-      materialFor: () => material(density),
-    });
-    expect(result.massKg).toBeCloseTo(volume * unit ** 3 * density * fill, 10);
+    const massKg = volume + 1;
+    const result = partProperties(unit, { part: definition([solid]), massKg });
+    expect(result.massKg).toBe(massKg);
     for (const [axis, value] of result.centreOfMass.entries()) {
       expect(value).toBeCloseTo(centre[axis]! * unit, 10);
     }
   });
 
-  it('uses material density as a mass relation for identical geometry', () => {
-    const mass = (density: number) =>
-      partProperties(1, {
-        part: definition([box]),
-        fillFraction: 1,
-        materialFor: () => material(density),
-      }).massKg;
-    expect(mass(2)).toBe(mass(1) * 2);
+  it('weights the assembly centre by authored part masses', () => {
+    const parts = {
+      light: { massKg: 1, centreOfMass: [0, 0, 0] as const },
+      heavy: { massKg: 3, centreOfMass: [6, 0, 0] as const },
+    };
+    const result = assemblyProperties(parts);
+    expect(result.massKg).toBe(parts.light.massKg + parts.heavy.massKg);
+    expect(result.centreOfMass).toEqual([4.5, 0, 0]);
   });
 
-  it('weights a compound centre by solid mass rather than averaging centres', () => {
+  it('uses the volume centroid within a part without deriving its mass', () => {
     const part = definition([
       { id: 'light', kind: 'box', box: { center: [0, 0, 0], half: [0.5, 0.5, 0.5] } },
-      { id: 'heavy', kind: 'box', box: { center: [6, 0, 0], half: [0.5, 0.5, 0.5] } },
+      { id: 'heavy', kind: 'box', box: { center: [6, 0, 0], half: [1, 0.5, 0.5] } },
     ]);
-    const result = partProperties(1, {
-      part,
-      fillFraction: 1,
-      materialFor: (solid) => material(solid.id === 'light' ? 1 : 3),
-    });
-    expect(result.centreOfMass).toEqual([4.5, 0, 0]);
+    const result = partProperties(1, { part, massKg: 7 });
+    expect(result.centreOfMass).toEqual([4, 0, 0]);
   });
 
   it('places physical centres in file metres and identifies nodes by instance family', () => {
@@ -162,8 +146,7 @@ describe('physical export', () => {
     expect(resolved.issues).toEqual([]);
     const parts = modelParts(resolved, (_id, shape) => ({
       part: shape,
-      fillFraction: 1,
-      materialFor: () => material(1),
+      massKg: 1,
     }));
     const expected = scale(applyPoint(resolved.placed.get('child')!, box.box.center), domain.units.metresPerUnit);
     for (const [axis, value] of parts.child!.centreOfMass.entries()) {

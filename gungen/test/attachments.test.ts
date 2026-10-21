@@ -7,7 +7,6 @@ import type { Assembly, Domain, PartDef, PartFamily, PortDef } from '@skelly/eng
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { applyPoint } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
-import { modelMassKg } from '@skelly/thing-core/mass';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
 import validator from 'gltf-validator';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -435,14 +434,6 @@ describe('attachment parts and export metadata', () => {
     const improvised = extent('improvised-suppressor');
     expect(improvised.length).toBeGreaterThan(real.length);
     expect(improvised.radius).toBeGreaterThan(real.radius);
-    const suppressorMass = (id: string) => {
-      const result = exportAttachmentGlb(id, { id: 'mass_fixture', file: 'assets/models/mass_fixture.glb' });
-      if (!result.ok) {
-        throw new Error(JSON.stringify(result.error));
-      }
-      return modelMassKg(result.modelEntry);
-    };
-    expect(suppressorMass('improvised-suppressor')).toBeGreaterThan(suppressorMass('real-suppressor'));
   });
 
   it('exports each attachment as standalone glTF and metadata deadvox accepts', async () => {
@@ -523,14 +514,14 @@ describe('attachment parts and export metadata', () => {
       }
     });
 
-    it('matches fitted optic mass to the standalone attachment export', () => {
+    it('keeps replaceable atom mass out of the host and standalone model entries', () => {
       const fittedOptic = defaultModsModel.modelEntry.gun.attachments?.find(({ id }) => id === 'optic-lpvo-1-6x');
-      const fittedPart = Object.values(defaultModsModel.modelEntry.parts).find(
-        (part) => part.node === fittedOptic?.node,
-      );
-      if (!fittedPart) {
-        throw new Error('No physical part for the fitted optic');
+      if (!fittedOptic) {
+        throw new Error('No fitted optic in the fixture');
       }
+      expect(Object.values(defaultModsModel.modelEntry.parts).some((part) => part.node === fittedOptic.node)).toBe(
+        false,
+      );
       const standalone = exportAttachmentGlb('optic-lpvo-1-6x', {
         id: 'optic_lpvo_mass_comparison',
         file: 'assets/models/optic_lpvo_mass_comparison.glb',
@@ -538,7 +529,7 @@ describe('attachment parts and export metadata', () => {
       if (!standalone.ok) {
         throw new Error(JSON.stringify(standalone.error));
       }
-      expect(fittedPart.massKg).toBe(modelMassKg(standalone.modelEntry));
+      expect(standalone.modelEntry.parts).toBeUndefined();
     });
   });
 

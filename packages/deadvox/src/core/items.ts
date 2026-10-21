@@ -564,14 +564,20 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
 
 export const typeWeightGrams = (registry: Registry, type: string): number => {
   const def = defOf(registry, type);
-  if (def.model === undefined) {
-    return def.weight;
+  const model = def.model === undefined ? undefined : registry.models.get(def.model);
+  if (def.model !== undefined && model === undefined) {
+    throw new Error(`Missing model ${def.model}`);
   }
-  const model = registry.models.get(def.model);
-  if (!model) {
-    throw new Error(`Missing physical model ${def.model}`);
+  if (model?.parts !== undefined) {
+    if (def.weight !== undefined) {
+      throw new Error(`Assembly ${type} also authors an item weight`);
+    }
+    return modelBodyMassKg(model) * 1000;
   }
-  return modelBodyMassKg(model) * 1000;
+  if (def.weight === undefined) {
+    throw new Error(`Atom ${type} has no authored item weight`);
+  }
+  return def.weight;
 };
 
 /** Grams, counting the stack, ammunition and everything in its pockets. */

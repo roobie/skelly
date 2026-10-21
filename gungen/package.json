@@ -27,7 +27,8 @@
     "@skelly/thing-core": "*",
     "@skelly/thing-export": "*",
     "@skelly/tool-ui": "*",
-    "three": "^0.186.0"
+    "three": "^0.186.0",
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

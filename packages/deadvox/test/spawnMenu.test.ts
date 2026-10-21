@@ -30,7 +30,6 @@ const { registry } = buildRegistry([
         {
           id: 'flashlight_model',
           file: 'assets/models/flashlight_model.glb',
-          parts: { body: { massKg: 0.2, centreOfMass: [0, 0, 0] } },
         },
       ],
       items: [

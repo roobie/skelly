@@ -20,20 +20,21 @@ See `packages/engine/src/assembly/template.ts`, `Template.variantParams`, and
 
 ## Physical model
 
-Shape-derived mass and centres of mass belong here rather than in a domain adapter or the
-game. Tools supply physical geometry, material assignments and fill assumptions; appearance
-profiles are not physical inputs. See `src/physical.ts`, `PhysicalInputs` and `modelParts`.
-Geometric integration uses the engine's shapes and math; material densities come from
-`packages/thing-core/src/materials.ts`, `MATERIALS`.
+Atoms have authored mass because mixed materials and hidden internal shapes make a drawn
+envelope an unreliable mass source. The tool supplies each body part's mass rather than a
+density or fill. This package places geometric centres without changing those authored
+values; see `src/physical.ts`, `PhysicalInputs`, `partProperties` and `modelParts`.
 
-Exported physical centres use the model-file frame in metres, after assembly placement; masses use
-kilograms. Deriving both from the same material-weighted volume prevents a compound part's
-centre from becoming an unweighted average. Hollows remain voids rather than becoming
-collision hulls. Empty physical geometry contributes no mass, with its reference point at
-the part origin. See `src/physical.ts`, `partProperties`.
+Geometric centres are volume-centroid estimates, not claims about internal material
+layout. Hollows remain voids rather than becoming collision hulls, and empty geometry uses
+the part origin as its reference point. Assembly centres weight the placed part centres
+by authored mass, so a light part cannot pull the centre as much as a heavy one. See
+`src/physical.ts`, `assemblyProperties`. Exported centres use the model-file frame in
+metres; authored masses use kilograms.
 
-A material density or fill is a modeling assumption, not proof of a measured product mass.
-Keep sources with the domain's physical inputs and keep exact outputs unpinned until their
-accuracy is approved. The gun policy is `gungen/src/gun/physical.jsonnet`, `roles`; its adapter is
-`gungen/src/gun/physical.ts`, `gunModelParts`. Canonical attachment geometry preserves an
-item's physical identity when a host-specific mount envelope changes its presentation.
+Replaceable geometry belongs to the child item rather than the body's mass table. Its
+item weight stays authoritative, so neither a host-specific mount envelope nor a shared
+visual proxy can change an atom's mass. The gun table is
+`gungen/src/gun/physical.jsonnet`, `partMasses`; its adapter is
+`gungen/src/gun/physical.ts`, `gunModelParts`. Export refuses a body part without exactly
+one matching row instead of guessing a mass.

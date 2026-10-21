@@ -1,4 +1,3 @@
-local authored = import 'authored-model-physics.libsonnet';
 local models = [
   { id: 'baseball_bat', file: 'assets/models/baseball_bat.glb', grip: { at: [-0.3, 0, 0] }, anchors: { strike: [0.4273, 0, 0] }, hold: 'upright', roll: 0 },
   { id: 'baton', file: 'assets/models/baton.glb', grip: { at: [-0.12, 0, 0] }, anchors: { strike: [0.4291, 0, 0] }, hold: 'upright', roll: 0 },
@@ -22,4 +21,4 @@ local models = [
   { id: 'wrench', file: 'assets/models/wrench.glb', grip: { at: [-0.075, 0, 0] }, anchors: { strike: [0.1047, 0, 0] }, hold: 'upright', roll: 90 },
   { id: 'steel_pipe', file: 'assets/models/steel_pipe.glb', grip: { at: [0, 0, 0] }, anchors: { strike: [0.927, 0, -0.1] }, hold: 'upright', roll: 0 },
 ];
-{ models: [authored(model) for model in models] }
+{ models: models }

@@ -1,9 +1,12 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly } from '@skelly/engine/assembly/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
-import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { gunDomain } from '../src/gun/domain.ts';
+import { exportGunGeometry } from '../src/gun/glbWriter.ts';
+import { GUN_PALETTE } from '../src/gun/palette.ts';
 
 const ROOT = join(import.meta.dirname, '..');
 const folders = ['designs', 'fixtures'] as const;
@@ -109,12 +112,18 @@ describe('GLB accessor contract', () => {
   });
 
   it.each(cases)('$key emits no primitive with missing or empty accessors', ({ key, id, assembly }) => {
-    const result = exportGunGlb(assembly, { id, file: `assets/models/${id}.glb` }, {});
+    // Invalid and suspended designs still probe geometry; they need no authored item mass rows.
+    const result = exportGunGeometry({
+      resolved: resolve(assembly, gunDomain),
+      palette: GUN_PALETTE,
+      appearance: {},
+      asset: { id, file: `assets/models/${id}.glb` },
+    });
     if (!result.ok) {
-      expect(key).toBe('fixtures/broken-firing-grip.json');
-      expect(result.error.code).toBe('missing-required-anchor');
-      return;
+      throw new Error(`${key}: ${JSON.stringify(result.error)}`);
     }
-    expect(primitiveAccessorErrors(parseGlbJson(result.glb)), key).toEqual([]);
+    const json = parseGlbJson(result.glb);
+    expect(json.meshes?.length ?? 0, key).toBeGreaterThan(0);
+    expect(primitiveAccessorErrors(json), key).toEqual([]);
   });
 });

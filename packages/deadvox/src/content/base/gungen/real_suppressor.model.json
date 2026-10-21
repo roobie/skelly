@@ -1,13 +1,6 @@
 {
   "id": "real_suppressor",
   "file": "assets/models/real_suppressor.glb",
-  "parts": {
-    "real-suppressor": {
-      "node": "real-suppressor:suppressor",
-      "massKg": 0.497976429221834,
-      "centreOfMass": [0.07131321492286705, 0, 0]
-    }
-  },
   "gun": {
     "attachment": {
       "id": "real-suppressor",

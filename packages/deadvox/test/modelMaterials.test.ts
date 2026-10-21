@@ -8,8 +8,6 @@ const table = {
   fixture: {
     colour: [0.8, 0.4, 0.2] as [number, number, number],
     finish: { metallic: 0.3, roughness: 0.6 },
-    densityKgPerM3: 1000,
-    source: 'fixture',
   },
 };
 

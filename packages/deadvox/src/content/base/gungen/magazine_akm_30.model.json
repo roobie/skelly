@@ -1,13 +1,6 @@
 {
   "id": "magazine_akm_30",
   "file": "assets/models/magazine_akm_30.glb",
-  "parts": {
-    "magazine": {
-      "node": "magazine:magazine",
-      "massKg": 2.7098867032532596,
-      "centreOfMass": [0.033939947688144644, -0.08542437190450859, 3.7499791663030147e-19]
-    }
-  },
   "gun": {
     "calibre": "7.62x39",
     "capacity": 30,

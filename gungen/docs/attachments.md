@@ -2,7 +2,7 @@
 read_if:
   - you change firearm attachment export or fitting compatibility
   - you add a muzzle device or change what a muzzle accepts
-  - you change the material or mass assumptions for an attachment
+  - you change authored attachment mass or its ownership
   - you preview fitted attachments in the viewer
 ---
 
@@ -12,11 +12,12 @@ Gungen owns attachment compatibility because only the firearm domain can certify
 
 Pair checks are sufficient because overlap and keep-out are relations between two placed parts. A group conflicts only when at least one pair conflicts, so a separate triple certificate would duplicate the same geometry question. For optics, rail support follows the mount feet rather than the full visual envelope; body clearance remains a separate fit relation. See `src/gun/attachments.ts`, `railSpanNotches`, `src/gun/rules.ts`, `opticMountFitForPart`, and `packages/deadvox/src/core/firearmFitting.ts`, `railFootprint`.
 
-Attachment physics uses canonical item geometry so host-specific mount presentation cannot
-change an item's mass. Density and fill assumptions are estimates, not measured product
-weights; keep exact outputs unpinned. See `src/gun/physical.ts`, `gunModelParts`;
-`src/gun/physical.jsonnet`, `roles`; and `docs/deferred-assertions.md`. Shared derivation
-belongs to `packages/thing-export/src/physical.ts`, `partProperties`, rather than the gun pack.
+Attachments are atoms, so their item weight remains authoritative across host-specific
+mount presentation and shared visual models. A gun body sums its authored part masses;
+replaceable geometry belongs to the fitted item instead of competing with its weight.
+See `src/gun/physical.ts`, `gunModelParts`; `src/gun/physical.jsonnet`, `partMasses`; and
+`packages/deadvox/src/core/items.ts`, `typeWeightGrams`. Geometric centres are estimates,
+not a source of mass; see `packages/thing-export/src/physical.ts`, `partProperties`.
 
 Item appearance belongs to the attachment instance rather than its host so the same item
 can keep its own finish across firearms without changing its physical inputs; see

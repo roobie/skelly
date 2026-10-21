@@ -1,191 +1,149 @@
 {
   "alu-anodized-black": {
     "colour": [0.15294117647058825, 0.17254901960784313, 0.19215686274509805],
-    "densityKgPerM3": 2700,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.makeitfrom.com/material-properties/6061-T6-Aluminum"
+    }
   },
   "brass": {
     "colour": [0.68999999999999995, 0.51000000000000001, 0.28999999999999998],
-    "densityKgPerM3": 8500,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html"
+    }
   },
   "copper": {
     "colour": [0.69999999999999996, 0.34000000000000002, 0.19],
-    "densityKgPerM3": 8960,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html"
+    }
   },
   "lead": {
     "colour": [0.38, 0.40000000000000002, 0.41999999999999998],
-    "densityKgPerM3": 11340,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html"
+    }
   },
   "paperboard-brown": {
     "colour": [0.27000000000000002, 0.23000000000000001, 0.17000000000000001],
-    "densityKgPerM3": 700,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-materials-d_1652.html"
+    }
   },
   "plastic-black": {
     "colour": [0.059999999999999998, 0.059999999999999998, 0.059999999999999998],
-    "densityKgPerM3": 950,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+    }
   },
   "plastic-blue": {
     "colour": [0.040000000000000001, 0.14999999999999999, 0.59999999999999998],
-    "densityKgPerM3": 950,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+    }
   },
   "plastic-green": {
     "colour": [0.080000000000000002, 0.40000000000000002, 0.13],
-    "densityKgPerM3": 950,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+    }
   },
   "plastic-red": {
     "colour": [0.69999999999999996, 0.035000000000000003, 0.025000000000000001],
-    "densityKgPerM3": 950,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+    }
   },
   "plastic-white": {
     "colour": [0.84999999999999998, 0.84999999999999998, 0.80000000000000004],
-    "densityKgPerM3": 950,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+    }
   },
   "plastic-yellow": {
     "colour": [0.84999999999999998, 0.69999999999999996, 0.040000000000000001],
-    "densityKgPerM3": 950,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "Representative modelling density; https://www.engineeringtoolbox.com/density-polymers-d_582.html"
+    }
   },
   "polymer-black": {
     "colour": [0.14117647058823529, 0.16078431372549021, 0.16862745098039217],
-    "densityKgPerM3": 1350,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.matweb.com/search/QuickText.aspx?SearchText=polyamide+66+30%25+glass+fiber"
+    }
   },
   "polymer-fde": {
     "colour": [0.69411764705882351, 0.56862745098039214, 0.3843137254901961],
-    "densityKgPerM3": 1350,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.matweb.com/search/QuickText.aspx?SearchText=polyamide+66+30%25+glass+fiber"
+    }
   },
   "polymer-od-green": {
     "colour": [0.29411764705882354, 0.34509803921568627, 0.21176470588235294],
-    "densityKgPerM3": 1350,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.matweb.com/search/QuickText.aspx?SearchText=polyamide+66+30%25+glass+fiber"
+    }
   },
   "rubber-black": {
     "colour": [0.094117647058823528, 0.10196078431372549, 0.10588235294117647],
-    "densityKgPerM3": 1100,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.engineeringtoolbox.com/density-solids-d_1265.html"
+    }
   },
   "steel": {
     "colour": [0.28999999999999998, 0.32000000000000001, 0.31],
-    "densityKgPerM3": 7850,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html"
+    }
   },
   "steel-blued": {
     "colour": [0.24313725490196078, 0.28627450980392155, 0.34901960784313724],
-    "densityKgPerM3": 7850,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html"
+    }
   },
   "steel-parkerized": {
     "colour": [0.29411764705882354, 0.30980392156862746, 0.29803921568627451],
-    "densityKgPerM3": 7850,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html"
+    }
   },
   "steel-stainless": {
     "colour": [0.70588235294117652, 0.72156862745098038, 0.72156862745098038],
-    "densityKgPerM3": 8000,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.azom.com/article.aspx?ArticleID=965"
+    }
   },
   "wood-birch": {
     "colour": [0.75686274509803919, 0.60392156862745094, 0.396078431372549],
-    "densityKgPerM3": 670,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.fpl.fs.usda.gov/documnts/fplgtr/fplgtr190/chapter_05.pdf"
+    }
   },
   "wood-walnut": {
     "colour": [0.45882352941176469, 0.2627450980392157, 0.14117647058823529],
-    "densityKgPerM3": 610,
     "finish": {
       "metallic": 0,
       "roughness": 0.84999999999999998
-    },
-    "source": "https://www.fpl.fs.usda.gov/documnts/fplgtr/fplgtr190/chapter_05.pdf"
+    }
   }
 }

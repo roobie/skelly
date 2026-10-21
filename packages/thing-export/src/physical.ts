@@ -2,7 +2,7 @@ import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
 import { add, applyPoint, extrusionPoint, scale, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { clippedExtrudedPolygonPolyhedron, polyhedronMeasures } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
-import type { MaterialDef } from '@skelly/thing-core/materials';
+import { modelMassKg } from '@skelly/thing-core/mass';
 import type { ModelParts } from '@skelly/thing-core/schema';
 import { partNodeName } from './glb.ts';
 
@@ -40,41 +40,31 @@ const solidProperties = (solid: Solid): VolumeProperties => {
 
 export interface PhysicalInputs {
   readonly part: PartDef;
-  readonly fillFraction: number;
-  readonly materialFor: (solid: Solid) => MaterialDef;
+  readonly massKg: number;
 }
 
 export const partProperties = (
   metresPerUnit: number,
   inputs: PhysicalInputs,
 ): { massKg: number; centreOfMass: Vec3 } => {
-  if (
-    !(
-      Number.isFinite(inputs.fillFraction) &&
-      inputs.fillFraction >= 0 &&
-      Number.isFinite(metresPerUnit) &&
-      metresPerUnit > 0
-    )
-  ) {
-    throw new Error('Physical inputs need a non-negative fill and positive finite scale');
+  if (!(Number.isFinite(inputs.massKg) && inputs.massKg >= 0)) {
+    throw new Error(`Missing or invalid authored mass for ${inputs.part.family}`);
   }
-  let massKg = 0;
+  if (!(Number.isFinite(metresPerUnit) && metresPerUnit > 0)) {
+    throw new Error('Physical placement needs a positive finite scale');
+  }
+  let volume = 0;
   let moment: Vec3 = [0, 0, 0];
   for (const solid of inputs.part.solids) {
     const properties = solidProperties(solid);
-    const density = inputs.materialFor(solid).densityKgPerM3;
-    if (!(Number.isFinite(density) && density > 0)) {
-      throw new Error(`Invalid material density for ${solid.id}`);
-    }
-    const mass = properties.volume * metresPerUnit ** 3 * density * inputs.fillFraction;
-    massKg += mass;
-    moment = add(moment, scale(properties.centre, mass));
+    volume += properties.volume;
+    moment = add(moment, scale(properties.centre, properties.volume));
   }
-  const centreOfMass: Vec3 = massKg === 0 ? [0, 0, 0] : scale(moment, metresPerUnit / massKg);
-  if (!(Number.isFinite(massKg) && massKg >= 0 && centreOfMass.every(Number.isFinite))) {
-    throw new Error('Invalid derived physical properties');
+  const centreOfMass: Vec3 = volume === 0 ? [0, 0, 0] : scale(moment, metresPerUnit / volume);
+  if (!centreOfMass.every(Number.isFinite)) {
+    throw new Error('Invalid geometric centre');
   }
-  return { massKg, centreOfMass };
+  return { massKg: inputs.massKg, centreOfMass };
 };
 
 export const modelParts = (resolved: Resolved, inputsFor: (id: string, part: PartDef) => PhysicalInputs): ModelParts =>
@@ -97,3 +87,11 @@ export const modelParts = (resolved: Resolved, inputsFor: (id: string, part: Par
       ];
     }),
   );
+
+export const assemblyProperties = (parts: ModelParts): { massKg: number; centreOfMass: Vec3 } => {
+  const massKg = modelMassKg({ parts });
+  const moment = Object.values(parts).reduce((sum, part) => add(sum, scale(part.centreOfMass, part.massKg)), [
+    0, 0, 0,
+  ] as Vec3);
+  return { massKg, centreOfMass: massKg === 0 ? [0, 0, 0] : scale(moment, 1 / massKg) };
+};

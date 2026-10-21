@@ -3,7 +3,6 @@
 // Changing a magazine here stows it instead, so skill 0 sits at the slow end.
 local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
 local huntingRifle = import 'gungen/rifle_hunting.model.json';
-local authored = import 'authored-model-physics.libsonnet';
 // The exported support is a contact on the wood; seat the wrist below and behind it so the palm's end meets it without obscuring ADS.
 local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
 
@@ -12,7 +11,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
     {
       id: 'rifle_hunting', name: 'Hunting rifle', category: 'weapon',
       description: '.308 Winchester bolt-action rifle with an internal magazine.',
-      model: 'rifle_hunting', size: [2, 11], twoHanded: true, weight: 3200,
+      model: 'rifle_hunting', size: [2, 11], twoHanded: true,
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
         recoilKickRadians: 0.025, dispersionRadians: 0.006,
@@ -44,8 +43,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "model": "shotgun_pump",
       "name": "Pump shotgun",
       "size": [2, 10],
-      "twoHanded": true,
-      "weight": 3000
+      "twoHanded": true
     },
     {
       "category": "weapon",
@@ -54,8 +52,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
       "size": [2, 10],
-      "twoHanded": true,
-      "weight": 3000
+      "twoHanded": true
     },
     {
       "category": "weapon",
@@ -75,8 +72,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "model": "rifle_assault",
       "name": "AR-pattern rifle",
       "size": [2, 9],
-      "twoHanded": true,
-      "weight": 3500
+      "twoHanded": true
     },
     {
       "category": "weapon",
@@ -95,24 +91,23 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "model": "rifle_ak",
       "name": "AK-pattern rifle",
       "size": [2, 9],
-      "twoHanded": true,
-      "weight": 3500
+      "twoHanded": true
     }
   ],
   // Imports keep the export writer from overwriting authored handling constructors.
   "models": [
-    authored({
+    {
       "anchors": { "muzzle": [0.1832, 0, 0.0501] },
       "file": "assets/models/pistol_compact.glb",
       "grip": { "at": [0.0866, 0, 0.0266], "turn": [-90, 0, 0] },
       "id": "pistol_compact"
-    }),
-    authored({
+    },
+    {
       "anchors": { "muzzle": [0.2107, 0, 0.0618] },
       "file": "assets/models/pistol_full.glb",
       "grip": { "at": [0.0885, 0, 0.0312], "turn": [-90, 0, 0] },
       "id": "pistol_full"
-    }),
+    },
     (import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } },
     (import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } },
     import 'gungen/round_7_d_62x39.model.json',
@@ -124,43 +119,43 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
     import 'gungen/revolver.model.json',
     import 'gungen/round_357_h_magnum.model.json',
     import 'gungen/case_357_h_magnum.model.json',
-    authored({
+    {
       "anchors": { "muzzle": [0.8005, 0.0004, 0.0394] },
       "file": "assets/models/rifle_battle.glb",
       "grip": { "at": [0.3158, 0.0004, -0.0138], "turn": [-90, 0, 0] },
       "id": "rifle_battle"
-    }),
-    authored({
+    },
+    {
       "anchors": { "muzzle": [0.7572, -0.0007, 0.0566] },
       "file": "assets/models/shotgun_auto.glb",
       "grip": { "at": [0.2903, -0.0007, 0.0123], "turn": [-90, 0, 0] },
       "id": "shotgun_auto"
-    }),
+    },
     import 'gungen/shotgun_pump.model.json',
-    authored({
+    {
       "anchors": { "muzzle": [0.4214, 0.0001, 0.0766] },
       "file": "assets/models/smg_compact.glb",
       "grip": { "at": [0.2868, 0.0001, 0.057], "turn": [-90, 0, 0] },
       "id": "smg_compact"
-    }),
-    authored({
+    },
+    {
       "anchors": { "muzzle": [0.5293, 0, 0.0742] },
       "file": "assets/models/smg_full.glb",
       "grip": { "at": [0.2944, 0, 0.0365], "turn": [-90, 0, 0] },
       "id": "smg_full"
-    }),
-    authored({
+    },
+    {
       "anchors": { "muzzle": [1.0624, 0.0111, 0.0418] },
       "file": "assets/models/sniper_material.glb",
       "grip": { "at": [0.3172, 0.0111, -0.0181], "turn": [-90, 0, 0] },
       "id": "sniper_material"
-    }),
-    authored({
+    },
+    {
       "anchors": { "muzzle": [0.916, 0.0078, 0.0337] },
       "file": "assets/models/sniper_rifle.glb",
       "grip": { "at": [0.296, 0.0078, -0.0179], "turn": [-90, 0, 0] },
       "id": "sniper_rifle"
-    }),
+    },
     huntingRifle + {
       anchors: huntingRifle.anchors + {
         support_wrist: [huntingRifle.anchors.support[i] + huntingSupportWristOffset[i] for i in std.range(0, 2)],

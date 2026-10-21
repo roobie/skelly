@@ -1,74 +1,86 @@
 import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { MATERIALS } from '@skelly/thing-core/materials';
+import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { modelParts, type PhysicalInputs } from '@skelly/thing-export/physical.ts';
-import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
-import { attachmentMetadata } from './attachments.ts';
-import { FAMILIES } from './parts.ts';
+import {
+  array,
+  check,
+  finite,
+  type InferOutput,
+  minValue,
+  nonEmpty,
+  number,
+  parse,
+  pipe,
+  record,
+  regex,
+  strictObject,
+  string,
+} from 'valibot';
 import content from './physical.json' with { type: 'json' };
 
-interface RolePhysics {
-  readonly material: string;
-  readonly fill: { readonly fraction: number; readonly source: string };
-  readonly slotMaterials?: Readonly<Record<string, string>>;
-}
+const PartMassSchema = strictObject({
+  id: pipe(string(), regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/)),
+  family: pipe(string(), nonEmpty()),
+  match: record(pipe(string(), nonEmpty()), string()),
+  massKg: pipe(number(), finite(), minValue(Number.MIN_VALUE)),
+});
+const PartMassTableSchema = pipe(
+  array(PartMassSchema),
+  check((rows) => new Set(rows.map(({ id }) => id)).size === rows.length, 'part mass row ids must be unique'),
+  check(
+    (rows) =>
+      rows.every(
+        ({ match }) =>
+          !['pose', 'muzzleInsetRatio', 'chamberIndex', 'frontSightMuzzleInsetRatio'].some((key) =>
+            Object.hasOwn(match, key),
+          ),
+      ),
+    'pose and placement cannot select a mass',
+  ),
+);
+export type PartMassRow = InferOutput<typeof PartMassSchema>;
+const partMasses = parse(PartMassTableSchema, content.partMasses);
 
-const physicalInputs = (part: PartDef): PhysicalInputs => {
-  const roles: Readonly<Record<string, RolePhysics>> = content.roles;
-  const role = roles[part.family];
-  if (!role) {
-    throw new Error(`No physical inputs for ${part.family}`);
-  }
-  const slots: Readonly<Record<string, string>> = content.slotMaterials;
-  return {
-    part,
-    fillFraction: role.fill.fraction,
-    materialFor: (solid) => {
-      const slot = solid.slot ?? part.slot;
-      const materialId =
-        solid.material ??
-        part.material ??
-        (slot === undefined ? undefined : (role.slotMaterials?.[slot] ?? slots[slot])) ??
-        role.material;
-      const material = MATERIALS[materialId];
-      if (!material) {
-        throw new Error(`No physical material ${materialId}`);
-      }
-      return material;
-    },
-  };
-};
+export class PartMassError extends Error {}
 
-const canonicalAttachmentPart = (id: string): PartDef => {
-  if (id.startsWith('optic-')) {
-    return FAMILIES.sight!.build({ type: id.slice('optic-'.length) });
-  }
-  if (id === 'real-suppressor' || id === 'improvised-suppressor') {
-    return ATTACHMENT_FAMILIES.suppressor!.build({ type: id });
-  }
-  const family = FAMILIES[id] ?? ATTACHMENT_FAMILIES[id];
-  if (!family) {
-    throw new Error(`No physical attachment family for ${id}`);
-  }
+const physicalInputs = (
+  resolved: Resolved,
+  id: string,
+  part: PartDef,
+  rows: readonly PartMassRow[],
+): PhysicalInputs => {
+  const family = resolved.assembly.parts[id]?.family;
   const params = Object.fromEntries(
-    Object.entries(family.params).flatMap(([name, spec]) => (spec.default === undefined ? [] : [[name, spec.default]])),
+    Object.entries(resolved.params.get(id) ?? {}).map(([key, parameter]) => [key, parameter.value]),
   );
-  return family.build(params);
+  const matches = rows.filter(
+    (row) => row.family === family && Object.entries(row.match).every(([key, value]) => params[key] === value),
+  );
+  if (matches.length !== 1) {
+    throw new PartMassError(
+      `Design ${JSON.stringify(resolved.assembly.name)}, part ${JSON.stringify(id)}, family ${JSON.stringify(family)}, resolved params ${JSON.stringify(params)}: expected one authored mass row; matched ${matches.length === 0 ? 'none' : matches.map(({ id: row }) => row).join(', ')}`,
+    );
+  }
+  return { part, massKg: matches[0]!.massKg };
 };
 
-export const gunModelParts = (resolved: Resolved) =>
-  modelParts(resolved, (id, part) => {
-    const instance = resolved.assembly.parts[id];
-    if (!instance) {
-      throw new Error(`No physical instance for ${id}`);
-    }
-    const source = { ...part, family: instance.family };
-    const params = resolved.params.get(id);
-    const metadata = attachmentMetadata(
-      instance.family,
-      params && Object.fromEntries(Object.entries(params).map(([name, parameter]) => [name, parameter.value])),
-      resolved.domain.units.metresPerUnit,
-      source,
-    );
-    // A host-specific mount envelope must not change the physical identity of a fitted item.
-    return physicalInputs(metadata ? canonicalAttachmentPart(metadata.id) : source);
-  });
+export const gunModelParts = (
+  resolved: Resolved,
+  replaceableNodes: ReadonlySet<string>,
+  rows: readonly PartMassRow[] = partMasses,
+) => {
+  // Replaceable geometry belongs to the child item, whose authored weight is authoritative.
+  const body = {
+    ...resolved,
+    defs: new Map(
+      [...resolved.defs].filter(([id]) => {
+        const family = resolved.assembly.parts[id]?.family;
+        if (family === undefined) {
+          throw new PartMassError(`No instance for physical part ${id}`);
+        }
+        return !replaceableNodes.has(partNodeName(id, family));
+      }),
+    ),
+  };
+  return modelParts(body, (id, part) => physicalInputs(resolved, id, part, rows));
+};

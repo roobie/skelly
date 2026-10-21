@@ -1,12 +1,1 @@
-{
-  "id": "round_5_d_56x45",
-  "file": "assets/models/round-5_d_56x45.glb",
-  "parts": {
-    "cartridge": {
-      "node": "cartridge:cartridge-model",
-      "massKg": 0.028784689499338684,
-      "centreOfMass": [0.025058314161977943, 0, 0]
-    }
-  },
-  "gun": { "calibre": "5.56x45" }
-}
+{ "id": "round_5_d_56x45", "file": "assets/models/round-5_d_56x45.glb", "gun": { "calibre": "5.56x45" } }

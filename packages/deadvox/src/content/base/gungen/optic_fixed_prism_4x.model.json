@@ -1,13 +1,6 @@
 {
   "id": "optic_fixed_prism_4x",
   "file": "assets/models/optic_fixed_prism_4x.glb",
-  "parts": {
-    "optic-fixed-prism-4x": {
-      "node": "optic-fixed-prism-4x:sight",
-      "massKg": 0.357488038040254,
-      "centreOfMass": [-0.004559516357722613, 0.02307690142456911, -0.001996865089113965]
-    }
-  },
   "gun": {
     "attachment": {
       "id": "optic-fixed-prism-4x",

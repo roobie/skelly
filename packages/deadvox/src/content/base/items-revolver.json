@@ -53,8 +53,7 @@
       "model": "revolver",
       "name": ".357 revolver",
       "size": [2, 3],
-      "twoHanded": false,
-      "weight": 1130
+      "twoHanded": false
     },
     {
       "ammo": {
