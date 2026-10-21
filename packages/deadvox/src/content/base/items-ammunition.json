@@ -31,14 +31,14 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "cartridge_box_308_h_winchester",
+      "model": "cartridge_box_308_h_winchester",
       "name": "Sealed .308 Winchester box (20)",
       "size": [2, 1],
       "unpack": {
         "count": 20,
         "item": "cartridge_308_h_winchester",
         "simSeconds": 1.2
-      },
-      "weight": 520
+      }
     },
     {
       "category": "misc",
@@ -111,14 +111,14 @@
         "usage": ["Military"]
       },
       "id": "cartridge_box_5_d_56x45",
+      "model": "cartridge_box_5_d_56x45",
       "name": "Sealed 5.56×45 box (20)",
       "size": [2, 1],
       "unpack": {
         "count": 20,
         "item": "cartridge_5_d_56x45",
         "simSeconds": 1.2
-      },
-      "weight": 280
+      }
     },
     {
       "category": "ammo",
@@ -128,14 +128,14 @@
         "usage": ["Military"]
       },
       "id": "cartridge_box_7_d_62x39",
+      "model": "cartridge_box_7_d_62x39",
       "name": "Sealed 7.62×39 box (20)",
       "size": [2, 1],
       "unpack": {
         "count": 20,
         "item": "cartridge_7_d_62x39",
         "simSeconds": 1.2
-      },
-      "weight": 360
+      }
     },
     {
       "category": "ammo",

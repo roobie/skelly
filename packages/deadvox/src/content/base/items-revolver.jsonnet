@@ -30,7 +30,7 @@
     },
     {
       id: 'cartridge_box_357_h_magnum', name: '.357 Magnum box', category: 'ammo',
-      weight: 825, size: [2, 2], unpack: { item: 'cartridge_357_h_magnum', count: 50, simSeconds: 1.5 },
+      model: 'cartridge_box_357_h_magnum', size: [2, 2], unpack: { item: 'cartridge_357_h_magnum', count: 50, simSeconds: 1.5 },
     },
     {
       id: 'spent_case_357_h_magnum', name: '.357 Magnum case', category: 'material',

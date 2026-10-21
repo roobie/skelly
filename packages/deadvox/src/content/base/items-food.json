@@ -8,6 +8,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "canned_beans",
+      "model": "canned_beans",
       "name": "Can of beans",
       "size": [1, 2],
       "unpack": {
@@ -17,8 +18,7 @@
           "opening": 1
         },
         "simSeconds": 3
-      },
-      "weight": 450
+      }
     },
     {
       "category": "food",
@@ -43,6 +43,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "canned_soup",
+      "model": "canned_soup",
       "name": "Can of soup",
       "size": [1, 2],
       "unpack": {
@@ -52,8 +53,7 @@
           "opening": 1
         },
         "simSeconds": 3
-      },
-      "weight": 430
+      }
     },
     {
       "category": "food",
@@ -83,9 +83,9 @@
         "water": 0
       },
       "id": "crackers",
+      "model": "crackers",
       "name": "Box of crackers",
-      "size": [2, 2],
-      "weight": 250
+      "size": [2, 2]
     },
     {
       "category": "food",
@@ -118,9 +118,9 @@
         "water": 0
       },
       "id": "chocolate_bar",
+      "model": "chocolate_bar",
       "name": "Chocolate bar",
-      "size": [2, 1],
-      "weight": 100
+      "size": [2, 1]
     },
     {
       "category": "drink",
@@ -134,9 +134,9 @@
         "water": 300
       },
       "id": "soda_can",
+      "model": "soda_can",
       "name": "Can of soda",
-      "size": [1, 2],
-      "weight": 360
+      "size": [1, 2]
     },
     {
       "category": "drink",
@@ -150,9 +150,9 @@
         "water": 1000
       },
       "id": "water_bottle",
+      "model": "water_bottle",
       "name": "Bottle of water",
-      "size": [1, 3],
-      "weight": 1050
+      "size": [1, 3]
     },
     {
       "category": "drink",
@@ -166,9 +166,9 @@
         "water": 900
       },
       "id": "juice_carton",
+      "model": "juice_carton",
       "name": "Carton of juice",
-      "size": [1, 3],
-      "weight": 1050
+      "size": [1, 3]
     }
   ]
 }

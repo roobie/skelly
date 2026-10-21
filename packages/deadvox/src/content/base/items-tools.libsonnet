@@ -92,7 +92,7 @@ local items = [
     id: 'gas_canister',
     name: 'Gas cartridge',
     category: 'misc',
-    weight: 350,
+    model: 'gas_canister',
     size: [1, 2],
     stack: 2,
     description: 'Fuel for a blowtorch.',

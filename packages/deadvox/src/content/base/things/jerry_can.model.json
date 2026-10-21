@@ -1,0 +1,8 @@
+{
+  "id": "jerry_can",
+  "file": "assets/models/jerry_can.glb",
+  "parts": { "package": { "node": "package:carton", "massKg": 2.5, "centreOfMass": [0, 0.21240192709700098, 0] } },
+  "grip": { "at": [0, 0.47600000000000003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

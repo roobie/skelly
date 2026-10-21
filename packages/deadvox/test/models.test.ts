@@ -18,7 +18,7 @@ import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import { fittedPartFrame, prepareModel } from '../src/render/models.ts';
+import { fittedPartFrame, heldModelFrame, prepareModel } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
@@ -51,7 +51,33 @@ const { registry, issues } = buildRegistry([
     .sort()
     .map(base),
   read('test/fixtures/packs/lamp/lamp.json'),
+  {
+    source: 'bundle-fixture',
+    data: { items: [{ id: 'fixture_bundle', name: 'Bundle fixture', category: 'misc', weight: 1, size: [1, 2] }] },
+  },
 ]);
+
+it('prepares every thing recipe export for ground and held drawing with its grip at the hand origin', async () => {
+  const recipe: { id: string }[] = JSON.parse(readFileSync('../thing-authoring-tool/exports/deadvox.json', 'utf8'));
+  expect(recipe.length).toBeGreaterThan(0);
+  await Promise.all(
+    recipe.map(async ({ id }) => {
+      const definition = registry.models.get(id)!;
+      const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+      const { ground, held, groundParts } = prepareModel(definition, scene);
+      const groundBounds = new Box3().setFromObject(ground);
+      expect(groundBounds.isEmpty(), id).toBe(false);
+      expect(groundBounds.min.y, id).toBeCloseTo(0);
+      expect(groundParts.length, id).toBeGreaterThan(0);
+      expect(new Box3().setFromObject(held).isEmpty(), id).toBe(false);
+      if (definition.grip) {
+        held.updateMatrixWorld(true);
+        const grip = heldModelFrame(held).localToWorld(new Vector3(...definition.grip.at));
+        expect(grip.length(), id).toBeCloseTo(0);
+      }
+    }),
+  );
+});
 
 describe('piles with models', () => {
   const inventory = new Inventory(registry);
@@ -62,7 +88,7 @@ describe('piles with models', () => {
       // The lamp is 3 × 1 cells, long along the grid's x.
       { item: inventory.create('lamp'), x: 2, y: 1, rotated: false },
       { item: inventory.create('lamp'), x: 6, y: 2, rotated: true },
-      { item: inventory.create('canned_beans'), x: 0, y: 4, rotated: false },
+      { item: inventory.create('fixture_bundle'), x: 0, y: 4, rotated: false },
     ],
   };
 
@@ -73,13 +99,13 @@ describe('piles with models', () => {
       ['lamp', [(10 + 3.5 / PILE_GRID.w) * S, 4 * S, (-3 + 1.5 / PILE_GRID.h) * S], 0],
       ['lamp', [(10 + 6.5 / PILE_GRID.w) * S, 4 * S, (-3 + 3.5 / PILE_GRID.h) * S], Math.PI / 2],
     ]);
-    expect(bundle.map((p) => p.item.type)).toEqual(['canned_beans']);
+    expect(bundle.map((p) => p.item.type)).toEqual(['fixture_bundle']);
   });
 
   it("keeps items in the bundle while their model can't be drawn", () => {
     const { models, bundle } = pileLayout(registry, pile, S, () => false);
     expect(models).toEqual([]);
-    expect(bundle.map((p) => p.item.type)).toEqual(['lamp', 'lamp', 'canned_beans']);
+    expect(bundle.map((p) => p.item.type)).toEqual(['lamp', 'lamp', 'fixture_bundle']);
   });
 
   it('turns an item whose long side is its height the other way', () => {

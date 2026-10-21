@@ -17,7 +17,7 @@
     },
     {
       id: 'cartridge_box_308_h_winchester', name: 'Sealed .308 Winchester box (20)',
-      category: 'ammo', weight: 520, size: [2, 1],
+      category: 'ammo', model: 'cartridge_box_308_h_winchester', size: [2, 1],
       unpack: { item: 'cartridge_308_h_winchester', count: 20, simSeconds: 1.2 },
     },
     {
@@ -71,7 +71,7 @@
       "id": "cartridge_box_5_d_56x45",
       "name": "Sealed 5.56×45 box (20)",
       "category": "ammo",
-      "weight": 280,
+      "model": "cartridge_box_5_d_56x45",
       "size": [2, 1],
       "description": "Sealed cardboard box of twenty 5.56×45 cartridges.",
       "unpack": { "item": "cartridge_5_d_56x45", "count": 20, "simSeconds": 1.2 }
@@ -80,7 +80,7 @@
       "id": "cartridge_box_7_d_62x39",
       "name": "Sealed 7.62×39 box (20)",
       "category": "ammo",
-      "weight": 360,
+      "model": "cartridge_box_7_d_62x39",
       "size": [2, 1],
       "description": "Sealed cardboard box of twenty 7.62×39 cartridges.",
       "unpack": { "item": "cartridge_7_d_62x39", "count": 20, "simSeconds": 1.2 }

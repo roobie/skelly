@@ -1,6 +1,261 @@
 {
   "models": [
     {
+      "file": "assets/models/canned_beans.glb",
+      "grip": {
+        "at": [0, 0.056500000000000002, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "canned_beans",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.055928062313458364, 0],
+          "massKg": 0.45000000000000001,
+          "node": "package:vessel"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/canned_soup.glb",
+      "grip": {
+        "at": [0, 0.061499999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "canned_soup",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.06092612064541375, 0],
+          "massKg": 0.42999999999999999,
+          "node": "package:vessel"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/crackers.glb",
+      "grip": {
+        "at": [0, 0.10000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "crackers",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.10068854621041944, 0],
+          "massKg": 0.25,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/chocolate_bar.glb",
+      "grip": {
+        "at": [0, 0.0060000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "chocolate_bar",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.0061739196169052126, 0],
+          "massKg": 0.10000000000000001,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/soda_can.glb",
+      "grip": {
+        "at": [0, 0.060500000000000005, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "soda_can",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.059055056734215343, 0],
+          "massKg": 0.35999999999999999,
+          "node": "package:vessel"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/water_bottle.glb",
+      "grip": {
+        "at": [0, 0.12, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "water_bottle",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.10473515077838855, 0],
+          "massKg": 1.05,
+          "node": "package:vessel"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/juice_carton.glb",
+      "grip": {
+        "at": [0, 0.095000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "juice_carton",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.10026769352988682, 0],
+          "massKg": 1.05,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/cartridge_box_308_h_winchester.glb",
+      "grip": {
+        "at": [0, 0.040000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "cartridge_box_308_h_winchester",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.040690447174969231, 0],
+          "massKg": 0.52000000000000002,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/cartridge_box_5_d_56x45.glb",
+      "grip": {
+        "at": [0, 0.032500000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "cartridge_box_5_d_56x45",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.033191603922942604, 0],
+          "massKg": 0.28000000000000003,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/cartridge_box_7_d_62x39.glb",
+      "grip": {
+        "at": [0, 0.032500000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "cartridge_box_7_d_62x39",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.033192136800040267, 0],
+          "massKg": 0.35999999999999999,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/cartridge_box_357_h_magnum.glb",
+      "grip": {
+        "at": [0, 0.0275, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "cartridge_box_357_h_magnum",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.028195008239786962, 0],
+          "massKg": 0.82499999999999996,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shotshell_box.glb",
+      "grip": {
+        "at": [0, 0.037499999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "shotshell_box",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.038192863669956299, 0],
+          "massKg": 0.83999999999999997,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/ammo_can.glb",
+      "grip": {
+        "at": [0, 0.21100000000000002, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "ammo_can",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.090339562477778051, 0],
+          "massKg": 1.6000000000000001,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/jerry_can.glb",
+      "grip": {
+        "at": [0, 0.47600000000000003, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "jerry_can",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.21240192709700098, 0],
+          "massKg": 2.5,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/gas_canister.glb",
+      "grip": {
+        "at": [0, 0.071500000000000008, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "gas_canister",
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.062254371020122178, 0],
+          "massKg": 0.34999999999999998,
+          "node": "package:vessel"
+        }
+      },
+      "roll": 0
+    },
+    {
       "file": "assets/models/hand_saw.glb",
       "grip": {
         "at": [-0.13, 0.034000000000000002, 0]

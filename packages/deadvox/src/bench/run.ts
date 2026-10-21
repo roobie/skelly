@@ -6,6 +6,7 @@
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import type { Vec3 } from '../core/coords.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import type { Body } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
@@ -22,7 +23,7 @@ import type { StreamerStats } from '../game/streamer.ts';
 import { flashlightDaylightScale } from '../render/flashlight.ts';
 import { MobActorMeshes } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
-import { BENCH_LIGHT_COUNTS, createBenchLightFixture } from './lightFixture.ts';
+import { BENCH_LIGHT_COUNTS, benchFlareSourcesFromUrl, createBenchLightFixture } from './lightFixture.ts';
 import {
   type BenchConfig,
   type BenchRecord,
@@ -51,10 +52,12 @@ export interface BenchRun {
   density: number | null;
   /** Time of day as "HH:MM" (`&time=`); noon when absent. Night brings the fog, and the far plane, closer. */
   time?: string;
-  /** Draw through the mood pass with the default look (`&post=1`, bench/post.ts). */
+  /** Select the independent full-post workload (`&post=1`, bench/post.ts). */
   post: boolean;
   /** Apply the goggles' registry-authored night-vision view (`&nightVision=1`, bench/post.ts). */
   nightVision: boolean;
+  /** Camera-local source positions in metres; also selects play's content-default look. */
+  flareSources?: Vec3[] | undefined;
   /** Detailed shambler population to keep active through every phase; undefined rejects a malformed URL. */
   shamblers: number | undefined;
 }
@@ -86,6 +89,7 @@ export const benchRunFromUrl = (
     quick: params.has('quick'),
     post: benchPostFromUrl(params),
     nightVision: benchNightVisionFromUrl(params),
+    flareSources: benchFlareSourcesFromUrl(params),
     shamblers: shamblerValues?.length === 1 ? shamblerValues[0]! : undefined,
     ...siteFromUrl(params, 'testHouse', registry),
     ...(parseTimeOfDay(time) === undefined ? {} : { time }),
@@ -128,7 +132,9 @@ export const nextUrl = (run: BenchRun, seed: number): string => {
     (run.site === 'forest' && run.density !== null ? `&density=${run.density}` : '');
   const time = run.time === undefined ? '' : `&time=${run.time}`;
   const shamblers = `&shamblers=${run.shamblers ?? 0}`;
-  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${shamblers}${postUrlPart(run.post, run.nightVision)}${quick}`;
+  const sources =
+    run.flareSources === undefined ? '' : `&flareSources=${encodeURIComponent(JSON.stringify(run.flareSources))}`;
+  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${shamblers}${postUrlPart(run.post, run.nightVision)}${sources}${quick}`;
 };
 
 export const forestWorkload = (registry: Pick<Registry, 'siteGeneration'>, seed: number, density: number | null) => {
@@ -178,12 +184,18 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   if (run.time !== undefined) {
     applySky(engine.sky, skyAt(hour, dayCycle));
   }
-  const lightFixture = createBenchLightFixture(engine, startTime);
+  const lightFixture = createBenchLightFixture(engine, startTime, run.flareSources);
   window.addEventListener('pagehide', lightFixture.dispose, { once: true });
   const daylightScale = flashlightDaylightScale(skyAt(hour, dayCycle));
   const gl = renderer.getContext();
   const pixel = new Uint8Array(4);
-  const drawScene = benchDraw(engine, { post: run.post, nightVision: run.nightVision, skyAngle: hour });
+  const drawScene = benchDraw(engine, {
+    post: run.post,
+    nightVision: run.nightVision,
+    skyAngle: hour,
+    playLook: run.flareSources !== undefined,
+    lightPool: lightFixture.lightPool,
+  });
   const draw = () => {
     lightFixture.update(camera, daylightScale);
     drawScene();
@@ -198,10 +210,12 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
           ...(run.site === 'forest' ? { forest: forestWorkload(engine.registry, config.seed, run.density) } : {}),
           time: run.time ?? '12:00',
           ...(run.post ? { post: true } : {}),
+          nightVision: run.nightVision,
+          ...(run.flareSources === undefined ? {} : { flareSources: run.flareSources }),
           lightWorkload: {
-            active: BENCH_LIGHT_COUNTS.carried + BENCH_LIGHT_COUNTS.dropped,
-            carried: BENCH_LIGHT_COUNTS.carried,
-            dropped: BENCH_LIGHT_COUNTS.dropped,
+            active: lightFixture.activeCount(),
+            carried: lightFixture.carried,
+            dropped: lightFixture.dropped,
             pointLightSlots: BENCH_LIGHT_COUNTS.pointLights,
             shamblers: shamblerCount,
             actors: 'detailed',
