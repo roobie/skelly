@@ -15,6 +15,7 @@ const stageTopics: Record<Tutorial['stage'], string> = {
   door: 'interact',
   loot: 'inventory',
   hands: 'wield',
+  open: 'hand',
   eat: 'hand',
   drink: 'hand',
   light: 'hand',
@@ -50,10 +51,10 @@ const stageHint = (tutorial: Tutorial, { inventory, inventoryOpen, lightOn }: Tu
           label,
         );
   const eatHint = () => {
-    if (held('beans')) {
-      return use('beans', 'Eat beans');
+    if (held('opened_beans')) {
+      return use('opened_beans', 'Eat beans');
     }
-    if ([...inventory.items()].some(({ item }) => item.type === 'beans')) {
+    if ([...inventory.items()].some(({ item }) => item.type === 'opened_beans')) {
       return wield('Opened beans — Take / wield');
     }
     return held('canned_beans') ? use('canned_beans', 'Open can') : wield('Can of beans');
@@ -91,7 +92,9 @@ const stageHint = (tutorial: Tutorial, { inventory, inventoryOpen, lightOn }: Tu
           ${action('inventory.search', 'Search supplies')} · ${quickAction}
         `
       : inventoryAction,
-    hands: wield('Can of beans'),
+    hands: wield('Can of beans · Can opener'),
+    open:
+      held('canned_beans') && held('can_opener') ? use('can_opener', 'Open can') : wield('Can of beans · Can opener'),
     eat: stage === 'eat' ? eatHint() : '',
     drink: held('water_bottle') ? use('water_bottle', 'Drink') : wield('Water bottle'),
     light: held('flashlight')
@@ -142,11 +145,6 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
           ? html`<p class="tutorial-action-note">Range — north-west dirt path · Range supplies — Backpack / boxed ammunition</p>
             <p class="tutorial-action-note">Loose ammunition must be carried; a revolver needs a free loading hand. Release loading before capacity for a partial load.</p>
             <p class="tutorial-action-note">Pumping chambers a shell from the tube; unloading ejects live rounds. Ammunition is finite; Restart practice replaces the whole attempt.</p>`
-          : ''
-      }
-      ${
-        tutorial.stage === 'eat' || tutorial.stage === 'hands'
-          ? html`<p class="tutorial-action-note">A carried can opener enables opening a sealed can in hand. Opened food goes to a pocket or the ground, not into the hand.</p>`
           : ''
       }
     `,

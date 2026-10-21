@@ -840,6 +840,7 @@ const ItemSchema = strictObject({
   container: optional(strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()) })),
   wearable: optional(WearableSchema),
   food: optional(FoodSchema),
+  serving: optional(strictObject({ food: Id, empty: Id })),
   treatment: optional(TreatmentSchema),
   analgesic: optional(AnalgesicSchema),
   tool: optional(ToolSchema),
@@ -853,6 +854,7 @@ const ItemSchema = strictObject({
       count: pipe(Count, minValue(1, 'must be at least 1')),
       simSeconds: PositiveSimSeconds,
       qualities: optional(record(Id, QualityLevel)),
+      inPlace: optional(vBoolean()),
     }),
   ),
   /** An authored yield for a finished item; never inferred from recipe alternatives. */
@@ -932,6 +934,7 @@ const SoundSchema = strictObject({
     }, 'recipe names must be unique within a sound'),
   ),
   gain: pipe(Positive, maxValue(1, 'must be at most 1')),
+  lowShelf: optional(strictObject({ frequencyHz: Positive, gainDb: pipe(number(), finite()) })),
   pitchJitter: SoundMultipliers,
   gainJitter: SoundMultipliers,
   minIntervalSimSeconds: SimSeconds,

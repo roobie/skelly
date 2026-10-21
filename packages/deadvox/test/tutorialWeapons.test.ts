@@ -53,6 +53,7 @@ const fixture = (kind: PracticeGun) => {
     inventory,
     queue,
     () => [0, 1, 0],
+    undefined,
     (type) => observer.unpackedAmmo(type),
   );
   expect(unpack.activate(packageItem)).toBeUndefined();

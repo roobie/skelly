@@ -351,6 +351,16 @@ body.unconscious::after {
   display: none;
 }
 
+#item-action-list {
+  position: fixed;
+  left: 1rem;
+  bottom: 4rem;
+  padding: calc(var(--ui-spacing) * 0.5rem);
+  background: var(--panel);
+  white-space: pre;
+  pointer-events: none;
+}
+
 /* A bound key shown beside its action; every hint draws it through `keyCap` in src/ui/keyCap.ts. */
 .keycap {
   display: inline-block;
@@ -912,7 +922,8 @@ body.unconscious::after {
   min-width: 0;
 }
 #inventory .inv-around-section[data-around-section="floor"] {
-  flex: 1 1 8.25rem;
+  flex: 0 0 auto;
+  min-width: min-content;
 }
 #inventory .inv-around-section[data-around-section="container"] {
   flex: 0 0 auto;
@@ -937,6 +948,7 @@ body.unconscious::after {
 #inventory .inv-grid-packed {
   display: grid;
   grid-template-columns: repeat(auto-fill, 3rem);
+  grid-auto-columns: 3rem;
   grid-auto-rows: 3rem;
   grid-auto-flow: row;
   align-content: start;

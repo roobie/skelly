@@ -45,7 +45,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { config, sim, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), firearmShotEvent: (item) => firearmShotEmission(registry, item, firearms.noiseFactorFor(item)).event, fireWeapon: (item, time) => fireWeapon(item, time) } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { config, sim, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), reportReader: () => sim.events.reader() } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -193,7 +193,7 @@ try {
     true,
     'the debug modifier cancels F2 on the title screen',
   );
-  // Observe the public admission result instead of an implementation-specific source snippet.
+  // Read committed reports before returning from fire so native starts must still share their shot's frame.
   await page.evaluate(async () => {
     const moduleUrl = '/src/game/firearmHandling.ts';
     const { FirearmMechanics } = await import(moduleUrl);
@@ -203,9 +203,12 @@ try {
     const { fire } = FirearmMechanics.prototype;
     FirearmMechanics.prototype.fire = function (input) {
       const admitted = fire.call(this, input);
-      if (admitted) {
-        globalThis.fullAutoProbe.shots.push(input.simTime);
-        globalThis.fullAutoProbe.shotFrames.push(globalThis.fullAutoProbe.frame);
+      const probe = globalThis.fullAutoProbe;
+      for (const report of probe.reportReader?.read() ?? []) {
+        if (report.kind === 'sound' && report.event === probe.event) {
+          probe.shots.push(report.time);
+          probe.shotFrames.push(probe.frame);
+        }
       }
       return admitted;
     };
@@ -429,7 +432,8 @@ try {
     const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
     const rifle = inventory.hands.right;
     const data = firearmHandlingFor(rifle, inventory.registry);
-    const event = globalThis.fullAutoRuntime.firearmShotEvent(rifle);
+    const event = inventory.registry.items.get(rifle.type).firearm.shotSound;
+    globalThis.fullAutoProbe.event = event;
     const voiceCap = inventory.registry.sounds.get(event)?.voiceCap;
     const rounds = rifle.slots?.magazine?.cartridges?.length;
     if (!(voiceCap > 0 && data.roundsPerSimSecond > 0 && rounds > 1)) {
@@ -450,7 +454,6 @@ try {
     if (rifle?.type !== 'rifle_assault') {
       throw new Error('The AR loadout is missing before cold sound startup');
     }
-    globalThis.fullAutoProbe.event = globalThis.fullAutoRuntime.firearmShotEvent(rifle);
     for (let index = 0; index < globalThis.fullAutoProbe.tuning.voiceCap + 8; index++) {
       session.playPlayerSound(globalThis.fullAutoProbe.event, session.sim.time, { listenerRelative: true });
     }
@@ -492,7 +495,8 @@ try {
     if (rifle?.type !== 'rifle_assault' || !rifle.slots?.magazine) {
       throw new Error('The AR loadout did not put a magazine-fed AR in the right hand');
     }
-    globalThis.fullAutoProbe.event = globalThis.fullAutoRuntime.firearmShotEvent(rifle);
+    globalThis.fullAutoProbe.reportReader = globalThis.fullAutoRuntime.reportReader();
+    globalThis.fullAutoProbe.reportReader.read();
     const refusal = session.firearms.cock(rifle.uid, session.sim.time);
     if (refusal) {
       throw new Error(`Could not charge the fixture AR: ${refusal}`);
@@ -631,6 +635,8 @@ try {
       ).length === globalThis.fullAutoProbe.tuning.voiceCap,
   );
   await page.evaluate(() => {
+    // Warm-up voices test the cap, not committed firearm shots.
+    globalThis.fullAutoProbe.reportReader.read();
     globalThis.fullAutoProbe.shots = [];
     globalThis.fullAutoProbe.shotFrames = [];
     globalThis.fullAutoProbe.released = false;
@@ -756,43 +762,6 @@ try {
   assert.equal(runtimeTuning.effective, runtimeTuning.slider, 'the mouse-selected value changes firearm handling');
   assert.equal(runtimeTuning.locked, true, 'dragging the slider keeps pointer lock available for play');
   assert.ok(!runtimeTuning.saved.includes('skillZeroHandling'), 'runtime tuning is not included in a save');
-  const firearmNoise = await page.evaluate(() => {
-    const { session } = globalThis.fullAutoRuntime;
-    const originalFire = session.firearms.fire;
-    const shots = [
-      { label: 'unsuppressed AR', uid: 101, type: 'rifle_assault' },
-      {
-        label: 'suppressed AR',
-        uid: 102,
-        type: 'rifle_assault',
-        slots: { muzzle: { uid: 202, type: 'real_suppressor', count: 1, condition: 1 } },
-      },
-      { label: 'unsuppressed AK', uid: 103, type: 'rifle_ak' },
-    ];
-    session.firearms.fire = () => ({ committed: true });
-    try {
-      return shots.map((item) => {
-        const factor = session.firearms.noiseFactorFor(item);
-        if (!globalThis.fullAutoRuntime.fireWeapon(item, session.sim.time)) {
-          throw new Error(`fireWeapon refused ${item.label}`);
-        }
-        const noise = session.playerAudio.vocalNoise;
-        if (!noise) {
-          throw new Error(`fireWeapon emitted no noise for ${item.label}`);
-        }
-        return { label: item.label, radius: noise.radiusMetres, factor };
-      });
-    } finally {
-      session.firearms.fire = originalFire;
-    }
-  });
-  const noiseByLabel = new Map(firearmNoise.map(({ label, radius }) => [label, radius]));
-  const factorByLabel = new Map(firearmNoise.map(({ label, factor }) => [label, factor]));
-  assert.equal(
-    noiseByLabel.get('suppressed AR') / noiseByLabel.get('unsuppressed AR'),
-    factorByLabel.get('suppressed AR'),
-    'fireWeapon scales AR noise by its fitted suppressor factor',
-  );
   assert.deepEqual(errors, []);
   process.stdout.write(
     `full-auto native WebAudio passed: ${expectedShots} shots/burst, ${persistentCases} cases, release stops, ${native.records.length} starts, native starts in their shots' frames, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,

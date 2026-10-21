@@ -241,6 +241,22 @@ try {
     assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     assert.deepEqual(pageErrors, []);
   });
+  await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    r.setHand(r.dominant, r.inventory.create('machete'));
+    r.setHand(r.off, r.inventory.create('canned_beans'));
+  });
+  await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
+  await page.mouse.wheel(0, 100);
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.selectedItemAction(r.inventory.hands[r.dominant])?.opening === true;
+  });
+  const artifacts = resolve(projectRoot, 'test-results/primary-action');
+  await mkdir(artifacts, { recursive: true });
+  await page.screenshot({ path: resolve(artifacts, 'can-action-list.png') });
 } finally {
   if (browser) {
     await timePhase('browser-close', () => browser.close());

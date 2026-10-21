@@ -96,13 +96,9 @@ import { mountTutorial } from '../ui/tutorial.ts';
 import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { GameAudio } from './audio.ts';
-import {
-  createRefusalPresenter,
-  firearmShotEmission,
-  handlingMoveCompleteCue,
-  handlingMoveStartCue,
-} from './audioPresentation.ts';
+import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
+import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
 import { continueActionResumesJob } from './continueAction.ts';
 import type {
@@ -180,7 +176,6 @@ import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandO
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
-
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import {
   isOrbitResetMovementAction,
@@ -1022,7 +1017,13 @@ export const startPlay = (
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
   });
   const { compression } = sim;
-  const unpacking = new Unpacking(inventory, queue, feet, (type) => tutorial?.weapons.unpackedAmmo(type));
+  const unpacking = new Unpacking(
+    inventory,
+    queue,
+    feet,
+    (type) => tutorial?.opened(type),
+    (type) => tutorial?.weapons.unpackedAmmo(type),
+  );
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
     input.pitch = session.restoredLook.pitch;
@@ -1125,6 +1126,7 @@ export const startPlay = (
     });
   drawHudOptions();
   const prompt = $('prompt');
+  const itemActionList = $('item-action-list');
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
   const restBox = $('rest');
@@ -2871,11 +2873,6 @@ export const startPlay = (
     if (!fired) {
       return false;
     }
-    if (registry.items.get(item.type)?.firearm?.pump || item.firearm?.cylinder) {
-      return true;
-    }
-    const shot = firearmShotEmission(registry, item, firearms.noiseFactorFor(item));
-    session.playPlayerSound(shot.event, time, shot);
     return true;
   };
 
@@ -2950,8 +2947,14 @@ export const startPlay = (
     if (refusePrimaryUseWhileHandling()) {
       return;
     }
-    const action = selectPrimaryAction(inventory, hand);
+    const held = inventory.hands[hand];
+    const action = selectPrimaryAction(inventory, hand, held && survival.selectedItemAction(held)?.id);
     switch (action.kind) {
+      case 'open-can': {
+        const target = openingTargetForHand(inventory, hand);
+        refusalReason(target ? unpacking.activate(target) : 'I have no can to open');
+        return;
+      }
       case 'unpack':
         refusalReason(unpacking.activate(action.item));
         return;
@@ -3145,14 +3148,17 @@ export const startPlay = (
     carry: ReturnType<typeof carryPreview>,
   ) => {
     const interactionHint = interactionHintFor(target, carry);
+    const actions =
+      visible.interaction && input.locked && !debugTools?.buildOn ? survival.wieldedItemActionHint() : undefined;
+    itemActionList.textContent = actions ?? '';
+    itemActionList.hidden = !actions;
     return playPromptText(
       {
         now,
         notice,
         noticeUntil,
         interactionHint,
-        itemActionHint:
-          visible.interaction && input.locked && !debugTools?.buildOn ? survival.wieldedItemActionHint() : undefined,
+        itemActionHint: undefined,
         interruption: compression.interruption,
         resting: rest.action !== undefined,
       },
@@ -3634,7 +3640,9 @@ export const startPlay = (
       doorOpen: [...entities.all].some((entity) => entity.type === 'wood_door' && entity.open),
       searched: [...entities.all].some((entity) => entity.type === 'tutorial_cabinet' && entity.searched),
       looted: inventory.looted.size > 0,
-      wielded: Object.values(inventory.hands).some((item) => item?.type === 'canned_beans'),
+      wielded:
+        Object.values(inventory.hands).some((item) => item?.type === 'canned_beans') &&
+        Object.values(inventory.hands).some((item) => item?.type === 'can_opener'),
       lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
       paused: mainMenuOpen && started,
     });
@@ -3852,6 +3860,7 @@ export const startPlay = (
       inventoryPanel.hidden = true;
       syncMenuState();
       prompt.hidden = true;
+      itemActionList.hidden = true;
       if (!options.restore || options.restore.character.scenarioRun?.completedAtGameTimestamp === null) {
         options.saveController?.finishWin();
       }
@@ -3879,6 +3888,7 @@ export const startPlay = (
     inventoryPanel.hidden = true;
     syncMenuState();
     prompt.hidden = true;
+    itemActionList.hidden = true;
     const summary = {
       cause,
       worldSeed: sim.seed,

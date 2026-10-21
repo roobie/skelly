@@ -48,6 +48,10 @@ export class Tutorial {
     this.onComplete = onComplete;
   }
 
+  opened(type: string): void {
+    this.achieved.add(`opened:${type}`);
+  }
+
   consumed(type: string): void {
     this.achieved.add(`consumed:${type}`);
   }
@@ -83,6 +87,7 @@ export class Tutorial {
     | 'door'
     | 'loot'
     | 'hands'
+    | 'open'
     | 'eat'
     | 'drink'
     | 'light'
@@ -97,7 +102,8 @@ export class Tutorial {
       ['move', this.achieved.has('move') && this.achieved.has('look')],
       ['door', this.achieved.has('door')],
       ['loot', this.achieved.has('loot')],
-      ['hands', this.achieved.has('hands') || this.achieved.has('consumed:beans')],
+      ['hands', this.achieved.has('hands') || this.achieved.has('opened:canned_beans')],
+      ['open', this.achieved.has('opened:canned_beans')],
       ['eat', this.achieved.has('consumed:beans')],
       ['drink', this.achieved.has('consumed:water_bottle')],
       ['light', this.achieved.has('light')],

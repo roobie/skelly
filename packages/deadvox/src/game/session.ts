@@ -91,6 +91,7 @@ import {
   type Zombie,
   ZombieSystem,
 } from '../core/zombies.ts';
+import { firearmShotSound } from './audioPresentation.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
@@ -910,18 +911,11 @@ export const createSession = (options: SessionOptions) => {
         const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'hit');
         character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
       }
-      if (firearm.firearm?.cylinder) {
-        playPlayerSound(registry.items.get(firearm.type)!.firearm!.shotSound, time, {
-          sourceLabel: registry.items.get(firearm.type)!.name,
-          noiseRadiusScale: firearms.noiseFactorFor(firearm),
-        });
-      }
-      if (registry.items.get(firearm.type)?.firearm?.pump) {
-        playPlayerSound('shotgun_blast', time, {
-          sourceLabel: 'pump shotgun',
-          noiseRadiusScale: firearms.noiseFactorFor(firearm),
-        });
-      }
+      const sound = firearmShotSound(registry, firearm);
+      playPlayerSound(sound.event, time, {
+        sourceLabel: sound.sourceLabel,
+        noiseRadiusScale: firearms.noiseFactorFor(firearm),
+      });
     },
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),

@@ -42,19 +42,24 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
   it('credits every consumed thing export', () => {
     assertRecipeCredits(recipe, JSON.parse(readFileSync(join(base, 'assets/manifest.json'), 'utf8')));
   });
-  it('builds the registry with one tool mass source for each item', () => {
+  it('builds the registry with one authoritative mass source for each item', () => {
     assert.deepEqual(issues, []);
     for (const row of recipe) {
       const item = registry.items.get(row.source);
       assert.ok(item, `${row.source}: missing consumer`);
       assert.equal(item.model, row.id);
-      assert.equal(item.weight, undefined);
-      const toolItem = catalogue.items.find(({ id }) => id === row.source);
-      assert.ok(toolItem);
       const model = registry.models.get(row.id);
-      assert.ok(model?.parts);
-      const authoredMass = toolItem.parts.reduce((sum, part) => sum + part.massKg, 0);
-      assert.equal(exportDifference(modelMassKg(model), authoredMass), null, row.id);
+      assert.ok(model);
+      if (model.parts === undefined) {
+        assert.equal(typeof item.weight, 'number');
+        assert.equal(typeWeightGrams(registry, item.id), item.weight);
+      } else {
+        assert.equal(item.weight, undefined);
+        const toolItem = catalogue.items.find(({ id }) => id === row.source);
+        assert.ok(toolItem);
+        const authoredMass = toolItem.parts.reduce((sum, part) => sum + part.massKg, 0);
+        assert.equal(exportDifference(modelMassKg(model), authoredMass), null, row.id);
+      }
     }
   });
   it('loads every part node through the Deadvox GLTF association', async () => {

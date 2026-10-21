@@ -4,6 +4,7 @@ import type { Inventory, Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { putDownRefusal } from '../core/itemThrow.ts';
 import { freshDropTarget, playerPockets } from '../core/options.ts';
+import { unpackingTool } from './canOpening.ts';
 
 export const UNPACK_ACTION = 'item.unpack';
 
@@ -14,17 +15,21 @@ export class Unpacking {
   private readonly feet: () => Vec3;
   private readonly onUnpacked: (type: string) => void;
 
+  private readonly opened: ((type: string) => void) | undefined;
+
   constructor(
     inventory: Inventory,
     queue: HandlingQueue,
     feet: () => Vec3,
+    opened?: (type: string) => void,
     onUnpacked: (type: string) => void = () => undefined,
   ) {
+    this.opened = opened;
     this.inventory = inventory;
     this.queue = queue;
     this.feet = feet;
     this.onUnpacked = onUnpacked;
-    queue.registerAction(UNPACK_ACTION, (params) => this.complete(params.uid));
+    queue.registerAction(UNPACK_ACTION, (params) => this.complete(params.uid, params.toolUid));
   }
 
   activate(item: Item): string | undefined {
@@ -32,15 +37,12 @@ export class Unpacking {
     if (!unpack) {
       return 'This item cannot be unpacked';
     }
-    if (
-      !Object.entries(unpack.qualities ?? {}).every(([quality, level]) =>
-        [...this.inventory.carriedTree()].some(
-          ({ item: tool }) => (defOf(this.inventory.registry, tool.type).tool?.qualities[quality] ?? 0) >= level,
-        ),
-      )
-    ) {
-      return 'I need a tool for this';
+    const tool = unpackingTool(this.inventory, item);
+    if (Object.keys(unpack.qualities ?? {}).length > 0 && !tool) {
+      return 'I need a tool in my other hand';
     }
+    const rate =
+      unpack.qualities?.opening && tool ? defOf(this.inventory.registry, tool.type).tool!.qualities.opening! : 1;
     if (this.inventory.locate(item)?.kind !== 'hand') {
       return 'Wield the package to unpack it';
     }
@@ -50,15 +52,16 @@ export class Unpacking {
     this.queue.enqueueAction(
       UNPACK_ACTION,
       `Unpack ${this.inventory.name(item)}`,
-      this.inventory.scaleHandlingTime(defOf(this.inventory.registry, item.type).unpack!.simSeconds),
+      this.inventory.scaleHandlingTime(unpack.simSeconds / rate),
       {
         uid: item.uid,
+        toolUid: tool?.uid ?? null,
       },
     );
     return undefined;
   }
 
-  private complete(uid: unknown): string | undefined {
+  private complete(uid: unknown, toolUid: unknown): string | undefined {
     const box = typeof uid === 'number' ? this.inventory.itemByUid(uid) : undefined;
     if (!box || this.inventory.locate(box)?.kind !== 'hand') {
       return 'Package is no longer held';
@@ -66,6 +69,15 @@ export class Unpacking {
     const payload = defOf(this.inventory.registry, box.type).unpack;
     if (!payload) {
       return 'Package no longer has unpacking data';
+    }
+    if (Object.keys(payload.qualities ?? {}).length > 0 && unpackingTool(this.inventory, box)?.uid !== toolUid) {
+      return 'The opening tool is no longer in my other hand';
+    }
+    if (payload.inPlace) {
+      const { type } = box;
+      this.inventory.transform(box, payload.item);
+      this.opened?.(type);
+      return undefined;
     }
     const shell = this.inventory.create(payload.item, payload.count, 1);
     // Admission guarantees one stack. Reserve enough ordinary spill capacity for the entire
