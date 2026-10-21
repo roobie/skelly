@@ -52,8 +52,10 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('hands');
     state.wielded = true;
     observe();
-    expect(tutorial.stage).toBe('eat');
+    expect(tutorial.stage).toBe('open');
     tutorial.consumed('unrelated_fixture_food');
+    expect(tutorial.stage).toBe('open');
+    tutorial.opened('canned_beans');
     expect(tutorial.stage).toBe('eat');
     tutorial.consumed('beans');
     expect(tutorial.stage).toBe('drink');
@@ -83,6 +85,7 @@ describe('practice objectives', () => {
 
   it('remembers out-of-order supplies instead of requiring already consumed items again', () => {
     const { tutorial, state, observe } = fixture();
+    tutorial.opened('canned_beans');
     const inventory = new Inventory(BUNDLED_CONTENT.registry);
     const queue = new HandlingQueue(inventory);
     const survival = new Survival(new Simulation({ seed: 1 }), inventory, queue, {

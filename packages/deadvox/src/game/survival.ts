@@ -186,7 +186,7 @@ export class Survival {
       return undefined;
     }
     const actions = this.availableItemActions(item);
-    if (actions.length === 0) {
+    if (actions.length === 0 || (actions.length < 2 && (actions[0]!.opening || actions[0]!.id === 'own'))) {
       return undefined;
     }
     const selectedId = this.selectedItemAction(item)?.id;
@@ -314,7 +314,7 @@ export class Survival {
       return "I can't use the firearm from here";
     }
     // A weapon or key keeps its own action; a tool's category refuses only when nothing in it can be consumed.
-    const use = consumption(def);
+    const use = consumption(def, this.inventory.registry);
     if (def.weapon || def.key || (!use && def.category === 'tool' && !def.light)) {
       return `Nothing to do with the ${def.name.toLowerCase()} from here`;
     }
@@ -363,10 +363,19 @@ export class Survival {
   }
 
   /** Eats, drinks or takes one of `item`; rotten food makes you sick instead. */
-  private finishConsuming(item: Item): undefined {
-    const def = defOf(this.inventory.registry, item.type);
+  private finishConsuming(item: Item): string | undefined {
+    const vessel = defOf(this.inventory.registry, item.type);
+    if (!consumption(vessel, this.inventory.registry)) {
+      return 'There is nothing left to eat';
+    }
+    const foodType = vessel.serving?.food ?? item.type;
+    const def = defOf(this.inventory.registry, foodType);
     const rotten = isRotten(def, item, this.sim.calendar);
-    this.inventory.consume(item);
+    if (vessel.serving) {
+      this.inventory.transform(item, vessel.serving.empty);
+    } else {
+      this.inventory.consume(item);
+    }
     if (def.analgesic) {
       this.sim.body.takeAnalgesic(item.type);
     } else if (rotten) {
@@ -375,7 +384,8 @@ export class Survival {
     } else {
       consume(this.sim.needs, def.food!, this.sim.body.nourishmentScale);
     }
-    this.hooks.consumed?.(item.type);
+    this.hooks.consumed?.(foodType);
+    return undefined;
   }
 
   private heldFirestarterFor(light: Item): Item | string {

@@ -15,6 +15,7 @@ const stageTopics: Record<Tutorial['stage'], string> = {
   door: 'interact',
   loot: 'inventory',
   hands: 'wield',
+  open: 'hand',
   eat: 'hand',
   drink: 'hand',
   light: 'hand',
@@ -44,10 +45,10 @@ const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn
           label,
         );
   const eatHint = () => {
-    if (held('beans')) {
-      return use('beans', 'Eat beans');
+    if (held('opened_beans')) {
+      return use('opened_beans', 'Eat beans');
     }
-    if ([...inventory.items()].some(({ item }) => item.type === 'beans')) {
+    if ([...inventory.items()].some(({ item }) => item.type === 'opened_beans')) {
       return wield('Opened beans — Take / wield');
     }
     return held('canned_beans') ? use('canned_beans', 'Open can') : wield('Can of beans');
@@ -64,7 +65,9 @@ const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn
           ${action('inventory.search', 'Search supplies')} · ${quickAction}
         `
       : inventoryAction,
-    hands: wield('Can of beans'),
+    hands: wield('Can of beans · Can opener'),
+    open:
+      held('canned_beans') && held('can_opener') ? use('can_opener', 'Open can') : wield('Can of beans · Can opener'),
     eat: stage === 'eat' ? eatHint() : '',
     drink: held('water_bottle') ? use('water_bottle', 'Drink') : wield('Water bottle'),
     light: held('flashlight')
@@ -101,11 +104,7 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
         <button type="button" @click=${restart}>Restart practice</button>
         <button type="button" @click=${exit}>Exit practice</button>
       </div>
-      ${
-        tutorial.stage === 'eat' || tutorial.stage === 'hands'
-          ? html`<p class="tutorial-action-note">A carried can opener enables opening a sealed can in hand. Opened food goes to a pocket or the ground, not into the hand.</p>`
-          : ''
-      }
+
     `,
       document.getElementById('tutorial-actions')!,
     );

@@ -57,11 +57,13 @@ const addLoot = (registry: Registry, roots: ReadonlySet<string>): Set<string> =>
 const inputsReady = (recipe: RecipeDef, items: ReadonlySet<string>): boolean =>
   recipe.components.every((group) => group.some((component) => items.has(component.item)));
 
-const addUnpackedContents = (registry: Registry, items: Set<string>): void => {
+const addItemOutputs = (registry: Registry, items: Set<string>): void => {
   for (const id of items) {
-    const payload = registry.items.get(id)?.unpack?.item;
-    if (payload !== undefined) {
-      items.add(payload);
+    const item = registry.items.get(id);
+    for (const output of [item?.unpack?.item, item?.serving?.empty]) {
+      if (output !== undefined) {
+        items.add(output);
+      }
     }
   }
 };
@@ -111,7 +113,7 @@ const closure = ({ registry, found, tools, knowledge, skills, workstationQualiti
   let previous: number;
   do {
     previous = items.size;
-    addUnpackedContents(registry, items);
+    addItemOutputs(registry, items);
     addDisassemblyOutputs(registry, items);
     for (const recipe of registry.recipes.values()) {
       if (
@@ -206,7 +208,7 @@ const worldSources = (registry: Registry) => {
   for (const fixed of scenario.fixedLoot.flatMap((source) => source.items)) {
     found.add(fixed.item);
   }
-  addUnpackedContents(registry, found);
+  addItemOutputs(registry, found);
   return { found, workstations, workstationQualities };
 };
 
