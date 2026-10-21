@@ -104,6 +104,7 @@ rebase or force-push a published branch. The steps and their reasons are in
 
 ## Dependency age
 
+- Rapier is exempt from the one-month rule and tracks the latest release because the spike evaluates upstream's current deterministic build.
 - Covers adding or upgrading any project dependency or tool: npm packages in
   `package.json` or lockfiles, Python packages, project-work CLIs, and GitHub
   Actions versions in workflows.

@@ -40,6 +40,7 @@
     "bench:shamblers": "node --experimental-strip-types --import ./tools/register-mobgen-alias.mjs src/bench/shamblers-cpu.mjs"
   },
   "dependencies": {
+    "@dimforge/rapier3d-deterministic": "0.21.0",
     "@skelly/thing-core": "*",
     "jfxr": "0.13.0",
     "lit-html": "^3.3.3",
