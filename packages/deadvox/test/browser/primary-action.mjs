@@ -1244,6 +1244,37 @@ try {
     gestures: [{ trusted: true, actorExists: false }],
     creationHidden: true,
   });
+  const canOpening = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    const can = r.inventory.create('canned_beans');
+    r.setHand(r.dominant, r.inventory.create('machete'));
+    r.setHand(r.off, can);
+    return { uid: can.uid, opened: r.inventory.registry.items.get(can.type).unpack.item };
+  });
+  await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
+  const actionListBounds = await page.locator('#item-action-list').boundingBox();
+  assert(actionListBounds.x < 640 && actionListBounds.y > 360, 'action choices stay in the lower left');
+  await page.mouse.wheel(0, 100);
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.selectedItemAction(r.inventory.hands[r.dominant])?.opening === true;
+  });
+  await page.mouse.click(640, 450);
+  await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
+  const openedInHand = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    const failures = r.queue.tick(r.queue.remaining).failed;
+    const can = r.inventory.itemByUid(uid);
+    return { failures, type: can.type, held: r.inventory.hands[r.off] === can };
+  }, canOpening.uid);
+  assert.deepEqual(
+    openedInHand,
+    { failures: [], type: canOpening.opened, held: true },
+    'the wheel-selected click opens rather than swings',
+  );
+  await page.waitForFunction(() => document.querySelector('#item-action-list').hidden);
   const heldLighter = async (side, trigger) => {
     const before = await page.evaluate((hand) => {
       const r = globalThis.primaryActionTest;
@@ -3054,21 +3085,21 @@ try {
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.interaction = false;
   });
-  await page.waitForFunction(() => document.querySelector('#prompt').hidden);
+  await page.waitForFunction(() => document.querySelector('#item-action-list').hidden);
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.interaction = true;
   });
   let hintWaitError;
   try {
     await page.waitForFunction(
-      () => document.querySelector('#prompt')?.textContent?.includes('›') === true,
+      () => document.querySelector('#item-action-list')?.textContent?.includes('›') === true,
       undefined,
       { timeout: 5000 },
     );
   } catch (error) {
     hintWaitError = error;
   }
-  const actionHint = await page.locator('#prompt').textContent();
+  const actionHint = await page.locator('#item-action-list').textContent();
   const hintCount = (actionHint?.match(/›/g) ?? []).length;
   const hintWaitFailure = hintWaitError ? `; hint wait failed: ${hintWaitError}` : '';
   assert.equal(
