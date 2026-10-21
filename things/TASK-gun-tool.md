@@ -6,26 +6,23 @@ read_if:
 
 # Gun tool and retirement
 
-This is the proposed PR sequence for `things/WORK.md`, "Phases", under #509.
+This is the PR sequence for `things/WORK.md`, "Phases", under #509.
 The headings are scheduling labels, not minted work-item IDs. Dispatch mints each item.
 Delete this task file when the retirement phase merges; move lasting reasons into the
 owning package docs before deletion.
 
 ## Gates and limits
 
-The relocation round needs BR to settle the tension between moving gungen once during
-phase 5 and deleting it in phase 6. The proposed reading is to refactor in place, move
-once at the end of phase 5, then retire remaining references and the old test name in
-phase 6. This avoids two implementations and does not require packages to import gungen.
-The gun-tool home remains proposed in `things/WORK.md`, "Target structure"; the relocation
-card asks for confirmation rather than treating that row as settled.
+Refactor in place and move once at the phase 5 exit to the home in
+`things/WORK.md`, "Target structure"; phase 6 retires residual references and the old
+contract test name. One move avoids two live implementations, and packages never import
+gungen.
 
-The item rounds need BR to confirm whether part items require playable disassembly in
-this phase. The proposed scope is authored part identity, standalone exports and Deadvox
-item records, not new player actions. A mass-table key alone is not an exportable part:
-`gungen/src/gun/physical.ts`, `physicalInputs`, matches only identity-bearing parameters,
-while geometry also uses the resolved assembly. Item authoring must supply a concrete
-build source, without making pose or placement create another item.
+The part-item scope is authored part identity, standalone exports and Deadvox item
+records, with no new player actions. Gameplay disassembly is deferred to #1040 so the
+part rounds stay small and disassembly gets its own design. A mass-table key alone is
+not an exportable part: see `gungen/src/gun/physical.ts`, `physicalInputs`. Item identity
+needs a concrete build source, without making pose or placement create another item.
 
 Open question 1 in `things/WORK.md`, "Open questions", need not block this sequence:
 sharing engine shapes is not sharing a domain part. Keep each tool's authored parts local;
@@ -82,7 +79,7 @@ all invariants above.
 
 ## Phase 5: authored part catalogue
 
-**Depends on:** consumption proof and the part-item scope ruling.
+**Depends on:** consumption proof.
 
 Give the mass rows concrete, closed item identities and build sources before changing
 assembly composition. Keep the catalogue in gungen until the single move, so there is no
@@ -117,8 +114,8 @@ parts. Preserve child-item mass ownership in
 `packages/deadvox/test/modelMass.test.ts`: fitted replaceable geometry must not be counted
 twice. Add a focused fixture that detects a duplicated child contribution, with one mutant
 caught by that test. Reject an uncurated part choice at export; proposals may remain in
-the editor without becoming exports. No new fitting, crafting or inventory actions unless
-BR's scope ruling explicitly expands this round. Preserve all invariants above.
+the editor without becoming exports. No new fitting, crafting or inventory actions.
+Preserve all invariants above.
 
 ## Phase 5: viewer boundary
 
@@ -142,11 +139,11 @@ invariants above.
 
 ## Phase 5: single package move and reproduction exit
 
-**Depends on:** viewer boundary and the relocation ruling.
+**Depends on:** viewer boundary.
 
 Move the gun implementation, authored sources, tests and still-valid reasons together to
-BR's confirmed package home. A move rather than a rewrite preserves one owner of gun and
-ammo policy. Essential CI, compiler, workspace and consumer wiring must move in the same
+the package home in `things/WORK.md`, "Target structure". A move rather than a rewrite
+preserves one owner of gun and ammo policy. Essential CI, compiler, workspace and consumer wiring must move in the same
 PR: postponing working paths to phase 6 would make this PR knowingly broken. See
 `tools/jsonnet/compile.mjs`, `SOURCE_ROOTS`; `tools/refresh-deadvox.mjs`; and
 `.github/workflows/pages.yml`. Update `packageEdges` so the new tool cannot import its
@@ -166,8 +163,8 @@ Preserve all invariants above, including the old root contract test name until r
 **Depends on:** the complete phase 5 reproduction exit.
 
 Remove residual gungen ownership only after its replacement proves the full consumption
-boundary. Under the proposed single-move reading, the old source directory is already
-gone; this phase retires remaining names and references, not a second implementation.
+boundary. The single move leaves this phase to retire remaining names and references,
+not a second implementation.
 Do not delete useful tests or pending feature reasons merely because they mention gungen.
 
 **Exit:** rename the root contract to the gun tool's contract and update its CI invocation

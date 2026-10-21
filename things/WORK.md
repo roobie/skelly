@@ -101,13 +101,13 @@ Settled:
   question 2 is answered. Each phase may keep a short-lived task
   file in `things/`, deleted when the phase merges.
 
-Proposed, not settled: the gun-tool row of the target structure below and every answer
-to an open question. Move an item up here once it is decided.
+The open questions below remain unsettled.
 
 ## Target structure
 
-The engine, core, export and thing-tool rows follow "Decisions"; the gun-tool row awaits
-its replacement phase.
+The package homes follow `things/WORK.md`, "Decisions". The gun tool is refactored in
+place and moves once at the phase 5 exit, avoiding two live implementations and keeping
+packages from importing gungen.
 
 | Area | Home |
 |---|---|
@@ -118,7 +118,7 @@ its replacement phase.
 | GLB and model-entry writing, per-part mass and centre of mass | the export package |
 | Scene, camera, parameter panel, URL state | `packages/tool-ui` |
 | Generic parts and rules | `packages/thing-authoring-tool` |
-| Gun parts, rules, cycling, ammo UI | `gun-authoring-tool` |
+| Gun parts, rules, cycling, ammo UI | `packages/gun-authoring-tool` |
 | Gameplay and content fields | `deadvox` |
 
 Imports run one way: foundation, shapes, assembly, thing-core, the export package, tools.
@@ -159,7 +159,9 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    Exit: the gun tool reproduces and validates the consumption boundary authored in
    `gungen/exports/deadvox.jsonnet`. An explicit recipe keeps retirement from overlooking
    exports that are not guns; see `gungen/src/cli/exportRecipe.ts`, `loadExportRecipe`.
-6. **Retire gungen.** Switch CI, scripts and docs, then delete `gungen/` and its contract test.
+6. **Retire gungen.** Retire residual names and references after the single phase 5 move;
+   rename the retained consumption contract atomically with its CI invocation so the gate
+   never disappears.
 7. **Close out.**
    - Run the closing docs pass.
    - Move every decision here that outlives the plan into `things/README.md` or the owning
