@@ -3,6 +3,7 @@ read_if:
   - you change inventory reach, wield preferences or quick-move admission
   - you change delayed item use or battery selection
   - you change quickbar hand displacement or automatic stow behavior
+  - you change where a held item goes when the player wields something else
 ---
 
 # Inventory reach and options
@@ -11,17 +12,11 @@ Inventory reach is a geometry-and-ownership query, not gaze or line of sight. It
 
 A reach snapshot is derived and may be cached, but it is not saved or authority for delayed commands. Commands recheck current ownership, reach and search state when they complete. The same boundary protects moves and battery swaps from acting on stale plans.
 
-Options provide the available action, its time and any refusal reason. Survival owns registered effects, not a second eligibility policy. Ordinary best-pocket, to-hands and drop behavior remain deliberate; quickbar takes use best-effort stow and never drop items automatically. Quick move queues the ordinary whole-stack handling move; it does not transfer instantly or invoke use. See `src/core/options.ts`, `options`, and `src/game/inputBindings.ts`, `INPUT_BINDINGS`.
+Options provide the available action, its time and any refusal reason. Survival owns registered effects, not a second eligibility policy. Best-pocket, to-hands and drop stay deliberate player choices; quickbar takes use best-effort stow and never drop items automatically. See `src/core/options.ts`, `options`.
 
-The ordinary best-pocket command chooses the quickest eligible pocket; ordinary
-to-hands and drop ordering remain unchanged. Quick move queues the ordinary
-whole-stack handling move and does not transfer instantly or invoke use. Compatible
-stacks take precedence over pocket priority to avoid fragmenting stock into
-duplicate stacks, but only when the whole stack fits; otherwise, it moves intact
-to a new spot. `inventoryPocket` in
-`src/core/options.ts` checks compatible stacks before free spots. See also
-`src/game/inputBindings.ts`, `INPUT_BINDINGS`, for the quick-move gate and
-`src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`, for its queue route.
+Quick move queues the ordinary whole-stack handling move; it does not transfer instantly or invoke use, so the move stays visible and interruptible. Best-pocket chooses the quickest eligible pocket, but a compatible stack takes precedence when the whole stack fits, so stock does not fragment into duplicate stacks; otherwise the stack moves intact to a new spot. See `src/core/options.ts`, `inventoryPocket`; `src/game/inputBindings.ts`, `INPUT_BINDINGS`, for the quick-move gate; and `src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`, for its queue route.
+
+A wielded item is one the player wants to keep. Taking something new into the hands stows what they held in the player's own carrying, a sling or a pocket, when there is room, and never puts it into the container or onto the ground the new item came from. The player chose to hold that item, so a hand action must not quietly give it to the world: left in a container the player then walks away from, it is lost without the player having decided to lose it. What happens when nothing carried has room is open until d537.
 
 Dominant/off-hand preferences resolve through the actual character without
 changing physical slots. A failed action preserves ownership. Dead lights choose
