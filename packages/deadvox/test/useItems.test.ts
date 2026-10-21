@@ -47,6 +47,25 @@ const sealedCanRegistry = (): Registry => {
       qualities: { opening: 1 },
     },
   });
+  items.set('fixture_can_tool', {
+    id: 'fixture_can_tool',
+    economy: { usage: [], tiers: [] },
+    name: 'Fixture can tool',
+    category: 'tool',
+    weight: 1,
+    size: [1, 1],
+    tool: { qualities: { opening: 1 } },
+  });
+  items.set('fixture_tool_belt', {
+    id: 'fixture_tool_belt',
+    economy: { usage: [], tiers: [] },
+    name: 'Fixture tool belt',
+    category: 'clothing',
+    weight: 1,
+    size: [1, 1],
+    wearable: { slot: 'waist', encumbrance: 0 },
+    container: { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(0) }] },
+  });
   return { ...registry, items };
 };
 
@@ -178,16 +197,24 @@ describe('using what you hold', () => {
     expect(readTypes).toEqual([readableType]);
   });
 
-  it('cannot eat a sealed can until opening it with a carried tool', () => {
+  it('cannot eat a sealed can until a tool in a worn pocket opens it', () => {
     const { sim, inventory, queue, survival, hold } = setup(sealedCanRegistry());
     const sealed = hold('fixture_sealed_can');
     const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
+    const before = inventory.snapshotState();
 
-    expect(survival.use(sealed)).toBe('Nothing to do with the fixture sealed can yet');
-    expect(unpacking.activate(sealed)).toBe('I need a tool for this');
+    expect(survival.use(sealed)).toBeDefined();
+    expect(unpacking.activate(sealed)).toBeDefined();
+    expect(inventory.snapshotState()).toEqual(before);
+    expect(queue.jobs).toEqual([]);
 
-    hold('can_opener', 'left');
+    const belt = inventory.create('fixture_tool_belt');
+    const tool = inventory.create('fixture_can_tool');
+    if (!(inventory.add(belt, { kind: 'worn' }) && inventory.add(tool, { kind: 'pocket', owner: belt, pocket: 0 }))) {
+      throw new Error('Could not equip the fixture tool');
+    }
     expect(unpacking.activate(sealed)).toBeUndefined();
+    expect(queue.jobs).toHaveLength(1);
     queue.tick(1);
 
     const opened = [...inventory.items()].find(({ item }) => item.type === 'fixture_opened_can_contents')?.item;

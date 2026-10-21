@@ -27,9 +27,9 @@ export class Unpacking {
     }
     if (
       !Object.entries(unpack.qualities ?? {}).every(([quality, level]) =>
-        this.inventory
-          .carried()
-          .some((tool) => (defOf(this.inventory.registry, tool.type).tool?.qualities[quality] ?? 0) >= level),
+        [...this.inventory.carriedTree()].some(
+          ({ item: tool }) => (defOf(this.inventory.registry, tool.type).tool?.qualities[quality] ?? 0) >= level,
+        ),
       )
     ) {
       return 'I need a tool for this';

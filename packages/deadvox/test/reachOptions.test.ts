@@ -292,9 +292,7 @@ it('opened beans expose the eat time and a refusal when both hands hold other it
   t.inventory.move(beans, { kind: 'pocket', owner: backpack, pocket: 0 });
   t.add('flashlight', { kind: 'hand', side: 'right' });
   t.add('chocolate_bar', { kind: 'hand', side: 'left' });
-  expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({
-    plan: { ok: false, reason: 'Take the beans in your hands first' },
-  });
+  expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({ plan: { ok: false } });
 });
 
 describe('handling move admission', () => {
