@@ -363,8 +363,11 @@ export class Survival {
   }
 
   /** Eats, drinks or takes one of `item`; rotten food makes you sick instead. */
-  private finishConsuming(item: Item): undefined {
+  private finishConsuming(item: Item): string | undefined {
     const vessel = defOf(this.inventory.registry, item.type);
+    if (!consumption(vessel, this.inventory.registry)) {
+      return 'There is nothing left to eat';
+    }
     const foodType = vessel.serving?.food ?? item.type;
     const def = defOf(this.inventory.registry, foodType);
     const rotten = isRotten(def, item, this.sim.calendar);
@@ -382,6 +385,7 @@ export class Survival {
       consume(this.sim.needs, def.food!, this.sim.body.nourishmentScale);
     }
     this.hooks.consumed?.(foodType);
+    return undefined;
   }
 
   private heldFirestarterFor(light: Item): Item | string {

@@ -126,6 +126,17 @@ describe('held can opening', () => {
     },
   );
 
+  it('queued duplicate eating refuses without consuming the empty vessel', () => {
+    const f = fixture();
+    expect(f.unpacking.activate(f.can)).toBeUndefined();
+    expect(f.queue.tick(f.queue.remaining).failed).toEqual([]);
+    expect(f.survival.use(f.can)).toBeUndefined();
+    expect(f.survival.use(f.can)).toBeUndefined();
+    expect(f.queue.tick(f.queue.remaining).failed).toHaveLength(1);
+    expect(f.inventory.itemByUid(f.can.uid)).toBe(f.can);
+    expect(f.can.type).toBe('test_empty');
+  });
+
   it('the wheel selection chooses opening rather than the tool swing, without a lost-target attack', () => {
     const f = fixture('left');
     const selected = () => selectPrimaryAction(f.inventory, f.other, f.survival.selectedItemAction(f.tool)?.id);
