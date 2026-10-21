@@ -304,5 +304,82 @@
     "grip": { "at": [3.469446951953614e-18, 0.00575, -1.3877787807814457e-17], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 0
+  },
+  {
+    "id": "beans",
+    "file": "assets/models/beans.glb",
+    "grip": { "at": [0, 0.002, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "soup",
+    "file": "assets/models/soup.glb",
+    "grip": { "at": [0, 0.0045, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "apple",
+    "file": "assets/models/apple.glb",
+    "parts": {
+      "body": {
+        "node": "body:stemmedFruit",
+        "massKg": 0.18,
+        "centreOfMass": [0.0000037527945636891458, 0.03719666728199075, 1.3331610776034511e-21]
+      }
+    },
+    "grip": { "at": [0, 0.0355, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "bandage",
+    "file": "assets/models/bandage.glb",
+    "parts": {
+      "body": {
+        "node": "body:woundRoll",
+        "massKg": 0.02,
+        "centreOfMass": [0.0003110423131491174, 0.022421080525116755, 0]
+      }
+    },
+    "grip": { "at": [0, 0.0225, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "antiseptic",
+    "file": "assets/models/antiseptic.glb",
+    "grip": { "at": [0, 0.045, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "antibiotics",
+    "file": "assets/models/antibiotics.glb",
+    "grip": { "at": [0, 0.032, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "painkillers",
+    "file": "assets/models/painkillers.glb",
+    "grip": { "at": [0, 0.026999999999999996, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "codeine",
+    "file": "assets/models/codeine.glb",
+    "grip": { "at": [0, 0.032, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "morphine",
+    "file": "assets/models/morphine.glb",
+    "grip": { "at": [0, 0.036, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
   }
 ]

@@ -78,7 +78,16 @@
         "assets/models/stick.glb",
         "assets/models/wax.glb",
         "assets/models/wooden_plank.glb",
-        "assets/models/field_patch.glb"
+        "assets/models/field_patch.glb",
+        "assets/models/beans.glb",
+        "assets/models/soup.glb",
+        "assets/models/apple.glb",
+        "assets/models/bandage.glb",
+        "assets/models/antiseptic.glb",
+        "assets/models/antibiotics.glb",
+        "assets/models/painkillers.glb",
+        "assets/models/codeine.glb",
+        "assets/models/morphine.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",
