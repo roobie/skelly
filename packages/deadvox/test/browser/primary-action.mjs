@@ -2766,9 +2766,12 @@ try {
     };
     const hint = plain(r.useText(door));
     r.useTarget(door);
-    return { hint, job: r.session.sim.actions.job, doorUid: door.uid };
+    return { hint, toolName: r.inventory.name(crowbar), job: r.session.sim.actions.job, doorUid: door.uid };
   });
-  assert.ok(pryPreview.hint.toLowerCase().includes('crowbar'), 'the interaction hint names its carried prying tool');
+  assert.ok(
+    pryPreview.hint.toLowerCase().includes(pryPreview.toolName.toLowerCase()),
+    'the interaction hint names its carried prying tool',
+  );
   assert.equal(pryPreview.job?.jobType, 'forceDoor', 'the door interaction starts the owned prying action');
   await page.waitForFunction(() => document.querySelector('#handling').hidden);
   await page.evaluate(() => {

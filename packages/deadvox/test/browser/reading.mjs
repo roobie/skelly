@@ -549,9 +549,20 @@ try {
       { seconds: 5, from: searchStart, label: 'crate search (2.25 simulated seconds)', record },
     );
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
-    const note = page.locator('.inv-item[title^="Placeholder note,"]');
+    const noteFixture = await page.evaluate(() => {
+      const { screen, session } = globalThis.readingWitness;
+      const item = screen.order.find((value) => {
+        const definition = session.inventory.registry.items.get(value.type);
+        return definition.readable && !definition.book;
+      });
+      if (!item) {
+        throw new Error('Searched crate has no plain readable item');
+      }
+      return { uid: item.uid, readable: session.inventory.registry.items.get(item.type).readable };
+    });
+    const noteRowUid = noteFixture.uid;
+    const note = page.locator(`.inv-item[data-uid="${noteRowUid}"]`);
     await note.waitFor();
-    const noteRowUid = Number(await note.getAttribute('data-uid'));
     const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.order.length);
     for (let step = 0; step < itemCount; step += 1) {
       // biome-ignore lint/performance/noAwaitInLoops: selection must advance through the real keyboard action one row at a time.
@@ -659,31 +670,27 @@ try {
       const { input, screen } = globalThis.readingWitness;
       const target = document.elementFromPoint(input.cursorX, input.cursorY);
       return {
-        selected: screen.selected?.type,
+        selected: screen.selected?.uid,
         target: target && { tag: target.tagName, className: String(target.className), text: target.textContent },
       };
     });
-    assert.equal(noteSelection.selected, 'sample_note', `pointer selected the note: ${JSON.stringify(noteSelection)}`);
+    assert.equal(noteSelection.selected, noteRowUid, `pointer selected the note: ${JSON.stringify(noteSelection)}`);
     const handStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     await pressAction(page, 'inventory.hands');
     await waitForSimulation(
       page,
-      () => {
+      (uid) => {
         const { session } = globalThis.readingWitness;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
-          reached: Object.values(session.inventory.hands).some((item) => item?.type === 'sample_note'),
+          reached: Object.values(session.inventory.hands).some((item) => item?.uid === uid),
         };
       },
-      undefined,
+      noteRowUid,
       { seconds: 5, from: handStart, label: 'note to hand', record },
     );
-    const noteUid = await page.evaluate(
-      () =>
-        Object.values(globalThis.readingWitness.session.inventory.hands).find((item) => item?.type === 'sample_note')
-          .uid,
-    );
+    const noteUid = noteRowUid;
     await pressAction(page, 'quickbar.assign.1');
     const assignedUid = await page.evaluate((uid) => {
       const { session } = globalThis.readingWitness;
@@ -698,13 +705,13 @@ try {
     // Observe the real pre-open focus, never manufacture a focus for the restore assertion.
     const previousFocus = await page.evaluateHandle(() => document.activeElement);
     await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
-    assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a folded note');
-    assert.ok((await page.locator('.reading-text').innerText()).includes('NOT PLAYTEST LORE'));
+    assert.equal(await page.locator('#reading h1').innerText(), noteFixture.readable.title);
+    assert.equal(await page.locator('.reading-text').textContent(), noteFixture.readable.text);
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('role')), 'dialog');
     const itemState = () =>
-      page.evaluate(() => {
+      page.evaluate((uid) => {
         const { session, input, body, reading, readCalls } = globalThis.readingWitness;
-        const item = Object.values(session.inventory.hands).find((value) => value?.type === 'sample_note');
+        const item = Object.values(session.inventory.hands).find((value) => value?.uid === uid);
         return {
           time: session.sim.time,
           position: [...body.pos],
@@ -715,7 +722,7 @@ try {
           jobs: session.queue.jobs.length,
           readCalls,
         };
-      });
+      }, noteUid);
     const before = await itemState();
     await pressAction(page, 'quickbar.use.1');
     await pressAction(page, 'hand.use-off');
@@ -863,15 +870,26 @@ try {
     );
     assert.equal(afterMove.stopped, true);
     assert.equal(afterMove.compression, false);
-    const signX = await page.evaluate(() => {
-      const sign = [...globalThis.readingWitness.engine.entities.all].find((entity) => entity.type === 'sample_sign');
-      return sign.pos[0] + sign.size[0] / 2;
+    const signFixture = await page.evaluate(() => {
+      const { engine } = globalThis.readingWitness;
+      const sign = [...engine.entities.all].find(
+        (entity) => engine.entities.registry.furniture.get(entity.type)?.readable,
+      );
+      if (!sign) {
+        throw new Error('Reading route has no readable furniture');
+      }
+      return {
+        x: sign.pos[0] + sign.size[0] / 2,
+        type: sign.type,
+        readable: engine.entities.registry.furniture.get(sign.type).readable,
+      };
     });
-    await walk('movement.back', signX, false);
-    await aim('sample_sign');
+    await walk('movement.back', signFixture.x, false);
+    await aim(signFixture.type);
     await pressAction(page, 'world.interact');
     await page.locator('#reading').waitFor({ state: 'visible' });
-    assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
+    assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);
+    assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.readingWitness.session.sim.paused);
     const menu = await record('pause while reading');
@@ -890,7 +908,8 @@ try {
     // A hidden reading surface must not capture F after resume.
     await pressAction(page, 'world.interact');
     await page.locator('#reading').waitFor({ state: 'visible' });
-    assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
+    assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);
+    assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
     await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction(() => {
