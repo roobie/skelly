@@ -57,6 +57,23 @@ describe('exposure', () => {
   });
 });
 
+it.each([
+  ['exposure', clampExposure],
+  ['bloom override', clampBloomClip],
+  ['flashlight strength', clampTorch],
+] as const)('removes floating-point noise around an interior owner-rounded %s value', (_name, clamp) => {
+  const lower = clamp(-Number.MAX_VALUE);
+  const upper = clamp(Number.MAX_VALUE);
+  const rounded = clamp((lower + upper) / 2);
+  expect(rounded).toBeGreaterThan(lower);
+  expect(rounded).toBeLessThan(upper);
+  const noise = Number.EPSILON * Math.max(1, Math.abs(rounded)) * 4;
+  for (const input of [rounded - noise, rounded + noise]) {
+    expect(input).not.toBe(rounded);
+    expect(clamp(input)).toBe(rounded);
+  }
+});
+
 describe('bloom threshold', () => {
   it('is the clip value divided by exposure, so the same on-screen brightness blooms at any exposure', () => {
     expect(bloomThreshold(1, 2)).toBe(2);
