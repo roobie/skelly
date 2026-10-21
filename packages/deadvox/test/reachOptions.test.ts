@@ -490,7 +490,7 @@ describe('handling move admission', () => {
     expect(t.queue.busy).toBe(false);
   });
 
-  // The held item goes on the player, else to an empty off hand when the wielded item is one-handed,
+  // The held item goes on the player, else to an empty off hand when neither item needs both hands,
   // else into the wielded item's container, else to the feet.
   // A crate holds only the wielded item, so the held item fits there only in its vacated spot.
   it.each([
@@ -520,6 +520,13 @@ describe('handling move admission', () => {
     {
       held: 'fixture_tool',
       wielded: 'fixture_pole',
+      container: 'fixture_cabinet',
+      offHand: 'free',
+      lands: 'container',
+    },
+    {
+      held: 'fixture_pole',
+      wielded: 'fixture_tool',
       container: 'fixture_cabinet',
       offHand: 'free',
       lands: 'container',

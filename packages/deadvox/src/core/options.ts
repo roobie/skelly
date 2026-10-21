@@ -521,7 +521,12 @@ const ifPlans = (inv: Inventory, held: Item, target: Target | undefined): Target
  */
 const stowRoom = (inv: Inventory, held: Item, way: MakeWay): Target | undefined =>
   carriedStowTarget(inv, held) ??
-  ifPlans(inv, held, way.offHand && { kind: 'hand', side: way.offHand }) ??
+  // A two-handed item plans into the empty off hand but then bars the wielded item from the main hand.
+  ifPlans(
+    inv,
+    held,
+    way.offHand && !defOf(inv.registry, held.type).twoHanded ? { kind: 'hand', side: way.offHand } : undefined,
+  ) ??
   ifPlans(inv, held, way.source);
 
 const stowsHeldFirst = (inv: Inventory, displaced: readonly Item[], way: MakeWay): boolean =>
