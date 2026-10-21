@@ -192,6 +192,78 @@
     "source": "can_opener"
   },
   {
+    "id": "beans",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "beans"
+  },
+  {
+    "id": "soup",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "soup"
+  },
+  {
+    "id": "apple",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "apple"
+  },
+  {
+    "id": "bandage",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "bandage"
+  },
+  {
+    "id": "antiseptic",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "antiseptic"
+  },
+  {
+    "id": "antibiotics",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "antibiotics"
+  },
+  {
+    "id": "painkillers",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "painkillers"
+  },
+  {
+    "id": "codeine",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "codeine"
+  },
+  {
+    "id": "morphine",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "morphine"
+  },
+  {
     "id": "shambler_torso",
     "kind": "item",
     "options": {

@@ -1,0 +1,7 @@
+{
+  "id": "antiseptic",
+  "file": "assets/models/antiseptic.glb",
+  "grip": { "at": [0, 0.045, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}
