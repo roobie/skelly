@@ -214,6 +214,10 @@
                   "item": "canned_beans"
                 },
                 {
+                  "count": 1,
+                  "item": "can_opener"
+                },
+                {
                   "count": 2,
                   "item": "water_bottle"
                 },

@@ -42,6 +42,7 @@ shape.colliding({
       template: 'tutorial_station', position: [-3, 0, -4], rotation: 0,
       fixedLoot: [{ at: [1, 1, 2], items: [
         { item: 'canned_beans', count: 2 },
+        { item: 'can_opener', count: 1 },
         { item: 'water_bottle', count: 2 },
         { item: 'flashlight', fitted: { battery: 'aa_battery' } },
         { item: 'bandage', count: 2 },

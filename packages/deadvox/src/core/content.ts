@@ -295,7 +295,7 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
 
 type Report = (section: ContentSection, id: string, path: string, message: string) => void;
 
-const checkUnpacking = (item: ItemDef, registry: Registry, report: Report): void => {
+const checkUnpacking = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report): void => {
   if (!item.unpack) {
     return;
   }
@@ -307,6 +307,11 @@ const checkUnpacking = (item: ItemDef, registry: Registry, report: Report): void
   }
   if (item.container) {
     report('items', item.id, '.unpack', 'sealed packages are not containers');
+  }
+  for (const quality of Object.keys(item.unpack.qualities ?? {})) {
+    if (!qualities.has(quality)) {
+      report('items', item.id, `.unpack.qualities.${quality}`, `no tool quality "${quality}"`);
+    }
   }
 };
 
@@ -705,7 +710,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkItemFirearm(item, registry, report);
     checkMeleeSounds(item, registry, report);
     checkItemOptic(item, registry, obtainable, report);
-    checkUnpacking(item, registry, report);
+    checkUnpacking(item, registry, qualities, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
     checkToolFuel(item, registry, report);

@@ -7,15 +7,34 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "id": "canned_beans",
+      "name": "Can of beans",
+      "size": [1, 2],
+      "unpack": {
+        "count": 1,
+        "item": "beans",
+        "qualities": {
+          "opening": 1
+        },
+        "simSeconds": 3
+      },
+      "weight": 450
+    },
+    {
+      "category": "food",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "food": {
         "calories": 350,
         "consumeSimSeconds": 3,
         "water": 100
       },
-      "id": "canned_beans",
-      "name": "Can of beans",
+      "id": "beans",
+      "name": "Beans",
       "size": [1, 2],
-      "weight": 450
+      "weight": 350
     },
     {
       "category": "food",
@@ -23,15 +42,34 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "id": "canned_soup",
+      "name": "Can of soup",
+      "size": [1, 2],
+      "unpack": {
+        "count": 1,
+        "item": "soup",
+        "qualities": {
+          "opening": 1
+        },
+        "simSeconds": 3
+      },
+      "weight": 430
+    },
+    {
+      "category": "food",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "food": {
         "calories": 200,
         "consumeSimSeconds": 3,
         "water": 250
       },
-      "id": "canned_soup",
-      "name": "Can of soup",
+      "id": "soup",
+      "name": "Soup",
       "size": [1, 2],
-      "weight": 430
+      "weight": 330
     },
     {
       "category": "food",

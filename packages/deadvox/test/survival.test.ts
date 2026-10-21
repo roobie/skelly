@@ -145,7 +145,7 @@ describe('catch-up', () => {
 
 describe('food', () => {
   const apple = registry.items.get('apple')!; // rots after 240 game hours
-  const beans = registry.items.get('canned_beans')!;
+  const beans = registry.items.get('beans')!;
 
   it('rots on the clock, the same whether checked every game minute or once', () => {
     const item = { uid: 1, type: 'apple', count: 1, condition: 1 };
@@ -171,7 +171,7 @@ describe('food', () => {
       madeAtGameTimestamp: 100 * SECONDS_PER_HOUR,
     };
     expect(spoilage(apple, picked, 220 * SECONDS_PER_HOUR)).toBeCloseTo(0.5, 9);
-    expect(spoilage(beans, { uid: 2, type: 'canned_beans', count: 1, condition: 1 }, 1e9)).toBeUndefined();
+    expect(spoilage(beans, { uid: 2, type: 'beans', count: 1, condition: 1 }, 1e9)).toBeUndefined();
   });
 
   it('feeds you', () => {

@@ -282,18 +282,18 @@ it('a queued move rechecks proximity after its displayed option was admitted', (
   expect(t.inventory.hands.right).toBeUndefined();
 });
 
-it('beans expose the eat time and a refusal when both hands hold other items', () => {
+it('opened beans expose the eat time and a refusal when both hands hold other items', () => {
   const t = setup();
-  const beans = t.add('canned_beans', { kind: 'hand', side: 'right' });
+  const beans = t.add('beans', { kind: 'hand', side: 'right' });
   expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({
-    plan: { ok: true, time: registry.items.get('canned_beans')!.food!.consumeSimSeconds },
+    plan: { ok: true, time: registry.items.get('beans')!.food!.consumeSimSeconds },
   });
   const backpack = t.add('school_backpack', { kind: 'worn' });
   t.inventory.move(beans, { kind: 'pocket', owner: backpack, pocket: 0 });
   t.add('flashlight', { kind: 'hand', side: 'right' });
   t.add('chocolate_bar', { kind: 'hand', side: 'left' });
   expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({
-    plan: { ok: false, reason: 'Take the can of beans in your hands first' },
+    plan: { ok: false, reason: 'Take the beans in your hands first' },
   });
 });
 

@@ -129,7 +129,8 @@
       "size": [1, 4],
       "tool": {
         "qualities": {
-          "cutting": 2
+          "cutting": 2,
+          "opening": 1
         }
       },
       "weapon": {
@@ -161,7 +162,8 @@
       "size": [1, 3],
       "tool": {
         "qualities": {
-          "cutting": 2
+          "cutting": 2,
+          "opening": 1
         }
       },
       "weapon": {
@@ -193,7 +195,8 @@
       "size": [1, 6],
       "tool": {
         "qualities": {
-          "cutting": 2
+          "cutting": 2,
+          "opening": 1
         }
       },
       "weapon": {

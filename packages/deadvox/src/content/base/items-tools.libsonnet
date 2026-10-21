@@ -115,7 +115,7 @@ local items = [
     weight: 150,
     size: [1, 4],
     model: 'kitchen_knife',
-    tool: { qualities: { cutting: 2 } },
+    tool: { qualities: { cutting: 2, opening: 1 } },
     weapon: melee('cut', 'swing', damage=8, reach=0.25, cooldownSimSeconds=0.5, stamina=3, impulse=3.5, wearPerHit=0.025) + lightSwing,
   },
   {
@@ -125,7 +125,7 @@ local items = [
     weight: 300,
     size: [1, 3],
     model: 'kabar',
-    tool: { qualities: { cutting: 2 } },
+    tool: { qualities: { cutting: 2, opening: 1 } },
     weapon: melee('cut', 'swing', damage=9, reach=0.3, cooldownSimSeconds=0.55, stamina=3.5, impulse=4, wearPerHit=0.025) + lightSwing,
   },
   {
@@ -135,7 +135,7 @@ local items = [
     weight: 550,
     size: [1, 6],
     model: 'machete',
-    tool: { qualities: { cutting: 2 } },
+    tool: { qualities: { cutting: 2, opening: 1 } },
     weapon: melee('cut', 'swing', damage=11, reach=0.45, cooldownSimSeconds=0.75, stamina=5, impulse=4.5, wearPerHit=0.02) + lightSwing,
   },
   {

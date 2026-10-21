@@ -21,8 +21,18 @@ export class Unpacking {
   }
 
   activate(item: Item): string | undefined {
-    if (!defOf(this.inventory.registry, item.type).unpack) {
+    const { unpack } = defOf(this.inventory.registry, item.type);
+    if (!unpack) {
       return 'This item cannot be unpacked';
+    }
+    if (
+      !Object.entries(unpack.qualities ?? {}).every(([quality, level]) =>
+        this.inventory
+          .carried()
+          .some((tool) => (defOf(this.inventory.registry, tool.type).tool?.qualities[quality] ?? 0) >= level),
+      )
+    ) {
+      return 'I need a tool for this';
     }
     if (this.inventory.locate(item)?.kind !== 'hand') {
       return 'Wield the package to unpack it';
