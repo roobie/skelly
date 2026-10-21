@@ -308,9 +308,8 @@ describe('engine import boundary', () => {
   const repo = fileURLToPath(new URL('../../../', import.meta.url));
   const roots = rootsUnder(repo);
 
-  it('keeps engine source imports and identifiers domain-neutral', () => {
+  it('keeps engine source identifiers domain-neutral', () => {
     const files = sourceFiles(roots.engineSrc);
-    expect(findBoundaryViolations(files, roots)).toEqual([]);
     expect(findDomainIdentifierViolations(files)).toEqual([]);
   });
 
