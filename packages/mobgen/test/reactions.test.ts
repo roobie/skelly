@@ -148,15 +148,13 @@ describe('deathPose', () => {
   const cases = TEMPLATES.flatMap((t) => [1, 2, 3].map((seed) => [t.name, seed] as const));
   it.each(cases)('%s seed %i ends lying down, not penetrating the ground, in both fall directions', (name, seed) => {
     const found = generateValid(TEMPLATES.find((t) => t.name === name)!, seed);
-    if (!found) {
-      return; // no valid genome at this seed for this template — nothing to check
-    }
-    const body = build(found.genome);
-    const voxels = voxelize(body, found.genome.voxelSize, found.genome.seed);
+    expect(found, `${name} seed ${seed} must produce a valid fixture`).toBeDefined();
+    const body = build(found!.genome);
+    const voxels = voxelize(body, found!.genome.voxelSize, found!.genome.seed);
     const extents = footRestExtents(body.bones, voxels);
     const bodyExtents = bodyRestExtents(body.bones, voxels);
-    const params = found.genome.params as HumanoidParams;
-    const walkActor = { bones: body.bones, extents, params, seed: found.genome.seed };
+    const params = found!.genome.params as HumanoidParams;
+    const walkActor = { bones: body.bones, extents, params, seed: found!.genome.seed };
     const actor = { ...walkActor, bodyExtents };
     const standing = walkPose(walkActor, INITIAL_CLOCK, 0);
     const byId = new Map(body.bones.map((b: Bone) => [b.id, b]));

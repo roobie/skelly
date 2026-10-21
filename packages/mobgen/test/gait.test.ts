@@ -21,6 +21,7 @@ import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { idleBasePose } from '../src/mob/idle.ts';
 import { type StepStyle, stepPlanFor } from '../src/mob/steps.ts';
 import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const SPEEDS = [0.8, 2.8]; // deadvox shamblers: wander / chase
 
@@ -173,36 +174,49 @@ describe('walkPose', () => {
     };
   };
 
-  const seeds = [1, 2];
-  const StepsToCheck = 16;
-  for (const name of TEMPLATES.map((t) => t.name)) {
-    for (const speed of SPEEDS) {
-      for (const seed of seeds) {
-        it(`${name} seed ${seed}: grounded foot drift stays within one voxel at ${speed} m/s over ${StepsToCheck} steps`, () => {
-          const found = setup(name, seed);
-          let worstHeelDrift = 0;
-          let worstToeDrift = 0;
-          let anyHeelDown = false;
-          let anyToeDown = false;
-          for (let k = 0; k < StepsToCheck; k++) {
-            const { heel, toe } = stepPlantDrift(found, speed, k);
-            worstHeelDrift = Math.max(worstHeelDrift, heel.maxDrift);
-            worstToeDrift = Math.max(worstToeDrift, toe.maxDrift);
-            anyHeelDown ||= heel.touchedDown;
-            anyToeDown ||= toe.touchedDown;
-          }
-          // Sanity check first: both corners actually touched down somewhere (otherwise the drift
-          // checks below would be silently checking nothing).
-          expect(anyHeelDown).toBe(true);
-          expect(anyToeDown).toBe(true);
-          // One voxel is the grid's resolution: a smaller slide cannot show on the voxel grid.
-          const maxDrift = found.voxels.size;
-          expect(worstHeelDrift).toBeLessThanOrEqual(maxDrift);
-          expect(worstToeDrift).toBeLessThanOrEqual(maxDrift);
-        });
+  const driftCases = [
+    ['shambler', 1, 0.8, 0],
+    ['runner', 2, 2.8, 1],
+    ['brute', 1, 0.8, 2],
+    ['shambler', 2, 2.8, 3],
+  ] as const;
+  it.each(driftCases)('%s seed %i: heel and toe drift stay within one voxel at %f m/s on step %i', (name, seed, speed, step) => {
+    const found = setup(name, seed);
+    const { heel, toe } = stepPlantDrift(found, speed, step);
+    expect(heel.touchedDown).toBe(true);
+    expect(toe.touchedDown).toBe(true);
+    expect(heel.maxDrift).toBeLessThanOrEqual(found.voxels.size);
+    expect(toe.maxDrift).toBeLessThanOrEqual(found.voxels.size);
+  });
+
+  sweepGroup('grounded foot drift', () => {
+    const seeds = [1, 2];
+    const stepsToCheck = 16;
+    for (const name of TEMPLATES.map((t) => t.name)) {
+      for (const speed of SPEEDS) {
+        for (const seed of seeds) {
+          it(`${name} seed ${seed}: grounded foot drift stays within one voxel at ${speed} m/s over ${stepsToCheck} steps`, () => {
+            const found = setup(name, seed);
+            let worstHeelDrift = 0;
+            let worstToeDrift = 0;
+            let anyHeelDown = false;
+            let anyToeDown = false;
+            for (let k = 0; k < stepsToCheck; k++) {
+              const { heel, toe } = stepPlantDrift(found, speed, k);
+              worstHeelDrift = Math.max(worstHeelDrift, heel.maxDrift);
+              worstToeDrift = Math.max(worstToeDrift, toe.maxDrift);
+              anyHeelDown ||= heel.touchedDown;
+              anyToeDown ||= toe.touchedDown;
+            }
+            expect(anyHeelDown).toBe(true);
+            expect(anyToeDown).toBe(true);
+            expect(worstHeelDrift).toBeLessThanOrEqual(found.voxels.size);
+            expect(worstToeDrift).toBeLessThanOrEqual(found.voxels.size);
+          });
+        }
       }
     }
-  }
+  });
 
   for (const name of TEMPLATES.map((t) => t.name)) {
     it(`${name}: the swing foot never dips below ground across ${NumSteps} steps at 2.8 m/s (drag included)`, () => {
@@ -220,32 +234,44 @@ describe('walkPose', () => {
     });
   }
 
-  // Wider base + per-step stagger jitter means a crossover stagger's swing could in principle pass close
-  // to the planted stance ankle — check it stays at least ~a voxel clear, over enough steps/seeds to catch
-  // a bad crossover.
-  for (const name of TEMPLATES.map((t) => t.name)) {
-    for (const seed of [1, 2, 3, 4, 5]) {
-      it(`${name} seed ${seed}: the swing ankle stays clear of the stance ankle's X`, () => {
-        const found = setup(name, seed);
-        const { body, voxels, extents, params } = found;
-        const actor = { bones: body.bones, extents, params, seed: found.seed };
-        const ankleOf = (side: 'L' | 'R') => body.bones.find((b) => b.id === `foot.${side}`)!.head;
-        let worstGap = Number.POSITIVE_INFINITY;
-        for (const speed of [0.8, 1.4, 2.8]) {
-          for (let k = 0; k < 40; k++) {
-            for (let i = 1; i < 20; i++) {
-              const pose = walkPose(actor, { stepIndex: k, progress: i / 20 }, speed);
-              const transforms = boneTransforms(body.bones, pose);
-              const [xL] = applyPoint(transforms.get('foot.L')!, ankleOf('L'));
-              const [xR] = applyPoint(transforms.get('foot.R')!, ankleOf('R'));
-              worstGap = Math.min(worstGap, Math.abs(xL - xR));
-            }
-          }
+  const ankleGap = (name: string, seed: number, speeds: readonly number[], steps: number): number => {
+    const found = setup(name, seed);
+    const { body, extents, params } = found;
+    const actor = { bones: body.bones, extents, params, seed: found.seed };
+    const ankleOf = (side: 'L' | 'R') => body.bones.find((bone) => bone.id === `foot.${side}`)!.head;
+    let worstGap = Number.POSITIVE_INFINITY;
+    for (const speed of speeds) {
+      for (let k = 0; k < steps; k++) {
+        for (let i = 1; i < 20; i++) {
+          const pose = walkPose(actor, { stepIndex: k, progress: i / 20 }, speed);
+          const transforms = boneTransforms(body.bones, pose);
+          const [xL] = applyPoint(transforms.get('foot.L')!, ankleOf('L'));
+          const [xR] = applyPoint(transforms.get('foot.R')!, ankleOf('R'));
+          worstGap = Math.min(worstGap, Math.abs(xL - xR));
         }
-        expect(worstGap).toBeGreaterThan(voxels.size);
-      });
+      }
     }
-  }
+    return worstGap;
+  };
+
+  it.each([['shambler', 1, 0.8], ['runner', 2, 1.4], ['brute', 3, 2.8]] as const)(
+    '%s seed %i: the swing ankle stays clear at %f m/s',
+    (name, seed, speed) => {
+      const found = setup(name, seed);
+      expect(ankleGap(name, seed, [speed], 8)).toBeGreaterThan(found.voxels.size);
+    },
+  );
+
+  sweepGroup('swing ankle clearance', () => {
+    for (const name of TEMPLATES.map((t) => t.name)) {
+      for (const seed of [1, 2, 3, 4, 5]) {
+        it(`${name} seed ${seed}: the swing ankle stays clear of the stance ankle's X`, () => {
+          const found = setup(name, seed);
+          expect(ankleGap(name, seed, [0.8, 1.4, 2.8], 40)).toBeGreaterThan(found.voxels.size);
+        });
+      }
+    }
+  });
 });
 
 describe('drunk shamble steps', () => {
@@ -265,10 +291,21 @@ describe('drunk shamble steps', () => {
     expect(forward).toEqual(backward);
   });
 
-  for (const name of TEMPLATES.map((t) => t.name)) {
-    for (const seed of [1]) {
-      it(`${name} seed ${seed}: all three styles occur within 40 steps`, () => {
-        const found = setup(name, seed);
+  it('the selector can reach every style with fixture-owned gait parameters', () => {
+    const params = { pelvisSway: 6, limp: 1, hunch: 15, strideFactor: 1.5 } as HumanoidParams;
+    const seen = new Set<StepStyle>();
+    for (let seed = 0; seed < 12; seed++) {
+      for (let step = 0; step < 12; step++) {
+        seen.add(stepPlanFor(seed, step, params).style);
+      }
+    }
+    expect(seen).toEqual(new Set(['normal', 'stagger', 'drag', 'lurch']));
+  });
+
+  sweepGroup('style population', () => {
+    for (const name of TEMPLATES.map((t) => t.name)) {
+      it(`${name}: all three styles occur within 40 steps`, () => {
+        const found = setup(name, 1);
         const seen = new Set<StepStyle>();
         for (let k = 0; k < 40; k++) {
           seen.add(stepPlanFor(found.seed, k, found.params).style);
@@ -278,7 +315,7 @@ describe('drunk shamble steps', () => {
         }
       });
     }
-  }
+  });
 });
 
 describe('advanceClock', () => {

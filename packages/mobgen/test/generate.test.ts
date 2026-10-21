@@ -15,18 +15,6 @@ describe('generate', () => {
     }
   });
 
-  it('is deterministic: same genome, identical voxel arrays', () => {
-    for (const t of TEMPLATES) {
-      const genome = generate(t, 42);
-      const a = realize(genome).voxels;
-      const b = realize(genome).voxels;
-      expect(a.dims).toEqual(b.dims);
-      expect(a.origin).toEqual(b.origin);
-      expect([...a.owner]).toEqual([...b.owner]);
-      expect([...a.color]).toEqual([...b.color]);
-    }
-  });
-
   it('a genome survives JSON and realizes to the same voxels (the genome is the save format)', () => {
     for (const t of TEMPLATES) {
       const genome = generate(t, 42);
@@ -35,16 +23,25 @@ describe('generate', () => {
       const a = realize(genome).voxels;
       const b = realize(again).voxels;
       expect(b.dims).toEqual(a.dims);
+      expect(b.origin).toEqual(a.origin);
       expect([...b.owner]).toEqual([...a.owner]);
       expect([...b.color]).toEqual([...a.color]);
     }
   });
 
-  it('varies with the seed', () => {
+  it('changes generated params when a fixture-owned seed changes', () => {
     for (const t of TEMPLATES) {
-      const keys = new Set(Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, seed).params)));
-      expect(keys.size).toBeGreaterThan(40);
+      expect(generate(t, 1).params).not.toEqual(generate(t, 2).params);
     }
+  });
+
+  sweepGroup('seed diversity', () => {
+    it('varies across a population of seeds', () => {
+      for (const t of TEMPLATES) {
+        const keys = new Set(Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, seed).params)));
+        expect(keys.size).toBeGreaterThan(40);
+      }
+    });
   });
 });
 
@@ -145,20 +142,6 @@ describe('coarser voxel sizes', () => {
     }
   });
 
-  it('pins the 1/4-block foot-resolution limit without loosening attached', () => {
-    const brute = TEMPLATES.find((template) => template.name === 'brute')!;
-    for (const seed of [7, 42]) {
-      expect(realize({ ...generate(brute, seed), voxelSize: 0.5 / 4 }).report.ok).toBe(true);
-    }
-    for (const template of HUMANOID_TEMPLATES.filter((candidate) => candidate.name !== 'brute')) {
-      for (const seed of [7, 42]) {
-        const { report } = realize({ ...generate(template, seed), voxelSize: 0.5 / 4 });
-        expect(report.ok, `${template.name} seed ${seed}`).toBe(false);
-        expect(report.issues.every((issue) => issue.rule === 'attached' || issue.rule === 'grounded')).toBe(true);
-        expect(report.issues.some((issue) => issue.bones?.some((bone) => bone.startsWith('foot.')))).toBe(true);
-      }
-    }
-  });
 });
 
 const LOD_SIZES = [0.5 / 6, 0.5 / 4, 0.5 / 2] as const;

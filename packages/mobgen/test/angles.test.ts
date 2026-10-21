@@ -19,6 +19,7 @@ import {
 } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
 const TOL = 1e-9;
@@ -142,26 +143,43 @@ const attackFixtureProblems = (fixture: Fixture): string[] => {
 };
 
 describe('Pose.angles recompose to the walk matrices', () => {
-  for (const template of HUMANOID_TEMPLATES) {
-    it(`${template.name}: every angle-carrying bone, seeds x speeds x phases, within ${TOL}`, () => {
-      const problems: string[] = [];
-      for (const seed of SEEDS) {
-        const fixture = actorFor(template.name, seed);
-        for (const speed of SPEEDS) {
-          for (const clock of clocksFor(fixture, speed)) {
-            const pose = walkPose(fixture.actor, clock, speed, true);
-            problems.push(...walkProblems(pose));
-            // Recording angles must not change a single matrix or the root.
-            const plain = walkPose(fixture.actor, clock, speed);
-            expect(plain.angles).toBeUndefined();
-            expect(pose.root).toEqual(plain.root);
-            expect(pose.rotations).toEqual(plain.rotations);
+  it.each([
+    ['shambler', 1, 0.8],
+    ['runner', 2, 1.4],
+    ['brute', 3, 2.8],
+  ])('%s: every angle-carrying bone recomposes at a representative walk phase', (templateName, seed, speed) => {
+    const fixture = actorFor(templateName, seed);
+    const clock = clocksFor(fixture, speed).at(-1)!;
+    const pose = walkPose(fixture.actor, clock, speed, true);
+    expect(walkProblems(pose)).toEqual([]);
+    const plain = walkPose(fixture.actor, clock, speed);
+    expect(plain.angles).toBeUndefined();
+    expect(pose.root).toEqual(plain.root);
+    expect(pose.rotations).toEqual(plain.rotations);
+  });
+
+  sweepGroup('walk angle reconstruction population', () => {
+    for (const template of HUMANOID_TEMPLATES) {
+      it(`${template.name}: every angle-carrying bone, seeds x speeds x phases, within ${TOL}`, () => {
+        const problems: string[] = [];
+        for (const seed of SEEDS) {
+          const fixture = actorFor(template.name, seed);
+          for (const speed of SPEEDS) {
+            for (const clock of clocksFor(fixture, speed)) {
+              const pose = walkPose(fixture.actor, clock, speed, true);
+              problems.push(...walkProblems(pose));
+              // Recording angles must not change a single matrix or the root.
+              const plain = walkPose(fixture.actor, clock, speed);
+              expect(plain.angles).toBeUndefined();
+              expect(pose.root).toEqual(plain.root);
+              expect(pose.rotations).toEqual(plain.rotations);
+            }
           }
         }
-      }
-      expect(problems).toEqual([]);
-    });
-  }
+        expect(problems).toEqual([]);
+      });
+    }
+  });
 
   it('a standing pose (speed 0) reports empty angles, matching its empty rotations', () => {
     const fixture = actorFor('shambler', 1);
@@ -172,12 +190,29 @@ describe('Pose.angles recompose to the walk matrices', () => {
 });
 
 describe('attackPose clipAngles recompose to the attacked matrices', () => {
-  for (const template of HUMANOID_TEMPLATES) {
-    it(`${template.name}: walk layer x clip layer (with the arm fade weight) within ${TOL}`, () => {
-      const problems = SEEDS.flatMap((seed) => attackFixtureProblems(actorFor(template.name, seed)));
-      expect(problems).toEqual([]);
-    });
-  }
+  it.each([
+    ['shambler', 1, 0.8, 0.1],
+    ['runner', 2, 1.4, 0.2],
+    ['brute', 3, 2.8, 0.7],
+    ['shambler', 1, 1.4, 0.85],
+  ])('%s seed %i at %f m/s: walk and clip layers recompose through arm fade at t=%f', (templateName, seed, speed, time) => {
+    const fixture = actorFor(templateName, seed);
+    const clock = clocksFor(fixture, speed).at(-1)!;
+    const base = walkPose(fixture.actor, clock, speed, true);
+    const attacked = attackPose(fixture.actor, LUNGE_GRAB, time, base);
+    expect(attacked.angles).toBe(base.angles);
+    expect(Object.keys(attacked.clipAngles ?? {})).not.toHaveLength(0);
+    expect(attackProblems(base, attacked, time)).toEqual([]);
+  });
+
+  sweepGroup('attack angle reconstruction population', () => {
+    for (const template of HUMANOID_TEMPLATES) {
+      it(`${template.name}: walk layer x clip layer (with the arm fade weight) within ${TOL}`, () => {
+        const problems = SEEDS.flatMap((seed) => attackFixtureProblems(actorFor(template.name, seed)));
+        expect(problems).toEqual([]);
+      });
+    }
+  });
 
   it('without walk angles the attack pose carries none either', () => {
     const fixture = actorFor('shambler', 1);
