@@ -7,6 +7,7 @@ import process from 'node:process';
 import { it } from 'node:test';
 import {
   adaptMainInteractionPick,
+  mainArrivalGit,
   mainOverlayPath,
   mainSourceOverlays,
   removedExports,
@@ -66,6 +67,38 @@ it('main reads find the package where each revision places it, after the branch 
     assert.equal(workspaceDirectory(git, branch, 'deadvox'), 'packages/deadvox');
     assert.throws(() => workspaceDirectory(git, base, 'missing'), MISSING_WORKSPACE);
   } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
+
+it('main arrival Git commands ignore inherited repository bindings at discovery and subsequent commands', () => {
+  const repository = mkdtempSync(join(tmpdir(), 'main-arrival-bindings-'));
+  // biome-ignore lint/style/noProcessEnv: fixture Git must never inherit a hook's repository bindings.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
+  const foreign = join(repository, 'foreign');
+  // biome-ignore lint/style/noProcessEnv: exercise the real subprocess boundary with hostile inherited bindings.
+  const previous = { GIT_DIR: process.env.GIT_DIR, GIT_WORK_TREE: process.env.GIT_WORK_TREE };
+  try {
+    const { branch } = movedPackageHistory(repository, git);
+    mkdirSync(foreign);
+    execFileSync('git', ['init', '-q', foreign], { env });
+    // biome-ignore lint/style/noProcessEnv: these bindings are the regression input, restored below.
+    Object.assign(process.env, { GIT_DIR: join(foreign, '.git'), GIT_WORK_TREE: foreign });
+    const actual = mainArrivalGit(join(repository, 'packages/deadvox'));
+    assert.equal(actual(['rev-parse', '--show-toplevel']), repository);
+    assert.equal(actual(['rev-parse', 'HEAD']), branch);
+    assert.equal(workspaceDirectory(actual, 'HEAD', 'deadvox'), 'packages/deadvox');
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) {
+        // biome-ignore lint/style/noProcessEnv: restore the caller's environment exactly.
+        delete process.env[key];
+      } else {
+        // biome-ignore lint/style/noProcessEnv: restore the caller's environment exactly.
+        process.env[key] = value;
+      }
+    }
     rmSync(repository, { recursive: true, force: true });
   }
 });
