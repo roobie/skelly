@@ -2160,7 +2160,11 @@ their state.
    Factory structures plus compatible parts and capability-matched add-ons come
    before scratch-building, without reducing mounting to fixed sockets. Keep the grain
    at named swappable parts, not individual bolts, wire runs or plumbing, so repair
-   does not become assembly bookkeeping.
+   does not become assembly bookkeeping. A body fitted to a chassis cab, such as a box
+   van's cargo box, is its own factory structure resting on the frame, not part of the
+   cab's: the chassis cab stays a complete drivable unit without it, and the body's
+   storage is a capability of that fitted structure, not a vehicle kind. See
+   `src/vehicles/boxVan.ts`, `BOX_VAN`.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the
