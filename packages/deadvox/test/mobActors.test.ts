@@ -1149,7 +1149,9 @@ describe('MobActorMeshes reactions', () => {
       }
       expect(ids.length).toBeGreaterThan(1);
       expect(renderer.isTracked(ids[0]!)).toBe(false);
-      expect(renderer.isTracked(ids.at(-1)!)).toBe(true);
+      for (const id of ids.slice(1)) {
+        expect(renderer.isTracked(id)).toBe(true);
+      }
     } finally {
       renderer.dispose();
     }
@@ -1204,17 +1206,24 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.zombieDied(id, zombie);
       store.remove(id);
 
-      const initial = renderer.boneMatrix(id, 'pelvis')!;
-      let lowest = initial[7]!;
-      for (let frame = 0; frame < 300; frame++) {
+      let previous = renderer.boneMatrix(id, 'pelvis')![7]!;
+      let lying: number | undefined;
+      for (let frame = 0; frame < 300 && lying === undefined; frame++) {
+        renderer.sync(store, 0.1, 1, true);
+        const current = renderer.boneMatrix(id, 'pelvis')![7]!;
+        if (current === previous) {
+          lying = current;
+        }
+        previous = current;
+      }
+      expect(lying).toBeDefined();
+      let sank = false;
+      for (let frame = 0; frame < 300 && renderer.isTracked(id); frame++) {
         renderer.sync(store, 0.1, 1, true);
         const pelvis = renderer.boneMatrix(id, 'pelvis');
-        if (!pelvis) {
-          break;
-        }
-        lowest = Math.min(lowest, pelvis[7]!);
+        sank ||= pelvis !== undefined && pelvis[7]! < lying!;
       }
-      expect(lowest).toBeLessThan(initial[7]!);
+      expect(sank).toBe(true);
     } finally {
       renderer.dispose();
     }

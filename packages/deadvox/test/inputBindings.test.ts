@@ -70,12 +70,12 @@ const fixture: readonly Binding[] = [
     plainKey: true,
   },
 ];
-const event = (code: string, extra: Partial<KeyboardEvent> = {}) => ({
+const event = (code: string, extra: Partial<KeyboardEvent & Chord> = {}) => ({
   code,
-  shiftKey: false,
-  altKey: false,
-  ctrlKey: false,
-  metaKey: false,
+  shiftKey: extra.modifier === 'shift',
+  altKey: extra.modifier === 'alt',
+  ctrlKey: extra.modifier === 'ctrl',
+  metaKey: extra.modifier === 'meta',
   repeat: false,
   isComposing: false,
   timeStamp: 0,

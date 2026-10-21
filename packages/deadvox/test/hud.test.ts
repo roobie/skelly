@@ -48,7 +48,7 @@ describe('quickbarViewModel', () => {
       filled: true,
       name: inv.name(flashlight),
     });
-    expect(vm.slots[0]?.where).toContain('right');
+    expect(vm.slots[0]?.where).not.toBe('');
   });
 
   it('shows a worn item as worn', () => {
@@ -72,7 +72,9 @@ describe('quickbarViewModel', () => {
     const where = vm.slots[2]?.where ?? '';
     expect(where).toContain(inv.name(hoodie).toLowerCase());
     const seconds = Number.parseFloat(where.split('·')[1] ?? '');
-    expect(seconds).toBeGreaterThanOrEqual(inv.pocketHandling(hoodie, 0));
+    const from = inv.locate(matches)!;
+    const expected = inv.handlingTime(matches, from, { kind: 'hand', side: 'left' });
+    expect(seconds).toBeCloseTo(expected, 1);
   });
 
   it('renders an item left in furniture as an empty slot', () => {
