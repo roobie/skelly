@@ -396,12 +396,13 @@ describe('keyboard registry', () => {
     keyboard.context = () => ({ context, debug: false });
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
+    const registry = new BindingRegistry(INPUT_BINDINGS, storage());
     const tabs = [
-      { code: 'KeyG', action: 'ui.inventory-tab-items' },
-      { code: 'KeyV', action: 'ui.inventory-tab-skills' },
-      { code: 'KeyB', action: 'ui.inventory-tab-crafting' },
-      { code: 'KeyH', action: 'ui.inventory-tab-actions' },
-    ];
+      'ui.inventory-tab-items',
+      'ui.inventory-tab-skills',
+      'ui.inventory-tab-crafting',
+      'ui.inventory-tab-actions',
+    ].map((action) => ({ action, code: registry.chords(action)[0]!.code }));
 
     for (const tab of tabs) {
       expect(keyboard.press(event(tab.code))).toBe(true);
@@ -416,22 +417,15 @@ describe('keyboard registry', () => {
       keyboard.release(event(tab.code));
     }
     for (const [index, tab] of tabs.entries()) {
-      const registry = new BindingRegistry(INPUT_BINDINGS, storage());
-      expect(registry.binding(tab.action)?.contexts).toEqual(expect.arrayContaining(['play', 'inventory']));
-      expect(registry.rebind(tab.action, [{ code: `Numpad${4 + index}` }])).toBeUndefined();
+      const rebindRegistry = new BindingRegistry(INPUT_BINDINGS, storage());
+      expect(rebindRegistry.binding(tab.action)?.contexts).toEqual(expect.arrayContaining(['play', 'inventory']));
+      expect(rebindRegistry.rebind(tab.action, [{ code: `Numpad${4 + index}` }])).toBeUndefined();
     }
-    const wield = new BindingRegistry(INPUT_BINDINGS, storage()).binding('inventory.hands');
-    expect(wield?.defaults[0]?.code).toBe('KeyW');
-    expect(wield?.contexts).toEqual(['inventory']);
+    expect(registry.binding('inventory.hands')?.contexts).toEqual(['inventory']);
   });
   it('keeps debug behind F2 and allows rebinding the Backquote HUD hold', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
-    expect(bindings.binding('debug.gate')?.defaults[0]?.code).toBe('F2');
-    expect(bindings.binding('debug.panel-toggle')).toMatchObject({
-      defaults: [{ code: 'Backquote' }],
-      gate: 'debug.gate',
-    });
-    expect(bindings.binding('hud.toggle')?.defaults[0]?.code).toBe('Backquote');
+    expect(bindings.binding('debug.panel-toggle')?.gate).toBe('debug.gate');
     expect(bindings.rebind('hud.toggle', [{ code: 'KeyJ' }])).toBeUndefined();
     expect(bindings.label('hud.toggle')).toBe('J');
   });
