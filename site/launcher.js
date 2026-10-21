@@ -221,6 +221,7 @@ const page = (state) => html`  <main>
         <h2 id="links-title">Links</h2>
         <ul>
           <li><a href="deadvox/playtest/round1/">Deadvox Round 1 Playtest</a></li>
+          <li><a href="https://deadvox-playtest-round2.surge.sh/">Deadvox Round 2 Playtest</a></li>
         </ul>
       </section>
 
