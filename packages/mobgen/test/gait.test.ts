@@ -174,20 +174,48 @@ describe('walkPose', () => {
     };
   };
 
+  const matchingStance = (
+    found: ReturnType<typeof setup>,
+    style: StepStyle,
+    footBone: 'foot.L' | 'foot.R',
+  ): number | undefined => {
+    for (let step = 1; step < 24; step++) {
+      const stanceFoot = step % 2 === 1 ? 'foot.L' : 'foot.R';
+      if (stanceFoot === footBone && stepPlanFor(found.seed, step - 1, found.params).style === style) {
+        return step;
+      }
+    }
+    return undefined;
+  };
+
+  const driftCaseFor = (style: StepStyle, footBone: 'foot.L' | 'foot.R', speed: number) => {
+    for (const template of TEMPLATES) {
+      for (let seed = 0; seed < 8; seed++) {
+        const found = setup(template.name, seed);
+        const step = matchingStance(found, style, footBone);
+        if (step !== undefined) {
+          return { found, speed, step, style, footBone };
+        }
+      }
+    }
+    throw new Error(`no ${style} ${footBone} stance found in the test coverage fixture`);
+  };
+
   const driftCases = [
-    ['shambler', 1, 0.8, 0],
-    ['runner', 2, 2.8, 1],
-    ['brute', 1, 0.8, 2],
-    ['shambler', 2, 2.8, 3],
-  ] as const;
-  it.each(driftCases)('%s seed %i: heel and toe drift stay within one voxel at %f m/s on step %i', (name, seed, speed, step) => {
-    const found = setup(name, seed);
-    const { heel, toe } = stepPlantDrift(found, speed, step);
-    expect(heel.touchedDown).toBe(true);
-    expect(toe.touchedDown).toBe(true);
-    expect(heel.maxDrift).toBeLessThanOrEqual(found.voxels.size);
-    expect(toe.maxDrift).toBeLessThanOrEqual(found.voxels.size);
-  });
+    driftCaseFor('normal', 'foot.L', 0.8),
+    driftCaseFor('lurch', 'foot.R', 1.4),
+    driftCaseFor('stagger', 'foot.L', 2.8),
+    driftCaseFor('drag', 'foot.R', 0.8),
+  ];
+  for (const { found, speed, step, style, footBone } of driftCases) {
+    it(`${style} ${footBone}: heel and toe drift stay within one voxel through stance transitions`, () => {
+      const { heel, toe } = stepPlantDrift(found, speed, step);
+      expect(heel.touchedDown).toBe(true);
+      expect(toe.touchedDown).toBe(true);
+      expect(heel.maxDrift).toBeLessThanOrEqual(found.voxels.size);
+      expect(toe.maxDrift).toBeLessThanOrEqual(found.voxels.size);
+    });
+  }
 
   sweepGroup('grounded foot drift', () => {
     const seeds = [1, 2];
@@ -254,13 +282,14 @@ describe('walkPose', () => {
     return worstGap;
   };
 
-  it.each([['shambler', 1, 0.8], ['runner', 2, 1.4], ['brute', 3, 2.8]] as const)(
-    '%s seed %i: the swing ankle stays clear at %f m/s',
-    (name, seed, speed) => {
-      const found = setup(name, seed);
-      expect(ankleGap(name, seed, [speed], 8)).toBeGreaterThan(found.voxels.size);
-    },
-  );
+  it.each([
+    ['shambler', 1, 0.8],
+    ['runner', 2, 1.4],
+    ['brute', 3, 2.8],
+  ] as const)('%s seed %i: the swing ankle stays clear at %f m/s', (name, seed, speed) => {
+    const found = setup(name, seed);
+    expect(ankleGap(name, seed, [speed], 8)).toBeGreaterThan(found.voxels.size);
+  });
 
   sweepGroup('swing ankle clearance', () => {
     for (const name of TEMPLATES.map((t) => t.name)) {

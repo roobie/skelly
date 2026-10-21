@@ -190,20 +190,25 @@ describe('Pose.angles recompose to the walk matrices', () => {
 });
 
 describe('attackPose clipAngles recompose to the attacked matrices', () => {
-  it.each([
-    ['shambler', 1, 0.8, 0.1],
-    ['runner', 2, 1.4, 0.2],
-    ['brute', 3, 2.8, 0.7],
-    ['shambler', 1, 1.4, 0.85],
-  ])('%s seed %i at %f m/s: walk and clip layers recompose through arm fade at t=%f', (templateName, seed, speed, time) => {
-    const fixture = actorFor(templateName, seed);
-    const clock = clocksFor(fixture, speed).at(-1)!;
-    const base = walkPose(fixture.actor, clock, speed, true);
-    const attacked = attackPose(fixture.actor, LUNGE_GRAB, time, base);
-    expect(attacked.angles).toBe(base.angles);
-    expect(Object.keys(attacked.clipAngles ?? {})).not.toHaveLength(0);
-    expect(attackProblems(base, attacked, time)).toEqual([]);
-  });
+  const focusedCases = [
+    ['shambler', 1, 0.8, 0],
+    ['runner', 2, 1.4, 0.1],
+    ['brute', 3, 2.8, 0.2],
+    ['shambler', 1, 1.4, 0.7],
+    ['runner', 2, 0.8, 0.85],
+    ['brute', 3, 1.4, LUNGE_GRAB.duration],
+  ] as const;
+  for (const [templateName, seed, speed, time] of focusedCases) {
+    it(`${templateName}: walk and clip layers recompose through arm fade at t=${time}`, () => {
+      const fixture = actorFor(templateName, seed);
+      const clock = clocksFor(fixture, speed).at(-1)!;
+      const base = walkPose(fixture.actor, clock, speed, true);
+      const attacked = attackPose(fixture.actor, LUNGE_GRAB, time, base);
+      expect(attacked.angles).toBe(base.angles);
+      expect(Object.keys(attacked.clipAngles ?? {})).not.toHaveLength(0);
+      expect(attackProblems(base, attacked, time)).toEqual([]);
+    });
+  }
 
   sweepGroup('attack angle reconstruction population', () => {
     for (const template of HUMANOID_TEMPLATES) {
