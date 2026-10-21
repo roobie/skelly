@@ -308,8 +308,10 @@ describe('keyboard registry', () => {
       ['stance.ready', 'up'],
     ]);
   });
-  it('keeps ready and ADS held when F2 enables debug controls', () => {
-    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+  it('keeps ready and ADS held when debug controls enable', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    const gate = bindings.chords('debug.gate')[0]!;
+    const keyboard = new KeyboardInput(bindings);
     keyboard.context = () => ({ context: 'play', debug: true });
     let ready = false;
     let ads = false;
@@ -339,7 +341,7 @@ describe('keyboard registry', () => {
     ).toBe(true);
     keyboard.releasePointer(1, 3);
     expect([ready, ads]).toEqual([true, true]);
-    expect(keyboard.press(event('F2'))).toBe(true);
+    expect(keyboard.press(event(gate.code, gate))).toBe(true);
     expect([ready, ads, keyboard.held('stance.ready')]).toEqual([true, true, true]);
   });
   it('keeps both continue paths in their separate owners', () => {
@@ -402,19 +404,19 @@ describe('keyboard registry', () => {
       'ui.inventory-tab-skills',
       'ui.inventory-tab-crafting',
       'ui.inventory-tab-actions',
-    ].map((action) => ({ action, code: registry.chords(action)[0]!.code }));
+    ].map((action) => ({ action, chord: registry.chords(action)[0]! }));
 
     for (const tab of tabs) {
-      expect(keyboard.press(event(tab.code))).toBe(true);
+      expect(keyboard.press(event(tab.chord.code, tab.chord))).toBe(true);
       expect(commands.at(-1)?.action).toBe(tab.action);
-      keyboard.release(event(tab.code));
+      keyboard.release(event(tab.chord.code, tab.chord));
     }
     context = 'inventory';
     keyboard.sync();
     for (const tab of tabs) {
-      expect(keyboard.press(event(tab.code))).toBe(true);
+      expect(keyboard.press(event(tab.chord.code, tab.chord))).toBe(true);
       expect(commands.at(-1)?.action).toBe(tab.action);
-      keyboard.release(event(tab.code));
+      keyboard.release(event(tab.chord.code, tab.chord));
     }
     for (const [index, tab] of tabs.entries()) {
       const rebindRegistry = new BindingRegistry(INPUT_BINDINGS, storage());
@@ -455,27 +457,27 @@ describe('keyboard registry', () => {
       'down',
     ]);
   });
-  it('routes a shared worn-light and gated debug chord without a clash', () => {
-    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
-    const light = bindings.chords('light.worn-toggle')[0]!;
+  it('routes a fixture-owned shared ordinary and gated debug chord without a clash', () => {
+    const bindings = new BindingRegistry(fixture, storage());
+    const ordinary = bindings.chords('fixture.interact')[0]!;
     const gate = bindings.chords('debug.gate')[0]!;
-    const debug = bindings.chords('debug.fog-decrease')[0]!;
+    const debug = bindings.chords('fixture.debug')[0]!;
     const keyboard = new KeyboardInput(bindings);
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
     keyboard.context = () => ({ context: 'play', debug: true });
     const downs = () => commands.filter(({ phase }) => phase === 'down').map(({ action }) => action);
 
-    expect(keyboard.press(event(light.code, light))).toBe(true);
-    keyboard.release(event(light.code, light));
-    expect(downs()).toContain('light.worn-toggle');
-    expect(downs()).not.toContain('debug.fog-decrease');
+    expect(keyboard.press(event(ordinary.code, ordinary))).toBe(true);
+    keyboard.release(event(ordinary.code, ordinary));
+    expect(downs()).toContain('fixture.interact');
+    expect(downs()).not.toContain('fixture.debug');
 
     commands.length = 0;
     expect(keyboard.press(event(gate.code, gate))).toBe(true);
     expect(keyboard.press(event(debug.code, debug))).toBe(true);
-    expect(downs()).toContain('debug.fog-decrease');
-    expect(downs()).not.toContain('light.worn-toggle');
+    expect(downs()).toContain('fixture.debug');
+    expect(downs()).not.toContain('fixture.interact');
   });
   it('gates the review map and keeps game freeze on a separate effective chord', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
