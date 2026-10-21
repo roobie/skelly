@@ -52,11 +52,16 @@ choices, not absence. See `src/content/base/graphics.jsonnet`,
 
 Benchmarks isolate machine preferences and debug graphics overrides so saved choices cannot
 silently change a comparison workload. Scene scale stays fixed at the content default because
-GPU-dependent adaptation would change the pixel workload during a run. Their look is independent
-of play defaults so visual-policy changes cannot redefine the benchmark. Content-owned benchmark
-weathering lets mods choose that workload without changing benchmark logic. See
-`src/game/engine.ts`, `createEngine`, `src/game/graphicsControls.ts`, `GraphicsControls`, and
-`src/bench/post.ts`, `BENCH_LOOK` and `applyBenchWeathering`.
+GPU-dependent adaptation would change the pixel workload during a run. The full-post workload keeps
+an independent look so visual-policy changes cannot redefine it. The goggles comparison instead follows
+play's content-default look and shares its flare update: measuring another look or omitting source
+occlusion would not establish the cost players pay. Source placement belongs to the benchmark query
+so comparisons can vary the workload without changing code. Content-owned benchmark weathering
+lets mods choose that workload without changing benchmark logic. See
+`src/game/engine.ts`, `createEngine`, `src/game/graphicsControls.ts`, `GraphicsControls`,
+`src/bench/post.ts`, `benchDraw` and `applyBenchWeathering`,
+`src/bench/lightFixture.ts`, `benchFlareSourcesFromUrl`, and
+`src/render/nightVisionFlare.ts`, `createNightVisionFlareUpdate`.
 
 Automatic scene resolution applies with or without post effects, because choosing the plain
 look must not disable the machine's quality trade. It follows GPU execution cost rather than

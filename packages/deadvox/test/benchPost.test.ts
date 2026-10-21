@@ -1,4 +1,6 @@
+import { PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import { benchFlareSourcesFromUrl } from '../src/bench/lightFixture.ts';
 import {
   applyBenchWeathering,
   benchDraw,
@@ -48,6 +50,17 @@ describe('benchmark post-processing option', () => {
     expect(benchNightVisionFromUrl(params(nextUrl(run, 1)))).toBe(true);
   });
 
+  it('keeps query-authored sources across runs and rejects invalid placements', () => {
+    const positions = [
+      [0, 0, -2],
+      [0.2, 0, -3],
+    ];
+    const query = params(`bench=1&flareSources=${JSON.stringify(positions)}`);
+    const run = benchRunFromUrl(query, { layouts: new Map(), scenarios: new Map() });
+    expect(benchFlareSourcesFromUrl(params(nextUrl(run, 1)))).toEqual(positions);
+    expect(() => benchFlareSourcesFromUrl(params('flareSources=[[1,2]]'))).toThrow();
+  });
+
   it('is read by both benchmark modes', () => {
     expect(benchRunFromUrl(params('bench=1'), { layouts: new Map(), scenarios: new Map() }).post).toBe(false);
     expect(benchRunFromUrl(params('bench=1&post=1'), { layouts: new Map(), scenarios: new Map() }).post).toBe(true);
@@ -62,7 +75,7 @@ describe('benchmark post-processing option', () => {
       renderer: { info, toneMapping: 0, toneMappingExposure: 1 },
       registry: startupContent().registry,
       scene: {},
-      camera: { position: {} },
+      camera: new PerspectiveCamera(),
       meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
       mood: {
         restore: vi.fn(),

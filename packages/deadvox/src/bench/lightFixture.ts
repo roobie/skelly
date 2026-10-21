@@ -1,6 +1,7 @@
-import type { PerspectiveCamera } from 'three';
+import { type PerspectiveCamera, Vector3 } from 'three';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import type { Vec3 } from '../core/coords.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory } from '../core/inventory.ts';
 import { toggleLight } from '../core/lights.ts';
@@ -15,7 +16,58 @@ import { PileMeshes } from '../render/piles.ts';
 export const BENCH_LIGHT_COUNTS = Object.freeze({ carried: 4, dropped: 12, pointLights: POINT_LIGHT_POOL_SIZE });
 const INNER_RING_COUNT = 4;
 
-export const createBenchLightFixture = (engine: RenderedEngine, calendar: number) => {
+export const benchFlareSourcesFromUrl = (params: URLSearchParams): Vec3[] | undefined => {
+  const value = params.get('flareSources');
+  if (value === null) {
+    return undefined;
+  }
+  const positions: unknown = JSON.parse(value);
+  if (
+    !Array.isArray(positions) ||
+    positions.length > POINT_LIGHT_POOL_SIZE ||
+    !positions.every(
+      (pos) => Array.isArray(pos) && pos.length === 3 && pos.every((n) => typeof n === 'number' && Number.isFinite(n)),
+    )
+  ) {
+    throw new Error('flareSources must be an array of camera-local metre triples within the point-light pool budget');
+  }
+  return positions as Vec3[];
+};
+
+const createFlareFixture = (engine: RenderedEngine, positions: readonly Vec3[]) => {
+  const light = engine.registry.items.get('torch')?.light;
+  if (!light) {
+    throw new Error('Missing benchmark torch content');
+  }
+  const lightPool = new LightPool(engine.scene);
+  const local = new Vector3();
+  return {
+    inventory: new Inventory(engine.registry),
+    carried: 0,
+    dropped: 0,
+    lightPool,
+    update: (camera: PerspectiveCamera, daylightScale: number) => {
+      camera.updateMatrixWorld();
+      for (const [index, slot] of lightPool.lights.entries()) {
+        const pos = positions[index];
+        slot.intensity = pos ? light.intensity * daylightScale : 0;
+        slot.color.set(light.color);
+        slot.distance = light.radius;
+        if (pos) {
+          slot.position.copy(local.fromArray(pos).applyMatrix4(camera.matrixWorld));
+        }
+      }
+    },
+    setSprinting: (_sprinting: boolean) => undefined,
+    activeCount: () => positions.length,
+    dispose: () => lightPool.group.removeFromParent(),
+  };
+};
+
+export const createBenchLightFixture = (engine: RenderedEngine, calendar: number, positions?: readonly Vec3[]) => {
+  if (positions) {
+    return createFlareFixture(engine, positions);
+  }
   const { config, registry, scene, spawn } = engine;
   const { blockSize } = config.scale;
   const inventory = new Inventory(registry);
@@ -81,6 +133,9 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
   const noHeldPose: Pick<HeldItems, 'lightPositionOf'> = { lightPositionOf: () => false };
   return {
     inventory,
+    carried: BENCH_LIGHT_COUNTS.carried,
+    dropped: BENCH_LIGHT_COUNTS.dropped,
+    lightPool,
     update: (targetCamera: PerspectiveCamera, daylightScale: number) =>
       lightPool.update(inventory, { held: noHeldPose, camera: targetCamera, blockSize, daylightScale }),
     setSprinting: (sprinting: boolean) => survival.setSprinting(sprinting),

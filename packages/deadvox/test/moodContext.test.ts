@@ -11,11 +11,16 @@ import {
 import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { expect, it, vi } from 'vitest';
+import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
+import { benchDraw } from '../src/bench/post.ts';
 import graphics from '../src/content/base/graphics.json' with { type: 'json' };
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { NightVision } from '../src/core/schema.ts';
 import type { Sky } from '../src/core/sky.ts';
 import { realSeconds } from '../src/core/time.ts';
+import type { RenderedEngine } from '../src/game/engine.ts';
 import { Mood } from '../src/render/mood.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 const owner = vi.hoisted(() => ({
   composers: [] as {
@@ -72,17 +77,62 @@ const gogglesMood = (renderer: WebGLRenderer, scene = new Scene()) => {
   return mood;
 };
 
-it("draws the goggles' night-vision view through the post chain while the look's post is off", () => {
+it('measures the night-vision chain and source occlusion/halos with the play-default look, not full post', () => {
   const renderer = fakeRenderer(NeutralToneMapping, 1);
-  const mood = gogglesMood(renderer);
-  const composersBefore = owner.composers.length;
-
-  mood.render(() => undefined);
-
-  expect(mood.post).toBe(false);
-  expect(owner.composers.length).toBe(composersBefore + 1);
-  expect(owner.composers.at(-1)!.render).toHaveBeenCalled();
-  expect(renderer.render).not.toHaveBeenCalled();
+  const scene = new Scene();
+  const camera = new PerspectiveCamera(70, 1, 0.1, 100);
+  const mood = new Mood(renderer, scene, camera, graphics.graphics[0]!);
+  mood.externalGpuTiming = true;
+  const isSolid = vi.fn(() => false);
+  const base = baseRegistry();
+  const items = new Map(base.items);
+  const torch = items.get('torch')!;
+  items.set(torch.id, { ...torch, light: { ...torch.light!, intensity: 10 } });
+  const goggles = items.get('night_vision_goggles')!;
+  items.set(goggles.id, { ...goggles, light: { ...goggles.light!, nightVision: GOGGLES } });
+  const look = new Map(base.look);
+  const defaults = look.get(CORE_CONTENT_IDS.coreLook)!;
+  look.set(defaults.id, { ...defaults, tone: 'none', post: false });
+  const engine = {
+    renderer,
+    scene,
+    camera,
+    mood,
+    isSolid,
+    registry: { ...base, items, look },
+    config: { scale: { blockSize: 1 } },
+    meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
+    shadows: { restore: vi.fn(), update: vi.fn() },
+  } as unknown as RenderedEngine;
+  const fixture = createBenchLightFixture(engine, 0, [[0, 0, -2]]);
+  fixture.update(camera, 1);
+  try {
+    for (const nightVision of [false, true]) {
+      isSolid.mockClear();
+      vi.mocked(renderer.render).mockClear();
+      const composersBefore = owner.composers.length;
+      benchDraw(engine, { post: false, nightVision, playLook: true, skyAngle: 0, lightPool: fixture.lightPool })();
+      expect(mood.post).toBe(false);
+      expect(renderer.toneMapping).toBe(NoToneMapping);
+      expect(isSolid.mock.calls.length > 0).toBe(nightVision);
+      if (nightVision) {
+        expect(owner.composers.length).toBe(composersBefore + 1);
+        expect(owner.composers.at(-1)!.render).toHaveBeenCalledOnce();
+        expect(renderer.render).not.toHaveBeenCalled();
+        const output = owner.composers
+          .at(-1)!
+          .passes.find((pass) => (pass as OutputPass).uniforms?.uNightVision) as OutputPass;
+        expect(output.uniforms.uNightVision!.value).toBe(1);
+        expect(output.uniforms.uNightFlare!.value).toBeGreaterThan(0);
+        expect(output.uniforms.uNightHalos!.value[2]).toBeGreaterThan(0);
+      } else {
+        expect(owner.composers.length).toBe(composersBefore);
+        expect(renderer.render).toHaveBeenCalledOnce();
+      }
+    }
+  } finally {
+    fixture.dispose();
+  }
 });
 
 it('undoes exposure on the sky in the chain only for a tone mapper that applies it', () => {

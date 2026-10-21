@@ -150,8 +150,9 @@ export interface BenchRecord {
   };
   /** Time of day (`&time=HH:MM`); records from before it existed ran at noon. */
   time?: string;
-  /** Drawn through the mood pass with the default look (`&post=1`, bench/post.ts); records from before it existed, and runs without it, drew plain. */
   post?: boolean;
+  nightVision?: boolean;
+  flareSources?: readonly (readonly [number, number, number])[];
   /** Made-light and detailed-shambler population that shared the full-phase scene. */
   lightWorkload?: {
     active: number;
