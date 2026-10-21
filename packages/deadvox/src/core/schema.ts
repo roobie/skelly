@@ -932,6 +932,7 @@ const SoundSchema = strictObject({
     }, 'recipe names must be unique within a sound'),
   ),
   gain: pipe(Positive, maxValue(1, 'must be at most 1')),
+  lowShelf: optional(strictObject({ frequencyHz: Positive, gainDb: pipe(number(), finite()) })),
   pitchJitter: SoundMultipliers,
   gainJitter: SoundMultipliers,
   minIntervalSimSeconds: SimSeconds,
