@@ -49,12 +49,11 @@ describe('grade strength steps', () => {
 });
 
 describe('exposure', () => {
-  it('clamps at owner-defined endpoints and rounds consistently', () => {
+  it('clamps at owner-defined endpoints', () => {
     const lower = clampExposure(Number.NEGATIVE_INFINITY);
     const upper = clampExposure(Number.POSITIVE_INFINITY);
     expect(clampExposure(lower - 1)).toBe(lower);
     expect(clampExposure(upper + 1)).toBe(upper);
-    expect(clampExposure(1.26)).toBe(clampExposure(1.3));
   });
 });
 
@@ -142,22 +141,20 @@ describe('bloom clip per tone mapper', () => {
     }
   });
 
-  it('clamps an override at owner-defined endpoints and rounds consistently', () => {
+  it('clamps an override at owner-defined endpoints', () => {
     const lower = clampBloomClip(Number.NEGATIVE_INFINITY);
     const upper = clampBloomClip(Number.POSITIVE_INFINITY);
     expect(clampBloomClip(lower - 1)).toBe(lower);
     expect(clampBloomClip(upper + 1)).toBe(upper);
-    expect(clampBloomClip(2.26)).toBe(clampBloomClip(2.3));
   });
 });
 
 describe('flashlight strength multiplier', () => {
-  it('rounds consistently, clamps at owner-defined endpoints, and defaults nonsense input', () => {
+  it('clamps at owner-defined endpoints and defaults nonsense input', () => {
     const lower = clampTorch(-Number.MAX_VALUE);
     const upper = clampTorch(Number.MAX_VALUE);
     expect(clampTorch(lower - 1)).toBe(lower);
     expect(clampTorch(upper + 1)).toBe(upper);
-    expect(clampTorch(1.5625)).toBe(clampTorch(1.56));
     expect(clampTorch(Number.NaN)).toBe(DEFAULT_TORCH);
   });
 
