@@ -1,10 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { Box3, Group, type Object3D, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import firearmContent from '../src/content/base/models-firearms.json' with { type: 'json' };
 import type { ModelDef } from '../src/core/content.ts';
 import { heldEjectionPose, heldGripOffset } from '../src/core/heldPose.ts';
+import { ModelSchema } from '../src/core/schema.ts';
 import { simPerMinute, simSeconds } from '../src/core/time.ts';
 import {
   actionPartPaths,
@@ -17,8 +19,14 @@ import {
 } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
 
-const ar = firearmContent.models.find((model) => model.id === 'rifle_assault') as ModelDef;
-const ak = firearmContent.models.find((model) => model.id === 'rifle_ak') as ModelDef;
+const ar = parse(
+  ModelSchema,
+  firearmContent.models.find((model) => model.id === 'rifle_assault'),
+);
+const ak = parse(
+  ModelSchema,
+  firearmContent.models.find((model) => model.id === 'rifle_ak'),
+);
 const load = (model: ModelDef = ar) => {
   const bytes = readFileSync(`src/content/base/${model.file}`);
   return new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
@@ -26,12 +34,15 @@ const load = (model: ModelDef = ar) => {
 
 describe('exported firearm presentation', () => {
   it('turns the exported bolt knob before drawing it by the exported stroke and resets from rest', async () => {
-    const bolt = firearmContent.models.find(
-      (candidate) =>
-        'gun' in candidate &&
-        'action' in candidate.gun &&
-        Object.values(candidate.gun.action.parts).some((part) => 'turn' in part),
-    ) as ModelDef;
+    const bolt = parse(
+      ModelSchema,
+      firearmContent.models.find(
+        (candidate) =>
+          'gun' in candidate &&
+          'action' in candidate.gun &&
+          Object.values(candidate.gun.action.parts).some((part) => 'turn' in part),
+      ),
+    );
     const action = bolt.gun!.action!;
     const gltf = await load(bolt);
     const paths = actionPartPaths(gltf.scene, action, gltf.parser);

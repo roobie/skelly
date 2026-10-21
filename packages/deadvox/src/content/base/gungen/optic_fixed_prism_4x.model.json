@@ -5,7 +5,6 @@
     "attachment": {
       "id": "optic-fixed-prism-4x",
       "kind": "optic",
-      "massKg": 0.357488038040254,
       "mount": "rail-top",
       "properties": {
         "reticleKind": "chevron",

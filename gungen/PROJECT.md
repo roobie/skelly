@@ -5,6 +5,7 @@ read_if:
   - you use or update the golden AKM reference photo or its overlays
   - you change attachment compatibility, sights or the Gungen-to-Deadvox export contract
   - you change a gun Deadvox ships, or anything its export reads
+  - you change physical inputs or their ownership
   - you author or key a gun part's mass
   - you change Gungen's test or cross-project integration policy
 ---
@@ -47,9 +48,9 @@ A Gungen change to a gun Deadvox ships refreshes Deadvox's copy, its GLB and mod
 
 The hunting rifle's civilian identity, integral loading, separate scope and phased turn-bolt contract are governed by `docs/bolt-action-export.md`. Geometry is exported before playable handling so Deadvox consumes fitted dimensions rather than inventing them.
 
-The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `packages/deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is authored on the attachment's item, because an attachment is an atom (`things/README.md`, "Rules"); until g73 lands, `src/gun/attachmentMass.ts#attachmentMassKg` still estimates it from geometry and material.
+The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts`, `exportGunGlb`, and `packages/deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is authored on the attachment's item, because an attachment is an atom (`things/README.md`, "Rules"). Shared export places geometric centres without estimating mass; see `packages/thing-export/src/physical.ts`, `modelParts`.
 
-Until a gun's parts become items (`../things/WORK.md`, "Phases"), each body part's authored mass comes from one part mass table keyed by part family and variant. A part shared by several designs then has one value, and the table already has the shape of the closed item set. A parametric part gets one row per variant rather than a scaling rule, because a rule would derive mass again. A row names only the params that make it a different part, so a pose or a placement does not split a row. Export fails when a part matches no row or more than one, because a guessed mass is the derivation the rule removes.
+Until a gun's parts become items (`../things/WORK.md`, "Phases"), each body part's authored mass comes from one part mass table keyed by part family and variant. A part shared by several designs then has one value, and the table already has the shape of the closed item set. A parametric part gets one row per variant rather than a scaling rule, because a rule would derive mass again. A row names only the params that make it a different part, so a pose or a placement does not split a row. Export fails when a part matches no row or more than one, because a guessed mass is the derivation the rule removes. See `src/gun/physical.jsonnet`, `partMasses`, and `src/gun/physical.ts`, `gunModelParts`.
 
 Revolvers use independently mounted moving parts and a separate rotational export contract so the linear carrier contract stays focused; see `docs/revolver-export.md` and `src/gun/revolverExport.ts`, `RevolverMetadata`.
 

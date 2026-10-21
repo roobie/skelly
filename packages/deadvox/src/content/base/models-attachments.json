@@ -6,7 +6,6 @@
         "attachment": {
           "id": "foregrip",
           "kind": "foregrip",
-          "massKg": 0.016938745312499996,
           "mount": "rail-bottom",
           "mountFrame": {
             "normal": [0, 1, 0],
@@ -29,7 +28,6 @@
         "attachment": {
           "id": "improvised-suppressor",
           "kind": "suppressor",
-          "massKg": 1.2218603437304045,
           "mount": "muzzle",
           "mountFrame": {
             "normal": [-1, 0, 0],
@@ -49,7 +47,6 @@
         "attachment": {
           "id": "optic-digital-thermal",
           "kind": "optic",
-          "massKg": 0.33766184237147778,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -84,7 +81,6 @@
         "attachment": {
           "id": "optic-fixed-prism-4x",
           "kind": "optic",
-          "massKg": 0.35748803804025397,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -119,7 +115,6 @@
         "attachment": {
           "id": "optic-high-mag-5-25x",
           "kind": "optic",
-          "massKg": 0.32549166112242423,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -154,7 +149,6 @@
         "attachment": {
           "id": "optic-holographic",
           "kind": "optic",
-          "massKg": 0.30874713046874996,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -185,7 +179,6 @@
         "attachment": {
           "id": "optic-lpvo-1-6x",
           "kind": "optic",
-          "massKg": 0.16156919783654183,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -220,7 +213,6 @@
         "attachment": {
           "id": "optic-mini-reflex",
           "kind": "optic",
-          "massKg": 0.080040095034115549,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -251,7 +243,6 @@
         "attachment": {
           "id": "optic-tube-dot",
           "kind": "optic",
-          "massKg": 0.046295373754543331,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -282,7 +273,6 @@
         "attachment": {
           "id": "rail-front-sight",
           "kind": "iron-sight",
-          "massKg": 0.025743185742187501,
           "mount": "rail-top",
           "mountFrame": {
             "normal": [0, -1, 0],
@@ -311,7 +301,6 @@
         "attachment": {
           "id": "real-suppressor",
           "kind": "suppressor",
-          "massKg": 0.49797642922183399,
           "mount": "muzzle",
           "mountFrame": {
             "normal": [-1, 0, 0],
@@ -331,7 +320,6 @@
         "attachment": {
           "id": "tactical-flashlight-mount",
           "kind": "flashlight-mount",
-          "massKg": 0.015398859374999999,
           "mount": "rail-side",
           "mountFrame": {
             "normal": [0, 0, -1],

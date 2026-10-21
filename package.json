@@ -6,6 +6,7 @@
   "workspaces": [
     "packages/engine",
     "packages/thing-core",
+    "packages/thing-export",
     "packages/tool-ui",
     "gungen",
     "packages/deadvox",

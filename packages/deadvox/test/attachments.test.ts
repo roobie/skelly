@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Inventory } from '../src/core/inventory.ts';
-import { defOf, weightOf } from '../src/core/items.ts';
+import { defOf, typeWeightGrams, weightOf } from '../src/core/items.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -29,7 +29,7 @@ describe('fitted firearm items', () => {
     expect(optic!.type).toBe(defaultItem!.id);
     expect(inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
     expect(inventory.itemByUid(optic!.uid)).toBe(optic);
-    expect(weightOf(registry, rifle)).toBeGreaterThan(defOf(registry, rifle.type).weight);
+    expect(weightOf(registry, rifle)).toBeGreaterThan(typeWeightGrams(registry, rifle.type));
 
     const wrong = inventory.create(rival!.id);
     expect(() => inventory.fitSlot(rifle, defaultAttachment!.mountedAt, wrong)).toThrow(UNCERTIFIED_ATTACHMENT);

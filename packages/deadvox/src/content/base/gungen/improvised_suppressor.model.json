@@ -6,7 +6,6 @@
       "id": "improvised-suppressor",
       "kind": "suppressor",
       "mount": "muzzle",
-      "massKg": 1.2218603437304045,
       "properties": { "noiseFactor": 0.7, "wearClass": "improvised" },
       "mountFrame": { "normal": [-1, 0, 0], "up": [0, 1, 0] }
     }

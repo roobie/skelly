@@ -10,7 +10,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { defOf, type Item, weightOf } from '../src/core/items.ts';
+import { defOf, type Item, typeWeightGrams, weightOf } from '../src/core/items.ts';
 import { BUCK_HALF_ANGLE, type PelletShot } from '../src/core/pellets.ts';
 import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
@@ -593,8 +593,9 @@ describe('real pump ammunition', () => {
     expect(f.fire(8)).toBe(true);
     expect(f.gun.firearm?.cycle).toBeUndefined();
     expect(f.gun.firearm?.chamber).toBe('case');
-    expect(f.inventory.carriedWeight()).toBe(
-      mass - registry.items.get(shellType)!.weight + registry.items.get(hullType)!.weight,
+    expect(f.inventory.carriedWeight()).toBeCloseTo(
+      mass - typeWeightGrams(registry, shellType) + typeWeightGrams(registry, hullType),
+      8,
     );
     expect(f.fire(8.1)).toBe(false);
     f.rack(9);
@@ -756,8 +757,9 @@ describe('real pump ammunition', () => {
       corrupt.hands.right!.firearm!.tube = tube;
       expect(() => Inventory.restoreState(f.inventory.registry, corrupt)).toThrow();
     }
-    expect(weightOf(registry, restored.hands.right!)).toBe(
-      registry.items.get('pump_shotgun')!.weight + 3 * registry.items.get(shellType)!.weight,
+    expect(weightOf(registry, restored.hands.right!)).toBeCloseTo(
+      typeWeightGrams(registry, 'pump_shotgun') + 3 * typeWeightGrams(registry, shellType),
+      8,
     );
   });
 

@@ -2,7 +2,6 @@ import type { PartAppearance, PartDef, PartInstance, Resolved } from '@skelly/en
 import { applyDir, applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import appearanceContent from './appearance.json' with { type: 'json' };
-import { attachmentMassKg } from './attachmentMass.ts';
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
 
@@ -40,7 +39,6 @@ export interface AttachmentMetadata {
   readonly mount: MountKind;
   /** Local connector frame of the standalone attachment model; its normal opposes the firearm slot normal. */
   readonly mountFrame: { readonly normal: Vec3; readonly up: Vec3 };
-  readonly massKg: number;
   readonly properties: AttachmentProperties;
   /** Local sight frame for runtime fitting; the host gun transform is applied by Deadvox. */
   readonly sight?: AttachmentSightMetadata;
@@ -199,7 +197,6 @@ const opticMetadata = (
   return {
     id: `optic-${optic.id}`,
     kind: 'optic',
-    massKg: attachmentMassKg('sight', part, metresPerUnit, `optic-${optic.id}`),
     mount: optic.mount.kind,
     properties: {
       reticleKind: optic.reticleKind,
@@ -230,7 +227,6 @@ const railFrontSightMetadata = (metresPerUnit: number, part?: PartDef): Attachme
   return {
     id: 'rail-front-sight',
     kind: 'iron-sight',
-    massKg: attachmentMassKg('rail-front-sight', part, metresPerUnit, 'rail-front-sight'),
     mount: 'rail-top',
     properties: span ? { railSpanNotches: span } : {},
     ...(axis?.referenceDistanceU === undefined
@@ -250,7 +246,6 @@ const railFrontSightMetadata = (metresPerUnit: number, part?: PartDef): Attachme
 const suppressorMetadata = (
   params: Readonly<Record<string, string>> | undefined,
   part: PartDef | undefined,
-  metresPerUnit: number,
 ): AttachmentCoreMetadata | undefined => {
   const type = params?.type as keyof typeof suppressors | undefined;
   const properties = type && suppressors[type];
@@ -258,40 +253,37 @@ const suppressorMetadata = (
     return undefined;
   }
   if (!part) {
-    throw new Error(`Suppressor ${type} has no geometry for mass metadata`);
+    throw new Error(`Suppressor ${type} has no geometry for attachment metadata`);
   }
   return {
     id: type,
     kind: 'suppressor',
     mount: 'muzzle',
-    massKg: attachmentMassKg('suppressor', part, metresPerUnit, type),
     properties,
   };
 };
 
-const flashlightMountMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentCoreMetadata => {
+const flashlightMountMetadata = (part: PartDef | undefined): AttachmentCoreMetadata => {
   const span = railSpanNotches(part, 'rail-side');
   if (!part) {
-    throw new Error('Flashlight mount has no geometry for mass metadata');
+    throw new Error('Flashlight mount has no geometry for attachment metadata');
   }
   return {
     id: 'tactical-flashlight-mount',
     kind: 'flashlight-mount',
-    massKg: attachmentMassKg('tactical-flashlight-mount', part, metresPerUnit, 'tactical-flashlight-mount'),
     mount: 'rail-side',
     properties: span ? { railSpanNotches: span } : {},
   };
 };
 
-const foregripMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentCoreMetadata => {
+const foregripMetadata = (part: PartDef | undefined): AttachmentCoreMetadata => {
   const span = railSpanNotches(part, 'rail-bottom');
   if (!part) {
-    throw new Error('Foregrip has no geometry for mass metadata');
+    throw new Error('Foregrip has no geometry for attachment metadata');
   }
   return {
     id: 'foregrip',
     kind: 'foregrip',
-    massKg: attachmentMassKg('foregrip', part, metresPerUnit, 'foregrip'),
     mount: 'rail-bottom',
     properties: { handlingClass: 'vertical', ...(span ? { railSpanNotches: span } : {}) },
   };
@@ -310,11 +302,11 @@ export const attachmentMetadata = (
       case 'rail-front-sight':
         return railFrontSightMetadata(metresPerUnit, part);
       case 'suppressor':
-        return suppressorMetadata(params, part, metresPerUnit);
+        return suppressorMetadata(params, part);
       case 'tactical-flashlight-mount':
-        return flashlightMountMetadata(part, metresPerUnit);
+        return flashlightMountMetadata(part);
       case 'foregrip':
-        return foregripMetadata(part, metresPerUnit);
+        return foregripMetadata(part);
       default:
         return;
     }

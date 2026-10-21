@@ -10,7 +10,6 @@ const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachme
     attachment: {
       id: 'optic_fixture',
       kind: 'optic',
-      massKg: 1,
       mount: 'rail-top',
       mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
       properties: { ...properties, railSpanNotches: { minOffset: 0, maxOffset: 0 } },

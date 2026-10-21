@@ -6,6 +6,7 @@ import type { ItemDef, ModelDef, Registry } from './content.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
+import { modelBodyMassKg } from './modelMass.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
@@ -561,17 +562,29 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
     return x >= p.x && x < p.x + w && y >= p.y && y < p.y + h;
   });
 
-const itemWeightGrams = (registry: Registry, item: Item): number => {
-  const def = defOf(registry, item.type);
-  const model = def.model ? registry.models.get(def.model) : undefined;
-  return model?.gun?.attachment ? model.gun.attachment.massKg * 1000 : def.weight;
+export const typeWeightGrams = (registry: Registry, type: string): number => {
+  const def = defOf(registry, type);
+  const model = def.model === undefined ? undefined : registry.models.get(def.model);
+  if (def.model !== undefined && model === undefined) {
+    throw new Error(`Missing model ${def.model}`);
+  }
+  if (model?.parts !== undefined) {
+    if (def.weight !== undefined) {
+      throw new Error(`Assembly ${type} also authors an item weight`);
+    }
+    return modelBodyMassKg(model) * 1000;
+  }
+  if (def.weight === undefined) {
+    throw new Error(`Atom ${type} has no authored item weight`);
+  }
+  return def.weight;
 };
 
 /** Grams, counting the stack, ammunition and everything in its pockets. */
 export const weightOf = (registry: Registry, item: Item): number =>
-  itemWeightGrams(registry, item) * item.count +
+  typeWeightGrams(registry, item.type) * item.count +
   ammunitionWeight(registry, item) +
-  (item.cartridges ?? []).reduce((sum, round) => sum + defOf(registry, round).weight, 0) +
+  (item.cartridges ?? []).reduce((sum, round) => sum + typeWeightGrams(registry, round), 0) +
   Object.values(item.slots ?? {}).reduce((sum, child) => sum + (child ? weightOf(registry, child) : 0), 0) +
   (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
   (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);
@@ -597,7 +610,8 @@ const ammunitionWeight = (registry: Registry, item: Item): number => {
         })
       : undefined;
   return rounds.reduce(
-    (sum, type) => sum + defOf(registry, type).weight,
-    (hull?.weight ?? 0) * (state.cylinder?.chambers.filter((chamber) => chamber.state === 'case').length ?? 1),
+    (sum, type) => sum + typeWeightGrams(registry, type),
+    (hull ? typeWeightGrams(registry, hull.id) : 0) *
+      (state.cylinder?.chambers.filter((chamber) => chamber.state === 'case').length ?? 1),
   );
 };

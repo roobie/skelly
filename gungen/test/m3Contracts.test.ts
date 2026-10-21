@@ -1,6 +1,6 @@
 import type { AnchorFrame } from '@skelly/engine/assembly/anchors.ts';
 import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import type { GlbExportInput } from '@skelly/engine/export/exportTypes.ts';
+import type { GlbExportInput } from '@skelly/thing-export/exportTypes.ts';
 import { expectTypeOf, it } from 'vitest';
 import type {
   AnchorSelectionError,

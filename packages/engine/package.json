@@ -15,7 +15,6 @@
   "exports": {
     "./foundation/*": "./src/foundation/*",
     "./shapes/*": "./src/shapes/*",
-    "./assembly/*": "./src/assembly/*",
-    "./export/*": "./src/export/*"
+    "./assembly/*": "./src/assembly/*"
   }
 }

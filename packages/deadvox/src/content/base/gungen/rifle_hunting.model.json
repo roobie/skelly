@@ -1,6 +1,63 @@
 {
   "id": "rifle_hunting",
   "file": "assets/models/rifle_hunting.glb",
+  "parts": {
+    "barrel": {
+      "node": "barrel:barrel",
+      "massKg": 0.85,
+      "centreOfMass": [0.27600000000000013, 0, 3.3800251656466966e-17]
+    },
+    "bolt-carrier": {
+      "node": "bolt-carrier:bolt-carrier",
+      "massKg": 0.35,
+      "centreOfMass": [-0.10710417212839816, -0.0000994325629633827, 0.00013257675061783907]
+    },
+    "bolt-handle-arm": {
+      "node": "bolt-handle-arm:bolt-handle-arm",
+      "massKg": 0.07,
+      "centreOfMass": [-0.17644683721965596, -0.021537348878623814, 0.029090511658967845]
+    },
+    "bolt-handle-knob": {
+      "node": "bolt-handle-knob:bolt-handle-knob",
+      "massKg": 0.025,
+      "centreOfMass": [-0.18152134221635646, -0.04183536886542586, 0.04431402664906938]
+    },
+    "front-sight": {
+      "node": "front-sight:front-sight",
+      "massKg": 0.02,
+      "centreOfMass": [0.52325, 0.0017332386088154059, 6.424201720693521e-17]
+    },
+    "handguard": {
+      "node": "handguard:handguard",
+      "massKg": 0.35,
+      "centreOfMass": [0.010416254577300879, -0.025299784112680135, -0.00034863390937133745]
+    },
+    "lower": {
+      "node": "lower:lower",
+      "massKg": 0.18,
+      "centreOfMass": [-0.10515867724867724, -0.050835171957671954, -1.1203412338072766e-19]
+    },
+    "magazine": {
+      "node": "magazine:magazine",
+      "massKg": 0.12,
+      "centreOfMass": [-0.048875, -0.0273125, -2.1125157285291842e-18]
+    },
+    "rear-sight": {
+      "node": "rear-sight:sporting-rear-sight",
+      "massKg": 0.035,
+      "centreOfMass": [0.07475, 0.017139423076923076, 8.463604681607309e-18]
+    },
+    "receiver": {
+      "node": "receiver:receiver",
+      "massKg": 0.7,
+      "centreOfMass": [-0.0934279850409514, -0.0004790244446958024, -0.0007390509595252855]
+    },
+    "stock": {
+      "node": "stock:stock",
+      "massKg": 0.5,
+      "centreOfMass": [-0.38145369483953023, -0.07291201296911763, -2.3990391876216627e-17]
+    }
+  },
   "grip": { "at": [-0.215625, -0.048875, 0], "turn": [0, 0, 0] },
   "anchors": {
     "support": [0.14145, -0.031929, 0],

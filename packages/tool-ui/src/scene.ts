@@ -3,8 +3,6 @@
 
 import { portFrame } from '@skelly/engine/assembly/resolve.ts';
 import type { Report } from '@skelly/engine/assembly/validate.ts';
-import { resolveAppearance, solidColor, srgbToHex } from '@skelly/engine/export/appearance.ts';
-import type { AppearanceContext, Palette } from '@skelly/engine/export/exportTypes.ts';
 import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import type { Mat3, Transform, Vec3 } from '@skelly/engine/foundation/math.ts';
 import { applyDir, compose } from '@skelly/engine/foundation/math.ts';
@@ -12,6 +10,8 @@ import { type DisplayItem, displayItems } from '@skelly/engine/shapes/display.ts
 import { type Obb, worldBox } from '@skelly/engine/shapes/geometry.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { resolveAppearance, solidColor, srgbToHex } from '@skelly/thing-export/appearance.ts';
+import type { AppearanceContext, Palette } from '@skelly/thing-export/exportTypes.ts';
 import type * as Three from 'three';
 
 const FAIL = 0xe5_53_4b;

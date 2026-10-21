@@ -5,7 +5,6 @@
     "attachment": {
       "id": "optic-lpvo-1-6x",
       "kind": "optic",
-      "massKg": 0.16156919783654183,
       "mount": "rail-top",
       "properties": {
         "reticleKind": "crosshair",

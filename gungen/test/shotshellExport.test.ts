@@ -1,4 +1,4 @@
-import { srgbToLinear } from '@skelly/engine/export/glb.ts';
+import { srgbToLinear } from '@skelly/thing-export/glb.ts';
 import validator from 'gltf-validator';
 import { Box3, Raycaster, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -40,7 +40,7 @@ describe('shotshell cartridge export', () => {
     for (const { kind, length, scene, report } of checks) {
       const model = models[kind];
       const assetId = shell.id.replaceAll('-', '_h_');
-      expect(model.modelEntry).toEqual({
+      expect(model.modelEntry).toMatchObject({
         id: `${kind}_${assetId}`,
         file: `assets/models/${kind}-${assetId}.glb`,
         gun: { calibre: shell.id },

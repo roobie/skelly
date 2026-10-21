@@ -5,7 +5,6 @@
     "attachment": {
       "id": "rail-front-sight",
       "kind": "iron-sight",
-      "massKg": 0.0257431857421875,
       "mount": "rail-top",
       "properties": { "railSpanNotches": { "minOffset": 0, "maxOffset": 0 } },
       "sight": {

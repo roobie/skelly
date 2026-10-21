@@ -6,7 +6,6 @@
       "id": "real-suppressor",
       "kind": "suppressor",
       "mount": "muzzle",
-      "massKg": 0.497976429221834,
       "properties": { "noiseFactor": 0.25, "wearClass": "real" },
       "mountFrame": { "normal": [-1, 0, 0], "up": [0, 1, 0] }
     }

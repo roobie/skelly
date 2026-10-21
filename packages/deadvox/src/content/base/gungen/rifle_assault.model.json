@@ -1,6 +1,53 @@
 {
   "id": "rifle_assault",
   "file": "assets/models/rifle_assault.glb",
+  "parts": {
+    "receiver": {
+      "node": "receiver:receiver",
+      "massKg": 0.9,
+      "centreOfMass": [-0.09836006879322255, 0.0028006505524942075, -0.0005816141076187872]
+    },
+    "charging-handle": {
+      "node": "charging-handle:ar-charging-handle",
+      "massKg": 0.06,
+      "centreOfMass": [-0.15716046672828093, 0.02209073475046211, -0.0011239602587800538]
+    },
+    "bolt-carrier": {
+      "node": "bolt-carrier:bolt-carrier",
+      "massKg": 0.33,
+      "centreOfMass": [-0.07162417347055296, 0.0019156041111343869, -2.0898427739723737e-18]
+    },
+    "lower": {
+      "node": "lower:lower",
+      "massKg": 0.35,
+      "centreOfMass": [-0.10538275556302514, -0.04308425396909006, 1.7554398241411386e-18]
+    },
+    "barrel": {
+      "node": "barrel:barrel",
+      "massKg": 0.95,
+      "centreOfMass": [0.19406249999999994, 1.1416158540019516e-19, 2.7078956367341458e-17]
+    },
+    "handguard": {
+      "node": "handguard:handguard",
+      "massKg": 0.35,
+      "centreOfMass": [0.148594392382104, 0, 1.8197564700198953e-17]
+    },
+    "grip": {
+      "node": "grip:grip",
+      "massKg": 0.1,
+      "centreOfMass": [-0.16434811272068695, -0.09264101403642647, 1.3536269438268472e-17]
+    },
+    "stock": {
+      "node": "stock:stock",
+      "massKg": 0.35,
+      "centreOfMass": [-0.31043670198688395, -0.015454204587902285, -1.5350412499375295e-17]
+    },
+    "front-sight": {
+      "node": "front-sight:front-sight",
+      "massKg": 0.11,
+      "centreOfMass": [0.307625, 0.01804747409669096, 4.0914698053299194e-17]
+    }
+  },
   "grip": { "at": [-0.158906, -0.084252, 0], "turn": [0, 0, 0] },
   "anchors": { "support": [0.177675, -0.01725, 0], "muzzle": [0.414, 0, 0], "ejection": [-0.048875, 0.002875, 0.023] },
   "gun": {
@@ -50,7 +97,6 @@
       {
         "id": "optic-lpvo-1-6x",
         "kind": "optic",
-        "massKg": 0.16156919783654183,
         "mount": "rail-top",
         "properties": {
           "reticleKind": "crosshair",

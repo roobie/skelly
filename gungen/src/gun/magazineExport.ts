@@ -5,7 +5,7 @@ import type {
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
-} from '@skelly/engine/export/exportTypes.ts';
+} from '@skelly/thing-export/exportTypes.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import { gunDomain } from './domain.ts';

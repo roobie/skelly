@@ -707,7 +707,12 @@ describe('rifle firearm handling', () => {
       {
         source: 'no-calibre-fixture.json',
         data: {
-          models: [{ id: 'pistol_full', file: 'assets/models/pistol_full.glb' }],
+          models: [
+            {
+              id: 'pistol_full',
+              file: 'assets/models/pistol_full.glb',
+            },
+          ],
           items: [
             {
               id: 'unannotated_gun',

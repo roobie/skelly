@@ -5,7 +5,6 @@
     "attachment": {
       "id": "optic-high-mag-5-25x",
       "kind": "optic",
-      "massKg": 0.3254916611224242,
       "mount": "rail-top",
       "properties": {
         "reticleKind": "crosshair",

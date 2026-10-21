@@ -1982,18 +1982,41 @@ try {
       globalThis.primaryActionTest.inputRecorder.copyInputs().actions.filter((action) => action.action === 'item.throw')
         .length,
   );
-  const shortStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
-  const shortRelease = await mouseCharge(page);
-  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  const shortGesture = await page.evaluate(() => {
+    const target = document.pointerLockElement;
+    if (!target) {
+      throw new Error('Short throw needs the locked game input target');
+    }
+    const { left, top, width, height } = target.getBoundingClientRect();
+    const init = {
+      button: 0,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      clientX: left + width / 2,
+      clientY: top + height / 2,
+    };
+    // A Node round trip can cross the minimum hold on a slow rendered frame. Deliver the
+    // input-listener press/release pair in one page task, then let simulation consume it.
+    target.dispatchEvent(new MouseEvent('mousedown', { ...init, buttons: 1 }));
+    const pressed = globalThis.primaryActionTest.input.dominantUseDown;
+    target.dispatchEvent(new MouseEvent('mouseup', { ...init, buttons: 0 }));
+    return {
+      start: globalThis.primaryActionTest.session.sim.time,
+      pressed,
+      released: !globalThis.primaryActionTest.input.dominantUseDown,
+    };
+  });
+  assert.equal(shortGesture.pressed, true, 'the short press reached the input owner');
+  assert.equal(shortGesture.released, true, 'the short release reached the input owner');
   await waitForSimulation(
     page,
-    throwChargeSample,
-    { start: shortStart, seconds: throwFixture.minimumHoldSimSeconds / 2 },
+    progressingSample,
+    { start: shortGesture.start },
     {
-      seconds: throwFixture.minimumHoldSimSeconds / 2 + 0.1,
+      seconds: 1,
       label: 'release before minimum hold leaves the item in hand',
       record: (line) => process.stderr.write(`${line}\n`),
-      stop: shortRelease,
     },
   );
   const shortThrowResult = await page.evaluate((uid) => {

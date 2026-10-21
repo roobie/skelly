@@ -183,18 +183,25 @@ const signedArea2D = (points: readonly Vec2[]): number => {
   return areaSum / 2;
 };
 
-export const polyhedronVolume = (polyhedron: ConvexPolyhedron): number => {
+export const polyhedronMeasures = (
+  polyhedron: ConvexPolyhedron,
+): { readonly volume: number; readonly centroid: Vec3 } => {
   let sixVolume = 0;
+  let moment: Vec3 = [0, 0, 0];
   for (const face of polyhedron.faces) {
+    const a = polyhedron.vertices[face[0]!]!;
     for (let i = 1; i < face.length - 1; i++) {
-      sixVolume += dot(
-        polyhedron.vertices[face[0]!]!,
-        cross(polyhedron.vertices[face[i]!]!, polyhedron.vertices[face[i + 1]!]!),
-      );
+      const b = polyhedron.vertices[face[i]!]!;
+      const c = polyhedron.vertices[face[i + 1]!]!;
+      const signed = dot(a, cross(b, c));
+      sixVolume += signed;
+      moment = add(moment, scale(add(add(a, b), c), signed / 4));
     }
   }
-  return Math.abs(sixVolume / 6);
+  return { volume: Math.abs(sixVolume / 6), centroid: sixVolume === 0 ? [0, 0, 0] : scale(moment, 1 / sixVolume) };
 };
+
+export const polyhedronVolume = (polyhedron: ConvexPolyhedron): number => polyhedronMeasures(polyhedron).volume;
 
 interface ClipFaceContext {
   readonly polyhedron: ConvexPolyhedron;

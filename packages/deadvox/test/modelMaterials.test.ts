@@ -8,8 +8,6 @@ const table = {
   fixture: {
     colour: [0.8, 0.4, 0.2] as [number, number, number],
     finish: { metallic: 0.3, roughness: 0.6 },
-    densityKgPerM3: 1000,
-    source: 'fixture',
   },
 };
 
@@ -27,7 +25,10 @@ it('prepares exported material references from shared content without losing the
   const colourMultiplier = [0.5, 1, 0.25];
   material.userData = { materialId, colourMultiplier };
   const scene = new Group().add(new Mesh(new BoxGeometry(), material));
-  prepareModel({ id: 'fixture', file: 'assets/models/fixture.glb' }, scene);
+  prepareModel(
+    { id: 'fixture', file: 'assets/models/fixture.glb', parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } } },
+    scene,
+  );
   const srgbToLinear = (value: number) => (value <= 0.040_45 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
   for (const [index, channel] of material.color.toArray().entries()) {
     expect(channel).toBeCloseTo(srgbToLinear(definition.colour[index]! * colourMultiplier[index]!));

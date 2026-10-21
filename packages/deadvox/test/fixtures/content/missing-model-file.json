@@ -1,5 +1,10 @@
 {
-  "models": [{ "id": "lamp", "file": "assets/models/lamp.glb" }],
+  "models": [
+    {
+      "id": "lamp",
+      "file": "assets/models/lamp.glb"
+    }
+  ],
   "items": [
     {
       "id": "lamp",

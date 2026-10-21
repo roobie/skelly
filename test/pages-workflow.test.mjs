@@ -84,6 +84,23 @@ test('Gungen filters include representative Deadvox and Mobgen import files', ()
   }
 });
 
+test('thing-export has its own typecheck and unit job covering its dependency paths', () => {
+  const workflow = readWorkflow('thing-export.yml');
+  const commands = commandLinesIn(workflow.jobs.check.steps);
+  assert.ok(commands.includes('npm run typecheck'));
+  assert.ok(commands.includes('npm test'));
+  for (const event of ['push', 'pull_request']) {
+    for (const file of [
+      'packages/thing-export/src/physical.ts',
+      'packages/engine/src/shapes/solid.ts',
+      'packages/thing-core/src/schema.ts',
+      'package-lock.json',
+    ]) {
+      assert.ok(workflowIncludesPath(workflow, event, file), `${event} includes ${file}`);
+    }
+  }
+});
+
 test('Pages assembly puts project builds beside the Round 1 page', () => {
   const assembly = pages.jobs.build.steps.find((step) => step.name === 'Assemble the site');
   assert.ok(assembly?.run, 'Pages workflow has an assembly command');

@@ -11,7 +11,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
     {
       id: 'rifle_hunting', name: 'Hunting rifle', category: 'weapon',
       description: '.308 Winchester bolt-action rifle with an internal magazine.',
-      model: 'rifle_hunting', size: [2, 11], twoHanded: true, weight: 3200,
+      model: 'rifle_hunting', size: [2, 11], twoHanded: true,
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
         recoilKickRadians: 0.025, dispersionRadians: 0.006,
@@ -43,8 +43,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "model": "shotgun_pump",
       "name": "Pump shotgun",
       "size": [2, 10],
-      "twoHanded": true,
-      "weight": 3000
+      "twoHanded": true
     },
     {
       "category": "weapon",
@@ -53,8 +52,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
       "size": [2, 10],
-      "twoHanded": true,
-      "weight": 3000
+      "twoHanded": true
     },
     {
       "category": "weapon",
@@ -74,8 +72,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "model": "rifle_assault",
       "name": "AR-pattern rifle",
       "size": [2, 9],
-      "twoHanded": true,
-      "weight": 3500
+      "twoHanded": true
     },
     {
       "category": "weapon",
@@ -94,8 +91,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "model": "rifle_ak",
       "name": "AK-pattern rifle",
       "size": [2, 9],
-      "twoHanded": true,
-      "weight": 3500
+      "twoHanded": true
     }
   ],
   // Imports keep the export writer from overwriting authored handling constructors.
@@ -114,20 +110,12 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
     },
     (import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } },
     (import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } },
-    { gun: { calibre: '7.62x39' }, file: 'assets/models/round-7_d_62x39.glb', id: 'round_7_d_62x39' },
-    { gun: { calibre: '7.62x39' }, file: 'assets/models/case-7_d_62x39.glb', id: 'case_7_d_62x39' },
-    { gun: { calibre: '5.56x45' }, file: 'assets/models/round-5_d_56x45.glb', id: 'round_5_d_56x45' },
-    { gun: { calibre: '5.56x45' }, file: 'assets/models/case-5_d_56x45.glb', id: 'case_5_d_56x45' },
-    {
-      gun: { calibre: '12-gauge-00-buck' },
-      "file": "assets/models/round-12_h_gauge_h_00_h_buck.glb",
-      "id": "round_12_h_gauge_h_00_h_buck"
-    },
-    {
-      gun: { calibre: '12-gauge-00-buck' },
-      "file": "assets/models/case-12_h_gauge_h_00_h_buck.glb",
-      "id": "case_12_h_gauge_h_00_h_buck"
-    },
+    import 'gungen/round_7_d_62x39.model.json',
+    import 'gungen/case_7_d_62x39.model.json',
+    import 'gungen/round_5_d_56x45.model.json',
+    import 'gungen/case_5_d_56x45.model.json',
+    import 'gungen/round_12_h_gauge_h_00_h_buck.model.json',
+    import 'gungen/case_12_h_gauge_h_00_h_buck.model.json',
     import 'gungen/revolver.model.json',
     import 'gungen/round_357_h_magnum.model.json',
     import 'gungen/case_357_h_magnum.model.json',

@@ -26,7 +26,12 @@ const { registry } = buildRegistry([
   {
     source: 'fixture.json',
     data: {
-      models: [{ id: 'flashlight_model', file: 'assets/models/flashlight_model.glb' }],
+      models: [
+        {
+          id: 'flashlight_model',
+          file: 'assets/models/flashlight_model.glb',
+        },
+      ],
       items: [
         {
           id: 'flashlight',

@@ -31,11 +31,10 @@ Both tools depend on the core and the export package, and never on each other.
 
 ## Why
 
-`gungen/` bundles general modeling (geometry, revolve, mesh, assembly, appearance, GLB
-export, validation) with gun rules, so a thing that is not a gun has nowhere to be
-authored and ends up as an unreproducible binary or a fallback box. Separating the general
-part into a core lets every thing have a source that can be regenerated, and keeps gun
-rules out of the tools that do not need them.
+Every kind of thing needs a reproducible authoring source rather than only a committed
+binary or a fallback box. Shared mechanisms let the tools use one model contract while
+gun rules stay out of tools that do not need them. Separate authoring tools keep that
+domain ownership explicit.
 
 The end state is that `gungen/` is deleted and deadvox's models all come from these tools.
 Removal waits on the gun-authoring tool reproducing every gungen export; `things/WORK.md` tracks the steps.
@@ -46,9 +45,9 @@ Removal waits on the gun-authoring tool reproducing every gungen export; `things
   fields) lives in the gun tool, never in the core.
 - The core stays free of rendering libraries so either tool, and tests, can use it headless.
 - An atom, an item not made up of other items, has an authored mass. An assembly's mass is
-  the sum of its parts' masses. Deriving mass from shape volume and material density gave
-  implausible weights: not every part is one material, and real shapes are more complex than
-  the authored solids. Summing still gives any assembly a total and a centre of mass, so
+  the sum of its parts' masses. Shape volume and material density are unreliable mass
+  sources: not every part is one material, and real shapes are more complex than the
+  authored solids. Summing still gives any assembly a total and a centre of mass, so
   removing or swapping a part is a subtraction.
 - The tools are authoring tools, not generators: each exports a closed set of items, so
   every atom it draws has a mass someone authored. The gun tool's parts (barrels, receivers

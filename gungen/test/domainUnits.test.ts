@@ -1,10 +1,10 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
-import type { GlbAssetIdentity, Palette } from '@skelly/engine/export/exportTypes.ts';
-import { exportGlb } from '@skelly/engine/export/glb.ts';
 import { boxFromMinMax } from '@skelly/engine/shapes/geometry.ts';
 import type { DomainUnits } from '@skelly/engine/shapes/solid.ts';
+import type { GlbAssetIdentity, Palette } from '@skelly/thing-export/exportTypes.ts';
+import { exportGlb } from '@skelly/thing-export/glb.ts';
 import { describe, expect, it } from 'vitest';
 import { readGlb } from './glbReader.ts';
 

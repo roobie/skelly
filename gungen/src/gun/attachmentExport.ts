@@ -1,6 +1,6 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, PartAppearance, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import type { GlbAssetIdentity, GlbExportError } from '@skelly/engine/export/exportTypes.ts';
+import type { GlbAssetIdentity, GlbExportError } from '@skelly/thing-export/exportTypes.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { attachmentInstanceForId, attachmentMetadata } from './attachments.ts';
 import { gunDomain } from './domain.ts';

@@ -5,7 +5,6 @@
     "attachment": {
       "id": "optic-digital-thermal",
       "kind": "optic",
-      "massKg": 0.3376618423714778,
       "mount": "rail-top",
       "properties": {
         "reticleKind": "crosshair",

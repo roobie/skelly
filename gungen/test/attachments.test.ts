@@ -5,16 +5,15 @@ import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import { keepOutBetweenParts, solidOverlapBetweenParts } from '@skelly/engine/assembly/rules.ts';
 import type { Assembly, Domain, PartDef, PartFamily, PortDef } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
-import { partNodeName } from '@skelly/engine/export/glb.ts';
 import { applyPoint } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import { partNodeName } from '@skelly/thing-export/glb.ts';
 import validator from 'gltf-validator';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { buildRegistry } from '../../packages/deadvox/src/core/content.ts';
 import { AK_MAGAZINE_CALIBRE_BY_VARIANT, AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
 import { attachmentCompatibility, attachmentCompatibilityPairs } from '../src/gun/attachmentCompatibility.ts';
 import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';
-import { attachmentMassKg } from '../src/gun/attachmentMass.ts';
 import {
   ATTACHMENT_IDS,
   type AttachmentMetadata,
@@ -435,26 +434,6 @@ describe('attachment parts and export metadata', () => {
     const improvised = extent('improvised-suppressor');
     expect(improvised.length).toBeGreaterThan(real.length);
     expect(improvised.radius).toBeGreaterThan(real.radius);
-    const suppressorMass = (id: string) => {
-      const { familyName, params, part } = attachmentBuild(id);
-      return attachmentMetadata(familyName, params, gunDomain.units.metresPerUnit, part)!.massKg;
-    };
-    expect(suppressorMass('improvised-suppressor')).toBeGreaterThan(suppressorMass('real-suppressor'));
-  });
-
-  it('uses material density as a mass relation for identical geometry', () => {
-    const { part } = attachmentBuild('foregrip');
-    const aluminium = attachmentMassKg(
-      'foregrip',
-      { ...part, material: 'alu-anodized-black' },
-      gunDomain.units.metresPerUnit,
-    );
-    const steel = attachmentMassKg(
-      'foregrip',
-      { ...part, material: 'steel-parkerized' },
-      gunDomain.units.metresPerUnit,
-    );
-    expect(steel).toBeGreaterThan(aluminium);
   });
 
   it('exports each attachment as standalone glTF and metadata deadvox accepts', async () => {
@@ -535,9 +514,14 @@ describe('attachment parts and export metadata', () => {
       }
     });
 
-    it('matches fitted optic mass to the standalone attachment export', () => {
+    it('keeps replaceable atom mass out of the host and standalone model entries', () => {
       const fittedOptic = defaultModsModel.modelEntry.gun.attachments?.find(({ id }) => id === 'optic-lpvo-1-6x');
-      expect(fittedOptic?.massKg).toBeDefined();
+      if (!fittedOptic) {
+        throw new Error('No fitted optic in the fixture');
+      }
+      expect(Object.values(defaultModsModel.modelEntry.parts).some((part) => part.node === fittedOptic.node)).toBe(
+        false,
+      );
       const standalone = exportAttachmentGlb('optic-lpvo-1-6x', {
         id: 'optic_lpvo_mass_comparison',
         file: 'assets/models/optic_lpvo_mass_comparison.glb',
@@ -545,7 +529,7 @@ describe('attachment parts and export metadata', () => {
       if (!standalone.ok) {
         throw new Error(JSON.stringify(standalone.error));
       }
-      expect(fittedOptic?.massKg).toBe(standalone.modelEntry.gun.attachment?.massKg);
+      expect(standalone.modelEntry.parts).toBeUndefined();
     });
   });
 

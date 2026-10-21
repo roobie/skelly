@@ -1,6 +1,48 @@
 {
   "id": "revolver",
   "file": "assets/models/revolver.glb",
+  "parts": {
+    "barrel": {
+      "node": "barrel:revolver-barrel",
+      "massKg": 0.22,
+      "centreOfMass": [0.0627887854548451, -0.004454023488100743, 4.2567846124195674e-17]
+    },
+    "crane": {
+      "node": "crane:revolver-crane",
+      "massKg": 0.07,
+      "centreOfMass": [-0.0012609649122807018, -0.033390350877192984, 3.718521837937336e-18]
+    },
+    "cylinder": {
+      "node": "cylinder:revolver-cylinder",
+      "massKg": 0.28,
+      "centreOfMass": [-0.031625, -0.014374999999999999, -1.5046719395719482e-20]
+    },
+    "ejector": {
+      "node": "ejector:revolver-ejector",
+      "massKg": 0.025,
+      "centreOfMass": [0.020631865117255968, -0.014375000000000002, 2.0408715008988548e-17]
+    },
+    "frame": {
+      "node": "frame:revolver-frame",
+      "massKg": 0.4,
+      "centreOfMass": [-0.06092107848335089, -0.03410860671976444, 0]
+    },
+    "grip": {
+      "node": "grip:revolver-grip",
+      "massKg": 0.08,
+      "centreOfMass": [-0.1210026623242349, -0.09855019644334162, 4.675113213115973e-18]
+    },
+    "hammer": {
+      "node": "hammer:revolver-hammer",
+      "massKg": 0.03,
+      "centreOfMass": [-0.08187094907407406, -0.006987847222222222, -1.0026299572672076e-17]
+    },
+    "trigger": {
+      "node": "trigger:revolver-trigger",
+      "massKg": 0.025,
+      "centreOfMass": [-0.04164583333333333, -0.06660416666666666, -5.100143648949081e-18]
+    }
+  },
   "grip": { "at": [-0.12075, -0.094875, 0], "turn": [0, 0, 0] },
   "anchors": { "muzzle": [0.12075, 0, 0] },
   "gun": {

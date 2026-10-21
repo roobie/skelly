@@ -1,6 +1,6 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import { exportGlb } from '@skelly/engine/export/glb.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { exportGlb } from '@skelly/thing-export/glb.ts';
 import type { Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
 import { GUN_PALETTE } from '../src/gun/palette.ts';

@@ -35,7 +35,6 @@ import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
-import appearance from './appearance.json' with { type: 'json' };
 import { AR_HANDLE_CHANNEL, arChargingHandle } from './arChargingHandle.ts';
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
@@ -52,6 +51,7 @@ import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './eject
 import { METRES_PER_UNIT } from './exportFrame.ts';
 import type { MuzzleBore } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
+import physical from './physical.json' with { type: 'json' };
 import { gunPort } from './portData.ts';
 import {
   PUMP_ACTION_TRAVEL_U,
@@ -3627,7 +3627,7 @@ const tubeMagazine: PartFamily = {
         ? [
             {
               ...octagonalPrism('cap-lug', PUMP_TUBE_CAP_HALF_EXTENT, [length - PUMP_TUBE_CAP_LENGTH, length]),
-              material: appearance.solidMaterials.magazineMetal,
+              material: physical.solidMaterials.magazineMetal,
               slot: 'metal',
             },
           ]
@@ -4249,7 +4249,7 @@ const magazineGeometryFor = (
         ],
         [-shape.width / 2, shape.width / 2],
       ),
-      material: appearance.solidMaterials.magazineMetal,
+      material: physical.solidMaterials.magazineMetal,
       slot: 'accent' as const,
     };
     return { collision: [sharedTop, body, floorplate], display: [sharedTop, body, floorplate] };
@@ -4335,7 +4335,7 @@ export const magazine: PartFamily = {
               [-depth / 2, resolvedInsertion - len, -width / 2 - 0.25],
               [depth / 2 + 0.25, resolvedInsertion - len + 0.25, width / 2 + 0.25],
             ),
-            material: appearance.solidMaterials.magazineMetal,
+            material: physical.solidMaterials.magazineMetal,
             slot: 'accent',
           },
         ]

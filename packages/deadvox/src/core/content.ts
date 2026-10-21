@@ -666,6 +666,24 @@ const checkWearableModels = (item: ItemDef, registry: Registry, report: Report):
   }
 };
 
+const checkItemMass = (item: ItemDef, registry: Registry, report: Report): void => {
+  const model = item.model === undefined ? undefined : registry.models.get(item.model);
+  if (item.model !== undefined && model === undefined) {
+    return;
+  }
+  const hasParts = model?.parts !== undefined;
+  if (hasParts === (item.weight !== undefined)) {
+    report(
+      'items',
+      item.id,
+      '.weight',
+      hasParts
+        ? 'an assembly sums its model parts and cannot author an item weight'
+        : 'an atom needs an authored item weight',
+    );
+  }
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
   checkInventoryNameCollisions(items, report);
@@ -681,6 +699,7 @@ const checkItems = (registry: Registry, report: Report) => {
         report('items', item.id, '.container.pockets', issue);
       }
     }
+    checkItemMass(item, registry, report);
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
     checkItemFirearm(item, registry, report);

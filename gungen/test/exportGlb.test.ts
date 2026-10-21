@@ -2,8 +2,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly } from '@skelly/engine/assembly/schema.ts';
-import type { GlbAssetIdentity, Palette } from '@skelly/engine/export/exportTypes.ts';
-import { exportGlb, partNodeName, srgbToLinear } from '@skelly/engine/export/glb.ts';
 import {
   applyPoint,
   IDENTITY,
@@ -19,6 +17,8 @@ import {
 import { displayItems as selectDisplayItems } from '@skelly/engine/shapes/display.ts';
 import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import { meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
+import type { GlbAssetIdentity, Palette } from '@skelly/thing-export/exportTypes.ts';
+import { exportGlb, partNodeName, srgbToLinear } from '@skelly/thing-export/glb.ts';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
@@ -796,8 +796,12 @@ describe('glb export: deadvox model entry', () => {
         hold: { position: base.hold.position, forward: [c, s, 0], up: [-s, c, 0] },
         others: base.others,
       };
-      return createGunModelEntry({ asset: ASSET, anchors, metresPerUnit: resolved.domain.units.metresPerUnit }).grip
-        .turn;
+      return createGunModelEntry({
+        asset: ASSET,
+        parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } },
+        anchors,
+        metresPerUnit: resolved.domain.units.metresPerUnit,
+      }).grip.turn;
     };
     expect(turnFor(0)).toEqual(turnFor(18));
     expect(turnFor(-25)).toEqual(turnFor(18));

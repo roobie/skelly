@@ -1,13 +1,17 @@
 ---
 read_if:
-  - you tune attachment mass from published product comparisons
-  - you decide when attachment mass figures can become pinned assertions
+  - you tune authored item or gun-part masses
+  - you decide whether a mass assertion would freeze gameplay content
   - you review geometry snapshots or exact seeded outputs in generator tests
 ---
 
 # Deferred assertions
 
-Attachment masses are class estimates, not fixed product replicas. Keep exact outputs unpinned until BR approves the material-density and fill assumptions; otherwise a geometry choice would be presented as a measured product weight. Recompute with `src/gun/attachmentMass.ts`, `attachmentMassKg`, and compare against its cited specifications.
+Item and part masses are authored gameplay content, not geometry-derived product
+specifications. Exact outputs stay unpinned so tuning does not freeze the closed item set.
+Inspect the table in `src/gun/physical.jsonnet`, `partMasses`, and re-export through
+`src/gun/physical.ts`, `gunModelParts`. Tests protect authoritative item weight and part
+summation with their own fixtures instead of pinning production totals.
 
 The exported flashlight is only a mount, so it cannot be compared with a complete weapon light until a flashlight-body export exists. This is a boundary on the comparison, not a reason to infer the missing mass.
 

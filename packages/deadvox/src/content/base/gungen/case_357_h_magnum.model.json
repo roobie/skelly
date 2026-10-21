@@ -1,7 +1,1 @@
-{
-  "id": "case_357_h_magnum",
-  "file": "assets/models/case-357_h_magnum.glb",
-  "gun": {
-    "calibre": "357-magnum"
-  }
-}
+{ "id": "case_357_h_magnum", "file": "assets/models/case-357_h_magnum.glb", "gun": { "calibre": "357-magnum" } }

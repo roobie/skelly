@@ -5,7 +5,6 @@
     "attachment": {
       "id": "optic-hunting-3-9x",
       "kind": "optic",
-      "massKg": 0.17393058603090866,
       "mount": "rail-top",
       "properties": {
         "reticleKind": "crosshair",

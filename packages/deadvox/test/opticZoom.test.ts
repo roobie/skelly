@@ -24,7 +24,6 @@ const fixture = (rememberPerWeapon = true, fixed = false) => {
       attachment: {
         id: 'fixture_optic',
         kind: 'optic',
-        massKg: 1,
         mount: 'rail-top',
         mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
         properties: { magnification: range },

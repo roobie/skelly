@@ -1,7 +1,7 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import type { AppearanceContext, GlbAssetIdentity, GlbExportError } from '@skelly/engine/export/exportTypes.ts';
 import type { RevolvedSolid, Solid } from '@skelly/engine/shapes/solid.ts';
+import type { AppearanceContext, GlbAssetIdentity, GlbExportError } from '@skelly/thing-export/exportTypes.ts';
 import { cartridgeModelAsset } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { type RoundProfiles, roundProfiles } from '../ammo/roundProfile.ts';

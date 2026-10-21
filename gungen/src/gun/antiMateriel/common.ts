@@ -7,7 +7,7 @@ import { SIZE_CLASSES, type SizeClass } from '@skelly/engine/foundation/conventi
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import { boxFromMinMax } from '@skelly/engine/shapes/geometry.ts';
 import type { BoxSolid, Solid, SolidDisplayHints, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
-import appearance from '../appearance.json' with { type: 'json' };
+import physical from '../physical.json' with { type: 'json' };
 
 export const X: Vec3 = [1, 0, 0];
 export const NEG_X: Vec3 = [-1, 0, 0];
@@ -49,4 +49,4 @@ export const octagonPrism = (id: string, flatRadius: number, along: readonly [nu
 };
 
 /** Solid black rubber, shared by recoil pads and the dark perforation panels. */
-export const RUBBER: SolidFinish = appearance.solidFinishes.rubber;
+export const RUBBER: SolidFinish = physical.solidFinishes.rubber;

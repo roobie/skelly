@@ -1,15 +1,15 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import type { ModelParts, NeutralModel } from '@skelly/thing-core/schema';
 import type {
   AppearanceContext,
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
-} from '@skelly/engine/export/exportTypes.ts';
-import { partNodeName } from '@skelly/engine/export/glb.ts';
-import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
-import type { NeutralModel } from '@skelly/thing-core/schema';
+} from '@skelly/thing-export/exportTypes.ts';
+import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { resolveGunAction } from './actionDescription.ts';
@@ -36,6 +36,7 @@ import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { internalMagazineCapacity } from './internalMagazine.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
+import { gunModelParts, PartMassError } from './physical.ts';
 import { type RevolverMetadata, revolverMetadata } from './revolverExport.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
@@ -114,6 +115,7 @@ export interface GunModelFields {
 }
 
 export interface GunDeadvoxModelEntry extends DeadvoxModelEntry {
+  readonly parts: ModelParts;
   readonly grip: { readonly at: Vec3; readonly turn: Vec3 };
 }
 
@@ -137,7 +139,10 @@ export type GunAssetIdentity = GlbAssetIdentity;
 
 export type GunExportResult =
   | { readonly ok: true; readonly glb: Uint8Array; readonly modelEntry: GunDeadvoxModelEntry }
-  | { readonly ok: false; readonly error: GlbExportError | AnchorSelectionError };
+  | {
+      readonly ok: false;
+      readonly error: GlbExportError | AnchorSelectionError | { readonly code: 'part-mass'; readonly message: string };
+    };
 
 const round6 = (value: number): number => {
   const rounded = Math.round(value * 1e6) / 1e6;
@@ -371,12 +376,14 @@ const sightMetadata = (resolved: Resolved): GunModelFields['sight'] => {
 
 export const createGunModelEntry = ({
   asset,
+  parts,
   anchors,
   metresPerUnit,
   options = {},
   sight,
 }: {
   asset: GunAssetIdentity;
+  parts: ModelParts;
   anchors: SelectedAnchors;
   metresPerUnit: number;
   options?: GunModelEntryOptions;
@@ -393,6 +400,7 @@ export const createGunModelEntry = ({
   return {
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
+    parts,
     grip: { at: modelPoint(anchors.hold.position, metresPerUnit), turn: gripTurn() },
     ...(others.length > 0 || handling
       ? {
@@ -423,6 +431,31 @@ const integralCapacity = (resolved: Resolved, cartridge: Cartridge | undefined):
 
 const boltMetadataIssue = (assembly: Assembly, cartridge: Cartridge | undefined): string | undefined =>
   cartridge && isBoltAssembly(assembly) ? boltCalibreIssue(cartridge.id) : undefined;
+
+const bodyPhysicalData = (
+  resolved: Resolved,
+  fitted: readonly { readonly node: string }[],
+  magazine: { readonly node: string } | undefined,
+) => {
+  const replaceableNodes = new Set([...fitted.map(({ node }) => node), ...(magazine ? [magazine.node] : [])]);
+  try {
+    return { ok: true as const, parts: gunModelParts(resolved, replaceableNodes) };
+  } catch (error) {
+    if (!(error instanceof PartMassError)) {
+      throw error;
+    }
+    return { ok: false as const, error: { code: 'part-mass' as const, message: error.message } };
+  }
+};
+
+const attachmentCertificates = (
+  assembly: Assembly,
+  slots: readonly AttachmentSlotMetadata[],
+  excluded: readonly string[],
+) => {
+  const compatibility = attachmentCompatibility(assembly, slots, gunDomain, excluded);
+  return { compatibility, compatibilityPairs: attachmentCompatibilityPairs(assembly, slots, compatibility) };
+};
 
 /**
  * Exports a gun assembly: core writes the GLB, then this adapter selects gun anchors and builds the Deadvox entry.
@@ -462,8 +495,15 @@ export const exportGunGlb = (
   const {
     units: { metresPerUnit },
   } = resolved.domain;
+  const fittedAttachments = attachmentData(resolved);
+  const magazine = magazineSlotData(resolved);
+  const physical = bodyPhysicalData(resolved, fittedAttachments, magazine);
+  if (!physical.ok) {
+    return physical;
+  }
   const modelEntry = createGunModelEntry({
     asset,
+    parts: physical.parts,
     anchors,
     metresPerUnit,
     options: {
@@ -479,15 +519,10 @@ export const exportGunGlb = (
     direction: normalize(toFileAxes(direction)),
     up: normalize(toFileAxes(up)),
   }));
-  const magazine = magazineSlotData(resolved);
   const revolver = revolverMetadata(resolved, metadata.cartridge);
-  const compatibility = includeAttachmentCompatibility
-    ? attachmentCompatibility(assembly, attachmentSlotsData, gunDomain, excludedAttachments)
-    : undefined;
-  const compatibilityPairs =
-    compatibility === undefined
-      ? undefined
-      : attachmentCompatibilityPairs(assembly, attachmentSlotsData, compatibility);
+  const certificates = includeAttachmentCompatibility
+    ? attachmentCertificates(assembly, attachmentSlotsData, excludedAttachments)
+    : {};
   return {
     ...result,
     modelEntry: {
@@ -495,11 +530,9 @@ export const exportGunGlb = (
       gun: {
         ...modelEntry.gun,
         ...(revolver ? { revolver } : {}),
-        attachments: attachmentData(resolved),
+        attachments: fittedAttachments,
         attachmentSlots: attachmentSlotsData,
-        ...(compatibility === undefined || compatibilityPairs === undefined
-          ? {}
-          : { compatibility, compatibilityPairs }),
+        ...certificates,
         ...(magazine ? { slots: { magazine } } : {}),
       },
     },

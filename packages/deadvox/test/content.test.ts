@@ -689,7 +689,6 @@ describe('content', () => {
           gun: {
             attachment: {
               id: 'fixture-suppressor',
-              massKg: 0.4,
               kind: 'suppressor',
               mount: 'muzzle',
               mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
@@ -1716,7 +1715,12 @@ describe('content references', () => {
               light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, emissive: 1 },
             },
           ],
-          models: [{ id: 'glowstick', file: 'assets/models/glowstick.glb' }],
+          models: [
+            {
+              id: 'glowstick',
+              file: 'assets/models/glowstick.glb',
+            },
+          ],
         },
       },
     ]);
@@ -1866,7 +1870,6 @@ describe('content references', () => {
               economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Fixture rifle',
               category: 'weapon',
-              weight: 1,
               size: [1, 1],
               firearm,
               model: item,
