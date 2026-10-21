@@ -1,6 +1,7 @@
 // The mood pass: bloom, colour grade, vignette and film grain on top of the scene, plus the
 // height-fog mist. With `post` off, direct display shading is preserved and a smaller scene
-// viewport can be copied and presented full-size without enabling any mood effects.
+// viewport can be copied and presented full-size without enabling any mood effects. A night-vision
+// view or an optic lens still draws through the chain, because the player's view needs it.
 //
 // Pipeline (post on), all in an MSAA half-float linear target until the last step:
 //   RenderPass (scene) -> hands -> bloom -> output (tone mapping + sRGB + grade/film) -> screen
@@ -135,6 +136,11 @@ export class Mood {
     return this.state.post;
   }
 
+  /** Whether the frame draws through the post chain without an optic lens. */
+  private get chain(): boolean {
+    return this.state.post || this.nightVision !== undefined;
+  }
+
   get bloom(): boolean {
     return this.state.bloom;
   }
@@ -229,7 +235,7 @@ export class Mood {
 
   /**
    * The view through worn night-vision goggles that are on and charged, or none; cheap enough to call every frame.
-   * It shows only with post on, as the drug vignette does.
+   * While set, the frame draws through the post chain even with `post` off.
    */
   setNightVision(view: NightVision | undefined): void {
     if (view !== this.nightVision) {
@@ -310,7 +316,7 @@ export class Mood {
     const { background } = this.scene;
     if (this.crackOn) {
       this.crackColor.setRGB(1, 0, 1);
-      if (this.state.post) {
+      if (this.chain) {
         this.crackColor.multiplyScalar(targetColorScale(this.renderer.toneMappingExposure));
       }
       this.scene.background = this.crackColor;
@@ -346,7 +352,7 @@ export class Mood {
   }
 
   private draw(drawHands: () => void, opticFrame?: OpticLensFrame): void {
-    if (!(this.state.post || opticFrame)) {
+    if (!(this.chain || opticFrame)) {
       const { renderer } = this;
       const chosen = renderer.toneMapping;
       renderer.toneMapping = screenToneMapping(chosen);
@@ -437,7 +443,7 @@ export class Mood {
         renderer.setRenderTarget(previous);
       }
     };
-    if (!this.state.post) {
+    if (!this.chain) {
       // Compile for the curve `draw` will actually use under `auto`, not the custom one.
       const chosen = renderer.toneMapping;
       renderer.toneMapping = screenToneMapping(chosen);

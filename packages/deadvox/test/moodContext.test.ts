@@ -1,10 +1,15 @@
 import { NeutralToneMapping, PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { expect, it, vi } from 'vitest';
 import graphics from '../src/content/base/graphics.json' with { type: 'json' };
+import { realSeconds } from '../src/core/time.ts';
 import { Mood } from '../src/render/mood.ts';
 
 const owner = vi.hoisted(() => ({
-  composers: [] as { dispose: ReturnType<typeof vi.fn>; setPixelRatio: ReturnType<typeof vi.fn> }[],
+  composers: [] as {
+    dispose: ReturnType<typeof vi.fn>;
+    setPixelRatio: ReturnType<typeof vi.fn>;
+    render: ReturnType<typeof vi.fn>;
+  }[],
 }));
 vi.mock('three/addons/postprocessing/EffectComposer.js', () => {
   class EffectComposer {
@@ -24,6 +29,33 @@ vi.mock('three/addons/postprocessing/EffectComposer.js', () => {
     // biome-ignore lint/style/useNamingConvention: the mock must match the three.js class export.
     EffectComposer,
   };
+});
+
+it("draws the goggles' night-vision view through the post chain while the look's post is off", () => {
+  const renderer = {
+    domElement: new EventTarget(),
+    getPixelRatio: () => 1,
+    toneMapping: NeutralToneMapping,
+    toneMappingExposure: 1,
+    render: vi.fn(),
+  } as unknown as WebGLRenderer;
+  const mood = new Mood(renderer, new Scene(), new PerspectiveCamera(), graphics.graphics[0]!);
+  mood.externalGpuTiming = true;
+  mood.setNightVision({
+    gain: 2,
+    tint: '#00ff00',
+    grain: 0,
+    edge: { darkening: 1, inner: 0.2, outer: 0.4 },
+    flare: { strength: 1, distanceMetres: 1, blastIntensity: 1, recoverRealSeconds: realSeconds(1), haloRadius: 0.1 },
+  });
+  const composersBefore = owner.composers.length;
+
+  mood.render(() => undefined);
+
+  expect(mood.post).toBe(false);
+  expect(owner.composers.length).toBe(composersBefore + 1);
+  expect(owner.composers.at(-1)!.render).toHaveBeenCalled();
+  expect(renderer.render).not.toHaveBeenCalled();
 });
 
 it('abandons lost-context post targets without deleting dead handles and rebuilds them for rendering', () => {

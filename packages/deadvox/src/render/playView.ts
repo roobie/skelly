@@ -305,7 +305,7 @@ export const createPlayView = (
   let flareShown = 0;
   /** After the pool has its lights for this frame; nothing is computed while the view isn't shown. */
   const updateFlare = (dt: number): void => {
-    if (!(mood?.post && nightVision)) {
+    if (!(mood && nightVision)) {
       flareShown = 0;
       mood?.setNightVisionFlare(NO_FLARE);
       return;
