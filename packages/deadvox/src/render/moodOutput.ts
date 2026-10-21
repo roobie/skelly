@@ -13,6 +13,11 @@ uniform vec3 uHighlightTint;
 uniform float uVignette;
 uniform float uGrain;
 uniform float uSeed;
+uniform float uNightVision;
+uniform float uNightGain;
+uniform vec3 uNightTint;
+uniform float uNightGrain;
+uniform vec3 uNightEdge;
 
 float moodHash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -54,6 +59,14 @@ vec4 moodDrugSample() {
   sum += texture2D(tDiffuse, vUv - vec2(r, -r) * 0.7071);
   return sum / 10.0;
 }
+
+// Night vision in display space: the picture's brightness in the tint, with grain, darkened outside the goggles'
+// narrowed field of view (x darkening, from y to z).
+vec3 moodNightVision(vec3 color) {
+  float l = dot(clamp(color, 0.0, 1.0), vec3(0.2126, 0.7152, 0.0722));
+  vec3 c = uNightTint * l + (moodHash(gl_FragCoord.xy + uSeed) - 0.5) * uNightGrain;
+  return c * (1.0 - uNightEdge.x * smoothstep(uNightEdge.y, uNightEdge.z, length(vUv - 0.5)));
+}
 `;
 
 /** Grade in display space, without storing and re-reading a display-space frame. */
@@ -69,6 +82,11 @@ export function createMoodOutputPass(): OutputPass {
     uVignette: { value: 0 },
     uGrain: { value: 0 },
     uSeed: { value: 0 },
+    uNightVision: { value: 0 },
+    uNightGain: { value: 1 },
+    uNightTint: { value: [0, 0, 0] },
+    uNightGrain: { value: 0 },
+    uNightEdge: { value: [0, 0, 1] },
   });
   const shader = output.material.fragmentShader;
   const main = shader.indexOf('void main()');
@@ -77,12 +95,17 @@ export function createMoodOutputPass(): OutputPass {
   if (main < 0 || end <= main || sample < 0) {
     throw new Error('OutputPass shader no longer has the mood integration point');
   }
-  const body = `${shader.slice(main, sample)}gl_FragColor = moodDrugSample();${shader.slice(sample + SAMPLE.length, end)}`;
-  // OutputPass owns tone mapping and the transfer function; grade must follow both. The drug vignette sits outside
-  // the grade's gate so it shows with film and grade off.
+  // Night vision's gain amplifies linear light, so tone mapping still rolls bright sources off.
+  const body = `${shader.slice(main, sample)}gl_FragColor = moodDrugSample();
+  gl_FragColor.rgb *= uNightGain;${shader.slice(sample + SAMPLE.length, end)}`;
+  // OutputPass owns tone mapping and the transfer function; grade must follow both. Night vision and the drug
+  // vignette sit outside the grade's gate so they show with film and grade off.
   output.material.fragmentShader = `${shader.slice(0, main)}${GRADE_DECLARATIONS}${body}
   if (uGradeEnabled > 0.5) {
     gl_FragColor = vec4(moodGrade(gl_FragColor.rgb), 1.0);
+  }
+  if (uNightVision > 0.5) {
+    gl_FragColor = vec4(moodNightVision(gl_FragColor.rgb), 1.0);
   }
   gl_FragColor.rgb *= 1.0 - uDrugVignette * ${DRUG_DARKEN.toFixed(6)} * moodEdge();
 }`;

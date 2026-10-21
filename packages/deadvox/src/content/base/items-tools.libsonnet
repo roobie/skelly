@@ -198,6 +198,35 @@ local items = [
     ) + { wornSwitch: true },
   },
   {
+    id: 'night_vision_goggles',
+    name: 'Night-vision goggles',
+    category: 'light',
+    weight: 550,
+    size: [2, 2],
+    description: 'Battery-powered night-vision goggles with an infrared lamp.',
+    model: 'night_vision_goggles',
+    wearable: {
+      slot: 'eyes',
+      encumbrance: 0,
+      figureModel: { model: 'night_vision_goggles', at: [0, 0, 0], turn: [0, 180, 0] },
+    },
+    // The light stands in for the infrared lamp: wide, dim and seen only from close up.
+    light: {
+      radius: 14,
+      seenFrom: 8,
+      color: '#7dff86',
+      intensity: 0.8,
+      power: { battery: 'aa_battery', chargePerGameHour: 0.15, swapSimSeconds: 2 },
+      wornSwitch: true,
+      nightVision: {
+        gain: 6,
+        tint: '#8cff8f',
+        grain: 0.08,
+        edge: { darkening: 0.92, inner: 0.28, outer: 0.5 },
+      },
+    },
+  },
+  {
     id: 'torch',
     name: 'Torch',
     category: 'light',

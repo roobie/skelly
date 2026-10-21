@@ -83,7 +83,7 @@ const PLAYER_BOXES: Readonly<Record<PlayerArmPart, FigureBox>> = {
   rightFoot: { size: [0.18, 0.12, 0.28], at: [0.12, 0.06, -0.16] },
 };
 
-const WORN_ATTACHMENTS: Partial<Record<WearSlot, PlayerArmPart>> = { head: 'head' };
+const WORN_ATTACHMENTS: Partial<Record<WearSlot, PlayerArmPart>> = { head: 'head', eyes: 'head' };
 
 const regionBox = (part: PlayerArmPart, anchoredLeg = false): FigureBox => {
   const box = PLAYER_BOXES[part];
@@ -209,7 +209,7 @@ export interface PlayerFigurePose {
 export class PlayerMeshes {
   readonly group = new Group();
   private readonly meshes = new Map<PlayerArmPart, InstancedMesh>();
-  private readonly attachments = new Map<PlayerArmPart, Group>();
+  private readonly attachments = new Map<PlayerArmPart, Group[]>();
   private wornVersion = '';
   private readonly models: ModelLibrary | undefined;
   private readonly dummy = new Object3D();
@@ -246,13 +246,13 @@ export class PlayerMeshes {
       const hiddenHeldArm = isArmPart(part) && side !== undefined && hidden[side];
       const hiddenInFirstPerson = part === 'head' && !thirdPerson;
       mesh.count = hiddenHeldArm || hiddenInFirstPerson ? 0 : 1;
-      const attachment = this.attachments.get(part);
-      if (attachment) {
+      const attachments = this.attachments.get(part) ?? [];
+      for (const attachment of attachments) {
         attachment.visible = mesh.count > 0;
       }
       if (mesh.count > 0) {
         this.updatePart(part, mesh, pose);
-        if (attachment) {
+        for (const attachment of attachments) {
           attachment.position.copy(this.dummy.position);
           attachment.quaternion.copy(this.dummy.quaternion);
         }
@@ -266,7 +266,7 @@ export class PlayerMeshes {
       return;
     }
     this.wornVersion = version;
-    for (const attachment of this.attachments.values()) {
+    for (const attachment of [...this.attachments.values()].flat()) {
       attachment.removeFromParent();
     }
     this.attachments.clear();
@@ -286,7 +286,7 @@ export class PlayerMeshes {
       attachment.name = `worn-${slot}`;
       attachment.add(model);
       attachment.traverse((object) => object.layers.set(PLAYER_FIGURE_LAYER));
-      this.attachments.set(part, attachment);
+      this.attachments.set(part, [...(this.attachments.get(part) ?? []), attachment]);
       this.group.add(castsAndReceives(attachment));
     }
   }

@@ -29,6 +29,7 @@
     itemActionLabels: { stripRound: 'Strip a round' },
     wearSlotLabels: {
       head: 'Head',
+      eyes: 'Eyes',
       torso: 'Torso',
       vest: 'Vest',
       legs: 'Legs',

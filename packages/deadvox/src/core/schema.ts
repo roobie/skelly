@@ -231,7 +231,8 @@ const ITEM_CATEGORIES = [
   'misc',
 ] as const;
 
-const CLOTHING_SLOTS = ['head', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
+/** Eyes sits beside the head so goggles stack with a helmet or headlamp (`DESIGN.md`, "The item model"). */
+const CLOTHING_SLOTS = ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
 /** The shoulder holds a slung long gun, never clothing (`DESIGN.md`, "Shoulder and sling"). */
 const WEAR_SLOTS = [...CLOTHING_SLOTS, 'shoulder'] as const;
 
@@ -334,6 +335,7 @@ const UiTuningSchema = strictObject({
   /** What the inventory screen calls each wear slot. */
   wearSlotLabels: strictObject({
     head: Name,
+    eyes: Name,
     torso: Name,
     vest: Name,
     legs: Name,
@@ -607,6 +609,24 @@ export const BeamSpillSchema = strictObject({
 });
 export type BeamSpill = InferOutput<typeof BeamSpillSchema>;
 
+const NightVisionSchema = strictObject({
+  /** Multiplies the scene's linear light before tone mapping. */
+  gain: Positive,
+  /** The colour the picture's brightness is shown in. */
+  tint: Color,
+  /** Peak-to-peak grain, in display-referred colour (0..1). */
+  grain: Fraction,
+  /**
+   * The narrowed field of view: the picture darkens from `inner` to `outer` (distances from its centre, as shares
+   * of its size) and by `darkening` beyond.
+   */
+  edge: pipe(
+    strictObject({ darkening: Fraction, inner: Fraction, outer: Fraction }),
+    check((edge) => edge.inner < edge.outer, 'inner must be less than outer'),
+  ),
+});
+export type NightVision = InferOutput<typeof NightVisionSchema>;
+
 const LightSchema = strictObject({
   /** Metres it lights up. */
   radius: Positive,
@@ -646,6 +666,8 @@ const LightSchema = strictObject({
   power: optional(strictObject({ battery: Id, chargePerGameHour: GamePerHour, swapSimSeconds: PositiveSimSeconds })),
   /** Stays lit while worn and answers the worn-light control, so a source not in the hand needs no new key. */
   wornSwitch: optional(vBoolean()),
+  /** How the view looks through it while worn, on and charged (`DESIGN.md`, "Light"). */
+  nightVision: optional(NightVisionSchema),
 });
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });

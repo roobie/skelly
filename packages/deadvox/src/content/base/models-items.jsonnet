@@ -31,6 +31,7 @@
     { "id": "stab_vest", "file": "assets/models/stab_vest.glb" },
     { "id": "riot_helmet", "file": "assets/models/riot_helmet.glb" },
     { "id": "riot_helmet_view", "file": "assets/models/riot_helmet_view.glb" },
+    { "id": "night_vision_goggles", "file": "assets/models/night_vision_goggles.glb" },
     import 'things/thread_spool.model.json',
     import 'things/fuse.model.json',
     import 'things/cord_coil.model.json',

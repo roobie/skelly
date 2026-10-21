@@ -316,6 +316,22 @@ describe('snapshot state components', () => {
     expect(restored.survival.lit?.uid).toBe(headlamp.uid);
   });
 
+  it('round-trips switched-on goggles in the eyes slot beside a head item', async () => {
+    const runtime = createRuntime();
+    const helmet = runtime.inventory.create('riot_helmet');
+    const goggles = runtime.inventory.create('night_vision_goggles');
+    expect(runtime.inventory.add(helmet, { kind: 'worn' })).toBe(true);
+    expect(runtime.inventory.add(goggles, { kind: 'worn' })).toBe(true);
+    expect(runtime.survival.toggleWornLights()).toBeUndefined();
+
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    const restoredGoggles = restored.inventory.itemByUid(goggles.uid)!;
+    expect(restored.inventory.locate(restoredGoggles)).toMatchObject({ kind: 'worn', slot: 'eyes' });
+    expect(restored.inventory.worn.head?.uid).toBe(helmet.uid);
+    expect(restoredGoggles.on).toBe(true);
+  });
+
   it('round-trips worn feet and hands items in their slots', async () => {
     const wearable = (id: string, slot: 'feet' | 'hands') => ({
       id,

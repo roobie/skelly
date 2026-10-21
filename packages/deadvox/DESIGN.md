@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change worn head gear seen from inside or on the player figure
+  - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity or startup admission
   - you change streaming reveal or loading readiness
   - you change build-time bundle validation stamps or trusted admission
@@ -555,10 +556,9 @@ context. Stock that does not suit the host building comes from a special event: 
 small authored scene, such as a dead special operations soldier, with its own loot
 context, which the instance places on another building's lot. The event is not
 linked to that building; it sits on cells the host leaves empty and is not a clue.
-The rifle lies on the soldier's body and the magazine is in a pocket, because
-`DESIGN.md`, "The item model" keeps the pocket real-sized while loot lies outside
-containers; the substation gives a military reward ahead of the lab, and the NVGs
-join the same body when the item lands. An event may author its own threat, which spawns with it
+The rifle lies on the soldier's body and the magazine and the NVGs are in its pockets,
+because `DESIGN.md`, "The item model" keeps the pocket real-sized while loot lies outside
+containers; the substation gives a military reward ahead of the lab. An event may author its own threat, which spawns with it
 so the scene tells its story; how those markers count against the scenario's
 population budget remains open. An authored event carries the promised reward, so
 fixed stock still passes the economy check without bending a place's theme. Stock that suits the place but not
@@ -1322,6 +1322,11 @@ fractions. Contact can meet a different layer because a puddle reaches boots
 before trousers and a grip reaches gloves before a sleeve. See `src/core/wear.ts`,
 `wornItemMet`; `src/content/base/body.jsonnet`, `coverage` and `touchFirst`.
 
+**Eyes slot.** Goggles take their own slot beside the head, so night-vision goggles
+stack with a helmet or a headlamp instead of making the player choose between seeing
+in the dark and head protection or a lamp. Both show on the figure's head. See
+`src/core/schema.ts`, `WearableSchema`, and `src/render/playerFigure.ts`, `PlayerMeshes`.
+
 A worn item stops a share of a hit before flesh damage and bleeding are resolved,
 set per damage kind because real armour is built against particular threats.
 A stab vest's flexible panels stop blades and points but barely spread a blow;
@@ -1787,6 +1792,16 @@ windows hides it. Thrown flares, glowsticks, and fire lure zombies like noise,
 while the lantern zombie uses the same principle against the player. Most
 portable lights occupy a hand; a headlamp frees both at the cost of a weaker
 beam. Fuel, batteries, and powered fixed lights keep illumination consequential.
+
+Night-vision goggles are a worn light, because power, battery swaps, the worn-light
+hold and how far others notice a source already belong to the light component. Their
+light stands in for the infrared lamp: dim, green and seen only from close up. While
+they are worn, switched on and charged, the whole view brightens and turns green with
+grain, and its edges darken to the goggles' narrowed field of view, so seeing in the
+dark costs sight at the sides. A spectator sees none of it. It sits in the mood pass
+with the drug vignette rather than in a pass of its own. Bright lights flaring through
+the goggles, the rest of that cost, belongs to #1021. See `src/core/lights.ts`,
+`wornNightVision`, and `src/render/moodOutput.ts`, `createMoodOutputPass`.
 
 ## Dropped items land
 

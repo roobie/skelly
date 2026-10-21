@@ -58,6 +58,8 @@ export const targetForPackedFloorDrop = (
 
 /** Wear slots always shown, so there's somewhere to drop clothing and a slung long gun. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'vest', 'hands', 'legs', 'feet', 'back', 'waist'];
+/** Head-worn slots show only while something is worn there, at the top of the worn panel. */
+const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes'];
 
 export interface ScreenHooks {
   /** What each wear slot is called; from the core ui content. */
@@ -1103,7 +1105,11 @@ export class InventoryScreen {
         occupied: occupiedHand(this.inv, side),
       }),
     );
-    const slots = new Set<WearSlot>([...SHOWN_SLOTS, ...(Object.keys(this.inv.worn) as WearSlot[])]);
+    const slots = new Set<WearSlot>([
+      ...WORN_ONLY_SLOTS.filter((slot) => this.inv.worn[slot]),
+      ...SHOWN_SLOTS,
+      ...(Object.keys(this.inv.worn) as WearSlot[]),
+    ]);
     const worn = [...slots].map((slot): SlotViewModel => {
       const item = this.inv.worn[slot];
       return {

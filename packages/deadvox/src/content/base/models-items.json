@@ -82,6 +82,10 @@
       "id": "riot_helmet_view"
     },
     {
+      "file": "assets/models/night_vision_goggles.glb",
+      "id": "night_vision_goggles"
+    },
+    {
       "file": "assets/models/thread_spool.glb",
       "id": "thread_spool",
       "parts": {

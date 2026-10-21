@@ -28,7 +28,7 @@ import {
   throwDistanceForItem,
   traceItemLanding,
 } from '../core/itemThrow.ts';
-import { chargeShare, offHandUse } from '../core/lights.ts';
+import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
@@ -3183,6 +3183,7 @@ export const startPlay = (
         ...thirdPersonOrbitFrame(orbitAngle),
         sightImpaired: sim.body.consequences.sightImpaired,
         drugVignette: sim.body.drugVignette,
+        nightVision: wornNightVision(inventory),
         painTier: painTierDef(),
       },
       $('damage'),

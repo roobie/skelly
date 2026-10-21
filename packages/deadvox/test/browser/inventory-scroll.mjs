@@ -178,7 +178,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
   body: () => body, character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
-  slotLabels: Object.fromEntries(['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, 'fixture ' + slot])),
+  slotLabels: Object.fromEntries(['head', 'eyes', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, 'fixture ' + slot])),
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');

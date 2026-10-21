@@ -15,7 +15,7 @@ const refusalSound = {
   noise: { enabled: false, radiusMetres: 1 },
 };
 const wearSlotLabels = Object.fromEntries(
-  ['head', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [
+  ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [
     slot,
     `fixture ${slot}`,
   ]),
