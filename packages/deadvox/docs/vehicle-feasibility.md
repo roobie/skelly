@@ -10,7 +10,7 @@ The experiment is not a production solver selection. Keep candidate-specific ini
 
 ## Numeric eligibility
 
-Rapier remains diagnostic until d568-2 decides a precision contract. Its deterministic build uses single-precision arithmetic, while `docs/decisions/0008-deterministic-world.md`, "Decision" retains its doubles rule. f32 may be evaluated for production only against that contract's cross-engine, save and replay gates within the admitted envelope. That ADR's reason is cross-engine agreement, including lockstep and replay, not merely the width of a JavaScript wrapper; an f32 solver may satisfy that reason, so evidence rather than its number type judges it. Dependency age exemption does not imply numeric exemption.
+Rapier remains diagnostic until BR decides the precision contract that d568-2 drafts. Its deterministic build uses single-precision arithmetic, while `docs/decisions/0008-deterministic-world.md`, "Decision" retains its doubles rule. f32 may be evaluated for production only against that contract's cross-engine, save and replay gates within the admitted envelope. That ADR's reason is cross-engine agreement, including lockstep and replay, not merely the width of a JavaScript wrapper; an f32 solver may satisfy that reason, so evidence rather than its number type judges it. Dependency age exemption does not imply numeric exemption.
 
 The package artifact is pinned by `package-lock.json`, `packages`. Its upstream build provenance and precision evidence belong in the admission report; cross-engine agreement of that artifact remains a candidate-round gate. Do not infer agreement from the library name or a simulation source hash.
 
