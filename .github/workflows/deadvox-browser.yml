@@ -130,7 +130,7 @@ jobs:
       - name: Install feasibility agreement browsers
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         timeout-minutes: 3
-        run: npx playwright install --with-deps chromium firefox webkit
+        run: npx playwright install chromium firefox webkit
       - name: Vehicle feasibility agreement (Node, Chromium, Firefox, WebKit)
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         timeout-minutes: 1
