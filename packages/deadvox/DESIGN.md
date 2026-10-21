@@ -1591,8 +1591,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   `gungen/src/gun/attachments.ts`, `suppressors`;
   `src/core/firearmAttachments.ts`, `firearmAttachmentResponse` and
   `wearFirearmAttachments`; `src/core/zombies.ts`, `hearVocalNoise`;
-  `src/game/audioPresentation.ts`, `firearmShotEmission`; and
-  `src/game/play.ts`, `fireWeapon`.
+  `src/game/audioPresentation.ts`, `firearmShotSound`; and
+  `src/game/session.ts`, `createSession`.
 - **Player-owned sound playback:** Character- and held-item sounds have the
   player as their source; listener-relative playback makes them move with the
   player, who is the listener. Simulation sound/noise events keep their source
