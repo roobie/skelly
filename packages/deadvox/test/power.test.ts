@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { validateContent } from '../src/core/content.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { PowerNetwork, type PowerState, type PowerTransition } from '../src/core/power.ts';
-import type { PowerDeviceDef } from '../src/core/powerContent.ts';
+import { gameMillisecondsAt, PowerNetwork, type PowerState, type PowerTransition } from '../src/core/power.ts';
+import { POWER_UNITS, type PowerDeviceDef } from '../src/core/powerContent.ts';
 import { simTimestamp } from '../src/core/time.ts';
 import {
   deviceState,
-  powerAgreementBounds,
   powerClock,
   powerCycle,
   powerDefinitions,
@@ -25,13 +24,15 @@ const network = (state = powerState(), definitions = powerDefinitions) =>
   new PowerNetwork(environment(definitions), state);
 const entry = (state: PowerState, id: string) => state.devices.find((device) => device.id === id)!;
 const advance = (power: PowerNetwork, to: number) => power.advance(simTimestamp(to));
+const tickGameMilliseconds = gameMillisecondsAt(powerClock, powerTuning.tickSimSeconds);
 
 function runAgreement(end: number, ticking: boolean) {
   const power = network();
   const transitions: PowerTransition[] = [];
   const runTo = (target: number) => {
     if (ticking) {
-      while (power.snapshot().atSimSeconds + powerTuning.tickSimSeconds < target) {
+      const targetGameMilliseconds = gameMillisecondsAt(powerClock, target);
+      while (power.snapshot().atGameMilliseconds + tickGameMilliseconds < targetGameMilliseconds) {
         transitions.push(...power.tick());
       }
     }
@@ -46,8 +47,7 @@ function runAgreement(end: number, ticking: boolean) {
 }
 
 describe('PowerNetwork', () => {
-  it('agrees with ticking across fuel, storage, solar and a mid-run rate change', () => {
-    const measured = { fuelLitres: 0, storedWh: 0, transitionSimSeconds: 0 };
+  it('agrees exactly with ticking across fuel, storage, solar and a mid-run rate change', () => {
     const day = dayPhaseAt(powerCycle, 0);
     const phaseTimes = [day.dawn, day.sunrise, day.sunset, day.nightfall].map((at) => at / powerClock.ratio);
     const checkpoints = [
@@ -68,32 +68,13 @@ describe('PowerNetwork', () => {
     for (const end of checkpoints) {
       const live = runAgreement(end, true);
       const caught = runAgreement(end, false);
-      for (const device of live.state.devices) {
-        const other = entry(caught.state, device.id);
-        measured.fuelLitres = Math.max(measured.fuelLitres, Math.abs(device.fuelLitres - other.fuelLitres));
-        measured.storedWh = Math.max(measured.storedWh, Math.abs(device.storedWh - other.storedWh));
-        expect(device.powered).toBe(other.powered);
-        expect(device.restartBlocked).toBe(other.restartBlocked);
-      }
-      expect(live.transitions.map(({ at: _, ...change }) => change)).toEqual(
-        caught.transitions.map(({ at: _, ...change }) => change),
-      );
-      live.transitions.forEach((change, i) => {
-        measured.transitionSimSeconds = Math.max(
-          measured.transitionSimSeconds,
-          Math.abs(change.at - caught.transitions[i]!.at),
-        );
-      });
+      expect(live.state).toEqual(caught.state);
+      expect(live.transitions).toEqual(caught.transitions);
     }
     const completed = runAgreement(checkpoints.at(-1)!, false);
-    expect(entry(completed.state, 'generator').fuelLitres).toBe(0);
+    expect(entry(completed.state, 'generator').fuelUnits).toBe(0);
     expect(completed.transitions.some((change) => change.at > rateChangeAt && !change.powered)).toBe(true);
     expect(completed.transitions.some((change) => change.at > rateChangeAt && change.powered)).toBe(true);
-    // biome-ignore lint/suspicious/noConsole: The integration spike reports the bounds for BR approval.
-    console.info('POWER_AGREEMENT', measured);
-    expect(measured.fuelLitres).toBeLessThanOrEqual(powerAgreementBounds.fuelLitres);
-    expect(measured.storedWh).toBeLessThanOrEqual(powerAgreementBounds.storedWh);
-    expect(measured.transitionSimSeconds).toBeLessThanOrEqual(powerAgreementBounds.transitionSimSeconds);
   });
 
   it('admits whole consumers by content priority and identity, independent of insertion order', () => {
@@ -103,9 +84,9 @@ describe('PowerNetwork', () => {
       { id: 'urgent', kind: 'consumer', priority: -1, demandWatts: 6 },
     ];
     const state: PowerState = {
-      atSimSeconds: 0,
+      atGameMilliseconds: 0,
       devices: [
-        { ...deviceState('source', 'supply'), fuelLitres: 2 },
+        { ...deviceState('source', 'supply'), fuelUnits: 2 * POWER_UNITS.amount },
         deviceState('b', 'load'),
         deviceState('a', 'load'),
         { ...deviceState('urgent'), enabled: false },
@@ -138,18 +119,14 @@ describe('PowerNetwork', () => {
       chargeEfficiency: 0.8,
       dischargeEfficiency: 0.5,
     } as const;
-    const defs: PowerDeviceDef[] = [
-      supply,
-      store,
-      { ...store, id: 'later', priority: 1 },
-      { id: 'load', kind: 'consumer', priority: 0, demandWatts: 10 },
-    ];
+    const load = { id: 'load', kind: 'consumer', priority: 0, demandWatts: 10 } as const;
+    const defs: PowerDeviceDef[] = [supply, store, { ...store, id: 'later', priority: 1 }, load];
     const first = order === 'priority' ? 'b' : 'a';
     const second = order === 'priority' ? 'a' : 'b';
     const state: PowerState = {
-      atSimSeconds: 0,
+      atGameMilliseconds: 0,
       devices: [
-        { ...deviceState('source', 'supply'), fuelLitres: 5 },
+        { ...deviceState('source', 'supply'), fuelUnits: 5 * POWER_UNITS.amount },
         deviceState('b', 'store'),
         deviceState('a', order === 'priority' ? 'later' : 'store'),
         { ...deviceState('load'), enabled: false },
@@ -158,33 +135,25 @@ describe('PowerNetwork', () => {
     };
     const power = network(state, defs);
     advance(power, 15);
-    expect(entry(power.snapshot(), first).storedWh).toBeGreaterThan(0);
-    expect(entry(power.snapshot(), second).storedWh).toBe(0);
+    expect(entry(power.snapshot(), first).storedMicrojoules).toBeGreaterThan(0);
+    expect(entry(power.snapshot(), second).storedMicrojoules).toBe(0);
     advance(power, 45);
-    const full = entry(power.snapshot(), first).storedWh;
-    const later = entry(power.snapshot(), second).storedWh;
-    expect(full).toBe(store.capacityWh);
+    const full = entry(power.snapshot(), first).storedMicrojoules;
+    const later = entry(power.snapshot(), second).storedMicrojoules;
+    expect(full).toBe(store.capacityWh * POWER_UNITS.amount);
     expect(later).toBeGreaterThan(0);
     const before = power.snapshot();
     power.setEnabled(simTimestamp(45), 'source', false);
     power.setEnabled(simTimestamp(45), 'load', true);
     advance(power, 48);
-    expect(entry(power.snapshot(), first).storedWh).toBeLessThan(full);
-    expect(entry(power.snapshot(), second).storedWh).toBe(later);
-    const burned = state.devices[0]!.fuelLitres - entry(before, 'source').fuelLitres;
-    const generated = (burned / supply.burnLitresPerGameHour) * supply.outputWatts;
-    expect(Math.abs(full + later - generated * store.chargeEfficiency)).toBeLessThanOrEqual(
-      powerAgreementBounds.storedWh,
-    );
-    const drained = full - entry(power.snapshot(), first).storedWh;
-    const demand = defs.at(-1)!;
-    if (demand.kind !== 'consumer') {
-      throw new Error('Invalid test fixture');
-    }
-    const delivered = demand.demandWatts * (((48 - 45) * powerClock.ratio) / 3600);
-    expect(Math.abs(drained * store.dischargeEfficiency - delivered)).toBeLessThanOrEqual(
-      powerAgreementBounds.storedWh,
-    );
+    expect(entry(power.snapshot(), first).storedMicrojoules).toBeLessThan(full);
+    expect(entry(power.snapshot(), second).storedMicrojoules).toBe(later);
+    const burned = state.devices[0]!.fuelUnits - entry(before, 'source').fuelUnits;
+    const runMilliseconds = burned / (supply.burnLitresPerGameHour * POWER_UNITS.rate);
+    expect(full + later).toBe(runMilliseconds * supply.outputWatts * POWER_UNITS.rate * store.chargeEfficiency);
+    const drained = full - entry(power.snapshot(), first).storedMicrojoules;
+    const delivered = load.demandWatts * POWER_UNITS.rate * gameMillisecondsAt(powerClock, 48 - 45);
+    expect(drained * store.dischargeEfficiency).toBe(delivered);
   });
 
   it('waits for full batteries before restart without instantaneous on/off oscillation', () => {
@@ -194,8 +163,12 @@ describe('PowerNetwork', () => {
       { id: 'load', kind: 'consumer', priority: 0, demandWatts: 4 },
     ];
     const state: PowerState = {
-      atSimSeconds: 0,
-      devices: [{ ...deviceState('source', 'supply'), fuelLitres: 100 }, deviceState('store'), deviceState('load')],
+      atGameMilliseconds: 0,
+      devices: [
+        { ...deviceState('source', 'supply'), fuelUnits: 100 * POWER_UNITS.amount },
+        deviceState('store'),
+        deviceState('load'),
+      ],
       links: ['store', 'load'].map((to, index) => ({ from: 'source', to, itemUid: index + 1 })),
     };
     const power = network(state, defs);
@@ -203,12 +176,14 @@ describe('PowerNetwork', () => {
     if (supply?.kind !== 'generator' || store?.kind !== 'battery') {
       throw new Error('Invalid test fixture');
     }
-    const fullAt = (store.capacityWh / (supply.outputWatts * store.chargeEfficiency)) * (3600 / powerClock.ratio);
+    const capacity = store.capacityWh * POWER_UNITS.amount;
+    const fullAt =
+      capacity / (supply.outputWatts * POWER_UNITS.rate * store.chargeEfficiency) / gameMillisecondsAt(powerClock, 1);
     expect(advance(power, fullAt / 2)).toEqual([]);
-    expect(entry(power.snapshot(), 'store').storedWh).toBeLessThan(store.capacityWh);
+    expect(entry(power.snapshot(), 'store').storedMicrojoules).toBeLessThan(capacity);
     expect(entry(power.snapshot(), 'load').powered).toBe(false);
     const history = advance(power, 600);
-    expect(Math.abs(history[0]!.at - fullAt)).toBeLessThanOrEqual(powerAgreementBounds.transitionSimSeconds);
+    expect(history[0]!.at).toBe(fullAt);
     expect(history.some((change) => change.powered)).toBe(true);
     expect(history.some((change) => !change.powered)).toBe(true);
     for (let i = 1; i < history.length; i++) {
@@ -223,47 +198,48 @@ describe('PowerNetwork', () => {
     if (panel.kind !== 'solar') {
       throw new Error('Invalid test fixture');
     }
-    const day = dayPhaseAt(powerCycle, 0);
-    const boundaries = [0, day.dawn, day.sunrise, day.sunset, day.nightfall, 86_400];
-    let expectedWh = 0;
-    for (let i = 1; i < boundaries.length; i++) {
-      const from = boundaries[i - 1]!;
-      const to = boundaries[i]!;
-      const { phase } = dayPhaseAt(powerCycle, (from + to) / 2);
-      expectedWh += panel.outputWatts[phase] * ((to - from) / 3600);
-    }
     const store = {
       id: 'store',
       kind: 'battery',
       priority: 0,
-      capacityWh: expectedWh * 2,
+      capacityWh: 1000,
       chargeEfficiency: 0.8,
       dischargeEfficiency: 0.9,
     } as const;
+    const day = dayPhaseAt(powerCycle, 0);
+    const boundaries = [0, day.dawn, day.sunrise, day.sunset, day.nightfall, 86_400];
+    let expected = 0;
+    for (let i = 1; i < boundaries.length; i++) {
+      const from = boundaries[i - 1]!;
+      const to = boundaries[i]!;
+      const { phase } = dayPhaseAt(powerCycle, (from + to) / 2);
+      const milliseconds = Math.round(to * POWER_UNITS.time) - Math.round(from * POWER_UNITS.time);
+      expected += milliseconds * panel.outputWatts[phase] * POWER_UNITS.rate * store.chargeEfficiency;
+    }
     const power = network(
       {
-        atSimSeconds: 0,
+        atGameMilliseconds: 0,
         devices: [deviceState('panel'), deviceState('store')],
         links: [{ from: 'panel', to: 'store', itemUid: 1 }],
       },
       [panel, store],
     );
     advance(power, 86_400 / powerClock.ratio);
-    expect(
-      Math.abs(entry(power.snapshot(), 'store').storedWh - expectedWh * store.chargeEfficiency),
-    ).toBeLessThanOrEqual(powerAgreementBounds.storedWh);
+    expect(entry(power.snapshot(), 'store').storedMicrojoules).toBe(expected);
   });
 
   it('burns fuel while idling and settles old networks before rewiring', () => {
     const power = network();
     power.setEnabled(simTimestamp(0), 'low', false);
-    const initialFuel = entry(power.snapshot(), 'generator').fuelLitres;
+    const initialFuel = entry(power.snapshot(), 'generator').fuelUnits;
     expect(power.rewire(simTimestamp(10), [])).toEqual([]);
-    expect(entry(power.snapshot(), 'generator').fuelLitres).toBeLessThan(initialFuel);
-    expect(entry(power.snapshot(), 'first').storedWh).toBeGreaterThan(entry(powerState(), 'first').storedWh);
-    const charge = entry(power.snapshot(), 'first').storedWh;
+    expect(entry(power.snapshot(), 'generator').fuelUnits).toBeLessThan(initialFuel);
+    expect(entry(power.snapshot(), 'first').storedMicrojoules).toBeGreaterThan(
+      entry(powerState(), 'first').storedMicrojoules,
+    );
+    const charge = entry(power.snapshot(), 'first').storedMicrojoules;
     advance(power, 20);
-    expect(entry(power.snapshot(), 'first').storedWh).toBe(charge);
+    expect(entry(power.snapshot(), 'first').storedMicrojoules).toBe(charge);
     const connected = network();
     const isolated = connected.rewire(
       simTimestamp(10),
@@ -289,12 +265,12 @@ describe('PowerNetwork', () => {
     expect(restored.snapshot()).toEqual(original.snapshot());
   });
 
-  it('rejects invalid saved resources, unknown mechanisms and duplicated cable ownership', () => {
+  it('rejects invalid saved resources, inexact content, unknown mechanisms and duplicated cable ownership', () => {
     const state = powerState();
     expect(() =>
       network({
         ...state,
-        devices: state.devices.map((device) => (device.id === 'generator' ? { ...device, fuelLitres: -1 } : device)),
+        devices: state.devices.map((device) => (device.id === 'generator' ? { ...device, fuelUnits: -1 } : device)),
       }),
     ).toThrow();
     expect(() => network({ ...state, links: [...state.links, state.links[0]!] })).toThrow();
@@ -308,6 +284,8 @@ describe('PowerNetwork', () => {
       def.kind === 'battery' && def.id === 'first' ? { ...def, chargeEfficiency: 0 } : def,
     );
     expect(validateContent({ source: 'power-fixture', data: { powerDevices: invalid } }).length).toBeGreaterThan(0);
+    const inexact = powerDefinitions.map((def) => (def.kind === 'consumer' ? { ...def, demandWatts: 0.0001 } : def));
+    expect(validateContent({ source: 'power-fixture', data: { powerDevices: inexact } }).length).toBeGreaterThan(0);
     expect(
       validateContent({
         source: 'power-fixture',

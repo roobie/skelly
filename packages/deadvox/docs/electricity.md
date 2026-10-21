@@ -54,15 +54,27 @@ service from the final powered flag. Returned histories belong to the caller;
 consuming a history and saving appliance progress must share the same settlement
 boundary. See `src/core/power.ts`, `PowerNetwork.advance`, `PowerTransition`,
 `PowerNetwork.setEnabled`, `PowerNetwork.refuel` and `PowerNetwork.rewire`.
-
-Absolute resource bounds preserve freedom to change integration algorithms while
-making near-player disagreement visible. The integration spike's fixture bounds
-require approval before appliance integration on d577; widening them to excuse a
-failure is not a fix. See `test/powerFixture.ts`, `powerAgreementBounds`, and
-`test/power.test.ts`, "agrees with ticking across fuel, storage, solar and a mid-run rate change".
 The same event model is canonical beyond the player's simulation block; it needs
-no renderer or streaming input. Cross-browser same-path identity is not relaxed
-by the tick/catch-up bounds.
+no renderer or streaming input.
+
+## Integer units
+
+Tick play and catch-up agree exactly, because fuel, stored energy and on/off time
+count whole units in state, saves and both paths. Exact agreement gives
+determinism with nothing to tune, and a harmless refactor cannot break it the way
+it can erode a tolerance. A failing agreement run is a defect, never a bound to
+widen. See `test/power.test.ts`, "agrees exactly with ticking across fuel, storage, solar and a mid-run rate change".
+
+Content keeps authoring litres, watt-hours, watts and seconds, converted once at
+load. A value with no whole unit count is invalid content rather than silently
+rounded, so authored decimals keep their meaning. Rates count units per game
+millisecond, so the clock ratio cannot change how they round. The scales leave
+safe-integer headroom for long absences. See `src/core/powerContent.ts`,
+`POWER_UNITS`.
+
+Each storage rate rounds once per balance, always in the same direction, so
+splitting a span at a tick cannot change the result. See `src/core/power.ts`,
+`storageTransfer`.
 
 ## Links and state
 

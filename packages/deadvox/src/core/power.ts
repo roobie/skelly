@@ -1,42 +1,50 @@
 import {
   array,
   boolean,
-  finite,
   type InferOutput,
-  integer,
   minValue,
   nonEmpty,
   number,
   parse,
   pipe,
+  safeInteger,
   strictObject,
   string,
 } from 'valibot';
-import { type ClockSettings, calendarAt, SECONDS_PER_DAY, simToGameHours } from './clock.ts';
+import { type ClockSettings, SECONDS_PER_DAY } from './clock.ts';
 import type { Registry } from './content.ts';
 import { type DayCycle, type DayPhase, dayPhaseAt } from './dayPhase.ts';
-import { type PowerDeviceDef, PowerDeviceSchema, type PowerTuningDef, PowerTuningSchema } from './powerContent.ts';
+import {
+  exactUnits,
+  POWER_UNITS,
+  type PowerDeviceDef,
+  PowerDeviceSchema,
+  type PowerTuningDef,
+  PowerTuningSchema,
+  unitCount,
+} from './powerContent.ts';
 import { PowerGraph } from './powerGraph.ts';
 import { type SimTimestamp, simTimestamp } from './time.ts';
 
-const Amount = pipe(number(), finite(), minValue(0));
+const Units = pipe(number(), safeInteger(), minValue(0));
 const Identity = pipe(string(), nonEmpty());
 const DeviceStateSchema = strictObject({
   id: Identity,
   type: Identity,
   enabled: boolean(),
-  fuelLitres: Amount,
-  storedWh: Amount,
+  fuelUnits: Units,
+  storedMicrojoules: Units,
   powered: boolean(),
   restartBlocked: boolean(),
 });
 const LinkSchema = strictObject({
   from: Identity,
   to: Identity,
-  itemUid: pipe(number(), finite(), integer(), minValue(1)),
+  itemUid: pipe(number(), safeInteger(), minValue(1)),
 });
 const PowerStateSchema = strictObject({
-  atSimSeconds: Amount,
+  /** Game milliseconds since simulation time 0. */
+  atGameMilliseconds: Units,
   devices: array(DeviceStateSchema),
   links: array(LinkSchema),
 });
@@ -57,16 +65,78 @@ interface PowerEnvironment {
   readonly clock: ClockSettings;
 }
 
-type Device = PowerDeviceState & { readonly definition: PowerDeviceDef };
+/** A device definition in integer units: power per game millisecond, stored amounts, parts per million. */
+type Spec = { readonly priority: number } & (
+  | { readonly kind: 'generator'; readonly output: number; readonly burn: number }
+  | { readonly kind: 'solar'; readonly output: Readonly<Record<DayPhase, number>> }
+  | { readonly kind: 'battery'; readonly capacity: number; readonly charge: number; readonly discharge: number }
+  | { readonly kind: 'consumer'; readonly demand: number }
+);
+type Device = PowerDeviceState & { readonly spec: Spec };
 interface Store {
   readonly device: Device;
-  readonly definition: Extract<PowerDeviceDef, { kind: 'battery' }>;
+  readonly spec: Extract<Spec, { kind: 'battery' }>;
 }
 interface Transfer {
   readonly device: Device;
-  readonly perGameHour: number;
+  readonly perGameMillisecond: number;
   readonly limit: number;
 }
+
+const DAY_MILLISECONDS = SECONDS_PER_DAY * POWER_UNITS.time;
+
+/** The game millisecond since simulation time 0 nearest a simulation time. */
+export const gameMillisecondsAt = (clock: ClockSettings, at: number): number =>
+  Math.round(at * clock.ratio * POWER_UNITS.time);
+
+const specOf = (def: PowerDeviceDef): Spec => {
+  const { rate, amount, efficiency } = POWER_UNITS;
+  switch (def.kind) {
+    case 'generator':
+      return {
+        kind: def.kind,
+        priority: def.priority,
+        output: exactUnits(def.outputWatts, rate),
+        burn: exactUnits(def.burnLitresPerGameHour, rate),
+      };
+    case 'solar': {
+      const { night, dawn, day, dusk } = def.outputWatts;
+      const output = { night, dawn, day, dusk };
+      for (const phase of Object.keys(output) as DayPhase[]) {
+        output[phase] = exactUnits(output[phase], rate);
+      }
+      return { kind: def.kind, priority: def.priority, output };
+    }
+    case 'battery':
+      return {
+        kind: def.kind,
+        priority: def.priority,
+        capacity: exactUnits(def.capacityWh, amount),
+        charge: exactUnits(def.chargeEfficiency, efficiency),
+        discharge: exactUnits(def.dischargeEfficiency, efficiency),
+      };
+    case 'consumer':
+      return { kind: def.kind, priority: def.priority, demand: exactUnits(def.demandWatts, rate) };
+    default:
+      throw new Error('Unknown power device kind');
+  }
+};
+
+const safe = (value: number): number => {
+  if (!Number.isSafeInteger(value)) {
+    throw new Error('Power units out of range');
+  }
+  return value;
+};
+// Float division can land one off the exact quotient of large integers.
+const floorDiv = (dividend: number, divisor: number): number => {
+  const quotient = Math.floor(dividend / divisor);
+  if (quotient * divisor > dividend) {
+    return quotient - 1;
+  }
+  return (quotient + 1) * divisor <= dividend ? quotient + 1 : quotient;
+};
+const ceilDiv = (dividend: number, divisor: number): number => -floorDiv(-dividend, divisor);
 
 const compareId = (a: string, b: string): number => {
   if (a === b) {
@@ -74,23 +144,22 @@ const compareId = (a: string, b: string): number => {
   }
   return a < b ? -1 : 1;
 };
-const priorityOrder = (a: Device, b: Device): number =>
-  a.definition.priority - b.definition.priority || compareId(a.id, b.id);
+const priorityOrder = (a: Device, b: Device): number => a.spec.priority - b.spec.priority || compareId(a.id, b.id);
 const resource = (device: Device): number =>
-  device.definition.kind === 'generator' ? device.fuelLitres : device.storedWh;
-const transferDuration = (transfer: Transfer, hoursPerSecond: number): number =>
-  (transfer.limit - resource(transfer.device)) / (transfer.perGameHour * hoursPerSecond);
+  device.spec.kind === 'generator' ? device.fuelUnits : device.storedMicrojoules;
+const transferDuration = (transfer: Transfer): number =>
+  ceilDiv(Math.abs(transfer.limit - resource(transfer.device)), Math.abs(transfer.perGameMillisecond));
 const storesOf = (devices: readonly Device[]): Store[] =>
   devices.flatMap((device) =>
-    device.enabled && device.definition.kind === 'battery' ? [{ device, definition: device.definition }] : [],
+    device.enabled && device.spec.kind === 'battery' ? [{ device, spec: device.spec }] : [],
   );
 
-const validateResources = (entry: PowerDeviceState, definition: PowerDeviceDef): void => {
+const validateResources = (entry: PowerDeviceState, spec: Spec): void => {
   if (
-    (definition.kind !== 'generator' && entry.fuelLitres !== 0) ||
-    (definition.kind !== 'battery' && entry.storedWh !== 0) ||
-    (definition.kind === 'battery' && entry.storedWh > definition.capacityWh) ||
-    (definition.kind !== 'consumer' && (entry.powered || entry.restartBlocked))
+    (spec.kind !== 'generator' && entry.fuelUnits !== 0) ||
+    (spec.kind !== 'battery' && entry.storedMicrojoules !== 0) ||
+    (spec.kind === 'battery' && entry.storedMicrojoules > spec.capacity) ||
+    (spec.kind !== 'consumer' && (entry.powered || entry.restartBlocked))
   ) {
     throw new Error('Invalid power device resources');
   }
@@ -99,27 +168,30 @@ const validateResources = (entry: PowerDeviceState, definition: PowerDeviceDef):
 const production = (devices: readonly Device[], phase: DayPhase, transfers: Transfer[]): number => {
   let supply = 0;
   for (const device of devices) {
-    const def = device.definition;
+    const { spec } = device;
     if (!device.enabled) {
       continue;
     }
-    if (def.kind === 'generator' && device.fuelLitres > 0) {
-      supply += def.outputWatts;
-      transfers.push({ device, perGameHour: -def.burnLitresPerGameHour, limit: 0 });
-    } else if (def.kind === 'solar') {
-      supply += def.outputWatts[phase];
+    if (spec.kind === 'generator' && device.fuelUnits > 0) {
+      supply += spec.output;
+      transfers.push({ device, perGameMillisecond: -spec.burn, limit: 0 });
+    } else if (spec.kind === 'solar') {
+      supply += spec.output[phase];
     }
   }
   return supply;
 };
 
+// Rates round once per balance, always the same way, so a split at a tick cannot change them.
 const storageTransfer = (stores: readonly Store[], remaining: number): Transfer[] => {
-  for (const { device, definition } of stores) {
-    if (remaining > 0 && device.storedWh < definition.capacityWh) {
-      return [{ device, perGameHour: remaining * definition.chargeEfficiency, limit: definition.capacityWh }];
+  const { efficiency } = POWER_UNITS;
+  for (const { device, spec } of stores) {
+    if (remaining > 0 && device.storedMicrojoules < spec.capacity) {
+      const perGameMillisecond = floorDiv(safe(remaining * spec.charge), efficiency);
+      return perGameMillisecond > 0 ? [{ device, perGameMillisecond, limit: spec.capacity }] : [];
     }
-    if (remaining < 0 && device.storedWh > 0) {
-      return [{ device, perGameHour: remaining / definition.dischargeEfficiency, limit: 0 }];
+    if (remaining < 0 && device.storedMicrojoules > 0) {
+      return [{ device, perGameMillisecond: -ceilDiv(safe(-remaining * efficiency), spec.discharge), limit: 0 }];
     }
   }
   return [];
@@ -129,35 +201,44 @@ export class PowerNetwork {
   private readonly devices = new Map<string, Device>();
   private links: PowerLink[];
   private readonly graph: PowerGraph;
-  private atSimSeconds: SimTimestamp;
-  private readonly phases: readonly { readonly gameTimeOfDay: number; readonly phase: DayPhase }[];
-  private readonly tuning: PowerTuningDef;
+  private atGameMilliseconds: number;
+  private readonly phases: readonly { readonly gameMilliseconds: number; readonly phase: DayPhase }[];
+  private readonly tickGameMilliseconds: number;
+  private readonly startGameMilliseconds: number;
   private readonly clock: ClockSettings;
 
   constructor(environment: PowerEnvironment, state: unknown) {
     const { registry, tuning, cycle, clock } = environment;
-    if (!(Number.isFinite(clock.ratio) && clock.ratio > 0 && Number.isFinite(clock.start) && clock.start >= 0)) {
+    const start = unitCount(clock.start, POWER_UNITS.time);
+    if (!(Number.isFinite(clock.ratio) && clock.ratio > 0 && start !== undefined && start >= 0)) {
       throw new Error('Invalid power clock');
     }
-    this.tuning = parse(PowerTuningSchema, tuning);
     this.clock = { ...clock };
+    this.startGameMilliseconds = start;
+    const tick = unitCount(parse(PowerTuningSchema, tuning).tickSimSeconds, clock.ratio * POWER_UNITS.time);
+    if (!tick) {
+      throw new Error('Invalid power tuning');
+    }
+    this.tickGameMilliseconds = tick;
     const saved = parse(PowerStateSchema, state);
-    this.atSimSeconds = simTimestamp(saved.atSimSeconds);
+    this.atGameMilliseconds = saved.atGameMilliseconds;
     for (const entry of saved.devices) {
       const definition = registry.powerDevices.get(entry.type);
       if (!definition || this.devices.has(entry.id)) {
         throw new Error('Unknown power device type or duplicate identity');
       }
-      const parsed = parse(PowerDeviceSchema, definition);
-      validateResources(entry, parsed);
-      this.devices.set(entry.id, { ...entry, definition: parsed });
+      const spec = specOf(parse(PowerDeviceSchema, definition));
+      validateResources(entry, spec);
+      this.devices.set(entry.id, { ...entry, spec });
     }
     this.links = this.validateLinks(saved.links);
     this.graph = new PowerGraph(this.wiring(this.links));
     const day = dayPhaseAt(cycle, 0);
-    this.phases = [...new Set([0, day.dawn, day.sunrise, day.sunset, day.nightfall])]
-      .sort((a, b) => a - b)
-      .map((timeOfDay) => ({ gameTimeOfDay: timeOfDay, phase: dayPhaseAt(cycle, timeOfDay).phase }));
+    const boundaries = new Map<number, DayPhase>();
+    for (const timeOfDay of [0, day.dawn, day.sunrise, day.sunset, day.nightfall].sort((a, b) => a - b)) {
+      boundaries.set(Math.round(timeOfDay * POWER_UNITS.time), dayPhaseAt(cycle, timeOfDay).phase);
+    }
+    this.phases = [...boundaries].map(([gameMilliseconds, phase]) => ({ gameMilliseconds, phase }));
   }
 
   private validateLinks(links: readonly PowerLink[]): PowerLink[] {
@@ -179,16 +260,16 @@ export class PowerNetwork {
 
   snapshot(): PowerState {
     return {
-      atSimSeconds: this.atSimSeconds,
+      atGameMilliseconds: this.atGameMilliseconds,
       devices: [...this.devices.values()]
         .sort((a, b) => compareId(a.id, b.id))
-        .map(({ definition: _, ...entry }) => ({ ...entry })),
+        .map(({ spec: _, ...entry }) => ({ ...entry })),
       links: this.links.map((link) => ({ ...link })),
     };
   }
 
   tick(): readonly PowerTransition[] {
-    return this.advance(simTimestamp(this.atSimSeconds + this.tuning.tickSimSeconds));
+    return this.run(safe(this.atGameMilliseconds + this.tickGameMilliseconds));
   }
 
   setEnabled(at: SimTimestamp, id: string, enabled: boolean): readonly PowerTransition[] {
@@ -201,16 +282,17 @@ export class PowerNetwork {
 
   refuel(at: SimTimestamp, id: string, litres: number): readonly PowerTransition[] {
     const device = this.device(id);
+    const units = unitCount(litres, POWER_UNITS.amount);
     if (
-      device.definition.kind !== 'generator' ||
-      !Number.isFinite(litres) ||
-      litres < 0 ||
-      !Number.isFinite(device.fuelLitres + litres)
+      device.spec.kind !== 'generator' ||
+      units === undefined ||
+      units < 0 ||
+      !Number.isSafeInteger(device.fuelUnits + units)
     ) {
       throw new Error('Invalid generator refuelling');
     }
     const changes = [...this.advance(at)];
-    device.fuelLitres += litres;
+    device.fuelUnits += units;
     changes.push(...this.advance(at));
     return changes;
   }
@@ -224,6 +306,14 @@ export class PowerNetwork {
     return changes;
   }
 
+  advance(to: SimTimestamp): readonly PowerTransition[] {
+    const target = gameMillisecondsAt(this.clock, to);
+    if (!Number.isSafeInteger(target) || target < this.atGameMilliseconds) {
+      throw new Error('Power time must be finite and monotonic');
+    }
+    return this.run(target);
+  }
+
   private device(id: string): Device {
     const device = this.devices.get(id);
     if (!device) {
@@ -232,19 +322,23 @@ export class PowerNetwork {
     return device;
   }
 
+  private simAt(gameMilliseconds: number): SimTimestamp {
+    return simTimestamp(gameMilliseconds / (this.clock.ratio * POWER_UNITS.time));
+  }
+
   private solar(): { phase: DayPhase; next: number } {
-    const day = Math.floor(calendarAt(this.clock, this.atSimSeconds) / SECONDS_PER_DAY);
+    const start = this.startGameMilliseconds;
+    const day = floorDiv(start + this.atGameMilliseconds, DAY_MILLISECONDS);
     let phase: DayPhase = 'night';
     let previous = Number.NEGATIVE_INFINITY;
     let next = Number.POSITIVE_INFINITY;
-    // Compare in simulation time, avoiding a lossy reverse conversion at phase boundaries.
     for (let offset = -1; offset <= 1; offset++) {
       for (const event of this.phases) {
-        const at = ((day + offset) * SECONDS_PER_DAY + event.gameTimeOfDay - this.clock.start) / this.clock.ratio;
-        if (at <= this.atSimSeconds && at > previous) {
+        const at = (day + offset) * DAY_MILLISECONDS + event.gameMilliseconds - start;
+        if (at <= this.atGameMilliseconds && at > previous) {
           previous = at;
           ({ phase } = event);
-        } else if (at > this.atSimSeconds) {
+        } else if (at > this.atGameMilliseconds) {
           next = Math.min(next, at);
         }
       }
@@ -253,12 +347,10 @@ export class PowerNetwork {
   }
 
   private storageAllowed(consumer: Device, stores: readonly Store[]): boolean {
-    if (!stores.some(({ device }) => device.storedWh > 0)) {
+    if (!stores.some(({ device }) => device.storedMicrojoules > 0)) {
       return false;
     }
-    return (
-      !consumer.restartBlocked || stores.every(({ device, definition }) => device.storedWh === definition.capacityWh)
-    );
+    return !consumer.restartBlocked || stores.every(({ device, spec }) => device.storedMicrojoules === spec.capacity);
   }
 
   private admit(
@@ -269,10 +361,10 @@ export class PowerNetwork {
   ): number {
     let remaining = supply;
     for (const consumer of devices) {
-      if (consumer.definition.kind !== 'consumer') {
+      if (consumer.spec.kind !== 'consumer') {
         continue;
       }
-      const demand = consumer.definition.demandWatts;
+      const { demand } = consumer.spec;
       const powered = consumer.enabled && (demand <= remaining || this.storageAllowed(consumer, stores));
       if (powered) {
         remaining -= demand;
@@ -282,7 +374,7 @@ export class PowerNetwork {
       }
       if (powered !== consumer.powered) {
         consumer.powered = powered;
-        changes.push({ at: this.atSimSeconds, consumerId: consumer.id, powered });
+        changes.push({ at: this.simAt(this.atGameMilliseconds), consumerId: consumer.id, powered });
       }
     }
     return remaining;
@@ -300,40 +392,35 @@ export class PowerNetwork {
     return transfers;
   }
 
-  private integrate(transfers: readonly Transfer[], elapsed: number, hoursPerSecond: number): void {
+  private integrate(transfers: readonly Transfer[], elapsed: number): void {
     for (const transfer of transfers) {
       const { device } = transfer;
       const value =
-        transferDuration(transfer, hoursPerSecond) <= elapsed
+        transferDuration(transfer) <= elapsed
           ? transfer.limit
-          : resource(device) + transfer.perGameHour * hoursPerSecond * elapsed;
-      if (device.definition.kind === 'generator') {
-        device.fuelLitres = value;
+          : resource(device) + transfer.perGameMillisecond * elapsed;
+      if (device.spec.kind === 'generator') {
+        device.fuelUnits = value;
       } else {
-        device.storedWh = value;
+        device.storedMicrojoules = value;
       }
     }
   }
 
-  advance(to: SimTimestamp): readonly PowerTransition[] {
-    if (!Number.isFinite(to) || to < this.atSimSeconds) {
-      throw new Error('Power time must be finite and monotonic');
-    }
+  private run(to: number): readonly PowerTransition[] {
     const changes: PowerTransition[] = [];
     for (;;) {
       const solar = this.solar();
       const transfers = this.balance(solar.phase, changes);
-      if (this.atSimSeconds === to) {
+      if (this.atGameMilliseconds === to) {
         return changes;
       }
-      let elapsed = Math.min(to, solar.next) - this.atSimSeconds;
-      const hoursPerSecond = simToGameHours(this.clock, 1);
+      let elapsed = Math.min(to, solar.next) - this.atGameMilliseconds;
       for (const transfer of transfers) {
-        elapsed = Math.min(elapsed, transferDuration(transfer, hoursPerSecond));
+        elapsed = Math.min(elapsed, transferDuration(transfer));
       }
-      // A sub-ULP resource event still settles its boundary, without inventing elapsed time.
-      this.integrate(transfers, elapsed, hoursPerSecond);
-      this.atSimSeconds = simTimestamp(this.atSimSeconds + elapsed);
+      this.integrate(transfers, elapsed);
+      this.atGameMilliseconds += elapsed;
     }
   }
 }

@@ -1,5 +1,5 @@
 import type { PowerDeviceState, PowerState } from '../src/core/power.ts';
-import type { PowerDeviceDef } from '../src/core/powerContent.ts';
+import { exactUnits, POWER_UNITS, type PowerDeviceDef } from '../src/core/powerContent.ts';
 import { simTimestamp } from '../src/core/time.ts';
 
 export const powerDefinitions: PowerDeviceDef[] = [
@@ -19,19 +19,19 @@ export const deviceState = (id: string, type = id): PowerDeviceState => ({
   id,
   type,
   enabled: true,
-  fuelLitres: 0,
-  storedWh: 0,
+  fuelUnits: 0,
+  storedMicrojoules: 0,
   powered: false,
   restartBlocked: false,
 });
 
 export const powerState = (): PowerState => ({
-  atSimSeconds: 0,
+  atGameMilliseconds: 0,
   devices: [
-    { ...deviceState('generator'), fuelLitres: 0.77 },
+    { ...deviceState('generator'), fuelUnits: exactUnits(0.77, POWER_UNITS.amount) },
     deviceState('panel'),
-    { ...deviceState('first'), storedWh: 2.4 },
-    { ...deviceState('second'), storedWh: 3.7 },
+    { ...deviceState('first'), storedMicrojoules: exactUnits(2.4, POWER_UNITS.amount) },
+    { ...deviceState('second'), storedMicrojoules: exactUnits(3.7, POWER_UNITS.amount) },
     { ...deviceState('high'), enabled: false },
     deviceState('low'),
   ],
@@ -41,6 +41,3 @@ export const powerState = (): PowerState => ({
     itemUid: index + 1,
   })),
 });
-
-// Rounded-up integration spike measurements, pending BR approval.
-export const powerAgreementBounds = { fuelLitres: 8e-17, storedWh: 5e-14, transitionSimSeconds: 3e-13 };
