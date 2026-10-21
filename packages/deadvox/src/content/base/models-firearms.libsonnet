@@ -32,7 +32,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         "dispersionRadians": 0,
         "pump": true,
         "recoilKickRadians": 0.035,
-        "shotSound": "gunshot",
+        "shotSound": "shotgun_blast",
         "dryFireSound": "shotgun_dry_click",
         "skillZeroHandling": {
           "automaticFollowup": { "recoilKickScale": 20, "recoilRecoveryScale": 0.18, "variance": 60 },

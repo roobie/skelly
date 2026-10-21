@@ -1016,10 +1016,25 @@ try {
     const { session } = globalThis.pumpHandlingTest;
     session.frame(session.firearms.stanceEffectsFor(uid).raiseDurationSimSeconds + 0.1);
   }, boltIds.gun);
+  await page.evaluate(() => {
+    globalThis.reportReader = globalThis.pumpHandlingTest.session.sim.events.reader();
+  });
   await page.mouse.click(640, 450);
   await page.waitForFunction(
     (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.chamber === 'case',
     boltIds.gun,
+  );
+  const reports = await page.evaluate((uid) => {
+    const { session } = globalThis.pumpHandlingTest;
+    const gun = session.inventory.itemByUid(uid);
+    const event = session.inventory.registry.items.get(gun.type).firearm.shotSound;
+    return globalThis.reportReader.read().filter((entry) => entry.event === event);
+  }, boltIds.gun);
+  assert.equal(reports.filter(({ kind }) => kind === 'sound').length, 1, 'one report per native browser shot');
+  assert.equal(
+    reports.filter(({ kind }) => kind === 'noise').length,
+    1,
+    'one hearing stimulus per native browser shot',
   );
   const boltKeys = await page.context().newCDPSession(page);
   await pressCdpActionBurst(
