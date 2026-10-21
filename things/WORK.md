@@ -33,7 +33,6 @@ Why each boundary matters, and where it is checked:
 - Which parts of gungen's viewer are generic and which are gun-specific; settled when the gun
   tool phase moves gun code onto the shared packages.
 - Whether `PartFamily` and `ParamSpec` already work as family builders for non-gun things.
-- Whether single-part things fit the assembly framework or need a lighter path.
 - How validation, collision and the viewer rebuild scale with part count; no benchmark exists,
   so measure before optimising.
 - The smallest benchmark set to add before the thing tool adds load.
@@ -73,6 +72,9 @@ Settled:
 - An assembly's export carries each part's mass and centre of mass, and an export package
   above `thing-core` writes them with the GLB and the model entry (`things/README.md`,
   "Rules"; `things/README.md`, "Packages").
+- Every thing is an assembly; `thing-core` gives a single-part thing a short helper that
+  wraps its one part. Export, mass and preview then have one path, the setup is written
+  once, and a single-part thing can gain parts later without a rewrite.
 - The engine ends at assembly; export belongs above the neutral core so material and model
   contracts cannot pull dependencies back into geometry (`packages/engine/README.md`, "Layers").
 - The directory structure is fixed before any new feature work.
@@ -82,7 +84,7 @@ Settled:
 - At pre-pre-alpha no old format is kept alive; only deadvox validating and loading every
   export is owed.
 - Work is tracked in this file and GitHub issues, with no work-item prefix until open
-  question 3 is answered. Each phase may keep a short-lived task
+  question 2 is answered. Each phase may keep a short-lived task
   file in `things/`, deleted when the phase merges.
 
 Proposed, not settled: the tool rows of the target structure below and every answer to an
@@ -109,9 +111,8 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
 
 ## Open questions
 
-1. Whether single-part things use the assembly framework or only shapes, materials and export.
-2. Where parts shared by both tools live (a turned stock, for instance).
-3. Which work-item prefix the things packages use, beside `g`, `d`, `m` and `r` in
+1. Where parts shared by both tools live (a turned stock, for instance).
+2. Which work-item prefix the things packages use, beside `g`, `d`, `m` and `r` in
    `AGENTS.md`, "Work item IDs"; the close-out phase writes the answer into `AGENTS.md`.
 
 ## Phases
