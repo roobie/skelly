@@ -25,8 +25,8 @@ attention, supplying machines and risking stored goods.
 ## Scope and boundaries
 
 The slice includes craft-placed walls, floors, doors, barricades and furniture;
-locks and zombie door bashing, including the tier-2 brute; generators, solar,
-batteries, wires, lights and appliances; and material burning, neighbouring spread,
+locks and zombie door bashing, including the tier-2 brute's knockback; generators,
+solar, batteries, wires, lights and appliances; and material burning, neighbouring spread,
 smoke, light and molotovs. Lanterns, fixed lamps and window covering make lighting
 a base decision. These are the scope in `EPIC.md`, "5. Holding ground", not a
 settled catalogue or construction grid.
@@ -54,7 +54,8 @@ prerequisite; an authored test room can prove a mechanism, not complete the slic
 Door forcing retains material/tool requirements and irreversible lock destruction.
 Bashing needs actor and obstacle strength, not an inference from movement or the
 brute silhouette. The authored brute shambler is not automatically the tier-2
-brute. See `DESIGN.md`, "Base building and electricity", and
+brute; the tier-2 brute's door breaking and player knockback arrive together under
+`DESIGN.md`, "Types are data". See `DESIGN.md`, "Base building and electricity", and
 `src/core/zombies.ts`, `ZombieSystem.updateObstacleContact`.
 Boarding already has directional opening semantics; player-built boarding must
 not silently turn an inside-openable leaf into an immovable wall. See
@@ -67,8 +68,8 @@ not silently turn an inside-openable leaf into an immovable wall. See
   open. Its admission gate below must close before any trap implementation.
   Heavy payloads are not a prerequisite for defending a base.
 - **#276, heavy attacks and stagger:** not required by Slice 5's settled scope.
-  Door strength does not settle charged attacks, knockdown or player knockback.
-  Its admission gate keeps those decisions independent of bashing.
+  Door strength does not settle charged player attacks or hit-induced shambler
+  stagger. Their separate admission gates do not reopen tier-2 brute knockback.
 - **#313, scripted dynamic events:** not required for ordinary appliance commands.
   Keep scriptability and position-triggered events out unless BR explicitly admits
   the issue; powered appliances do not implicitly authorise a scripting language.
@@ -93,12 +94,23 @@ unbuilt. Unanswered gates block only their dependent work.
   catalogue and novel structures open. B: a general recipe-driven building palette
   across those categories — medium debt from validation and placement breadth,
   leaves structural physics open. Neither option drops walls or floors from exit.
-- **Support and removal:** Is placement supported by a simple local rule, or a
-  persistent support graph? A: local placement checks — low initial debt but medium
-  extension cost for collapse; leaves collapse unimplemented. B: authored support
-  dependencies — medium debt and destructive cascades to prove; leaves physical
-  stress simulation open. Decide contents and interrupted deconstruction outcomes
-  before either can remove occupied structures.
+- **Support:** Is placement supported by a simple local rule or a persistent support
+  graph? A: local placement checks — low initial debt but medium extension cost for
+  collapse, leaves collapse unimplemented. B: authored support dependencies — medium
+  debt and destructive cascades to prove, leaves physical stress simulation open.
+- **Removal contents:** Must players empty a structure before deconstruction or may
+  completion transfer its contents into the world? A: require empty contents at start
+  and completion — low ownership debt, leaves automatic unloading open. B: transfer
+  contents atomically at completion, refusing completion without a valid destination
+  — medium ownership/revalidation debt, leaves hauling and contents destruction open.
+  Neither permits item loss or duplication.
+- **Interrupted deconstruction:** Does a structure remain usable during paused
+  deconstruction or stay unavailable while work is pending?
+  A: retain use until completion — low state debt but medium completion-revalidation
+  cost, leaves staged dismantling open. B: reserve the structure against use while
+  work is pending — medium interaction/persistence debt, leaves partial salvage open.
+  Both retain resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";
+  cancellation releases work ownership without producing the completion yield.
 
 ### Breach gates — decision items #273 and #800
 
@@ -113,11 +125,6 @@ unbuilt. Unanswered gates block only their dependent work.
   rule? A: repeated strikes — medium debt in input/combat integration, leaves heavy
   attacks separate. B: long-action forcing — low debt in job ownership but medium
   cost if later unified with strike combat, leaves charged attacks separate.
-- **Brute consequences (#273; #276 for combat effects):** Is the first tier-2 brute
-  distinguished by breach capability and combat tuning alone, or also by knockback?
-  A: breach without knockback — low debt, leaves displacement combat open.
-  B: add knockback — medium debt in collision and body response, leaves general
-  heavy attacks and enemy knockdown undecided. Resolve this before the brute look.
 
 ### Power and appliance gates — decision item d576
 
@@ -134,9 +141,14 @@ unbuilt. Unanswered gates block only their dependent work.
   priority order — low debt, leaves balanced utilisation open. B: proportional to
   available capacity/charge — medium numerical-boundary debt, leaves player-directed
   priorities open. Neither is settled by topology.
-- **Storage realism:** Are transfers unlimited and lossless, or content-rate-capped
-  and lossy? A: ideal storage — low debt, leaves constraints open for later balancing.
-  B: caps and efficiencies — medium event-integration debt, leaves chemistry open.
+- **Storage transfer caps:** Are storage transfer rates unlimited or content-capped?
+  A: unlimited — low debt, leaves rate constraints open for later balancing.
+  B: content caps — medium event-integration debt, leaves chemistry open.
+- **Storage efficiency:** Are storage transfers lossless or content-efficiency-based?
+  A: lossless — low debt, leaves conversion losses open for later balancing.
+  B: content efficiencies — medium event-integration debt, leaves chemistry open.
+  Rate caps and efficiency are independent so capped lossless and uncapped lossy
+  storage remain available choices.
 - **Generator idling:** Burn continuously while running, even with no useful demand,
   or throttle fuel to useful output? A: continuous burning — low debt, leaves
   automatic control open. B: demand-following fuel use — medium dispatch debt,
@@ -147,11 +159,14 @@ unbuilt. Unanswered gates block only their dependent work.
   orientation open. Both use the existing world day-cycle authority, not an
   electrical day length; see `src/core/dayPhase.ts`, `DayCycle`. Approve phase
   mapping before solar integration; time-of-day dependence does not choose a curve.
-- **Wire electrical limits:** Ideal links, capacity limits, or length-dependent
-  losses too? A: ideal — low debt, leaves routing economics open. B: capacity limits
-  — medium network-flow debt, leaves losses open. C: losses and limits — high
-  flow/integration debt, leaves voltage and protection modelling open. This decision
-  is separate from visible wire placement.
+- **Wire capacity:** Are wire capacities unlimited or content-limited?
+  A: unlimited — low debt, leaves capacity-based routing economics open.
+  B: capacity limits — medium network-flow debt, leaves circuit protection open.
+- **Wire loss:** Are wires lossless or subject to length-dependent losses?
+  A: lossless — low debt, leaves distance-based routing economics open.
+  B: length-dependent losses — high flow/integration debt, leaves voltage modelling
+  open. Capacity and loss are independent, including lossy links without capacity
+  limits; neither decides visible wire placement.
 - **Electrical agreement tolerance:** What absolute resource error may near-player
   tick/catch-up comparison accept? A: exact equality through a shared canonical
   integrator — medium implementation debt, leaves alternative numerical methods
@@ -189,41 +204,52 @@ unbuilt. Unanswered gates block only their dependent work.
   contain spread by removing fuel and retreating? A: containment — low debt, leaves
   extinguishing tools open. B: direct extinguishing — medium debt in application,
   resources and persistence, leaves detailed water/heat transport open.
-- **Lit-base attention:** What attracts zombies: visible emitters or illuminated
+- **Light stimulus:** What attracts zombies: visible emitters or illuminated
   exposed surfaces as well? A: emitter visibility through uncovered openings — low
   debt using existing light-source attention, leaves diffuse glow recognition open.
   B: sampled illuminated surfaces — higher debt in simulation exposure and occlusion,
-  leaves volumetric glow open. In both cases, decide whether distant regional hordes
-  receive the stimulus or only local/background actors; local-only has lower debt
-  but leaves regional attraction open, regional influence has higher persistence
-  debt but makes unattended crowd formation part of the proof. Rendering residency
-  cannot decide what zombies perceive.
+  leaves volumetric glow open.
+- **Regional light influence:** Does base light stimulate only local/background
+  actors or distant regional hordes too? A: local/background actors — lower debt,
+  leaves regional attraction open. B: regional hordes too — higher persistence debt,
+  leaves richer regional stimulus interactions open and requires proof of unattended
+  crowd formation. Rendering residency cannot decide what zombies perceive.
 
 ### Admission and acceptance gates
 
 - **Traps (#107):** Include a bounded alarm/slowing set or defer the issue? Inclusion
   has medium debt in mechanism triggers, disarming and offscreen outcomes, leaves
   heavy payloads open; deferral has low debt and leaves all trap gameplay open.
-  Inclusion needs separate rulings on enemy awareness, disarming risk/recovery,
-  self-trigger consequences and offscreen firing from the issue before coding.
-- **Heavy attacks (#276):** Admit charged attacks and stagger or keep them separate?
-  Admission has medium debt in input, hit response and saved timing, leaves further
-  combat abilities open; deferral has low debt and leaves ordinary strikes and
-  independently decided brute knockback sufficient for this slice's breach work.
+  Conditional on #107 admission, a later design round must author separate atomic
+  cards with debt-graded options and negative space for enemy awareness, disarming
+  time, disarming risk, disarming tools, recovered parts, self-trigger severity and
+  offscreen firing before any trap implementation. Admission alone clears none of
+  these gates; mechanism-based triggering remains settled by #107 and offscreen
+  choices must obey `docs/decisions/0008-deterministic-world.md`, "Decision".
+- **Charged attacks (#276):** Admit charged player attacks or defer them?
+  A: admit — medium input/saved-timing debt, leaves further combat abilities open.
+  B: defer — low debt, leaves charged attacks open without blocking ordinary breach.
+- **Hit-induced stagger (#276):** Admit hit-induced shambler stagger or defer it?
+  A: admit — medium hit-response/timing debt, leaves general knockdown open.
+  B: defer — low debt, leaves stagger open without blocking ordinary breach.
+  Either admission can stand alone; neither changes settled tier-2 brute knockback.
 - **Dynamic events (#313):** Keep explicit appliance commands, admit data-driven
   trigger/condition/effect rules, or admit a script language? Those have low,
   medium and high debt respectively. Commands leave general authored events open;
   rules leave language tooling open; scripts leave sandboxing and mod authority to
-  settle before implementation. Neither admission settles position triggers.
-- **Playtest (d576):** Use an authored shelter-and-supply route followed by a regional
-  return, or a wholly regional shelter choice? The authored route has low authoring
+  settle before implementation. Conditional on #313 admission, a later design round
+  must author a separate debt-graded position-trigger permission card before event
+  implementation; language admission alone does not permit position triggers.
+- **Playtest setting (d576):** Use an authored shelter-and-supply route followed by
+  a regional return, or a wholly regional shelter choice? The authored route has low authoring
   debt but medium risk of hiding site-selection problems; it leaves procedural
   variety open. The regional loop has medium world-content debt; it leaves a curated
-  teaching route open. Separately choose natural attention pressure or an authored
-  initial threat population: natural pressure has low special-case debt but leaves
-  encounter pacing variable; an initial population has low engine debt but medium
-  content-maintenance debt and leaves emergent arrival pacing unproved. Neither
-  choice permits scripted waves without the #313 gate.
+  teaching route open.
+- **Playtest pressure (d576):** Should pressure come from natural attention or an
+  authored initial threat population? A: natural attention — low special-case debt,
+  leaves encounter pacing variable. B: authored initial population — low engine
+  debt but medium content-maintenance debt, leaves emergent arrival pacing unproved.
+  Neither setting nor pressure permits scripted waves without the #313 gate.
 
 ## Reviewable build order
 
@@ -258,8 +284,9 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    material/strength resolution at the obstacle-contact boundary. Prove blocked
    actors cannot path through an intact leaf, a broken leaf invalidates obstruction,
    noise attracts through ordinary senses, and boarding keeps its directional
-   contract. Show the tier-2 brute rather than silently upgrading the cellar guard.
-   BR approves the breach look and any admitted displacement effects.
+   contract. Show the tier-2 brute breaking doors and knocking the player back,
+   including collision-safe displacement, rather than silently upgrading the cellar
+   guard. BR approves the breach and knockback look.
 6. **Fire, smoke and light.** After fire/exposure gates, prove ignition and spread,
    material exhaustion, actor consequences, obstruction and light invalidation.
    Molotovs and wood cutting must enter the same fire owner; sufficient torch fuel
