@@ -2,7 +2,7 @@ import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
 import type { RevolvedSolid, Solid } from '@skelly/engine/shapes/solid.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError } from '@skelly/thing-export/exportTypes.ts';
-import { cartridgeModelAsset } from '../ammo/calibreSlug.ts';
+import { type CartridgeModelKind, cartridgeModelAsset } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { type RoundProfiles, roundProfiles } from '../ammo/roundProfile.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
@@ -114,14 +114,23 @@ const metallicSolids = (cartridge: Extract<Cartridge, { kind: 'metallic' }>) => 
   };
 };
 
+export const exportCartridgeModel = (
+  cartridge: Cartridge,
+  component: CartridgeModelKind,
+  asset: GlbAssetIdentity,
+  appearance?: AppearanceContext,
+): SingleCartridgeExportResult => {
+  const solids = cartridge.kind === 'shotshell' ? shotshellGeometry(cartridge) : metallicSolids(cartridge);
+  return makeModelExport(cartridge, asset, solids[component], appearance);
+};
+
 /** Export loaded-round/shell and fired-case/hull GLBs at real millimetre-derived dimensions. */
 export const exportCartridgeModels = (cartridge: Cartridge, appearance?: AppearanceContext): CartridgeExportResult => {
-  const solids = cartridge.kind === 'shotshell' ? shotshellGeometry(cartridge) : metallicSolids(cartridge);
-  const round = makeModelExport(cartridge, cartridgeModelAsset('round', cartridge.id), solids.round, appearance);
+  const round = exportCartridgeModel(cartridge, 'round', cartridgeModelAsset('round', cartridge.id), appearance);
   if (!round.ok) {
     return round;
   }
-  const firedCase = makeModelExport(cartridge, cartridgeModelAsset('case', cartridge.id), solids.case, appearance);
+  const firedCase = exportCartridgeModel(cartridge, 'case', cartridgeModelAsset('case', cartridge.id), appearance);
   if (!firedCase.ok) {
     return firedCase;
   }

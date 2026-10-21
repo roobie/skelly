@@ -4,6 +4,7 @@ read_if:
   - you wonder what remains before `gungen/` can be deleted
   - you decide where a shared concept, schema field or tool UI part belongs
   - you move the engine's export layer, the material data or mass out of gungen or the engine
+  - you change the recipe defining the gun tool's reproduction exit
 ---
 
 # WORK
@@ -135,8 +136,10 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    load test together. The compass keeps its dedicated display renderer.
 5. **Gun tool.** Move gungen's gun and ammo logic onto the shared packages as an authoring
    tool: its parts become a closed set of deadvox items, each atom with an authored mass, and
-   a gun is an assembly of them. The gungen part mass table's rows become those items. Exit: every gungen export deadvox consumes is reproduced by
-   the gun tool and validates.
+   a gun is an assembly of them. The gungen part mass table's rows become those items.
+   Exit: the gun tool reproduces and validates the consumption boundary authored in
+   `gungen/exports/deadvox.jsonnet`. An explicit recipe keeps retirement from overlooking
+   exports that are not guns; see `gungen/src/cli/exportRecipe.ts`, `loadExportRecipe`.
 6. **Retire gungen.** Switch CI, scripts and docs, then delete `gungen/` and its contract test.
 7. **Close out.**
    - Run the closing docs pass.

@@ -1,6 +1,47 @@
 {
   "sources": [
     {
+      "author": "Skelly contributors",
+      "changes": "Original project-built geometry exported from the authored recipe in metres, +x forward and +y up. Cartridge dimensions come from the recipe sources; unsupported internal dimensions remain visual proxies.",
+      "download": null,
+      "files": [
+        "assets/models/rifle_assault.glb",
+        "assets/models/rifle_ak.glb",
+        "assets/models/shotgun_pump.glb",
+        "assets/models/rifle_hunting.glb",
+        "assets/models/revolver.glb",
+        "assets/models/round_5_d_56x45.glb",
+        "assets/models/case_5_d_56x45.glb",
+        "assets/models/round_7_d_62x39.glb",
+        "assets/models/case_7_d_62x39.glb",
+        "assets/models/round_12_h_gauge_h_00_h_buck.glb",
+        "assets/models/case_12_h_gauge_h_00_h_buck.glb",
+        "assets/models/round_308_h_winchester.glb",
+        "assets/models/case_308_h_winchester.glb",
+        "assets/models/round_357_h_magnum.glb",
+        "assets/models/case_357_h_magnum.glb",
+        "assets/models/foregrip.glb",
+        "assets/models/improvised_suppressor.glb",
+        "assets/models/optic_digital_thermal.glb",
+        "assets/models/optic_fixed_prism_4x.glb",
+        "assets/models/optic_high_mag_5_25x.glb",
+        "assets/models/optic_holographic.glb",
+        "assets/models/optic_hunting_3_9x.glb",
+        "assets/models/optic_lpvo_1_6x.glb",
+        "assets/models/optic_mini_reflex.glb",
+        "assets/models/optic_tube_dot.glb",
+        "assets/models/rail_front_sight.glb",
+        "assets/models/real_suppressor.glb",
+        "assets/models/tactical_flashlight_mount.glb",
+        "assets/models/magazine_stanag_20.glb",
+        "assets/models/magazine_stanag_30.glb",
+        "assets/models/magazine_akm_30.glb"
+      ],
+      "licence": "CC0-1.0",
+      "title": "Gungen authored model exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/exports/deadvox.jsonnet"
+    },
+    {
       "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
       "changes": "K_22P near take, single-shot slices 0.82–1.90 s and 7.42–8.50 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade.",
       "download": "Prepared SFX Library.7z",
@@ -188,73 +229,6 @@
       "licence": "CC0-1.0",
       "title": "CC0 Flat Guns West",
       "url": "https://opengameart.org/content/cc0-flat-guns-west"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI and --calibre 5.56x45; exported carrier/hand-only charging-handle nodes, grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up",
-      "download": null,
-      "files": ["assets/models/rifle_assault.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen AR design export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ar.json"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Generated in metres from the curated archetype-ak-akm design, whose own calibre is 7.62x39, with gungen's export:glb CLI; handle geometry travels on the carrier node; exported grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up",
-      "download": null,
-      "files": ["assets/models/rifle_ak.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen AK design export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ak-akm.json"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; generic projectile profile follows its documented seating-depth assumption; case includes the fired case and primer",
-      "download": null,
-      "files": ["assets/models/round-7_d_62x39.glb", "assets/models/case-7_d_62x39.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen 7.62x39 cartridge exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/7.62x39.json"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Generated in metres from gungen's stanag-20, stanag-30 and akm-30 magazine prefabs with its export:magazine CLI, against the sourced 5.56x45 and 7.62x39 cartridge data; the round column, capacity and one pose per round come from the fitted geometry; original project-built geometry",
-      "download": null,
-      "files": [
-        "assets/models/magazine_stanag_20.glb",
-        "assets/models/magazine_stanag_30.glb",
-        "assets/models/magazine_akm_30.glb"
-      ],
-      "licence": "CC0-1.0",
-      "title": "Gungen magazine prefab exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/prefabs.ts"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Original curated 12-gauge pump geometry, metres/+x forward/+y up, separate carrier and forend GLB nodes coupled in hand mode only. Loading aperture/stroke from sourced shell dimensions; integral tube capacity from geometry with labelled visual reserve estimates. See gungen/docs/pump-action-export.md.",
-      "download": null,
-      "files": ["assets/models/shotgun_pump.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen hunting-cabin pump design export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-pump-shotgun.json"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; round includes the projectile and case, case includes the fired case and primer",
-      "download": null,
-      "files": ["assets/models/round-5_d_56x45.glb", "assets/models/case-5_d_56x45.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen 5.56x45 cartridge exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/5.56x45.json"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Original project-built geometry, sourced external mm dimensions converted to metres. Unknown closure uses a labelled generic roll-crimp visual proxy at the conservative loaded envelope; fired hull is open. Wall, lip, closure card and plastic/brass look are visual approximations, not manufacturer data; unsourced primer omitted. See gungen/docs/shotshell-export.md.",
-      "download": null,
-      "files": ["assets/models/round-12_h_gauge_h_00_h_buck.glb", "assets/models/case-12_h_gauge_h_00_h_buck.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen 12-gauge shotshell exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/12-gauge-00-buck.json"
     },
     {
       "author": "qubodup",
@@ -568,79 +542,12 @@
     },
     {
       "author": "Skelly contributors",
-      "changes": "Exported by gungen from original project-built part geometry as standalone models at each mount base, +x forward and +y up.",
-      "download": null,
-      "files": [
-        "assets/models/foregrip.glb",
-        "assets/models/improvised_suppressor.glb",
-        "assets/models/optic_digital_thermal.glb",
-        "assets/models/optic_fixed_prism_4x.glb",
-        "assets/models/optic_high_mag_5_25x.glb",
-        "assets/models/optic_holographic.glb",
-        "assets/models/optic_lpvo_1_6x.glb",
-        "assets/models/optic_mini_reflex.glb",
-        "assets/models/optic_tube_dot.glb",
-        "assets/models/rail_front_sight.glb",
-        "assets/models/real_suppressor.glb",
-        "assets/models/tactical_flashlight_mount.glb"
-      ],
-      "licence": "CC0-1.0",
-      "title": "Gungen standalone firearm attachments",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/attachmentExport.ts"
-    },
-    {
-      "author": "Skelly contributors",
       "changes": "Original asset provenance data and its Jsonnet composition source.",
       "download": null,
       "files": ["assets/manifest.jsonnet", "assets/manifest.libsonnet"],
       "licence": "CC0-1.0",
       "title": "Project asset manifest sources",
-      "url": "https://github.com/roobie/skelly/tree/main/deadvox/src/content/base/assets"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Original model geometry generated through the Gungen export pipeline.",
-      "download": null,
-      "files": ["assets/models/rifle_hunting.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen hunting rifle export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/hunting-rifle.json"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Original model geometry generated through the Gungen export pipeline.",
-      "download": null,
-      "files": ["assets/models/round-308_h_winchester.glb", "assets/models/case-308_h_winchester.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen civilian .308 Winchester cartridge exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/308-winchester.json"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Original model geometry generated through the Gungen export pipeline.",
-      "download": null,
-      "files": ["assets/models/optic_hunting_3_9x.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen hunting scope export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/optics.ts"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Original project-built geometry exported by gungen. Moving assembly parts and the revolver metadata preserve the assembled rest pose for runtime composition; see gungen/docs/revolver-export.md.",
-      "download": null,
-      "files": ["assets/models/revolver.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen .357 Magnum revolver export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-revolver.json"
-    },
-    {
-      "author": "Skelly contributors",
-      "changes": "Original project-built presentation geometry exported from sourced external dimensions. Unknown typical overall length uses the sourced maximum for presentation; the projectile and primer use the generic visual proxies in gungen/src/ammo/roundProfile.ts, roundProfiles.",
-      "download": null,
-      "files": ["assets/models/round-357_h_magnum.glb", "assets/models/case-357_h_magnum.glb"],
-      "licence": "CC0-1.0",
-      "title": "Gungen .357 Magnum cartridge exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/357-magnum.json"
+      "url": "https://github.com/roobie/skelly/tree/main/packages/deadvox/src/content/base/assets"
     }
   ]
 }

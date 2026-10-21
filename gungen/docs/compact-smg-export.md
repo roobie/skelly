@@ -5,6 +5,7 @@ read_if:
   - you add the 9x19 cartridge or the compact SMG's Deadvox entry
   - you choose the reference drawing or photos a Gungen design is traced from
   - you separate a traced design's appearance profile from a generator fixture
+  - you change the structured Deadvox export recipe or add shipped variants
 ---
 
 # Compact SMG export
@@ -61,15 +62,9 @@ Each mover is certified with the swept-clearance check, not exempted by family; 
 
 ## Export contract for Deadvox
 
-The export follows the existing model record and anchors; it adds no new channel. See `src/gun/exportGlb.ts`, `DeadvoxModelEntry`, and `src/gun/anchorData.ts`, `GUN_ANCHORS`.
+The export uses the shared model envelope rather than adding a compact-SMG channel: hand, loading and sight relationships belong to fitted geometry, not invented gameplay coordinates. See `src/gun/exportGlb.ts`, `DeadvoxModelEntry`, and `src/gun/anchorData.ts`, `GUN_ANCHORS`. Distinct stock and muzzle choices keep separate export identities so the playable model needs no configuration-specific channel.
 
-- **Hand datums.** The firing hand is at the grip anchor and the support hand is at the handguard support anchor, as in other handguard designs.
-- **Magazine.** A detachable-magazine slot at the lower magwell, with round poses from the magazine column, so Deadvox reloads it like other box-fed guns.
-- **Ejection port.** The receiver ejection anchor at the traced port.
-- **Muzzle and sight.** The muzzle anchor at the muzzle's tip on each muzzle variant. The iron-sight eye line passes through the drum aperture and the front ring.
-- **Stock and muzzle variants.** Each variant is its own export, so the model record needs no stock or muzzle field. The telescoping variant exports at its extended position. Only the two threaded-muzzle exports, one per stock, are credited in Deadvox.
-
-The record is refreshed through the same path as other credited guns, so Deadvox-owned fields survive; see `src/cli/refreshDeadvoxFirearms.ts`.
+Shipped variants belong in `exports/deadvox.jsonnet` so the consumption boundary cannot silently omit a variant or infer equipment from another gun. Exporter-written records remain separate from authored gameplay overlays; see `src/cli/exportRecipe.ts`, `loadExportRecipe`, and `src/cli/refreshDeadvox.ts`.
 
 ## Content tunables
 

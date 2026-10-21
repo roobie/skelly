@@ -2,6 +2,7 @@
 read_if:
   - you change or consume the revolver model export, shared writer or moving-part transforms
   - you refresh the revolver or its ammunition in Deadvox
+  - you change the structured Deadvox export recipe
 ---
 
 # Revolver export
@@ -24,4 +25,4 @@ The curated design carries its own cartridge identity. Geometry-only exports wit
 
 Asset credits cover runtime media rather than Jsonnet authoring programs. Keeping the manifest's source beside its compiled output must not require that source to credit itself; see `packages/deadvox/src/core/assets.ts`, `assetFileIssues`.
 
-The CLI owns the GLBs and JSON entries under `packages/deadvox/src/content/base/gungen`; Jsonnet imports those entries into the firearm pack so refreshes have one metadata writer. See `src/cli/export.ts`, `src/cli/exportCartridges.ts`, and `packages/deadvox/src/content/base/models-firearms.libsonnet`. Do not hand-edit exported geometry or metadata.
+A refresh has one metadata writer so exported geometry cannot drift from hand-edited records, while authored gameplay overlays remain untouched. The explicit consumption boundary is `exports/deadvox.jsonnet`; see `src/cli/refreshDeadvox.ts`, `loadExportRecipe`, and `packages/deadvox/src/content/base/models-firearms.libsonnet`.

@@ -1,0 +1,199 @@
+[
+  {
+    "id": "rifle_assault",
+    "kind": "design",
+    "source": "gungen/designs/archetype-ar.json"
+  },
+  {
+    "id": "rifle_ak",
+    "kind": "design",
+    "source": "gungen/designs/archetype-ak-akm.json"
+  },
+  {
+    "id": "shotgun_pump",
+    "kind": "design",
+    "source": "gungen/designs/archetype-pump-shotgun.json"
+  },
+  {
+    "id": "rifle_hunting",
+    "kind": "design",
+    "source": "gungen/designs/hunting-rifle.json"
+  },
+  {
+    "id": "revolver",
+    "kind": "design",
+    "source": "gungen/designs/archetype-revolver.json"
+  },
+  {
+    "id": "round_5_d_56x45",
+    "kind": "cartridge",
+    "options": {
+      "component": "round"
+    },
+    "source": "gungen/cartridges/5.56x45.json"
+  },
+  {
+    "id": "case_5_d_56x45",
+    "kind": "cartridge",
+    "options": {
+      "component": "case"
+    },
+    "source": "gungen/cartridges/5.56x45.json"
+  },
+  {
+    "id": "round_7_d_62x39",
+    "kind": "cartridge",
+    "options": {
+      "component": "round"
+    },
+    "source": "gungen/cartridges/7.62x39.json"
+  },
+  {
+    "id": "case_7_d_62x39",
+    "kind": "cartridge",
+    "options": {
+      "component": "case"
+    },
+    "source": "gungen/cartridges/7.62x39.json"
+  },
+  {
+    "id": "round_12_h_gauge_h_00_h_buck",
+    "kind": "cartridge",
+    "options": {
+      "component": "round"
+    },
+    "source": "gungen/cartridges/12-gauge-00-buck.json"
+  },
+  {
+    "id": "case_12_h_gauge_h_00_h_buck",
+    "kind": "cartridge",
+    "options": {
+      "component": "case"
+    },
+    "source": "gungen/cartridges/12-gauge-00-buck.json"
+  },
+  {
+    "id": "round_308_h_winchester",
+    "kind": "cartridge",
+    "options": {
+      "component": "round"
+    },
+    "source": "gungen/cartridges/308-winchester.json"
+  },
+  {
+    "id": "case_308_h_winchester",
+    "kind": "cartridge",
+    "options": {
+      "component": "case"
+    },
+    "source": "gungen/cartridges/308-winchester.json"
+  },
+  {
+    "id": "round_357_h_magnum",
+    "kind": "cartridge",
+    "options": {
+      "component": "round"
+    },
+    "source": "gungen/cartridges/357-magnum.json"
+  },
+  {
+    "id": "case_357_h_magnum",
+    "kind": "cartridge",
+    "options": {
+      "component": "case"
+    },
+    "source": "gungen/cartridges/357-magnum.json"
+  },
+  {
+    "id": "foregrip",
+    "kind": "attachment",
+    "source": "foregrip"
+  },
+  {
+    "id": "improvised_suppressor",
+    "kind": "attachment",
+    "source": "improvised-suppressor"
+  },
+  {
+    "id": "optic_digital_thermal",
+    "kind": "attachment",
+    "source": "optic-digital-thermal"
+  },
+  {
+    "id": "optic_fixed_prism_4x",
+    "kind": "attachment",
+    "source": "optic-fixed-prism-4x"
+  },
+  {
+    "id": "optic_high_mag_5_25x",
+    "kind": "attachment",
+    "source": "optic-high-mag-5-25x"
+  },
+  {
+    "id": "optic_holographic",
+    "kind": "attachment",
+    "source": "optic-holographic"
+  },
+  {
+    "id": "optic_hunting_3_9x",
+    "kind": "attachment",
+    "source": "optic-hunting-3-9x"
+  },
+  {
+    "id": "optic_lpvo_1_6x",
+    "kind": "attachment",
+    "source": "optic-lpvo-1-6x"
+  },
+  {
+    "id": "optic_mini_reflex",
+    "kind": "attachment",
+    "source": "optic-mini-reflex"
+  },
+  {
+    "id": "optic_tube_dot",
+    "kind": "attachment",
+    "source": "optic-tube-dot"
+  },
+  {
+    "id": "rail_front_sight",
+    "kind": "attachment",
+    "source": "rail-front-sight"
+  },
+  {
+    "id": "real_suppressor",
+    "kind": "attachment",
+    "source": "real-suppressor"
+  },
+  {
+    "id": "tactical_flashlight_mount",
+    "kind": "attachment",
+    "source": "tactical-flashlight-mount"
+  },
+  {
+    "id": "magazine_stanag_20",
+    "kind": "magazine",
+    "options": {
+      "appearanceProfile": "ar",
+      "cartridge": "gungen/cartridges/5.56x45.json"
+    },
+    "source": "stanag-20"
+  },
+  {
+    "id": "magazine_stanag_30",
+    "kind": "magazine",
+    "options": {
+      "appearanceProfile": "ar",
+      "cartridge": "gungen/cartridges/5.56x45.json"
+    },
+    "source": "stanag-30"
+  },
+  {
+    "id": "magazine_akm_30",
+    "kind": "magazine",
+    "options": {
+      "appearanceProfile": "ak",
+      "cartridge": "gungen/cartridges/7.62x39.json"
+    },
+    "source": "akm-30"
+  }
+]

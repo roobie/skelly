@@ -67,21 +67,24 @@ models.ground = (id) => {
   return clone;
 };
 const render = () => renderer.render(scene, camera);
-const sync = () => { inventory.version++; piles.sync(inventory); render(); };
+const sync = () => { piles.sync(inventory); render(); };
+const stack = inventory.piles.values().next().value.items[0].item;
 const instances = () => piles.group.children.filter((child) => child.isInstancedMesh);
 piles.sync(inventory);
 render();
 const originalInstances = instances();
 const warmup = snapshot();
-for (let update = 0; update < 100; update++) sync();
+for (let update = 0; update < 100; update++) {
+  if (!inventory.changeCondition(stack.uid, -0.001)) throw new Error('Could not dirty the owned pile item');
+  sync();
+}
 const afterUpdates = snapshot();
 const pileClones = groundClones;
 const sameInstances = originalInstances.length > 0 && originalInstances.every((mesh) => piles.group.children.includes(mesh));
-const stack = inventory.piles.values().next().value.items[0].item;
-stack.count = 3;
+if (!inventory.consume(stack, stack.count - 3)) throw new Error('Could not reduce the case stack');
 sync();
 const reducedCount = instances()[0]?.count;
-stack.count = 100;
+if (!inventory.add(inventory.create(stack.type, 100 - stack.count, stack.condition), { kind: 'pile', pos: [0, 2, 0] })) throw new Error('Could not restore the case stack');
 sync();
 const cappedCount = instances()[0]?.count;
 const countChanges = delta(afterUpdates, snapshot());
@@ -117,7 +120,7 @@ for (let wave = 0; wave < 100; wave++) {
 const flight = { clones: groundClones - beforeFlightClones, active: effects.activeCount, visuals: effects.mesh.children.length };
 const meshesOnRemoval = instances().length;
 const beforeRemoval = snapshot();
-inventory.piles.clear();
+if (!inventory.consume(stack, stack.count)) throw new Error('Could not remove the case pile');
 sync();
 const removal = delta(beforeRemoval, snapshot());
 const childrenAfterRemoval = piles.group.children.length;
@@ -183,11 +186,11 @@ const measure = async (launchedBrowser, address, mode) => {
   });
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('request', (request) => {
-    if (request.url().includes('/case-5_d_56x45.glb') && request.resourceType() === 'fetch') {
+    if (request.url().includes('/assets/models/') && request.resourceType() === 'fetch') {
       caseRequests += 1;
     }
   });
-  await page.route('**/case-5_d_56x45.glb*', async (route) => {
+  await page.route('**/assets/models/*.glb*', async (route) => {
     if (route.request().resourceType() !== 'fetch' || mode === 'loaded') {
       await route.continue();
     } else if (mode === 'failed') {

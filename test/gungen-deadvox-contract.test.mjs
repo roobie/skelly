@@ -3,10 +3,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { parseCartridgeJson } from '../gungen/src/ammo/parseCartridge.ts';
-import { exportFileText } from '../gungen/src/cli/exportFile.ts';
-import { exportAttachmentGlb } from '../gungen/src/gun/attachmentExport.ts';
-import { exportCartridgeModels } from '../gungen/src/gun/cartridgeExport.ts';
+import { loadExportRecipe } from '../gungen/src/cli/exportRecipe.ts';
+import { modelEntryJson } from '../gungen/src/cli/modelEntryJson.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
@@ -19,22 +17,8 @@ const { safeParse } = deadvoxRequire('valibot');
 const ROOT = new URL('../', import.meta.url).pathname;
 const DESIGNS = join(ROOT, 'gungen/designs');
 const DEADVOX_BASE = join(ROOT, 'packages/deadvox/src/content/base');
-const FIREARM_CONTENT = JSON.parse(readFileSync(join(DEADVOX_BASE, 'models-firearms.json'), 'utf8'));
-// The asset manifest credits each exported gun to its gungen design, so a new export joins the sync check with its credit.
-const DESIGN_SOURCE = /\/gungen\/designs\/([^/]+\.json)$/;
-const CARTRIDGE_SOURCE = /\/gungen\/cartridges\/[^/]+\.json$/;
-const MODEL_FILE = /^assets\/models\/([^/]+)\.glb$/;
-const ASSET_SOURCES = JSON.parse(readFileSync(join(DEADVOX_BASE, 'assets/manifest.json'), 'utf8')).sources;
-const EXPORTED_GUNS = ASSET_SOURCES.flatMap(({ url, files }) => {
-  const design = typeof url === 'string' ? DESIGN_SOURCE.exec(url)?.[1] : undefined;
-  return design ? files.map((file) => ({ design, file, modelId: MODEL_FILE.exec(file)?.[1] })) : [];
-});
-const omitDeadvoxOwnedFields = ({ gun, anchors, ...model }) => {
-  const { chargingHandleDegrees: _chargingHandleDegrees, ...exportedGun } = gun ?? {};
-  // Gungen owns contact geometry; Deadvox content may place the player's wrist relative to that contact.
-  const { support_wrist: _supportWrist, ...exportedAnchors } = anchors ?? {};
-  return { ...model, ...(gun ? { gun: exportedGun } : {}), ...(anchors ? { anchors: exportedAnchors } : {}) };
-};
+const RECIPE = loadExportRecipe();
+const EXPORTED = RECIPE.map((row) => ({ id: row.id, source: row.source, ...row.generate() }));
 const glbJson = (bytes) =>
   JSON.parse(
     bytes
@@ -92,26 +76,6 @@ const exportDifference = (actual, expected, path = '$') => {
   }
   return Object.is(actual, expected) ? null : `${path} differs`;
 };
-const modelSyncDifference = ({ glb, modelEntry }, source) => {
-  const { id, file } = modelEntry;
-  const committed = FIREARM_CONTENT.models.find((model) => model.id === id);
-  if (!committed) {
-    return `missing Deadvox model ${id}`;
-  }
-  const difference = exportDifference(omitDeadvoxOwnedFields(committed), modelEntry);
-  if (difference) {
-    return `${id} differs from ${source}: ${difference}`;
-  }
-  // Node versions round linear colours in the last bit; geometry still compares byte for byte.
-  const committedGlb = readFileSync(join(DEADVOX_BASE, file));
-  const exportedGlb = Buffer.from(glb);
-  const glbDifference = exportDifference(glbJson(committedGlb), glbJson(exportedGlb));
-  if (glbDifference) {
-    return `${file} differs from ${source}: ${glbDifference}`;
-  }
-  return glbBinary(committedGlb).equals(glbBinary(exportedGlb)) ? null : `${file} geometry differs from ${source}`;
-};
-
 const loadExports = () =>
   readdirSync(DESIGNS)
     .filter((file) => file.endsWith('.json') && !file.startsWith('look-'))
@@ -134,7 +98,7 @@ const loadExports = () =>
     });
 
 describe('gungen exports satisfy deadvox model validation', () => {
-  it('validates each exported gun model entry, including action metadata', () => {
+  it('validates each curated gun model entry, including action metadata', () => {
     const exportedGuns = loadExports();
     assert.ok(exportedGuns.length > 0);
     for (const { file, model } of exportedGuns) {
@@ -144,77 +108,61 @@ describe('gungen exports satisfy deadvox model validation', () => {
     }
   });
 
-  it("keeps Deadvox's copy of every exported gun identical to gungen's export", () => {
-    assert.ok(EXPORTED_GUNS.length > 0, 'the asset manifest credits no gungen design');
-    for (const { design, file, modelId } of EXPORTED_GUNS) {
-      assert.ok(modelId, `${design}: ${file} is not a Deadvox model file`);
-      const result = exportFileText(readFileSync(join(DESIGNS, design), 'utf8'), { id: modelId, file });
-      assert.ok(result.ok, `${design}: ${result.ok ? '' : result.message}`);
-      assert.equal(modelSyncDifference(result, design), null);
+  it('reproduces the exporter-written model text and GLB of every recipe row', () => {
+    for (const { id, glb, modelEntry, source } of EXPORTED) {
+      const { file } = modelEntry;
+      assert.equal(modelEntry.id, id, `${source}: recipe identity was not used`);
+      assert.equal(file, `assets/models/${id}.glb`, `${source}: recipe output path was not used`);
+      assert.equal(
+        readFileSync(join(DEADVOX_BASE, 'gungen', `${id}.model.json`), 'utf8'),
+        modelEntryJson(modelEntry),
+        `${id}: ${source}`,
+      );
+      assert.ok(safeParse(ModelSchema, modelEntry).success, `${id}: invalid exported model`);
+      // Node versions round linear colours in the last bit; geometry still compares byte for byte.
+      const committedGlb = readFileSync(join(DEADVOX_BASE, file));
+      const exportedGlb = Buffer.from(glb);
+      assert.equal(exportDifference(glbJson(committedGlb), glbJson(exportedGlb)), null, `${file}: ${source}`);
+      assert.ok(glbBinary(committedGlb).equals(glbBinary(exportedGlb)), `${file}: geometry differs from ${source}`);
     }
   });
 
-  it('keeps credited round and case exports synchronized with their cartridge sources', () => {
-    const sources = ASSET_SOURCES.filter(({ url }) => typeof url === 'string' && CARTRIDGE_SOURCE.test(url));
-    assert.ok(sources.length > 0, 'the manifest credits no cartridge exports');
-    for (const { url, files } of sources) {
-      const cartridgeFile = url.slice(url.lastIndexOf('/') + 1);
-      const parsed = parseCartridgeJson(readFileSync(join(ROOT, 'gungen/cartridges', cartridgeFile), 'utf8'));
-      assert.ok(parsed.ok, `${cartridgeFile}: ${JSON.stringify(parsed)}`);
-      const exported = exportCartridgeModels(parsed.cartridge);
-      assert.ok(exported.ok, `${cartridgeFile}: ${JSON.stringify(exported.error)}`);
-      assert.ok(files.length > 0, `${cartridgeFile} credits no model files`);
-      for (const file of files) {
-        const model = Object.values(exported.models).find(({ modelEntry }) => modelEntry.file === file);
-        assert.ok(model, `${file} is not produced by ${cartridgeFile}`);
-        assert.equal(modelSyncDifference(model, cartridgeFile), null);
-      }
+  it('leaves no committed exporter-written model without a recipe row', () => {
+    const ids = new Set(RECIPE.map(({ id }) => id));
+    for (const file of readdirSync(join(DEADVOX_BASE, 'gungen')).filter((entry) => entry.endsWith('.model.json'))) {
+      assert.ok(ids.has(file.slice(0, -'.model.json'.length)), `${file}: orphaned export`);
     }
   });
 
-  it('keeps standalone optic exports synchronized with the credited optic catalogue', () => {
-    const sources = ASSET_SOURCES.filter(
-      ({ url }) => typeof url === 'string' && url.endsWith('/gungen/src/gun/optics.ts'),
-    );
-    assert.ok(sources.length > 0, 'the manifest credits no standalone optic catalogue exports');
-    for (const { files } of sources) {
-      assert.ok(files.length > 0, 'the optic source credits no model files');
-      for (const file of files) {
-        const id = MODEL_FILE.exec(file)?.[1];
-        assert.ok(id, `invalid optic model file ${file}`);
-        const exported = exportAttachmentGlb(id.replaceAll('_', '-'), { id, file });
-        assert.ok(exported.ok, JSON.stringify(exported.error));
-        assert.equal(modelSyncDifference(exported, 'optic catalogue'), null);
-      }
-    }
-  });
-
-  it('loads each exported suppressor material without changing its colour', async () => {
+  it('loads exported suppressor material colours unchanged through the Deadvox loader', async () => {
+    const suppressors = EXPORTED.filter(({ modelEntry }) => modelEntry.gun?.attachment?.kind === 'suppressor');
+    assert.ok(suppressors.length > 0);
     await Promise.all(
-      ['real_suppressor', 'improvised_suppressor'].map(async (id) => {
-        const exported = exportAttachmentGlb(id.replaceAll('_', '-'), {
-          id,
-          file: `assets/models/${id}.glb`,
-        });
-        assert.ok(exported.ok, exported.ok ? '' : JSON.stringify(exported.error));
-        const exportedColor = glbJson(Buffer.from(exported.glb)).materials[0].pbrMetallicRoughness.baseColorFactor;
-        const asset = readFileSync(join(ROOT, `packages/deadvox/src/content/base/assets/models/${id}.glb`));
-        const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(asset).buffer, '');
-        const loadedColors = [];
+      suppressors.map(async ({ modelEntry, glb }) => {
+        const raw = glbJson(Buffer.from(glb));
+        const bytes = readFileSync(join(DEADVOX_BASE, modelEntry.file));
+        const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+        const materials = new Set();
         loaded.scene.traverse((object) => {
           if (object.isMesh) {
-            const materials = Array.isArray(object.material) ? object.material : [object.material];
-            loadedColors.push(...materials.map(({ color }) => color.toArray()));
+            for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+              materials.add(material);
+            }
           }
         });
-        assert.ok(loadedColors.length > 0, `Deadvox ${id} GLB loaded no mesh materials`);
-        assert.deepEqual(loadedColors, [exportedColor.slice(0, 3)]);
+        assert.ok(materials.size > 0, `${modelEntry.id}: no loaded mesh materials`);
+        for (const material of materials) {
+          const index = loaded.parser.associations.get(material)?.materials;
+          assert.ok(Number.isInteger(index), `${modelEntry.id}: no material association`);
+          const colour = raw.materials[index].pbrMetallicRoughness.baseColorFactor;
+          assert.deepEqual(material.color.toArray(), colour.slice(0, 3));
+        }
       }),
     );
   });
 
   it('loads every exported revolver moving node through the Deadvox parser association', async () => {
-    const models = FIREARM_CONTENT.models.filter((model) => model.gun?.revolver);
+    const models = EXPORTED.map(({ modelEntry }) => modelEntry).filter((model) => model.gun?.revolver);
     assert.ok(models.length > 0);
     await Promise.all(
       models.map(async (model) => {
