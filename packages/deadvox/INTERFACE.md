@@ -55,7 +55,7 @@ Bleeding feedback names each region's tier when messages are enabled. A content 
 
 ## Development, playtest and errors
 
-`?debug=1` is a development profile whose tools and readouts may be instructional. A separate playtest profile remains planned, without god mode, spawning, noclip or time controls. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
+`?debug=1` is a development profile whose tools and readouts may be instructional. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
 
 A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
 
@@ -75,6 +75,6 @@ See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#over
 
 ## Open direction
 
-- Add the playtest profile and shape a diegetic first-run introduction from playtest findings.
+- #746: Add the playtest profile and shape a diegetic first-run introduction from playtest findings.
 - Make the clock diegetic through a watch.
 - Develop bodily cues one state at a time; retire a HUD line only after its replacement is judged in play.
