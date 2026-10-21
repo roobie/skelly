@@ -1,7 +1,8 @@
 // The mood pass: bloom, colour grade, vignette and film grain on top of the scene, plus the
 // height-fog mist. With `post` off, direct display shading is preserved and a smaller scene
 // viewport can be copied and presented full-size without enabling any mood effects. A night-vision
-// view or an optic lens still draws through the chain, because the player's view needs it.
+// view or an optic lens still draws through the chain, because the player's view needs it, but
+// with `post` off the chain adds only that view.
 //
 // Pipeline (post on), all in an MSAA half-float linear target until the last step:
 //   RenderPass (scene) -> hands -> bloom -> output (tone mapping + sRGB + grade/film) -> screen
@@ -21,6 +22,7 @@ import {
   type Material,
   Mesh,
   NeutralToneMapping,
+  NoToneMapping,
   type Object3D,
   type PerspectiveCamera,
   PlaneGeometry,
@@ -139,6 +141,11 @@ export class Mood {
   /** Whether the frame draws through the post chain without an optic lens. */
   private get chain(): boolean {
     return this.state.post || this.nightVision !== undefined;
+  }
+
+  /** What undoes OutputPass's exposure on the sky's colours in the chain; no tone mapper applies none. */
+  private chainColorScale(): number {
+    return this.renderer.toneMapping === NoToneMapping ? 1 : targetColorScale(this.renderer.toneMappingExposure);
   }
 
   get bloom(): boolean {
@@ -305,19 +312,19 @@ export class Mood {
 
   /**
    * Draws the frame. `drawHands` draws the held items on top of the scene: into the post chain
-   * when post is on, onto the screen when it's off.
+   * when the chain runs, onto the screen when it doesn't.
    */
   render(drawHands: () => void, opticFrame?: OpticLensFrame): void {
     if (this.contextLost) {
       return;
     }
     // Crack check: only the clear colour changes (the fog on geometry keeps the sky colour), so
-    // magenta shows exactly where no geometry covered the sample. Post-on scales it like the sky.
+    // magenta shows exactly where no geometry covered the sample. The chain scales it like the sky.
     const { background } = this.scene;
     if (this.crackOn) {
       this.crackColor.setRGB(1, 0, 1);
       if (this.chain) {
-        this.crackColor.multiplyScalar(targetColorScale(this.renderer.toneMappingExposure));
+        this.crackColor.multiplyScalar(this.chainColorScale());
       }
       this.scene.background = this.crackColor;
     }
@@ -384,12 +391,13 @@ export class Mood {
     const exposure = this.renderer.toneMappingExposure;
     this.bloomPass!.threshold = bloomThreshold(exposure, this.effectiveBloomClip());
     // The clear colour, the distance fog and the mist all land in the linear target and then get
-    // the exposure from OutputPass, which would push a bright sky past the bloom threshold and
-    // brighten it against the no-post frame. Scaled by 1 / exposure for this frame, they come out
-    // as the sky's own colour. All three scale alike, so geometry still fades into the background
+    // the exposure from OutputPass's tone mapper, which would push a bright sky past the bloom
+    // threshold and brighten it against the no-post frame. Scaled by 1 / exposure for this frame,
+    // they come out as the sky's own colour. Without a tone mapper nothing applies exposure, so
+    // nothing is undone. All three scale alike, so geometry still fades into the background
     // exactly at the far plane. The originals are put back afterwards (scene.background is the fog's
     // own Color, see applySky), so the post-off path and the next frame see the unscaled sky.
-    const scale = targetColorScale(exposure);
+    const scale = this.chainColorScale();
     const fogColor = this.scene.fog?.color;
     const mist = heightFogUniforms.uHeightFogColor.value;
     const savedFog = fogColor?.clone();
@@ -485,10 +493,23 @@ export class Mood {
     return Promise.all(compiling).finally(() => quad.dispose());
   }
 
+  /**
+   * The effects `post` switches, all off without it: a chain run only for the goggles or an optic must not show
+   * effects the look turned off.
+   */
+  private postEffects() {
+    if (!this.state.post) {
+      return { bloom: false, film: false, grade: 0, painDesaturation: 0, drugVignette: 0, mist: 0 };
+    }
+    const { bloom, film, grade } = this.state;
+    const drugVignette = drugVignetteShown(this.drugVignette, this.drugVignetteScaleValue);
+    return { bloom, film, grade, painDesaturation: this.painDesaturation, drugVignette, mist: this.skyMist };
+  }
+
   /** The values the passes and shaders read, from the state and the sky. */
   private sync(): void {
-    const { post, bloom, film, grade } = this.state;
-    heightFogUniforms.uHeightFog.value.x = post ? this.skyMist : 0;
+    const { bloom, film, grade, painDesaturation, drugVignette, mist } = this.postEffects();
+    heightFogUniforms.uHeightFog.value.x = mist;
     if (!this.composer) {
       return;
     }
@@ -497,14 +518,14 @@ export class Mood {
     bloomPass.strength = this.skyBloom;
     const params = gradeParams(grade);
     const u = this.outputPass!.uniforms;
-    u.uGradeEnabled!.value = grade > 0 || film || this.painDesaturation > 0 ? 1 : 0;
-    u.uSaturation!.value = params.saturation * (1 - this.painDesaturation);
+    u.uGradeEnabled!.value = grade > 0 || film || painDesaturation > 0 ? 1 : 0;
+    u.uSaturation!.value = params.saturation * (1 - painDesaturation);
     u.uContrast!.value = params.contrast;
     u.uShadowTint!.value = [...params.shadowTint];
     u.uHighlightTint!.value = [...params.highlightTint];
     u.uVignette!.value = film ? VIGNETTE : 0;
     u.uGrain!.value = film ? GRAIN : 0;
-    u.uDrugVignette!.value = drugVignetteShown(this.drugVignette, this.drugVignetteScaleValue);
+    u.uDrugVignette!.value = drugVignette;
     const night = this.nightVision;
     // The tint is applied after the transfer function, so it goes in as display (sRGB) values.
     const tint = night ? new Color(night.tint).getRGB({ r: 0, g: 0, b: 0 }, SRGBColorSpace) : { r: 0, g: 0, b: 0 };
@@ -527,7 +548,7 @@ export class Mood {
     this.opticPass = undefined;
   }
 
-  /** Built on first use, so a run that never turns post on (the benchmark) allocates no targets. */
+  /** Built on first use, so a run that never needs the chain (the benchmark) allocates no targets. */
   private ensureComposer(): EffectComposer {
     if (this.composer) {
       return this.composer;
