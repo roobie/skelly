@@ -7,6 +7,7 @@ import type { Vec3 } from './coords.ts';
 import type { HandlingQueue, MoveJob } from './handling.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
+import { NO_LANDING_REFUSAL } from './itemThrow.ts';
 import { chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { Readable } from './readable.ts';
@@ -103,15 +104,19 @@ export const playerPockets = (
     })),
   );
 
-/** Ordinary drop finds room for either a carried move or a fresh emission. */
+/** Ordinary drop finds room for either a carried move or a fresh emission, on the ground below each spot. */
 export const dropTarget = (
-  inv: Pick<Inventory, 'locate' | 'planAdd' | 'plan'>,
+  inv: Pick<Inventory, 'locate' | 'planAdd' | 'plan' | 'landing'>,
   item: Item,
   feet: Vec3,
 ): { target: Target; plan: Plan } => {
   let first: { target: Target; plan: Plan } | undefined;
   const fresh = inv.locate(item) === undefined;
-  for (const pos of dropSpots(feet)) {
+  for (const spot of dropSpots(feet)) {
+    const pos = inv.landing(spot);
+    if (!pos) {
+      continue;
+    }
     const target: Target = { kind: 'pile', pos };
     const plan = fresh ? inv.planAdd(item, target) : inv.plan(item, target);
     first ??= { target, plan };
@@ -119,7 +124,7 @@ export const dropTarget = (
       return { target, plan };
     }
   }
-  return first!;
+  return first ?? { target: { kind: 'pile', pos: feet }, plan: { ok: false, reason: NO_LANDING_REFUSAL } };
 };
 
 /** A sling-fitted long gun goes on a free shoulder before any pocket or the ground: the sling is for carrying it. */
@@ -550,8 +555,8 @@ export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   if (!held || held === item) {
     return inv.plan(item, { kind: 'hand', side: preferred }).ok ? undefined : 'Your hands are full';
   }
-  const away = slingTarget(inv, held) ?? bestPocket(inv, held)?.target ?? dropTarget(inv, held, feet).target;
-  const stow = queue.enqueue(held, away);
+  const away = plannedStowTarget(inv, held, feet);
+  const stow = away ? queue.enqueue(held, away) : dropTarget(inv, held, feet).plan;
   if (!stow.ok) {
     return stow.reason;
   }

@@ -47,6 +47,7 @@ import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { settleCell } from '../core/itemThrow.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
@@ -697,6 +698,7 @@ export const createSession = (options: SessionOptions) => {
     },
   };
   const reach = bindReach(reachPlayer);
+  inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, isSolid);
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
   const chest = (): Vec3 => [
     body.pos[0],
