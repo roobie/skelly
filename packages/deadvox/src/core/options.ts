@@ -501,18 +501,34 @@ const sourceGrid = (inv: Inventory, item: Item | undefined): Target | undefined 
   }
 };
 
+/** Where a held item may make way besides the player: an empty off hand, and the wielded item's container. */
+interface MakeWay {
+  readonly offHand?: HandSide | undefined;
+  readonly source?: Target | undefined;
+}
+
+const oneHandWay = (inv: Inventory, item: Item, offHand: HandSide): MakeWay => ({
+  offHand: inv.hands[offHand] ? undefined : offHand,
+  source: sourceGrid(inv, item),
+});
+
+const ifPlans = (inv: Inventory, held: Item, target: Target | undefined): Target | undefined =>
+  target && inv.plan(held, target).ok ? target : undefined;
+
 /**
  * A wielded item is one the player wants to keep, and so is the held item it displaces:
- * on the player first, then in the wielded item's container, and only then at the feet.
+ * on the player first, then the empty off hand, then the wielded item's container, and only then at the feet.
  */
-const stowRoom = (inv: Inventory, held: Item, source: Target | undefined): Target | undefined =>
-  carriedStowTarget(inv, held) ?? (source && inv.plan(held, source).ok ? source : undefined);
+const stowRoom = (inv: Inventory, held: Item, way: MakeWay): Target | undefined =>
+  carriedStowTarget(inv, held) ??
+  ifPlans(inv, held, way.offHand && { kind: 'hand', side: way.offHand }) ??
+  ifPlans(inv, held, way.source);
 
-const stowsHeldFirst = (inv: Inventory, displaced: readonly Item[], source: Target | undefined): boolean =>
-  displaced.length > 0 && displaced.every((held) => stowRoom(inv, held, source));
+const stowsHeldFirst = (inv: Inventory, displaced: readonly Item[], way: MakeWay): boolean =>
+  displaced.length > 0 && displaced.every((held) => stowRoom(inv, held, way));
 
-const plannedStowTarget = (inv: Inventory, item: Item, feet: Vec3, source?: Target): Target | undefined => {
-  const room = stowRoom(inv, item, source);
+const plannedStowTarget = (inv: Inventory, item: Item, feet: Vec3, way: MakeWay = {}): Target | undefined => {
+  const room = stowRoom(inv, item, way);
   if (room) {
     return room;
   }
@@ -534,7 +550,7 @@ const stowTwoHandDisplacements = (args: {
   const stows: MoveJob[] = [];
   for (const held of displaced) {
     const plannedHeld = planned.itemByUid(held.uid);
-    const plannedTarget = plannedHeld && plannedStowTarget(planned, plannedHeld, feet, plannedSource);
+    const plannedTarget = plannedHeld && plannedStowTarget(planned, plannedHeld, feet, { source: plannedSource });
     const liveTarget = plannedTarget && liveTargetFor(inv, plannedTarget);
     if (!(plannedHeld && plannedTarget && liveTarget)) {
       cancelStows(queue, stows);
@@ -572,7 +588,7 @@ const wieldTwoHanded = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   const displaced = [...new Set([inv.hands[preferred], inv.hands[secondary]])].filter(
     (held): held is Item => held !== undefined && held !== item,
   );
-  if (!stowsHeldFirst(inv, displaced, sourceGrid(inv, item))) {
+  if (!stowsHeldFirst(inv, displaced, { source: sourceGrid(inv, item) })) {
     const direct = queue.enqueue(item, target);
     if (direct.ok || direct.reason === 'Already queued') {
       return direct.ok ? undefined : direct.reason;
@@ -596,12 +612,12 @@ export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   const secondary = offSide(inv.character);
   const occupant = inv.hands[preferred];
   const displaced = occupant && occupant !== item ? [occupant] : [];
-  const source = sourceGrid(inv, item);
+  const way = oneHandWay(inv, item, secondary);
   // A direct move into the occupied hand swaps the held item into the wielded item's own spot,
-  // the last room in its container; a free off hand must not stand in for the drop at the feet.
+  // the last room in its container; a free off hand takes the held item, never the wielded one.
   const sides = displaced.length > 0 ? [preferred] : [preferred, secondary];
   if (
-    !stowsHeldFirst(inv, displaced, source) &&
+    !stowsHeldFirst(inv, displaced, way) &&
     sides.some((hand) => queue.enqueue(item, { kind: 'hand', side: hand }).ok)
   ) {
     return undefined;
@@ -610,7 +626,7 @@ export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   if (!held || held === item) {
     return inv.plan(item, { kind: 'hand', side: preferred }).ok ? undefined : 'Your hands are full';
   }
-  const away = plannedStowTarget(inv, held, feet, source);
+  const away = plannedStowTarget(inv, held, feet, way);
   const stow = away ? queue.enqueue(held, away) : dropTarget(inv, held, feet).plan;
   if (!stow.ok) {
     return stow.reason;

@@ -490,79 +490,124 @@ describe('handling move admission', () => {
     expect(t.queue.busy).toBe(false);
   });
 
-  // The held item goes on the player, else into the wielded item's container, else to the feet.
+  // The held item goes on the player, else to an empty off hand when the wielded item is one-handed,
+  // else into the wielded item's container, else to the feet.
   // A crate holds only the wielded item, so the held item fits there only in its vacated spot.
   it.each([
-    { held: 'fixture_tool', wielded: 'fixture_other_tool', container: 'fixture_cabinet', lands: 'player' },
-    { held: 'fixture_tool', wielded: 'fixture_pole', container: 'fixture_cabinet', lands: 'player' },
-    { held: 'fixture_pole', wielded: 'fixture_tool', container: 'fixture_cabinet', lands: 'player' },
-    { held: 'fixture_tool', wielded: 'fixture_other_tool', container: 'fixture_cabinet', lands: 'container' },
-    { held: 'fixture_tool', wielded: 'fixture_pole', container: 'fixture_cabinet', lands: 'container' },
-    { held: 'fixture_tool', wielded: 'fixture_other_tool', container: 'fixture_crate', lands: 'container' },
-    { held: 'fixture_bar', wielded: 'fixture_other_tool', container: 'fixture_crate', lands: 'feet' },
-  ] as const)('wielding $wielded from $container makes way for held $held: $lands', (row) => {
-    const { registry: fixtureRegistry, issues } = buildRegistry([
-      playerInventorySource(),
-      {
-        source: 'wield-from-container.json',
-        data: {
-          items: [
-            { id: 'fixture_tool', name: 'Tool', category: 'tool', weight: 1, size: [1, 1] },
-            { id: 'fixture_other_tool', name: 'Other tool', category: 'tool', weight: 1, size: [1, 1] },
-            { id: 'fixture_pole', name: 'Pole', category: 'tool', weight: 1, size: [1, 3], twoHanded: true },
-            { id: 'fixture_bar', name: 'Bar', category: 'tool', weight: 1, size: [1, 2] },
-            {
-              id: 'fixture_pack',
-              name: 'Pack',
-              category: 'bag',
-              weight: 1,
-              size: [2, 2],
-              wearable: { slot: 'back', encumbrance: 0 },
-              container: { pockets: [{ grid: [3, 3], handlingSimSeconds: 1 }] },
-            },
-          ],
-          furniture: [
-            {
-              id: 'fixture_cabinet',
-              name: 'Cabinet',
-              size: [1, 1, 1],
-              color: '#ffffff',
-              container: { pockets: [{ grid: [4, 4], handlingSimSeconds: 1 }] },
-            },
-            {
-              id: 'fixture_crate',
-              name: 'Crate',
-              size: [1, 1, 1],
-              color: '#ffffff',
-              container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
-            },
-          ],
+    {
+      held: 'fixture_tool',
+      wielded: 'fixture_other_tool',
+      container: 'fixture_cabinet',
+      offHand: 'free',
+      lands: 'player',
+    },
+    { held: 'fixture_tool', wielded: 'fixture_pole', container: 'fixture_cabinet', offHand: 'free', lands: 'player' },
+    { held: 'fixture_pole', wielded: 'fixture_tool', container: 'fixture_cabinet', offHand: 'free', lands: 'player' },
+    {
+      held: 'fixture_tool',
+      wielded: 'fixture_other_tool',
+      container: 'fixture_cabinet',
+      offHand: 'free',
+      lands: 'offHand',
+    },
+    {
+      held: 'fixture_tool',
+      wielded: 'fixture_other_tool',
+      container: 'fixture_cabinet',
+      offHand: 'busy',
+      lands: 'container',
+    },
+    {
+      held: 'fixture_tool',
+      wielded: 'fixture_pole',
+      container: 'fixture_cabinet',
+      offHand: 'free',
+      lands: 'container',
+    },
+    {
+      held: 'fixture_tool',
+      wielded: 'fixture_other_tool',
+      container: 'fixture_crate',
+      offHand: 'busy',
+      lands: 'container',
+    },
+    { held: 'fixture_bar', wielded: 'fixture_other_tool', container: 'fixture_crate', offHand: 'busy', lands: 'feet' },
+  ] as const)(
+    'wielding $wielded from $container with the off hand $offHand makes way for held $held: $lands',
+    (row) => {
+      const { registry: fixtureRegistry, issues } = buildRegistry([
+        playerInventorySource(),
+        {
+          source: 'wield-from-container.json',
+          data: {
+            items: [
+              { id: 'fixture_tool', name: 'Tool', category: 'tool', weight: 1, size: [1, 1] },
+              { id: 'fixture_other_tool', name: 'Other tool', category: 'tool', weight: 1, size: [1, 1] },
+              { id: 'fixture_pole', name: 'Pole', category: 'tool', weight: 1, size: [1, 3], twoHanded: true },
+              { id: 'fixture_bar', name: 'Bar', category: 'tool', weight: 1, size: [1, 2] },
+              { id: 'fixture_rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
+              {
+                id: 'fixture_pack',
+                name: 'Pack',
+                category: 'bag',
+                weight: 1,
+                size: [2, 2],
+                wearable: { slot: 'back', encumbrance: 0 },
+                container: { pockets: [{ grid: [3, 3], handlingSimSeconds: 1 }] },
+              },
+            ],
+            furniture: [
+              {
+                id: 'fixture_cabinet',
+                name: 'Cabinet',
+                size: [1, 1, 1],
+                color: '#ffffff',
+                container: { pockets: [{ grid: [4, 4], handlingSimSeconds: 1 }] },
+              },
+              {
+                id: 'fixture_crate',
+                name: 'Crate',
+                size: [1, 1, 1],
+                color: '#ffffff',
+                container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+              },
+            ],
+          },
         },
-      },
-    ]);
-    expect(issues).toEqual([]);
-    const t = setup(undefined, fixtureRegistry);
-    const leading = dominantSide(t.inventory.character);
-    const pack = row.lands === 'player' ? t.add('fixture_pack', { kind: 'worn' }) : undefined;
-    const held = t.add(row.held, { kind: 'hand', side: leading });
-    const container = t.inventory.entities.add({ type: row.container, pos: [1, 0, 0], size: [1, 1, 1], facing: 'n' })!;
-    t.inventory.entities.markSearched(container);
-    const wielded = t.add(row.wielded, { kind: 'furniture', entity: container, pocket: 0 });
+      ]);
+      expect(issues).toEqual([]);
+      const t = setup(undefined, fixtureRegistry);
+      const leading = dominantSide(t.inventory.character);
+      const pack = row.lands === 'player' ? t.add('fixture_pack', { kind: 'worn' }) : undefined;
+      const held = t.add(row.held, { kind: 'hand', side: leading });
+      if (row.offHand === 'busy') {
+        t.add('fixture_rag', { kind: 'hand', side: offSide(t.inventory.character) });
+      }
+      const container = t.inventory.entities.add({
+        type: row.container,
+        pos: [1, 0, 0],
+        size: [1, 1, 1],
+        facing: 'n',
+      })!;
+      t.inventory.entities.markSearched(container);
+      const wielded = t.add(row.wielded, { kind: 'furniture', entity: container, pocket: 0 });
 
-    expect(toHands(t.inventory, t.queue, wielded, [0, 0, 0])).toBeUndefined();
-    for (const job of [...t.queue.jobs]) {
-      t.queue.tick(job.duration);
-    }
+      expect(toHands(t.inventory, t.queue, wielded, [0, 0, 0])).toBeUndefined();
+      for (const job of [...t.queue.jobs]) {
+        t.queue.tick(job.duration);
+      }
 
-    const landed = {
-      player: { kind: 'pocket', owner: pack },
-      container: { kind: 'furniture', entity: container },
-      feet: { kind: 'pile' },
-    }[row.lands];
-    expect(t.inventory.locate(held)).toMatchObject(landed);
-    expect(t.inventory.hands[leading]).toBe(wielded);
-    expect(t.queue.busy).toBe(false);
-  });
+      const landed = {
+        player: { kind: 'pocket', owner: pack },
+        offHand: { kind: 'hand', side: offSide(t.inventory.character) },
+        container: { kind: 'furniture', entity: container },
+        feet: { kind: 'pile' },
+      }[row.lands];
+      expect(t.inventory.locate(held)).toMatchObject(landed);
+      expect(t.inventory.hands[leading]).toBe(wielded);
+      expect(t.queue.busy).toBe(false);
+    },
+  );
 
   it.each(['right', 'left'] as const)(
     '%s-dominant deferred toHands take re-plans after freeing its occupied slot',
