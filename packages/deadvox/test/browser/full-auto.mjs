@@ -423,7 +423,27 @@ try {
       globalThis.fullAutoProbe.laserVisibleAfterFire ||= impactEffects.laser.visible;
     };
   });
-  // Reproduce the review's same-quantum cold load with the AR's actual shot sample.
+  const tuning = await page.evaluate(async () => {
+    const { inventory } = globalThis.fullAutoRuntime;
+    const moduleUrl = '/src/game/firearmHandling.ts';
+    const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
+    const rifle = inventory.hands.right;
+    const data = firearmHandlingFor(rifle, inventory.registry);
+    const event = globalThis.fullAutoRuntime.firearmShotEvent(rifle);
+    const voiceCap = inventory.registry.sounds.get(event)?.voiceCap;
+    const rounds = rifle.slots?.magazine?.cartridges?.length;
+    if (!(voiceCap > 0 && data.roundsPerSimSecond > 0 && rounds > 1)) {
+      throw new Error('Full-auto fixture needs capped audio, automatic cadence and a loaded magazine');
+    }
+    const interval = 1 / data.roundsPerSimSecond;
+    const duration = Math.min(2, (rounds - 0.5) * interval);
+    const values = { voiceCap, interval, duration, caseType: spentCaseItemId(data.calibre) };
+    globalThis.fullAutoProbe.tuning = values;
+    return values;
+  });
+  const expectedShots = Math.ceil(tuning.duration / tuning.interval);
+  assert.ok(expectedShots > 1, 'the burst exercises automatic follow-up shots');
+  // Exercise same-quantum cold admission beyond the selected sound's cap.
   await page.evaluate(() => {
     const { inventory, session } = globalThis.fullAutoRuntime;
     const rifle = inventory.hands.right;
@@ -431,7 +451,7 @@ try {
       throw new Error('The AR loadout is missing before cold sound startup');
     }
     globalThis.fullAutoProbe.event = globalThis.fullAutoRuntime.firearmShotEvent(rifle);
-    for (let index = 0; index < 40; index++) {
+    for (let index = 0; index < globalThis.fullAutoProbe.tuning.voiceCap + 8; index++) {
       session.playPlayerSound(globalThis.fullAutoProbe.event, session.sim.time, { listenerRelative: true });
     }
   });
@@ -439,21 +459,22 @@ try {
     () =>
       globalThis.fullAutoProbe.sources.filter(
         (record) => record.starts.length > 0 && record.event === globalThis.fullAutoProbe.event,
-      ).length === 40,
+      ).length ===
+      globalThis.fullAutoProbe.tuning.voiceCap + 8,
   );
   const cold = await page.evaluate(() =>
     globalThis.fullAutoProbe.sources
       .filter((record) => record.event === globalThis.fullAutoProbe.event)
       .map(({ stops, ramps }) => ({ stops, ramps })),
   );
-  assert.equal(cold.flatMap(({ stops }) => stops).length, 8, '32 full cold voices and eight fading retirees');
+  assert.equal(cold.flatMap(({ stops }) => stops).length, 8, 'the selected voice cap leaves eight fading retirees');
   assert.ok(
     cold.every(({ stops, ramps }) =>
       stops.every(
         ({ when, now }) => when !== null && when > now && ramps.some((ramp) => ramp.value === 0 && ramp.time === when),
       ),
     ),
-    'all 40 cold starts retain fades, not seven immediate hard stops',
+    'all cold starts retain fades rather than immediate hard stops',
   );
   await page.waitForFunction(() =>
     globalThis.fullAutoProbe.sources
@@ -485,14 +506,14 @@ try {
     const probe = globalThis.fullAutoProbe;
     probe.casesBefore = [...inventory.piles.values()]
       .flatMap((pile) => pile.items)
-      .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
+      .filter(({ item }) => item.type === probe.tuning.caseType)
       .reduce((sum, { item }) => sum + item.count, 0);
     // Release from the actual simulation clock, not a wall-clock sleep or guessed frame count.
     session.sim.scheduler.register({
       id: 'full-auto-test-release',
       rate: 60,
       tick: (_dt, time) => {
-        if (probe.shots.length > 0 && time >= probe.shots[0] + 2 - 1e-9 && !probe.released) {
+        if (probe.shots.length > 0 && time >= probe.shots[0] + probe.tuning.duration - 1e-9 && !probe.released) {
           globalThis.dispatchEvent(new MouseEvent('mouseup', { button: 0 }));
           probe.released = true;
           probe.releaseAt = time;
@@ -537,8 +558,8 @@ try {
   const cadence = await page.evaluate(() => ({ shots: globalThis.fullAutoProbe.shots }));
   assert.equal(
     cadence.shots.length,
-    27,
-    'holding AR primary fires 27 shots in the half-open two-second burst at 800 rpm',
+    expectedShots,
+    'holding primary follows the admitted cadence over the half-open burst',
   );
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.trajectories),
@@ -547,14 +568,14 @@ try {
   );
   cadence.shots.forEach((time, index) => {
     assert.ok(
-      Math.abs(time - cadence.shots[0] - index * 0.075) < 1e-8,
+      Math.abs(time - cadence.shots[0] - index * tuning.interval) < 1e-8,
       'exact simulation shot deadlines, not accumulated frame rounding',
     );
   });
   await page.waitForFunction(
     () => globalThis.fullAutoRuntime.session.sim.time > globalThis.fullAutoProbe.releaseAt + 0.25,
   );
-  assert.equal(await page.evaluate(() => globalThis.fullAutoProbe.shots.length), 27, 'release stops firing');
+  assert.equal(await page.evaluate(() => globalThis.fullAutoProbe.shots.length), expectedShots, 'release stops firing');
   const recoilState = await page.evaluate(() => {
     const { input, session } = globalThis.fullAutoRuntime;
     const state = session.aim.snapshotState();
@@ -588,7 +609,7 @@ try {
     }
   });
 
-  // Warm buffers are real decoded bundled samples. Seed 32 live tails so this burst must steal.
+  // Seed the selected cap with real decoded samples so the warm burst must steal.
   await page.waitForFunction(() =>
     globalThis.fullAutoProbe.sources
       .filter((record) => record.event === globalThis.fullAutoProbe.event)
@@ -599,7 +620,7 @@ try {
     const probe = globalThis.fullAutoProbe;
     probe.sources = [];
     probe.peak = 0;
-    for (let index = 0; index < 32; index++) {
+    for (let index = 0; index < probe.tuning.voiceCap; index++) {
       session.playPlayerSound(probe.event, session.sim.time, { listenerRelative: true });
     }
   });
@@ -607,7 +628,7 @@ try {
     () =>
       globalThis.fullAutoProbe.sources.filter(
         (record) => record.event === globalThis.fullAutoProbe.event && record.starts.length > 0,
-      ).length === 32,
+      ).length === globalThis.fullAutoProbe.tuning.voiceCap,
   );
   await page.evaluate(() => {
     globalThis.fullAutoProbe.shots = [];
@@ -639,14 +660,18 @@ try {
         gainDisconnected,
       })),
   }));
-  assert.equal(native.shots.length, 27);
-  assert.equal(native.records.length, 32 + 27, 'native source starts equal warm-up plus accepted shots');
+  assert.equal(native.shots.length, expectedShots);
+  assert.equal(
+    native.records.length,
+    tuning.voiceCap + expectedShots,
+    'native source starts equal warm-up plus accepted shots',
+  );
   assert.ok(native.records.every(({ starts }) => starts.length === 1));
-  const burst = native.records.slice(32);
+  const burst = native.records.slice(tuning.voiceCap);
   // Voices start immediately on the audio clock, so its span is wall time under CI load. Bind each
   // native start to its shot instead: never before it on the simulation clock, and in the same animation
   // frame as it (a frame can fire two shots, so no sim-time upper bound is stable).
-  assert.equal(native.shotFrames.length, 27);
+  assert.equal(native.shotFrames.length, expectedShots);
   burst.forEach(({ starts, simStarts, startFrames }, index) => {
     assert.ok(
       simStarts[0] >= native.shots[index] - 1e-9,
@@ -662,11 +687,11 @@ try {
     () =>
       [...globalThis.fullAutoRuntime.inventory.piles.values()]
         .flatMap((pile) => pile.items)
-        .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
+        .filter(({ item }) => item.type === globalThis.fullAutoProbe.tuning.caseType)
         .reduce((sum, { item }) => sum + item.count, 0) - globalThis.fullAutoProbe.casesBefore,
   );
-  assert.equal(persistentCases, 54, 'both automatic bursts record every case at impact');
-  assert.ok(native.peak <= 64, '32 full voices plus at most 32 fading tails');
+  assert.equal(persistentCases, cadence.shots.length + native.shots.length, 'both bursts record every case at impact');
+  assert.ok(native.peak <= 2 * tuning.voiceCap, 'live voices plus fading tails stay within twice the selected cap');
   assert.ok(
     native.records.some(({ stops }) => stops.length),
     'the warm two-second burst exercises voice stealing',
@@ -770,7 +795,7 @@ try {
   );
   assert.deepEqual(errors, []);
   process.stdout.write(
-    `full-auto native WebAudio passed: 27 shots/2s at 800rpm, 27 cases, release stops, ${native.records.length} starts, native starts in their shots' frames, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,
+    `full-auto native WebAudio passed: ${expectedShots} shots/burst, ${persistentCases} cases, release stops, ${native.records.length} starts, native starts in their shots' frames, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,
   );
 } catch (error) {
   const page = browser?.contexts()[0]?.pages()[0];
