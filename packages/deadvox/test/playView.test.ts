@@ -630,7 +630,8 @@ describe('play presentation ownership', () => {
 
   it('passes night vision to the mood for the player and none for a spectator', () => {
     const { mood, view } = fixture();
-    const nightVision = registry.items.get('night_vision_goggles')!.light!.nightVision!;
+    const { nightVision } = registry.items.get('night_vision_goggles')!.light!;
+    expect(nightVision).toBeDefined();
     const damage = { style: { opacity: '' } } as unknown as HTMLElement;
     const frame = {
       dt: 0.1,
