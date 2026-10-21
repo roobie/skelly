@@ -13,7 +13,8 @@
         "empty": "empty_can",
         "food": "beans"
       },
-      "size": [1, 2]
+      "size": [1, 2],
+      "weight": 100
     },
     {
       "category": "food",
@@ -28,7 +29,8 @@
         "empty": "empty_can",
         "food": "soup"
       },
-      "size": [1, 2]
+      "size": [1, 2],
+      "weight": 100
     },
     {
       "category": "tool",
@@ -39,7 +41,8 @@
       "id": "empty_can",
       "model": "canned_beans",
       "name": "Empty can",
-      "size": [1, 2]
+      "size": [1, 2],
+      "weight": 100
     },
     {
       "category": "food",
@@ -60,7 +63,8 @@
           "opening": 1
         },
         "simSeconds": 15
-      }
+      },
+      "weight": 450
     },
     {
       "category": "food",
@@ -96,7 +100,8 @@
           "opening": 1
         },
         "simSeconds": 15
-      }
+      },
+      "weight": 430
     },
     {
       "category": "food",

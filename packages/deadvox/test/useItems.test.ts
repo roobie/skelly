@@ -3,7 +3,7 @@ import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import type { Registry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
+import { type Item, typeWeightGrams } from '../src/core/items.ts';
 import { chargeOf, toggleLight } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import { bindReach } from '../src/core/reach.ts';
@@ -226,6 +226,33 @@ describe('using what you hold', () => {
     expect(survival.use(opened)).toBeUndefined();
     queue.tick(1);
     expect(sim.needs.calories).toBeGreaterThan(sim.body.spawnNeeds.calories);
+  });
+
+  it('opening conserves carried mass and eating removes only the retained serving mass', () => {
+    const cans = [...registry.items.values()].filter(
+      (def) => def.unpack?.inPlace && registry.items.get(def.unpack.item)?.serving,
+    );
+    expect(cans.length).toBeGreaterThan(0);
+    for (const def of cans) {
+      const { inventory, queue, survival, hold } = setup();
+      const can = hold(def.id);
+      const quality = Object.keys(def.unpack!.qualities!)[0]!;
+      const tool = [...registry.items.values()].find((item) => (item.tool?.qualities?.[quality] ?? 0) > 0)!;
+      hold(tool.id, 'left');
+      const sealedMass = inventory.carriedWeight();
+      const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
+      expect(unpacking.activate(can)).toBeUndefined();
+      expect(queue.tick(queue.remaining).failed).toEqual([]);
+      expect(inventory.carriedWeight()).toBeCloseTo(sealedMass);
+      const serving = registry.items.get(can.type)!.serving!;
+      const foodMass = typeWeightGrams(registry, serving.food);
+      expect(foodMass).toBeGreaterThan(0);
+      expect(survival.use(can)).toBeUndefined();
+      expect(queue.tick(queue.remaining).failed).toEqual([]);
+      expect(inventory.carriedWeight()).toBeCloseTo(sealedMass - foodMass);
+      expect(inventory.itemByUid(can.uid)).toBe(can);
+      expect(can.type).toBe(serving.empty);
+    }
   });
 
   it('needs the food in your hands, and rotten food makes you sick', () => {
