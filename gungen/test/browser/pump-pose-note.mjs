@@ -42,7 +42,7 @@ try {
     `http://127.0.0.1:${server.httpServer.address().port}/?fixture=archetype-pump-shotgun&pose=action-open`,
   );
   await page.waitForFunction(() => document.querySelector('#status').textContent.includes('PASS'));
-  assert.match(await page.locator('#status').innerText(), /^PASS/, 'canonical pump control');
+  assert.equal(await page.locator('#status [data-pose-warning]').count(), 1, 'canonical pump control');
   await page.locator('#file').setInputFiles({
     name: 'renamed-pump.json',
     mimeType: 'application/json',
@@ -51,9 +51,10 @@ try {
   // Wait for the renamed assembly's actual parameter cards, not the previous model's PASS status.
   await page.waitForFunction(() => document.querySelector('#param-panel').textContent.includes('pump-grip'));
   const status = await page.locator('#status').innerText();
-  console.log(JSON.stringify({ status, errors }));
+  const poseWarning = await page.locator('#status [data-pose-warning]').count();
+  console.log(JSON.stringify({ status, poseWarning, errors }));
   assert.match(status, /^PASS/);
-  assert(status.length > 'PASS'.length, 'renamed pump must retain a pose indication');
+  assert.equal(poseWarning, 1, 'renamed pump must retain a pose indication');
   assert.deepEqual(errors, []);
   console.log('PASS: actual pump pose indication survives receiver/carrier/forend identity-only renames');
 } finally {

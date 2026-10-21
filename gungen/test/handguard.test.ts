@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { FAMILIES } from '../src/gun/parts.ts';
 
 describe('barrel-fitted handguards', () => {
-  it('builds a bounded opening around each barrel bore', () => {
+  it('keeps slabs between the barrel opening and receiver envelope', () => {
     for (const bore of ['S', 'M', 'L'] as const) {
+      const barrel = FAMILIES.barrel!.build({ length: 'L', bore });
+      const receiver = FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore });
       const handguard = FAMILIES.handguard!.build({ length: 'L', barrelBore: bore, bore });
       const top = handguard.solids.find(({ id }) => id === 'top')!;
       const side = handguard.solids.find(({ id }) => id === 'right')!;
@@ -13,12 +15,13 @@ describe('barrel-fitted handguards', () => {
       if (top.kind !== 'box' || side.kind !== 'box') {
         throw new Error('Expected box slabs for the handguard.');
       }
-      expect(top.box.half[1]).toBeGreaterThan(0);
-      expect(side.box.half[2]).toBeGreaterThan(0);
-      expect(top.box.center[1] - top.box.half[1]).toBeLessThan(top.box.center[1] + top.box.half[1]);
-      expect(side.box.center[2] - side.box.half[2]).toBeLessThan(side.box.center[2] + side.box.half[2]);
+      const max = (solids: typeof barrel.solids, axis: number) =>
+        Math.max(...solids.map((solid) => localSolidBounds(solid)[1][axis]!));
+      expect(top.box.center[1] - top.box.half[1]).toBeGreaterThanOrEqual(max(barrel.solids, 1));
+      expect(side.box.center[2] - side.box.half[2]).toBeGreaterThanOrEqual(max(barrel.solids, 2));
+      expect(top.box.center[1] + top.box.half[1]).toBeLessThanOrEqual(max(receiver.solids, 1));
+      expect(side.box.center[2] + side.box.half[2]).toBeLessThanOrEqual(max(receiver.solids, 2));
     }
-
   });
 
   it('closes the AK upper handguard around the gas cylinder on top of the lower handguard', () => {
@@ -36,7 +39,10 @@ describe('barrel-fitted handguards', () => {
     for (const layout of ['standard', 'ak'] as const) {
       const reaches = (['S', 'M', 'L'] as const).map((size) => {
         const handguard = FAMILIES.handguard!.build({ length: size, layout, mount: 'free-float' });
-        return Math.max(...handguard.solids.map((solid) => localSolidBounds(solid)[1][0]));
+        const ends = handguard.solids.map((solid) => localSolidBounds(solid)[1][0]);
+        expect(ends.length, `${layout}/${size}`).toBeGreaterThan(0);
+        expect(ends.every(Number.isFinite), `${layout}/${size}`).toBe(true);
+        return Math.max(...ends);
       });
       expect(reaches[0]).toBeLessThan(reaches[1]!);
       expect(reaches[1]).toBeLessThan(reaches[2]!);

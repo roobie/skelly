@@ -159,7 +159,7 @@ describe('pump shotgun variants', () => {
     it('picks both the pistol-grip and the gripless lower layout across seeds', () => {
       const layouts = new Set<string>();
       for (const seed of SEEDS) {
-        layouts.add(generate(pumpShotgun, gunDomain, seed).parts.lower?.params?.layout!);
+        layouts.add(generate(pumpShotgun, gunDomain, seed).parts.lower?.params?.layout ?? '');
       }
       expect(layouts).toEqual(new Set(['pump', 'trigger']));
     });
