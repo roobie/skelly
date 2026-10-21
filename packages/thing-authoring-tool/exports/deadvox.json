@@ -23,5 +23,80 @@
     "id": "desk_lamp",
     "kind": "item",
     "source": "dead_desk_lamp"
+  },
+  {
+    "id": "canned_beans",
+    "kind": "item",
+    "source": "canned_beans"
+  },
+  {
+    "id": "canned_soup",
+    "kind": "item",
+    "source": "canned_soup"
+  },
+  {
+    "id": "crackers",
+    "kind": "item",
+    "source": "crackers"
+  },
+  {
+    "id": "chocolate_bar",
+    "kind": "item",
+    "source": "chocolate_bar"
+  },
+  {
+    "id": "soda_can",
+    "kind": "item",
+    "source": "soda_can"
+  },
+  {
+    "id": "water_bottle",
+    "kind": "item",
+    "source": "water_bottle"
+  },
+  {
+    "id": "juice_carton",
+    "kind": "item",
+    "source": "juice_carton"
+  },
+  {
+    "id": "cartridge_box_308_h_winchester",
+    "kind": "item",
+    "source": "cartridge_box_308_h_winchester"
+  },
+  {
+    "id": "cartridge_box_5_d_56x45",
+    "kind": "item",
+    "source": "cartridge_box_5_d_56x45"
+  },
+  {
+    "id": "cartridge_box_7_d_62x39",
+    "kind": "item",
+    "source": "cartridge_box_7_d_62x39"
+  },
+  {
+    "id": "cartridge_box_357_h_magnum",
+    "kind": "item",
+    "source": "cartridge_box_357_h_magnum"
+  },
+  {
+    "id": "shotshell_box",
+    "kind": "item",
+    "source": "shotshell_box"
+  },
+  {
+    "id": "ammo_can",
+    "kind": "item",
+    "source": "ammo_can"
+  },
+  {
+    "id": "jerry_can",
+    "kind": "item",
+    "source": "jerry_can"
+  },
+  {
+    "id": "gas_canister",
+    "kind": "item",
+    "source": "gas_canister"
   }
 ]

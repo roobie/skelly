@@ -17,9 +17,9 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "ammo_can",
+      "model": "ammo_can",
       "name": "Ammo can",
-      "size": [3, 2],
-      "weight": 1600
+      "size": [3, 2]
     },
     {
       "category": "material",
@@ -388,9 +388,9 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "jerry_can",
+      "model": "jerry_can",
       "name": "Jerry can",
-      "size": [4, 5],
-      "weight": 2500
+      "size": [4, 5]
     },
     {
       "category": "material",
@@ -454,14 +454,14 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "shotshell_box",
+      "model": "shotshell_box",
       "name": "Sealed shotshell box (20)",
       "size": [2, 2],
       "unpack": {
         "count": 20,
         "item": "shell_12_gauge_00_buck",
         "simSeconds": 1.2
-      },
-      "weight": 840
+      }
     },
     {
       "category": "material",

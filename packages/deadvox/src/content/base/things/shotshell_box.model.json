@@ -1,0 +1,8 @@
+{
+  "id": "shotshell_box",
+  "file": "assets/models/shotshell_box.glb",
+  "parts": { "package": { "node": "package:carton", "massKg": 0.84, "centreOfMass": [0, 0.0381928636699563, 0] } },
+  "grip": { "at": [0, 0.0375, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

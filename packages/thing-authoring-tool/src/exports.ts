@@ -6,7 +6,7 @@ import recipe from '../exports/deadvox.json' with { type: 'json' };
 import { buildItem, catalogue, palette, type ToolItem } from './catalogue.ts';
 
 export const exportItem = (item: ToolItem, asset: ReturnType<typeof recipeAsset>) => {
-  const { report, masses } = buildItem(item);
+  const { report, masses, handling } = buildItem(item);
   const out = exportGlb({
     resolved: report.resolved,
     asset,
@@ -25,7 +25,7 @@ export const exportItem = (item: ToolItem, asset: ReturnType<typeof recipeAsset>
     }
     return { part, massKg };
   });
-  return { glb: out.glb, modelEntry: { ...asset, parts }, physical: assemblyProperties(parts) };
+  return { glb: out.glb, modelEntry: { ...asset, parts, ...handling }, physical: assemblyProperties(parts) };
 };
 const exporters = {
   item: (row: RecipeRow) => {
