@@ -15,7 +15,8 @@
 // `shadow.intensity` to 0 and stops redrawing its map (but a casting light with no map yet always gets
 // one allocated by three's pass, `needsMap`). The flashlight's beams likewise keep `castShadow` with
 // the setting whether on or off (flashlight.ts, `shadowsAllowed`), and a beam's map is drawn only
-// while it is bright enough to show (`beamMapDue`).
+// while it is bright enough to show (`beamMapDue`); otherwise its `shadow.intensity` is 0, so the
+// map it stopped refreshing shades nothing.
 //
 // The sun's map is drawn from the chunk faces that face it, where its light enters a solid, not from
 // three.js's default for a one-sided material, the back faces where light leaves. At an inside corner
@@ -335,7 +336,11 @@ export class Shadows {
     }
     this.torchCasters = 0;
     for (const torch of torches) {
-      if (torch.castShadow && beamMapDue(torch.intensity)) {
+      const due = torch.castShadow && beamMapDue(torch.intensity);
+      // A faint beam still lights receivers, which sample its map; a map it no longer refreshes would cast
+      // stale shadows, so it shades nothing until it is redrawn. three.js reads this after this pass.
+      torch.shadow.intensity = due ? 1 : 0;
+      if (due) {
         this.torchCasters += meshes.selectShadowCasters(withinRange(torch.position, torch.distance), BackSide);
         draw([torch], scene, this.torchView);
       } else if (needsMap(torch)) {

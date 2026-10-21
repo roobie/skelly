@@ -429,6 +429,25 @@ describe('Shadows', () => {
     expect(shadows.casters.torch).toBe(1);
   });
 
+  it('shades nothing with the map of a beam gone faint, and redraws it from where the beam is once bright again', () => {
+    const { frame, torch, shadows } = setup();
+    torch.castShadow = true;
+    torch.intensity = CALIBRATED_BEAM_INTENSITY;
+    torch.position.set(0, 1.6, 0);
+    expect(frame(0)).toContain(torch);
+    expect(shadows.casters.torch).toBe(1);
+    expect(torch.shadow.intensity).toBe(1);
+    // Faint but still lighting receivers, which sample the map drawn at the old spot.
+    torch.intensity = 0.01;
+    torch.position.set(0, 1.6, 100);
+    expect(frame(0)).not.toContain(torch);
+    expect(torch.shadow.intensity).toBe(0);
+    torch.intensity = CALIBRATED_BEAM_INTENSITY;
+    expect(frame(0)).toContain(torch);
+    expect(shadows.casters.torch).toBe(0);
+    expect(torch.shadow.intensity).toBe(1);
+  });
+
   it('warms the shaders with every beam in the casting state the setting gives', () => {
     const { shadows, torch } = setup();
     const worn = new SpotLight();
