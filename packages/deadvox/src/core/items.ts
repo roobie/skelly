@@ -48,7 +48,7 @@ export interface ItemFields<Node> {
   /** An explosive's fuse left in Sim seconds; present once it has left the hand with the pin out. */
   fuseRemainingSimSeconds?: number;
   /** A trap lying set on the floor, or shut on a leg (core/bearTrap.ts); absent while it is safe to carry. */
-  trap?: TrapState;
+  trap?: TrapState | undefined;
   /**
    * Game-clock timestamp when it was made; absent means before the world began (day 1,
    * 00:00). Food rots from then (core/food.ts).
@@ -66,9 +66,7 @@ export interface ItemFields<Node> {
 }
 
 /** Holding a zombie by id, or the player when `zombie` is absent. */
-export type TrapState =
-  | { state: 'armed' }
-  | { state: 'holding'; zombie?: number; remainingSimSeconds: number };
+export type TrapState = { state: 'armed' } | { state: 'holding'; zombie?: number; remainingSimSeconds: number };
 
 type ItemSlots<Node> = Record<string, Node>;
 
@@ -94,6 +92,9 @@ export interface ItemState extends ItemFields<ItemState> {
 export type Placed = PlacedItem<Item>;
 export type PlacedState = PlacedItem<ItemState>;
 
+const trapField = (trap: TrapState | undefined): { trap?: TrapState } =>
+  trap === undefined ? {} : { trap: { ...trap } };
+
 /** Immutable, isolated item tree suitable for a save snapshot. */
 export const snapshotItem = (item: Item): Readonly<ItemState> =>
   freezeSnapshot({
@@ -108,7 +109,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: item.litAtGameTimestamp }),
     ...(item.pinPulled === undefined ? {} : { pinPulled: item.pinPulled }),
     ...(item.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: item.fuseRemainingSimSeconds }),
-    ...(item.trap === undefined ? {} : { trap: { ...item.trap } }),
+    ...trapField(item.trap),
     ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
@@ -255,7 +256,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: state.litAtGameTimestamp }),
     ...(state.pinPulled === undefined ? {} : { pinPulled: state.pinPulled }),
     ...(state.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: state.fuseRemainingSimSeconds }),
-    ...(state.trap === undefined ? {} : { trap: { ...state.trap } }),
+    ...trapField(state.trap),
     ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),

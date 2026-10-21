@@ -46,11 +46,6 @@
       "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
       "download": null,
       "files": [
-        "assets/models/tape_roll.glb",
-        "assets/models/thread_spool.glb",
-        "assets/models/cord_coil.glb",
-        "assets/models/fuse.glb",
-        "assets/models/desk_lamp.glb",
         "assets/models/canned_beans.glb",
         "assets/models/canned_soup.glb",
         "assets/models/crackers.glb",
@@ -69,7 +64,13 @@
         "assets/models/opened_beans.glb",
         "assets/models/opened_soup.glb",
         "assets/models/empty_can.glb",
-        "assets/models/can_opener.glb"
+        "assets/models/can_opener.glb",
+        "assets/models/tape_roll.glb",
+        "assets/models/thread_spool.glb",
+        "assets/models/cord_coil.glb",
+        "assets/models/fuse.glb",
+        "assets/models/bear_trap.glb",
+        "assets/models/desk_lamp.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",

@@ -14,6 +14,4 @@ export const regionIndex = (blockCoordinate: number, blockSize: number): number 
  * whether a column is loaded or drawn never decides it.
  */
 export const inPlayerBlock = (point: Readonly<Vec3>, player: Readonly<Vec3>, blockSize: number): boolean =>
-  [0, 2].every(
-    (axis) => Math.abs(regionIndex(point[axis]!, blockSize) - regionIndex(player[axis]!, blockSize)) <= 1,
-  );
+  [0, 2].every((axis) => Math.abs(regionIndex(point[axis]!, blockSize) - regionIndex(player[axis]!, blockSize)) <= 1);

@@ -1,45 +1,5 @@
 [
   {
-    "id": "tape_roll",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "electrical_tape"
-  },
-  {
-    "id": "thread_spool",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "sewing_thread"
-  },
-  {
-    "id": "cord_coil",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "nylon_cord"
-  },
-  {
-    "id": "fuse",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "fuse"
-  },
-  {
-    "id": "desk_lamp",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "dead_desk_lamp"
-  },
-  {
     "id": "canned_beans",
     "kind": "item",
     "options": {
@@ -190,5 +150,53 @@
       "mass": "parts"
     },
     "source": "can_opener"
+  },
+  {
+    "id": "tape_roll",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "electrical_tape"
+  },
+  {
+    "id": "thread_spool",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "sewing_thread"
+  },
+  {
+    "id": "cord_coil",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "nylon_cord"
+  },
+  {
+    "id": "fuse",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "fuse"
+  },
+  {
+    "id": "bear_trap",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "bear_trap"
+  },
+  {
+    "id": "desk_lamp",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "dead_desk_lamp"
   }
 ]

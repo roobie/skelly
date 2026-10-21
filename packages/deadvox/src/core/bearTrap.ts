@@ -83,7 +83,7 @@ export class BearTraps {
       }
       trap.remainingSimSeconds -= dt;
       if (trap.remainingSimSeconds <= 0 || (trap.zombie !== undefined && !contacts.alive(trap.zombie))) {
-        delete item.trap;
+        item.trap = undefined;
       }
     }
     const player = cellOf(contacts.player);

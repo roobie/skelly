@@ -289,6 +289,17 @@
       "roll": 0
     },
     {
+      "file": "assets/models/bear_trap.glb",
+      "id": "bear_trap",
+      "parts": {
+        "bear_trap": {
+          "centreOfMass": [-0.0079782121277872427, 0.0093646790692327852, 4.7367461800379853e-18],
+          "massKg": 4.5,
+          "node": "bear_trap:bearTrap"
+        }
+      }
+    },
+    {
       "file": "assets/models/hand_saw.glb",
       "grip": {
         "at": [-0.13, 0.034000000000000002, 0]

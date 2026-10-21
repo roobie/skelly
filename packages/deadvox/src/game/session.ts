@@ -6,6 +6,7 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
+import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
@@ -54,7 +55,6 @@ import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
-import { BearTraps } from '../core/bearTrap.ts';
 import { freshDropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
@@ -93,9 +93,9 @@ import {
   ZombieSystem,
 } from '../core/zombies.ts';
 import { firearmShotSound } from './audioPresentation.ts';
+import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
-import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
 import {
   ATTACHMENT_WORK_SKILL,
@@ -1549,8 +1549,7 @@ export const createSession = (options: SessionOptions) => {
     const tick = playerTick;
     playerTick += 1;
     playerInput = controls.sampleAtPlayerTick?.(tick, live, time, sim.compression.c) ?? live;
-    const moving =
-      playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal && !traps.holds(undefined);
+    const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal && !traps.holds(undefined);
     const intent = moving ? playerInput.intent : IDLE;
     if (
       trapInterrupts.read().some((event) => event.kind === 'interrupt') ||

@@ -46,7 +46,7 @@ export const interruptDisarm = (queue: HandlingQueue): void => {
 
 /** On completion each action is checked again against the live trap; a valid disarm never springs it. */
 export const registerTrapActions = ({ queue, inventory, reach, setCell }: TrapActionHooks): void => {
-  queue.registerAction(SET_ACTION, ({ itemUid }) => {
+  queue.registerAction(SET_ACTION, ({ itemUid }): string | undefined => {
     const item = itemParam(inventory, itemUid);
     if (!(item && defOf(inventory.registry, item.type).trap && inventory.locate(item)?.kind === 'hand')) {
       return "The trap isn't in my hands";
@@ -62,7 +62,7 @@ export const registerTrapActions = ({ queue, inventory, reach, setCell }: TrapAc
     item.trap = { state: 'armed' };
     return undefined;
   });
-  queue.registerAction(DISARM_ACTION, ({ itemUid }) => {
+  queue.registerAction(DISARM_ACTION, ({ itemUid }): string | undefined => {
     const item = itemParam(inventory, itemUid);
     if (item?.trap?.state !== 'armed') {
       return "The trap isn't set";
@@ -70,7 +70,7 @@ export const registerTrapActions = ({ queue, inventory, reach, setCell }: TrapAc
     if (!reach().entries.some((entry) => entry.item === item)) {
       return 'Too far away';
     }
-    delete item.trap;
+    item.trap = undefined;
     return undefined;
   });
 };
