@@ -96,10 +96,16 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
     );
     render(
       html`
-      <button type="button" @click=${openControls}>Practice controls</button>
-      ${tutorial.stage === 'eat' || tutorial.stage === 'hands' ? html`<p>A carried can opener enables opening a sealed can in hand. Opened food goes to a pocket or the ground, not into the hand.</p>` : ''}
-      <button type="button" @click=${restart}>Restart practice</button>
-      <button type="button" @click=${exit}>Exit practice</button>
+      <div class="tutorial-action-buttons">
+        <button type="button" @click=${openControls}>Practice controls</button>
+        <button type="button" @click=${restart}>Restart practice</button>
+        <button type="button" @click=${exit}>Exit practice</button>
+      </div>
+      ${
+        tutorial.stage === 'eat' || tutorial.stage === 'hands'
+          ? html`<p class="tutorial-action-note">A carried can opener enables opening a sealed can in hand. Opened food goes to a pocket or the ground, not into the hand.</p>`
+          : ''
+      }
     `,
       document.getElementById('tutorial-actions')!,
     );

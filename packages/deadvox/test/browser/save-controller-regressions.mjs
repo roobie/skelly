@@ -252,6 +252,9 @@ try {
             throw new Error('Opened food must be recoverable through ordinary Hands');
           }
           draw({ inventory, inventoryOpen: false, lightOn: false });
+          const panel = document.querySelector('#tutorial-actions');
+          const buttonRow = panel?.querySelector(':scope > .tutorial-action-buttons');
+          const note = panel?.querySelector(':scope > .tutorial-action-note');
           return {
             loot,
             lootCaps,
@@ -260,6 +263,7 @@ try {
             opened,
             eating: actions(),
             stage: tutorial.stage,
+            noteOnOwnLine: note?.parentElement === panel && !buttonRow?.contains(note),
           };
         } finally {
           gauntletWitness.manual = false;
@@ -287,6 +291,7 @@ try {
       assert(canHints.opened.includes('inventory.hands'), 'unpacked food points to taking it into hand');
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
       assert.equal(canHints.stage, 'eat', 'opening and wielding alone are not consumption');
+      assert.equal(canHints.noteOnOwnLine, true, 'practice note is separate from the action buttons');
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
       await page.evaluate(() => {
