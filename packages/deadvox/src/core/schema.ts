@@ -1518,6 +1518,8 @@ const PaletteThingSchema = pipe(
     loot: optional(Id),
     lootUsage: optional(UsageSchema),
     facing: optional(picklist(['n', 'e', 's', 'w'])),
+    /** The face this furniture lies on, when it is not standing on its bottom. */
+    tip: optional(picklist(['back', 'front', 'left', 'right', 'top'])),
     /** Initial lock state, only on a door; ids are unique within an authored site. */
     lock: optional(DoorLockSchema),
     /** Fastened where it stands, like a fitted cupboard, so the player can't move it. */
@@ -1542,10 +1544,11 @@ const PaletteThingSchema = pipe(
       e.furniture !== undefined ||
       (e.loot === undefined &&
         e.facing === undefined &&
+        e.tip === undefined &&
         e.lock === undefined &&
         e.fixed === undefined &&
         e.items === undefined),
-    '"loot", "facing", "lock", "fixed" and "items" only go with "furniture"',
+    '"loot", "facing", "tip", "lock", "fixed" and "items" only go with "furniture"',
   ),
   check((e) => e.spawn !== undefined || e.chance === undefined, '"chance" only goes with "spawn"'),
 );

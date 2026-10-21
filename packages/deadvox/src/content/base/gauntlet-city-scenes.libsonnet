@@ -12,11 +12,10 @@ local item(id, weight, count=null, condition=null) =
 local nothing(weight) = { nothing: true, weight: weight };
 local furnitureLoot = {
   kitchen_cupboard: 'kitchen_cupboard', counter: 'kitchen_cupboard', fridge: 'fridge', wardrobe: 'wardrobe',
-  desk: 'desk', shelf: 'shelf', shelf_fallen: 'shelf', shelf_on_side: 'shelf',
-  wardrobe_fallen: 'wardrobe', wardrobe_on_side: 'wardrobe', crate: 'junk',
+  desk: 'desk', shelf: 'shelf', crate: 'junk',
 };
-local at(furniture, x, z, facing='n', loot=std.get(furnitureLoot, furniture, null), fixed=false) =
-  { furniture: furniture, x: x, z: z, facing: facing, loot: loot, fixed: fixed };
+local at(furniture, x, z, facing='n', loot=std.get(furnitureLoot, furniture, null), fixed=false, tip=null) =
+  { furniture: furniture, x: x, z: z, facing: facing, loot: loot, fixed: fixed, tip: tip };
 local shambler(x, z) = { x: x, z: z, spawn: true };
 // Placements stay in two bands, rows 6-7 and rows 10-11. Rows 4-5 are the lane a body walks between
 // the entry anchor, the stair landings and the street door, so they stay clear.
@@ -38,8 +37,8 @@ local scenes = [
   {
     id: 'failed_barricade', beats: 1, weight: 2,
     things: [
-      at('wardrobe_fallen', 3, 6, 'e'), at('shelf_on_side', 7, 6), at('chair_on_back', 1, 6),
-      at('chair_on_side', 9, 7), at('crate', 12, 10),
+      at('wardrobe', 3, 6, 'e', tip='back'), at('shelf', 7, 6, tip='left'), at('chair', 1, 6, tip='back'),
+      at('chair', 9, 7, tip='left'), at('crate', 12, 10),
     ],
     shamblers: [shambler(12, 7), shambler(1, 5)],
   },
@@ -53,9 +52,9 @@ local scenes = [
   {
     id: 'searched', beats: 0, weight: 2,
     things: [
-      at('wardrobe_on_side', 0, 11, loot='gauntlet_searched'), at('shelf_fallen', 6, 10, 'e'),
-      at('crate_overturned', 11, 10), at('desk', 2, 6, loot='gauntlet_searched'),
-      at('chair_on_side', 8, 6),
+      at('wardrobe', 0, 11, loot='gauntlet_searched', tip='left'), at('shelf', 6, 10, 'e', tip='back'),
+      at('crate', 11, 10, tip='top'), at('desk', 2, 6, loot='gauntlet_searched'),
+      at('chair', 8, 6, tip='left'),
     ],
   },
   {
@@ -70,7 +69,10 @@ assert std.all([scene.beats <= 1 for scene in scenes]) : 'a room holds at most o
 local carves = { lower: [2, 3, 10], middle: [8, 9, 10], room: null };
 local extent(thing) =
   local s = sizes[thing.furniture];
-  if thing.facing == 'e' || thing.facing == 'w' then [s[2], s[1], s[0]] else s;
+  local tipped = if thing.tip == 'back' || thing.tip == 'front' then [s[0], s[2], s[1]]
+                 else if thing.tip == 'left' || thing.tip == 'right' then [s[1], s[0], s[2]]
+                 else s;
+  if thing.facing == 'e' || thing.facing == 'w' then [tipped[2], tipped[1], tipped[0]] else tipped;
 local covers(thing, x, y, z) =
   local e = extent(thing);
   x >= thing.x && x < thing.x + e[0] && y < e[1] && z >= thing.z && z < thing.z + e[2];
@@ -101,6 +103,7 @@ local piece(level, scene, choices=offered(level), suffix='') =
       [thing.char]: { furniture: thing.furniture }
                     + (if thing.facing == 'n' then {} else { facing: thing.facing })
                     + (if thing.loot == null then {} else { loot: thing.loot })
+                    + (if thing.tip == null then {} else { tip: thing.tip })
                     + (if thing.fixed then { fixed: true } else {})
                     + (if std.objectHas(thing, 'items') then { items: thing.items } else {})
       for thing in things

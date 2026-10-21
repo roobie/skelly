@@ -10,6 +10,7 @@ import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import type { LootContext } from './loot.ts';
+import type { Tip } from './orientation.ts';
 import { pickWeighted, Rng } from './random.ts';
 import type {
   DecalDef,
@@ -35,9 +36,19 @@ const FACINGS: readonly Facing[] = ['n', 'e', 's', 'w'];
 
 export const turnFacing = (facing: Facing, turn: Turn): Facing => FACINGS[(FACINGS.indexOf(facing) + turn) % 4]!;
 
-/** A piece's cells as [x, y, z], seen from the template: east- and west-facing pieces lie along z. */
-export const pieceSize = (size: readonly [number, number, number], facing: Facing): Vec3 =>
-  facing === 'e' || facing === 'w' ? [size[2], size[1], size[0]] : [size[0], size[1], size[2]];
+/** A piece's cells as [x, y, z], seen from the template after its authored pose. */
+export const pieceSize = (size: readonly [number, number, number], facing: Facing, tip?: Tip): Vec3 => {
+  let tipped: Vec3 = [size[0], size[1], size[2]];
+  if (tip === 'back' || tip === 'front') {
+    tipped = [size[0], size[2], size[1]];
+  } else if (tip === 'left' || tip === 'right') {
+    tipped = [size[1], size[0], size[2]];
+  }
+  if (facing === 'e' || facing === 'w') {
+    return [tipped[2], tipped[1], tipped[0]];
+  }
+  return tipped;
+};
 
 /** Every [x, y, z] in a box, in (y, z, x) order: lowest layer first, then rows, then cells. */
 export function* cellsOf([sx, sy, sz]: readonly [number, number, number]): Generator<Vec3> {
@@ -117,7 +128,9 @@ export const templateLockIds = (registry: Registry, template: TemplateDef | MapP
       return [];
     }
     const { id } = entry.lock;
-    return (findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n')).anchors ?? []).map(() => id);
+    return (findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n', entry.tip)).anchors ?? []).map(
+      () => id,
+    );
   });
 
 /** A piece of furniture in a template, in template coordinates. */
@@ -130,6 +143,7 @@ interface Piece {
   /** The palette's loot table. */
   loot?: string | undefined;
   facing: Facing;
+  tip?: Tip;
   pos: Vec3;
   size: Vec3;
 }
@@ -224,13 +238,14 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
     }
     const def = registry.furniture.get(entry.furniture)!;
     const facing = entry.facing ?? 'n';
-    const size = pieceSize(def.size, facing);
+    const size = pieceSize(def.size, facing, entry.tip);
     for (const pos of findPieces(template, char, size).anchors ?? []) {
       pieces.push({
         furniture: def.id,
         loot: entry.loot,
         ...(entry.lootUsage === undefined ? {} : { lootUsage: entry.lootUsage }),
         facing,
+        ...(entry.tip ? { tip: entry.tip } : {}),
         pos,
         size,
         ...(entry.lock ? { lock: entry.lock } : {}),
@@ -848,6 +863,7 @@ export interface PlacedPiece {
   furniture: string;
   loot?: string | undefined;
   facing: Facing;
+  tip?: Tip;
   /** Its lowest corner, in blocks. */
   pos: Vec3;
   /** Cells along world x, y and z. */
@@ -867,6 +883,7 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
       loot: piece.loot,
       ...(piece.lootUsage === undefined ? {} : { lootUsage: piece.lootUsage }),
       facing: turnFacing(piece.facing, turn),
+      ...(piece.tip ? { tip: piece.tip } : {}),
       pos: [origin[0] + Math.min(ax, bx), origin[1] + piece.pos[1], origin[2] + Math.min(az, bz)],
       size: [Math.abs(bx - ax) + 1, piece.size[1], Math.abs(bz - az) + 1],
     };

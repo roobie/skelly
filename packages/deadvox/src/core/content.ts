@@ -908,7 +908,7 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (entry.furniture !== undefined && !furniture) {
     found.push(['.furniture', `no furniture "${entry.furniture}"`]);
   }
-  const pieces = furniture && findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n'));
+  const pieces = furniture && findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n', entry.tip));
   if (pieces?.problem) {
     found.push(['.furniture', pieces.problem]);
   }

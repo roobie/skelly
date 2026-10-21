@@ -439,7 +439,8 @@
         },
         "k": "concrete",
         "p": {
-          "furniture": "chair_on_side"
+          "furniture": "chair",
+          "tip": "left"
         },
         "r": {
           "facing": "s",

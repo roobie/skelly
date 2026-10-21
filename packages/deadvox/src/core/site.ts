@@ -188,6 +188,7 @@ export const furnitureOf = (
           pos: piece.pos,
           size: piece.size,
           facing: piece.facing,
+          ...(piece.tip ? { tip: piece.tip } : {}),
           ...(piece.lock ? { lock: piece.lock } : {}),
           ...(piece.fixed ? { fixed: true as const } : {}),
         },
