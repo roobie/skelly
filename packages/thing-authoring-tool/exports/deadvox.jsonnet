@@ -6,4 +6,5 @@ local item(id, source, exportMass='parts') = { id: id, kind: 'item', source: sou
   item('fuse', 'fuse'),
 ] + [item(package.id, package.id, package.exportMass) for package in import '../packages.libsonnet']
 + [item(can.id, can.id, can.exportMass) for can in (import '../cans.libsonnet').items]
++ [item(food.id, food.id, food.exportMass) for food in import '../food-medical.libsonnet']
 + [item(light.id, light.id, light.exportMass) for light in import '../lights.libsonnet']

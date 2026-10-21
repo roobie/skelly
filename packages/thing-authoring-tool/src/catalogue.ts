@@ -27,6 +27,7 @@ import {
 } from 'valibot';
 import content from '../items.json' with { type: 'json' };
 import { coil } from './families/coil.ts';
+import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
 import { fuse } from './families/fuse.ts';
 import { grenade } from './families/grenade.ts';
 import { handOpener } from './families/handOpener.ts';
@@ -107,6 +108,9 @@ const builders = {
   openTin,
   handOpener,
   grenade,
+  foodPortion,
+  stemmedFruit,
+  woundRoll,
 } satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {
   if (!Object.hasOwn(builders, part.family)) {
