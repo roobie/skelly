@@ -231,14 +231,14 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
     if (width === undefined) throw Error('content width cap is missing');
     const rack = inventory.entities.add({ type: 'scroll_rack', pos: [0, 0, 0], size: [1, 2, 1], facing: 'n' });
     if (!rack) throw Error('cap-width rack fixture failed');
-    rack.searched = true;
+    inventory.entities.markSearched(rack);
     capToken = inventory.create('scroll_token');
     if (!inventory.add(capToken, { kind: 'furniture', entity: rack, pocket: 0, at: { x: width - 1, y: 0, rotated: false } })) {
       throw Error('last-column item fixture failed');
     }
     const small = inventory.entities.add({ type: 'scroll_small_container', pos: [1, 0, 0], size: [1, 1, 1], facing: 'n' });
     if (!small) throw Error('small container fixture failed');
-    small.searched = true;
+    inventory.entities.markSearched(small);
     screen.update();
   },
   get gameplayWheels() { return gameplayWheels; },
