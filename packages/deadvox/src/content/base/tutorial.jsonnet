@@ -4,7 +4,7 @@ local cabinets = import 'cabinet-shapes.libsonnet';
 local supplyPaint = '#8d986d';
 local lootContext = { usage: ['Residential'], tier: 'Tier1' };
 local wall = ['WWWWWWWWWWWW', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'WWWWWDDWWWWW'];
-local cabinetWall = wall[:2] + ['WKK........W'] + wall[3:];
+local cabinetWall = wall[:1] + ['WK.........W', 'WK.........W'] + wall[3:];
 shape.colliding({
   furniture: [{
     id: 'tutorial_cabinet',
@@ -24,7 +24,7 @@ shape.colliding({
     palette: {
       '.': 'air', '#': 'planks', W: 'siding_blue', R: 'roof',
       D: { furniture: 'wood_door', facing: 's' },
-      K: { furniture: 'tutorial_cabinet' },
+      K: { furniture: 'tutorial_cabinet', facing: 'e' },
     },
     layers: [rows.repeat('############', 9)]
       + rows.repeat(cabinetWall, 3) + [wall] + [wall[:8] + ['WWWWWWWWWWWW']]
@@ -40,7 +40,7 @@ shape.colliding({
     terrain: [],
     buildings: [{
       template: 'tutorial_station', position: [-3, 0, -4], rotation: 0,
-      fixedLoot: [{ at: [1, 1, 2], items: [
+      fixedLoot: [{ at: [1, 1, 1], items: [
         { item: 'canned_beans', count: 2 },
         { item: 'can_opener', count: 1 },
         { item: 'water_bottle', count: 2 },
