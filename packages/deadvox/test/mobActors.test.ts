@@ -1105,7 +1105,11 @@ describe('MobActorMeshes reactions', () => {
       }
       expect(renderer.isTracked(ids[0]!)).toBe(true);
       expect(renderer.isTracked(ids[1]!)).toBe(false); // oldest ordinary corpse evicted; incapacitated row is protected
-      renderer.sync(store, DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1, 1);
+      renderer.sync(
+        store,
+        DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
+        1,
+      );
       const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
       expect(lying).toBeDefined();
       expect(renderer.boneMatrix(ids[0]!, 'head')).not.toEqual(uprightHead); // prove this is the fall pose, not a standing live row
@@ -1125,14 +1129,22 @@ describe('MobActorMeshes reactions', () => {
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
       const damage = incapacitate(zombie);
-      renderer.sync(store, DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1, 1);
+      renderer.sync(
+        store,
+        DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
+        1,
+      );
       expect(damage.system.finishDowned(damage.id, false)).toBeUndefined();
       store.remove(id);
       renderer.zombieDied(id, zombie);
       renderer.sync(store, 1, 1);
       expect(renderer.isTracked(id)).toBe(true); // still lies there, now as an ordinary corpse
 
-      renderer.sync(store, DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1, 1);
+      renderer.sync(
+        store,
+        DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
+        1,
+      );
       expect(renderer.isTracked(id)).toBe(false);
     } finally {
       renderer.dispose();
