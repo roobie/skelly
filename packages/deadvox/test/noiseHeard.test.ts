@@ -491,7 +491,16 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'shotgun noise emitted',
       events.slice(from).some((event) => event.kind === 'noise'),
     );
+    const firedShotEvents = new Set(
+      events
+        .slice(from)
+        .filter((event) => event.kind === 'sound')
+        .map((event) => event.event),
+    );
     for (const event of firearmShotSoundEvents(registry)) {
+      if (firedShotEvents.has(event)) {
+        continue;
+      }
       const before = events.length;
       session.playPlayerSound(event, session.sim.time);
       drainEvents();

@@ -78,9 +78,10 @@ const FIXTURES = 'src/content/base';
 const baseRegistry = loadBaseRegistry();
 
 describe('firearm audio presentation', () => {
-  it('selects the M4 sound only for the AR and keeps AK and actor selection consistent', () => {
+  it('selects each firearm’s authored shot sound and keeps actor selection consistent', () => {
     const ar = firearm('rifle_assault');
     const ak = firearm('rifle_ak');
+    const pump = firearm('pump_shotgun');
     expect(firearmShotSound(baseRegistry, ar)).toMatchObject({
       event: 'gunshot_m4',
       sourceLabel: ar.type,
@@ -89,6 +90,11 @@ describe('firearm audio presentation', () => {
     expect(firearmShotSound(baseRegistry, ak)).toMatchObject({
       event: 'gunshot',
       sourceLabel: ak.type,
+      listenerRelative: true,
+    });
+    expect(firearmShotSound(baseRegistry, pump)).toMatchObject({
+      event: 'shotgun_blast',
+      sourceLabel: pump.type,
       listenerRelative: true,
     });
 
