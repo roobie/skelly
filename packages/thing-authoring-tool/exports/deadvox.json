@@ -190,5 +190,77 @@
       "mass": "parts"
     },
     "source": "can_opener"
+  },
+  {
+    "id": "aa_battery",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "aa_battery"
+  },
+  {
+    "id": "rag",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "rag"
+  },
+  {
+    "id": "duct_tape",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "duct_tape"
+  },
+  {
+    "id": "nails",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "nails"
+  },
+  {
+    "id": "scrap_metal",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "scrap_metal"
+  },
+  {
+    "id": "stick",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "stick"
+  },
+  {
+    "id": "wax",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "wax"
+  },
+  {
+    "id": "wooden_plank",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "wooden_plank"
+  },
+  {
+    "id": "field_patch",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "field_patch"
   }
 ]

@@ -7,3 +7,4 @@ local item(id, source, exportMass='parts') = { id: id, kind: 'item', source: sou
   item('desk_lamp', 'dead_desk_lamp'),
 ] + [item(package.id, package.id, package.exportMass) for package in import '../packages.libsonnet']
 + [item(can.id, can.id, can.exportMass) for can in (import '../cans.libsonnet').items]
++ [item(material.id, material.id, material.exportMass) for material in import '../materials.libsonnet']

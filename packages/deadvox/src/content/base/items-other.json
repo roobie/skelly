@@ -43,10 +43,10 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "aa_battery",
+      "model": "aa_battery",
       "name": "AA battery",
       "size": [1, 1],
-      "stack": 10,
-      "weight": 23
+      "stack": 10
     },
     {
       "category": "medical",
@@ -176,13 +176,13 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "rag",
+      "model": "rag",
       "name": "Rag",
       "size": [1, 1],
       "stack": 6,
       "treatment": {
         "bleeding": 2
-      },
-      "weight": 50
+      }
     },
     {
       "category": "material",
@@ -191,9 +191,9 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "duct_tape",
+      "model": "duct_tape",
       "name": "Duct tape",
-      "size": [1, 1],
-      "weight": 150
+      "size": [1, 1]
     },
     {
       "category": "material",
@@ -202,10 +202,10 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "nails",
+      "model": "nails",
       "name": "Nails",
       "size": [1, 1],
-      "stack": 100,
-      "weight": 5
+      "stack": 100
     },
     {
       "category": "material",
@@ -214,10 +214,10 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "scrap_metal",
+      "model": "scrap_metal",
       "name": "Scrap metal",
       "size": [1, 2],
-      "stack": 5,
-      "weight": 500
+      "stack": 5
     },
     {
       "book": {

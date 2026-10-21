@@ -69,7 +69,16 @@
         "assets/models/opened_beans.glb",
         "assets/models/opened_soup.glb",
         "assets/models/empty_can.glb",
-        "assets/models/can_opener.glb"
+        "assets/models/can_opener.glb",
+        "assets/models/aa_battery.glb",
+        "assets/models/rag.glb",
+        "assets/models/duct_tape.glb",
+        "assets/models/nails.glb",
+        "assets/models/scrap_metal.glb",
+        "assets/models/stick.glb",
+        "assets/models/wax.glb",
+        "assets/models/wooden_plank.glb",
+        "assets/models/field_patch.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",

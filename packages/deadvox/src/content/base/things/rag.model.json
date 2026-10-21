@@ -1,0 +1,14 @@
+{
+  "id": "rag",
+  "file": "assets/models/rag.glb",
+  "parts": {
+    "material": {
+      "node": "material:foldedSheet",
+      "massKg": 0.05,
+      "centreOfMass": [0.002032137568242561, 0.015259421346948698, -0.00017493534911478442]
+    }
+  },
+  "grip": { "at": [-0.0525, 0.0175, 0.042499999999999996], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

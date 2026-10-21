@@ -30,6 +30,7 @@ import { coil } from './families/coil.ts';
 import { fuse } from './families/fuse.ts';
 import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
+import { cutStock, foldedSheet, turnedStock } from './families/materials.ts';
 import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
@@ -105,6 +106,9 @@ const builders = {
   vessel,
   openTin,
   handOpener,
+  cutStock,
+  foldedSheet,
+  turnedStock,
 } satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {
   if (!Object.hasOwn(builders, part.family)) {

@@ -1,5 +1,4 @@
-{
-  "models": [
+local authored = [
     std.objectRemoveKey(import 'things/canned_beans.model.json', 'parts'),
     std.objectRemoveKey(import 'things/canned_soup.model.json', 'parts'),
     import 'things/opened_beans.model.json',
@@ -69,5 +68,7 @@
     { "id": "paper_sheet", "file": "assets/models/paper_sheet.glb" },
     { "id": "folded_note", "file": "assets/models/folded_note.glb" },
     { "id": "notebook", "file": "assets/models/notebook.glb" }
-  ]
+];
+{
+  models: authored + [model for model in import 'things/index.json' if !std.member([entry.id for entry in authored], model.id)],
 }
