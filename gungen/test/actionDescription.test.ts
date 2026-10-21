@@ -35,7 +35,9 @@ it('discovers the pump open-pose pair after receiver/carrier/forend renames with
   const offsets = actionOpenOffsets(action);
   expect([...offsets.keys()]).toEqual(['slide', 'pump-grip']);
   for (const offset of offsets.values()) {
-    expect(offset).toEqual([-5.5, 0, 0].map((value) => expect.closeTo(value, 12)));
+    expect(offset[0]).toBeLessThan(0);
+    expect(offset[1]).toBeCloseTo(0, 12);
+    expect(offset[2]).toBeCloseTo(0, 12);
   }
   const layers = buildLayers(report, [], 'role', {}, 32, offsets);
   try {

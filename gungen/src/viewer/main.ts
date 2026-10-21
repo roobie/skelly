@@ -236,6 +236,7 @@ if (ammoMeshes) {
   label.id = 'ammo-info';
   label.textContent = ammoCartridge?.designation ?? '';
   if (ammoCartridge?.kind === 'shotshell') {
+    label.dataset.closure = ammoCartridge.closure.value ?? 'unknown';
     const proxy =
       ammoCartridge.closure.value === null
         ? 'Roll-crimp visual proxy (source closure unknown).'
@@ -592,7 +593,7 @@ const renderPanel = (assembly: Assembly) => {
   const actionOpen =
     initialQuery.get('pose') === 'action-open' && actionOpenOffsets(resolveGunAction(report.resolved)).size > 0;
   const poseNote = actionOpen
-    ? '<span class="note"> · view-only full-rearward pump pose; validation and export remain at rest</span>'
+    ? '<span class="note" data-pose-warning="true"> · view-only full-rearward pump pose; validation and export remain at rest</span>'
     : '';
   status.innerHTML = verdict + note + poseNote;
 
