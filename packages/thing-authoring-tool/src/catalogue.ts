@@ -29,7 +29,9 @@ import content from '../items.json' with { type: 'json' };
 import { head, limb, torso } from './families/body.ts';
 import { coil } from './families/coil.ts';
 import { fuse } from './families/fuse.ts';
+import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
+import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
 import { spool } from './families/spool.ts';
@@ -59,6 +61,7 @@ const PartSchema = strictObject({
 });
 const ItemSchema = strictObject({
   id: name,
+  exportMass: picklist(['parts', 'inventory-atom']),
   parts: pipe(
     array(PartSchema),
     nonEmpty(),
@@ -104,6 +107,8 @@ const builders = {
   limb,
   torso,
   head,
+  openTin,
+  handOpener,
 } satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {
   if (!Object.hasOwn(builders, part.family)) {

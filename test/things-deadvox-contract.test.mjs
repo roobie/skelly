@@ -67,7 +67,12 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       exported.map(async ({ modelEntry }) => {
         const bytes = readFileSync(join(base, modelEntry.file));
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
-        for (const part of Object.values(modelEntry.parts)) {
+        let hasMesh = false;
+        loaded.scene.traverse((node) => {
+          hasMesh ||= node.isMesh === true;
+        });
+        assert.ok(hasMesh, `${modelEntry.id}: missing geometry`);
+        for (const part of Object.values(modelEntry.parts ?? {})) {
           if (part.node !== undefined) {
             const [node] = namedNodes(loaded.scene, loaded.parser, [part.node]);
             assert.ok(

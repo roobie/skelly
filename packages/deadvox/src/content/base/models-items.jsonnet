@@ -2,6 +2,10 @@
   "models": [
     std.objectRemoveKey(import 'things/canned_beans.model.json', 'parts'),
     std.objectRemoveKey(import 'things/canned_soup.model.json', 'parts'),
+    import 'things/opened_beans.model.json',
+    import 'things/opened_soup.model.json',
+    import 'things/empty_can.model.json',
+    import 'things/can_opener.model.json',
     import 'things/crackers.model.json',
     import 'things/chocolate_bar.model.json',
     import 'things/soda_can.model.json',

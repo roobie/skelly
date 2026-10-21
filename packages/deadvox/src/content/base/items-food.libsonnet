@@ -1,7 +1,7 @@
 // Eating takes longer than drinking; a rotting food spoils at its going-off fraction of life and poisons for its health cost.
 local eats(calories, water) = { calories: calories, water: water, consumeSimSeconds: 3 };
 local drinks(calories, water) = { calories: calories, water: water, consumeSimSeconds: 2 };
-local canShellGrams = 100;
+local canShellGrams = (import 'packages/thing-authoring-tool/cans.libsonnet').shellMassKg * 1000;
 local beansGrams = 350;
 local soupGrams = 330;
 
@@ -9,15 +9,15 @@ local soupGrams = 330;
   items: [
     {
       id: 'opened_beans', name: 'Opened can of beans', category: 'food',
-      model: 'canned_beans', weight: canShellGrams, size: [1, 2], serving: { food: 'beans', empty: 'empty_can' },
+      model: 'opened_beans', weight: canShellGrams, size: [1, 2], serving: { food: 'beans', empty: 'empty_can' },
     },
     {
       id: 'opened_soup', name: 'Opened can of soup', category: 'food',
-      model: 'canned_soup', weight: canShellGrams, size: [1, 2], serving: { food: 'soup', empty: 'empty_can' },
+      model: 'opened_soup', weight: canShellGrams, size: [1, 2], serving: { food: 'soup', empty: 'empty_can' },
     },
     {
       id: 'empty_can', name: 'Empty can', category: 'tool',
-      model: 'canned_beans', weight: canShellGrams, size: [1, 2],
+      model: 'empty_can', weight: canShellGrams, size: [1, 2],
     },
     {
       id: 'canned_beans',

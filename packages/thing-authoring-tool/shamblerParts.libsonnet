@@ -1,6 +1,7 @@
 local params(values) = { [key]: std.toString(values[key]) for key in std.objectFields(values) };
 local part(id, family, massKg, dimensions, finish, grip) = {
   id: id,
+  exportMass: 'parts',
   parts: [{ id: 'part', family: family, massKg: massKg, params: params(dimensions), finish: finish, ports: [] }],
   connections: [],
   handling: { part: 'part', solid: grip.solid, fraction: grip.fraction, turn: [0, 0, 0], hold: grip.hold, roll: 0 },
