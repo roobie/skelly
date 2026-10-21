@@ -125,6 +125,7 @@ import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from '.
 import type { ColumnReveal } from './columnReveal.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
+import { PoseTextureUpdates } from './poseTextureUpdates.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
@@ -419,6 +420,7 @@ interface Debris extends SlotHolder {
 }
 
 export interface MobActorMeshesOptions {
+  readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
   /** The authored figure seeds to build variants for (`figureSeedPool` of the registry's zombie types). */
   readonly figureSeeds: readonly number[];
@@ -529,6 +531,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly layout: CrowdTextureLayout;
   private readonly textureData: Float32Array;
   private readonly texture: DataTexture;
+  private readonly textureUpdates: PoseTextureUpdates;
   private readonly material: MeshLambertMaterial;
   private readonly states = new Map<EntityId, ZombieRenderState>();
   private readonly corpses = new Map<EntityId, Corpse>();
@@ -612,6 +615,7 @@ export class MobActorMeshes implements ZombieRenderer {
     this.texture.minFilter = NearestFilter;
     this.texture.generateMipmaps = false;
     this.texture.needsUpdate = true;
+    this.textureUpdates = new PoseTextureUpdates(this.texture, options.canvas);
 
     this.material = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
     this.material.customProgramCacheKey = () => 'deadvox-mob-actor-crowd-texture';
@@ -1690,6 +1694,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     packSeveredMask(this.textureData, this.layout, globalRow, severedIndices);
     packBloodiness(this.textureData, this.layout, globalRow, bloodiness);
+    this.textureUpdates.touch(globalRow);
   }
 
   private observePerceptionTime(state: ZombieRenderState, zombie: Zombie): void {
@@ -1885,6 +1890,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     packSeveredMask(this.textureData, this.layout, d.globalRow, hidden);
     packBloodiness(this.textureData, this.layout, d.globalRow, d.bloodiness);
+    this.textureUpdates.touch(d.globalRow);
   }
 
   private zombiePoseBounds(zombie: Zombie, placement: { worldPos: Vec3 }): { center: Vector3; radius: number } {
@@ -1984,13 +1990,12 @@ export class MobActorMeshes implements ZombieRenderer {
     this.activeBlend = blend;
     this.backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
     this.renderBlend = blend;
-    let anyDirty = false;
     const present = new Set<EntityId>();
     for (const [id, zombie] of store.entries()) {
       present.add(id);
       const actorBackgroundBlend = backgroundActorBlend(zombie, simulationTime, this.backgroundBlend);
       this.renderBlend = zombie.tier === 'background' ? actorBackgroundBlend : this.activeBlend;
-      anyDirty = this.syncZombie({ id, zombie }, Math.max(0, Math.min(realDt, 0.05)), simulationTime ?? 0) || anyDirty;
+      this.syncZombie({ id, zombie }, Math.max(0, Math.min(realDt, 0.05)), simulationTime ?? 0);
     }
     for (const [id, state] of this.states) {
       if (state.lastSeenFrame !== this.frameCounter) {
@@ -2002,13 +2007,11 @@ export class MobActorMeshes implements ZombieRenderer {
         this.freeCorpse(id);
       }
     }
-    const corpsesDirty = this.advanceCorpses(realDt);
-    const debrisDirty = this.advanceDebris(realDt);
+    this.advanceCorpses(realDt);
+    this.advanceDebris(realDt);
     this.fleshChunks.update(realDt, this.rigidWorld());
     this.applyReveal();
-    if (corpsesDirty || debrisDirty || anyDirty) {
-      this.texture.needsUpdate = true;
-    }
+    this.textureUpdates.flush();
   }
 
   // Slot compaction can rewrite a moved actor's row, so gate only after all insertion and pruning.
@@ -2128,6 +2131,7 @@ export class MobActorMeshes implements ZombieRenderer {
       this.removeWound(id);
     }
     this.fleshChunks.dispose();
+    this.textureUpdates.dispose();
     this.texture.dispose();
     this.material.dispose();
     for (const variant of this.variants) {

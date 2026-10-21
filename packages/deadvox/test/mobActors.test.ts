@@ -19,7 +19,7 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { DEATH_FALL_DURATION } from '@mobgen/mob/reactions.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
-import { Color, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
+import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { amalgamFigureForType } from '../src/core/amalgamFigure.ts';
@@ -416,6 +416,80 @@ describe('feet at body.pos.y (mobgen pose convention)', () => {
 });
 
 describe('MobActorMeshes', () => {
+  it('queues exact pose texture contents through admission, offscreen movement, severing, death and row reuse', () => {
+    const canvas = new EventTarget() as HTMLCanvasElement;
+    const renderer = new MobActorMeshes(0.5, 2, {
+      figureSeeds: figureSeedPool(registry.zombies),
+      poolSize: 1,
+      canvas,
+    });
+    const { texture } = renderer as unknown as { texture: DataTexture };
+    const data = texture.image.data as Float32Array;
+    const bits = new Uint32Array(data.buffer, data.byteOffset, data.length);
+    const uploaded = new Uint32Array(bits.length);
+    let version = -1;
+    let partialUploads = 0;
+    const upload = (): void => {
+      if (version !== texture.version) {
+        if (texture.updateRanges.length === 0) {
+          uploaded.set(bits);
+        } else {
+          partialUploads += 1;
+          for (const { start, count } of texture.updateRanges) {
+            expect(start % 4).toBe(0);
+            expect(count % 4).toBe(0);
+            expect(Math.floor(start / (texture.image.width * 4))).toBe(
+              Math.floor((start + count - 1) / (texture.image.width * 4)),
+            );
+            uploaded.set(bits.subarray(start, start + count), start);
+          }
+          texture.clearUpdateRanges();
+        }
+        ({ version } = texture);
+        texture.onUpdate?.(texture);
+      }
+      expect(uploaded).toEqual(bits);
+    };
+    const store = new MapEntityStore<Zombie>();
+    const zombie = makeZombie([0, 0, -5]);
+    const id = store.add(zombie);
+    try {
+      renderer.sync(store);
+      expect(texture.updateRanges).toHaveLength(0);
+      upload();
+      const before = uploaded.slice();
+      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+      camera.lookAt(0, 0, 1);
+      camera.updateMatrixWorld(true);
+      renderer.setCamera(camera);
+      zombie.body.pos[0] += 2;
+      renderer.sync(store, 1 / 60);
+      // No bind between syncs: the next pass must receive both sets of changes.
+      store.add(makeZombie([4, 0, -5]));
+      renderer.sync(store, 1 / 60);
+      upload();
+      expect(uploaded).not.toEqual(before);
+      renderer.zombieSevered(id, 'hand.L', undefined, zombie);
+      renderer.zombieDied(id, zombie);
+      store.remove(id);
+      renderer.sync(store, 1 / 60);
+      upload();
+      renderer.sync(store, CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + DEATH_FALL_DURATION);
+      upload();
+      store.add(makeZombie([8, 0, -5]));
+      renderer.sync(store, 1 / 60);
+      upload();
+      expect(partialUploads).toBeGreaterThan(0);
+      canvas.dispatchEvent(new Event('webglcontextlost'));
+      uploaded.fill(0);
+      renderer.sync(store);
+      expect(texture.updateRanges).toHaveLength(0);
+      upload();
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('uses terrain reveal membership for detailed and box actors without removing their presentation state', () => {
     const terrain = new ChunkMeshes(0.5, registry);
     const renderer = new MobActorMeshes(0.5, 1, {
