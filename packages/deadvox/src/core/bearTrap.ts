@@ -9,7 +9,7 @@ import { defOf, type Item } from './items.ts';
 import type { ItemDef } from './schema.ts';
 import { inPlayerBlock } from './worldRegion.ts';
 
-export type TrapDef = NonNullable<ItemDef['trap']>;
+type TrapDef = NonNullable<ItemDef['trap']>;
 
 export interface LyingTrap {
   readonly item: Item;
