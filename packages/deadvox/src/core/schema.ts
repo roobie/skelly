@@ -2373,6 +2373,9 @@ const ZombieSchema = strictObject({
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
     check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
   ),
+  /** A melee hit with at least this impulse holds the zombie still and spoils its attack (docs/stagger.md);
+   * absent means it never staggers. */
+  stagger: optional(strictObject({ impulseThreshold: Positive, durationSimSeconds: PositiveSimSeconds })),
   /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/amalgamCarving.ts): the struck voxel
    * and every voxel within the radius of it. Amalgams only. */
   carving: optional(

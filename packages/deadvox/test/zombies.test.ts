@@ -18,7 +18,7 @@ import type { DoorLockDef, ZombieDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
-import { gameTimeOfDay, simRate } from '../src/core/time.ts';
+import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
 import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
 import { HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
@@ -3521,6 +3521,89 @@ describe('attack windup', () => {
     restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
 
     expect(restored.store.get(id)!.attackWindup).toBe(before);
+  });
+});
+
+describe('stagger', () => {
+  const stagger = { impulseThreshold: 6, durationSimSeconds: simSeconds(0.5) };
+  const staggering: ZombieDef = { ...SHAMBLER, stagger };
+  const heavy = { ...FISTS_MELEE, impulse: stagger.impulseThreshold };
+  const light = { ...FISTS_MELEE, impulse: stagger.impulseThreshold - 0.1 };
+
+  /** A shambler in reach of a still player, one tick into its attack wind-up. */
+  const windingUp = () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(staggering, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60);
+    return { system, id, zombie: system.store.get(id)!, damage: () => damage };
+  };
+
+  it('a hit at the threshold spoils the attack for the stagger duration; a lighter hit does not', () => {
+    const staggered = windingUp();
+    expect(staggered.zombie.attackWindup).toBeGreaterThan(0);
+    const ray = regionRay(staggered.zombie, 'torso');
+    expect(staggered.system.swing(ray.origin, ray.direction, heavy)).toBe(staggered.id);
+    expect(staggered.zombie.staggerTime).toBe(stagger.durationSimSeconds);
+    expect(staggered.zombie.attackWindup).toBe(0);
+    run(staggered.system, stagger.durationSimSeconds - 2 / 60);
+    expect(staggered.zombie.staggerTime).toBeGreaterThan(0);
+    expect(staggered.zombie.attackWindup).toBe(0);
+    expect(staggered.damage()).toBe(0);
+    run(staggered.system, 3 / 60);
+    expect(staggered.zombie.staggerTime).toBe(0);
+
+    const unstaggered = windingUp();
+    expect(unstaggered.zombie.attackWindup).toBeGreaterThan(0);
+    const lightRay = regionRay(unstaggered.zombie, 'torso');
+    expect(unstaggered.system.swing(lightRay.origin, lightRay.direction, light)).toBe(unstaggered.id);
+    expect(unstaggered.zombie.staggerTime).toBe(0);
+    expect(unstaggered.zombie.attackWindup).toBeGreaterThan(0);
+  });
+
+  it('never moves the zombie: it holds its exact position while staggered', () => {
+    const chasing = () => {
+      const system = new ZombieSystem(senses(() => player([12, 1, 0], [-1, 0, 0]), FLOOR));
+      const id = system.add(staggering, [0, 1, 0], [1, 0, 0]);
+      run(system, 1);
+      return { system, id, zombie: system.store.get(id)! };
+    };
+    const { system, id, zombie } = chasing();
+    expect(zombie.mode).toBe('chase');
+    const before = [...zombie.body.pos];
+    const ray = regionRay(zombie, 'torso');
+    expect(system.swing(ray.origin, ray.direction, heavy)).toBe(id);
+    expect(zombie.body.pos).toEqual(before);
+    run(system, stagger.durationSimSeconds - 2 / 60);
+    expect(zombie.body.pos).toEqual(before);
+
+    const control = chasing();
+    const controlBefore = [...control.zombie.body.pos];
+    const controlRay = regionRay(control.zombie, 'torso');
+    expect(control.system.swing(controlRay.origin, controlRay.direction, light)).toBe(control.id);
+    run(control.system, stagger.durationSimSeconds - 2 / 60);
+    expect(control.zombie.body.pos).not.toEqual(controlBefore);
+  });
+
+  it('keeps the remaining stagger across a snapshot/restore', () => {
+    const { system, id, zombie } = windingUp();
+    const ray = regionRay(zombie, 'torso');
+    system.swing(ray.origin, ray.direction, heavy);
+    run(system, stagger.durationSimSeconds / 2);
+    const remaining = zombie.staggerTime;
+    expect(remaining).toBeGreaterThan(0);
+    const restored = new ZombieSystem(senses(() => player([0, 2, 0]), FLOOR));
+    restored.restoreState(system.snapshotState(), () => staggering);
+    expect(restored.store.get(id)!.staggerTime).toBe(remaining);
   });
 });
 

@@ -349,6 +349,8 @@ export interface Zombie {
   /** `acidSpit` telegraph: seconds left in the wind-up, 0 = not winding up. Progress for presentation is
    * `acidSpitWindupProgress`. */
   spitWindup: number;
+  /** Seconds that the last heavy enough hit still holds it from moving and starting an attack; 0 = none. */
+  staggerTime: number;
   /** Seconds until the next spit may start; counts down whatever the zombie is doing. */
   spitWait: number;
   /** Seeded stream for the spit's aim, apart from behaviorRng so a spit never shifts movement draws. */
@@ -428,6 +430,8 @@ const validSpitTimers = (zombie: ZombieState): boolean =>
   zombie.spitWindup >= 0 &&
   Number.isFinite(zombie.spitWait) &&
   zombie.spitWait >= 0;
+const validStaggerTime = (zombie: ZombieState): boolean =>
+  Number.isFinite(zombie.staggerTime) && zombie.staggerTime >= 0;
 const validObstacleWanderState = (zombie: ZombieState): boolean =>
   Number.isFinite(zombie.obstacleWanderRemaining) &&
   zombie.obstacleWanderRemaining >= 0 &&
@@ -1412,6 +1416,7 @@ const zombieSnapshotFields = [
   'attackWait',
   'attackWindup',
   'spitWindup',
+  'staggerTime',
   'spitWait',
   'gaitPhase',
   'footstepClock',
@@ -1517,6 +1522,7 @@ const zombieSnapshotProjectors = {
   attackWait: (zombie) => zombie.attackWait,
   attackWindup: (zombie) => zombie.attackWindup,
   spitWindup: (zombie) => zombie.spitWindup,
+  staggerTime: (zombie) => zombie.staggerTime,
   spitWait: (zombie) => zombie.spitWait,
   gaitPhase: (zombie) => zombie.gaitPhase,
   footstepClock: (zombie) => ({ ...zombie.footstepClock }),
@@ -1827,6 +1833,7 @@ export class ZombieSystem {
           !validRngState(zombie.dismemberRng) ||
           !validRngState(zombie.spitRng) ||
           !validSpitTimers(zombie) ||
+          !validStaggerTime(zombie) ||
           !Number.isFinite(zombie.idleSoundTimer) ||
           zombie.idleSoundTimer < 0 ||
           !validZombieEventState(zombie) ||
@@ -2185,6 +2192,7 @@ export class ZombieSystem {
       attackWait: 0,
       attackWindup: 0,
       spitWindup: 0,
+      staggerTime: 0,
       spitWait: 0,
       gaitPhase: 0,
       footstepClock: initialShamblerFootstepClock(type.stepLength),
@@ -2417,6 +2425,9 @@ export class ZombieSystem {
         direction = movementDirection;
         speed = desiredSpeed;
       }
+      if (zombie.staggerTime > 0) {
+        speed = 0;
+      }
       zombie.horizontalSpeed = speed;
       zombie.body.vel[0] = (direction[0] * speed) / blockSize;
       zombie.body.vel[2] = (direction[2] * speed) / blockSize;
@@ -2458,6 +2469,7 @@ export class ZombieSystem {
     }
     zombie.attackWait = Math.max(0, zombie.attackWait - dt);
     zombie.spitWait = Math.max(0, zombie.spitWait - dt);
+    zombie.staggerTime = Math.max(0, zombie.staggerTime - dt);
   }
 
   private updatePerception(): void {
@@ -2774,7 +2786,7 @@ export class ZombieSystem {
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { zombie, type, dt } = scratch;
-    if (zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) {
+    if ((zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) || zombie.staggerTime > 0) {
       scratch.desiredSpeed = 0;
       scratch.direction = [0, 0, 0];
       scratch.aimDirection = undefined;
@@ -3028,6 +3040,7 @@ export class ZombieSystem {
       }
     } else if (
       zombie.mode === 'chase' &&
+      zombie.staggerTime <= 0 &&
       zombie.attackWait <= 0 &&
       zombie.spitWindup <= 0 &&
       (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie.severed)) &&
@@ -3089,6 +3102,7 @@ export class ZombieSystem {
     if (
       zombie.mode === 'chase' &&
       scratch.sees &&
+      zombie.staggerTime <= 0 &&
       zombie.spitWait <= 0 &&
       zombie.attackWindup <= 0 &&
       metres >= spit.rangeBand.nearMetres &&
@@ -3708,6 +3722,9 @@ export class ZombieSystem {
       zombie.hitFlinchTime = 0;
       this.cancelAcidSpit(zombie);
     }
+    if (!projectile) {
+      this.stagger(zombie, hit.impulse);
+    }
     if (damage > 0) {
       this.options.onWound?.(id, zombie, hit, damage);
     }
@@ -3753,6 +3770,17 @@ export class ZombieSystem {
     }
     zombie.carved = [...zombie.carved, ...cells].sort((a, b) => a - b);
     this.options.onCarve?.(id, zombie, cells, strikes.find((strike) => strike.cell === struck)!.hit);
+  }
+
+  /** Doc: `docs/stagger.md`. A heavy enough hit spoils the attack in progress; position is never touched. */
+  private stagger(zombie: Zombie, impulse: number): void {
+    const stagger = zombie.type.stagger;
+    if (!stagger || impulse < stagger.impulseThreshold) {
+      return;
+    }
+    zombie.staggerTime = Math.max(zombie.staggerTime, stagger.durationSimSeconds);
+    zombie.attackWindup = 0;
+    this.cancelAcidSpit(zombie);
   }
 
   /** A hit during the wind-up spoils the spit and spends the content fraction of the cooldown. */
