@@ -65,6 +65,10 @@
         "assets/models/ammo_can.glb",
         "assets/models/jerry_can.glb",
         "assets/models/gas_canister.glb",
+        "assets/models/opened_beans.glb",
+        "assets/models/opened_soup.glb",
+        "assets/models/empty_can.glb",
+        "assets/models/can_opener.glb",
         "assets/models/frag_grenade.glb",
         "assets/models/dead_desk_lamp.glb"
       ],

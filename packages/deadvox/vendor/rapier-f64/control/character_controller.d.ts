@@ -1,0 +1,58 @@
+import { Vector } from "../math";
+import { BroadPhase, Collider, ColliderSet, InteractionGroups, NarrowPhase } from "../geometry";
+import { QueryFilterFlags } from "../pipeline";
+import { IntegrationParameters, RigidBodySet } from "../dynamics";
+export declare class CharacterCollision {
+    collider: Collider | null;
+    translationDeltaApplied: Vector;
+    translationDeltaRemaining: Vector;
+    toi: number;
+    witness1: Vector;
+    witness2: Vector;
+    normal1: Vector;
+    normal2: Vector;
+}
+export declare class KinematicCharacterController {
+    private raw;
+    private rawCharacterCollision;
+    private params;
+    private broadPhase;
+    private narrowPhase;
+    private bodies;
+    private colliders;
+    private _applyImpulsesToDynamicBodies;
+    private _characterMass;
+    constructor(offset: number, params: IntegrationParameters, broadPhase: BroadPhase, narrowPhase: NarrowPhase, bodies: RigidBodySet, colliders: ColliderSet);
+    free(): void;
+    up(): Vector;
+    setUp(vector: Vector): void;
+    applyImpulsesToDynamicBodies(): boolean;
+    setApplyImpulsesToDynamicBodies(enabled: boolean): void;
+    characterMass(): number | null;
+    setCharacterMass(mass: number | null): void;
+    offset(): number;
+    setOffset(value: number): void;
+    normalNudgeFactor(): number;
+    setNormalNudgeFactor(value: number): void;
+    slideEnabled(): boolean;
+    setSlideEnabled(enabled: boolean): void;
+    autostepMaxHeight(): number | null;
+    autostepMinWidth(): number | null;
+    autostepIncludesDynamicBodies(): boolean | null;
+    autostepEnabled(): boolean;
+    enableAutostep(maxHeight: number, minWidth: number, includeDynamicBodies: boolean): void;
+    disableAutostep(): void;
+    maxSlopeClimbAngle(): number;
+    setMaxSlopeClimbAngle(angle: number): void;
+    minSlopeSlideAngle(): number;
+    setMinSlopeSlideAngle(angle: number): void;
+    snapToGroundDistance(): number | null;
+    enableSnapToGround(distance: number): void;
+    disableSnapToGround(): void;
+    snapToGroundEnabled(): boolean;
+    computeColliderMovement(collider: Collider, desiredTranslationDelta: Vector, filterFlags?: QueryFilterFlags, filterGroups?: InteractionGroups, filterPredicate?: (collider: Collider) => boolean): void;
+    computedMovement(): Vector;
+    computedGrounded(): boolean;
+    numComputedCollisions(): number;
+    computedCollision(i: number, out?: CharacterCollision): CharacterCollision | null;
+}

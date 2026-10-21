@@ -30,3 +30,11 @@ Separate recipes keep tools independent while shared validation and file writing
 parallel formats; see `exports/deadvox.jsonnet`, `src/exports.ts`, `loadThingRecipe`, and
 `packages/thing-export/README.md`, "Recipe ownership". The root refresh command is owned by
 `tools/refresh-deadvox.mjs`.
+
+Inventory atoms may retain a runtime item weight rather than exported part masses:
+a vessel containing a serving must not gain the serving's mass twice, and visual
+primitives are not inventory parts. The authored `exportMass` choice follows each
+item into its recipe; disagreement is refused rather than silently choosing an
+authority. Geometry and authoring-preview physical properties do not change with
+that export choice. See `src/catalogue.ts`, `ItemSchema`, `src/exports.ts`,
+`exportItem` and `loadThingRecipe`, and `cans.libsonnet`, `shellMassKg` and `items`.

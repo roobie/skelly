@@ -1,6 +1,6 @@
 import { MATERIALS } from '@skelly/thing-core/materials';
 import { expect, it } from 'vitest';
-import { buildItem, loadCatalogue } from '../src/catalogue.ts';
+import { buildItem, catalogue, loadCatalogue } from '../src/catalogue.ts';
 import { exportItem, loadThingRecipe } from '../src/exports.ts';
 
 const material = Object.keys(MATERIALS)[0]!;
@@ -20,6 +20,7 @@ const fixture = () => ({
   items: [
     {
       id: 'fixture',
+      exportMass: 'parts',
       parts: [
         {
           id: 'lower',
@@ -82,13 +83,37 @@ it('exports a grip following the held solid through resizing and assembly placem
   datum.solid = 'missing';
   expect(exportFixture).toThrow('missing handling geometry');
 });
+it('omits runtime part masses only when inventory-atom export is authored', () => {
+  const input = fixture();
+  const asset = { id: 'fixture', file: 'assets/models/fixture.glb' } as const;
+  const assembly = exportItem(loadCatalogue(input).items[0]!, asset);
+  input.items[0]!.exportMass = 'inventory-atom';
+  const atom = exportItem(loadCatalogue(input).items[0]!, asset);
+  expect(assembly.modelEntry.parts).toBeDefined();
+  expect(atom.modelEntry).not.toHaveProperty('parts');
+  expect(atom.glb).toEqual(assembly.glb);
+  expect(atom.physical).toEqual(assembly.physical);
+});
+it('refuses recipe mass ownership that differs from the authored item', () => {
+  const item = catalogue.items[0]!;
+  expect(() =>
+    loadThingRecipe([
+      {
+        id: 'fixture',
+        kind: 'item',
+        source: item.id,
+        options: { mass: item.exportMass === 'parts' ? 'inventory-atom' : 'parts' },
+      },
+    ]),
+  ).toThrow('Recipe mass ownership differs');
+});
 it('refuses unknown geometry families during catalogue loading', () => {
   const input = fixture();
   input.items[0]!.parts[0]!.family = 'fixture-unknown';
   expect(() => loadCatalogue(input)).toThrow('Unknown thing family');
 });
 it('refuses recipe references outside the authored item set', () => {
-  expect(() => loadThingRecipe([{ id: 'fixture', kind: 'item', source: 'fixture-unknown' }])).toThrow(
-    'Unknown tool item',
-  );
+  expect(() =>
+    loadThingRecipe([{ id: 'fixture', kind: 'item', source: 'fixture-unknown', options: { mass: 'parts' } }]),
+  ).toThrow('Unknown tool item');
 });

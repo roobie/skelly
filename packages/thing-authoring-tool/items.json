@@ -4,6 +4,7 @@
   "items": [
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -41,6 +42,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -78,6 +80,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -115,6 +118,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -152,6 +156,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -189,6 +194,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -226,6 +232,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -263,6 +270,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -300,6 +308,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -337,6 +346,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -374,6 +384,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -411,6 +422,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -448,6 +460,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -485,6 +498,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -522,6 +536,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -559,6 +574,186 @@
     },
     {
       "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "opened_beans",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-terracotta",
+            "label": "paint-terracotta",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.0253",
+            "height": "0.11",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.074800000000000005",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.036999999999999998",
+            "rimWidth": "0.0014",
+            "serving": "beans",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "opened_soup",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-terracotta",
+            "label": "paperboard-tan",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.0276",
+            "height": "0.12",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.081600000000000006",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.034000000000000002",
+            "rimWidth": "0.0014",
+            "serving": "soup",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "empty_can",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-terracotta",
+            "label": "paint-terracotta",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.0253",
+            "height": "0.11",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.074800000000000005",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.036999999999999998",
+            "rimWidth": "0.0014",
+            "serving": "empty",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 90,
+        "solid": "grip-left",
+        "turn": [0, 0, 0]
+      },
+      "id": "can_opener",
+      "parts": [
+        {
+          "family": "handOpener",
+          "finish": {
+            "body": "steel-grey",
+            "grip": "plastic-red",
+            "key": "paint-charcoal",
+            "wheel": "steel-parkerized"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "cutterRadius": "0.0080000000000000002",
+            "cutterThickness": "0.002",
+            "feedRadius": "0.0089999999999999993",
+            "feedThickness": "0.0050000000000000001",
+            "gripDepth": "0.014",
+            "gripLength": "0.091999999999999998",
+            "gripWidth": "0.014",
+            "handleGap": "0.0080000000000000002",
+            "handleLength": "0.127",
+            "handleSplay": "9",
+            "jawGap": "0.01",
+            "jawLength": "0.036999999999999998",
+            "jawThickness": "0.0040000000000000001",
+            "jawWidth": "0.021000000000000001",
+            "keyLength": "0.042000000000000003",
+            "keyThickness": "0.0060000000000000001",
+            "keyWidth": "0.014",
+            "pivotRadius": "0.0040000000000000001",
+            "spindleHeight": "0.021999999999999999",
+            "spindleRadius": "0.0030000000000000001",
+            "tangDepth": "0.0060000000000000001",
+            "tangWidth": "0.0080000000000000002",
+            "toothCount": "12",
+            "toothDepth": "0.002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -606,6 +801,7 @@
           "to": "shade.arm"
         }
       ],
+      "exportMass": "parts",
       "id": "dead_desk_lamp",
       "parts": [
         {
@@ -696,6 +892,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "id": "electrical_tape",
       "parts": [
         {
@@ -718,6 +915,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "id": "sewing_thread",
       "parts": [
         {
@@ -744,6 +942,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "id": "nylon_cord",
       "parts": [
         {
@@ -765,6 +964,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "id": "fuse",
       "parts": [
         {
