@@ -392,12 +392,19 @@ const liveTargetFor = (inv: Inventory, target: Target): Target | undefined => {
   return owner ? { ...target, owner } : undefined;
 };
 
+/** A copy to plan a sequence of moves on; it lands drops as the live inventory does. */
+const planningCopy = (inv: Inventory): Inventory => {
+  const copy = Inventory.restoreState(inv.registry, inv.snapshotState());
+  copy.landing = inv.landing;
+  return copy;
+};
+
 const queueQuickbarStows = (
   inventory: Inventory,
   queue: HandlingQueue,
   displaced: ReadonlySet<Item>,
 ): { queued: number; unable: Item[] } => {
-  const plannedInventory = Inventory.restoreState(inventory.registry, inventory.snapshotState());
+  const plannedInventory = planningCopy(inventory);
   const unable: Item[] = [];
   let queued = 0;
   for (const held of displaced) {
@@ -486,7 +493,7 @@ const stowTwoHandDisplacements = (args: {
   readonly target: Target;
 }): string | undefined => {
   const { inv, queue, item, feet, displaced, target } = args;
-  const planned = Inventory.restoreState(inv.registry, inv.snapshotState());
+  const planned = planningCopy(inv);
   const stows: MoveJob[] = [];
   for (const held of displaced) {
     const plannedHeld = planned.itemByUid(held.uid);
