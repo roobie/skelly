@@ -212,12 +212,9 @@ try {
           paused: false,
         });
         const queue = new HandlingQueue(inventory);
-        const unpacking = new Unpacking(
-          inventory,
-          queue,
-          () => [0, 0, 0],
-          (type) => tutorial.opened(type),
-        );
+        const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], {
+          opened: (type) => tutorial.opened(type),
+        });
         gauntletWitness.manual = true;
         try {
           const draw = mountTutorial(
@@ -346,13 +343,9 @@ try {
           if (!(inventory.add(bag, { kind: 'worn' }) && inventory.add(box, { kind: 'hand', side: 'right' }))) {
             throw new Error('Weapons fixture must fit');
           }
-          const unpack = new Unpacking(
-            inventory,
-            queue,
-            () => [0, 1, 0],
-            undefined,
-            (type) => tutorial.weapons.unpackedAmmo(type),
-          );
+          const unpack = new Unpacking(inventory, queue, () => [0, 1, 0], {
+            unpacked: (type) => tutorial.weapons.unpackedAmmo(type),
+          });
           if (unpack.activate(box) !== undefined || queue.tick(queue.remaining).failed.length > 0) {
             throw new Error('Ammunition unpack must complete');
           }

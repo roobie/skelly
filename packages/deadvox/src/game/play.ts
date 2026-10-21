@@ -1017,13 +1017,10 @@ export const startPlay = (
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
   });
   const { compression } = sim;
-  const unpacking = new Unpacking(
-    inventory,
-    queue,
-    feet,
-    (type) => tutorial?.opened(type),
-    (type) => tutorial?.weapons.unpackedAmmo(type),
-  );
+  const unpacking = new Unpacking(inventory, queue, feet, {
+    opened: (type) => tutorial?.opened(type),
+    unpacked: (type) => tutorial?.weapons.unpackedAmmo(type),
+  });
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
     input.pitch = session.restoredLook.pitch;

@@ -49,13 +49,9 @@ const fixture = (kind: PracticeGun) => {
   const bag = inventory.create('hiking_backpack');
   expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
   expect(inventory.add(packageItem, { kind: 'hand', side: 'right' })).toBe(true);
-  const unpack = new Unpacking(
-    inventory,
-    queue,
-    () => [0, 1, 0],
-    undefined,
-    (type) => observer.unpackedAmmo(type),
-  );
+  const unpack = new Unpacking(inventory, queue, () => [0, 1, 0], {
+    unpacked: (type) => observer.unpackedAmmo(type),
+  });
   expect(unpack.activate(packageItem)).toBeUndefined();
   expect(queue.tick(queue.remaining).failed).toEqual([]);
   expect(inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
