@@ -15,7 +15,9 @@ Build project-owned double-precision WASM from the official Rapier bindings and 
 
 The reproducible build owner is `tools/rapier-f64/build.py`, `main`. Its precision transformation widens physical scalars and buffers while retaining integer handles, indices and byte snapshots; debug colors remain upstream presentation floats. Keeping the upstream solver unchanged avoids owning a solver fork. The comparison build isolates precision from upstream-version changes rather than treating a different npm kernel as a precision control.
 
-The artifact shipping mechanism needs a BR decision before production integration. Local experiment artifacts are not shipped game dependencies. `tools/rapier-f64/local.mjs`, `runLocal`, extends the existing browser harness for those builds; `tools/rapier-f64/candidate.ts`, `rapierCandidate`, deliberately preserves its collision-free fixture and marks hidden solver work unmeasured. Zero wrapper counters are not evidence of bounded internal work. Do not infer agreement from the library name or a simulation source hash.
+Commit the f64 WASM and its generated bindings and load them from the repository. This is the simplest supply path without CI-build or package infrastructure to own; a later shipping card may replace it. `tools/rapier-f64/build.py`, `main`, owns regeneration, provenance recording and local rebuild verification; `test/rapierBuild.test.ts` checks the committed supply without requiring Rust in CI.
+
+`tools/rapier-f64/local.mjs`, `runLocal`, exercises the committed module and optionally a locally built single-precision control; `tools/rapier-f64/candidate.ts`, `rapierCandidate`, deliberately preserves its collision-free fixture and marks hidden solver work unmeasured. Zero wrapper counters are not evidence of bounded internal work. Do not infer agreement from the library name or a simulation source hash.
 
 ## Harness boundaries
 

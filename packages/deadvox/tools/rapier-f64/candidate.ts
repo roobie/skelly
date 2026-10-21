@@ -1,5 +1,5 @@
-import type * as Rapier from '@dimforge/rapier3d-deterministic';
 import type { Candidate, Tier } from '../../src/vehicles/feasibility/contract.ts';
+import type * as Rapier from '../../vendor/rapier-f64/rapier.js';
 
 export function rapierCandidate(api: typeof Rapier, precision: string): Candidate {
   return {

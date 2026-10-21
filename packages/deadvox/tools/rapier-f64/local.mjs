@@ -5,7 +5,16 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-export async function runLocal(vite, engines, selected) {
+const packageDirectory = (precision) =>
+  new URL(
+    precision === 'f64' ? '../../vendor/rapier-f64/' : '../../../../test-results/rapier-f32/pkg/',
+    import.meta.url,
+  );
+const packageUrl = (precision, directory) =>
+  precision === 'f64' ? '/vendor/rapier-f64/' : `/@fs${fileURLToPath(directory)}`;
+
+export async function runLocal(vite, engines, selected, compare = true) {
+  const precisions = compare ? ['f64', 'f32'] : ['f64'];
   const artifacts = new URL('../../../../test-results/rapier-agreement/', import.meta.url);
   await mkdir(artifacts, { recursive: true });
   const { runSuite } = await vite.ssrLoadModule('/src/vehicles/feasibility/runner.ts');
@@ -13,11 +22,11 @@ export async function runLocal(vite, engines, selected) {
   const { rapierCandidate } = await vite.ssrLoadModule('/tools/rapier-f64/candidate.ts');
   const results = {};
   const paths = {};
-  for (const precision of ['f64', 'f32']) {
-    const directory = new URL(`../../../../test-results/rapier-${precision}/pkg/`, import.meta.url);
+  for (const precision of precisions) {
+    const directory = packageDirectory(precision);
     const wasm = await readFile(new URL('rapier_wasm3d_bg.wasm', directory));
     const identity = createHash('sha256').update(wasm).digest('hex');
-    const url = `/@fs${fileURLToPath(directory)}`;
+    const url = packageUrl(precision, directory);
     paths[precision] = url;
     const raw = await vite.ssrLoadModule(`${url}rapier_wasm3d.js`);
     // biome-ignore lint/style/useNamingConvention: wasm-bindgen owns this initialization key
@@ -67,7 +76,7 @@ export async function runLocal(vite, engines, selected) {
     try {
       const page = await browser.newPage();
       await page.goto(`http://127.0.0.1:${address.port}/test/browser/vehicle-feasibility.html`);
-      for (const precision of ['f64', 'f32']) {
+      for (const precision of precisions) {
         const baseline = results[precision];
         const suite = await page.evaluate(
           async ({ url, identity, precision: numericPrecision }) => {

@@ -29,3 +29,5 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("dim2"))']
 [profile.release]
 codegen-units = 1
 strip = true
+lto = true
+opt-level = "s"

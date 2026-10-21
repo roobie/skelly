@@ -6,6 +6,7 @@
       "project": ["site/**/*.js!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"]
     },
     "packages/deadvox": {
+      "ignore": ["vendor/rapier-f64/**"],
       "ignoreBinaries": [
         // Local publication uses the operator's mise-managed, authenticated Surge CLI.
         "mise",

@@ -47,6 +47,8 @@ try {
       process.argv.slice(2).filter((argument) => argument !== '--local-rapier'),
     );
   } else {
+    const { runLocal } = await import('../../tools/rapier-f64/local.mjs');
+    await runLocal(vite, engines, process.argv.slice(2), false);
     const { runSuite } = await vite.ssrLoadModule('/src/vehicles/feasibility/runner.ts');
     const { firstDivergence } = await vite.ssrLoadModule('/src/vehicles/feasibility/trace.ts');
     const fingerprint = await vite.ssrLoadModule('/tools/simulationFingerprint.ts');
@@ -55,16 +57,14 @@ try {
       readFile: (path) => readFile(path, 'utf8'),
     });
     const build = fingerprint.fingerprintSimulationSourceMap(graph.sources);
-    const wasm = await readFile(
-      new URL('../../../../node_modules/@dimforge/rapier3d-deterministic/rapier_wasm3d_bg.wasm', import.meta.url),
-    );
+    const wasm = await readFile(new URL('../../vendor/rapier-f64/rapier_wasm3d_bg.wasm', import.meta.url));
     const identities = {
       packageLockSha256: createHash('sha256')
         .update(await readFile(new URL('../../../../package-lock.json', import.meta.url)))
         .digest('hex'),
       sourceFingerprint: build,
       rapierWasmSha256: createHash('sha256').update(wasm).digest('hex'),
-      rapierRole: 'installed diagnostic candidate; not executed by this moving-body harness',
+      rapierRole: 'committed f64 diagnostic candidate; agreement measured by runLocal',
     };
     const baseline = runSuite(build);
     await writeFile(
@@ -79,7 +79,7 @@ try {
     const address = vite.httpServer.address();
     assert(address && typeof address !== 'string');
     const selected = process.argv.slice(2);
-    for (const engine of selected.length > 0 ? selected : Object.keys(engines)) {
+    for (const engine of (selected.length > 0 ? selected : Object.keys(engines)).filter((name) => name !== 'node')) {
       assert(Object.hasOwn(engines, engine), `Unknown engine: ${engine}`);
       // biome-ignore lint/performance/noAwaitInLoops: serialize engines so timing samples do not compete with each other
       const browser = await engines[engine]();
