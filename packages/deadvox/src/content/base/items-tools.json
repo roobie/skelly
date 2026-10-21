@@ -374,6 +374,13 @@
             "inner": 0.28000000000000003,
             "outer": 0.5
           },
+          "flare": {
+            "blastIntensity": 40,
+            "distanceMetres": 3,
+            "haloRadius": 0.12,
+            "recoverSeconds": 0.59999999999999998,
+            "strength": 0.14999999999999999
+          },
           "gain": 6,
           "grain": 0.080000000000000002,
           "tint": "#8cff8f"

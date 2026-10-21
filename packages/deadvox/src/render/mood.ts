@@ -58,7 +58,8 @@ import { DrawPass } from './drawPass.ts';
 import { GpuFrameTime } from './gpuFrameTime.ts';
 import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
-import { createMoodOutputPass } from './moodOutput.ts';
+import { createMoodOutputPass, setNightFlareUniforms } from './moodOutput.ts';
+import { type NightVisionFlare, NO_FLARE } from './nightVisionFlare.ts';
 import { OpticLensRenderer, opticLensPass } from './opticLens.ts';
 import { ScreenScale } from './screenScale.ts';
 
@@ -100,6 +101,7 @@ export class Mood {
   private drugVignette = 0;
   private drugVignetteScaleValue: number;
   private nightVision: NightVision | undefined;
+  private nightVisionFlare: NightVisionFlare = NO_FLARE;
   private crackOn = false;
   private readonly crackColor = new Color();
   private composer: EffectComposer | undefined;
@@ -233,6 +235,17 @@ export class Mood {
     if (view !== this.nightVision) {
       this.nightVision = view;
       this.sync();
+    }
+  }
+
+  /**
+   * Bright light flaring through the night-vision view (`src/render/nightVisionFlare.ts`, `nightVisionFlare`);
+   * cheap enough to call every frame. It shows only while a night-vision view is set.
+   */
+  setNightVisionFlare(flare: NightVisionFlare): void {
+    this.nightVisionFlare = flare;
+    if (this.outputPass) {
+      setNightFlareUniforms(this.outputPass, this.nightVision, flare);
     }
   }
 
@@ -494,6 +507,7 @@ export class Mood {
     u.uNightTint!.value = [tint.r, tint.g, tint.b];
     u.uNightGrain!.value = night?.grain ?? 0;
     u.uNightEdge!.value = night ? [night.edge.darkening, night.edge.inner, night.edge.outer] : [0, 0, 1];
+    setNightFlareUniforms(this.outputPass!, night, this.nightVisionFlare);
   }
 
   private releaseComposer(): void {
