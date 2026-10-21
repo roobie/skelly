@@ -20,7 +20,7 @@ import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate } from '../src/core/time.ts';
 import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import {
   FIGURE_BOXES,
@@ -3407,32 +3407,38 @@ describe('attack windup', () => {
   });
 
   it('keeps simulation-backed hit flinch through save/restore and freeze', () => {
-    const system = new ZombieSystem(senses(() => player([100, 2, 0]), FLOOR));
-    const id = system.add(SHAMBLER, [0.5, 1, 0]);
+    const stair: SolidAt = (_x, y, z) => y === 0 || (z >= 3 && y === 1);
+    const sense = senses(() => player([0, 2, 10], [0, 0, -1]), stair);
+    const system = new ZombieSystem(sense);
+    const id = system.add(SHAMBLER, [0, 1, 2.2], [0, 0, 1]);
     const zombie = system.store.get(id)!;
+    for (let tick = 0; tick < 120 && (zombie.stepOffset ?? 0) === 0; tick++) {
+      system.tick(1 / 60);
+    }
+    expect(zombie.stepOffset).toBeLessThan(0);
     const ray = regionRay(zombie, 'head');
     expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id);
     expect(zombie.hitFlinchTime).toBe(0);
 
-    run(system, 0.1);
-    const savedTime = system.store.get(id)!.hitFlinchTime!;
-    system.store.get(id)!.stanceWeight = 0.37;
-    system.store.get(id)!.stepOffset = -0.25;
+    run(system, HIT_FLINCH_DURATION / 4);
+    const { hitFlinchTime: savedTime, stanceWeight, stepOffset } = system.store.get(id)!;
     expect(savedTime).toBeGreaterThan(0);
-    expect(savedTime).toBeLessThan(0.35);
-    const restored = new ZombieSystem(senses(() => player([100, 2, 0]), FLOOR));
+    expect(savedTime).toBeLessThan(HIT_FLINCH_DURATION);
+    expect(stanceWeight).toBeGreaterThan(0);
+    expect(stepOffset).toBeLessThan(0);
+    const restored = new ZombieSystem(sense);
     restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
-    expect(restored.store.get(id)!.stanceWeight).toBe(0.37);
-    expect(restored.store.get(id)!.stepOffset).toBe(-0.25);
+    expect(restored.store.get(id)!.stanceWeight).toBe(stanceWeight);
+    expect(restored.store.get(id)!.stepOffset).toBe(stepOffset);
 
     restored.setFrozen(true);
-    run(restored, 0.5);
+    run(restored, HIT_FLINCH_DURATION * 2);
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
-    expect(restored.store.get(id)!.stanceWeight).toBe(0.37);
-    expect(restored.store.get(id)!.stepOffset).toBe(-0.25);
+    expect(restored.store.get(id)!.stanceWeight).toBe(stanceWeight);
+    expect(restored.store.get(id)!.stepOffset).toBe(stepOffset);
     restored.setFrozen(false);
-    run(restored, 0.3);
+    run(restored, HIT_FLINCH_DURATION);
     expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();
   });
 

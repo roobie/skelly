@@ -12,9 +12,10 @@ import {
 import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import { type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
-import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const registry = baseRegistry();
@@ -23,18 +24,49 @@ const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
 
-const restoredPoseZombie = (
-  create: () => ZombieSystem,
-  type: NonNullable<ReturnType<typeof registry.zombies.get>>,
-  pose: Record<string, unknown>,
-) => {
-  const seeded = create();
-  const id = seeded.add(type, [2, 1, 3], [0, 0, -1]);
-  const state = structuredClone(seeded.snapshotState());
-  Object.assign(state.zombies[0]!.zombie as object, pose);
-  const system = create();
-  system.restoreState(state, (typeId) => registry.zombies.get(typeId));
-  return { system, id, zombie: system.store.get(id)! };
+const livePoseZombie = (type = SHAMBLER) => {
+  let target: Vec3 = [100, 1, 100];
+  let damage = 0;
+  const system = new ZombieSystem({
+    tuning: TEST_SENSE_TUNING,
+    isOpaque: FLOOR,
+    player: () => ({ pos: target, facing: [0, 0, 1], movement: 'still', lit: false, lightSeenFrom: 40 }),
+    isSolid: FLOOR,
+    dayPhase: () => dayStateAtHour(12),
+    blockSize: BLOCK_SIZE,
+    physics: physicsFor(SCALE),
+    jumpSpeed: PLAYER.jump,
+    hurtPlayer: (amount) => {
+      damage += amount;
+    },
+  });
+  const id = system.add(type, [2, 1, 3], [0, 0, -1]);
+  const zombie = system.store.get(id)!;
+  return {
+    system,
+    id,
+    zombie,
+    damage: () => damage,
+    approach: (distance = 1.2) => {
+      target = [zombie.body.pos[0] + zombie.facing[0] * distance, 2, zombie.body.pos[2] + zombie.facing[2] * distance];
+    },
+  };
+};
+
+const startTurnedAttack = () => {
+  const live = livePoseZombie();
+  live.system.tick(1 / 20);
+  live.approach();
+  live.system.tick(1 / 6000);
+  return live;
+};
+
+const rendererFor = (zombie: Zombie) => {
+  const figureSeeds = figureSeedPool(registry.zombies);
+  return new MobActorMeshes(BLOCK_SIZE, 4, {
+    figureSeeds,
+    poolSize: mobFigurePoolSizeThrough(figureSeeds, zombie.figureSeed),
+  });
 };
 
 const offsetForBox = ({
@@ -120,30 +152,20 @@ const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
 
 describe('rendered and hit shambler poses', () => {
   it('matches a frozen lunge pose after windup cancellation', () => {
-    const create = () =>
-      new ZombieSystem({
-        tuning: TEST_SENSE_TUNING,
-        isOpaque: FLOOR,
-        player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
-        isSolid: FLOOR,
-        dayPhase: () => dayStateAtHour(12),
-        blockSize: BLOCK_SIZE,
-        physics: physicsFor(SCALE),
-        jumpSpeed: PLAYER.jump,
-        hurtPlayer: () => undefined,
-      });
-    const { system, id, zombie } = restoredPoseZombie(create, SHAMBLER, {
-      figureSeed: 1,
-      mode: 'chase',
-      stanceWeight: 1,
-      horizontalSpeed: 0,
-      gaitPhase: 0,
-      attackWindup: 0,
-      attackWait: 0.9,
-    });
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 2 });
+    const { system, id, zombie, damage } = startTurnedAttack();
+    expect(zombie.attackWindup).toBeGreaterThan(0);
+    expect(zombie.attackWait).toBeGreaterThan(0);
+    const renderer = rendererFor(zombie);
     try {
       renderer.sync(system.store, 0, 1);
+      const wait = zombie.attackWait;
+      system.setFrozen(true);
+      expect(zombie.attackWindup).toBe(0);
+      expect(zombie.attackWait).toBe(wait);
+      const frozen = system.snapshotState();
+      system.tick(SHAMBLER.attack.windupSimSeconds + SHAMBLER.attack.cooldownSimSeconds);
+      expect(system.snapshotState()).toEqual(frozen);
+      expect(damage()).toBe(0);
       renderer.sync(system.store, 0, 1, true);
       const mismatch = maxOffset(renderer, id, zombie);
       expect(mismatch.worst.centreCm).toBeLessThan(0.001);
@@ -156,40 +178,30 @@ describe('rendered and hit shambler poses', () => {
   });
 
   it.each(['runner', 'crawler'] as const)('keeps rendered %s gait and flinch aligned with hit regions', (model) => {
-    const create = () =>
-      new ZombieSystem({
-        tuning: TEST_SENSE_TUNING,
-        isOpaque: FLOOR,
-        player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
-        isSolid: FLOOR,
-        dayPhase: () => dayStateAtHour(12),
-        blockSize: BLOCK_SIZE,
-        physics: physicsFor(SCALE),
-        jumpSpeed: PLAYER.jump,
-        hurtPlayer: () => undefined,
-      });
-    const base = restoredPoseZombie(create, registry.zombies.get(model)!, {
-      figureSeed: 1,
-      mode: 'idle',
-      horizontalSpeed: 0.7,
-      gaitPhase: 0.8,
-    });
-    const { system, id, zombie } = restoredPoseZombie(create, registry.zombies.get(model)!, {
-      figureSeed: 1,
-      mode: 'idle',
-      horizontalSpeed: 0.7,
-      gaitPhase: 0.8,
-      hitFlinchTime: 0.08,
-    });
-    const baseInput = zombiePoseInputFor(base.zombie, base.id, BLOCK_SIZE);
+    const { system, id, zombie, approach } = livePoseZombie(registry.zombies.get(model)!);
+    approach(10);
+    for (let tick = 0; tick < 60 && zombie.gaitPhase === 0; tick++) {
+      system.tick(1 / 60);
+    }
+    expect(zombie.mode).toBe('chase');
+    const head = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
+      (box) => box.bone === 'head',
+    )!.center;
+    expect(system.swing([head[0], head[1] + 1, head[2] - 1.5], [0, -1, 1.5], { ...FISTS_MELEE, damage: 1 })).toBe(id);
+    expect(zombie.hitFlinchTime).toBe(0);
+    system.tick(HIT_FLINCH_DURATION / 4);
+    expect(zombie.gaitPhase).toBeGreaterThan(0);
+    expect(zombie.hitFlinchTime).toBeGreaterThan(0);
+    system.setFrozen(true);
     const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const { hitFlinchTime: _flinch, ...baseInput } = input;
     const flinched = posedShambler(input);
     const basePose = posedShambler(baseInput);
     const recovered = posedShambler({ ...input, hitFlinchTime: HIT_FLINCH_DURATION });
     expect(flinched.pose.rotations.head).not.toEqual(basePose.pose.rotations.head);
     expect(recovered.transforms).toEqual(basePose.transforms);
 
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 2 });
+    const renderer = rendererFor(zombie);
     try {
       renderer.sync(system.store, 0, 1, true);
       const mismatch = maxOffset(renderer, id, zombie);
@@ -277,31 +289,13 @@ describe('rendered and hit shambler poses', () => {
   });
 
   it('aimAt hits the rendered head centre during a frozen lunge and turned head-look', () => {
-    const create = () =>
-      new ZombieSystem({
-        tuning: TEST_SENSE_TUNING,
-        isOpaque: FLOOR,
-        player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
-        isSolid: FLOOR,
-        dayPhase: () => dayStateAtHour(12),
-        blockSize: BLOCK_SIZE,
-        physics: physicsFor(SCALE),
-        jumpSpeed: PLAYER.jump,
-        hurtPlayer: () => undefined,
-      });
-    const { system, id, zombie } = restoredPoseZombie(create, SHAMBLER, {
-      figureSeed: 1,
-      mode: 'chase',
-      stanceWeight: 1,
-      headYaw: 0.45,
-      horizontalSpeed: 0.7,
-      gaitPhase: 0.8,
-      attackWait: 0.9,
-      attackWindup: 0.15,
-    });
+    const { system, id, zombie } = startTurnedAttack();
+    expect(zombie.attackWindup).toBeGreaterThan(0);
+    expect(zombie.attackWait).toBeGreaterThan(0);
+    expect(Math.abs(zombie.headYaw)).toBeGreaterThan(0);
     system.setFrozen(true);
 
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 2 });
+    const renderer = rendererFor(zombie);
     try {
       renderer.sync(system.store, 0, 1, true);
       const headBox = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
