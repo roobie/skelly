@@ -3,7 +3,7 @@ read_if:
   - you change the vehicle part model, build page or vehicle exports
   - you start vehicle content, in-game vehicles or saved vehicle state
   - you derive vehicle behavior from its parts
-  - you pick up an open vehicle design question
+  - you distinguish the visual spike from the settled vehicle slice design
 ---
 
 # Vehicle spike: vehicles built from parts
@@ -21,9 +21,9 @@ The spike is a debug page for judging vehicle appearance and disassembly before 
 
 A blueprint is content; a vehicle instance owns its fitting state. This lets builds omit or change fittings without creating a second model, and lets two vehicles of one blueprint evolve independently. Part types have one catalogue identity so a removed part can remain the same type across vehicles. See `src/vehicles/model.ts`, `PartType`, `Blueprint`, `VehicleInstance` and `Fitting`.
 
-A part cannot be removed while another fitting depends on it, or installed before its supports exist. Support is the structural boundary that prevents floating assemblies. Keep part definitions content-shaped so a future schema can adopt them without rewriting the model. Shared part types are appropriate where the part serves the same role across builds.
+Support prevents floating assemblies during deliberate editing; see `src/vehicles/model.ts`, `addFitting` and `removeFitting`. Those editor refusal rules do not implement impact detachment. The game must cascade through unsupported dependents while preserving surviving items, as specified in `SLICE-6.md`, "Condition, appearance and attachment".
 
-Paint is vehicle-owned; non-paint material colors belong to the part type. Wear is per fitting and seeded by vehicle/fitting identity so it remains stable across loads without altering shape. Keep detail bounded by mesh cost. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`.
+Seeded cosmetic wear permits visual variation without changing shape or implying functional damage. Keep detail bounded by mesh cost. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`. The game's appearance belongs to the part through salvage and refitting; the spike's vehicle paint is not a competing production ownership rule.
 
 ## Noise comes from the build
 
@@ -39,26 +39,10 @@ The pickup's regular-cab split is not published: its front clip follows the doub
 
 The part grid preserves fitting placement; subdivided voxels let the model express thin structure, wheel arches, seats and controls. Mesh cost is per part type, so fitting instances can share geometry. Keep the voxel engine project's control; a finer grain must not render one object per voxel. See `src/vehicles/model.ts`, `PART_CELL` and `VOXELS_PER_CELL`.
 
-## Deferred, each with its trigger
+## From the spike to the game
 
-- Placement rules and quarter-turn orientations: when a player or editor can place a part. Supports remain stored choices; contact only proposes candidates.
-- `needs`/`provides` on part types: when a part can fit more than one host.
-- Motion axes, steering and driven-wheel identity: when steering or drive is implemented.
-- Part condition, attachment, joints and consequences for supported parts: when collision can damage parts or fitting takes tools and time.
-- Per-fitting paint and a removable-part item: when parts become inventory items.
-- Parked vehicle save representation: when vehicles enter saves.
-- Baked meshes and distance LOD: when several vehicles share an in-game view.
-- Content schema and pack validation: after the source of truth for shape authoring is chosen.
-- Cargo as stored items rather than fittings: when vehicle storage exists.
+The settled scope and dependency order are in `SLICE-6.md`, "Reviewable build order"; further directions and their issue triggers are in `SLICE-6.md`, "Deferred work and its trigger". The spike remains a visual instrument, not the authority for production item ownership, damage, saves or physics.
 
-Derived mass, center of mass, noise and later handling/power/fuel should follow fitted parts rather than duplicate vehicle totals.
+VAT assembles thing-tool-authored parts and exports baked geometry. That boundary lets the game load validated content without evaluating authoring shapes. Shared exported per-part mass and centre of mass replace a parallel vehicle physical authority; see `things/WORK.md`, "Decisions". Cargo remains items within fitted storage rather than becoming fittings itself.
 
-## Open decisions for BR
-
-1. How far designers should support building unforeseen vehicles.
-2. Whether welded structure is one player-facing part or many.
-3. Whether paint wear and condition are separate.
-4. Whether items and fitted parts share condition terms.
-5. Whether near-side parts can fit the far side.
-6. Where part voxel shapes are authored as content.
-7. How heavy parts move once removed.
+The first loop builds from factory structures, uses welded assemblies as player-facing units, and shares unhanded parts across compatible hosts. Independent appearance and event-driven condition keep salvage history without scheduled maintenance. The shared item condition vocabulary avoids a meaning change when a part comes off. Heavy recovery uses a drivable hoist vehicle, so it exercises the same build and ownership rules rather than a separate equipment model.

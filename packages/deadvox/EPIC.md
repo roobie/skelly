@@ -232,8 +232,9 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 
 ### 6. Wheels
 
-The proposed decision gates and build order are in [SLICE-6.md](SLICE-6.md).
-Its open choices require BR's answers before dependent implementation.
+The settled scope, implementation gates and build order are in [SLICE-6.md](SLICE-6.md).
+The hatchback and pickup establish the transport loop; the heavy-part-hoist uses the
+same vehicle systems for field salvage. The motorbike follows the four-wheel loop.
 
 - Vehicles as grids of parts: building from wrecks, installing and removing
   parts, and repair.

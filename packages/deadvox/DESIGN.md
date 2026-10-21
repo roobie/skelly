@@ -2077,8 +2077,10 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 ## Vehicles
 
 The vehicle goal is deep modularity and customizability without requiring
-fidelity beyond what play needs. The vehicle spike tests the part model against
-that goal; its reasons are in [docs/vehicle-spike.md](docs/vehicle-spike.md).
+fidelity beyond what play needs. The first playable scope and implementation gates
+are in [SLICE-6.md](SLICE-6.md); the visual model's reasons are in
+[docs/vehicle-spike.md](docs/vehicle-spike.md). These are design rules, not a claim
+that parked scenery implements the vehicle simulation.
 
 Vehicles are built, not picked. How a vehicle looks, holds together, runs,
 handles, sounds, breaks, and gets repaired follows from the parts fitted and
@@ -2095,11 +2097,16 @@ their state.
    (skill, tools, materials and time to install, remove and repair, because building and
    repair are crafting); and what it's for (the capabilities it provides). The spike's
    supports are `src/vehicles/model.ts`, `Fitting.supportedBy`.
-3. **Two layers.** A part type is immutable content that mods can extend. A fitting is
-   that part on this vehicle, with its own state: condition (intact, damaged, badly
-   damaged, broken) and attachment (attached or ripped off). Collisions damage the parts
-   that hit something. The spike's layers: `src/vehicles/model.ts`, `PartType`, and `VehicleInstance`,
-   whose own fittings are where that state goes.
+3. **Condition is not attachment or appearance.** Part types are immutable content;
+   fittings own instance state. A fitting places an item on a vehicle without changing
+   its identity or condition vocabulary. Cosmetic weathering
+   stays separate from functional condition, so rust is not a mechanical diagnosis
+   and refitting does not repaint a part. Functional wear comes from damaging events,
+   not distance or time: repair follows consequences rather than scheduled chores.
+   Impact may detach struck parts and cascade through unsupported dependents, retaining
+   surviving parts as world items. Broken attached mass still matters; detached mass
+   does not. The spike's type/instance seam is `src/vehicles/model.ts`, `PartType`
+   and `VehicleInstance`; it is not the game's damage implementation.
 4. **Networks at the fidelity play needs.** Steering is a per-part property. Drive is a
    per-axle driven flag, so front, rear or all-wheel drive is a build choice. Power and
    fuel are vehicle-wide pools: is there a charged battery, is there a tank with gas. The
@@ -2111,49 +2118,54 @@ their state.
    fuel use, protection and storage. Vehicles make noise, and driving is fast and loud.
    Engine noise is the source, with the chassis/hull damping it. See `measure` and
    `noiseRadius` in `src/vehicles/model.ts`.
-6. **Parts are items.** A removed part becomes an item carrying its type and condition
-   (the `vehiclePart` component, see [The item model](#the-item-model)): salvage it,
-   carry it, refit it. A vehicle can be pieced together from wrecks. So a part type's id
-   names one type across all vehicles: `src/vehicles/catalogue.ts`, `CATALOGUE`.
-7. **Data-driven and moddable.** Part types and vehicles live in schema-validated content
-   (see [Content and modding](#content-and-modding)), and a mod adds parts without code.
-   The spike keeps its part types content-shaped for that: `src/vehicles/voxels.ts`,
-   `ShapeOp`.
-8. **The grain is "a part a player would name and swap":** wheel, door, engine, battery,
-   seat, bull bar. No bolts, wire runs or plumbing as separate things.
-9. **Cheap at scale.** A street of parked cars costs little to draw, and editing works
-   part by part.
-10. **What a vehicle blocks comes from its fitted parts.** Collision reads the same
-    fitting list the renderer draws, so a part removed in play changes the look and what
-    blocks through one path, and the vehicle slice builds on this rule instead of
-    replacing it. A body panel is a thin shell, so a column of cells counts as filled
-    between its lowest and highest part; a cell blocks when enough of it is filled, and
-    that fraction is content, so a pack tunes it. Picking and the crosshair read the same
-    cells, so aiming at empty air above a bonnet selects nothing that could not be bumped
-    into. Placing, settling and the "nothing falls on a body" check still take the piece's
-    whole box. Shaped furniture blocks by the same rule:
-    `docs/content.md`, "Furniture solidity". See `src/vehicles/solid.ts`, `solidBlocks`,
-    and `src/core/blockEntities.ts`, `BlockEntities.hasPartAt`.
+6. **Parts are items.** Salvage and refitting retain condition, appearance, resources
+   and contents, rather than copying them into a second vehicle item universe. Parts
+   are unhanded to keep salvage reusable across sides, without closing later handed
+   content. Shared identity starts at `src/vehicles/catalogue.ts`, `CATALOGUE`.
+   Heavy recovery uses a heavy-part-hoist vehicle built and driven through the vehicle
+   systems, not an equipment exception or an engine carried in a pocket.
+7. **Data-driven and moddable.** VAT assembles things whose shapes the thing tool
+   authors. Exported render and baked collision geometry keep authoring operations
+   out of the game; shared per-part mass and centre of mass avoid a second physical
+   authority. See `packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
+   `things/WORK.md`, "Decisions". Game capabilities remain schema-validated content
+   so a mod adds compatible parts without code.
+8. **The grain is a useful salvage action.** Factory welded structure is one
+   player-facing assembly with component fittings retained for damage and shape.
+   Factory structures plus compatible parts and capability-matched add-ons come
+   before scratch-building, without reducing mounting to fixed sockets. Keep the grain
+   at named swappable parts, not individual bolts, wire runs or plumbing, so repair
+   does not become assembly bookkeeping.
+9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
+   Part-level changes should not require rebuilding unrelated vehicles.
+10. **Obstruction follows the build.** Render, collision and picking derive from the
+    same fittings and poses, so removed parts and animated doors cannot leave invisible
+    walls or selectable empty air. The parked exterior approximation is owned by
+    `src/vehicles/solid.ts`, `solidBlocks`, and `src/core/blockEntities.ts`,
+    `BlockEntities.hasPartAt`; its filled columns are not a cabin-space model.
+    Glazing blocks bodies but transmits sight and light, with explicit sound
+    attenuation, so visible windows agree with perception. Shared furniture reasons
+    are in `docs/content.md`, "Furniture solidity".
 
-**Open, deliberately (not part of the goal yet):**
+**Driving and access.** Road-going arcade handling is sufficient for v1 beta;
+greater realism is the post-beta direction under #322. The physics implementation
+remains an evidence-based choice, with Rapier a candidate rather than a dependency;
+see [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels). Determinism and streaming
+follow `docs/decisions/0008-deterministic-world.md`, "Decision". Leaving a moving
+vehicle is allowed: coasting, collision and bystander consequences must not vanish
+when a column unloads. Parked vehicles retain their derived world collision.
 
-- **Driving-physics fidelity.** The plan so far: a rigid body with a box collider for
-  each part, ray-cast wheels with suspension, and arcade handling first. Rapier (a
-  WebAssembly physics engine) is the candidate; see
-  [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels) for driving over terrain that rises
-  in 0.5 m steps. A parked vehicle keeps its cell collision.
-- **Whether vehicles are voxel-destructible.**
-- **Vehicles as an enclosure** (gas-tight, a shelter).
-- **Open doors.** A vehicle's doors block as shut. A door that opens in play needs its
-  cells to follow it; decided with the vehicle slice (#322).
-- **Rounding.** A cell blocks whole or not at all, so what a vehicle blocks can sit up
-  to a quarter-metre off its look. Half-height cells from slabs (#221) would shrink it.
-- **What may stand in a vehicle's empty cells.** Placing takes the whole box, so a crate
-  can't be put on a bonnet. Whether pieces may share a vehicle's empty cells is decided
-  with the vehicle slice (#322).
-- **Glass.** Every fitted material blocks movement, sight, sound and sky light alike.
-  Whether glass lets sight or light through, as wire does (see
-  [Block shapes](#block-shapes)), is decided with the vehicle slice (#322).
+Entry is seated through animated usable doors for the first loop. Walking through
+plausible interiors is an important long-term requirement for the #322 trucks, RVs
+or free-form-building follow-up, not a permanently excluded interaction. Start with
+useful fitted cargo; further compartments extend the same ownership model rather
+than turning the entire wreck into a container.
+
+**Deferred scope.** #322 carries scratch-built frames, voxel erosion, player-cut
+structure, enclosure and arbitrary world objects riding vehicle space. These are
+separate from first-slice impact detachment and fitted cargo. #221 owns finer
+collision grain; the parked approximation must not be mistaken for exact geometry.
+The consumer triggers and reasons are in `SLICE-6.md`, "Deferred work and its trigger".
 
 ## Content and modding
 

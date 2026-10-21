@@ -1,38 +1,56 @@
 ---
 read_if:
   - you're planning vehicle implementation, authoring or the Wheels playtest
-  - you're resolving the vehicle choices on issue 322
+  - you're applying the settled vehicle scope and deferred directions from issue 322
   - you're integrating vehicle state with items, saves, collision or region simulation
+  - you're building the heavy-part-hoist vehicle or impact detachment
 ---
 
 # Slice 6 — Wheels
 
-**Status: proposed.** This is a decision-ready plan, not approval to implement its
-open choices. #322 owns those choices. The approved goal remains
-`DESIGN.md`, "Vehicles"; the slice sequence remains `EPIC.md`, "How each slice runs".
-Accepting this document does not answer the questions below.
+**Status: design settled; implementation and play acceptance remain.** The vehicle
+goal is in `DESIGN.md`, "Vehicles"; the slice process is in
+`EPIC.md`, "How each slice runs". This plan states implementation intent, not a
+claim that the spike already provides the game systems.
 
 ## The smallest useful loop
 
-The proposed first playable loop is to find an incomplete vehicle, inspect why it
-cannot run, salvage a compatible part from another wreck, fit it with tools, fuel
-and start it, carry loot to another stop, suffer a consequential collision, and
-choose between repair, stripping weight and abandoning the vehicle. Save and return
-to the same build. This tests whether mobility and carrying capacity justify the
-noise, supplies and exposed work, rather than merely whether a car can move.
+Find an incomplete vehicle, inspect why it cannot run, salvage a compatible part
+from another wreck, fit it with tools, fuel and start it, carry loot to another
+stop, suffer a consequential collision, and choose between repair, stripping weight
+and abandoning the vehicle. Save and return to the same build. This tests whether
+mobility and carrying capacity justify the noise, supplies and exposed work, rather
+than merely whether a car can move.
 
-Use the hatchback and pickup for the first complete loop, with genuinely shared
-service parts and one freely placed capability-matched add-on. Two hosts expose
+The hatchback and pickup are the first transport hosts, with genuinely shared
+service parts and a freely placed capability-matched add-on. Two hosts expose
 accidental blueprint-specific restrictions; the add-on exposes a disguised fixed
-socket system. Factory structures remain the starting points pending #322 Q1–Q2.
-The proposed content scope needs BR's approval before authoring begins.
+socket system. The motorbike follows after the four-wheel loop, rather than putting
+balance and lean on the first playtest's critical path.
 
-The world needs salvageable wrecks and a convoy remnant, fuel and tools within
-reach of the loop, a workshop for heavy work, cargo worth transporting, enemies
-that respond to engine noise, and a route with a meaningful dismount. Wrecks are
-vehicle instances with missing and damaged parts, not searchable furniture with a
-second future identity. Loose loot beside a wreck stays loose. Cargo belongs to
-fitted storage parts, never to an invisible vehicle-wide inventory.
+Building starts from factory structures with compatible parts and add-ons, not raw
+rails and plates. Factory welded structure is one player-facing assembly while
+retaining its component fittings for local damage and shape. This keeps routine
+work at the grain of a useful salvage action without closing later structural
+fabrication or cutting.
+
+Heavy salvage uses a mobile heavy-part-hoist that is itself a vehicle, built and
+driven through the same vehicle systems. It is not a separate equipment kind or a
+workshop-only transfer exception. Field engine recovery therefore has a physical
+workflow, with lifting, load ownership and clearance to prove. The hoist is required
+utility content alongside the two transport hosts, not a third transport host that
+reopens the roster choice.
+
+The world needs salvageable wrecks and a convoy remnant, fuel, tools and lifting
+access within reach of the loop, cargo worth transporting, enemies that respond to
+engine noise, and a route with a meaningful dismount. Wrecks are vehicle instances
+with missing and damaged parts, not searchable furniture with a second future
+identity. Loose loot beside a wreck stays loose.
+
+A useful trunk or bed cargo fitting starts the storage corpus. Contents belong to
+that fitted item, never to an invisible vehicle-wide inventory. This makes transport
+valuable without requiring every glovebox and door pocket before the loop can be
+judged; additional compartments use the same ownership mechanism.
 
 A bounded authored route can prove the loop before regional integration, but does
 not complete the slice. Slice 4b's drivable surfaces and region map remain release
@@ -43,7 +61,8 @@ not by car makes parking and dismounting meaningful without sealing the whole ma
 ## Playtest questions and exit
 
 Can players diagnose a non-running build, find a compatible part and finish the
-repair without outside instructions? Does altered mass placement change a driving
+repair without outside instructions? Can they recover a heavy part with the hoist
+without losing track of what owns it? Does altered mass placement change a driving
 choice rather than just a statistic? Does cargo capacity justify a noisy arrival?
 Does an impact create a repair, stripping or abandonment decision rather than a
 routine reset? Can players recognise when a route requires leaving the car?
@@ -63,20 +82,47 @@ joint state; it must not create another independently mutable copy of the item.
 Vehicle membership and ordinary inventory ownership are exclusive. A failed or
 interrupted transfer must not duplicate the part or consume it without a destination.
 
-VAT assembles things; the thing tool authors their shapes. Do not revive a second
-vehicle material or mass authority. The neutral export boundary is
+VAT assembles things; the thing tool authors their shapes. The VAT export carries
+baked per-part collision geometry beside render geometry so simulation never
+reconstructs authoring shapes. Do not revive a second vehicle material or mass
+authority. The neutral export boundary is
 `packages/thing-core/src/schema.ts`, `NeutralModelSchema`; the reasons for keeping
 geometry out of Deadvox are in `things/WORK.md`, "Decisions". Vehicle-specific
 capabilities and gameplay requirements belong to validated game content, not the
-neutral core. The proposed VAT export carries baked collision geometry beside
-render geometry so simulation never reconstructs authoring shapes. #322 Q6 must
-settle this remaining export decision before more parts are authored.
+neutral core. The export contract precedes full VAT editor productionisation.
 
 The spike's `src/vehicles/model.ts`, `PartType`, `Fitting` and `VehicleInstance`,
-are useful concepts, not a production schema to preserve. In particular, do not
-carry the spike's mass field and geometric-centroid calculation forward as a
-competing authority to exported per-part mass and centre of mass. Attached cargo,
-fuel and occupants also contribute to the moving assembly's mass distribution.
+are useful concepts, not a production schema to preserve. Do not carry its mass
+field and geometric-centroid calculation forward as a competing authority to
+exported per-part mass and centre of mass. Attached cargo, fuel and occupants also
+contribute to the moving assembly's mass distribution.
+
+Parts are unhanded: placement determines the side. Reflection must transform
+physical and interaction datums as well as appearance so fitting does not create a
+visual-only variant. This keeps salvage reusable and the catalogue small without
+closing later separately authored handed parts. Capability and geometry still
+decide compatibility; unhanded does not mean universal fit.
+
+### Condition, appearance and attachment
+
+Weathering and functional condition are independent so a rusty working part and a
+clean broken one remain possible. Appearance stays with the part, rather than
+being replaced by the host's paint on installation. Functional condition changes
+through damaging events, not elapsed time or distance: repair follows consequences
+of play instead of scheduled maintenance. Fuel and charge consumption are not wear.
+
+Fitted and loose parts use the shared item condition vocabulary so removing a part
+does not change what its condition means. This is not a new vehicle ladder or a
+new numeric representation; its owner is `src/core/items.ts`, `Item`.
+
+Impact can detach a struck part and cascade through unsupported dependents. Surviving
+parts remain recoverable world items; damage does not silently delete ownership.
+Condition and attachment stay distinct because broken attached mass still affects
+the vehicle while detached mass does not. The cascade needs deterministic ordering,
+valid output placement and a defined outcome around occupied cabins. Those are
+implementation proof obligations, not permission to leave unsupported fittings or
+to stop the cascade at a loaded structural member. Whole-part damage does not imply
+voxel erosion or player-operated cutting of welded assemblies.
 
 ### Fitting is not just geometry
 
@@ -84,48 +130,71 @@ Keep attachment legality, structural support, work requirements and functional
 capability separate. Contact can suggest supports but cannot choose the structural
 contract: touching two surfaces does not mean both hold the part up. See
 `src/vehicles/model.ts`, `supportProblems`, `addFitting` and `removeFitting`.
+The spike's refusal to remove a support is not an impact-detachment implementation.
 
 Install, remove and repair are distinct activities. Cutting a weld is not welding
 in reverse. Use the existing long-action and crafting ownership boundaries rather
 than building a vehicle job scheduler; see `src/core/craftWork.ts`,
 `craftActionHooks`. Vehicle jobs need a world-target adapter because an installed
 part is not an ordinary inventory repair target. Revalidate reach, supports,
-resources and destination on completion. Do not call the spike mutators directly
-from a UI or let cancellation create a second fitting.
+resources and destination on completion. The hoist's lifted load must participate
+in the same single-owner transfer contract, not bypass it.
 
 Structural completeness and ability to run are different questions. Inspection
 must distinguish missing support, unusable drive, steering, fuel and charge without
 pretending that a finished silhouette means a running car. Player-visible details
-belong on the opened inspection surface under `INTERFACE.md`, "Text"; exact words
-and control bindings are not settled here.
+belong on the opened inspection surface under `INTERFACE.md`, "Text"; control
+labels come from bindings.
 
-### One build, several consumers
+### Access, glass and obstruction
+
+The first cabin interaction is seated entry through an animated usable door, not
+free walking inside. Entry and exit need reachable free space, and a door's changed
+pose must change obstruction; an obstructed swing is refused. This provides a
+coherent driver view and access without making moving interior floors a prerequisite.
+It does not require the vehicle to stop before exit: leaving it coasting is allowed,
+with the exit collision and resulting unattended motion proved together.
+
+Glazing blocks bodies while transmitting sight and light; sound attenuation is
+explicit content. This keeps the driver's view, external observers and interior
+lighting consistent rather than hiding an opaque cabin behind a transparent mesh.
+Bullet interaction uses the combat material rules, not an inference from movement
+blocking. Gas sealing is a separate question. #1016 gates interior visibility.
 
 Fitted parts and their poses own both appearance and obstruction. Keep parked
 world collision and picking derived, not hand-authored per wreck. See
 `src/vehicles/solid.ts`, `solidBlocks`, and `src/core/blockEntities.ts`,
-`BlockEntities.hasPartAt`. The existing filled-column approach is an exterior
-obstruction approximation, not an enterable-cabin or transparent-window model.
-Doors and glass must not inherit that approximation accidentally.
+`BlockEntities.hasPartAt`. The filled-column approximation is not an enterable-cabin
+or transparent-window model. Extend the consumers without treating that approximation
+as the cabin's authoritative empty space.
 
 A moving body needs swept collision and a defined handoff to parked occupancy.
-Both representations must derive from the same build and pose; neither may leave
-stale blocking cells or permit parking through a wall or actor. Changes must reach
-movement, navigation, picking, sight, sound and light together. #322's access and
-glass decisions gate this integration. #1016 gates a usable interior view; fixing
-building lighting does not satisfy it.
+Both representations derive from the same build and pose; neither may leave stale
+blocking cells or permit parking through a wall or actor. Changes must reach
+movement, navigation, picking, sight, sound and light together.
 
-The driving proposal is arcade handling with meaningful mass placement, steering
-and driven-axle choices, not identical handling behind different meshes. Fuel and
-electricity retain the approved pools rather than gaining cable and pipe graphs.
+### Driving and unattended motion
+
+Road-going arcade handling is sufficient for v1 beta, with meaningful mass placement,
+steering and driven-axle choices rather than identical handling behind different
+meshes. A constrained road controller needs explicit, tested boundaries for unsafe
+drops and rollover situations; it must not accidentally promise full airborne
+motion and recovery. Greater realism remains the long-term direction, not a reason
+to delay the playable loop. Fuel and electricity retain pools rather than cable
+and pipe graphs.
+
 Rapier remains a candidate, not a selected dependency. Compare it with a bounded
 project-owned solver before selecting an implementation; the existing
 `src/core/rigidBody.ts`, `RigidBody` and `stepRigidBody`, is a contact/impulse seam,
 not evidence that car suspension, tunnelling or deterministic replay is solved.
 
-Do not import the external research's always-real-time policy: Deadvox owns pause
-and compression. Driving uses simulation time and bounded steps, not render frame
-time. A physics choice must satisfy
+Leaving a moving car permits unattended coasting, collision and bystander damage.
+Budget and prove its deterministic coarse transition after regional departure;
+unloading is never an emergency brake. Do not keep extra regions locally simulated
+until a vehicle stops as an unrecorded exception to the residency contract.
+
+Deadvox owns pause and compression. Driving uses simulation time and bounded steps,
+not render frame time. A physics choice must satisfy
 `docs/decisions/0008-deterministic-world.md`, "Decision", including cross-browser
 agreement and position-driven residency. A WASM physics library does not establish
 that contract by itself. A failed deterministic prototype stops physics selection;
@@ -135,120 +204,107 @@ it does not silently weaken the contract.
 
 Persist authoritative instance identity, build membership and placement, supports
 and joint state, part condition and appearance, door state, storage contents,
-resource amounts, vehicle pose and motion, occupants, and any resumable work.
-These are intended state obligations, not a parallel field schema. Extend the
+resource amounts, vehicle pose and motion, occupants, lifted loads and any resumable
+work. These are intended state obligations, not a parallel field schema. Extend
 owning types and `src/core/saveState.ts`, `SaveSnapshot`, as each obligation lands.
 Derived mass, capabilities, geometry caches and world occupancy are rebuilt from
 that truth, never restored as independent editable totals.
 
-Saving in motion and during work must be equivalent to continuing without a load;
-parking is not permission to erase momentum at save time. Settled parked vehicles
-need no continuous rigid-body work. Region departure cannot freeze a coasting or
-running vehicle merely because a render column unloaded: its canonical coarse
-behaviour must be decided and tested before regional release. No new save migration
-promise is introduced; see `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
-
-## Decisions before dependent work
-
-Each question has a separate decision card in d541-1's report. Recommendations are
-proposals only. Record BR's chosen rule and reason in the owner before building it.
-
-- **Scope:** approve the two-host salvage/drive/repair loop and delay the bike, or
-  require the full vehicle roster before the first Wheels playtest.
-- **#322 Q1:** compatible-part building first or scratch-built structures immediately.
-- **#322 Q2:** welded assemblies as player-facing units or individually removable
-  structure; do not confuse player interaction grain with simulation grain.
-- **#322 Q3:** separate appearance weathering from functional condition; independently
-  decide whether functional wear is event-driven only.
-- **#322 Q4:** one condition vocabulary for fitted and loose items or distinct displays.
-- **#322 Q5:** unhanded parts or separately authored left/right items.
-- **#322 Q6:** confirm the VAT/thing-tool export boundary for runtime part shapes.
-- **#322 Q7:** which lifting and transport affordances make heavy salvage possible.
-- **Driving:** constrain the first handling envelope to road-going arcade vehicles or
-  require full rollover, flight and recovery in the first playable loop.
-- **Damage:** keep broken structure attached initially or permit impact detachment and
-  structural cascades immediately. Whole-part damage versus voxel erosion is separate.
-- **Access:** seated driving with animated entry doors or freely walking through cabins.
-- **Glass:** material-specific sight/light transmission or opaque cabin simulation.
-- **Cargo:** start with a useful cargo fitting or require the whole compartment vocabulary.
-- **Unattended vehicles:** require safe stopping before the player leaves the vehicle,
-  or include unattended movement and its coarse regional consequences in the first loop.
+Saving in motion, during work or across detachment must be equivalent to continuing
+without a load; parking is not permission to erase momentum at save time. Settled
+parked vehicles need no continuous rigid-body work. Running vehicles continue
+consuming resources out of view, and coasting vehicles retain their canonical
+consequences. No new save migration promise is introduced; see `AGENTS.md`,
+"Project stage: pre-pre-alpha, no backwards compatibility".
 
 ## Reviewable build order
 
-These are dependency-ordered work packages, not minted work-item IDs. The lead mints
-implementation rounds only after the relevant decisions. Each round includes its
-state, validation, focused proof and reason-doc update rather than leaving saves to
-an integration finale.
+These are dependency-ordered work packages, not minted work-item IDs. Each round
+includes its state, validation, focused proof and reason-doc update rather than
+leaving saves to an integration finale.
 
-1. **Decision closure and feasibility.** Resolve the questions above; run the
-   slice-start consolidation in `EPIC.md`, "How each slice runs". Compare driving
-   candidates on a route containing slopes, terrain edges, a thin obstacle and a
-   shallow wall scrape. Require cross-browser replay agreement, bounded collision
-   work and no tunnelling. BR judges the drive and the mass-placement difference.
-   Select neither a library nor its version without this evidence and the repository
-   dependency-age check. A local route proves feasibility, not region completion.
-2. **Authoring-to-game contract.** A shared part exported as a thing must validate and
-   load on two different hosts; a mod-authored compatible part must need no code edit.
-   Refuse broken references, invalid supports and unsupported capabilities. Keep the
-   VAT editor's production deployment and launcher work in #323 rather than making a
-   full editor a prerequisite for a minimal reproducible export path.
-3. **Persistent parked instances.** Replace the selected wreck placements with
-   vehicle-owned state and inspectable fittings. Prove independent instances, saved
-   removals and contents, deterministic placement and cache invalidation. Keep the
-   exterior collision and picking guarantees while the access model is added.
-4. **Salvage and workshop.** Install, remove and repair through the chosen work and
-   heavy-handling rules. Prove cancellation, changed supports, lost reach and absent
-   output space preserve single ownership. Show the shared part moving between hosts
-   and the capability-matched add-on at a player-chosen legal location. Heavy parts
-   must have a reachable workflow, not just a weight that prevents every action.
-5. **Cabin and cargo.** Add the chosen access, animated door and glazing behaviour,
-   fitted storage, charge and fuel handling. Prove blocked entry/exit and swing
-   refusal cannot place bodies through solids; test door/light changes in one browser
-   flow. BR checks interior visibility for #1016. Resources and storage survive
-   detach/refit without duplication or loss.
-6. **Driving and impact.** Integrate the selected solver, controls, engine noise,
-   resource use and local part damage. Prove moving-to-parked handoff, an immediate
-   save/load while moving, lost propulsion, braking and collision with terrain,
-   people and other vehicles. Apply BR's attachment decision rather than bypassing
-   support invariants on impact. Compare mass-placement variants while holding total
-   mass, power and external silhouette fixed; do not pin tuned trajectories.
+1. **Feasibility.** Run the slice-start consolidation in
+   `EPIC.md`, "How each slice runs". Compare driving candidates on slopes,
+   terrain edges, a thin obstacle and
+   a shallow wall scrape. Require cross-browser replay agreement, bounded collision
+   work and no tunnelling. Include unattended motion and a loaded hoist in the
+   feasibility envelope so neither becomes a late exception. BR judges handling,
+   the constrained boundary and the mass-placement difference. Select neither a
+   library nor its version without evidence and the dependency-age check.
+2. **Authoring-to-game contract.** A shared exported thing must validate and load on
+   two hosts; a mod-authored compatible part needs no code edit. Refuse broken
+   references, invalid supports and unsupported capabilities. Exercise reflected
+   datums and baked collision geometry. Keep VAT production deployment in #323
+   rather than making a full editor a prerequisite for reproducible exports.
+3. **Persistent parked instances and light salvage.** Replace selected wreck
+   placements with vehicle-owned state. Prove independent instances, saved removals
+   and contents, deterministic placement and cache invalidation. Add install,
+   remove and repair for hand-manageable parts; prove cancellation, changed supports,
+   lost reach and absent output space preserve single ownership. Show a shared part
+   moving between hosts and an add-on at a legal player-chosen placement.
+4. **Cabin, cargo and driving.** Add seated access, animated doors, channel-specific
+   glazing, fitted storage and resource handling. Integrate the selected solver,
+   controls and engine noise. Prove blocked entry/exit and swing refusal, moving-to-
+   parked handoff, braking, lost propulsion and save/load in motion. Include safe
+   placement when exiting a moving vehicle without arresting the vehicle. BR checks
+   interior visibility for #1016. Compare mass-placement variants while holding
+   total mass, power and silhouette fixed; do not pin tuned trajectories.
+5. **Heavy-part-hoist vehicle and heavy salvage.** Build the hoist through the same
+   authoring, instance and driving path, then add its lifting operation. Prove field
+   recovery, loaded clearance, load mass, release refusal and saved ownership through
+   lift, transport and refit. Do not substitute a workshop-only transfer or a new
+   equipment lifecycle for the vehicle. This follows driving because the means of
+   moving the heavy part is itself drivable.
+6. **Impact and support cascades.** Add local condition damage and detachment through
+   unsupported dependents. Prove deterministic cascade order, retained item identity
+   and contents, output placement, occupied-cabin consequences and collisions while
+   shedding parts. Include the loaded hoist; no load disappears when its support is
+   damaged. A save across the event must preserve the same result. The implementation
+   round must expose any unresolved destructive-placement trade-off before coding it.
 7. **Region and playtest.** Join Slice 4b's routes, wreck/convoy placement and residency
-   contract. Prove driving across a streaming boundary neither resets the vehicle nor
-   changes outcomes with load timing. Cover offscreen running/coasting behaviour,
-   fuel exhaustion and return to a parked modified build. Measure a street of parked
-   vehicles and moving contacts against the owning performance budget. Extend a
-   smoke flow rather than multiplying browser stages. BR plays the complete loop;
-   completion needs their verdict, not only green tests. Run the slice-exit
-   consolidation and deep docs pass, trimming this plan into lasting reasons and
-   code cues rather than keeping an implementation diary.
+   contract. Prove streaming boundaries neither reset vehicles nor change outcomes
+   with load timing. Cover unattended collision, canonical coarse motion, offscreen
+   fuel exhaustion and return to a modified build. Measure parked streets and moving
+   contacts against the owning budget. Extend smoke flows rather than multiplying
+   browser stages. BR plays the complete loop; completion needs their verdict, not
+   only green tests. Run the slice-exit consolidation and deep docs pass, trimming
+   this plan into lasting reasons and code cues rather than an implementation diary.
 
 ## Deferred work and its trigger
 
-These deferrals are proposed under #322 unless an existing issue is named.
+#322 carries the vehicle follow-up scope; the narrower issues below own their work.
 
-- **Scratch-built frames:** #322 Q1's first scratch-build work package, after the
-  cross-host fitting loop is accepted. Keep capability matching; do not prebuild a
-  general fabrication editor to claim future freedom.
+- **Scratch-built frames:** the #322 scratch-build follow-up after cross-host fitting
+  is accepted. Keep capability matching without prebuilding a fabrication editor.
+- **Walk-in interiors:** the #322 trucks, RVs or free-form-building follow-up. Walking
+  inside a plausible interior is an important long-term requirement; seated access
+  is a scope limit for the first loop, not a permanent restriction.
+- **Greater driving realism:** the #322 post-v1-beta driving follow-up, after the
+  arcade loop is accepted. Aim for as much realism as feasible, judged by play and
+  the deterministic performance contract rather than detail for its own sake.
+- **Handed parts:** the #322 content expansion that first needs physical left/right
+  incompatibility. Unhanded salvage leaves that expansion open rather than ruling
+  every future part permanently interchangeable across sides.
 - **Motorbike driving and stand/lean behaviour:** the motorbike content round under
-  #322, after four-wheel handling is accepted. Bike balance is not car tuning.
-- **Pickup reference refinement:** its content first-look under #322; measure the bed
-  then rather than canonising the spike's estimate. Wear appearance is also judged
-  at that first-look, not by accepting the debug slider's range as a game rule.
-- **Voxel erosion and cut-apart structure:** the first destruction expansion under
-  #322. Whole-part condition can serve the first loop without promising an editable
-  shape or importing authoring geometry into Deadvox.
-- **Gas-tightness, shelter, heating and permanent degradation:** dedicated #322
-  follow-up decisions before the first consumer. Obstruction and a roof do not prove
-  enclosure; a flood over connected space is a different question from ray blocking.
+  #322 after four-wheel handling is accepted. Bike balance is not car tuning.
+- **Pickup reference refinement and wear appearance:** the content first-look under
+  #322. Do not canonise an estimated bed length or a debug slider as a game rule.
+- **Additional storage compartments:** the #322 compartment-content follow-up after
+  cargo transport is accepted. Gloveboxes and door pockets extend fitted storage,
+  not a second vehicle inventory.
+- **Voxel erosion and player-cut structure:** the #322 destruction expansion. Impact
+  detachment does not require editable part geometry or authoring shapes in Deadvox.
+- **Gas-tightness, shelter, heating and permanent degradation:** #322 follow-up
+  decisions before their first consumer. Obstruction and a roof do not prove
+  enclosure; a flood over connected space differs from ray blocking.
 - **Furniture on bonnets and loose objects riding empty cabin cells:** #322's first
-  carried-world-object work package. Fitted cargo suffices first; do not infer that
-  permission to board grants permission to place arbitrary furniture inside a car.
-- **Finer collision grain:** #221, when its partial-block contract is settled. Preserve
-  the existing parked guarantee without pretending its rounding is exact geometry.
+  carried-world-object work package. Boarding and fitted cargo do not grant arbitrary
+  furniture placement inside a car.
+- **Finer collision grain:** #221 when its partial-block contract is settled. Preserve
+  parked guarantees without pretending their rounding is exact geometry.
 - **Pipes, wiring topology, trailers, mounted weapons and mobile workshops:** #322
-  expansion work only when a player decision needs that topology or interaction.
-  Pools and ordinary cargo are not a promise to simulate those systems.
+  expansion work when a player decision needs that topology or interaction. The
+  mobile hoist is in the first loop; it does not imply a complete mobile workshop.
 - **Full VAT UI and public launcher:** #323 after the export contract is proven.
   Productionising a tool is separate from declaring its output authoritative.
 
@@ -257,15 +313,14 @@ These deferrals are proposed under #322 unless an existing issue is named.
 Mass placement deserves a playable comparison because a build should change driving,
 not only acceleration. A contact-count score is a poor proxy: changing the contact
 solver can reverse its apparent handling result. Use trajectory properties and
-controlled comparisons alongside BR's play judgment; do not freeze another
-prototype's constants or grid size.
+controlled comparisons alongside BR's play judgment; do not freeze a prototype's
+constants or grid size.
 
-Structural relationships must remain authored choices because geometric support
-inference confuses proximity with fastening. Keeping independent work requirements
-also lets cutting, unbolting and repair differ without an explosion of part types.
+Structural relationships remain authored choices because geometric support inference
+confuses proximity with fastening. Independent work requirements let cutting,
+unbolting and repair differ without multiplying part types.
 
 A sealed interior cannot be inferred from a support graph, and vehicle reach cannot
-be inferred from road connectivity. Both are consequences of occupied and empty
-space at the consumer's scale. Leaving those distinctions explicit avoids building
-an enclosure simulator or regional road generator merely to get the salvage loop
-into play.
+be inferred from road connectivity. Both depend on occupied and empty space at the
+consumer's scale. Keeping those distinctions explicit avoids building an enclosure
+simulator or regional road generator merely to get the salvage loop into play.
