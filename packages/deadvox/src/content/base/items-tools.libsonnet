@@ -223,6 +223,7 @@ local items = [
         tint: '#8cff8f',
         grain: 0.08,
         edge: { darkening: 0.92, inner: 0.28, outer: 0.5 },
+        flare: { strength: 0.15, distanceMetres: 3, blastIntensity: 40, recoverRealSeconds: 0.6, haloRadius: 0.12 },
       },
     },
   },

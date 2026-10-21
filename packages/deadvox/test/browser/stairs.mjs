@@ -261,6 +261,16 @@ try {
         assert.ok(lit.marker > markerLighting.night.marker, 'lamp and flashlight illuminate the outline');
         assert.ok(lit.surface > markerLighting.night.surface, 'the light also illuminates the surface');
       }
+      const flare = await timePhase('night-vision-flare-pixels', () =>
+        page.evaluate(
+          async (path) => (await import(path)).nightVisionFlareProof(),
+          '/test/browser/night-vision-flare.ts',
+        ),
+      );
+      process.stdout.write(`NIGHT_VISION_FLARE ${JSON.stringify(flare)}\n`);
+      assert.ok(flare.flared.brightness > flare.plain.brightness, 'the flare brightens the goggles view');
+      assert.ok(flare.flared.spread < flare.plain.spread, 'the flare pales the tint towards white');
+      assert.ok(flare.halo > flare.corner, "a halo brightens its light's place more than the crop's far corner");
     }
     if (mode === 'lighting-outdoor') {
       await timePhase('mood-output-display-order', () =>

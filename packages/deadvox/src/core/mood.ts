@@ -4,7 +4,10 @@
 
 import type { Rgb } from './sky.ts';
 
-/** Which parts of the mood pass are on. `post` is the master: off, nothing below renders. */
+/**
+ * Which parts of the mood pass are on. `post` is the master: off, nothing below renders, even while a night-vision
+ * view or an optic lens runs the chain for itself.
+ */
 export interface MoodState {
   post: boolean;
   bloom: boolean;

@@ -1,4 +1,4 @@
-import { AdditiveBlending, Group, Mesh, MeshBasicMaterial, NormalBlending, SphereGeometry } from 'three';
+import { AdditiveBlending, Group, Mesh, MeshBasicMaterial, NormalBlending, SphereGeometry, type Vector3 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 
 // Presentation only: how long each part of a blast shows, how far it swells as a share of the blast radius, and
@@ -54,6 +54,16 @@ export class BlastFlashes {
       puff.mesh.visible = true;
     }
     this.update(0);
+  }
+
+  /** Each showing fireball's position in metres and the share of its life left, for the night-vision flare. */
+  *fireballs(): Generator<{ readonly position: Vector3; readonly remaining: number }> {
+    for (const blast of this.blasts) {
+      const fireball = blast.find(({ part }) => part === FIREBALL)!;
+      if (fireball.mesh.visible) {
+        yield { position: fireball.mesh.position, remaining: 1 - fireball.age / FIREBALL.realSeconds };
+      }
+    }
   }
 
   update(dt: number): void {

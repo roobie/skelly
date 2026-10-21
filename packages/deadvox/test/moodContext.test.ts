@@ -1,10 +1,31 @@
-import { NeutralToneMapping, PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
+import {
+  Color,
+  Fog,
+  NeutralToneMapping,
+  NoToneMapping,
+  PerspectiveCamera,
+  Scene,
+  type ToneMapping,
+  type WebGLRenderer,
+} from 'three';
+import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { expect, it, vi } from 'vitest';
 import graphics from '../src/content/base/graphics.json' with { type: 'json' };
+import type { NightVision } from '../src/core/schema.ts';
+import type { Sky } from '../src/core/sky.ts';
+import { realSeconds } from '../src/core/time.ts';
 import { Mood } from '../src/render/mood.ts';
 
 const owner = vi.hoisted(() => ({
-  composers: [] as { dispose: ReturnType<typeof vi.fn>; setPixelRatio: ReturnType<typeof vi.fn> }[],
+  composers: [] as {
+    passes: unknown[];
+    dispose: ReturnType<typeof vi.fn>;
+    setPixelRatio: ReturnType<typeof vi.fn>;
+    render: ReturnType<typeof vi.fn>;
+  }[],
+  /** Runs inside each composer render, while the chain's per-frame colours are in place. */
+  onRender: undefined as (() => void) | undefined,
 }));
 vi.mock('three/addons/postprocessing/EffectComposer.js', () => {
   class EffectComposer {
@@ -12,7 +33,7 @@ vi.mock('three/addons/postprocessing/EffectComposer.js', () => {
     dispose = vi.fn();
     setPixelRatio = vi.fn();
     setSize = vi.fn();
-    render = vi.fn();
+    render = vi.fn(() => owner.onRender?.());
     constructor() {
       owner.composers.push(this);
     }
@@ -24,6 +45,88 @@ vi.mock('three/addons/postprocessing/EffectComposer.js', () => {
     // biome-ignore lint/style/useNamingConvention: the mock must match the three.js class export.
     EffectComposer,
   };
+});
+
+const GOGGLES: NightVision = {
+  gain: 2,
+  tint: '#00ff00',
+  grain: 0,
+  edge: { darkening: 1, inner: 0.2, outer: 0.4 },
+  flare: { strength: 1, distanceMetres: 1, blastIntensity: 1, recoverRealSeconds: realSeconds(1), haloRadius: 0.1 },
+};
+
+const fakeRenderer = (toneMapping: ToneMapping, toneMappingExposure: number) =>
+  ({
+    domElement: new EventTarget(),
+    getPixelRatio: () => 1,
+    toneMapping,
+    toneMappingExposure,
+    render: vi.fn(),
+  }) as unknown as WebGLRenderer;
+
+/** A mood with the goggles on and the look's post off, as play starts. */
+const gogglesMood = (renderer: WebGLRenderer, scene = new Scene()) => {
+  const mood = new Mood(renderer, scene, new PerspectiveCamera(), graphics.graphics[0]!);
+  mood.externalGpuTiming = true;
+  mood.setNightVision(GOGGLES);
+  return mood;
+};
+
+it("draws the goggles' night-vision view through the post chain while the look's post is off", () => {
+  const renderer = fakeRenderer(NeutralToneMapping, 1);
+  const mood = gogglesMood(renderer);
+  const composersBefore = owner.composers.length;
+
+  mood.render(() => undefined);
+
+  expect(mood.post).toBe(false);
+  expect(owner.composers.length).toBe(composersBefore + 1);
+  expect(owner.composers.at(-1)!.render).toHaveBeenCalled();
+  expect(renderer.render).not.toHaveBeenCalled();
+});
+
+it('undoes exposure on the sky in the chain only for a tone mapper that applies it', () => {
+  const sky = new Color(0.1, 0.2, 0.3);
+  const skyInChain = (toneMapping: ToneMapping, exposure: number): Color => {
+    const scene = new Scene();
+    scene.fog = new Fog(sky.clone(), 1, 2);
+    scene.background = scene.fog.color;
+    const mood = gogglesMood(fakeRenderer(toneMapping, exposure), scene);
+    let seen: Color | undefined;
+    owner.onRender = () => {
+      seen = (scene.background as Color).clone();
+    };
+    mood.render(() => undefined);
+    owner.onRender = undefined;
+    return seen!;
+  };
+
+  // With no tone mapper nothing applies exposure, so the chain's sky is the direct path's at any exposure.
+  for (const exposure of [1, 0.2, 3]) {
+    expect(skyInChain(NoToneMapping, exposure).equals(sky)).toBe(true);
+  }
+  expect(skyInChain(NeutralToneMapping, 0.5).r).toBeGreaterThan(sky.r);
+});
+
+it("shows only the goggles' view in a chain run for them while the look's post is off", () => {
+  const mood = gogglesMood(fakeRenderer(NeutralToneMapping, 1));
+  mood.restore({ post: false, bloom: true, film: true, grade: 1, bloomClip: null });
+  mood.setSky({ tone: 0.5, heightFogColor: [0, 0, 0], bloom: 1, heightFog: 0 } as unknown as Sky);
+  mood.setPainDesaturation(1);
+  mood.setDrugVignette(1);
+
+  mood.render(() => undefined);
+
+  const passes = owner.composers.at(-1)!.passes as unknown[];
+  const bloom = passes.find((pass) => pass instanceof UnrealBloomPass)!;
+  const output = passes.find((pass): pass is OutputPass => (pass as OutputPass).uniforms?.uGradeEnabled !== undefined)!;
+  const u = output.uniforms;
+  expect(u.uNightVision!.value).toBe(1);
+  expect(bloom.enabled).toBe(false);
+  expect(u.uGradeEnabled!.value).toBe(0);
+  expect(u.uVignette!.value).toBe(0);
+  expect(u.uGrain!.value).toBe(0);
+  expect(u.uDrugVignette!.value).toBe(0);
 });
 
 it('abandons lost-context post targets without deleting dead handles and rebuilds them for rendering', () => {
