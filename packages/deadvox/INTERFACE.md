@@ -5,6 +5,7 @@ read_if:
   - you're changing prompts, HUD language, feedback or bodily cues
   - you're changing HUD options, UI layering or choice controls
   - you're changing debug/playtest separation or inventory layout
+  - you're weighing proposed item pictures against inventory readability
 ---
 
 # Deadvox interface
@@ -64,6 +65,38 @@ A blocking runtime error halts play, releases pointer lock and prevents further 
 The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `src/ui/style.css`, ":root", and `src/ui/comboBox.ts`, `comboBox`.
 
 Keep the nearby inventory pane wide enough for a content-capped container; selected details yield before useful grids are squeezed. See [inventory-layout](docs/inventory-layout.md).
+
+## Item pictures (proposed)
+
+Pictures could connect an inventory item to the object the player recognizes in
+hand or on the ground. Text already conveys identity and exact facts; the reason
+to add a picture is recognition of shape and fitted equipment, not another place
+to repeat statistics. A picture cannot replace a name when different items share
+a model, or replace a condition word when damage has no visible representation.
+See `src/ui/inventoryScreen.ts`, `itemTemplate` and `detailsTemplate`, and
+`src/render/itemLook.ts`, `itemLook`.
+
+Model-derived pictures avoid a second authored likeness that can disagree with
+the object in play. Still pictures trade inspection from different angles for
+less rendering competition with the moving world; a selected-item 3D view makes
+the opposite trade. Separate illustrations could make small silhouettes clearer,
+but add an art and mod-authoring obligation. Text alone avoids that obligation
+without supplying visual recognition. These are alternatives, not an approved
+presentation or a requirement to build all of them.
+
+Any chosen picture remains subject to the shared instance-look rule in
+`DESIGN.md`, "Piles and item models", and the knowledge boundary in
+`DESIGN.md`, "UI principles". A representative picture must not imply a fitted
+part or handling state the owned item lacks. Inspection must not become an
+alternate owner of handling. See `src/render/models.ts`, `ModelLibrary`, and
+`src/ui/inventoryScreen.ts`, `InventoryScreen`.
+
+Placement and text balance, picture lighting, treatment of items without models,
+and whether inspection depicts handling motion remain BR choices. They trade
+recognition against density, diegesis, authoring cost and attention while the
+world continues. Useful grids and their pointer access take precedence over a
+larger illustration; see `docs/inventory-layout.md`, "Clickable inventory layout".
+This proposal grants no implementation approval.
 
 ## Title choice
 
