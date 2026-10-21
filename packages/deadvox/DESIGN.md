@@ -50,6 +50,7 @@ read_if:
   - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
   - you change which item or model mass is authoritative
+  - you author item models or decide how medicine quantities should look
   - you're changing military progression, loot economy admission or loot unit planning, ground supply or roll-once persistence, including debug overlays
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
@@ -1167,19 +1168,29 @@ quickbar use.
 
 ### Piles and item models
 
-Ground items form piles. A modeled item keeps its own look in the pile; an item
-without a model is shown as a generic bundle. Portable papers use flat paper models,
-not standing furniture, so their appearance agrees with ordinary pickup and carrying.
-Author item models at rest in metres, with the long side along x. See
-`src/content/base/models-items.jsonnet` and `docs/readables.md`.
-Spent cases read as loose debris,
-not stacked material. See `PILE_DISPLAY_KIND` in `src/core/schema.ts`.
+Ground presentation preserves an item's identity rather than making distinct
+objects read as the same bundle. Portable papers use flat paper models, not
+standing furniture, so their appearance agrees with ordinary pickup and carrying.
+Spent cases read as loose debris, not stacked material. See
+`src/render/piles.ts`, `PileMeshes`, `src/core/schema.ts`, `PILE_DISPLAY_KIND`,
+and `docs/readables.md`.
 
 Pile meshes and presentation endpoints use the same current display projection.
 It accounts for active arc hides and gives scatter items their displayed pose, so
 an endpoint remains joined to the visible pile when another throw overlaps or
 scatter is involved. See `src/core/pileDisplay.ts`, `effectivePileDisplay` and
 `effectivePileItemPosition`.
+
+Pill medicines show a blister strip or bottle regardless of stack size, including
+when one item is one pill. A pack is easier to see and reads as medicine; the
+visual pack does not change dose counts or carried mass. See
+`packages/thing-authoring-tool/food-medical.libsonnet`, `bottle`, and
+`src/content/base/items-other.libsonnet`, `pillPack`.
+
+Food portions depict food rather than a second vessel, so a serving does not
+duplicate the can that owns it. See
+`packages/thing-authoring-tool/food-medical.libsonnet`, `atom`, and
+`src/content/base/items-food.libsonnet`, `beansGrams` and `soupGrams`.
 
 Use one item look derived from that instance's own state in every view. A
 firearm with its magazine removed must not appear loaded in a hand or pile; a
