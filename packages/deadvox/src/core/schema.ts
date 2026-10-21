@@ -56,6 +56,7 @@ import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
+import { PowerDeviceSchema, PowerTuningSchema } from './powerContent.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { shapeBlocks } from './shapeSolid.ts';
@@ -3084,6 +3085,8 @@ const SECTION_DESCRIPTOR = {
   mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
   mapPools: { schema: optional(array(MapPoolSchema)), label: 'map pools', order: 27 },
   look: { schema: optional(array(LookDefaultsSchema)), label: 'default look', order: 28 },
+  powerDevices: { schema: optional(array(PowerDeviceSchema)), label: 'power devices', order: 32 },
+  powerTuning: { schema: optional(array(PowerTuningSchema)), label: 'power tuning', order: 33 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
