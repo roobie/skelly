@@ -1,6 +1,17 @@
 import { type MaterialDef, MaterialReferenceSchema } from '@skelly/thing-core/materials';
-import { type Material, Mesh, MeshStandardMaterial, type Object3D, SRGBColorSpace } from 'three';
+import {
+  BufferGeometry,
+  Float32BufferAttribute,
+  Group,
+  InstancedMesh,
+  type Material,
+  Mesh,
+  MeshStandardMaterial,
+  type Object3D,
+  SRGBColorSpace,
+} from 'three';
 import { parse } from 'valibot';
+import { glowingCopy } from './itemEmissive.ts';
 
 const applyMaterial = (material: Material, table: Readonly<Record<string, MaterialDef>>): void => {
   if (!(Object.hasOwn(material.userData, 'materialId') || Object.hasOwn(material.userData, 'colourMultiplier'))) {
@@ -37,4 +48,37 @@ export const applyModelMaterials = (scene: Object3D, table: Readonly<Record<stri
       }
     }
   });
+};
+
+/**
+ * Hidden meshes holding one material for each shader program model materials can need in a scene, so
+ * the scene's warm-up compiles them before any model has loaded. Of what a table entry sets, only
+ * see-through changes the program (colour and finish are uniforms), and a lit item's glow adds its own.
+ * `instanced` adds the instanced copies ground piles draw with.
+ */
+export const modelMaterialWarmUp = (instanced: boolean, table: Readonly<Record<string, MaterialDef>>): Group => {
+  const variants = new Map<boolean, MeshStandardMaterial>();
+  for (const materialId of Object.keys(table)) {
+    const material = new MeshStandardMaterial();
+    material.userData = { materialId, colourMultiplier: [1, 1, 1] };
+    applyMaterial(material, table);
+    if (!variants.has(material.transparent)) {
+      variants.set(material.transparent, material);
+    }
+  }
+  // Exported models carry positions and normals, and three.js keys a program on both.
+  const geometry = new BufferGeometry()
+    .setAttribute('position', new Float32BufferAttribute([], 3))
+    .setAttribute('normal', new Float32BufferAttribute([], 3));
+  const group = new Group();
+  for (const material of [...variants.values()].flatMap((plain) => [plain, glowingCopy(plain, 0xff_ff_ff, 1)])) {
+    for (const mesh of instanced
+      ? [new Mesh(geometry, material), new InstancedMesh(geometry, material, 1)]
+      : [new Mesh(geometry, material)]) {
+      mesh.receiveShadow = true;
+      mesh.visible = false;
+      group.add(mesh);
+    }
+  }
+  return group;
 };
