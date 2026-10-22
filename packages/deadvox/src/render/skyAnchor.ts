@@ -35,11 +35,14 @@ export const addSkyAnchors = (geometry: BufferGeometry, size: readonly [number, 
 };
 
 type Point = [number, number, number];
+const QUAD_VERTICES = 4;
 interface OpeningField {
   readonly size: Point;
   readonly cellSize: number;
   readonly materialAt: (cell: readonly [number, number, number]) => string | undefined;
   readonly isOpening: (material: string) => boolean;
+  /** The cells `isOpening` accepts, so the outlooks come from them alone rather than a scan of the lattice. */
+  readonly openings: readonly Point[];
 }
 const dominantAxis = (direction: Point): number =>
   direction.reduce((best, value, index) => (Math.abs(value) > Math.abs(direction[best]!) ? index : best), 0);
@@ -57,11 +60,11 @@ const openingAnchor = ({
   lower: Point;
   cells: Point;
   field: OpeningField;
-}): Point | undefined => {
+}): { anchor: Point | undefined; sealed: boolean } => {
   const axis = dominantAxis(direction);
   const step = Math.sign(direction[axis]!);
   if (step === 0) {
-    return undefined;
+    return { anchor: undefined, sealed: false };
   }
   const cell = point.map((value, index) =>
     Math.floor((value - lower[index]! + direction[index]! * cellSize * 1e-4) / cellSize),
@@ -70,20 +73,61 @@ const openingAnchor = ({
     const material = materialAt(cell as Point);
     if (material !== undefined) {
       if (!isOpening(material)) {
-        return point.map((value, index) => value - direction[index]! * (BLOCK_SIZE / 2)) as Point;
+        return { anchor: undefined, sealed: true };
       }
-      return point.map((value, index) =>
-        index === axis ? lower[index]! + (cell[index]! + Number(step > 0)) * cellSize : value,
-      ) as Point;
+      // Past the envelope rather than at the glass: the coarse sky field counts the whole envelope as blocked.
+      return {
+        anchor: point.map((value, index) =>
+          index === axis
+            ? (step > 0 ? lower[index]! + cells[index]! * cellSize : lower[index]!) + step * BLOCK_SIZE
+            : value,
+        ) as Point,
+        sealed: false,
+      };
     }
     cell[axis] = cell[axis]! + step;
   }
-  return undefined;
+  return { anchor: undefined, sealed: false };
+};
+
+/** Six numbers per outlook: the window's centre, then the point past the envelope it looks out to. */
+const OUTLOOK_STRIDE = 6;
+const outlooksOf = new WeakMap<readonly Point[], Float64Array>();
+
+/**
+ * Where the openings look out: a window's centre carried horizontally past the envelope, away from the cabin's
+ * middle. Openings in the same block share one outlook, so the nearest-window search scales with the windows' extent
+ * rather than their voxel count. Built once per list of openings, which a look shares across its geometry passes.
+ */
+const openingOutlooks = ({ size, cellSize, openings }: OpeningField, lower: Point): Float64Array => {
+  const cached = outlooksOf.get(openings);
+  if (cached) {
+    return cached;
+  }
+  const reach = size.map((extent) => extent / 2);
+  const seen = new Set<string>();
+  const found: number[] = [];
+  for (const cell of openings) {
+    const centre = cell.map((value, index) => lower[index]! + (value + 0.5) * cellSize) as Point;
+    const axis = Math.abs(centre[0]) / reach[0]! > Math.abs(centre[2]) / reach[2]! ? 0 : 2;
+    const out = [...centre] as Point;
+    out[axis] = Math.sign(centre[axis]!) * (reach[axis]! + BLOCK_SIZE);
+    const block = `${centre.map((value) => Math.floor(value / BLOCK_SIZE)).join()}:${axis}`;
+    if (!seen.has(block)) {
+      seen.add(block);
+      found.push(...centre, ...out);
+    }
+  }
+  const outlooks = Float64Array.from(found);
+  outlooksOf.set(openings, outlooks);
+  return outlooks;
 };
 
 /**
- * Keeps an interior receiver in its cabin unless its face ray reaches an authored opening. Exterior faces retain the
- * envelope anchor that relieves their self-occlusion in the coarse sky field.
+ * An interior receiver whose face ray meets a window samples the sky there; one whose ray meets the roof or body
+ * samples from the nearest window instead, as diffuse light spreads through a room from its openings. Without any
+ * opening the cabin stays sealed and dark. Exterior faces retain the envelope anchor that relieves their
+ * self-occlusion in the coarse sky field.
  */
 export const addSkyOpeningAnchors = (geometry: BufferGeometry, field: OpeningField): void => {
   addSkyAnchors(geometry, field.size);
@@ -95,12 +139,55 @@ export const addSkyOpeningAnchors = (geometry: BufferGeometry, field: OpeningFie
   }
   const lower: Point = [-field.size[0] / 2, 0, -field.size[2] / 2];
   const cells = field.size.map((extent) => Math.round(extent / field.cellSize)) as Point;
-  for (let vertex = 0; vertex < position.count; vertex++) {
-    const point: Point = [position.getX(vertex), position.getY(vertex), position.getZ(vertex)];
-    const direction: Point = [normal.getX(vertex), normal.getY(vertex), normal.getZ(vertex)];
-    const anchor = openingAnchor({ point, direction, lower, cells, field });
-    if (anchor) {
-      anchors.setXYZ(vertex, ...anchor);
+  let outlooks: Float64Array | undefined;
+  // The receiver interpolates the anchor across a face, so a quad's corners must not look out of different windows:
+  // the line between them crosses the envelope, which the sky field counts as blocked.
+  for (let first = 0; first < position.count; first += QUAD_VERTICES) {
+    const quad = Array.from({ length: Math.min(QUAD_VERTICES, position.count - first) }, (_, index) => first + index);
+    const points = quad.map((vertex): Point => [position.getX(vertex), position.getY(vertex), position.getZ(vertex)]);
+    const results = quad.map((vertex, index) =>
+      openingAnchor({
+        point: points[index]!,
+        direction: [normal.getX(vertex), normal.getY(vertex), normal.getZ(vertex)],
+        lower,
+        cells,
+        field,
+      }),
+    );
+    if (!results.some(({ sealed }) => sealed)) {
+      quad.forEach((vertex, index) => {
+        if (results[index]!.anchor) {
+          anchors.setXYZ(vertex, ...results[index]!.anchor!);
+        }
+      });
+      continue;
+    }
+    outlooks ??= openingOutlooks(field, lower);
+    const centre = points[0]!.map((_, axis) => points.reduce((sum, point) => sum + point[axis]!, 0) / points.length);
+    let nearest = -1;
+    let best = Number.POSITIVE_INFINITY;
+    for (let at = 0; at < outlooks.length; at += OUTLOOK_STRIDE) {
+      const dx = outlooks[at]! - centre[0]!;
+      const dy = outlooks[at + 1]! - centre[1]!;
+      const dz = outlooks[at + 2]! - centre[2]!;
+      const distance = dx * dx + dy * dy + dz * dz;
+      if (distance < best) {
+        best = distance;
+        nearest = at;
+      }
+    }
+    if (nearest >= 0) {
+      for (const vertex of quad) {
+        anchors.setXYZ(vertex, outlooks[nearest + 3]!, outlooks[nearest + 4]!, outlooks[nearest + 5]!);
+      }
+    } else {
+      quad.forEach((vertex, index) => {
+        const direction: Point = [normal.getX(vertex), normal.getY(vertex), normal.getZ(vertex)];
+        anchors.setXYZ(
+          vertex,
+          ...(points[index]!.map((value, axis) => value - direction[axis]! * (BLOCK_SIZE / 2)) as Point),
+        );
+      });
     }
   }
 };
