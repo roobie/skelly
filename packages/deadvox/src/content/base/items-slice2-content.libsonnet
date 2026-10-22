@@ -360,7 +360,6 @@
       "id": "wrench",
       "name": "Adjustable wrench",
       "category": "tool",
-      "weight": 500,
       "size": [1, 3],
       "model": "wrench",
       "tool": { "qualities": { "wrenching": 1 } },

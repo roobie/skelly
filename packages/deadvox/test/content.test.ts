@@ -798,6 +798,17 @@ describe('content', () => {
     expect(rejected.issues.length).toBeGreaterThan(0);
   });
 
+  it('keeps every sleep surface that is carried like a rug poorer than every fixed one', () => {
+    const sleepers = [...baseRegistry.furniture.values()].filter((def) => def.rest?.sleep === true);
+    const carried = sleepers.filter((def) => def.cover === true);
+    const fixed = sleepers.filter((def) => def.cover !== true);
+    expect(carried.length).toBeGreaterThan(0);
+    expect(fixed.length).toBeGreaterThan(0);
+    const bestCarried = Math.max(...carried.map((def) => def.rest!.quality));
+    const worstFixed = Math.min(...fixed.map((def) => def.rest!.quality));
+    expect(bestCarried).toBeLessThan(worstFixed);
+  });
+
   it('rejects furniture shape boxes that leave the footprint on each axis', () => {
     const furniture = [
       {
