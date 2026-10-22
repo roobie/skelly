@@ -1327,7 +1327,10 @@ item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
   project's model tools and voxelized on its class grain; no model comes from a
   third party, whatever its licence. A third-party mesh isn't an authored recipe
   row, so it can't be voxelized on a class grain, and it would stay outside the
-  one look every other model shares.
+  one look every other model shares. A model is authored when an item first
+  needs it (firearms through gungen, other items through the thing tool), not
+  kept ready ahead of its item: a model with no item gets no play check and
+  drifts until something uses it.
 - **The asset manifest.** Each pack records the source, author, licence and
   changes for its assets. Validation rejects disallowed licences, missing CC BY
   attribution, duplicate or unlisted files, and missing files. The manifest and

@@ -21,30 +21,6 @@
     },
     {
       "anchors": {
-        "strike": [0.42909999999999998, 0, 0]
-      },
-      "file": "assets/models/baton.glb",
-      "grip": {
-        "at": [-0.12, 0, 0]
-      },
-      "hold": "upright",
-      "id": "baton",
-      "roll": 0
-    },
-    {
-      "anchors": {
-        "strike": [0.2145, 0, 0]
-      },
-      "file": "assets/models/cleaver.glb",
-      "grip": {
-        "at": [-0.074999999999999997, 0, 0]
-      },
-      "hold": "upright",
-      "id": "cleaver",
-      "roll": 90
-    },
-    {
-      "anchors": {
         "claw": [0.105, -0.129, 0],
         "strike": [0.2306, 0, 0]
       },
@@ -61,43 +37,6 @@
           "node": "crowbar:crowbar"
         }
       },
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "edge": [0.26600000000000001, -0.115, 0],
-        "strike": [0.31740000000000002, 0, 0]
-      },
-      "file": "assets/models/fire_axe.glb",
-      "grip": {
-        "at": [-0.37, 0, 0]
-      },
-      "hold": "upright",
-      "id": "fire_axe",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.22120000000000001, 0, 0]
-      },
-      "file": "assets/models/frying_pan.glb",
-      "grip": {
-        "at": [-0.080000000000000002, 0, 0]
-      },
-      "hold": "upright",
-      "id": "frying_pan",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.0935, 0, 0]
-      },
-      "file": "assets/models/golf_club.glb",
-      "grip": {
-        "at": [-0.60999999999999999, 0, 0]
-      },
-      "hold": "upright",
-      "id": "golf_club",
       "roll": 90
     },
     {
@@ -123,19 +62,6 @@
     },
     {
       "anchors": {
-        "edge": [0.186, -0.095000000000000001, 0],
-        "strike": [0.22220000000000001, 0, 0]
-      },
-      "file": "assets/models/hand_axe.glb",
-      "grip": {
-        "at": [-0.02, 0, 0]
-      },
-      "hold": "upright",
-      "id": "hand_axe",
-      "roll": 90
-    },
-    {
-      "anchors": {
         "strike": [0.2205, 0, 0]
       },
       "file": "assets/models/kabar.glb",
@@ -144,18 +70,6 @@
       },
       "hold": "forward",
       "id": "kabar"
-    },
-    {
-      "anchors": {
-        "strike": [0.15939999999999999, 0, 0]
-      },
-      "file": "assets/models/katana.glb",
-      "grip": {
-        "at": [-0.59999999999999998, 0, 0]
-      },
-      "hold": "upright",
-      "id": "katana",
-      "roll": 90
     },
     {
       "anchors": {
@@ -179,78 +93,6 @@
       },
       "hold": "forward",
       "id": "machete"
-    },
-    {
-      "anchors": {
-        "point": [0.23999999999999999, -0.28499999999999998, -0.019],
-        "strike": [0.31309999999999999, 0, 0]
-      },
-      "file": "assets/models/pickaxe.glb",
-      "grip": {
-        "at": [-0.37, 0, 0]
-      },
-      "hold": "upright",
-      "id": "pickaxe",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.1178, 0, 0]
-      },
-      "file": "assets/models/pocket_knife.glb",
-      "grip": {
-        "at": [-0.070000000000000007, 0, 0]
-      },
-      "hold": "forward",
-      "id": "pocket_knife"
-    },
-    {
-      "anchors": {
-        "strike": [0.41949999999999998, 0, 0]
-      },
-      "file": "assets/models/shovel.glb",
-      "grip": {
-        "at": [-0.38, 0, 0]
-      },
-      "hold": "upright",
-      "id": "shovel",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.28220000000000001, 0, 0]
-      },
-      "file": "assets/models/sickle.glb",
-      "grip": {
-        "at": [-0.16, 0, 0]
-      },
-      "hold": "upright",
-      "id": "sickle",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "face": [0.22, -0.086999999999999994, 0],
-        "strike": [0.27310000000000001, 0, 0]
-      },
-      "file": "assets/models/sledgehammer.glb",
-      "grip": {
-        "at": [-0.41999999999999998, 0, 0]
-      },
-      "hold": "upright",
-      "id": "sledgehammer",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.1797, 0, 0]
-      },
-      "file": "assets/models/tanto.glb",
-      "grip": {
-        "at": [-0.14499999999999999, 0, 0]
-      },
-      "hold": "forward",
-      "id": "tanto"
     },
     {
       "anchors": {

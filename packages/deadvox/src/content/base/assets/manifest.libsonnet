@@ -194,24 +194,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "changes": "Converted torch.obj to glTF binary, scaled to 0.2 m long, turned to lie along +x with the lens at +x, lens no longer emissive, both materials opaque (the OBJ's transmission filter had made them glass)"
     },
     {
-      "title": "CC0 Flat Guns West",
-      "url": "https://opengameart.org/content/cc0-flat-guns-west",
-      "author": "Pichuliru",
-      "licence": "CC0-1.0",
-      "download": "flat_guns_west.zip",
-      "files": [
-        "assets/models/pistol_compact.glb",
-        "assets/models/pistol_full.glb",
-        "assets/models/rifle_battle.glb",
-        "assets/models/shotgun_auto.glb",
-        "assets/models/smg_compact.glb",
-        "assets/models/smg_full.glb",
-        "assets/models/sniper_material.glb",
-        "assets/models/sniper_rifle.glb"
-      ],
-      "changes": "From the GLB files: rig baked into static meshes at rest and removed, stray icosphere removed, turned to lie on the side along +x with the muzzle at +x, renamed"
-    },
-    {
       "title": "15 vocal male strain/hurt/pain/jump sounds",
       "url": "https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds",
       "author": "qubodup",
@@ -362,25 +344,12 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "licence": "CC0-1.0",
       "download": "flatshadedmelee.zip",
       "files": [
-        "assets/models/baton.glb",
-        "assets/models/cleaver.glb",
-        "assets/models/fire_axe.glb",
-        "assets/models/frying_pan.glb",
-        "assets/models/golf_club.glb",
-        "assets/models/hand_axe.glb",
         "assets/models/kabar.glb",
-        "assets/models/katana.glb",
         "assets/models/kitchen_knife.glb",
         "assets/models/machete.glb",
-        "assets/models/pickaxe.glb",
-        "assets/models/pocket_knife.glb",
-        "assets/models/shovel.glb",
-        "assets/models/sickle.glb",
-        "assets/models/sledgehammer.glb",
-        "assets/models/tanto.glb",
         "assets/models/wrench.glb"
       ],
-      "changes": "Converted the 17 source OBJ meshes still used with their MTL palette material and shared T_PCL_Palette_c.png in Blender to self-contained GLBs; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented each long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root."
+      "changes": "Converted the four source OBJ meshes still used with their MTL palette material and shared T_PCL_Palette_c.png in Blender to self-contained GLBs; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented each long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root."
     },
     {
       "title": "Pipe",
