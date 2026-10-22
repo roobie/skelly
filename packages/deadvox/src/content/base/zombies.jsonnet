@@ -241,6 +241,24 @@ local content = {
       "loot": "soldier_pockets"
     },
     $.zombies[0] + {
+      "id": "farmer_shambler",
+      "name": "Farmer",
+      "authoredOnly": true,
+      "loot": "farmer_pockets"
+    },
+    $.zombies[0] + {
+      "id": "worker_shambler",
+      "name": "Site worker",
+      "authoredOnly": true,
+      "loot": "worker_pockets"
+    },
+    $.zombies[0] + {
+      "id": "medic_shambler",
+      "name": "Medic",
+      "authoredOnly": true,
+      "loot": "medic_pockets"
+    },
+    $.zombies[0] + {
       "id": "brute_shambler",
       "name": "Brute",
       "model": "brute",

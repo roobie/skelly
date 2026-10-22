@@ -12,9 +12,11 @@ import { blockColors, requiredContentIssues, validateContent } from '../src/core
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { corpseLootPoint, rollLoot } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
+import { Rng } from '../src/core/random.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import {
   BLOCK_PATTERNS,
@@ -286,6 +288,22 @@ describe('content', () => {
   it('excludes authored-only kinds from ordinary hamlet spawn weights', () => {
     const soldier = baseRegistry.zombies.get('military_shambler')!;
     expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
+  });
+
+  it('gives every zombie kind a kit that rolls real items the same way from the same seed', () => {
+    const kitKinds = [...baseRegistry.zombies.values()].filter(({ loot }) => loot !== undefined);
+    expect(kitKinds.length).toBeGreaterThan(0);
+    for (const kind of kitKinds) {
+      const point = corpseLootPoint(kind.loot!, 1, [0, 0, 0]);
+      for (let seed = 1; seed <= 20; seed += 1) {
+        const roll = () => rollLoot(baseRegistry, point, Rng.stream(seed, 'kit-contract'));
+        const first = roll();
+        expect(roll(), kind.id).toEqual(first);
+        for (const drop of first) {
+          expect(baseRegistry.items.has(drop.type), `${kind.id} drops ${drop.type}`).toBe(true);
+        }
+      }
+    }
   });
 
   it('resolves spawn names against the day cycle of the last file that defines one', () => {
