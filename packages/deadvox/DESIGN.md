@@ -13,6 +13,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
+  - you're implementing electricity networks, energy balance or appliance power history
   - you're implementing the authored gauntlet arrangement, scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth, the sewer route or its visual approval gate
   - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
@@ -2140,15 +2141,12 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way.
 - **Breach by strength.** Every leaf yields to enough strength, and its own breach values say how, so flimsy and burglary-safe leaves yield differently. A blow below the leaf's minimum strength does nothing, so a weak attacker cannot grind through by waiting; blows at or above it add their strength to the leaf's saved damage until it reaches the leaf's toughness. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate through one resolution; a swing that meets no zombie strikes the closed leaf in its reach. Every blow makes a noise that reaches zombies through ordinary hearing. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so it has no breach. See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashLeaf` and `strikeLeaf`, and `src/core/schema.ts`, `FurnitureSchema`.
 - **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
-- **Electricity** is a graph:
-  - **Nodes:** generators (burn fuel), solar panels (depend on the time of
-    day), batteries (store energy), and consumers (lights, fridges, radios,
-    workbench tools).
-  - **Edges:** wires.
-  - Connected components are recomputed only when wiring changes. Each power
-    tick balances supply, storage and demand for each network.
-  - When a base catches up after being unloaded, the calculation is closed
-    form: when the fuel ran out, then when the batteries emptied.
+- **Electricity** keeps topology separate from energy balance so rate changes
+  do not rebuild networks. Resource settlement and timestamped power transitions
+  preserve appliance history across absences and wiring changes. The dispatch,
+  storage, solar and link rules and their reasons are in
+  `docs/electricity.md`, "Electricity"; see `src/core/power.ts`, `PowerNetwork`,
+  and `src/core/powerGraph.ts`, `PowerGraph`.
 - **Fire** is a world system: burn rate per material, spread to neighbouring
   flammable blocks, smoke and light. Hot zombies and molotovs use the same
   system.

@@ -1,0 +1,8 @@
+{
+  "id": "duct_tape",
+  "file": "assets/models/duct_tape.glb",
+  "parts": { "material": { "node": "material:ring", "massKg": 0.15, "centreOfMass": [0, 0.024, 0] } },
+  "grip": { "at": [0.037000000000000005, 0.024, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}
