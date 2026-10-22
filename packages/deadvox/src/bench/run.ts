@@ -319,6 +319,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
           movement,
           lit: true,
           lightSeenFrom,
+          eyeHeightMetres: PLAYER.eye,
         }),
         dayPhase: () => dayPhaseAt(dayCycle, startTime),
         hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),

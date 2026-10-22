@@ -701,8 +701,8 @@ describe('rifle firearm handling', () => {
         data: {
           models: [
             {
-              id: 'pistol_full',
-              file: 'assets/models/pistol_full.glb',
+              id: 'unannotated_gun_model',
+              file: 'assets/models/rifle_ak.glb',
             },
           ],
           items: [
@@ -712,7 +712,7 @@ describe('rifle firearm handling', () => {
               category: 'weapon',
               weight: 1000,
               size: [1, 1],
-              model: 'pistol_full',
+              model: 'unannotated_gun_model',
               firearm: {
                 recoilKickRadians: 0.012,
                 dispersionRadians: 0.01,
@@ -725,7 +725,7 @@ describe('rifle firearm handling', () => {
       },
     ]);
     expect(fixture.issues).toEqual([]);
-    const model = fixture.registry.models.get('pistol_full')!;
+    const model = fixture.registry.models.get('unannotated_gun_model')!;
     expect(model.gun?.calibre).toBeUndefined();
     const bytes = readFileSync(join(BASE, model.file));
     const gltf = await new GLTFLoader().parseAsync(

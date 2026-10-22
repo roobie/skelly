@@ -1380,6 +1380,10 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
   for (const [path, message] of authoredLayoutIssues(layout, registry)) {
     report('layouts', layout.id, path, message);
   }
+  const light = layout.practice?.light;
+  if (light && registry.items.get(light.light)?.light?.power?.battery !== light.battery) {
+    report('layouts', layout.id, '.practice.light', `"${light.light}" is not a light that takes "${light.battery}"`);
+  }
 };
 
 const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {

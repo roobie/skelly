@@ -30,6 +30,10 @@ issue's bounded diagnosis and before/after/restored-before evidence, not a retry
 timeout. See `packages/deadvox/test/browser/save-storage.mjs`, `navigationOnly`, and
 `test/browser-ci-manifest.mjs`, `quarantinedScripts`.
 
+The stage clears the `pageshow` marker before Back, because the destination page writes the same session-storage key and would otherwise satisfy the wait while the old document is still loading. It then asserts that Back restored the cached page and, if not, fails with the navigation entry's `notRestoredReasons`. Reinstatement starts from that eviction reason: a Back that Chromium declines to restore is a bfcache eviction, not a slow save.
+
+The eviction's cause is unproven. Chromium reports it as `masked` with an `about:blank` child, which matches the hidden debug review-map iframe that start-up creates. The eviction did not return when the frame was put back, so the frame is not established as the cause and eviction depends on something that varies between runs. Do not lift the quarantine on the frame alone: it needs before, after and restored-before runs in which the restored-before runs evict again. See `packages/deadvox/src/game/play.ts`, `createReviewMapFrame`.
+
 Asynchronous save checks must poll the resolved result, not the truthiness of the promise:
 a false first observation must not certify quiescence. Separate browser capture and storage
 durations from host phase timings, because renderer dispatch delay can precede the work
@@ -37,6 +41,15 @@ being measured. Keep these observations bounded and retain document identity acr
 so destination activity cannot be mistaken for restored-world work. See
 `packages/deadvox/test/browser/save-storage.mjs`, `pollNavigation`, `navigationPhase` and
 `instrumentNavigationSave`.
+
+A stage timeout on a save step records the `#save-status` transitions and a Web Lock
+snapshot on both sides of the stalling step, because a bare timeout cannot tell a stalled
+discovery or write from a missing launcher. #749 (the gauntlet win checkpoint never reaches
+saved) reports this in the `save-other` shard. #670 (the second weathering page never
+enables `#go`) reports it only when the quarantined subflow runs with
+`DEADVOX_FIREFOX_UI_WEATHERING_TEST=1`, because no CI shard reaches it. Both issues stay
+open as the owners. See `packages/deadvox/test/browser/save-lock-diagnostics.mjs`,
+`saveLockSnapshot`.
 
 The required aggregate fails closed on unsuccessful or unobservable attempts in the same run: a later green rerun must not hide an earlier failure. See `tools/browser-ci-result.mjs`, `assertBrowserResult` and `checkBrowserWorkflow`, and `.github/workflows/deadvox.yml`.
 

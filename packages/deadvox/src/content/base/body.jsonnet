@@ -11,6 +11,7 @@ local normalSleep = 100 / normalSleepGameHours;
     knockoutSimSeconds: 20,
     staminaRegenDelaySimSeconds: 5,
     proneEyeHeightMetres: 0.3,
+    fragmentRegionHeights: { head: 0.85, torso: 0.45 },
     shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
     // Acid eats the outermost worn layer, so clothing is a consumable (`packages/deadvox/docs/acid-zombie.md`).
     outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
@@ -98,8 +99,8 @@ local normalSleep = 100 / normalSleepGameHours;
         },
       ],
     },
-    // Pain (`DESIGN.md`, "Pain") is open-ended. knockoutAt is its balance point, where felt pain is meant to knock out
-    // once the knockout lands (#654); until then nothing happens there. Tiers are shares of it.
+    // Pain (`DESIGN.md`, "Pain") is open-ended. knockoutAt is its balance point, where felt pain is meant to knock out;
+    // only shock knocks out, so nothing happens there yet. Tiers are shares of it.
     pain: {
       knockoutAt: 100,
       // A bite or stab hurts a little more than a blow of the same damage; a burn hurts most.

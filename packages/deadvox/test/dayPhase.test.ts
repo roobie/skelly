@@ -21,6 +21,7 @@ const player = {
   movement: 'still' as const,
   lit: false,
   lightSeenFrom: 0,
+  eyeHeightMetres: 1.3,
 };
 const hours = (seconds: number): number => seconds / 3600;
 const phaseSamples = () => {
