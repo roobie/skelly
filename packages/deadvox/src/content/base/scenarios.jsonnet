@@ -29,7 +29,7 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
       }, {
         at: [lab.surfaceOffset + 15, ground + 1, lab.surfaceOffset + 14],
         items: [{ item: 'gauntlet_maintenance_memo', placement: 'surface' }],
-      }],
+      }] + lab.fixedLoot,
       leads: [
         { template: 'gauntlet_public_memo', lot: 'hq', at: [26, 0, 13], standing: [25, 1, 14], fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_memo', placement: 'surface' }] }] },
         { template: 'gauntlet_public_directions', lot: 'police', at: [23, 0, 17], standing: [25, 1, 20], fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_directions', placement: 'surface' }] }] },

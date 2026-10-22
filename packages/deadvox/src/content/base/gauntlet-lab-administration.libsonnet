@@ -177,7 +177,7 @@ local shaftLid = { at: [29 * scale, 5 * scale], size: [3, 2] };
 local built = level.build({
   id: 'administration', base: base, plan: plan, rooms: rooms, context: { usage: ['Industrial'], tier: 'Tier1' },
   lock: 'gauntlet_lab_administration_seal', cardItem: 'gauntlet_lab_administration_card',
-  card: { at: [22, 6] },
+  card: { container: 'director_desk' },
   through: arrivals,
   holes: [{ at: [stairAt[0], stairAt[2]], size: [level.stair.size[0], level.stair.size[2]] }, shaftLid],
   // The briefing hall is the crowd room; the offices stay sparse and the stair hall quiet.
@@ -192,7 +192,8 @@ local built = level.build({
   standing: [6 * scale, base + 1, 24 * scale],
   stairAt: stairAt,
   stair: { upper: [stairAt[0] + 11, base + 1, stairAt[2] + 1], lower: [stairAt[0] + 1, stairAt[1], stairAt[2] + 1] },
-  seal: { doors: [[20 * scale, base + 1, 12 * scale], [29 * scale, base + 1, 8 * scale]], key: built.key, standing: built.keyStanding },
+  seal: { doors: [[20 * scale, base + 1, 12 * scale], [29 * scale, base + 1, 8 * scale]] } + built.cardSeal,
+  fixedLoot: built.cardStock,
   items: [{ id: 'gauntlet_lab_administration_card', name: 'Clearance keycard', category: 'tool', weight: 5, size: [1, 1], economy: { usage: ['Industrial'], tiers: ['Tier1'] }, model: 'folded_note', key: { lock: 'gauntlet_lab_administration_seal' } }],
   mapPieces: built.mapPieces,
   mapAssemblies: [built.mapAssembly],

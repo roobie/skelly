@@ -301,13 +301,43 @@ describe('final composed body-route certificate', () => {
     (index) => {
       const site = siteOf();
       const seal = site.plan.composition!.seals[index]!;
-      const original = site.lootPointsIn.bind(site);
-      vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
-        original(cx, cz).filter((point) => !point.destination.every((value, axis) => value === seal.key[axis])),
-      );
+      const atKey = (at: Readonly<Vec3>) => at.every((value, axis) => value === seal.key[axis]);
+      if (seal.held) {
+        const original = site.furnitureIn.bind(site);
+        vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+          original(cx, cz).map((spawn) => (atKey(spawn.spec.pos) ? { ...spawn, loot: [], surfaceLoot: [] } : spawn)),
+        );
+      } else {
+        const original = site.lootPointsIn.bind(site);
+        vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
+          original(cx, cz).filter((point) => !atKey(point.destination)),
+        );
+      }
       expect(scenarioCertificate(site).issues.some(([path]) => path === `.composition.seals[${index}]`)).toBe(true);
     },
   );
+
+  it('rejects a keycard container that lies behind the seal it opens', () => {
+    // Level two's card desk, made to hold level one's card and to open level one's bulkheads, which stand between it and the way in.
+    const composition = base.composition!;
+    const held = composition.seals.findIndex((seal) => seal.held);
+    const desk = composition.seals[held]!;
+    const above = composition.seals[held - 1]!;
+    const site = siteOf({ ...base, composition: { ...composition, seals: [{ ...desk, doors: above.doors }] } });
+    const space = new ScenarioRouteSpace(site);
+    space.blocked(...above.doors[0]!);
+    const lock = space.entities.at(...above.doors[0]!)!.lock!.id;
+    const card = [...registry.items.values()].find((item) => item.key?.lock === lock)!;
+    const original = site.furnitureIn.bind(site);
+    vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+      original(cx, cz).map((spawn) =>
+        spawn.spec.pos.every((value, axis) => value === desk.key[axis])
+          ? { ...spawn, loot: spawn.loot.map((item) => ({ ...item, type: card.id })) }
+          : spawn,
+      ),
+    );
+    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain('.composition.seals[0]');
+  });
 
   it(
     "keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted",

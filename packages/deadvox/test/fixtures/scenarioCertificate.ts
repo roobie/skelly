@@ -282,14 +282,22 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
     connections.push(next);
     [, floor] = next.lower;
   }
+  const sealCard = (seal: NonNullable<typeof plan.composition>['seals'][number]) => {
+    const holder = seal.held ? entities.at(...(seal.key as Vec3)) : undefined;
+    if (holder) {
+      session.search(holder);
+      until(() => holder.searched, Math.ceil((session.queue.remaining + 1) * 60));
+    }
+    const stock = holder ? (holder.pockets ?? []).flat() : (session.inventory.pileAt([...seal.key])?.items ?? []);
+    return stock.find(({ item }) => registry.items.get(item.type)?.key)?.item;
+  };
   const completed: typeof connections = [];
   let position: Readonly<Vec3> = plan.portal!.upper;
   for (const descent of connections) {
     for (const seal of plan.composition!.seals.filter((candidate) => candidate.standing[1] === position[1])) {
       walk(route(position, seal.standing));
       position = seal.standing;
-      const pile = session.inventory.pileAt([...seal.key]);
-      const card = pile?.items.find(({ item }) => registry.items.get(item.type)?.key)?.item;
+      const card = sealCard(seal);
       assert(card, 'seal card is a real placed item');
       freeLeftHand(seal.standing);
       const pickup = session.queue.enqueue(card, { kind: 'hand', side: 'left' });

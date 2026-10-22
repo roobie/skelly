@@ -50,6 +50,7 @@ local cabinetShape = [
     seals: [entry.seal, administration.seal],
     objective: [30, 3, 26],
   },
+  fixedLoot: entry.fixedLoot + administration.fixedLoot,
   loot: entry.loot + administration.loot,
   items: entry.items + administration.items,
   furniture: [

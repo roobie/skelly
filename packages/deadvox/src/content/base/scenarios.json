@@ -972,6 +972,15 @@
                 "placement": "surface"
               }
             ]
+          },
+          {
+            "at": [42, 25, 6],
+            "items": [
+              {
+                "item": "gauntlet_lab_administration_card",
+                "key": true
+              }
+            ]
           }
         ],
         "incidentalTemplates": [
@@ -1050,8 +1059,9 @@
           },
           {
             "doors": [[40, 25, 24], [58, 25, 16]],
-            "key": [44, 25, 12],
-            "standing": [44, 25, 13]
+            "held": true,
+            "key": [42, 25, 6],
+            "standing": [43, 25, 9]
           }
         ],
         "stairs": [

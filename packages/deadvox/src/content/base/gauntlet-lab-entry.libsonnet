@@ -140,7 +140,8 @@ local size = built.size;
   shaft: { ladder: [29 * scale + 1, base - 7, 24 * scale], upper: [29 * scale, base + 1, 24 * scale + 1], lower: [29 * scale, base - 7, 24 * scale + 1] },
   stairAt: [4 * scale, base - 7, 5 * scale],
   stair: { upper: [4 * scale + 11, base + 1, 5 * scale + 1], lower: [4 * scale + 1, base - 7, 5 * scale + 1] },
-  seal: { doors: [[5 * scale, base + 1, 10 * scale], [29 * scale, base + 1, 27 * scale]], key: built.key, standing: built.keyStanding },
+  seal: { doors: [[5 * scale, base + 1, 10 * scale], [29 * scale, base + 1, 27 * scale]] } + built.cardSeal,
+  fixedLoot: built.cardStock,
   items: [{ id: 'gauntlet_lab_entry_card', name: 'Security keycard', category: 'tool', weight: 5, size: [1, 1], economy: { usage: ['Industrial'], tiers: ['Tier1'] }, model: 'folded_note', key: { lock: 'gauntlet_lab_entry_seal' } }],
   mapPieces: built.mapPieces + [{
     id: 'gauntlet_lab_entry_cap', size: [size[0], 1, size[2]], style: 'concrete_lab', lootContext: { usage: ['Industrial'], tier: 'Tier1' },

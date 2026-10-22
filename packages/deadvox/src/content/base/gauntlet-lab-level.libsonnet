@@ -58,8 +58,9 @@ local stair = {
     local hole = function(dx, dz, x, z) inBox(level.holes, x * scale + dx, z * scale + dz);
     local marker = function(y, dx, dz, x, z) std.member(level.markers, [x * scale + dx, y, z * scale + dz]);
     local card = level.card;
-    local cardRoom = byToken[plan[card.at[1]][card.at[0]]];
-    local isCard = function(x, z) x == card.at[0] && z == card.at[1];
+    // A card with a `container` is stock in that dressing bay's container, so finding it is a search rather than a sighting.
+    local cardBay = if std.objectHas(card, 'container') then [d for d in dressing if d.id == card.container][0] else null;
+    local isCard = function(x, z) cardBay == null && x == card.at[0] && z == card.at[1];
     local opening = function(room, c, dx, dz, x, z)
       local candidates = [o for o in room.openings if o.token == c && (if o.axis == 'x' then z >= o.at[1] && z < o.at[1] + std.get(o, 'depth', 1) else x == o.at[0])];
       if std.length(candidates) == 0 then null
@@ -121,14 +122,21 @@ local stair = {
         ownership: { layers: [[std.join('', [if c == '.' then 'A' else 'S' for c in std.stringChars(row)]) for row in layer] for layer in layers] },
         anchors: {}, ports: [],
       };
+    local cardSeal = if cardBay == null then
+      local y = level.base + 1 + byToken[plan[card.at[1]][card.at[0]]].floorRise;
+      { key: [card.at[0] * scale, y, card.at[1] * scale], standing: [card.at[0] * scale, y, card.at[1] * scale + 1] }
+    else
+      local y = level.base + 1 + cardBay.rise;
+      { key: [cardBay.at[0] * scale, y, cardBay.at[1] * scale], standing: [cardBay.at[0] * scale + 1, y, cardBay.at[1] * scale + 3], held: true };
     assert std.all([std.length(row) == std.length(plan[0]) for row in plan]) : level.id + ' plan rows must have equal width: ' + std.toString([[z, std.length(plan[z])] for z in std.range(0, std.length(plan) - 1) if std.length(plan[z]) != std.length(plan[0])]);
     {
       size: size,
       expand: expand,
       through: through,
-      // Where the card lies and where a player stands to take it, in the lab's blocks for a level based at `base`.
-      key: [card.at[0] * scale, level.base + 1 + cardRoom.floorRise, card.at[1] * scale],
-      keyStanding: [card.at[0] * scale, level.base + 1 + cardRoom.floorRise, card.at[1] * scale + 1],
+      // Where the card is and where a player stands to take it, in the lab's blocks for a level based at `base`; a held card
+      // also needs its container's stock.
+      cardSeal: cardSeal,
+      cardStock: if cardBay == null then [] else [{ at: cardSeal.key, items: [{ item: level.cardItem, key: true }] }],
       mapPieces: [shell] + [bay(d) for d in dressing],
       mapAssembly: {
         id: 'gauntlet_lab_level_' + level.id, size: size, lootContext: level.context,
