@@ -4,6 +4,7 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: route segments and save boundaries run in order.
 import assert from 'node:assert/strict';
 import { holdAction, pressAction } from './input-actions.mjs';
+import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const gauntletLoading = async (browser, baseUrl) => {
@@ -74,6 +75,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
   await gauntletLoading(browser, baseUrl);
   const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
   try {
+    await context.addInitScript(installSaveStatusTrace);
     const page = await context.newPage();
     const url = new URL(baseUrl);
     url.searchParams.set('site', 'gauntlet');
@@ -536,6 +538,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         w.manual = false;
       }
     });
+    const locksBeforeWin = await saveLockSnapshot(page);
     await pressAction(page, 'world.interact');
     await page.waitForFunction(() => globalThis.gauntletWitness.session.won);
     journey.run = await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun);
@@ -559,9 +562,11 @@ export const gauntletFlow = async (browser, baseUrl) => {
           };
         })
         .catch((stateError) => `unreadable: ${stateError.message}`);
-      throw new Error(`win checkpoint wait timed out; save controller state: ${JSON.stringify(state)}`, {
-        cause: error,
-      });
+      const locks = { beforeWin: locksBeforeWin, afterTimeout: await saveLockSnapshot(page) };
+      throw new Error(
+        `win checkpoint wait timed out; save controller state: ${JSON.stringify(state)}; save locks: ${JSON.stringify(locks)}`,
+        { cause: error },
+      );
     }
     await page.reload();
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
