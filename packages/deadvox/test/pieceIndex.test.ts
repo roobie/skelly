@@ -74,7 +74,10 @@ const indexMismatches = (entities: BlockEntities): string[] => {
 
 it('lists the pieces of each column as a full scan does through adds, moves, removal, a breach and a restore', () => {
   const entities = new BlockEntities(registry);
+  // Furnished before the seam door but in the later column, so a lookup that lists by column order puts it out of place.
+  const early = entities.add(spec(blockDef, [CHUNK + 8, 0, 12]))!;
   const seamDoor = entities.add(spec(doorDef, [CHUNK - 1, 0, 4]))!;
+  expect(columnsOf(early)).toEqual(new Set(['1,0']));
   const raised = entities.add(spec(blockDef, [CHUNK - 1, 3, 1]))!;
   const far = entities.add(spec(blockDef, [-3, 0, -3]))!;
   const moved = entities.add(spec(blockDef, [2, 0, 2]))!;
