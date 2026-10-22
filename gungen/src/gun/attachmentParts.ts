@@ -2,6 +2,7 @@ import type { PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import { boxFromMinMax } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { FOREGRIP_PROPORTIONS } from './foregripProportions.ts';
 import type { MuzzleBore } from './mounts.ts';
 
 const X: Vec3 = [1, 0, 0];
@@ -92,11 +93,21 @@ const foregrip: PartFamily = {
   name: 'foregrip',
   params: {},
   build(): PartDef {
+    const { foot, grip } = FOREGRIP_PROPORTIONS;
     return {
       family: 'foregrip',
       solids: [
-        box('foot', [-1, -0.5, -0.75], [1, 0.5, 0.75]),
-        box('grip', [-0.75, -4, -0.5], [0.75, -0.5, 0.5], 'furniture'),
+        box(
+          'foot',
+          [-foot.halfLengthU, -foot.heightU / 2, -foot.halfWidthU],
+          [foot.halfLengthU, foot.heightU / 2, foot.halfWidthU],
+        ),
+        box(
+          'grip',
+          [-grip.halfLengthU, -foot.heightU / 2 - grip.lengthU, -grip.halfWidthU],
+          [grip.halfLengthU, -foot.heightU / 2, grip.halfWidthU],
+          'furniture',
+        ),
       ],
       ports: [{ id: 'base', mount: 'rail-bottom', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true }],
       keepOuts: [],
