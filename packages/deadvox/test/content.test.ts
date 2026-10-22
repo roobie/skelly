@@ -12,6 +12,7 @@ import { blockColors, requiredContentIssues, validateContent } from '../src/core
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
@@ -54,6 +55,25 @@ const baseSounds = {
       .filter(({ source }) => source.startsWith('sounds'))
       .flatMap(({ data }) => (data as { sounds: unknown[] }).sounds),
   },
+};
+const reachableLootItems = (root: string | undefined): { table: string; item: string }[] => {
+  const found: { table: string; item: string }[] = [];
+  const seen = new Set<string>();
+  const pending = root === undefined ? [] : [root];
+  while (pending.length > 0) {
+    const table = baseRegistry.loot.get(pending.pop()!)!;
+    if (!seen.has(table.id)) {
+      seen.add(table.id);
+      for (const { item, table: nested } of table.entries) {
+        if (nested !== undefined) {
+          pending.push(nested);
+        } else if (item !== undefined) {
+          found.push({ table: table.id, item });
+        }
+      }
+    }
+  }
+  return found;
 };
 const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
   const zombieFile = base.find((file) => file.source === 'zombies.json')!;
@@ -286,6 +306,16 @@ describe('content', () => {
   it('excludes authored-only kinds from ordinary hamlet spawn weights', () => {
     const soldier = baseRegistry.zombies.get('military_shambler')!;
     expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
+  });
+
+  it('gives every zombie kind only kit items its corpse can drop', () => {
+    const dead = [...baseRegistry.zombies.values()].flatMap((kind) => {
+      const { context } = corpseLootPoint(kind.loot ?? '', 0, [0, 0, 0]);
+      return reachableLootItems(kind.loot)
+        .filter(({ item }) => lootTypeIssue(baseRegistry, item, context) !== undefined)
+        .map(({ table, item }) => `${kind.id} → ${table} → ${item}`);
+    });
+    expect(dead).toEqual([]);
   });
 
   it('resolves spawn names against the day cycle of the last file that defines one', () => {
