@@ -24,6 +24,7 @@ import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import type { SelectedAnchors } from '../src/gun/anchors.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
+import { withAttachmentInstanceAppearances } from '../src/gun/attachments.ts';
 import { ACTION_CYCLE_PROFILES } from '../src/gun/cycle.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -82,8 +83,9 @@ const actionExportFacts = (name: string) => {
         Math.hypot(...sub(partMotion.end, partMotion.start)) * out.resolved.domain.units.metresPerUnit,
     };
   });
+  // The adapter paints fitted attachments in their item finish; the bytes in question are the action metadata's.
   const core = exportGlb({
-    resolved: out.resolved,
+    resolved: withAttachmentInstanceAppearances(out.resolved),
     palette: GUN_PALETTE,
     appearance: { appearanceProfile: 'ar' },
     asset: ASSET,

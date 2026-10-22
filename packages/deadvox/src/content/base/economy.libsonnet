@@ -4,7 +4,7 @@ local militaryItems = [
   'rifle_assault', 'rifle_ak',
   'cartridge_5_d_56x45', 'cartridge_7_d_62x39',
   'cartridge_box_5_d_56x45', 'cartridge_box_7_d_62x39',
-  'magazine_stanag_30', 'magazine_stanag_20', 'magazine_akm_30',
+  'magazine_stanag_30', 'magazine_stanag_20', 'magazine_akm_30', 'ak_slant_compensator',
   'night_vision_goggles',
 ];
 local medicalItems = ['codeine', 'morphine'];
