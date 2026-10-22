@@ -2,20 +2,9 @@
 // feet) gets a style and jittered parameters, deterministic from (genome seed, step index) — no new
 // sampled genome params, so a seed's walk doesn't reshuffle when this file changes its own constants.
 
+import { clamp } from '../core/math.ts';
+import { seededRng } from '../core/random.ts';
 import type { HumanoidParams } from './humanoid.ts';
-
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
-
-/** mulberry32: small, fast, deterministic — plenty for cosmetic jitter, not cryptographic. */
-const mulberry32 = (seed: number): (() => number) => {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d_2b_79_f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
-    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
-  };
-};
 
 /** Combines the genome seed and a step index into one 32-bit PRNG seed. */
 const stepSeed = (seed: number, stepIndex: number): number => {
@@ -123,7 +112,7 @@ export const stepPlanFor = (seed: number, stepIndex: number, params: HumanoidPar
 };
 
 const computeStepPlan = (seed: number, stepIndex: number, params: HumanoidParams, memo: StepPlanMemo): StepPlan => {
-  const rand = mulberry32(stepSeed(seed, stepIndex));
+  const rand = seededRng(stepSeed(seed, stepIndex));
   let style = pickStyle(rand, styleWeights(params));
   if (style !== 'normal' && stepIndex > 0 && stepPlanFor(seed, stepIndex - 1, params, memo).style === style) {
     style = 'normal';

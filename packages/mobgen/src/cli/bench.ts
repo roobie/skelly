@@ -97,6 +97,7 @@ for (let i = 0; i < poolSize; i++) {
     extents,
     params: genome.params as HumanoidParams,
     seed: genome.seed,
+    cache: createGaitCache(),
   };
   pool.push({ genome, walkActor, legGeometryL, parentIndex: indexBonesByParent(realized.body.bones) });
 }

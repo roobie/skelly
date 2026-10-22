@@ -75,7 +75,9 @@ describe('walkPose', () => {
       { stepIndex: 3, progress: 0.9 },
       { stepIndex: 7, progress: 0.1 },
     ];
-    const poses = clocks.map((clock) => walkPose({ bones: body.bones, extents, params, seed: 1 }, clock, 0));
+    const poses = clocks.map((clock) =>
+      walkPose({ bones: body.bones, extents, params, seed: 1, cache: createGaitCache() }, clock, 0),
+    );
     for (const pose of poses) {
       expect(pose.rotations).toEqual({});
     }
@@ -100,7 +102,7 @@ describe('walkPose', () => {
       for (let k = 0; k < NumSteps; k++) {
         for (let i = 0; i <= SamplesPerStep; i++) {
           const clock: GaitClock = { stepIndex: k, progress: i / SamplesPerStep };
-          const pose = walkPose({ bones: body.bones, extents, params, seed }, clock, 1.5);
+          const pose = walkPose({ bones: body.bones, extents, params, seed, cache: createGaitCache() }, clock, 1.5);
           const transforms = boneTransforms(body.bones, pose);
           const lowest = Math.min(
             contactPoint(extents, 'foot.L', transforms)[1],
@@ -137,7 +139,7 @@ describe('walkPose', () => {
     let first: readonly [number, number, number] | undefined;
     let maxDrift = 0;
     for (const clock of opts.clocks) {
-      const pose = walkPose({ bones: body.bones, extents, params, seed }, clock, opts.speed);
+      const pose = walkPose({ bones: body.bones, extents, params, seed, cache: createGaitCache() }, clock, opts.speed);
       const transforms = boneTransforms(body.bones, pose);
       const raw = applyPoint(transforms.get(opts.footBone)!, opts.corner);
       const point: readonly [number, number, number] = [raw[0], raw[1], raw[2] - opts.stepLen * clock.progress];
@@ -253,7 +255,7 @@ describe('walkPose', () => {
         const swingFoot = k % 2 === 0 ? 'foot.L' : 'foot.R'; // sideForStep(k): swinging during step k
         for (let i = 0; i <= 64; i++) {
           const clock: GaitClock = { stepIndex: k, progress: i / 64 };
-          const pose = walkPose({ bones: body.bones, extents, params, seed }, clock, 2.8);
+          const pose = walkPose({ bones: body.bones, extents, params, seed, cache: createGaitCache() }, clock, 2.8);
           const transforms = boneTransforms(body.bones, pose);
           const [, y] = contactPoint(extents, swingFoot, transforms);
           expect(y).toBeGreaterThanOrEqual(-(voxels.size / 2 + 1e-6));
@@ -265,7 +267,7 @@ describe('walkPose', () => {
   const ankleGap = (name: string, seed: number, speeds: readonly number[], steps: number): number => {
     const found = setup(name, seed);
     const { body, extents, params } = found;
-    const actor = { bones: body.bones, extents, params, seed: found.seed };
+    const actor = { bones: body.bones, extents, params, seed: found.seed, cache: createGaitCache() };
     const ankleOf = (side: 'L' | 'R') => body.bones.find((bone) => bone.id === `foot.${side}`)!.head;
     let worstGap = Number.POSITIVE_INFINITY;
     for (const speed of speeds) {
@@ -475,7 +477,7 @@ describe("walkPose's optional idle blend", () => {
   const { body, voxels } = found.realized;
   const extents = footRestExtents(body.bones, voxels);
   const params = found.genome.params as HumanoidParams;
-  const walkActor = { bones: body.bones, extents, params, seed: found.genome.seed };
+  const walkActor = { bones: body.bones, extents, params, seed: found.genome.seed, cache: createGaitCache() };
   const idle = idleBasePose(walkActor, 'slack');
 
   it('at speed 0, passing idle returns exactly the idle pose (never the bind pose)', () => {

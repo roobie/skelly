@@ -10,7 +10,14 @@ import {
   indexBonesByParent,
   type Pose,
 } from '../src/core/pose.ts';
-import { advanceClock, footRestExtents, INITIAL_CLOCK, legGeometryFor, walkPose } from '../src/mob/gait.ts';
+import {
+  advanceClock,
+  createGaitCache,
+  footRestExtents,
+  INITIAL_CLOCK,
+  legGeometryFor,
+  walkPose,
+} from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
 
@@ -91,7 +98,7 @@ describe('boneTransformsInto (the allocation-free posing path)', () => {
       const extents = footRestExtents(body.bones, voxels);
       const params = genome.params as HumanoidParams;
       const legGeometryL = legGeometryFor(body.bones, extents, 'L');
-      const walkActor = { bones: body.bones, extents, params, seed: genome.seed };
+      const walkActor = { bones: body.bones, extents, params, seed: genome.seed, cache: createGaitCache() };
       const parentIndex = indexBonesByParent(body.bones);
       const scratch = allocateBoneTransforms(body.bones.length);
 

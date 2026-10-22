@@ -4,7 +4,7 @@ import { build, generateValid } from '../src/core/generate.ts';
 import { applyPoint, IDENTITY_M } from '../src/core/math.ts';
 import { boneTransforms } from '../src/core/pose.ts';
 import { voxelize } from '../src/core/voxelize.ts';
-import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '../src/mob/gait.ts';
+import { corners, createGaitCache, footRestExtents, INITIAL_CLOCK, walkPose } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { applyIdleMotion, idleBasePose, idlePose } from '../src/mob/idle.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
@@ -23,6 +23,7 @@ const actorOf = (found: ReturnType<typeof setup>) => ({
   extents: found.extents,
   params: found.params,
   seed: found.seed,
+  cache: createGaitCache(),
 });
 
 const boneById = (bones: readonly Bone[], id: string): Bone => bones.find((b) => b.id === id)!;
