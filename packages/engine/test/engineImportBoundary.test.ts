@@ -313,11 +313,22 @@ describe('engine import boundary', () => {
     expect(findDomainIdentifierViolations(files)).toEqual([]);
   });
 
-  it('keeps every package within its import edges', () => {
-    const files = sourceFiles(roots.packages);
-    expect(files.length).toBeGreaterThan(0);
-    expect(findBoundaryViolations(files, roots)).toEqual([]);
+  // One case per package, so a package's cost bounds its own timeout instead of the whole tree's.
+  const packageFiles = readdirSync(roots.packages, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && !dependencyDirectories.has(entry.name))
+    .map((entry) => ({ name: entry.name, files: sourceFiles(join(roots.packages, entry.name)) }));
+
+  it('finds source packages to check', () => {
+    expect(packageFiles.some(({ files }) => files.length > 0)).toBe(true);
   });
+
+  // Scanning every file costs time proportional to the file count, and a loaded CI runner multiplies it
+  // well past the 5 s default, so the allowance grows with the package.
+  for (const { name, files } of packageFiles) {
+    it(`keeps package ${name} within its import edges`, { timeout: 5000 + 20 * files.length }, () => {
+      expect(findBoundaryViolations(files, roots)).toEqual([]);
+    });
+  }
 
   it('reads static, re-export and dynamic module references and skips import.meta and property names', () => {
     const references = moduleReferences(
