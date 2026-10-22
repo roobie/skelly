@@ -2,6 +2,7 @@
 import { expect, it } from 'vitest';
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
+import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../src/core/coreText.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
 
 const refusalSound = {
@@ -14,6 +15,14 @@ const refusalSound = {
   category: 'body',
   noise: { enabled: false, radiusMetres: 1 },
 };
+const slottedFixture = (slots: Readonly<Record<string, readonly string[]>>): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(slots).map(([key, names]) => [
+      key,
+      [`fixture ${key}`, ...names.map((name) => `{${name}}`)].join(' '),
+    ]),
+  );
+const coreMessages = slottedFixture(CORE_MESSAGE_SLOTS);
 const wearSlotLabels = Object.fromEntries(
   ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [
     slot,
@@ -25,9 +34,12 @@ const tuning = {
   spacing: 1,
   hudScale: 1,
   refusalSound: refusalSound.id,
+  audioVolumes: { master: 0.5, world: 0.5, body: 0.5, ui: 0.5 },
   restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
   doorCloseBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
   itemActionLabels: { stripRound: 'fixture strip' },
+  coreMessages,
+  coreActionLabels: slottedFixture(CORE_LABEL_SLOTS),
   wearSlotLabels,
   furnitureMoveMessages: Object.fromEntries(
     [
@@ -96,6 +108,8 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     restLabels: _r,
     doorCloseBlockedMessages: _d,
     itemActionLabels: _i,
+    coreMessages: _m,
+    coreActionLabels: _a,
     wearSlotLabels: _w,
     furnitureMoveMessages: _f,
     ...bare
@@ -106,6 +120,8 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     'ui[0].doorCloseBlockedMessages',
     'ui[0].furnitureMoveMessages',
     'ui[0].itemActionLabels',
+    'ui[0].coreMessages',
+    'ui[0].coreActionLabels',
     'ui[0].wearSlotLabels',
   ]);
   const { head: _h, ...partialSlots } = wearSlotLabels;
@@ -114,6 +130,20 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     data: { ui: [{ ...tuning, wearSlotLabels: partialSlots }] },
   });
   expect(partial.map(({ path }) => path)).toEqual(['ui[0].wearSlotLabels.head']);
+});
+
+it('rejects core text missing a key code asks for, so a lost message fails validation, not play', () => {
+  const { tooFar: _, ...withoutKey } = coreMessages;
+  const missing = validateContent({ source: 'no-key.json', data: { ui: [{ ...tuning, coreMessages: withoutKey }] } });
+  expect(missing.map(({ path }) => path)).toEqual(['ui[0].coreMessages.tooFar']);
+});
+
+it('rejects a core template that drops or invents a slot', () => {
+  const issues = validateContent({
+    source: 'bad-slots.json',
+    data: { ui: [{ ...tuning, coreMessages: { ...coreMessages, cantUse: 'fixture', tooFar: 'fixture {item}' } }] },
+  });
+  expect(issues.map(({ path }) => path).sort()).toEqual(['ui[0].coreMessages.cantUse', 'ui[0].coreMessages.tooFar']);
 });
 
 it('reports content without the core UI tuning at validation, not at startup', () => {

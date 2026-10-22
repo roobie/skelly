@@ -426,6 +426,23 @@
     },
     {
       "anchors": {
+        "lens": [0.19900000000000001, 0, 0]
+      },
+      "file": "assets/models/flashlight.glb",
+      "grip": {
+        "at": [0.085000000000000006, 0, 0]
+      },
+      "id": "flashlight",
+      "parts": {
+        "flashlight": {
+          "centreOfMass": [0.11609390178089583, -0.00016945493793847795, -0.00013707501349163534],
+          "massKg": 0.25,
+          "node": "flashlight:flashlight"
+        }
+      }
+    },
+    {
+      "anchors": {
         "flame": [0.112, 0, 0]
       },
       "file": "assets/models/candle.glb",
@@ -618,6 +635,30 @@
     {
       "file": "assets/models/dead_desk_lamp.glb",
       "id": "dead_desk_lamp",
+      "parts": {
+        "arm": {
+          "centreOfMass": [0.00099999999999999937, 0.077499999999999986, -9.7561600103919698e-18],
+          "massKg": 0.25,
+          "node": "arm:arm"
+        },
+        "base": {
+          "centreOfMass": [0, 0.0050000000000000001, 0],
+          "massKg": 0.5,
+          "node": "base:base"
+        },
+        "shade": {
+          "centreOfMass": [0.069232558139534883, 0.061325581395348834, -0.00058139534883721743],
+          "massKg": 0.14999999999999999,
+          "node": "shade:shade"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "flame": [0.069000000000000006, 0.050000000000000003, 0]
+      },
+      "file": "assets/models/dead_desk_lamp.glb",
+      "id": "oil_lamp",
       "parts": {
         "arm": {
           "centreOfMass": [0.00099999999999999937, 0.077499999999999986, -9.7561600103919698e-18],
@@ -913,6 +954,23 @@
         "material": {
           "centreOfMass": [-0.0031353591160220989, 0.01, 0.0045994475138121547],
           "massKg": 0.5,
+          "node": "material:cutStock"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/whetstone.glb",
+      "grip": {
+        "at": [0, 0.014999999999999999, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "whetstone",
+      "parts": {
+        "material": {
+          "centreOfMass": [0, 0.01478723404255319, -0.0015957446808510633],
+          "massKg": 0.25,
           "node": "material:cutStock"
         }
       },

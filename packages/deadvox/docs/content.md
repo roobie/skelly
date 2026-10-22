@@ -4,6 +4,7 @@ read_if:
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
+  - you add or change a refusal, notice or option label that core code shows the player
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
@@ -116,6 +117,36 @@ requires every field, so a pack that omits one fails validation instead of silen
 inheriting a code default. Readers take the values from the registry. See
 `src/core/schema.ts`, `InventoryTuningSchema` and `UiTuningSchema`, and `src/core/reach.ts`,
 `reachTuning`.
+
+## Core text
+
+What core says to the player, its refusals, notices and option labels, is mod content
+like any other text (#393, #456), so a mod can reword or translate it without a code
+change. It lives in the core ui row, in its own file so other text tables can grow beside
+it without touching the same lines. See `src/content/base/ui-core-text.libsonnet`.
+
+- **Read by key.** Code names each message by a stable key and never compares or matches
+  wording, so rewording a message cannot change what the game does. A rule that treats
+  some refusals specially, such as hiding the obvious ones from the item options, lists
+  keys, and a refusal another rule reacts to carries its key beside its text. See
+  `src/core/coreText.ts`, `coreMessage` and `coreRefusal`, and `src/core/options.ts`,
+  `OBVIOUS`.
+- **Required, with named slots.** One table of keys and slots drives both the schema and
+  the lookup's type, so a key code asks for and content lacks fails validation, not play.
+  A template names the values code fills in, such as `{item}`, and validation rejects one
+  that drops or invents a slot. See `src/core/coreText.ts`, `CORE_MESSAGE_SLOTS`, and
+  `src/core/schema.ts`, `slottedTable`.
+- **Owner rows.** The knockout refusal sits in the body row beside the bleeding refusal,
+  because the body that owns the state words its refusal and needs no registry. The
+  simulation takes the registry so its long actions can word theirs, and it words the
+  death cause that the body and needs report as a key. See `src/core/body.ts`,
+  `Body.actionRefusal` and `Body.advance`, and `src/core/sim.ts`, `SimOptions`.
+
+Internal invariant reasons that only a code defect can produce, such as a missing action
+owner, stay in code: no player meets them, and content would only hide the defect. So do
+the reasons that check saves, placed loot and fitted-item slots against content, since
+they report broken data to a developer, and play only offers fits that already pass them
+(`src/core/magazine.ts`, `slotsReason`).
 
 ## Handling range
 
@@ -430,9 +461,15 @@ Survey the fixture's real-world construction and its authored role before choosi
 
 Choose the structural appearance in content through `src/core/schema.ts`, `FurnitureSchema`, rather than a renderer ID exception. Follow `../../../docs/jsonnet.md`, "Jsonnet authoring", for the source boundary. Derive procedural parts from the definition's dimensions in `src/render/furnitureDetail.ts`, `furnitureDetail`, so the same construction works for differently sized definitions. Keep front relief within the occupied envelope and check rotated facings: protruding decoration would advertise interaction space the picker cannot reach.
 
-Use `packages/deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene, each intact beside its look at every damage step its material authors, so a material's steps can be judged on the furniture that wears them. The tool starts its own development server and takes a screenshot destination as its argument, then optionally the pieces to narrow to; its compare flag stands the plain block each piece drew before its detail at the head of its row, so a look review sees what the detail bought. Its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
+Use `packages/deadvox/tools/furniture-detail-probe.mjs` to inspect the definitions with appearance or door detail together in an isolated lit scene, each intact beside its look at every damage step its material authors, so a material's steps can be judged on the furniture that wears them; a door stands once more open, so its detail is seen to swing with it. The tool starts its own development server and takes a screenshot destination as its argument, then optionally the pieces to narrow to; its compare flag stands the plain block each piece drew before its detail at the head of its row, so a look review sees what the detail bought. Its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
 
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
+
+### Door detail
+
+Doorway leaves and hatches show how they open through their own `door.detail`, not an `appearance` kind: an appearance kind draws a fixed body from the definition's size, while a door's panel is posed per placement, swinging on its hinge or standing up on a hatch's hinge edge. A detail names raised fields, strap hinges on the hinge edge and a handle by the free edge, so a player can tell a door, which side it hangs on and where to take hold of it. Looks are named by how a door is built in `src/content/base/door-detail.libsonnet`; a door picks one and overrides only what its size or build needs, so no renderer code knows a door id. Both faces carry the same detail, because either face of a leaf may be the one a player meets.
+
+The detail replaces the plain panel inside the hinge group, so it swings with the leaf, and a doorway stays one draw. Geometry is cached per definition and panel size, so opening, closing and further copies build nothing. A shut hatch sits down in its frame so its ring and hinges stay within its cells; an open leaf or hatch reaches past them anyway. A body door keeps the handle drawn on its body and takes no detail. A shaped leaf's shape is its look: the detail is optional there, and the lab bulkhead carries its hinges in its shape because its panel lies inside its slab. A decal attached to a detailed door sits on the raised field, not the panel under it. See `src/core/schema.ts`, `DoorDetailSchema`; `src/render/doorDetail.ts`, `doorDetail`; `src/render/furniture.ts`, `FurnitureMeshes`; and `test/doorDetail.test.ts`, "door detail".
 
 ## Furniture solidity
 

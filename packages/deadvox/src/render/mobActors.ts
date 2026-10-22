@@ -1713,10 +1713,12 @@ export class MobActorMeshes implements ZombieRenderer {
   private hasRecentNearStimulus(state: ZombieRenderState, zombie: Zombie): boolean {
     const { stimulusAt, mode, investigationTier } = zombie;
     return (
-      mode === 'investigate' &&
+      (mode === 'hesitate' || mode === 'investigate') &&
       investigationTier === 'near' &&
       stimulusAt !== undefined &&
-      (stimulusAt === state.perceptionSimSeconds || stimulusAt === state.previousPerceptionSimSeconds)
+      (mode === 'hesitate' ||
+        stimulusAt === state.perceptionSimSeconds ||
+        stimulusAt === state.previousPerceptionSimSeconds)
     );
   }
 

@@ -65,6 +65,15 @@ const addItemOutputs = (registry: Registry, items: Set<string>): void => {
         items.add(output);
       }
     }
+    // A default attachment arrives fitted to its host and comes off it as its own item.
+    for (const fitted of registry.models.get(item?.model ?? '')?.gun?.attachments ?? []) {
+      const child = [...registry.items.values()].find(
+        (candidate) => registry.models.get(candidate.model ?? '')?.gun?.attachment?.id === fitted.id,
+      );
+      if (child) {
+        items.add(child.id);
+      }
+    }
   }
 };
 

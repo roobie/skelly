@@ -23,6 +23,8 @@ A craft requires both hands free; stowing is the player's decision. The work ite
 
 Disassembly snapshots yield when work starts, so stopping, skill changes or tool changes cannot alter its promised output. Repair recipes improve an existing target and are not disassembly results. Craft completion awards practice; take-apart does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Books teach recipes; practice may come from any activity. See `src/core/disassembly.ts`, `planDisassembly`, and `src/core/character.ts`, `Character.awardPractice`.
 
+Blades already dull with use, so each wearing blade has two sharpening repairs: a grind at a grinding wheel found in garages and workshops, and a weaker hone with a carried whetstone. A fixed wheel at a base and a weaker field stone make keeping an edge a trip-or-carry decision. See `src/core/wear.ts`, `wearMeleeWeaponOnHit`, and `src/content/base/recipes.libsonnet`, `sharpenRecipes`.
+
 Reading a recipe book progresses only while its page is open. Closing the page pauses work and preserves progress; movement closes it and passes through. Readable-only notes and signs do not create a timed job. See `src/core/bookReading.ts`, `bookReadingHooks`, and `src/game/play.ts`, `stopReadingOnClose`.
 
 ## Long actions
@@ -37,4 +39,4 @@ Cooking uses a lit station for recipes that require heat. Losing it stops the pl
 
 ## Reachability and tests
 
-Validation checks recipe references and reachability from known recipes, components, tools and authored sources. The repair corner demonstrates reachable plans rather than pinning a particular stock catalogue. See `src/core/reachability.ts`, `checkReachability`, and `src/game/testHouse.ts`, `populateTestHouseRepairCorner`.
+Validation checks recipe references and reachability from known recipes, components, tools and authored sources. The repair corner demonstrates reachable plans rather than pinning a particular stock catalogue; it is piles only, so it covers the repairs that need no workstation. See `src/core/reachability.ts`, `checkReachability`, and `src/game/testHouse.ts`, `populateTestHouseRepairCorner`.

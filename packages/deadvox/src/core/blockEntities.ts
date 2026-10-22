@@ -8,6 +8,7 @@ import { solidBlocks } from '../vehicles/solid.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
@@ -794,7 +795,7 @@ export class BlockEntities {
   doorRefusal(entity: BlockEntity, operation: DoorOperation, keys: readonly string[], from?: Vec3): string | undefined {
     const { door } = this.defOf(entity);
     if (!door) {
-      return "It isn't a door";
+      return coreMessage(this.registry, 'notDoor');
     }
     switch (operation) {
       case 'open':
@@ -802,7 +803,8 @@ export class BlockEntities {
       case 'close':
         return this.closeRefusal(entity);
       case 'bar':
-        return this.barRefusal(entity) ?? (entity.open ? 'Close the door first' : entity.bar && "It's already barred");
+        return this.barRefusal(entity) ??
+          (entity.open ? 'Close the door first' : entity.bar && "It's already barred");
       case 'unbar':
         return this.unbarRefusal(entity, from);
       default:
@@ -851,9 +853,9 @@ export class BlockEntities {
 
   private closeRefusal(entity: BlockEntity): string | undefined {
     if (entity.broken) {
-      return "It's broken";
+      return coreMessage(this.registry, 'broken');
     }
-    return entity.open ? undefined : "It's already closed";
+    return entity.open ? undefined : coreMessage(this.registry, 'alreadyClosed');
   }
 
   /** Whether a piece lies on the cells just above a hatch, where its lid would swing. */
@@ -872,18 +874,20 @@ export class BlockEntities {
 
   private lockRefusal(entity: BlockEntity, locked: boolean, keys: readonly string[]): string | undefined {
     if (!entity.lock) {
-      return 'The door has no lock';
+      return coreMessage(this.registry, 'noLock');
     }
     if (entity.open) {
-      return 'Close the door first';
+      return coreMessage(this.registry, 'doorOpen');
     }
     if (keys.length === 0) {
-      return 'Hold the key in your hands';
+      return coreMessage(this.registry, 'noKey');
     }
     if (!keys.includes(entity.lock.id)) {
-      return "The key doesn't fit";
+      return coreMessage(this.registry, 'wrongKey');
     }
-    return entity.lock.locked === locked ? `It's already ${locked ? 'locked' : 'unlocked'}` : undefined;
+    return entity.lock.locked === locked
+      ? coreMessage(this.registry, locked ? 'alreadyLocked' : 'alreadyUnlocked')
+      : undefined;
   }
 
   /** Use closeDoor for a gameplay close, which also checks occupying bodies. */
@@ -936,10 +940,10 @@ export class BlockEntities {
   /** Prying destroys a closed padlock; the door remains unlocked and cannot be relocked. */
   breakLock(entity: BlockEntity): string | undefined {
     if (!(this.defOf(entity).door && entity.lock?.locked)) {
-      return "There's no locked padlock to pry";
+      return coreMessage(this.registry, 'noPadlock');
     }
     if (entity.open) {
-      return 'Close the door first';
+      return coreMessage(this.registry, 'doorOpen');
     }
     entity.lock = undefined;
     this.version += 1;

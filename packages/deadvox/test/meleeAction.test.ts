@@ -45,6 +45,7 @@ const blockedPlayer = {
   movement: 'still' as const,
   lit: false,
   lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
 };
 const playerCombats = new WeakMap<ZombieSystem, PlayerCombat>();
 const combatFor = (system: ZombieSystem): PlayerCombat => playerCombats.get(system)!;

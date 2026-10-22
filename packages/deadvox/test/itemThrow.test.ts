@@ -4,6 +4,7 @@ import type { Registry } from '../src/core/content.ts';
 import type { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import {
+  dragRangeShare,
   hasMetThrowMinimumHold,
   itemFlightPoint,
   throwDistanceForItem,
@@ -21,10 +22,15 @@ const { throwArcHeightMetres: arcHeightMetres } = reachTuning(base);
 const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1 });
 const testRegistry = (weights: Record<string, number>): Registry =>
   ({
-    items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight }])),
+    items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight, size: [1, 1] }])),
     models: new Map(),
     inventory: base.inventory,
   }) as unknown as Registry;
+const stillAir = (registry: Registry): Registry => {
+  const tuning = reachTuning(registry);
+  const throwDrag = { ...tuning.throwDrag, airDensityKgPerCubicMetre: 0 };
+  return { ...registry, inventory: new Map([[tuning.id, { ...tuning, throwDrag }]]) } as Registry;
+};
 const presentationInventory = (item: Item): Inventory => {
   const pile = { pos: [2, 0, 0] as [number, number, number], items: [{ item, x: 0, y: 0, rotated: false }] };
   return {
@@ -67,12 +73,33 @@ describe('held-item throws', () => {
     expect(heavyRange).toBeLessThan(lightRange);
   });
 
-  it('keeps a light item at the tuned maximum range at full charge', () => {
-    const registry = testRegistry({ light: 450 });
+  it('keeps a light item at the tuned maximum range at full charge in still air', () => {
+    const registry = stillAir(testRegistry({ light: 450 }));
 
-    expect(throwDistanceForItem(testItem('light'), registry, tuning, tuning.chargeSimSeconds)).toBe(
+    expect(throwDistanceForItem(testItem('light'), registry, tuning, tuning.chargeSimSeconds)).toBeCloseTo(
       tuning.maximumDistanceMetres,
+      3,
     );
+  });
+
+  it('lands an item of the same mass shorter when it pushes more air', () => {
+    const registry = testRegistry({ compact: 100, flimsy: 100 });
+    registry.items.set('flimsy', { id: 'flimsy', weight: 100, size: [2, 3] } as never);
+    const compactRange = throwDistanceForItem(testItem('compact'), registry, tuning, tuning.chargeSimSeconds);
+    const flimsyRange = throwDistanceForItem(testItem('flimsy'), registry, tuning, tuning.chargeSimSeconds);
+
+    expect(flimsyRange).toBeLessThan(compactRange);
+  });
+
+  it('never lengthens a throw as drag rises, and lands however light the item', () => {
+    // Drag past the stepper's stable limit made the arc diverge and never come back down.
+    const shares = [0, 0.1, 1, 10, 100, 1e3, 1e6].map(dragRangeShare);
+
+    expect(shares[0]).toBeCloseTo(1, 5);
+    for (let index = 1; index < shares.length; index++) {
+      expect(shares[index]).toBeGreaterThan(0);
+      expect(shares[index]).toBeLessThanOrEqual(shares[index - 1]!);
+    }
   });
 
   it('uses the thrown item look, including its fitted magazine', () => {

@@ -346,34 +346,149 @@
       "workstation": "workbench"
     },
     {
-      "components": [
-        [
-          {
-            "count": 2,
-            "item": "wooden_plank"
-          }
-        ]
-      ],
-      "id": "door_bar",
-      "qualities": {
-        "sawing": 1
+      "components": [],
+      "id": "grind_kitchen_knife",
+      "kind": "repair",
+      "qualities": {},
+      "repair": {
+        "amount": 0.5,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
       },
       "result": {
         "count": 1,
-        "item": "door_bar"
+        "item": "kitchen_knife"
       },
       "skills": {
         "crafting": 0
       },
       "timeGameMinutes": 10,
-      "workstation": "workbench"
+      "workstation": "grinding_wheel"
+    },
+    {
+      "components": [],
+      "id": "hone_kitchen_knife",
+      "kind": "repair",
+      "qualities": {
+        "sharpening": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "kitchen_knife"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 20,
+      "workstation": null
+    },
+    {
+      "components": [],
+      "id": "grind_kabar",
+      "kind": "repair",
+      "qualities": {},
+      "repair": {
+        "amount": 0.5,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "kabar"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 10,
+      "workstation": "grinding_wheel"
+    },
+    {
+      "components": [],
+      "id": "hone_kabar",
+      "kind": "repair",
+      "qualities": {
+        "sharpening": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "kabar"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 20,
+      "workstation": null
+    },
+    {
+      "components": [],
+      "id": "grind_machete",
+      "kind": "repair",
+      "qualities": {},
+      "repair": {
+        "amount": 0.5,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "machete"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 10,
+      "workstation": "grinding_wheel"
+    },
+    {
+      "components": [],
+      "id": "hone_machete",
+      "kind": "repair",
+      "qualities": {
+        "sharpening": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "machete"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 20,
+      "workstation": null
     }
   ],
   "skills": [
     {
       "id": "crafting",
       "name": "Crafting",
-      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar"],
+      "startingRecipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "training": {
         "craftingTierOffset": 1
       }
@@ -386,7 +501,10 @@
       "id": "inventory_management",
       "inventory": {
         "handlingFactorFloor": 0,
-        "handlingFactorHalfLifeLevels": 1.1000000000000001
+        "handlingFactorHalfLifeLevels": 1.1000000000000001,
+        "handlingGroundSimSeconds": 1,
+        "handlingPerCellSimSeconds": 0.050000000000000003,
+        "handlingWearSimSeconds": 2
       },
       "name": "Inventory Management (IM)",
       "training": {
@@ -403,6 +521,11 @@
           "adsApertureFill": 0.84999999999999998,
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1000000000000001,
+          "caseEjection": {
+            "flightSimSeconds": 0.47999999999999998,
+            "landingLiftMetres": 0.0060000000000000001,
+            "speedMetresPerSimSecond": 3.5
+          },
           "loweredPitchRadians": 0.55000000000000004,
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
@@ -414,6 +537,7 @@
           "readyMovementRange": 0.34999999999999998,
           "reloadFactorFloor": 0.025000000000000001,
           "reloadFactorHalfLifeLevels": 5,
+          "shotTraceRangeBlocks": 240,
           "skillZeroHandling": {
             "automaticFollowup": {
               "recoilKickScale": 12,

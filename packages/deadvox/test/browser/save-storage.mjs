@@ -1100,6 +1100,8 @@ try {
     process.stdout.write(`${browserName}: in-tab loadout navigation ${JSON.stringify(result)}\n`);
     let restored;
     if (browserName === 'chromium' && result.pagehide?.persisted === true) {
+      // The destination page's own pageshow also writes the marker, so clear it to make the wait mean Back's.
+      await page.evaluate(() => sessionStorage.removeItem('d144-pageshow'));
       await navigationPhase('Back pageshow and quiescence', async () => {
         await navigatePage('navigation-only browser Back', () =>
           page.goBack({ waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS }),
@@ -1107,6 +1109,15 @@ try {
         await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') !== null, undefined, {
           timeout: STAGE_TIMEOUT_MS,
         });
+        const backPageshow = await page.evaluate(() => ({
+          persisted: sessionStorage.getItem('d144-pageshow') === 'true',
+          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
+        }));
+        assert.equal(
+          backPageshow.persisted,
+          true,
+          `Chromium evicted the cached page on Back: ${JSON.stringify(backPageshow.notRestoredReasons)}`,
+        );
         await waitForNavigationIdle();
       });
       restored = await navigationPhase('Back committed record read', () =>

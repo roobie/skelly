@@ -44,12 +44,15 @@ this package may not import deadvox's mesher; see `src/recipe.ts`, `RowSchema`,
 `src/voxelize.ts`, `voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
 
 Four grains, all content values: a coarse one for vehicles, furniture and the parts made
-to attach to them; a fine one for firearms and their magazines; a middle one for every
-other item or component; and a finest one for fine-detail parts. A vehicle part must match
-the grain of the vehicle it sits on, while a tool or a can drawn at that grain collapses to
-a few voxels. A gun needs its own because its small controls are detail at a few
-millimetres that the item grain cannot hold, and a magazine shares its gun's grain so a
-seated magazine matches the receiver's voxels. A sight notch or post is only a few
+to attach to them; a fine one for firearms, their magazines and hand-held items; a middle
+one for every other item or component; and a finest one for fine-detail parts. A vehicle
+part must match the grain of the vehicle it sits on, while a tool or a can drawn at that
+grain collapses to a few voxels. A gun needs its own because its small controls are detail
+at a few millimetres that the item grain cannot hold, and a magazine shares its gun's grain
+so a seated magazine matches the receiver's voxels. A hand-held item (a melee weapon, a
+knife, a wrench, a flashlight, a pipe) takes the gun class as well: it is long and thin,
+and at the item grain a bat's taper and a crowbar's hook read as blunt steps. The larger
+files are accepted. A sight notch or post is only a few
 millimetres wide, so the gun grain fills a notch and a post hides behind its neighbours;
 the finest grain gives those parts voxels small enough to keep them.
 
@@ -64,11 +67,12 @@ and the contract tests read one explicit value. See `tools/jsonnet/lib/voxel-gra
 
 A part asks for the finest grain by carrying a tag in its definition, so the choice sits
 with the part's content and the exporter holds no list of part names. See `src/glb.ts`,
-`VOXEL_DETAIL`, and `gungen/src/gun/parts.ts`, where the sight parts carry it. Every
-grain, an item's own included, must be a whole multiple of the finest, because every lattice is anchored at the
-same world origin and the grains then nest: each coarse voxel face lies on a fine voxel
-face, so a sight still meets the receiver and the gas tube without steps or gaps. The
-exporter refuses grains that do not nest; see `src/glb.ts`, `checkNesting`.
+`VOXEL_DETAIL`, and `gungen/src/gun/parts.ts`, where the sight parts carry it. A row that
+names a detail grain must make its own grain a whole multiple of it, because both lattices
+are anchored at the same world origin and the grains then nest: each coarse voxel face
+lies on a fine voxel face, so a sight still meets the receiver and the gas tube without
+steps or gaps. The exporter refuses a pair that does not nest, and a row without a detail
+grain has nothing to check; see `src/glb.ts`, `checkNesting`.
 
 Every part's voxels sit on one lattice shared by the whole model, not on a lattice of the
 part's own. Parts are placed at fractions of a voxel, and voxels from different lattices
@@ -115,11 +119,11 @@ A voxelized model replaces the smooth one in place rather than shipping beside i
 files per model would need a selector and a second registration for no consumer that
 wants the smooth one.
 
-Voxelized parts show no wear until g89 lands. Wear recolours or removes faces at runtime,
-and a greedy-merged mesh no longer has the grid it edits. g89 adds a second meshing mode
-that gives wear one quad per exposed voxel face, and deadvox's face-to-voxel wear to act on
-it; wear then works at any export grain without extra data. The price is heavier files and
-more triangles.
+Voxelized parts show no wear. Wear recolours or removes faces at runtime, and a
+greedy-merged mesh no longer has the grid it edits. Wear on voxelized parts needs a second
+meshing mode that gives one quad per exposed voxel face, and face-to-voxel wear in deadvox
+to act on it; wear then works at any export grain without extra data. The price is heavier
+files and more triangles.
 
 ## Physical model
 

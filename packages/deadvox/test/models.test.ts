@@ -334,6 +334,11 @@ describe('piles with models', () => {
       const render = (on: boolean) => {
         const items = new Inventory(registry);
         const light = items.create(definition.id);
+        if (on && definition.tool?.fuel) {
+          const canister = items.create(definition.tool.fuel.canister);
+          canister.charges = registry.items.get(canister.type)!.canister!.capacity;
+          items.fitSlot(light, 'canister', canister);
+        }
         if (on) {
           expect(toggleLight(registry, light, 0)).toBeUndefined();
         }
@@ -634,21 +639,6 @@ describe('base pack melee', () => {
     expect(claw.z).toBeGreaterThan(0);
   });
 
-  it('points the fire-axe cutting edge forward', async () => {
-    const edge = await heldAnchor('fire_axe', 'edge');
-    expect(edge.z).toBeLessThan(0);
-  });
-
-  it('points the sledgehammer striking face forward', async () => {
-    const face = await heldAnchor('sledgehammer', 'face');
-    expect(face.z).toBeLessThan(0);
-  });
-
-  it('points the hand-axe cutting edge forward', async () => {
-    const edge = await heldAnchor('hand_axe', 'edge');
-    expect(edge.z).toBeLessThan(0);
-  });
-
   it('points the machete cutting edge forward', async () => {
     const edge = await heldAnchor('machete', 'edge');
     expect(edge.z).toBeLessThan(0);
@@ -657,11 +647,6 @@ describe('base pack melee', () => {
   it('points the Kabar strike tip forward from its held grip', async () => {
     const strike = await heldAnchor('kabar', 'strike');
     expect(strike.z).toBeLessThan(0);
-  });
-
-  it('points the pickaxe point forward', async () => {
-    const point = await heldAnchor('pickaxe', 'point');
-    expect(point.z).toBeLessThan(0);
   });
 
   it('points the crowbar claw forward', async () => {

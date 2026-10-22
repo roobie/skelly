@@ -66,8 +66,7 @@ export const ACTIVE_ZOMBIE_RADIUS_METRES = 40;
 export const BACKGROUND_ZOMBIE_RATE = 2;
 export const BACKGROUND_ZOMBIE_SLICE_COUNT = 30;
 export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_ZOMBIE_SLICE_COUNT;
-const BACKGROUND_STEP_CAP_METRES = 1;
-export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
+export type ZombieMode = 'idle' | 'stroll' | 'hesitate' | 'search' | 'chase' | 'investigate' | 'return';
 export const zombieBodyDimensions = measureZombieBody;
 
 const requiredFigureSeeds = (type: ZombieDef): readonly number[] => {
@@ -75,6 +74,13 @@ const requiredFigureSeeds = (type: ZombieDef): readonly number[] => {
     throw new Error(`Zombie type ${type.id} is missing its authored figureSeeds`);
   }
   return type.figureSeeds;
+};
+
+const requiredGrabBand = (type: ZombieDef): number => {
+  if (type.attack.grabBandMetres === undefined) {
+    throw new Error(`Zombie type ${type.id} is missing its authored attack.grabBandMetres`);
+  }
+  return type.attack.grabBandMetres;
 };
 
 export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
@@ -305,6 +311,9 @@ export interface Zombie {
   idleSoundTimer: number;
   lastVocalNoiseId?: number | undefined;
   modeTimer: number;
+  hesitationFrom?: 'idle' | 'stroll' | undefined;
+  refusedAt?: number | undefined;
+  leanTarget?: Vec3 | undefined;
   searchAnchor?: Vec3 | undefined;
   searchTimer: number;
   searchStrolling: boolean;
@@ -444,6 +453,14 @@ const validShamblerFootstepClock = (clock: ShamblerFootstepClock): boolean =>
   clock.distanceUntilStep > 0 &&
   typeof clock.nextLongStep === 'boolean';
 const validZombieEventState = (zombie: ZombieState): boolean =>
+  (zombie.hesitationFrom === undefined || zombie.hesitationFrom === 'idle' || zombie.hesitationFrom === 'stroll') &&
+  (zombie.mode !== 'hesitate' ||
+    (zombie.hesitationFrom !== undefined &&
+      Number.isFinite(zombie.modeTimer) &&
+      zombie.modeTimer >= 0 &&
+      validVec3State(zombie.lastPerceived!))) &&
+  (zombie.refusedAt === undefined || (Number.isFinite(zombie.refusedAt) && zombie.refusedAt >= 0)) &&
+  (zombie.leanTarget === undefined || validVec3State(zombie.leanTarget)) &&
   (zombie.lastVocalNoiseId === null ||
     (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
   (zombie.stimulusAt === undefined || (Number.isFinite(zombie.stimulusAt) && zombie.stimulusAt >= 0)) &&
@@ -531,8 +548,8 @@ export interface PlayerSense {
   crouching?: boolean | undefined;
   lit: boolean;
   lightSeenFrom: number;
-  eyeHeightMetres?: number | undefined;
-  lightHeightMetres?: number | undefined;
+  /** Also the height of the light the player carries. */
+  eyeHeightMetres: number;
   /** Direct sunlight at the player's position; omitted by isolated perception fixtures. */
   sunlit?: boolean | undefined;
   lightSources?: readonly ZombieLightSource[] | undefined;
@@ -542,7 +559,7 @@ export interface PlayerSense {
 interface ZombieLightSource {
   pos: Vec3;
   seenFrom: number;
-  heightMetres?: number | undefined;
+  heightMetres: number;
   /** Direct sunlight at the source; omitted by isolated perception fixtures. */
   sunlit?: boolean | undefined;
   /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
@@ -805,14 +822,14 @@ interface AttackReachProbe {
   isSolid: SolidAt;
 }
 
-/** A grab reaches horizontally from the body, within a vertical band matching a standing player, chest to chest. */
+/** A grab reaches horizontally from the body, within its type's vertical band, chest to chest. */
 const grabOrigin = (
-  { zombiePos, playerPos, blockSize }: AttackReachProbe,
+  { zombie, zombiePos, playerPos, blockSize }: AttackReachProbe,
   reachMetres: number,
   chestOffset: number,
 ): Vec3 | undefined =>
   horizontalDistance(playerPos, zombiePos) * blockSize > reachMetres ||
-  Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= 1.7
+  Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= requiredGrabBand(zombie.type)
     ? undefined
     : [zombiePos[0], zombiePos[1] + chestOffset, zombiePos[2]];
 
@@ -865,8 +882,7 @@ const spitOrigin = (zombiePos: Vec3, blockSize: number): Vec3 => [
 
 /** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
 const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
-  const metres =
-    player.eyeHeightMetres === undefined ? PLAYER_CHEST_METRES : player.eyeHeightMetres * tuning.chestEyeFraction;
+  const metres = player.eyeHeightMetres * tuning.chestEyeFraction;
   return [player.pos[0], player.pos[1] + metres / blockSize, player.pos[2]];
 };
 
@@ -1058,7 +1074,6 @@ interface ZombieTickScratch {
   lightTarget?: Vec3 | undefined;
   vocal?: HeardNoise | undefined;
   tier?: HearingTier | undefined;
-  wasAware: boolean;
   target: Vec3;
   direction: Vec3;
   aimDirection?: Vec3 | undefined;
@@ -1102,7 +1117,6 @@ const createZombieTickScratch = (): ZombieTickScratch => ({
   lightTarget: undefined,
   vocal: undefined,
   tier: undefined,
-  wasAware: false,
   target: [0, 0, 0],
   direction: [0, 0, 0],
   aimDirection: undefined,
@@ -1160,7 +1174,7 @@ const hearingTier = ({
   if (distance > range * zombie.hearingModel.farMultiplier) {
     return undefined;
   }
-  const earOffset = 1.3 / blockSize;
+  const earOffset = zombie.earHeightMetres / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [player.pos[0], player.pos[1] + earOffset, player.pos[2]];
   const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
@@ -1237,7 +1251,7 @@ export const hearVocalNoise = ({
   if (distance > noise.radiusMetres * zombie.hearing * zombie.hearingModel.farMultiplier) {
     return undefined;
   }
-  const earOffset = 1.3 / blockSize;
+  const earOffset = zombie.earHeightMetres / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [noise.pos[0], noise.pos[1] + earOffset, noise.pos[2]];
   const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
@@ -1285,17 +1299,11 @@ const seesPlayer = ({
   if (metres > maximumRange) {
     return false;
   }
-  const rayOrigin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
-  const eyeHeight = player.eyeHeightMetres ?? 1.3;
-  const lightHeight = player.lightHeightMetres ?? eyeHeight;
-  const clearAtHeight = (heightMetres: number): boolean => {
-    const rayTarget: Vec3 = [player.pos[0], player.pos[1] + heightMetres / blockSize, player.pos[2]];
-    const toTarget = sub(rayTarget, rayOrigin);
-    return raycast(rayOrigin, unit(toTarget), Math.hypot(...toTarget), isSolid) === undefined;
-  };
-  const clear = clearAtHeight(eyeHeight);
-  const lightClear = !player.lit || clearAtHeight(lightHeight);
-  if (player.lit && lightClear && playerLightScale > 0) {
+  const rayOrigin: Vec3 = [from[0], from[1] + zombie.eyeHeightMetres / blockSize, from[2]];
+  const rayTarget: Vec3 = [player.pos[0], player.pos[1] + player.eyeHeightMetres / blockSize, player.pos[2]];
+  const toTarget = sub(rayTarget, rayOrigin);
+  const clear = raycast(rayOrigin, unit(toTarget), Math.hypot(...toTarget), isSolid) === undefined;
+  if (player.lit && clear && playerLightScale > 0) {
     sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale * lightSpotScale);
   } else if (player.crouching) {
     sightRange *= tuning.crouch.sightRangeScale;
@@ -1339,9 +1347,8 @@ const canSeeLight = ({
   if (dot < Math.cos((zombie.sightCone * Math.PI) / 180)) {
     return undefined;
   }
-  const origin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
-  const height = source.heightMetres ?? 0.15;
-  const target: Vec3 = [source.pos[0], source.pos[1] + height / blockSize, source.pos[2]];
+  const origin: Vec3 = [from[0], from[1] + zombie.eyeHeightMetres / blockSize, from[2]];
+  const target: Vec3 = [source.pos[0], source.pos[1] + source.heightMetres / blockSize, source.pos[2]];
   const ray = sub(target, origin);
   return raycast(origin, unit(ray), Math.hypot(...ray), isOpaque) === undefined ? distance : undefined;
 };
@@ -1400,6 +1407,9 @@ const zombieSnapshotFields = [
   'idleSoundTimer',
   'lastVocalNoiseId',
   'modeTimer',
+  'hesitationFrom',
+  'refusedAt',
+  'leanTarget',
   'searchAnchor',
   'searchTimer',
   'searchStrolling',
@@ -1504,6 +1514,9 @@ const zombieSnapshotProjectors = {
   idleSoundTimer: (zombie) => zombie.idleSoundTimer,
   lastVocalNoiseId: (zombie) => zombie.lastVocalNoiseId ?? null,
   modeTimer: (zombie) => zombie.modeTimer,
+  hesitationFrom: (zombie) => zombie.hesitationFrom,
+  refusedAt: (zombie) => zombie.refusedAt,
+  leanTarget: (zombie) => (zombie.leanTarget === undefined ? undefined : copy(zombie.leanTarget)),
   searchAnchor: (zombie) => (zombie.searchAnchor === undefined ? undefined : [...zombie.searchAnchor]),
   searchTimer: (zombie) => zombie.searchTimer,
   searchStrolling: (zombie) => zombie.searchStrolling,
@@ -1626,6 +1639,7 @@ export class ZombieSystem {
     return this.globs.map(({ state }) => state);
   }
   private readonly tickScratch = createZombieTickScratch();
+  private readonly chainStimuli: { caller: Zombie; origin: Vec3; target: Vec3 }[] = [];
   private readonly hordes = new Map<string, { state: Omit<HordeState, 'rng'>; rng: Rng }>();
   private frozen = false;
   private readonly solidBricks: SolidBricks;
@@ -2026,6 +2040,16 @@ export class ZombieSystem {
     const { type, body, home, behaviorRng } = zombie;
     const duration = inRange(behaviorRng, type.wander.strollSimSeconds);
     let heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
+    if (zombie.leanTarget) {
+      const toward = unit(sub(zombie.leanTarget, body.pos));
+      const weight = type.hearingModel.refusalLean;
+      heading = unit([
+        heading[0] * (1 - weight) + toward[0] * weight,
+        0,
+        heading[2] * (1 - weight) + toward[2] * weight,
+      ]);
+      zombie.leanTarget = undefined;
+    }
     const endpoint: Vec3 = [
       body.pos[0] + (heading[0] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
       body.pos[1],
@@ -2242,9 +2266,10 @@ export class ZombieSystem {
     };
     const rng = Rng.stream(this.options.seed ?? 0, `horde:${id}`);
     this.hordes.set(id, { state, rng });
+    const { innerMetres, stepMetres } = type.hordeSpacing;
     for (let index = 0; index < count; index++) {
       const angle = index * Math.PI * (3 - Math.sqrt(5));
-      const radiusMetres = 0.35 + 0.38 * Math.sqrt(index);
+      const radiusMetres = innerMetres + stepMetres * Math.sqrt(index);
       const offset: Vec3 = [
         (Math.cos(angle) * radiusMetres) / this.options.blockSize,
         0,
@@ -2409,10 +2434,10 @@ export class ZombieSystem {
     scratch.blockSize = blockSize;
     scratch.isSolid = isSolid;
     scratch.isOpaque = this.options.isOpaque;
-    for (const [id, zombie] of this.store.entries()) {
-      if (zombie.tier !== 'background' || id % sliceCount !== sliceIndex) {
-        continue;
-      }
+    const entries = [...this.store.entries()].filter(
+      ([id, zombie]) => zombie.tier === 'background' && id % sliceCount === sliceIndex,
+    );
+    for (const [id, zombie] of entries) {
       this.captureRenderPrevious(zombie, time);
       if (zombie.incapacitated) {
         this.tickIncapacitated(zombie, dt);
@@ -2427,7 +2452,19 @@ export class ZombieSystem {
       this.updatePerception();
       this.updateAttention();
       this.forgetIndividualStimulus(zombie, time);
-      let target = this.hordeTarget(zombie) ?? zombie.lastPerceived;
+    }
+    this.processChainStimuli(time);
+    for (const [id, zombie] of entries) {
+      if (zombie.incapacitated) {
+        continue;
+      }
+      scratch.id = id;
+      scratch.zombie = zombie;
+      scratch.pos = zombie.body.pos;
+      scratch.type = zombie.type;
+      scratch.rng = zombie.behaviorRng;
+      let target = zombie.mode === 'hesitate' ? undefined : (this.hordeTarget(zombie) ?? zombie.lastPerceived);
+      scratch.sees = zombie.mode === 'chase';
       if (scratch.sees) {
         target = player.pos;
       }
@@ -2439,7 +2476,11 @@ export class ZombieSystem {
         direction = distance > 0.5 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
         speed =
           distance > 0.5
-            ? Math.min(zombie.type.speed.chaseMetresPerSimSecond, BACKGROUND_STEP_CAP_METRES / dt, distance / dt)
+            ? Math.min(
+                zombie.type.speed.chaseMetresPerSimSecond,
+                zombie.type.speed.backgroundStepMetres / dt,
+                distance / dt,
+              )
             : 0;
         if (direction[0] !== 0 || direction[2] !== 0) {
           zombie.facing = copy(direction);
@@ -2555,14 +2596,108 @@ export class ZombieSystem {
       });
     }
     scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));
-    scratch.wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
-    if ((scratch.sees || scratch.tier || scratch.lightTarget) && !scratch.wasAware) {
-      this.options.onSound?.(type.sounds.alert, copy(pos), zombie);
+  }
+
+  private tickHesitation(): boolean {
+    const { zombie, time, sees, player, lightTarget, dt, vocal } = this.tickScratch;
+    const loud = vocal && player.vocalNoise!.radiusMetres >= zombie.type.hearingModel.loudNoiseRadiusMetres;
+    if (sees || loud || lightTarget || zombie.hordeId !== undefined) {
+      return false;
+    }
+    zombie.modeTimer = Math.max(0, zombie.modeTimer - dt);
+    if (zombie.modeTimer > 0) {
+      return true;
+    }
+    if (zombie.hesitationFrom === 'stroll') {
+      zombie.mode = 'investigate';
+      zombie.stimulusAt = time;
+    } else {
+      zombie.leanTarget = copy(zombie.lastPerceived!);
+      zombie.refusedAt = time;
+      zombie.lastPerceived = undefined;
+      zombie.stimulusAt = undefined;
+      this.beginIdle(zombie);
+    }
+    zombie.hesitationFrom = undefined;
+    this.announcePursuit('hesitate');
+    return true;
+  }
+
+  private updateAttention(): void {
+    const { zombie, time, sees, tier, player, lightTarget } = this.tickScratch;
+    const previous = zombie.mode;
+    if (previous === 'hesitate' && this.tickHesitation()) {
+      return;
+    }
+    this.resolveAttention();
+    const suspicious =
+      zombie.refusedAt !== undefined && time - zombie.refusedAt < zombie.type.hearingModel.refusalSuspicionSimSeconds;
+    if (
+      (previous === 'idle' || previous === 'stroll') &&
+      zombie.mode === 'investigate' &&
+      tier &&
+      this.tickScratch.vocal &&
+      !sees &&
+      !lightTarget &&
+      zombie.hordeId === undefined &&
+      !suspicious &&
+      player.vocalNoise!.radiusMetres < zombie.type.hearingModel.loudNoiseRadiusMetres
+    ) {
+      zombie.hesitationFrom = previous;
+      zombie.mode = 'hesitate';
+      zombie.modeTimer = inRange(zombie.behaviorRng, zombie.type.hearingModel.hesitationSimSeconds);
+    }
+    if (zombie.mode !== 'hesitate') {
+      zombie.hesitationFrom = undefined;
+    }
+    this.announcePursuit(previous);
+  }
+
+  private announcePursuit(previous: ZombieMode): void {
+    const { zombie, pos } = this.tickScratch;
+    if (
+      (zombie.mode === 'chase' || zombie.mode === 'investigate') &&
+      previous !== 'chase' &&
+      previous !== 'investigate'
+    ) {
+      zombie.leanTarget = undefined;
+      this.options.onSound?.(zombie.type.sounds.alert, copy(pos), zombie);
+      this.chainStimuli.push({ caller: zombie, origin: copy(pos), target: copy(zombie.lastPerceived!) });
     }
   }
 
+  private processChainStimuli(time: number): void {
+    // Drain to closure before movement so entity iteration cannot delay a later caller's listeners.
+    for (const stimulus of this.chainStimuli) {
+      const { chainRadiusMetres, chainChance } = stimulus.caller.type.hearingModel;
+      for (const [, zombie] of this.store.entries()) {
+        if (
+          zombie.incapacitated ||
+          zombie.mode === 'chase' ||
+          zombie.mode === 'investigate' ||
+          horizontalDistance(zombie.body.pos, stimulus.origin) * this.options.blockSize > chainRadiusMetres ||
+          zombie.soundRng.next() >= chainChance
+        ) {
+          continue;
+        }
+        zombie.mode = 'investigate';
+        zombie.hesitationFrom = undefined;
+        zombie.investigationTier = 'far';
+        zombie.searchAnchor = undefined;
+        zombie.searchTimer = 0;
+        zombie.searchStrolling = false;
+        zombie.leanTarget = undefined;
+        zombie.lastPerceived = copy(stimulus.target);
+        zombie.stimulusAt = time;
+        this.options.onSound?.(zombie.type.sounds.alert, copy(zombie.body.pos), zombie);
+        this.chainStimuli.push({ caller: zombie, origin: copy(zombie.body.pos), target: copy(stimulus.target) });
+      }
+    }
+    this.chainStimuli.length = 0;
+  }
+
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Preserve precedence between sight, near/far noise, prior chase, and horde attention.
-  private updateAttention(): void {
+  private resolveAttention(): void {
     const scratch = this.tickScratch;
     const { zombie, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
     if (sees) {
@@ -2586,7 +2721,10 @@ export class ZombieSystem {
       zombie.searchTimer = 0;
       zombie.searchStrolling = false;
       zombie.lastPerceived = copy(lightTarget);
-    } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search')) {
+    } else if (
+      tier === 'far' &&
+      (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search' || zombie.mode === 'hesitate')
+    ) {
       zombie.mode = 'investigate';
       zombie.investigationTier = 'far';
       zombie.searchAnchor = undefined;
@@ -2689,6 +2827,16 @@ export class ZombieSystem {
     scratch.wanderingAtTickStart = zombie.obstacleWanderRemaining > 0;
     this.updateIdleSound();
     switch (zombie.mode) {
+      case 'hesitate': {
+        const bearing = angleOf(sub(zombie.lastPerceived!, zombie.body.pos));
+        zombie.headYawTarget = bearing - angleOf(zombie.facing);
+        zombie.headYaw = approachAngle(
+          zombie.headYaw,
+          zombie.headYawTarget,
+          (zombie.type.wander.headTurnDegreesPerSimSecond * Math.PI * scratch.dt) / 180,
+        );
+        return;
+      }
       case 'idle':
         this.selectIdleIntent();
         return;
@@ -3303,7 +3451,18 @@ export class ZombieSystem {
       this.updatePerception();
       this.updateAttention();
       this.forgetIndividualStimulus(zombie, time);
-
+    }
+    this.processChainStimuli(time);
+    for (const [id, zombie] of entries) {
+      if (zombie.incapacitated) {
+        continue;
+      }
+      scratch.id = id;
+      scratch.zombie = zombie;
+      scratch.pos = zombie.body.pos;
+      scratch.type = zombie.type;
+      scratch.rng = zombie.behaviorRng;
+      scratch.sees = zombie.mode === 'chase';
       this.checkInvestigationArrival();
 
       this.selectMovementIntent();

@@ -14,12 +14,15 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
-const player = (pos: Vec3): { pos: Vec3; facing: Vec3; movement: 'still'; lit: false; lightSeenFrom: number } => ({
+const player = (
+  pos: Vec3,
+): { pos: Vec3; facing: Vec3; movement: 'still'; lit: false; lightSeenFrom: number; eyeHeightMetres: number } => ({
   pos,
   facing: [0, 0, -1],
   movement: 'still',
   lit: false,
   lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
 });
 const makeSystem = (
   target: Vec3,

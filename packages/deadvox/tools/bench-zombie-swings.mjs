@@ -13,7 +13,7 @@ const server = await createServer({
 try {
   const { buildRegistry } = await server.ssrLoadModule('/src/core/content.ts');
   const { ZombieSystem } = await server.ssrLoadModule('/src/core/zombies.ts');
-  const { physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
+  const { PLAYER, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
   const { makeScale } = await server.ssrLoadModule('/src/core/scale.ts');
   const contentDirectory = resolve(projectRoot, 'src/content/base');
   const { registry } = buildRegistry(
@@ -30,6 +30,7 @@ try {
     movement: 'still',
     lit: false,
     lightSeenFrom: 0,
+    eyeHeightMetres: PLAYER.eye,
   };
   const zombies = new ZombieSystem({
     seed: 41,

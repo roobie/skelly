@@ -1,0 +1,11 @@
+{
+  "id": "hammer",
+  "file": "assets/models/hammer.glb",
+  "parts": {
+    "hammer": {
+      "node": "hammer:hammer",
+      "massKg": 0.7,
+      "centreOfMass": [-0.004246817930271172, -0.007920468021187444, -0.0005342714839117716]
+    }
+  }
+}

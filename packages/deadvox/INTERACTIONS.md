@@ -36,7 +36,7 @@ Reading a recipe book is a long action only while its page is open. Closing it p
 
 Finishing a craft consumes escrow once and creates the result; cancellation returns the exact input identities. Disassembly snapshots its yield when work begins, so stopping and resuming cannot change the promised output after a skill or tool change. Repair recipes improve an existing target and are not disassembly results. See `src/core/disassembly.ts`, `planDisassembly`.
 
-Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. Any future activity-tier restriction is triggered by #275.
+Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. A tiered activity trains a skill only up to its tier, and practice at or above that tier is dropped, so repeating easy work cannot carry a skill upward; see `src/core/character.ts`, `Character.awardPractice`, and `src/content/base/recipes.libsonnet`, `training`.
 
 ## Long actions and interruptions
 
@@ -58,6 +58,6 @@ Only traps inside the block of nine regions around the player spring, and the te
 
 An appliance is a block entity whose behavior comes from components, not its id. Containers own pockets; controls issue commands; workstations provide recipe qualities; processes run without the player; power joins the electricity graph.
 
-A process runs while its chunk is loaded and catches up when it loads again. Settle its state at every rate change before applying the new rate; otherwise unloaded time can disagree with live ticking. Inside the block around the player, test catch-up against ordinary ticking, including a rate change; beyond it, test that the coarse result is deterministic. See [ADR 0008](docs/decisions/0008-deterministic-world.md). Appliance controls, processes and power are Slice 5 work.
+A process runs while its chunk is loaded and catches up when it loads again. Settle its state at every rate change before applying the new rate; otherwise unloaded time can disagree with live ticking. Inside the block around the player, test catch-up against ordinary ticking, including a rate change; beyond it, test that the coarse result is deterministic. See [ADR 0008](docs/decisions/0008-deterministic-world.md). The electricity graph is built (`src/core/power.ts`, `PowerNetwork`); appliance controls and unattended processes are still open, so these are their rules, not a description of code.
 
 Cooking uses a lit workstation when its recipe requires heat. A player craft stops if that requirement is lost; a process owned by an appliance does not occupy the player's hands or require compression.

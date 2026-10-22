@@ -46,6 +46,7 @@ const player = (): PlayerSense => ({
   movement: 'still',
   lit: false,
   lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
 });
 const system = (
   sense: () => PlayerSense = player,
@@ -497,7 +498,7 @@ describe('amalgam body and combat seam', () => {
     const noisyPlayer: PlayerSense = {
       ...player(),
       pos: [1000, 1, 1000],
-      vocalNoise: { id: 1, pos: [4, 1, 0], radiusMetres: 12, expiresAt: 10 },
+      vocalNoise: { id: 1, pos: [4, 1, 0], radiusMetres: type.hearingModel.loudNoiseRadiusMetres, expiresAt: 10 },
     };
     let heardBody = false;
     const hearingSystem = new ZombieSystem({

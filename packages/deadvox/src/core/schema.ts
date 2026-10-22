@@ -51,6 +51,7 @@ import {
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS, SLOT_PATTERN } from './coreText.ts';
 import { DAY_PHASES } from './dayPhase.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
@@ -75,7 +76,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
-import { TREE_SHAPES } from './treeShapes.ts';
+import { TREE_SHAPES, type TreeShape } from './treeShapes.ts';
 import { WEATHERING_RANGES } from './weather.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
@@ -327,6 +328,12 @@ const InventoryTuningSchema = strictObject({
   throwFlightSimSeconds: Positive,
   /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
   throwArcHeightMetres: NonNegative,
+  /** Air resistance on a thrown item (`DESIGN.md`, "Held-item throws"). */
+  throwDrag: strictObject({
+    airDensityKgPerCubicMetre: NonNegative,
+    /** Drag coefficient against the item's footprint area; it folds in the shape and how much of the footprint faces the air. */
+    footprintDragCoefficient: NonNegative,
+  }),
   /** Carrying furniture in both hands (`DESIGN.md`, "Moving furniture"). */
   furnitureMove: strictObject({
     /** The largest piece the player can lift, along each side. */
@@ -347,6 +354,29 @@ const InventoryTuningSchema = strictObject({
   }),
 });
 
+/** Text whose `{slot}` names are exactly `slots`, so a template can't drop or invent what code fills in. */
+const slotted = (slots: readonly string[]) =>
+  pipe(
+    Name,
+    check(
+      (text) => {
+        const named = new Set([...text.matchAll(SLOT_PATTERN)].map(([, slot]) => slot));
+        return named.size === slots.length && slots.every((slot) => named.has(slot));
+      },
+      slots.length === 0
+        ? 'must not name a {slot}'
+        : `must name exactly ${slots.map((slot) => `{${slot}}`).join(', ')}`,
+    ),
+  );
+
+const slottedTable = <K extends string>(slots: Readonly<Record<K, readonly string[]>>) =>
+  strictObject(
+    Object.fromEntries(Object.entries<readonly string[]>(slots).map(([key, names]) => [key, slotted(names)])) as Record<
+      K,
+      ReturnType<typeof slotted>
+    >,
+  );
+
 const UiTuningSchema = strictObject({
   id: Id,
   /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
@@ -355,6 +385,8 @@ const UiTuningSchema = strictObject({
   hudScale: Positive,
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: picklist(SOUND_EVENT_IDS),
+  /** The audio options' volumes before the player saves any. */
+  audioVolumes: strictObject({ master: Fraction, world: Fraction, body: Fraction, ui: Fraction }),
   /** What the rest card calls each kind of rest. */
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
@@ -390,6 +422,10 @@ const UiTuningSchema = strictObject({
   }),
   /** What the item action list calls an action whose wording does not depend on the item or wound. */
   itemActionLabels: strictObject({ stripRound: Name }),
+  /** Core's refusals and notices, by the key code asks for. */
+  coreMessages: slottedTable(CORE_MESSAGE_SLOTS),
+  /** What core's item, door and work options are called, by the key code asks for. */
+  coreActionLabels: slottedTable(CORE_LABEL_SLOTS),
   /** What the inventory screen calls each wear slot. */
   wearSlotLabels: strictObject({
     head: Name,
@@ -602,6 +638,8 @@ const FirearmSchema = strictObject({
   shotSound: Id,
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
   suppressedShotSound: optional(Id),
+  /** Low-frequency layer played with the shot, for a gun whose report needs more body than one recording has; skipped while suppressed. */
+  shotBodySound: optional(Id),
   /** Trigger pulled on an empty chamber; absent stays silent. */
   dryFireSound: optional(Id),
   /** The trigger pull cocks the hammer itself (double action), so every empty pull clicks; otherwise only working the action re-cocks it. */
@@ -783,17 +821,25 @@ const TrapSchema = strictObject({
   zombieLegDamage: NonNegative,
 });
 
-const FirearmAttachmentEffectsSchema = strictObject({
-  /** Fraction of the firearm's committed recoil kick removed at full condition. */
-  recoilReduction: optional(Fraction),
-  /** Condition lost per committed shot; absent means the attachment does not wear. */
-  wearPerShot: optional(Fraction),
-  /** Multipliers applied to the existing aim and stance response. */
-  swayScale: optional(Positive),
-  recoveryScale: optional(Positive),
-  raiseScale: optional(Positive),
-  swingScale: optional(Positive),
-});
+/** Tagged with its model's attachment kind, so each kind authors every effect it has and no other. */
+const FirearmAttachmentEffectsSchema = variant('kind', [
+  strictObject({
+    kind: literal('suppressor'),
+    /** Fraction of the firearm's committed recoil kick removed at full condition. */
+    recoilReduction: Fraction,
+    /** Condition lost per committed shot; zero means the attachment does not wear. */
+    wearPerShot: Fraction,
+  }),
+  strictObject({
+    kind: literal('foregrip'),
+    /** Multipliers applied to the existing aim and stance response. */
+    swayScale: Positive,
+    recoveryScale: Positive,
+    raiseScale: Positive,
+    swingScale: Positive,
+    wearPerShot: Fraction,
+  }),
+]);
 
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
@@ -1264,7 +1310,7 @@ const AttachmentSightSchema = strictObject({
 });
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
-  kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
+  kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip', 'muzzle-device']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
   mountFrame: strictObject({ normal: UnitVector, up: UnitVector }),
   properties: AttachmentPropertiesSchema,
@@ -1276,7 +1322,14 @@ const attachmentSpanCheck = check(
   attachmentSpanMatchesMount,
   'rail attachments need a notch span and muzzle attachments cannot have one',
 );
-const AttachmentSchema = pipe(AttachmentFieldsSchema, attachmentSpanCheck);
+const AttachmentSchema = pipe(
+  AttachmentFieldsSchema,
+  attachmentSpanCheck,
+  check(
+    ({ kind, properties }) => (kind === 'suppressor') === (properties.noiseFactor !== undefined),
+    'suppressors need a noise factor and other attachments cannot have one',
+  ),
+);
 const FittedAttachmentSchema = pipe(
   strictObject({
     ...AttachmentFieldsSchema.entries,
@@ -1483,6 +1536,29 @@ const DoorForcingSchema = pipe(
   ),
 );
 
+/** How a doorway leaf or hatch reads as one that opens; lengths are in metres (`docs/content.md`, "Door detail"). */
+const DoorDetailSchema = strictObject({
+  /** Colour of the handle and hinges. */
+  hardware: Color,
+  /** How far the fields stand off each face of the leaf. */
+  relief: Positive,
+  /** Bare border round the fields, and the gap between them; both show the leaf's darker core. */
+  frame: NonNegative,
+  seam: NonNegative,
+  /** Raised fields across the leaf from its hinge edge, and along that edge. */
+  fields: tuple([pipe(Count, minValue(1, 'must be at least 1')), pipe(Count, minValue(1, 'must be at least 1'))]),
+  /** Strap hinges lying on both faces from the hinge edge. */
+  hinges: strictObject({ count: Count, length: Positive, width: Positive }),
+  /** On both faces: its grip centre lies `fromFreeEdge` in from the free edge and `along` the length of the hinge edge. */
+  handle: strictObject({
+    kind: picklist(['knob', 'lever', 'pull', 'bar', 'ring']),
+    fromFreeEdge: Positive,
+    along: Fraction,
+    length: Positive,
+    thickness: Positive,
+  }),
+});
+
 const FurnitureShapeBoxSchema = strictObject({
   /** Lower corner in the furniture's cell coordinates. */
   position: tuple([NonNegative, NonNegative, NonNegative]),
@@ -1524,6 +1600,7 @@ const FurnitureSchema = pipe(
         hatch: optional(literal(true)),
         /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
         barredFrom: optional(picklist(['front', 'back'])),
+        detail: optional(DoorDetailSchema),
       }),
     ),
     /**
@@ -1634,6 +1711,11 @@ const FurnitureSchema = pipe(
     'appearance needs a plain container without a shape, door or readable',
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
+  // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: a body door is the front of its own drawn body.
+  check(
+    ({ door, shape, container }) => !door?.detail || shape === undefined || container === undefined,
+    'a body door draws its handle on its body, so door detail belongs only on doorway leaves and hatches',
+  ),
   // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: any other door breaks instead of being ruined.
   check(
     ({ ruin, door, shape, container }) => !(ruin && door) || (shape !== undefined && container !== undefined),
@@ -1710,6 +1792,8 @@ const FixedLootItem = strictObject({
   placement: optional(picklist(['surface', 'container'], 'placement must be surface or container')),
   /** Item types fitted at spawn, by slot id: a found gun that comes with its sling. */
   fitted: optional(record(Id, Id)),
+  /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
+  charge: optional(Fraction),
 });
 const GroundLootSupplySchema = union([
   strictObject({ kind: literal('empty') }),
@@ -2105,6 +2189,16 @@ const SiteLayoutSchema = strictObject({
   ),
   /** Observation only: playtest metrics record when the player first stands in each beat's area. */
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
+  /** Practice's optional modules: the items each teaches and the labels its steps show. */
+  practice: optional(
+    strictObject({
+      light: strictObject({
+        light: Id,
+        battery: Id,
+        labels: strictObject({ start: Name, on: Name, assign: Name, swap: Name, relight: Name }),
+      }),
+    }),
+  ),
 });
 
 const PoolRefSchema = union([KitRefSchema, strictObject({ kind: literal('template'), id: Id, style: optional(Id) })]);
@@ -2510,8 +2604,12 @@ const ZombieSchema = strictObject({
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
   /** Fraction of acid damage resisted, whatever the region; 1 is immune and omitted is neutral. */
   acidResistance: optional(Fraction),
-  /** Metres per Sim second. */
-  speed: strictObject({ wanderMetresPerSimSecond: SimRate, chaseMetresPerSimSecond: SimRate }),
+  speed: strictObject({
+    wanderMetresPerSimSecond: SimRate,
+    chaseMetresPerSimSecond: SimRate,
+    /** The farthest one background-tier tick moves it toward its target. */
+    backgroundStepMetres: Positive,
+  }),
   /** Metres advanced by one half-cycle of the leg gait. */
   stepLength: Positive,
   /** Surface-step sound family for grounded travel; omitted types do not emit footfalls. */
@@ -2539,6 +2637,12 @@ const ZombieSchema = strictObject({
   stimulusMemorySimSeconds: Positive,
   /** Half-angle of the sight cone, in degrees. */
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
+  /** Height above its feet that it sees from. */
+  eyeHeightMetres: Positive,
+  /** Height above its feet that it hears at; a sound's occlusion line runs level from the source at this height. */
+  earHeightMetres: Positive,
+  /** A horde of this type stands on a golden-angle spiral whose radius grows from `innerMetres` by `stepMetres` × √member. */
+  hordeSpacing: strictObject({ innerMetres: NonNegative, stepMetres: Positive }),
   /** Idle/stroll timing, home leash and eased look controls. */
   wander: strictObject({
     obstacleWanderChance: Fraction,
@@ -2571,10 +2675,20 @@ const ZombieSchema = strictObject({
       farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
       bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
       investigationDistanceMetres: Positive,
+      loudNoiseRadiusMetres: Positive,
+      hesitationSimSeconds: SimDurationRange,
+      refusalSuspicionSimSeconds: PositiveSimSeconds,
+      refusalLean: Fraction,
+      chainRadiusMetres: NonNegative,
+      chainChance: Fraction,
       searchSimSeconds: SimDurationRange,
       searchRadiusMetres: Positive,
       searchStrollSimSeconds: SimDurationRange,
     }),
+    check(
+      (model) => model.hesitationSimSeconds.min <= model.hesitationSimSeconds.max,
+      'minimum hesitation must not exceed maximum',
+    ),
     check(
       (model) => model.searchSimSeconds.min <= model.searchSimSeconds.max,
       'minimum search duration must not exceed maximum',
@@ -2618,6 +2732,8 @@ const ZombieSchema = strictObject({
       reach: Positive,
       cooldownSimSeconds: PositiveSimSeconds,
       windupSimSeconds: PositiveSimSeconds,
+      /** A grab lands only while the player's feet are less than this far above or below its own. */
+      grabBandMetres: optional(Positive),
       moves: ZombieMovesSchema,
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
@@ -2700,6 +2816,9 @@ const SkillSchema = pipe(
       strictObject({
         handlingFactorFloor: Fraction,
         handlingFactorHalfLifeLevels: Positive,
+        handlingPerCellSimSeconds: NonNegative,
+        handlingGroundSimSeconds: NonNegative,
+        handlingWearSimSeconds: NonNegative,
       }),
     ),
     combat: optional(
@@ -2729,6 +2848,13 @@ const SkillSchema = pipe(
             rackFactorHalfLifeLevels: Positive,
             attachmentFactorFloor: Fraction,
             attachmentFactorHalfLifeLevels: Positive,
+            caseEjection: strictObject({
+              speedMetresPerSimSecond: Positive,
+              flightSimSeconds: PositiveSimSeconds,
+              /** A landed case rests this far above its settled voxel surface, so it never z-fights the floor. */
+              landingLiftMetres: NonNegative,
+            }),
+            shotTraceRangeBlocks: Positive,
           }),
         ),
         melee: optional(
@@ -2783,6 +2909,41 @@ const SkillSchema = pipe(
     'inventory-management handling activity must be untiered',
   ),
 );
+/** Tree shapes in metres from the trunk's foot, built from half-metre slices (`src/core/vegetation.ts`, `treeShapes`). */
+const TreeCrownSchema = variant('kind', [
+  /** Leaves filling an ellipsoid around the trunk. */
+  strictObject({
+    kind: literal('ellipsoid'),
+    centreMetres: PositiveMetres,
+    radiiMetres: tuple([PositiveMetres, PositiveMetres, PositiveMetres]),
+  }),
+  /** Square leaf layers from `baseMetres` up to `topMetres`, narrowing by `taper` metres per metre of height. */
+  strictObject({
+    kind: literal('cone'),
+    baseMetres: NonNegative,
+    topMetres: PositiveMetres,
+    taper: Positive,
+    minHalfWidthMetres: PositiveMetres,
+  }),
+]);
+
+const TreeShapeSchema = pipe(
+  strictObject({ crown: TreeCrownSchema, heightMetres: PositiveMetres, branchReachMetres: PositiveMetres }),
+  check(({ crown }) => crown.kind !== 'cone' || crown.baseMetres < crown.topMetres, 'cone base must be below top'),
+);
+
+const TreesSchema = strictObject({
+  trunkHalfWidthMetres: PositiveMetres,
+  /** Two crossed branch layers, each this thick, the upper one this far below the trunk top. */
+  branchLayer: strictObject({ topDropMetres: NonNegative, thicknessMetres: PositiveMetres }),
+  shapes: strictObject(
+    Object.fromEntries(TREE_SHAPES.map((shape) => [shape, TreeShapeSchema])) as Record<
+      TreeShape,
+      typeof TreeShapeSchema
+    >,
+  ),
+});
+
 const SiteGenerationSchema = strictObject({
   id: Id,
   topography: strictObject({
@@ -2812,6 +2973,9 @@ const SiteGenerationSchema = strictObject({
     // One entry per draw, so repeating a shape weights it.
     treeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
     treeCellMetres: PositiveMetres,
+    /** How far a tree may stray from its cell's centre on each axis. */
+    treeJitterMetres: NonNegative,
+    trees: TreesSchema,
     hamletDensity: Fraction,
     forestHalfExtentMetres: PositiveMetres,
     forestDensityField: strictObject({
@@ -2903,6 +3067,18 @@ const SenseSchema = strictObject({
   }),
   /** How long a player vocal noise stays audible to shamblers after it is emitted. */
   vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
+  /**
+   * The shambler voice-pitch law (`DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
+   * height) at the smallest pooled body. One law covers the whole figure pool, so it lives here, not on a zombie type.
+   */
+  shamblerVoice: strictObject({
+    oldLawReferenceHeightMetres: Positive,
+    smallestAnchorMultiplier: Positive,
+    clampMultiplier: pipe(
+      strictObject({ min: Positive, max: Positive }),
+      check(({ min, max }) => min <= max, 'min must not exceed max'),
+    ),
+  }),
   light: strictObject({
     playerDaySightScale: Fraction,
     /** Reduce how far shamblers investigate non-player light sources. */
@@ -2915,6 +3091,11 @@ const SenseSchema = strictObject({
     renderedBeamLimit: pipe(Count, minValue(2)),
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
+    /**
+     * A light set down: the height a zombie's sight line aims at, and the drawn point light's lift when its model
+     * has no flame to shine from, high enough that the near-field falloff reaches nearby surfaces.
+     */
+    groundLight: strictObject({ senseHeightMetres: Positive, renderLiftMetres: Positive }),
   }),
 });
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
@@ -3096,10 +3277,17 @@ const BodyTuningSchema = pipe(
     infectionChance: Fraction,
     /** Sim seconds that the player remains unconscious. */
     knockoutSimSeconds: PositiveSimSeconds,
+    /** Why the player can't act while unconscious. */
+    knockoutRefusal: Name,
     /** Sim seconds to wait after stamina reaches zero before recovery begins. */
     staminaRegenDelaySimSeconds: PositiveSimSeconds,
     /** Player eye height in metres while unconscious and prone. */
     proneEyeHeightMetres: Positive,
+    /** Where on the upright body a grenade fragment strikes, as fractions of its height: above `head` hits the head, above `torso` the torso, else a leg. */
+    fragmentRegionHeights: pipe(
+      strictObject({ head: Fraction, torso: Fraction }),
+      check(({ head, torso }) => torso < head, 'torso must start below head'),
+    ),
     /** Shock damage per point of health damage, by the hit's damage kind. */
     shockPerDamage: perDamageKind(NonNegative),
     /** How much harder a hit of each damage kind wears the outermost worn item on the struck region; 1 is the item's own rate. */
@@ -3178,6 +3366,17 @@ const BodyTuningSchema = pipe(
     /** Health lost per Sim second while infection is advanced. */
     advancedInfectionHealthLossPerSimSecond: SimRate,
     needs: NeedsTuningSchema,
+    /** The stamina heartbeat, a presentation cue only (`DESIGN.md`, "Audio"). */
+    heartbeat: strictObject({
+      /** One beat each: the slow recording, and the shorter one used once a beat is too quick for the slow one. */
+      sounds: strictObject({ slow: Id, fast: Id }),
+      /** Silent above this stamina; rate and loudness rise linearly from here to exhaustion. */
+      startStamina: NeedPercent,
+      startHz: Positive,
+      exhaustedHz: Positive,
+      startGain: Fraction,
+      exhaustedGain: Fraction,
+    }),
     /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
     fatigueRisePerGameHour: GamePerHour,
     /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
@@ -3302,6 +3501,11 @@ const SECTION_DESCRIPTOR = {
           (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.figureSeeds === undefined)),
           'every type but the amalgam, whose figure seed is fixed, must define figureSeeds',
         ),
+        check(
+          (types) =>
+            types.every((zombie) => (zombie.model === 'amalgam') === (zombie.attack.grabBandMetres === undefined)),
+          'every type but the amalgam, which strikes from its core, must define attack.grabBandMetres',
+        ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
         check(
           (types) => types.every(zombieAcidSpitMatchesAbility),
@@ -3368,6 +3572,7 @@ export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
+export type LightPracticeDef = NonNullable<SiteLayoutDef['practice']>['light'];
 export type ScenarioDef = InferOutput<typeof ScenarioSchema>;
 export type FixedLootOverrideDef = InferOutput<typeof FixedLootOverride>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
@@ -3387,6 +3592,7 @@ export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'
 export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof typeof SECTION_DESCRIPTOR;

@@ -29,6 +29,7 @@ local authored = [
     import 'things/gas_canister.model.json',
     import 'things/frag_grenade.model.json',
     import 'things/torch.model.json',
+    (import 'things/flashlight.model.json') + { grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
     import 'things/candle.model.json',
     import 'things/bear_trap.model.json',
     (import 'things/compass.model.json') + {
@@ -82,6 +83,7 @@ local authored = [
     { "id": "sewing_kit", "file": "assets/models/sewing_kit.glb" },
     { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
     import 'things/dead_desk_lamp.model.json',
+    (import 'things/dead_desk_lamp.model.json') + { id: 'oil_lamp', anchors: { flame: [0.069, 0.05, 0] } },
     { "id": "table_fan", "file": "assets/models/table_fan.glb" },
     { "id": "cracked_phone", "file": "assets/models/cracked_phone.glb" },
     { "id": "broken_clock", "file": "assets/models/broken_clock.glb" },
@@ -101,5 +103,10 @@ local authored = [
     import 'things/shambler_right_leg.model.json'
 ];
 {
-  models: authored + [model for model in import 'things/index.json' if !std.member([entry.id for entry in authored], model.id)],
+  // A melee row imports its exported model and adds the grip and anchors, so the index must not list it again.
+  models: authored + [
+    model
+    for model in import 'things/index.json'
+    if !std.member([entry.id for entry in authored + (import 'models-melee.jsonnet').models], model.id)
+  ],
 }
