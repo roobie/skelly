@@ -195,12 +195,12 @@ describe('hand grenade', () => {
     session.sim.scheduler.advance(FUSE / 4);
     expect([lit, shed(grenade)]).toEqual([[], false]);
 
-    const version = session.inventory.version;
+    const { version: before } = session.inventory;
     expect(session.inventory.move(grenade, { kind: 'pile', pos: [1, 0, 0] }).ok).toBe(true);
     session.sim.scheduler.advance(FUSE / 4);
     expect(lit).toEqual([grenade]);
     expect(shed(grenade)).toBe(true);
-    expect(session.inventory.version).toBeGreaterThan(version);
+    expect(session.inventory.version).toBeGreaterThan(before);
     session.sim.scheduler.advance(FUSE / 4);
     expect(lit).toEqual([grenade]);
   });

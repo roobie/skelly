@@ -29,6 +29,12 @@ export interface ItemLook {
   readonly key: string;
 }
 
+/** A lit fuse has let the lever go, so the model no longer draws it. */
+const shedGroups = (registry: Registry, model: string, item: Item): string[] => {
+  const lever = registry.models.get(model)?.lever;
+  return lever && item.fuseRemainingSimSeconds !== undefined ? [lever.mergeGroup] : [];
+};
+
 /** The item's model with its fitted magazine's own model in the magazine slot; undefined without a model. */
 export const itemLook = (registry: Registry, item: Item): ItemLook | undefined => {
   const { model } = defOf(registry, item.type);
@@ -67,7 +73,7 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
       });
     }
   }
-  const hidden = modelDef?.lever && item.fuseRemainingSimSeconds !== undefined ? [modelDef.lever.mergeGroup] : [];
+  const hidden = shedGroups(registry, model, item);
   return {
     model,
     slots,
