@@ -27,8 +27,7 @@
       "wearable": {
         "encumbrance": 0,
         "slot": "head"
-      },
-      "weight": 80
+      }
     },
     {
       "category": "note",

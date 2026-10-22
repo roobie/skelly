@@ -5,4 +5,6 @@ local item(id, source) = { id: id, kind: 'item', source: source };
   item('cord_coil', 'nylon_cord'),
   item('fuse', 'fuse'),
   item('desk_lamp', 'dead_desk_lamp'),
-] + [item(package.id, package.id) for package in import '../packages.libsonnet']
+] + [item(package.id, package.id) for package in import '../packages.libsonnet'] + [
+  item(clothing.id, clothing.id) for clothing in import '../clothing-bags.libsonnet'
+]

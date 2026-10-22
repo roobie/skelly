@@ -65,7 +65,17 @@
         "assets/models/shotshell_box.glb",
         "assets/models/ammo_can.glb",
         "assets/models/jerry_can.glb",
-        "assets/models/gas_canister.glb"
+        "assets/models/gas_canister.glb",
+        "assets/models/jeans.glb",
+        "assets/models/rubber_boots.glb",
+        "assets/models/cargo_pants.glb",
+        "assets/models/hoodie.glb",
+        "assets/models/jacket.glb",
+        "assets/models/utility_vest.glb",
+        "assets/models/fanny_pack.glb",
+        "assets/models/school_backpack.glb",
+        "assets/models/hiking_backpack.glb",
+        "assets/models/baseball_cap.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",

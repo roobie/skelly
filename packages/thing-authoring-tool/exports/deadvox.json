@@ -98,5 +98,55 @@
     "id": "gas_canister",
     "kind": "item",
     "source": "gas_canister"
+  },
+  {
+    "id": "jeans",
+    "kind": "item",
+    "source": "jeans"
+  },
+  {
+    "id": "rubber_boots",
+    "kind": "item",
+    "source": "rubber_boots"
+  },
+  {
+    "id": "cargo_pants",
+    "kind": "item",
+    "source": "cargo_pants"
+  },
+  {
+    "id": "hoodie",
+    "kind": "item",
+    "source": "hoodie"
+  },
+  {
+    "id": "jacket",
+    "kind": "item",
+    "source": "jacket"
+  },
+  {
+    "id": "utility_vest",
+    "kind": "item",
+    "source": "utility_vest"
+  },
+  {
+    "id": "fanny_pack",
+    "kind": "item",
+    "source": "fanny_pack"
+  },
+  {
+    "id": "school_backpack",
+    "kind": "item",
+    "source": "school_backpack"
+  },
+  {
+    "id": "hiking_backpack",
+    "kind": "item",
+    "source": "hiking_backpack"
+  },
+  {
+    "id": "baseball_cap",
+    "kind": "item",
+    "source": "baseball_cap"
   }
 ]
