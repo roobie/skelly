@@ -1,6 +1,10 @@
 {
   "furniture": [
     {
+      "appearance": {
+        "kind": "door",
+        "surface": "painted-metal"
+      },
       "breach": {
         "durability": 60,
         "minimumStrength": 3.5
@@ -16,7 +20,7 @@
         ]
       },
       "id": "key_box",
-      "material": "wood",
+      "material": "steel",
       "name": "Key box",
       "size": [1, 1, 1]
     }
