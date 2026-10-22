@@ -843,7 +843,7 @@ find and retreat by the other route is a real choice. The lowest rebuilt level j
 the grid below through a temporary landing named in one place, which each rebuild moves
 down a storey. Threat may drop down a shaft but never climb up, so deep threat cannot
 reach the top and depth ordering holds. A lid then defends only against threat above.
-Until d508, threat stays on its own level. See
+Threat moving between levels is not built; until it is, threat stays on its own level. See
 `src/content/base/gauntlet-lab-administration.libsonnet`, `stair`;
 `src/content/base/gauntlet-lab.libsonnet`, `join`; and
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
@@ -947,8 +947,8 @@ Darkness uses world-derived sky transport and an ordinary carried light. The lab
 fixtures are intended to light only after power is restored, so light is earned,
 not given. Rebuilt levels' working and broken fixtures are inert set dressing. Entry's breaker
 belongs in the security post. Level two's is in a plant room off its circulation, so
-power is found by exploring. Until d509 builds that interaction and its saved per-level
-power state, the room and its marking are enough. Deeper levels' switch positions are decided at their own reviews. The
+power is found by exploring. The breaker interaction and its saved per-level power state
+are not built; until they are, the room and its marking are enough. Deeper levels' switch positions are decided at their own reviews. The
 lab has no lighting category until its light round. See
 `src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`, and
 `src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`. Finished site placements
@@ -1578,8 +1578,9 @@ wound severity. See `Body.treat` in `src/core/body.ts` and `bodyWound` in
 Pain is its own body state, apart from health and wounds, so a painkiller can ease
 what hurts without healing anything. Felt pain is acute plus background pain,
 less analgesia; it has no top. The threshold is a balance point for tiers and
-effects, not an implemented knockout: pain-triggered knockout through shock's
-mechanism is planned for #654 (round 2), not round 1. Acute pain comes from each
+effects, not an implemented knockout: only shock knocks out (`src/core/body.ts`,
+`Body.unconscious`), and felt pain reaching the threshold is meant to knock out through
+that same mechanism once it is built. Acute pain comes from each
 hit by damage kind and region,
 then fades. Background pain is derived from region damage, bleeding and infection,
 so treatment and healing change it without saved derived state. Pain tiers drive
@@ -1731,8 +1732,9 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   charging train firearms handling, while a magazine change and charge preserve
   the held ready stance. See `advancePlayerReadiness` in `src/game/session.ts`
   and `isFirearmTrainingAction` in `src/game/firearmHandling.ts`. Firearm quality
-  owns dispersion; skill controls handling. #275 defines tiered training; keep
-  source and above-tier practice rules with that work item.
+  owns dispersion; skill controls handling. Training is tiered: an activity trains
+  only up to its tier, so above-tier practice is dropped; see
+  `src/core/character.ts`, `Character.awardPractice`.
 - **Shot impacts.** Each round that meets world geometry leaves a surface
   mark. Marks and dust are presentation, not simulation damage or save state.
   When a wall lies between eye and muzzle, tracing from the eye lets the near
@@ -2675,7 +2677,8 @@ decoration.
   hearing or simulation; the `voice_size` comparison site exposes its endpoints.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
-  three moving shamblers emit footsteps at once. The MVP reuses pitched-down
+  few moving shamblers emit footsteps at once, so a horde does not become a wall of
+  noise; see `src/core/zombies.ts`, `SHAMBLER_FOOTSTEP_VOICE_CAP`. The MVP reuses pitched-down
   player footstep recordings as an explicit stand-in; body size also shifts
   their playback pitch.
 - **Your own sounds:** footsteps by surface and speed, doors, the inventory
