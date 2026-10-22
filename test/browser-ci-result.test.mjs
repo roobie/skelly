@@ -8,31 +8,26 @@ const missingAttempt = /Cannot observe run attempt/;
 const earlierAttemptsUnsuccessful = /Earlier same-SHA attempts were unsuccessful/;
 const earlierRun101Failed = /Run 101, attempt 1 concluded failure/;
 const earlierRun102Cancelled = /Run 102, attempt 1 concluded cancelled/;
-const success = (layout) => ({
-  fast: { result: layout === 'control' ? 'skipped' : 'success' },
-  unit: { result: layout === 'control' ? 'skipped' : 'success' },
-  browser: { result: layout === 'control' ? 'skipped' : 'success' },
-  'control-check': { result: layout === 'sharded' ? 'skipped' : 'success' },
-  'control-stages': { result: layout === 'sharded' ? 'skipped' : 'success' },
+const success = () => ({
+  fast: { result: 'success' },
+  unit: { result: 'success' },
+  browser: { result: 'success' },
 });
 
 describe('browser aggregate', () => {
-  it('requires selected jobs to succeed and only deliberately disabled layouts to skip', () => {
-    for (const layout of ['sharded', 'control']) {
-      assertBrowserResult({ layout, needs: success(layout), priorAttempts: [] });
-      const selected = Object.keys(success(layout)).filter((job) => success(layout)[job].result === 'success');
-      for (const job of selected) {
-        for (const result of ['failure', 'cancelled', 'skipped']) {
-          const needs = success(layout);
-          needs[job].result = result;
-          assert.throws(() => assertBrowserResult({ layout, needs, priorAttempts: [] }), failedJob);
-        }
+  it('requires every job to succeed, so a skipped job cannot pass', () => {
+    assertBrowserResult({ needs: success(), priorAttempts: [] });
+    for (const job of Object.keys(success())) {
+      for (const result of ['failure', 'cancelled', 'skipped']) {
+        const needs = success();
+        needs[job].result = result;
+        assert.throws(() => assertBrowserResult({ needs, priorAttempts: [] }), failedJob);
       }
     }
   });
 
   it('fails closed when run attempt is missing', async () => {
-    const env = { LAYOUT: 'sharded', NEEDS_JSON: JSON.stringify(success('sharded')) };
+    const env = { NEEDS_JSON: JSON.stringify(success()) };
     await assert.rejects(checkBrowserWorkflow({ env }), missingAttempt);
   });
 
@@ -42,7 +37,7 @@ describe('browser aggregate', () => {
       requested.push(attempt);
       return Promise.resolve({ conclusion: 'failure', url: 'https://example.org/first-attempt' });
     };
-    const env = { GITHUB_RUN_ATTEMPT: '1', LAYOUT: 'sharded', NEEDS_JSON: JSON.stringify(success('sharded')) };
+    const env = { GITHUB_RUN_ATTEMPT: '1', NEEDS_JSON: JSON.stringify(success()) };
     await checkBrowserWorkflow({ lookupAttempt, env });
     assert.deepEqual(requested, []);
     env.GITHUB_RUN_ATTEMPT = '2';

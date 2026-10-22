@@ -1,17 +1,7 @@
-export function assertBrowserResult({ layout, needs, priorAttempts }) {
-  if (!['sharded', 'control'].includes(layout)) {
-    throw new Error(`unknown layout: ${layout}`);
-  }
-  const expected = {
-    fast: layout === 'control' ? 'skipped' : 'success',
-    unit: layout === 'control' ? 'skipped' : 'success',
-    browser: layout === 'control' ? 'skipped' : 'success',
-    'control-check': layout === 'sharded' ? 'skipped' : 'success',
-    'control-stages': layout === 'sharded' ? 'skipped' : 'success',
-  };
-  for (const [job, result] of Object.entries(expected)) {
-    if (needs[job]?.result !== result) {
-      throw new Error(`${job}: expected ${result}, observed ${needs[job]?.result}`);
+export function assertBrowserResult({ needs, priorAttempts }) {
+  for (const job of ['fast', 'unit', 'browser']) {
+    if (needs[job]?.result !== 'success') {
+      throw new Error(`${job}: expected success, observed ${needs[job]?.result}`);
     }
   }
   for (const { conclusion, url, attempt } of priorAttempts) {
@@ -32,7 +22,7 @@ export async function checkBrowserWorkflow({ lookupAttempt, env }) {
       return lookupAttempt(attempt).then((result) => ({ ...result, attempt }));
     }),
   );
-  assertBrowserResult({ layout: env.LAYOUT, needs: JSON.parse(env.NEEDS_JSON), priorAttempts });
+  assertBrowserResult({ needs: JSON.parse(env.NEEDS_JSON), priorAttempts });
 }
 
 export function runsToInspect(runs, currentRunId) {
