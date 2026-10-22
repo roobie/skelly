@@ -32,6 +32,11 @@
         "suppressedShotSound": "gunshot_m4_suppressed"
       },
       "id": "rifle_hunting",
+      "lightMountSite": {
+        "at": [0.41999999999999998, -0.029999999999999999, 0],
+        "kind": "strap",
+        "turn": [0, 0, 0]
+      },
       "model": "rifle_hunting",
       "name": "Hunting rifle",
       "size": [2, 11],
@@ -66,6 +71,11 @@
         }
       },
       "id": "pump_shotgun",
+      "lightMountSite": {
+        "at": [0.34000000000000002, -0.044999999999999998, 0],
+        "kind": "strap",
+        "turn": [0, 0, 0]
+      },
       "model": "shotgun_pump",
       "name": "Pump shotgun",
       "size": [2, 10],

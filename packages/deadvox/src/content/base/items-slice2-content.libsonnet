@@ -1,3 +1,5 @@
+local lights = import 'lights.libsonnet';
+
 {
   "items": [
     {
@@ -284,11 +286,13 @@
     {
       "id": "taped_flashlight_mount",
       "name": "Taped-on flashlight mount",
-      "category": "weapon",
+      "category": "light",
       "weight": 120,
       "size": [1, 2],
       "model": "flashlight_mount",
-      "description": "A loose strap-and-bracket assembly.",
+      "description": "A flashlight strapped to a bracket. Taped under the barrel of a long gun, its beam follows the barrel.",
+      "lightMount": { "kind": "strap" },
+      "light": lights.flashlight,
       "disassembly": {
         "timeGameMinutes": 7,
         "skill": "mechanics",

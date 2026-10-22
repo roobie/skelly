@@ -7,6 +7,7 @@ import {
   footprintFitsRail,
   isExportedSingleFit,
   isLongGun,
+  LIGHT_MOUNT_SLOT,
   railFootprint,
   railFootprintsOverlap,
   SLING_SLOT,
@@ -111,7 +112,14 @@ const attachmentSlotsReason = (
 ): string | undefined => {
   const fitted: FittedAttachment[] = [];
   for (const [slotId, child] of Object.entries(slots)) {
-    if (!child || slotId === 'magazine' || slotId === 'battery' || slotId === 'canister' || slotId === SLING_SLOT) {
+    if (
+      !child ||
+      slotId === 'magazine' ||
+      slotId === 'battery' ||
+      slotId === 'canister' ||
+      slotId === SLING_SLOT ||
+      slotId === LIGHT_MOUNT_SLOT
+    ) {
       continue;
     }
     const result = fittedAttachmentFor(registry, model, slotId, child);
@@ -175,6 +183,24 @@ const slingSlotReason = (
   return registry.items.get(sling.type)?.sling ? undefined : 'Only a sling fits the sling mount';
 };
 
+const lightMountSlotReason = (
+  registry: Registry,
+  definition: ItemDef | undefined,
+  slots: Readonly<Record<string, { readonly type: string } | undefined>>,
+): string | undefined => {
+  const mount = slots[LIGHT_MOUNT_SLOT];
+  if (!mount) {
+    return undefined;
+  }
+  const site = isLongGun(definition) ? definition?.lightMountSite : undefined;
+  if (!site) {
+    return 'This gun has no place for a light';
+  }
+  return registry.items.get(mount.type)?.lightMount?.kind === site.kind
+    ? undefined
+    : 'That does not mount a light on this gun';
+};
+
 /** Why `slots` can't be fitted to this item, or undefined when they can. */
 export const slotsReason = (
   registry: Registry,
@@ -208,6 +234,7 @@ export const slotsReason = (
     batterySlotReason(registry, batteryType, slots) ??
     canisterSlotReason(registry, canisterType, slots) ??
     slingSlotReason(registry, definition, slots) ??
+    lightMountSlotReason(registry, definition, slots) ??
     attachmentSlotsReason(registry, model, slots)
   );
 };

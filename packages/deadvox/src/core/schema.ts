@@ -959,6 +959,16 @@ const ItemSchema = strictObject({
   firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** Fits a long gun's sling mount, so the gun can be carried on the shoulder. */
   sling: optional(vBoolean()),
+  /** A light mount: fits a long gun whose `lightMountSite` has the same kind, where gungen exports no rail for it. */
+  lightMount: optional(strictObject({ kind: Id })),
+  /** Where a long gun takes a `lightMount` of the same kind: a frame in the gun model's metres and XYZ degrees. */
+  lightMountSite: optional(
+    strictObject({
+      kind: Id,
+      at: tuple([number(), number(), number()]),
+      turn: tuple([number(), number(), number()]),
+    }),
+  ),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
