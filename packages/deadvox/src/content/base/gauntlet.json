@@ -7120,7 +7120,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_culture",
+                "id": "gauntlet_lab_culture_stair_join",
                 "kind": "assembly"
               },
               "weight": 1
@@ -7150,7 +7150,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_breach_incoming",
+                "id": "gauntlet_lab_breach",
                 "kind": "assembly"
               },
               "weight": 1
@@ -7402,58 +7402,6 @@
             }
           ],
           "id": "middle_west_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [39, 1, 29],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "middle_middle_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [31, 1, 31],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_middle_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [40, 1, 28],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_middle_threat_2",
           "size": [1, 1, 1],
           "turn": 0
         },
@@ -7717,21 +7665,6 @@
           "turn": 0
         },
         {
-          "at": [36, 1, 30],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_middle_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
           "at": [59, 1, 30],
           "choices": [
             {
@@ -7743,6 +7676,21 @@
             }
           ],
           "id": "middle_east_threat_centre",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [13, 1, 49],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "south_west_threat_centre",
           "size": [1, 1, 1],
           "turn": 0
         },
@@ -10342,6 +10290,21 @@
           "turn": 0
         },
         {
+          "at": [31, 17, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_stair",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "administration_stair",
+          "size": [12, 8, 2],
+          "turn": 0
+        },
+        {
           "at": [58, 17, 10],
           "choices": [
             {
@@ -10352,7 +10315,7 @@
               "weight": 1
             }
           ],
-          "id": "research_east_descent",
+          "id": "administration_shaft",
           "size": [3, 8, 2],
           "turn": 0
         },

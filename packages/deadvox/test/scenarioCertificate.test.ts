@@ -305,33 +305,33 @@ describe('final composed body-route certificate', () => {
     expect(scenarioCertificate(site).issues.some(([path]) => path === '.composition.seals[0]')).toBe(true);
   });
 
-  it('keeps both descents behind their bulkheads until the reachable card is admitted', () => {
+  it("keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted", () => {
     const site = siteOf();
-    const closed = new ScenarioRouteSpace(site);
+    const space = new ScenarioRouteSpace(site);
     const entry = site.plan.portal!.lower;
     const composition = site.plan.composition!;
     expect(composition.seals.length).toBeGreaterThan(0);
     for (const seal of composition.seals) {
-      expect(closed.path(entry, seal.standing)).toBeDefined();
+      expect(space.path(entry, seal.standing, { steps: true })).toBeDefined();
       for (const door of seal.doors) {
-        closed.blocked(...door);
-        const definition = closed.entities.defOf(closed.entities.at(...door)!);
+        space.blocked(...door);
+        const definition = space.entities.defOf(space.entities.at(...door)!);
         expect(definition.door).toBeDefined();
         expect(definition.door!.methods).toEqual({});
       }
+      const level = seal.doors[0]![1];
+      const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === level);
+      expect(links.length).toBeGreaterThan(0);
+      for (const link of links) {
+        expect(space.path(entry, link.upper, { steps: true })).toBeUndefined();
+      }
+      space.admitLock(space.entities.at(...seal.doors[0]!)!.lock!.id);
+      for (const link of links) {
+        expect(space.path(entry, link.upper, { steps: true })).toBeDefined();
+      }
     }
-    const [, upper] = entry;
-    const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === upper);
-    expect(links.length).toBeGreaterThan(0);
-    for (const link of links) {
-      expect(closed.path(entry, link.upper)).toBeUndefined();
-    }
-    const admitted = scenarioCertificate(site);
-    expect(admitted.issues).toEqual([]);
-    for (const link of links) {
-      expect(admitted.space.path(entry, link.upper)).toBeDefined();
-    }
-  });
+    expect(scenarioCertificate(site).issues).toEqual([]);
+  }, profile.composition!.storeys.length * WALK_MS_PER_STOREY);
 
   it('rejects a keyed lot resource whose key route has lost its climb', () => {
     const index = base.composition!.resources.findIndex((resource) => resource.key?.climbs.length);
