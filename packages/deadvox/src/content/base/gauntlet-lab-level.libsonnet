@@ -14,6 +14,11 @@ local kits = {
   locker: { furniture: { F: 'hq_weapon_cabinet' }, layers: tall(['FFF.', 'FFF.', '....', '....'], 5) },
   pump: { furniture: { F: 'gauntlet_look_pump' }, layers: tall(['FFFF', 'FFFF', 'FFFF', '....'], 4) },
   lift: { furniture: { F: 'gauntlet_lab_dead_lift' }, layers: tall(['FFFF', 'FFFF', '....', '....'], 5) },
+  shelves: { furniture: { A: 'shelf', B: 'shelf' }, layers: tall(['AABB', '....', '....', '....'], 4) },
+  archive: { furniture: { F: 'gauntlet_look_archive' }, layers: tall(['FFFF', 'FFFF', '....', '....'], 5) },
+  kitchen: { furniture: { A: 'kitchen_cupboard', B: 'station_kitchen_sink' }, layers: tall(['AABB', '....', '....', '....'], 2) },
+  fridge: { furniture: { F: 'fridge' }, layers: tall(['FF..', 'FF..', '....', '....'], 4) },
+  wc: { furniture: { A: 'station_toilet', B: 'station_washbasin' }, layers: tall(['AABB', 'AA..', '....', '....'], 2) },
 };
 local empty = ['....', '....', '....', '....'];
 local platform = ['pppp', 'pppp', 'pppp', 'pppp'];
