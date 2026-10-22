@@ -10,7 +10,7 @@
       category: 'ammo', weight: 24, size: [1, 1], stack: 20,
       model: 'round_308_h_winchester',
       ammo: {
-        calibre: '308-winchester', pellets: 1, diameterMm: 7.82,
+        calibre: '308-winchester', pellets: 1, spreadDegrees: 0, diameterMm: 7.82,
         damage: 65, impulse: 2.5, rangeMetres: 700, headDamageMultiplier: 2,
         loadSimSeconds: 0.8, stripSimSeconds: 0.5,
       },
@@ -36,6 +36,7 @@
       "ammo": {
         "calibre": "5.56x45",
         "pellets": 1,
+        "spreadDegrees": 0,
         "diameterMm": 5.7,
         "damage": 35,
         "impulse": 1,
@@ -57,6 +58,7 @@
       "ammo": {
         "calibre": "7.62x39",
         "pellets": 1,
+        "spreadDegrees": 0,
         "diameterMm": 7.92,
         "damage": 45,
         "impulse": 1.5,
