@@ -364,18 +364,6 @@ it is never rebuilt from the seed; unchanged columns regenerate. The save is one
 compressed record. See `src/game/session.ts`, `rolledColumns`; `src/core/world.ts`,
 `World`; and `src/core/saveFormat.ts`, `encodeSave`.
 
-### Edits persist
-
-A block or piece the player removes never comes back, and one they place stays, when its
-column is generated again or the game is reloaded. Base building takes placed and
-authored pieces apart for resources and places a great many blocks and pieces, so a
-removal that undid itself would duplicate resources and erase the player's work, and
-keeping edits must stay cheap at that scale.
-
-A column is furnished once, and its pieces are then saved state, kept in memory for the
-session, so a removed piece has nothing to return from. See `src/game/session.ts`,
-`rolledColumns`; `src/core/world.ts`, `World`; and `src/core/saveFormat.ts`, `encodeSave`.
-
 A piece cannot be removed while anything rests or stands on it, while a barricade stands
 in its doorway, or while it holds items, so removal never strands, floats or loses
 anything. Removing through a piece handle taken before a load throws, so the mistake
@@ -465,6 +453,12 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   their own tidying would punish an action the game wants them to take, and
   crushing shamblers with a stack would be a cheaper weapon than any the game
   balances.
+- **Nothing lifts from under a body.** Any body standing on a piece, the
+  player's or a shambler's, stops the player lifting it, as it stops removal.
+  Lifting and removal share one support query, so no second rule exists to
+  drift. A way to clear a body off a piece, such as a shove or the piece
+  tipping, is left to a later feature of its own. See
+  `src/core/furnitureMove.ts`, `supportRefusal`.
 - **What lies on top.** Loose items on a moved or falling piece go with it or
   beside it, and a container's pockets go with it, because moving a container
   is not searching it. When the items have nowhere to go the move is refused,
