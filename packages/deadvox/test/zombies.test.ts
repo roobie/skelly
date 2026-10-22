@@ -2853,8 +2853,12 @@ describe('two-tier shambler hearing', () => {
 
   it('makes a loud still-player vocalization alert and investigate once', () => {
     const noise = { id: 44, pos: [12, 1, 0] as Vec3, radiusMetres: 6, expiresAt: 1 };
-    const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01,
-      hearingModel: { ...SHAMBLER.hearingModel, loudNoiseRadiusMetres: noise.radiusMetres } };
+    const type = {
+      ...SHAMBLER,
+      sight: 0.01,
+      nightSight: 0.01,
+      hearingModel: { ...SHAMBLER.hearingModel, loudNoiseRadiusMetres: noise.radiusMetres },
+    };
     const target = { ...player(noise.pos), vocalNoise: noise };
     const heard: string[] = [];
     const system = new ZombieSystem({

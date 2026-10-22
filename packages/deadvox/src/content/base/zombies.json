@@ -102,6 +102,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,
@@ -320,6 +322,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,
@@ -538,6 +542,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,
@@ -756,6 +762,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,
@@ -974,6 +982,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,
@@ -1192,6 +1202,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,
@@ -1408,6 +1420,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,
@@ -1559,6 +1573,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,
@@ -1713,6 +1729,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,
@@ -1984,6 +2002,8 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
         "hesitationSimSeconds": {
           "max": 5,

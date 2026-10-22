@@ -2611,6 +2611,8 @@ const ZombieSchema = strictObject({
       hesitationSimSeconds: SimDurationRange,
       refusalSuspicionSimSeconds: PositiveSimSeconds,
       refusalLean: Fraction,
+      chainRadiusMetres: NonNegative,
+      chainChance: Fraction,
       searchSimSeconds: SimDurationRange,
       searchRadiusMetres: Positive,
       searchStrollSimSeconds: SimDurationRange,

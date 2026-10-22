@@ -675,6 +675,8 @@ content + {
       hesitationSimSeconds: { min: 5, max: 5 },
       refusalSuspicionSimSeconds: 20,
       refusalLean: 0.75,
+      chainRadiusMetres: 8,
+      chainChance: 0.35,
     },
     attack+: {
       moves: [move + { motion: meleeMotions[move.id] } for move in zombie.attack.moves],
