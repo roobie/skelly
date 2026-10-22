@@ -383,12 +383,15 @@ export const removeFurniture = (mover: FurnitureMover, entity: BlockEntity): str
   return undefined;
 };
 
-/** A ruined piece's debris, in stacks no larger than each item stacks. */
+/**
+ * A ruined piece's debris, in stacks no larger than each item stacks. These are stand-ins that only size the drop;
+ * `ruinFurniture` makes the real items once everything is known to fit, so a refused ruin creates none.
+ */
 const debrisOf = (inventory: Inventory, entity: BlockEntity): Placed[] =>
   (inventory.entities.defOf(entity).ruin?.debris ?? []).flatMap(({ item, count }) => {
     const stack = inventory.registry.items.get(item)?.stack ?? 1;
     return Array.from({ length: Math.ceil(count / stack) }, (_, at) => ({
-      item: inventory.create(item, Math.min(stack, count - at * stack)),
+      item: { uid: 0, type: item, count: Math.min(stack, count - at * stack), condition: 1 },
       x: 0,
       y: 0,
       rotated: false,
@@ -400,20 +403,28 @@ const debrisOf = (inventory: Inventory, entity: BlockEntity): Placed[] =>
  * at its cells, piles on it resettle, and pieces resting on it fall or, where they can't come down clear, are
  * destroyed in turn with the same drops. A blow can't be refused, so nothing here refuses, and nothing is lost or
  * left floating (`DESIGN.md`, "Edits persist"). Returns the destroyed pieces, the struck one first, so the caller
- * cancels the work that names them.
+ * cancels the work that names them. Where the drops have no room it changes nothing and returns undefined: the piece
+ * stands until a blow finds room, because destruction loses nothing (`DESIGN.md`, "Ruined furniture").
  */
-export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): BlockEntity[] => {
+export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): BlockEntity[] | undefined => {
   const { inventory } = mover;
   const shadow = new Shadow(mover.terrainSolid, inventory.entities);
   const { falls, ruined } = settle(mover, shadow, entity, true) as Settled;
   const destroyed = [entity, ...ruined];
-  const loose = destroyed.map((piece) => ({
-    items: [...(piece.pockets?.flat() ?? []), ...debrisOf(inventory, piece)],
-    targets: spreadFrom(shadow, footprint(piece.pos, piece.size)),
-  }));
+  const standIns = new Set<Placed>();
+  const loose = destroyed.map((piece) => {
+    const debris = debrisOf(inventory, piece);
+    for (const placed of debris) {
+      standIns.add(placed);
+    }
+    return {
+      items: [...(piece.pockets?.flat() ?? []), ...debris],
+      targets: spreadFrom(shadow, footprint(piece.pos, piece.size)),
+    };
+  });
   const dropped = new Set(loose.flatMap(({ items }) => items));
   if ([...dropped].some(({ item }) => !couldFit(inventory.registry, PILE_GRID, item))) {
-    throw new Error('A ruined piece holds an item too large for a pile');
+    return undefined;
   }
   const left = [...destroyed, ...falls.map((fall) => fall.entity)].map(({ pos, size }) => ({ pos, size }));
   const landed = falls.map(({ entity: fallen, y }) => ({
@@ -422,7 +433,10 @@ export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): Block
   }));
   const moves = resettlePiles(mover, shadow, pilesOver(inventory, [...left, ...landed]), loose);
   if (!moves) {
-    throw new Error('No floor around a ruined piece has room for what it held');
+    return undefined;
+  }
+  for (const placed of standIns) {
+    placed.item = inventory.create(placed.item.type, placed.item.count);
   }
   for (const piece of destroyed) {
     inventory.entities.destroy(piece);

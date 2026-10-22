@@ -2279,6 +2279,8 @@ describe('content references', () => {
             wander: {
               obstacleWanderChance: 0.25,
               obstacleWanderDistanceMetres: 10,
+              wayAroundReachMetres: 1.5,
+              wayAroundMinGainFraction: 0.25,
               idleSimSeconds: { min: 3, max: 10 },
               strollSimSeconds: { min: 3, max: 12 },
               leashMetres: 12,

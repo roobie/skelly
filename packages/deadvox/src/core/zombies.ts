@@ -724,37 +724,52 @@ const OBSTACLE_WANDER_ANGLES = [
   (-3 * Math.PI) / 4,
   Math.PI,
 ] as const;
-const openWanderHeadings = ({
-  body,
-  intent,
-  isSolid,
-  physics,
-  blockSize,
-}: {
+/** The slanted headings that still gain ground toward an intent, which a zombie held up tries to get past a piece. */
+const OBSTACLE_BYPASS_ANGLES = [Math.PI / 4, -Math.PI / 4] as const;
+const WAY_AROUND_STEPS = 8;
+interface ObstacleProbe {
   body: Body;
   intent: Vec3;
   isSolid: SolidAt;
   physics: PhysicsParams;
   blockSize: number;
-}): Vec3[] => {
-  const initial = copy(body.pos);
-  const duration = OBSTACLE_PROBE_DISTANCE_METRES / OBSTACLE_PROBE_SPEED;
-  const headings: Vec3[] = [];
-  for (const offset of OBSTACLE_WANDER_ANGLES) {
-    const heading = headingAt(angleOf(intent) + offset);
-    const probe: Body = {
-      ...body,
-      pos: copy(initial),
-      vel: [(heading[0] * OBSTACLE_PROBE_SPEED) / blockSize, 0, (heading[2] * OBSTACLE_PROBE_SPEED) / blockSize],
-    };
-    stepBody(probe, duration, isSolid, physics);
-    const progress = ((probe.pos[0] - initial[0]) * heading[0] + (probe.pos[2] - initial[2]) * heading[2]) * blockSize;
-    if (progress >= OBSTACLE_PROBE_DISTANCE_METRES * 0.5) {
-      headings.push(heading);
-    }
+}
+/**
+ * Where a body stands after walking `distanceMetres` along a heading, sliding along whatever blocks it. A contact
+ * zeroes the blocked axis' speed, so a probe that must get past an edge asks for the heading again each of `steps`.
+ */
+const probeHeading = (
+  { body, isSolid, physics, blockSize }: ObstacleProbe,
+  heading: Vec3,
+  distanceMetres: number,
+  steps = 1,
+): Vec3 => {
+  const probe: Body = { ...body, pos: copy(body.pos), vel: [0, 0, 0] };
+  for (let step = 0; step < steps; step++) {
+    probe.vel = [(heading[0] * OBSTACLE_PROBE_SPEED) / blockSize, 0, (heading[2] * OBSTACLE_PROBE_SPEED) / blockSize];
+    stepBody(probe, distanceMetres / OBSTACLE_PROBE_SPEED / steps, isSolid, physics);
   }
-  return headings;
+  return probe.pos;
 };
+const openWanderHeadings = (probe: ObstacleProbe): Vec3[] =>
+  OBSTACLE_WANDER_ANGLES.map((offset) => headingAt(angleOf(probe.intent) + offset)).filter((heading) => {
+    const end = probeHeading(probe, heading, OBSTACLE_PROBE_DISTANCE_METRES);
+    const { pos } = probe.body;
+    const progress = ((end[0] - pos[0]) * heading[0] + (end[2] - pos[2]) * heading[2]) * probe.blockSize;
+    return progress >= OBSTACLE_PROBE_DISTANCE_METRES * 0.5;
+  });
+/**
+ * Whether a body held up along its intent can walk past what holds it: within `reachMetres`, a slanted heading still
+ * gains at least `minGainFraction` of the ground toward the intent that a clear one would. A wall slides the probe
+ * along itself and gains none, so a piece in a doorway or a narrow gap has no way around, and clutter in the open has.
+ */
+const hasWayAround = (probe: ObstacleProbe, reachMetres: number, minGainFraction: number): boolean =>
+  OBSTACLE_BYPASS_ANGLES.some((offset) => {
+    const end = probeHeading(probe, headingAt(angleOf(probe.intent) + offset), reachMetres, WAY_AROUND_STEPS);
+    const { pos } = probe.body;
+    const gained = ((end[0] - pos[0]) * probe.intent[0] + (end[2] - pos[2]) * probe.intent[2]) * probe.blockSize;
+    return gained >= reachMetres * Math.cos(offset) * minGainFraction;
+  });
 const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
 const approach = (current: number, target: number, amount: number): number =>
   current < target ? Math.min(target, current + amount) : Math.max(target, current - amount);
@@ -2983,19 +2998,34 @@ export class ZombieSystem {
   }
 
   /**
-   * A zombie held up on the way to its target bashes what holds it, once per attack cooldown. Whether the blow does
-   * anything is the door's gate, not the zombie's (`DESIGN.md`, "Base building and electricity"); a type of strength 0
-   * never bashes. A zombie whose blow lands stays at the leaf instead of sliding or wandering off along the wall.
+   * A zombie held up on the way to its target bashes what holds it, once per attack cooldown, but only where that is
+   * its one way through (`DESIGN.md`, "Senses and AI"): a piece it can walk past is left to its slide and wander.
+   * Whether the blow does anything is the piece's gate, not the zombie's (`DESIGN.md`, "Base building and
+   * electricity"); a type of strength 0 never bashes. A zombie whose blow lands stays at the piece instead of sliding
+   * or wandering off along the wall.
    */
   private bashObstacle(): void {
-    const { zombie, type, obstacleContact, aimDirection } = this.tickScratch;
+    const scratch = this.tickScratch;
+    const { zombie, type, obstacleContact, aimDirection } = scratch;
     const { bashObstacle } = this.options;
     if (
       !(bashObstacle && obstacleContact && aimDirection) ||
       type.strength <= 0 ||
       (zombie.mode !== 'chase' && zombie.mode !== 'investigate') ||
       zombie.attackWait > 0 ||
-      zombie.attackWindup > 0 ||
+      zombie.attackWindup > 0
+    ) {
+      return;
+    }
+    const around = {
+      body: zombie.body,
+      intent: aimDirection,
+      isSolid: scratch.isSolid,
+      physics: { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 },
+      blockSize: scratch.blockSize,
+    };
+    if (
+      hasWayAround(around, type.wander.wayAroundReachMetres, type.wander.wayAroundMinGainFraction) ||
       !bashObstacle(this.bodyAhead(aimDirection), type.strength)
     ) {
       return;
