@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -295,6 +296,17 @@ it('opened beans expose the eat time and a refusal when both hands hold other it
   t.add('flashlight', { kind: 'hand', side: 'right' });
   t.add('chocolate_bar', { kind: 'hand', side: 'left' });
   expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({ plan: { ok: false } });
+});
+
+it('hides an obvious refusal by its key, so rewording it in content keeps it hidden', () => {
+  const core = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+  const reworded = { ...core, coreMessages: { ...core.coreMessages, alreadyInHand: 'fixture reworded' } };
+  const t = setup('right', { ...registry, ui: new Map(registry.ui).set(core.id, reworded) });
+  const knife = t.add('kabar', { kind: 'hand', side: 'right' });
+  const hands = options(knife, t.view()).flatMap((option) =>
+    option.kind === 'move' && option.target.kind === 'hand' ? [option.target.side] : [],
+  );
+  expect(hands).toEqual(['left']);
 });
 
 describe('handling move admission', () => {
