@@ -588,6 +588,108 @@
       "id": "notebook"
     },
     {
+      "file": "assets/models/shambler_torso.glb",
+      "grip": {
+        "at": [0, 0.37, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "shambler_torso",
+      "parts": {
+        "part": {
+          "centreOfMass": [3.5275431149547021e-19, 0.285211969192045, 0.00044777648490461818],
+          "massKg": 12,
+          "node": "part:torso"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_head.glb",
+      "grip": {
+        "at": [0, 0.15000000000000002, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "shambler_head",
+      "parts": {
+        "part": {
+          "centreOfMass": [-3.6626285073969821e-19, 0.14363995452417178, -0.010892676692107519],
+          "massKg": 5,
+          "node": "part:head"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_left_arm.glb",
+      "grip": {
+        "at": [0, 0.085000000000000006, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "shambler_left_arm",
+      "parts": {
+        "part": {
+          "centreOfMass": [-1.1462369968187862e-18, 0.41046539178806196, 1.3020175282656349e-18],
+          "massKg": 2.5,
+          "node": "part:limb"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_right_arm.glb",
+      "grip": {
+        "at": [0, 0.085000000000000006, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "shambler_right_arm",
+      "parts": {
+        "part": {
+          "centreOfMass": [-1.1462369968187862e-18, 0.41046539178806196, 1.3020175282656349e-18],
+          "massKg": 2.5,
+          "node": "part:limb"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_left_leg.glb",
+      "grip": {
+        "at": [0, 0.14999999999999999, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "shambler_left_leg",
+      "parts": {
+        "part": {
+          "centreOfMass": [-4.7338042503811491e-19, 0.46364836648021851, 0.0066774789503733839],
+          "massKg": 4,
+          "node": "part:limb"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_right_leg.glb",
+      "grip": {
+        "at": [0, 0.14999999999999999, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "shambler_right_leg",
+      "parts": {
+        "part": {
+          "centreOfMass": [-4.7338042503811491e-19, 0.46364836648021851, 0.0066774789503733839],
+          "massKg": 4,
+          "node": "part:limb"
+        }
+      },
+      "roll": 0
+    },
+    {
       "file": "assets/models/aa_battery.glb",
       "grip": {
         "at": [0, 0.02375, 0],

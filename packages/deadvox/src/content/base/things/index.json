@@ -381,5 +381,89 @@
     "grip": { "at": [0, 0.036, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
+  },
+  {
+    "id": "shambler_torso",
+    "file": "assets/models/shambler_torso.glb",
+    "parts": {
+      "part": {
+        "node": "part:torso",
+        "massKg": 12,
+        "centreOfMass": [3.527543114954702e-19, 0.285211969192045, 0.0004477764849046182]
+      }
+    },
+    "grip": { "at": [0, 0.37, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "shambler_head",
+    "file": "assets/models/shambler_head.glb",
+    "parts": {
+      "part": {
+        "node": "part:head",
+        "massKg": 5,
+        "centreOfMass": [-3.662628507396982e-19, 0.14363995452417178, -0.01089267669210752]
+      }
+    },
+    "grip": { "at": [0, 0.15000000000000002, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "shambler_left_arm",
+    "file": "assets/models/shambler_left_arm.glb",
+    "parts": {
+      "part": {
+        "node": "part:limb",
+        "massKg": 2.5,
+        "centreOfMass": [-1.1462369968187862e-18, 0.41046539178806196, 1.3020175282656349e-18]
+      }
+    },
+    "grip": { "at": [0, 0.085, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "shambler_right_arm",
+    "file": "assets/models/shambler_right_arm.glb",
+    "parts": {
+      "part": {
+        "node": "part:limb",
+        "massKg": 2.5,
+        "centreOfMass": [-1.1462369968187862e-18, 0.41046539178806196, 1.3020175282656349e-18]
+      }
+    },
+    "grip": { "at": [0, 0.085, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "shambler_left_leg",
+    "file": "assets/models/shambler_left_leg.glb",
+    "parts": {
+      "part": {
+        "node": "part:limb",
+        "massKg": 4,
+        "centreOfMass": [-4.733804250381149e-19, 0.4636483664802185, 0.006677478950373384]
+      }
+    },
+    "grip": { "at": [0, 0.15, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "shambler_right_leg",
+    "file": "assets/models/shambler_right_leg.glb",
+    "parts": {
+      "part": {
+        "node": "part:limb",
+        "massKg": 4,
+        "centreOfMass": [-4.733804250381149e-19, 0.4636483664802185, 0.006677478950373384]
+      }
+    },
+    "grip": { "at": [0, 0.15, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
   }
 ]

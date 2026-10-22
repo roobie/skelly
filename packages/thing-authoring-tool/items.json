@@ -1350,6 +1350,245 @@
     {
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "part",
+        "roll": 0,
+        "solid": "chest",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_torso",
+      "parts": [
+        {
+          "family": "torso",
+          "finish": {
+            "bone": "body-bone",
+            "gore": "body-gore",
+            "pants": "cloth-pants-grey",
+            "shirt": "cloth-shirt-faded",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 12,
+          "params": {
+            "chestDepth": "0.22",
+            "chestWidth": "0.40000000000000002",
+            "height": "0.59999999999999998",
+            "neckHeight": "0.059999999999999998",
+            "neckWidth": "0.10000000000000001",
+            "pelvisDepth": "0.20999999999999999",
+            "pelvisHeight": "0.20000000000000001",
+            "pelvisWidth": "0.34000000000000002",
+            "tear": "0.10000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "part",
+        "roll": 0,
+        "solid": "skull",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_head",
+      "parts": [
+        {
+          "family": "head",
+          "finish": {
+            "bone": "body-bone",
+            "eye": "body-eye",
+            "gore": "body-gore",
+            "hair": "body-hair",
+            "mouth": "body-mouth",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 5,
+          "params": {
+            "depth": "0.20000000000000001",
+            "hairCover": "0.059999999999999998",
+            "height": "0.23000000000000001",
+            "jawHeight": "0.070000000000000007",
+            "width": "0.17000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "end",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_left_arm",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-shirt-faded",
+            "end": "body-skin-sickly",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 2.5,
+          "params": {
+            "endDepth": "0.035000000000000003",
+            "endLength": "0.17000000000000001",
+            "endReach": "0",
+            "endWidth": "0.085000000000000006",
+            "length": "0.65000000000000002",
+            "lowerDepth": "0.074999999999999997",
+            "lowerWidth": "0.074999999999999997",
+            "sleeve": "0.17999999999999999",
+            "upper": "0.29999999999999999",
+            "upperDepth": "0.095000000000000001",
+            "upperWidth": "0.095000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "end",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_right_arm",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-shirt-faded",
+            "end": "body-skin-sickly",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 2.5,
+          "params": {
+            "endDepth": "0.035000000000000003",
+            "endLength": "0.17000000000000001",
+            "endReach": "0",
+            "endWidth": "0.085000000000000006",
+            "length": "0.65000000000000002",
+            "lowerDepth": "0.074999999999999997",
+            "lowerWidth": "0.074999999999999997",
+            "sleeve": "0.17999999999999999",
+            "upper": "0.29999999999999999",
+            "upperDepth": "0.095000000000000001",
+            "upperWidth": "0.095000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.20000000000000001, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "lower-cloth",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_left_leg",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-pants-grey",
+            "end": "rubber-black",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 4,
+          "params": {
+            "endDepth": "0.26000000000000001",
+            "endLength": "0.080000000000000002",
+            "endReach": "0.10000000000000001",
+            "endWidth": "0.10000000000000001",
+            "length": "0.84999999999999998",
+            "lowerDepth": "0.10000000000000001",
+            "lowerWidth": "0.10000000000000001",
+            "sleeve": "0.78000000000000003",
+            "upper": "0.41999999999999998",
+            "upperDepth": "0.14000000000000001",
+            "upperWidth": "0.14000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.20000000000000001, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "lower-cloth",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_right_leg",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-pants-grey",
+            "end": "rubber-black",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 4,
+          "params": {
+            "endDepth": "0.26000000000000001",
+            "endLength": "0.080000000000000002",
+            "endReach": "0.10000000000000001",
+            "endWidth": "0.10000000000000001",
+            "length": "0.84999999999999998",
+            "lowerDepth": "0.10000000000000001",
+            "lowerWidth": "0.10000000000000001",
+            "sleeve": "0.78000000000000003",
+            "upper": "0.41999999999999998",
+            "upperDepth": "0.14000000000000001",
+            "upperWidth": "0.14000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
       "id": "electrical_tape",
       "parts": [
         {
