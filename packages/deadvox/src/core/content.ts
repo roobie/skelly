@@ -443,14 +443,6 @@ const checkItemHeldDisplay = (item: ItemDef, registry: Registry, report: Report)
   }
 };
 
-/** A fuelled lamp swaps a canister that actually holds charge. */
-const checkFuelCanister = (item: ItemDef, registry: Registry, report: Report) => {
-  const fuel = item.tool?.fuel;
-  if (fuel && item.light?.fuelPerGameHour !== undefined && registry.items.get(fuel.canister)?.canister === undefined) {
-    report('items', item.id, '.tool.fuel.canister', `"${fuel.canister}" is not an item with a canister component`);
-  }
-};
-
 const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, report: Report) => {
   const { light, igniter } = item;
   const battery = light?.power?.battery;
@@ -477,7 +469,6 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   if (light?.burning && light.burnTimeGameHours === undefined && light.fuelPerGameHour === undefined) {
     report('items', item.id, '.light.burning', 'burning rules need a burn time or a fuel rate');
   }
-  checkFuelCanister(item, registry, report);
   if (light?.burning?.ignition === 'firestarter' && !hasIgniter) {
     report('items', item.id, '.light.burning.ignition', 'needs at least one item with an igniter component');
   }

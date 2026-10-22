@@ -83,16 +83,7 @@ local authored = [
     { "id": "sewing_kit", "file": "assets/models/sewing_kit.glb" },
     { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
     import 'things/dead_desk_lamp.model.json',
-    {
-      "id": "oil_lamp",
-      "file": "assets/models/dead_desk_lamp.glb",
-      "parts": {
-        "base": { "node": "base:base", "massKg": 0.5, "centreOfMass": [0, 0.005, 0] },
-        "arm": { "node": "arm:arm", "massKg": 0.25, "centreOfMass": [0.001, 0.0775, 0] },
-        "shade": { "node": "shade:shade", "massKg": 0.15, "centreOfMass": [0.0692, 0.0613, -0.0006] }
-      },
-      "anchors": { "flame": [0.069, 0.05, 0] }
-    },
+    (import 'things/dead_desk_lamp.model.json') + { id: 'oil_lamp', anchors: { flame: [0.069, 0.05, 0] } },
     { "id": "table_fan", "file": "assets/models/table_fan.glb" },
     { "id": "cracked_phone", "file": "assets/models/cracked_phone.glb" },
     { "id": "broken_clock", "file": "assets/models/broken_clock.glb" },
