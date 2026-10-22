@@ -2262,7 +2262,7 @@
       "category": "tool",
       "economy": {
         "tiers": ["Tier1"],
-        "usage": ["Industrial"]
+        "usage": ["Residential"]
       },
       "id": "gauntlet_lab_administration_card",
       "key": {
@@ -2742,23 +2742,91 @@
       "entries": [
         {
           "table": "gauntlet_food_stock",
+          "weight": 3
+        },
+        {
+          "item": "water_bottle",
           "weight": 2
+        },
+        {
+          "item": "soda_can",
+          "weight": 1
+        },
+        {
+          "item": "juice_carton",
+          "weight": 1
+        },
+        {
+          "item": "chocolate_bar",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 8
+        }
+      ],
+      "id": "gauntlet_lab_administration_canteen",
+      "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "item": "flashlight",
+          "weight": 1
+        },
+        {
+          "item": "aa_battery",
+          "weight": 2
+        },
+        {
+          "item": "duct_tape",
+          "weight": 1
+        },
+        {
+          "item": "glowstick",
+          "weight": 1
         },
         {
           "table": "gauntlet_medical_stock",
           "weight": 1
         },
         {
-          "item": "flashlight",
+          "nothing": true,
+          "weight": 8
+        }
+      ],
+      "id": "gauntlet_lab_administration_store",
+      "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "item": "aa_battery",
+          "weight": 1
+        },
+        {
+          "item": "lighter",
+          "weight": 1
+        },
+        {
+          "item": "electrical_tape",
+          "weight": 1
+        },
+        {
+          "item": "painkillers",
+          "weight": 1
+        },
+        {
+          "item": "cracked_phone",
           "weight": 1
         },
         {
           "nothing": true,
-          "weight": 3
+          "weight": 5
         }
       ],
-      "id": "gauntlet_lab_administration_margin",
-      "rolls": [1, 2]
+      "id": "gauntlet_lab_administration_office",
+      "rolls": [1, 1]
     }
   ],
   "mapAssemblies": [
@@ -31553,7 +31621,8 @@
         },
         "F": {
           "furniture": "fridge",
-          "loot": "d41_empty"
+          "loot": "gauntlet_lab_administration_canteen",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture_broken"
@@ -31605,11 +31674,13 @@
         },
         "A": {
           "furniture": "kitchen_cupboard",
-          "loot": "gauntlet_lab_administration_margin"
+          "loot": "gauntlet_lab_administration_canteen",
+          "lootUsage": ["Residential"]
         },
         "B": {
           "furniture": "station_kitchen_sink",
-          "loot": "gauntlet_lab_administration_margin"
+          "loot": "gauntlet_lab_administration_canteen",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -31661,7 +31732,8 @@
         },
         "F": {
           "furniture": "desk",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -31713,7 +31785,8 @@
         },
         "F": {
           "furniture": "desk",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -31765,7 +31838,8 @@
         },
         "F": {
           "furniture": "gauntlet_look_bench",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -31921,7 +31995,8 @@
         },
         "F": {
           "furniture": "desk",
-          "loot": "gauntlet_lab_administration_margin"
+          "loot": "gauntlet_lab_administration_office",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -31973,11 +32048,13 @@
         },
         "A": {
           "furniture": "police_file_cabinet",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "B": {
           "furniture": "police_file_cabinet",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -32133,7 +32210,8 @@
         },
         "F": {
           "furniture": "desk",
-          "loot": "d41_empty"
+          "loot": "gauntlet_lab_administration_office",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -32185,7 +32263,8 @@
         },
         "F": {
           "furniture": "desk",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -32237,11 +32316,13 @@
         },
         "A": {
           "furniture": "police_file_cabinet",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "B": {
           "furniture": "police_file_cabinet",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -32293,11 +32374,13 @@
         },
         "A": {
           "furniture": "police_file_cabinet",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "B": {
           "furniture": "police_file_cabinet",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Residential"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture_broken"
@@ -32349,11 +32432,13 @@
         },
         "A": {
           "furniture": "shelf",
-          "loot": "d41_empty"
+          "loot": "gauntlet_lab_administration_store",
+          "lootUsage": ["Industrial"]
         },
         "B": {
           "furniture": "shelf",
-          "loot": "d41_empty"
+          "loot": "gauntlet_lab_administration_store",
+          "lootUsage": ["Industrial"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -32405,11 +32490,13 @@
         },
         "A": {
           "furniture": "shelf",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Industrial"]
         },
         "B": {
           "furniture": "shelf",
-          "loot": "d41_empty"
+          "loot": "d41_empty",
+          "lootUsage": ["Industrial"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture_broken"
@@ -32461,11 +32548,13 @@
         },
         "A": {
           "furniture": "shelf",
-          "loot": "gauntlet_lab_administration_margin"
+          "loot": "gauntlet_lab_administration_store",
+          "lootUsage": ["Industrial"]
         },
         "B": {
           "furniture": "shelf",
-          "loot": "gauntlet_lab_administration_margin"
+          "loot": "gauntlet_lab_administration_store",
+          "lootUsage": ["Industrial"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"

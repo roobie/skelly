@@ -37,7 +37,7 @@ local stair = {
 {
   scale: scale,
   stair: stair,
-  // One rebuilt level from its plan and room table. `through` boxes stay open on every layer above the floor for pieces that
+  // One rebuilt level from its plan and room table. A room's `lootUsage` gives its stocked furniture a context that fits its use. `through` boxes stay open on every layer above the floor for pieces that
   // pass through the level; `holes` open its floor over the ways that leave it. Both are in blocks, as are `markers`.
   build:: function(level)
     local plan = level.plan;
@@ -117,6 +117,7 @@ local stair = {
           L: { furniture: if d.fixture == 'broken' then 'gauntlet_lab_fixture_broken' else 'gauntlet_lab_fixture' },
         } + { [glyph]: { furniture: if std.type(kit.furniture[glyph]) == 'object' then kit.furniture[glyph].id else kit.furniture[glyph],
                      loot: std.get(d, 'loot', 'd41_empty') }
+                     + (if std.objectHas(d.room, 'lootUsage') then { lootUsage: d.room.lootUsage } else {})
                      + (if std.type(kit.furniture[glyph]) == 'object' then { tip: kit.furniture[glyph].tip } else {}) for glyph in std.objectFields(kit.furniture) },
         layers: layers,
         ownership: { layers: [[std.join('', [if c == '.' then 'A' else 'S' for c in std.stringChars(row)]) for row in layer] for layer in layers] },

@@ -48,10 +48,10 @@ local rooms = {
   },
   staff_office: {
     tokens: ['f', 'F', '2', 'l'], wall: 'F', floor: 'f', band: '@',
-    finish: { floor: 'carpet', wall: 'plaster', base: 'plaster' }, ceilingDrop: 1, floorRise: 0,
+    finish: { floor: 'carpet', wall: 'plaster', base: 'plaster' }, ceilingDrop: 1, floorRise: 0, lootUsage: ['Residential'],
     openings: [{ token: 'l', at: [16, 8], axis: 'x', width: 2 }],
     dressing: [
-      { id: 'staff_desk_north', at: [14, 3], kit: 'desk', fixture: 'working' },
+      { id: 'staff_desk_north', at: [14, 3], kit: 'desk', fixture: 'working', loot: 'gauntlet_lab_administration_office' },
       { id: 'staff_desk_south', at: [13, 5], kit: 'desk', fixture: null },
       { id: 'staff_cabinets_north', at: [17, 3], kit: 'cabinets', fixture: null },
       { id: 'staff_cabinets_south', at: [17, 5], kit: 'cabinets', fixture: 'broken' },
@@ -59,10 +59,10 @@ local rooms = {
   },
   director: {
     tokens: ['o', 'O', '3', 't'], wall: 'O', floor: 'o', band: '$',
-    finish: { floor: 'planks', wall: 'dressed', base: 'dressed' }, ceilingDrop: 1, floorRise: 0,
+    finish: { floor: 'planks', wall: 'dressed', base: 'dressed' }, ceilingDrop: 1, floorRise: 0, lootUsage: ['Residential'],
     openings: [{ token: 't', at: [26, 8], axis: 'x', width: 2 }],
     dressing: [
-      { id: 'director_desk', at: [21, 3], kit: 'desk', fixture: 'working', loot: 'gauntlet_lab_administration_margin' },
+      { id: 'director_desk', at: [21, 3], kit: 'desk', fixture: 'working', loot: 'gauntlet_lab_administration_office' },
       { id: 'director_cabinets', at: [24, 5], kit: 'cabinets', fixture: null },
     ],
   },
@@ -115,12 +115,12 @@ local rooms = {
   },
   canteen: {
     tokens: ['n', 'N', '7', 'I'], wall: 'N', floor: 'n', band: '+',
-    finish: { floor: 'tiles', wall: 'plaster', base: 'dressed' }, ceilingDrop: 1, floorRise: 0,
+    finish: { floor: 'tiles', wall: 'plaster', base: 'dressed' }, ceilingDrop: 1, floorRise: 0, lootUsage: ['Residential'],
     // The door sits south of the shaft room's opening so the two don't face across the corridor.
     openings: [{ token: 'I', at: [25, 26], axis: 'z', width: 4 }],
     dressing: [
-      { id: 'canteen_fridge', at: [14, 23], kit: 'fridge', fixture: 'broken' },
-      { id: 'canteen_cupboards', at: [14, 25], kit: 'kitchen', fixture: null, loot: 'gauntlet_lab_administration_margin' },
+      { id: 'canteen_fridge', at: [14, 23], kit: 'fridge', fixture: 'broken', loot: 'gauntlet_lab_administration_canteen' },
+      { id: 'canteen_cupboards', at: [14, 25], kit: 'kitchen', fixture: null, loot: 'gauntlet_lab_administration_canteen' },
       { id: 'canteen_table_west', at: [18, 25], kit: 'desk', fixture: 'working' },
       { id: 'canteen_table_east', at: [21, 25], kit: 'desk', fixture: null },
       { id: 'canteen_bench', at: [18, 27], kit: 'bench', fixture: null },
@@ -143,18 +143,18 @@ local rooms = {
   },
   store_east: {
     tokens: ['g', 'G', '9', 'L'], wall: 'G', floor: 'g', band: '>',
-    finish: { floor: 'floor', wall: 'metal', base: 'concrete' }, ceilingDrop: 2, floorRise: 0,
+    finish: { floor: 'floor', wall: 'metal', base: 'concrete' }, ceilingDrop: 2, floorRise: 0, lootUsage: ['Industrial'],
     openings: [{ token: 'L', at: [28, 20], axis: 'z', width: 2 }],
     dressing: [
-      { id: 'store_east_shelves_west', at: [31, 19], kit: 'shelves', fixture: null },
+      { id: 'store_east_shelves_west', at: [31, 19], kit: 'shelves', fixture: null, loot: 'gauntlet_lab_administration_store' },
       { id: 'store_east_shelves_east', at: [33, 19], kit: 'shelves', fixture: 'broken' },
     ],
   },
   store_south: {
     tokens: ['x', 'X', '0', 'T'], wall: 'X', floor: 'x', band: '[',
-    finish: { floor: 'floor', wall: 'metal', base: 'concrete' }, ceilingDrop: 2, floorRise: 0,
+    finish: { floor: 'floor', wall: 'metal', base: 'concrete' }, ceilingDrop: 2, floorRise: 0, lootUsage: ['Industrial'],
     openings: [{ token: 'T', at: [28, 28], axis: 'z', width: 2 }],
-    dressing: [{ id: 'store_south_shelves', at: [31, 28], kit: 'shelves', fixture: 'working', loot: 'gauntlet_lab_administration_margin' }],
+    dressing: [{ id: 'store_south_shelves', at: [31, 28], kit: 'shelves', fixture: 'working', loot: 'gauntlet_lab_administration_store' }],
   },
   shaft_arrival: {
     tokens: ['s', 'U', 'P'], wall: 'U', floor: 's', band: ']',
@@ -194,11 +194,23 @@ local built = level.build({
   stair: { upper: [stairAt[0] + 11, base + 1, stairAt[2] + 1], lower: [stairAt[0] + 1, stairAt[1], stairAt[2] + 1] },
   seal: { doors: [[20 * scale, base + 1, 12 * scale], [29 * scale, base + 1, 8 * scale]] } + built.cardSeal,
   fixedLoot: built.cardStock,
-  items: [{ id: 'gauntlet_lab_administration_card', name: 'Clearance keycard', category: 'tool', weight: 5, size: [1, 1], economy: { usage: ['Industrial'], tiers: ['Tier1'] }, model: 'folded_note', key: { lock: 'gauntlet_lab_administration_seal' } }],
+  items: [{ id: 'gauntlet_lab_administration_card', name: 'Clearance keycard', category: 'tool', weight: 5, size: [1, 1], economy: { usage: rooms.director.lootUsage, tiers: ['Tier1'] }, model: 'folded_note', key: { lock: 'gauntlet_lab_administration_seal' } }],
   mapPieces: built.mapPieces,
   mapAssemblies: [built.mapAssembly],
-  loot: [{ id: 'gauntlet_lab_administration_margin', rolls: [1, 2], entries: [
-    { table: 'gauntlet_food_stock', weight: 2 }, { table: 'gauntlet_medical_stock', weight: 1 }, { item: 'flashlight', weight: 1 },
-    { nothing: true, weight: 3 },
-  ] }],
+  // Each room rolls what it was used for, kept as thin as the lab's other margins; offices hold desk clutter, not paper,
+  // because the level carries no readables until the destination round.
+  loot: [
+    { id: 'gauntlet_lab_administration_canteen', rolls: [1, 1], entries: [
+      { table: 'gauntlet_food_stock', weight: 3 }, { item: 'water_bottle', weight: 2 }, { item: 'soda_can', weight: 1 },
+      { item: 'juice_carton', weight: 1 }, { item: 'chocolate_bar', weight: 1 }, { nothing: true, weight: 8 },
+    ] },
+    { id: 'gauntlet_lab_administration_store', rolls: [1, 1], entries: [
+      { item: 'flashlight', weight: 1 }, { item: 'aa_battery', weight: 2 }, { item: 'duct_tape', weight: 1 }, { item: 'glowstick', weight: 1 },
+      { table: 'gauntlet_medical_stock', weight: 1 }, { nothing: true, weight: 8 },
+    ] },
+    { id: 'gauntlet_lab_administration_office', rolls: [1, 1], entries: [
+      { item: 'aa_battery', weight: 1 }, { item: 'lighter', weight: 1 }, { item: 'electrical_tape', weight: 1 }, { item: 'painkillers', weight: 1 },
+      { item: 'cracked_phone', weight: 1 }, { nothing: true, weight: 5 },
+    ] },
+  ],
 }
