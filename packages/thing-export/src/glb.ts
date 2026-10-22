@@ -103,6 +103,12 @@ const latticeOrigin = (placed: { readonly r: Mat3; readonly t: Vec3 }, grain: nu
 /** Part-definition tag that asks a voxelized export for the finer `voxelDetailGrain`. */
 export const VOXEL_DETAIL = 'voxel-detail';
 
+/** The grain a voxelized export samples this part at. */
+export const partVoxelGrain = (
+  def: PartDef,
+  { voxelGrain, voxelDetailGrain }: { readonly voxelGrain: number; readonly voxelDetailGrain?: number | undefined },
+): number => (def.tags?.includes(VOXEL_DETAIL) ? (voxelDetailGrain ?? voxelGrain) : voxelGrain);
+
 /**
  * Every part's lattice is anchored at the world origin, so two grains nest exactly when the coarse one is a whole
  * multiple of the fine one: each coarse voxel face then lies on a fine voxel face and the parts meet without steps.
@@ -452,7 +458,7 @@ export const exportGlb: ExportGlb = (input) => {
         : voxelPrimitivesFor(
             part,
             items,
-            part.def.tags?.includes(VOXEL_DETAIL) ? (input.voxelDetailGrain ?? input.voxelGrain) : input.voxelGrain,
+            partVoxelGrain(part.def, { voxelGrain: input.voxelGrain, voxelDetailGrain: input.voxelDetailGrain }),
           );
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };

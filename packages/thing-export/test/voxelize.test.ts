@@ -69,6 +69,30 @@ describe('voxelize', () => {
     expect(stats.voxels).toBe(16);
   });
 
+  // A rod of diamond section around a lattice edge, like a thin round on its side: wider than a voxel across, yet
+  // every centre lies outside it, while the sample columns either side cross it in a short chord.
+  const diamondRod = () => {
+    const r = 0.03;
+    const diamond = [
+      [r, 0],
+      [0, r],
+      [-r, 0],
+      [0, -r],
+    ];
+    const positions = [0, 0.2].flatMap((x) => diamond.flatMap(([y, z]) => [x, y!, z!]));
+    const sides = [0, 1, 2, 3].flatMap((i) => {
+      const j = (i + 1) % 4;
+      return [i, j, j + 4, i, j + 4, i + 4];
+    });
+    return { positions, indices: [...sides, 0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7], group: 0 };
+  };
+  it.each([
+    ['a solid wider than the grain', diamondRod()],
+    ['a speck no sample line crosses', box([0.001, 0.001, 0.001], [0.004, 0.004, 0.004])],
+  ])('keeps a voxel for %s that holds no voxel centre', (_, solid) => {
+    expect(voxelize([solid], grain).stats.voxels).toBeGreaterThan(0);
+  });
+
   it('lets a later source paint over an earlier one and meshes each group alone', () => {
     const { groups, stats } = voxelize(
       [box([0, 0, 0], [0.2, 0.2, 0.2], 0), box([0.1, 0.1, 0.1], [0.3, 0.2, 0.2], 1)],

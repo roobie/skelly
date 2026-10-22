@@ -1,14 +1,16 @@
+import type { VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
 import { exportGlb } from '@skelly/thing-export/glb.ts';
 import { assemblyProperties, modelParts } from '@skelly/thing-export/physical.ts';
-import { loadRecipe, type RecipeRow, recipeAsset, recipeOptions } from '@skelly/thing-export/recipe.ts';
-import { gtValue, literal, number, optional, parse, picklist, pipe, strictObject } from 'valibot';
+import { loadRecipe, type RecipeRow, recipeAsset, recipeOptions, recipeVoxel } from '@skelly/thing-export/recipe.ts';
+import { literal, optional, parse, picklist, strictObject } from 'valibot';
 import recipe from '../exports/deadvox.json' with { type: 'json' };
 import { buildItem, catalogue, palette, type ToolItem } from './catalogue.ts';
 
 export const exportItem = (
   item: ToolItem,
   asset: ReturnType<typeof recipeAsset>,
-  { collision = false, voxelGrain }: { readonly collision?: boolean; readonly voxelGrain?: number } = {},
+  voxel: VoxelGrains,
+  { collision = false }: { readonly collision?: boolean } = {},
 ) => {
   const { report, masses, handling, glow } = buildItem(item);
   const out = exportGlb({
@@ -16,7 +18,7 @@ export const exportItem = (
     asset,
     palette,
     revolveFacets: catalogue.facets,
-    ...(voxelGrain === undefined ? {} : { voxelGrain }),
+    ...voxel,
     generator: '@skelly/thing-authoring-tool',
     metadataNamespace: 'thing',
   });
@@ -54,7 +56,6 @@ const exporters = {
       strictObject({
         mass: picklist(['parts', 'inventory-atom']),
         collision: optional(literal(true)),
-        voxelGrain: optional(pipe(number(), gtValue(0))),
       }),
       recipeOptions(row),
     );
@@ -65,11 +66,7 @@ const exporters = {
     if (options.mass !== item.exportMass) {
       throw new Error(`Recipe mass ownership differs from tool item ${row.source}`);
     }
-    return () =>
-      exportItem(item, recipeAsset(row), {
-        collision: options.collision === true,
-        ...(options.voxelGrain === undefined ? {} : { voxelGrain: options.voxelGrain }),
-      });
+    return () => exportItem(item, recipeAsset(row), recipeVoxel(row), { collision: options.collision === true });
   },
 };
 export const loadThingRecipe = (value: unknown = recipe) => loadRecipe(value, exporters);

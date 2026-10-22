@@ -36,11 +36,11 @@ Consumer-authored projections can still select gameplay-specific physical bounda
 
 ## Voxelized export
 
-A recipe row may opt into `voxelGrain`, which replaces its smooth meshes with a greedy
-voxel mesh sampled at that grain. Rows without the option export as before, so only the
-rows that opt in change, and the selection is an explicit list in each recipe. The sampler
-lives here because this package may not import deadvox's mesher; see `src/voxelize.ts`,
-`voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
+Every model exports as a greedy voxel mesh, and the recipe loader refuses a row that
+names no voxel class. One export path means no model stays smooth beside voxel ones, and
+no flag or list decides which models are drawn which way. The sampler lives here because
+this package may not import deadvox's mesher; see `src/recipe.ts`, `RowSchema`,
+`src/voxelize.ts`, `voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
 
 Four grains, all content values: a coarse one for vehicles, furniture and the parts made
 to attach to them; a fine one for firearms and their magazines; a middle one for every
@@ -70,16 +70,22 @@ reading as one body. A part turned by a quarter turn shares the lattice too; one
 any other angle keeps its own. See `src/glb.ts`, `latticeOrigin`, and `src/voxelize.ts`,
 `voxelize`.
 
-A voxelized AK's sight line runs from the top of the rear sight the file draws to the top
-of the front post the file draws, not from the smooth design, because voxels move the tops
-the player lines up. Its up vector is made perpendicular to that line, since the game
-aligns the model's up to the camera's. Other sight families keep the smooth datum until a
-voxelized gun that uses one is exported. See `gungen/src/gun/exportGlb.ts`,
-`sightMetadata`.
+An iron sight line runs between the voxel tops the file draws, and the muzzle sits on the
+drawn front of the barrel, not on the smooth design, because voxels move the points the
+player lines up and the shot leaves from. The up vector is made perpendicular to that
+line, since the game aligns the model's up to the camera's. An optic keeps its optical
+axis, which no drawn top defines. See `gungen/src/gun/exportGlb.ts`, `sightMetadata` and
+`drawnMuzzle`.
 
-A solid thinner than the grain keeps one voxel of thickness instead of vanishing, because
-glass, blades and sheet parts are thin by design and losing them breaks the item; the cost
-is that they draw thicker than authored.
+Grip, flame and other anchors, collision boxes and centres of mass stay on the authored
+solids. They feed simulation rather than the eye, and a box snapped outward to the
+lattice no longer fits the cargo spaces it was authored to fill, so a drawn surface may
+stand up to one voxel off them.
+
+No solid vanishes. One thinner than the grain keeps one voxel of thickness, and one that
+holds no voxel centre keeps the voxel at its middle, because glass, blades, sheet parts
+and small rounds are thin or small by design and losing them breaks the item; the cost is
+that they draw thicker or blockier than authored. See `src/voxelize.ts`, `fillSource`.
 
 A voxelized model replaces the smooth one in place rather than shipping beside it: two
 files per model would need a selector and a second registration for no consumer that
@@ -89,7 +95,7 @@ Voxelized parts show no wear until g89 lands. Wear recolours or removes faces at
 and a greedy-merged mesh no longer has the grid it edits. g89 adds a second meshing mode
 that gives wear one quad per exposed voxel face, and deadvox's face-to-voxel wear to act on
 it; wear then works at any export grain without extra data. The price is heavier files and
-more triangles, growing with each voxelized item.
+more triangles.
 
 ## Physical model
 

@@ -2,10 +2,9 @@
 // glTF: `glb.ts` feeds it one part's solids (metres, part-local) and writes what comes back.
 //
 // A solid is sampled by casting a ray along z through each column of voxel centres, nudged off the centres by a fixed
-// fraction of a voxel so a ray never runs along a mesh edge. The spans between paired crossings are filled. A solid
-// with a side shorter than the grain would miss most rays, so it is sampled along all three axes and keeps at least one
-// voxel of thickness instead of vanishing; thicker solids are not thickened. Open meshes (an odd crossing count) drop
-// the unpaired crossing.
+// fraction of a voxel so a ray never runs along a mesh edge. The spans between paired crossings are filled. No solid
+// vanishes: one too thin or small to hold a voxel centre keeps at least one voxel (see `fillSource`); solids that hold
+// one are not thickened. Open meshes (an odd crossing count) drop the unpaired crossing.
 
 export interface VoxelSource {
   /** Part-local metres, three numbers per vertex. */
@@ -106,15 +105,16 @@ const crossings = (source: VoxelSource, grain: number, axes: Axes): Columns => {
 };
 
 /**
- * Fills the voxels whose centres lie inside the solid along one axis. With `rescue`, a span that holds no centre still
- * fills the voxel at its middle, so a thin solid keeps one voxel of thickness.
+ * Fills the voxels whose centres lie inside the solid along one axis, and says whether it filled any. With `rescue`, a
+ * span that holds no centre still fills the voxel at its middle, so a thin solid keeps one voxel of thickness.
  */
 const fillAlong = (
   target: { readonly grid: Grid; readonly source: VoxelSource; readonly grain: number },
   axes: Axes,
   rescue: boolean,
-): void => {
+): boolean => {
   const { grid, source, grain } = target;
+  let filled = false;
   for (const [column, depths] of crossings(source, grain, axes)) {
     const lattice = [Math.floor(column / RANGE) - HALF_RANGE, (column % RANGE) - HALF_RANGE];
     depths.sort((p, q) => p - q);
@@ -124,6 +124,7 @@ const fillAlong = (
       voxel[axes.across[1]] = lattice[1]!;
       voxel[axes.ray] = checkedIndex((ray + 0.5) * grain, grain);
       grid.set(keyOf(voxel[0]!, voxel[1]!, voxel[2]!), source.group);
+      filled = true;
     };
     for (let i = 0; i + 1 < depths.length; i += 2) {
       const first = Math.ceil(depths[i]! / grain - 0.5);
@@ -136,6 +137,7 @@ const fillAlong = (
       }
     }
   }
+  return filled;
 };
 
 const THIN_AXES: readonly Axes[] = [
@@ -144,15 +146,24 @@ const THIN_AXES: readonly Axes[] = [
   { across: [2, 0], ray: 1 },
 ];
 
-/** A solid with a side shorter than the grain is thin: it is sampled along every axis so it keeps a voxel's thickness. */
+/**
+ * A solid with a side shorter than the grain is thin: it is sampled along every axis so it keeps a voxel's thickness. A
+ * solid wider than the grain can still hold no voxel centre, such as a cylinder whose chords fall between them, so one
+ * that fills nothing is sampled as thin; one that no sample line crosses at all takes the voxel holding its centre.
+ */
 const fillSource = (grid: Grid, source: VoxelSource, grain: number): void => {
-  const extent = [0, 1, 2].map((axis) => {
+  const bounds = [0, 1, 2].map((axis) => {
     const values = Array.from({ length: source.positions.length / 3 }, (_, v) => source.positions[v * 3 + axis]!);
-    return Math.max(...values) - Math.min(...values);
+    return [Math.min(...values), Math.max(...values)] as const;
   });
-  const thin = Math.min(...extent) < grain;
-  for (const axes of thin ? THIN_AXES : THIN_AXES.slice(0, 1)) {
-    fillAlong({ grid, source, grain }, axes, thin);
+  const target = { grid, source, grain };
+  if (Math.min(...bounds.map(([min, max]) => max - min)) >= grain && fillAlong(target, THIN_AXES[0]!, false)) {
+    return;
+  }
+  const crossed = THIN_AXES.map((axes) => fillAlong(target, axes, true));
+  if (!crossed.includes(true)) {
+    const [x, y, z] = bounds.map(([min, max]) => checkedIndex((min + max) / 2, grain));
+    grid.set(keyOf(x!, y!, z!), source.group);
   }
 };
 
