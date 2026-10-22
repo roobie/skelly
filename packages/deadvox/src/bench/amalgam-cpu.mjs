@@ -63,8 +63,7 @@ const percentile = (samples, p) => [...samples].sort((a, b) => a - b)[Math.ceil(
 // read costs there. The bench has no streaming or block edits; measuring chunk construction would conflate
 // collision cost with terrain admission, so the bricks are read once before timing.
 const solidBlock = registry.blocks.findIndex((block, id) => id > 0 && block?.solid === true);
-const arena = (solid) => {
-  const world = new World();
+const fillWorld = (world, solid) => {
   for (let x = -24; x < 40; x++) {
     for (let z = -24; z < 40; z++) {
       for (let y = 0; y < 12; y++) {
@@ -74,8 +73,8 @@ const arena = (solid) => {
       }
     }
   }
-  const entities = new BlockEntities(registry);
-  const bricks = worldBricks(world, registry, entities);
+};
+const readBricks = (bricks) => {
   for (let bx = -6; bx < 10; bx++) {
     for (let bz = -6; bz < 10; bz++) {
       for (let by = 0; by < 3; by++) {
@@ -83,6 +82,13 @@ const arena = (solid) => {
       }
     }
   }
+};
+const arena = (solid) => {
+  const world = new World();
+  fillWorld(world, solid);
+  const entities = new BlockEntities(registry);
+  const bricks = worldBricks(world, registry, entities);
+  readBricks(bricks);
   return { bricks, isSolid: worldSolid(world, registry, entities) };
 };
 
