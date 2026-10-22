@@ -427,7 +427,7 @@ describe('hamlet save/load continuation', () => {
     expect(loaded.heardSounds).toEqual(continuedSounds);
     expect(continuedSounds.some(({ event }) => event === 'shambler_idle')).toBe(true);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
-  }, 5000);
+  });
 
   it('preserves an active-sleep interruption emitted between frames across save/load', () => {
     const uninterrupted = createRuntime(undefined, true, oneColumn);

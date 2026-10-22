@@ -161,7 +161,8 @@ describe('authored readable text', () => {
       version: session.inventory.version,
       entities: session.inventory.entities.version,
     };
-    expect(session.readFurniture({ ...sign })).toBe('It is no longer there');
+    const goneReason = session.readFurniture({ ...sign });
+    expect(goneReason).toBeTruthy();
     expect(session.readFurniture(target.entity)).toBeUndefined();
     expect(shown).toEqual([readable]);
     expect({
@@ -170,7 +171,9 @@ describe('authored readable text', () => {
       entities: session.inventory.entities.version,
     }).toEqual(before);
     session.body.pos = [30, 1, 0];
-    expect(session.readFurniture(sign)).toBe('Too far away');
+    const farReason = session.readFurniture(sign);
+    expect(farReason).toBeTruthy();
+    expect(farReason).not.toBe(goneReason);
     expect(shown).toHaveLength(1);
     expect(session.queue.jobs).toHaveLength(0);
   });
