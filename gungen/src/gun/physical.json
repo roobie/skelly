@@ -473,10 +473,10 @@
     },
     {
       "family": "ak-muzzle-device",
-      "id": "muzzle-ak-brake",
+      "id": "muzzle-ak74",
       "massKg": 0.12,
       "match": {
-        "style": "brake"
+        "style": "ak74"
       }
     },
     {
