@@ -174,7 +174,8 @@
         "raiseScale": 0.94999999999999996,
         "recoveryScale": 1.1000000000000001,
         "swayScale": 0.84999999999999998,
-        "swingScale": 1.1000000000000001
+        "swingScale": 1.1000000000000001,
+        "wearPerShot": 0
       },
       "id": "foregrip",
       "model": "foregrip",

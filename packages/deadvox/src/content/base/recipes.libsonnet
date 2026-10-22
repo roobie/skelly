@@ -52,7 +52,9 @@
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
           "attachmentFactorFloor": 0,
-          "attachmentFactorHalfLifeLevels": 1.1
+          "attachmentFactorHalfLifeLevels": 1.1,
+          "caseEjection": { "speedMetresPerSecond": 3.5, "flightSimSeconds": 0.48, "landingLiftMetres": 0.006 },
+          "shotTraceRangeBlocks": 240
         }
       }
     },

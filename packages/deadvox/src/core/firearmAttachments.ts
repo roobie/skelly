@@ -50,17 +50,13 @@ export const firearmAttachmentResponse = (registry: Registry, firearm: Item): Fi
   return { recoilScale, noiseFactor, swayScale, recoveryScale, raiseScale, swingScale };
 };
 
-/** Wear fitted suppressors once per committed shot; a broken suppressor gives no further benefit. */
+/** Wear fitted attachments once per committed shot; a broken attachment gives no further benefit. */
 export const wearFirearmAttachments = (inventory: Inventory, firearm: Item): void => {
-  const { registry } = inventory;
   for (const attachment of attachedItems(firearm)) {
-    const modelId = defOf(registry, attachment.type).model;
-    const metadata = modelId === undefined ? undefined : registry.models.get(modelId)?.gun?.attachment;
-    if (metadata?.kind !== 'suppressor') {
-      continue;
+    const effects = defOf(inventory.registry, attachment.type).firearmAttachmentEffects;
+    if (effects) {
+      inventory.changeCondition(attachment.uid, -effects.wearPerShot);
     }
-    const wear = defOf(registry, attachment.type).firearmAttachmentEffects?.wearPerShot ?? 0;
-    inventory.changeCondition(attachment.uid, -wear);
   }
 };
 

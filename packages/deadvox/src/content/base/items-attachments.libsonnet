@@ -111,7 +111,8 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
         "swayScale": 0.85,
         "recoveryScale": 1.1,
         "raiseScale": 0.95,
-        "swingScale": 1.1
+        "swingScale": 1.1,
+        "wearPerShot": 0
       }
     }
   ]

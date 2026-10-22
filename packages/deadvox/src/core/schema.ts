@@ -786,8 +786,8 @@ const TrapSchema = strictObject({
 const FirearmAttachmentEffectsSchema = strictObject({
   /** Fraction of the firearm's committed recoil kick removed at full condition. */
   recoilReduction: optional(Fraction),
-  /** Condition lost per committed shot; absent means the attachment does not wear. */
-  wearPerShot: optional(Fraction),
+  /** Condition lost per committed shot; zero means the attachment does not wear. */
+  wearPerShot: Fraction,
   /** Multipliers applied to the existing aim and stance response. */
   swayScale: optional(Positive),
   recoveryScale: optional(Positive),
@@ -2718,6 +2718,13 @@ const SkillSchema = pipe(
             rackFactorHalfLifeLevels: Positive,
             attachmentFactorFloor: Fraction,
             attachmentFactorHalfLifeLevels: Positive,
+            caseEjection: strictObject({
+              speedMetresPerSecond: Positive,
+              flightSimSeconds: PositiveSimSeconds,
+              /** A landed case rests this far above its settled voxel surface, so it never z-fights the floor. */
+              landingLiftMetres: NonNegative,
+            }),
+            shotTraceRangeBlocks: Positive,
           }),
         ),
         melee: optional(

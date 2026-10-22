@@ -5,8 +5,6 @@ import { pickFurnitureHit } from './furniturePick.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { World } from './world.ts';
 
-export const SHOT_TRACE_RANGE_BLOCKS = 240;
-
 export interface CrosshairTargetWorld {
   readonly world: Pick<World, 'getBlock'>;
   readonly registry: Pick<Registry, 'blocks'>;
@@ -26,19 +24,15 @@ export interface CrosshairTarget {
 export const crosshairAimPoint = (
   origin: Vec3,
   direction: Vec3,
-  target: CrosshairTarget | undefined,
-  nearerDistanceBlocks?: number,
+  rangeBlocks: number,
+  hitDistancesBlocks: readonly (number | undefined)[],
 ): Vec3 => {
   const magnitude = Math.hypot(...direction);
   const dir: Vec3 = magnitude > 0 ? (direction.map((component) => component / magnitude) as Vec3) : [0, 0, -1];
-  const candidates = [
-    target?.distanceBlocks ?? SHOT_TRACE_RANGE_BLOCKS,
-    nearerDistanceBlocks ?? SHOT_TRACE_RANGE_BLOCKS,
-  ];
-  const distance = Math.min(
-    SHOT_TRACE_RANGE_BLOCKS,
-    ...candidates.filter((value) => Number.isFinite(value) && value > 0),
+  const hits = hitDistancesBlocks.filter(
+    (value): value is number => value !== undefined && Number.isFinite(value) && value > 0,
   );
+  const distance = Math.min(rangeBlocks, ...hits);
   return origin.map((value, axis) => value + dir[axis]! * distance) as Vec3;
 };
 
@@ -46,7 +40,7 @@ export const crosshairTarget = (
   { world, registry, entities, isSolid, blockSize }: CrosshairTargetWorld,
   origin: Vec3,
   direction: Vec3,
-  maxDistanceBlocks = SHOT_TRACE_RANGE_BLOCKS,
+  maxDistanceBlocks: number,
 ): CrosshairTarget | undefined => {
   const magnitude = Math.hypot(...direction);
   if (

@@ -15,7 +15,6 @@ import {
   Vector3,
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
-import { SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import type { FirearmTrajectory } from '../game/firearmHandling.ts';
 import { type ShotTrace, traceShot } from './shotTrace.ts';
@@ -52,6 +51,7 @@ export class ImpactEffects {
   readonly pings: InstancedMesh<CircleGeometry, MeshBasicMaterial>;
   readonly laser: LineSegments;
   private readonly blockSize: number;
+  private readonly rangeBlocks: number;
   private readonly solidAt: SolidAt;
   private readonly isTargetCell: (block: Vec3) => boolean;
   private readonly marks: Mark[];
@@ -60,8 +60,14 @@ export class ImpactEffects {
   private next = 0;
   private laserAge = LASER_SECONDS;
 
-  constructor(blockSize: number, solidAt: SolidAt, isTargetCell: (block: Vec3) => boolean = () => false) {
+  constructor(
+    blockSize: number,
+    rangeBlocks: number,
+    solidAt: SolidAt,
+    isTargetCell: (block: Vec3) => boolean = () => false,
+  ) {
     this.blockSize = blockSize;
+    this.rangeBlocks = rangeBlocks;
     this.solidAt = solidAt;
     this.isTargetCell = isTargetCell;
     const holeGeometry = new CircleGeometry(blockSize * 0.075, 10);
@@ -119,7 +125,7 @@ export class ImpactEffects {
 
   /** Tracing, holes, pings and the laser share one resolved segment per pellet/round. */
   fire(trajectory: FirearmTrajectory, debugLaser: boolean): void {
-    const traces = traceShot(trajectory.origin, trajectory.directions, SHOT_TRACE_RANGE_BLOCKS, this.solidAt);
+    const traces = traceShot(trajectory.origin, trajectory.directions, this.rangeBlocks, this.solidAt);
     for (const trace of traces) {
       if (!trace.hit) {
         continue;

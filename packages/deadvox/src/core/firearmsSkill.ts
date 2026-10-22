@@ -60,6 +60,12 @@ export interface FirearmsCombatTuning {
   readonly rackFactorHalfLifeLevels: number;
   readonly attachmentFactorFloor: number;
   readonly attachmentFactorHalfLifeLevels: number;
+  readonly caseEjection: {
+    readonly speedMetresPerSecond: number;
+    readonly flightSimSeconds: number;
+    readonly landingLiftMetres: number;
+  };
+  readonly shotTraceRangeBlocks: number;
 }
 
 export interface FirearmsSkillEffects {
