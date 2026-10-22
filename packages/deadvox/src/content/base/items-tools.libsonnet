@@ -109,6 +109,18 @@ local items = [
     weapon: melee('blunt', 'swing', damage=10, reach=0.4, cooldownSimSeconds=0.8, stamina=5, impulse=6, wearPerHit=0.012) + metalRing,
   },
   {
+    id: 'sledgehammer',
+    name: 'Sledgehammer',
+    category: 'tool',
+    weight: 4500,
+    size: [2, 7],
+    description: 'Breaks a locked door open in a few loud blows. Also a heavy weapon.',
+    model: 'sledgehammer',
+    twoHanded: true,
+    tool: { qualities: { hammering: 3 } },
+    weapon: melee('blunt', 'swing', damage=24, reach=0.7, cooldownSimSeconds=1.6, stamina=16, impulse=14, wearPerHit=0.01) + heavySwing + metalRing,
+  },
+  {
     id: 'kitchen_knife',
     name: 'Kitchen knife',
     category: 'tool',

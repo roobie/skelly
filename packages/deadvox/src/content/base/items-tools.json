@@ -119,6 +119,41 @@
     },
     {
       "category": "tool",
+      "description": "Breaks a locked door open in a few loud blows. Also a heavy weapon.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "sledgehammer",
+      "model": "sledgehammer",
+      "name": "Sledgehammer",
+      "size": [2, 7],
+      "tool": {
+        "qualities": {
+          "hammering": 3
+        }
+      },
+      "twoHanded": true,
+      "weapon": {
+        "melee": {
+          "contactFraction": 0.40000000000000002,
+          "cooldownSimSeconds": 1.6000000000000001,
+          "damage": 24,
+          "hitLayerSound": "melee_hit_metal",
+          "impulse": 14,
+          "motion": "swing",
+          "reach": 0.69999999999999996,
+          "stamina": 16,
+          "swingSound": "melee_swing_heavy",
+          "type": "blunt",
+          "wearPerHit": 0.01,
+          "windupCapSimSeconds": 0.25
+        }
+      },
+      "weight": 4500
+    },
+    {
+      "category": "tool",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

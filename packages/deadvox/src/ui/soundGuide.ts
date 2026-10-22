@@ -52,6 +52,13 @@ const TRIGGER_ENTRIES = [
     },
   ],
   [
+    'lock_hammer',
+    {
+      trigger: 'Strike a locked door with a sledgehammer to break its lock open.',
+      note: 'Temporary stand-in: shares the door-blocked recording, pitched down. It carries farther than a crowbar strike.',
+    },
+  ],
+  [
     'furniture_scrape',
     {
       trigger: 'Hold F on a crate or other small piece to lift it, or press F to set it down.',
