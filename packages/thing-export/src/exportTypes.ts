@@ -88,6 +88,17 @@ export interface GlbExportInput {
   readonly metadataNamespace?: string;
   /** Facets of every revolved solid in the file: a level of detail baked in at export. Defaults to the mesh default. */
   readonly revolveFacets?: number;
+  /**
+   * Voxel edge in metres. When set, each part's drawn solids are sampled at this grain and written as a greedy-meshed
+   * voxel mesh, one primitive per finish, instead of their smooth meshes. An evaluation of voxelizing at export; absent
+   * leaves the export unchanged.
+   */
+  readonly voxelGrain?: number;
+  /**
+   * Voxel edge in metres for the parts whose definition carries the `VOXEL_DETAIL` tag (see `glb.ts`); every other part
+   * keeps `voxelGrain`. Must divide `voxelGrain` a whole number of times so the two lattices nest. Needs `voxelGrain`.
+   */
+  readonly voxelDetailGrain?: number;
 }
 
 export type GlbExportError =

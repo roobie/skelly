@@ -32,6 +32,7 @@ import {
 } from '@skelly/engine/foundation/math.ts';
 import { boxFromMinMax, localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import { VOXEL_DETAIL } from '@skelly/thing-export/glb.ts';
 import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
@@ -3154,6 +3155,7 @@ const frontSight: PartFamily = {
       ports: [{ id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
       keepOuts: [],
       axes: [{ kind: 'sight', origin: [0, postTop, 0], dir: X, referenceDistanceU: 4 }],
+      tags: [VOXEL_DETAIL],
     };
   },
 };
@@ -3179,6 +3181,7 @@ const muzzleBead: PartFamily = {
       ],
       keepOuts: [],
       axes: [{ kind: 'sight', origin: [0, 1.25, 0], dir: X }],
+      tags: [VOXEL_DETAIL],
     };
   },
 };
@@ -3219,6 +3222,7 @@ const sportingRearSight: PartFamily = {
         { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
       axes: [{ kind: 'sight', origin: [0, height, 0], dir: X, referenceDistanceU: sporter ? eyeReliefU : 4 }],
+      tags: [VOXEL_DETAIL],
       keepOuts: [],
     };
   },
@@ -3247,6 +3251,7 @@ const railFrontSight: PartFamily = {
       ports: [{ id: 'base', mount: 'rail-top', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
       keepOuts: [],
       axes: [{ kind: 'sight', origin: [0, sightAxisY, 0], dir: X, referenceDistanceU: 4 }],
+      tags: [VOXEL_DETAIL],
     };
   },
 };
@@ -3354,6 +3359,7 @@ const akRearSight: PartFamily = {
       ],
       keepOuts: [],
       axes: [{ kind: 'sight', origin: [0, AK_REAR_SIGHT_NOTCH_TOP_U, 0], dir: X, referenceDistanceU: 22 }],
+      tags: [VOXEL_DETAIL],
     };
   },
 };
@@ -4640,6 +4646,7 @@ const sight: PartFamily = {
       ],
       keepOuts: optic.keepOuts,
       axes: [{ kind: 'sight', origin: [0, optic.opticalAxisY, 0], dir: X }],
+      tags: [VOXEL_DETAIL],
     };
   },
 };

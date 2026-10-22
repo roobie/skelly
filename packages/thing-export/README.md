@@ -4,6 +4,7 @@ read_if:
   - you add an authoring tool that exports neutral models
   - you change physical inputs or interpret exported mass and centres of mass
   - you share export recipes or file writing between authoring tools
+  - you change or judge voxelized export
 ---
 
 # thing-export
@@ -32,6 +33,63 @@ A caller asks for the index only where a consumer reads it, so no unread generat
 tracked; see `tools/refresh-deadvox.mjs`, `jobs`.
 Consumer-authored projections can still select gameplay-specific physical boundaries; see
 `packages/deadvox/src/content/base/models-items.jsonnet`, `authored`.
+
+## Voxelized export
+
+A recipe row may opt into `voxelGrain`, which replaces its smooth meshes with a greedy
+voxel mesh sampled at that grain. Rows without the option export as before, so only the
+rows that opt in change, and the selection is an explicit list in each recipe. The sampler
+lives here because this package may not import deadvox's mesher; see `src/voxelize.ts`,
+`voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
+
+Four grains, all content values: a coarse one for vehicles, furniture and the parts made
+to attach to them; a fine one for firearms and their magazines; a middle one for every
+other item or component; and a finest one for fine-detail parts. A vehicle part must match
+the grain of the vehicle it sits on, while a tool or a can drawn at that grain collapses to
+a few voxels. A gun needs its own because its small controls are detail at a few
+millimetres that the item grain cannot hold, and a magazine shares its gun's grain so a
+seated magazine matches the receiver's voxels. A sight notch or post is only a few
+millimetres wide, so the gun grain fills a notch and a post hides behind its neighbours;
+the finest grain gives those parts voxels small enough to keep them. A row picks its
+class, never a number, so one tuning moves a whole class. See
+`tools/jsonnet/lib/voxel-grains.libsonnet`, and the recipes
+`packages/thing-authoring-tool/exports/deadvox.jsonnet` and `gungen/exports/deadvox.jsonnet`.
+
+A part asks for the finest grain by carrying a tag in its definition, so the choice sits
+with the part's content and the exporter holds no list of part names. See `src/glb.ts`,
+`VOXEL_DETAIL`, and `gungen/src/gun/parts.ts`, where the sight parts carry it. The coarse
+grain must be a whole multiple of the finest, because every lattice is anchored at the
+same world origin and the grains then nest: each coarse voxel face lies on a fine voxel
+face, so a sight still meets the receiver and the gas tube without steps or gaps. The
+exporter refuses grains that do not nest; see `src/glb.ts`, `checkNesting`.
+
+Every part's voxels sit on one lattice shared by the whole model, not on a lattice of the
+part's own. Parts are placed at fractions of a voxel, and voxels from different lattices
+leave steps and gaps where parts meet, so a receiver, a handguard and a magazine well stop
+reading as one body. A part turned by a quarter turn shares the lattice too; one turned by
+any other angle keeps its own. See `src/glb.ts`, `latticeOrigin`, and `src/voxelize.ts`,
+`voxelize`.
+
+A voxelized AK's sight line runs from the top of the rear sight the file draws to the top
+of the front post the file draws, not from the smooth design, because voxels move the tops
+the player lines up. Its up vector is made perpendicular to that line, since the game
+aligns the model's up to the camera's. Other sight families keep the smooth datum until a
+voxelized gun that uses one is exported. See `gungen/src/gun/exportGlb.ts`,
+`sightMetadata`.
+
+A solid thinner than the grain keeps one voxel of thickness instead of vanishing, because
+glass, blades and sheet parts are thin by design and losing them breaks the item; the cost
+is that they draw thicker than authored.
+
+A voxelized model replaces the smooth one in place rather than shipping beside it: two
+files per model would need a selector and a second registration for no consumer that
+wants the smooth one.
+
+Voxelized parts show no wear until g89 lands. Wear recolours or removes faces at runtime,
+and a greedy-merged mesh no longer has the grid it edits. g89 adds a second meshing mode
+that gives wear one quad per exposed voxel face, and deadvox's face-to-voxel wear to act on
+it; wear then works at any export grain without extra data. The price is heavier files and
+more triangles, growing with each voxelized item.
 
 ## Physical model
 

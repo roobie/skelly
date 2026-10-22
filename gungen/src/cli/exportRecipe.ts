@@ -8,7 +8,7 @@ import {
   type RecipeExport,
   type RecipeRow as Row,
 } from '@skelly/thing-export/recipe.ts';
-import { nonEmpty, parse, picklist, pipe, strictObject, string } from 'valibot';
+import { gtValue, nonEmpty, number, optional, parse, picklist, pipe, strictObject, string } from 'valibot';
 import content from '../../exports/deadvox.json' with { type: 'json' };
 import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import { exportAttachmentGlb } from '../gun/attachmentExport.ts';
@@ -30,10 +30,24 @@ const cartridgeAt = (source: string, root: string) => {
 
 const exporters = {
   design: (row: Row, root: string) => {
-    parse(strictObject({}), optionsFor(row));
+    const { voxelGrain, voxelDetailGrain } = parse(
+      strictObject({
+        voxelGrain: optional(pipe(number(), gtValue(0))),
+        voxelDetailGrain: optional(pipe(number(), gtValue(0))),
+      }),
+      optionsFor(row),
+    );
     const text = readFileSync(resolve(root, row.source), 'utf8');
     return () => {
-      const result = exportFileText(text, assetFor(row));
+      const result = exportFileText(
+        text,
+        assetFor(row),
+        {},
+        {
+          ...(voxelGrain === undefined ? {} : { voxelGrain }),
+          ...(voxelDetailGrain === undefined ? {} : { voxelDetailGrain }),
+        },
+      );
       if (!result.ok) {
         throw new Error(result.message);
       }
@@ -69,7 +83,11 @@ const exporters = {
   },
   magazine: (row: Row, root: string) => {
     const options = parse(
-      strictObject({ cartridge: pipe(string(), nonEmpty()), appearanceProfile: pipe(string(), nonEmpty()) }),
+      strictObject({
+        cartridge: pipe(string(), nonEmpty()),
+        appearanceProfile: pipe(string(), nonEmpty()),
+        voxelGrain: optional(pipe(number(), gtValue(0))),
+      }),
       optionsFor(row),
     );
     const prefab = GUN_PREFABS.find(({ id, family }) => id === row.source && family === 'magazine');
@@ -86,6 +104,7 @@ const exporters = {
         params: prefab.fixedParams,
         cartridge,
         appearance: { appearanceProfile: options.appearanceProfile },
+        ...(options.voxelGrain === undefined ? {} : { voxelGrain: options.voxelGrain }),
       });
       if (!result.ok) {
         throw new Error(JSON.stringify(result.error));
