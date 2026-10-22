@@ -1525,6 +1525,29 @@ const DoorForcingSchema = pipe(
   ),
 );
 
+/** How a doorway leaf or hatch reads as one that opens; lengths are in metres (`docs/content.md`, "Door detail"). */
+const DoorDetailSchema = strictObject({
+  /** Colour of the handle and hinges. */
+  hardware: Color,
+  /** How far the fields stand off each face of the leaf. */
+  relief: Positive,
+  /** Bare border round the fields, and the gap between them; both show the leaf's darker core. */
+  frame: NonNegative,
+  seam: NonNegative,
+  /** Raised fields across the leaf from its hinge edge, and along that edge. */
+  fields: tuple([pipe(Count, minValue(1, 'must be at least 1')), pipe(Count, minValue(1, 'must be at least 1'))]),
+  /** Strap hinges lying on both faces from the hinge edge. */
+  hinges: strictObject({ count: Count, length: Positive, width: Positive }),
+  /** On both faces: its grip centre lies `fromFreeEdge` in from the free edge and `along` the length of the hinge edge. */
+  handle: strictObject({
+    kind: picklist(['knob', 'lever', 'pull', 'bar', 'ring']),
+    fromFreeEdge: Positive,
+    along: Fraction,
+    length: Positive,
+    thickness: Positive,
+  }),
+});
+
 const FurnitureShapeBoxSchema = strictObject({
   /** Lower corner in the furniture's cell coordinates. */
   position: tuple([NonNegative, NonNegative, NonNegative]),
@@ -1566,6 +1589,7 @@ const FurnitureSchema = pipe(
         hatch: optional(literal(true)),
         /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
         barredFrom: optional(picklist(['front', 'back'])),
+        detail: optional(DoorDetailSchema),
       }),
     ),
     /**
@@ -1676,6 +1700,11 @@ const FurnitureSchema = pipe(
     'appearance needs a plain container without a shape, door or readable',
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
+  // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: a body door is the front of its own drawn body.
+  check(
+    ({ door, shape, container }) => !door?.detail || shape === undefined || container === undefined,
+    'a body door draws its handle on its body, so door detail belongs only on doorway leaves and hatches',
+  ),
   // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: any other door breaks instead of being ruined.
   check(
     ({ ruin, door, shape, container }) => !(ruin && door) || (shape !== undefined && container !== undefined),
