@@ -1,12 +1,16 @@
 import { exportGlb } from '@skelly/thing-export/glb.ts';
 import { assemblyProperties, modelParts } from '@skelly/thing-export/physical.ts';
 import { loadRecipe, type RecipeRow, recipeAsset, recipeOptions } from '@skelly/thing-export/recipe.ts';
-import { parse, picklist, strictObject } from 'valibot';
+import { literal, optional, parse, picklist, strictObject } from 'valibot';
 import recipe from '../exports/deadvox.json' with { type: 'json' };
 import { buildItem, catalogue, palette, type ToolItem } from './catalogue.ts';
 
-export const exportItem = (item: ToolItem, asset: ReturnType<typeof recipeAsset>) => {
-  const { report, masses, handling, anchors, glow } = buildItem(item);
+export const exportItem = (
+  item: ToolItem,
+  asset: ReturnType<typeof recipeAsset>,
+  { collision = false }: { readonly collision?: boolean } = {},
+) => {
+  const { report, masses, handling, glow } = buildItem(item);
   const out = exportGlb({
     resolved: report.resolved,
     asset,
@@ -18,20 +22,26 @@ export const exportItem = (item: ToolItem, asset: ReturnType<typeof recipeAsset>
   if (!out.ok) {
     throw new Error(JSON.stringify(out.error));
   }
-  const parts = modelParts(report.resolved, (id, part) => {
-    const massKg = masses[id];
-    if (massKg === undefined) {
-      throw new Error(`Missing authored mass for ${id}`);
-    }
-    return { part, massKg };
-  });
+  const parts = modelParts(
+    report.resolved,
+    (id, part) => {
+      const massKg = masses[id];
+      if (massKg === undefined) {
+        throw new Error(`Missing authored mass for ${id}`);
+      }
+      return { part, massKg };
+    },
+    { collision },
+  );
+  if (collision && item.exportMass !== 'parts') {
+    throw new Error(`${item.id}: baked collision travels with exported parts`);
+  }
   return {
     glb: out.glb,
     modelEntry: {
       ...asset,
       ...(item.exportMass === 'parts' ? { parts } : {}),
       ...handling,
-      ...anchors,
       ...(glow ? { emissiveMaterial: glow } : {}),
     },
     physical: assemblyProperties(parts),
@@ -39,7 +49,10 @@ export const exportItem = (item: ToolItem, asset: ReturnType<typeof recipeAsset>
 };
 const exporters = {
   item: (row: RecipeRow) => {
-    const options = parse(strictObject({ mass: picklist(['parts', 'inventory-atom']) }), recipeOptions(row));
+    const options = parse(
+      strictObject({ mass: picklist(['parts', 'inventory-atom']), collision: optional(literal(true)) }),
+      recipeOptions(row),
+    );
     const item = catalogue.items.find(({ id }) => id === row.source);
     if (!item) {
       throw new Error(`Unknown tool item ${row.source}`);
@@ -47,7 +60,7 @@ const exporters = {
     if (options.mass !== item.exportMass) {
       throw new Error(`Recipe mass ownership differs from tool item ${row.source}`);
     }
-    return () => exportItem(item, recipeAsset(row));
+    return () => exportItem(item, recipeAsset(row), { collision: options.collision === true });
   },
 };
 export const loadThingRecipe = (value: unknown = recipe) => loadRecipe(value, exporters);

@@ -23,11 +23,13 @@ import {
   picklist,
   pipe,
   record,
+  regex,
   strictObject,
   string,
 } from 'valibot';
 import content from '../items.json' with { type: 'json' };
 import { bearTrap } from './families/bearTrap.ts';
+import { block } from './families/block.ts';
 import { head, limb, torso } from './families/body.ts';
 import { coil } from './families/coil.ts';
 import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
@@ -57,6 +59,14 @@ const PortSchema = strictObject({
   up: ModelPointSchema,
   required: boolean(),
 });
+const SolidPointSchema = {
+  part: name,
+  solid: name,
+  fraction: pipe(
+    ModelPointSchema,
+    check((point) => point.every((value) => value >= 0 && value <= 1), 'datum fraction outside solid'),
+  ),
+};
 const PartSchema = strictObject({
   id: name,
   family: name,
@@ -65,14 +75,6 @@ const PartSchema = strictObject({
   finish: record(name, material),
   ports: array(PortSchema),
 });
-const DatumEntries = {
-  part: name,
-  solid: name,
-  fraction: pipe(
-    ModelPointSchema,
-    check((point) => point.every((value) => value >= 0 && value <= 1), 'datum fraction outside solid'),
-  ),
-};
 const ItemSchema = strictObject({
   id: name,
   exportMass: picklist(['parts', 'inventory-atom']),
@@ -84,15 +86,15 @@ const ItemSchema = strictObject({
   connections: array(strictObject({ from: name, to: name })),
   handling: optional(
     strictObject({
-      ...DatumEntries,
+      ...SolidPointSchema,
       turn: ModelPointSchema,
       hold: NeutralModelSchema.entries.hold,
       rest: NeutralModelSchema.entries.rest,
       roll: NeutralModelSchema.entries.roll,
     }),
   ),
-  /** Where a lit flame stands: deadvox draws its flame and light there. */
-  flame: optional(strictObject(DatumEntries)),
+  /** Named datums on solids, exported as the model's anchors. */
+  anchors: optional(record(pipe(string(), regex(/^[a-z0-9_]+$/)), strictObject(SolidPointSchema))),
   /** The finish slot that glows while lit; its material must be the only one that slot's finish names in the item. */
   glow: optional(name),
 });
@@ -108,7 +110,9 @@ const CatalogueSchema = strictObject({
 });
 export type ToolItem = InferOutput<typeof ItemSchema>;
 type ToolPart = ToolItem['parts'][number];
+type ToolDatum = NonNullable<ToolItem['handling']>;
 const builders = {
+  block,
   ring,
   spool,
   coil,
@@ -223,26 +227,31 @@ export const buildItem = (item: ToolItem) => {
   if (report.issues.length > 0) {
     throw new Error(`${item.id}: ${JSON.stringify(report.issues)}`);
   }
-  const datumPoint = (role: string, datum: { part: string; solid: string; fraction: readonly number[] }): Vec3 => {
+  const datumAt = (datum: Pick<ToolDatum, 'part' | 'solid' | 'fraction'>): Vec3 => {
     const solid = report.resolved.defs.get(datum.part)?.solids.find(({ id }) => id === datum.solid);
     const placed = report.resolved.placed.get(datum.part);
     if (!(solid && placed)) {
-      throw new Error(`${item.id}: missing ${role} geometry ${datum.part}/${datum.solid}`);
+      throw new Error(`${item.id}: missing datum geometry ${datum.part}/${datum.solid}`);
     }
     const [min, max] = localSolidBounds(solid);
     const point = min.map((value, axis) => value + datum.fraction[axis]! * (max[axis]! - value)) as unknown as Vec3;
     return scale(applyPoint(placed, point), catalogue.units.metresPerUnit);
   };
-  const handling: Pick<NeutralModel, 'grip' | 'hold' | 'rest' | 'roll'> = item.handling
-    ? {
-        grip: { at: datumPoint('handling', item.handling), turn: item.handling.turn },
-        hold: item.handling.hold,
-        ...(item.handling.rest ? { rest: item.handling.rest } : {}),
-        roll: item.handling.roll,
-      }
-    : {};
-  const anchors: Pick<NeutralModel, 'anchors'> = item.flame
-    ? { anchors: { flame: datumPoint('flame', item.flame) } }
-    : {};
-  return { report, masses, handling, anchors, glow: item.glow && glowMaterial(item, item.glow) };
+  let handling: Pick<NeutralModel, 'grip' | 'hold' | 'rest' | 'roll' | 'anchors'> = {};
+  if (item.handling) {
+    const datum = item.handling;
+    handling = {
+      grip: { at: datumAt(datum), turn: datum.turn },
+      hold: datum.hold,
+      ...(datum.rest ? { rest: datum.rest } : {}),
+      roll: datum.roll,
+    };
+  }
+  if (item.anchors) {
+    handling = {
+      ...handling,
+      anchors: Object.fromEntries(Object.entries(item.anchors).map(([id, datum]) => [id, datumAt(datum)])),
+    };
+  }
+  return { report, masses, handling, glow: item.glow && glowMaterial(item, item.glow) };
 };

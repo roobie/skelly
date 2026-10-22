@@ -233,6 +233,21 @@ const ITEM_CATEGORIES = [
   'misc',
 ] as const;
 
+/** What a fitted vehicle part provides; the game supports these, so content naming another is refused. */
+const VEHICLE_CAPABILITIES = [
+  'steered',
+  'driven',
+  'power',
+  'fuel',
+  'electricity',
+  'storage',
+  'seat',
+  'light',
+  'glazing',
+  'protection',
+] as const;
+export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
+
 /** Eyes sits beside the head so goggles stack with a helmet or headlamp (`DESIGN.md`, "The item model"). */
 const CLOTHING_SLOTS = ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
 /** The shoulder holds a slung long gun, never clothing (`DESIGN.md`, "Shoulder and sling"). */
@@ -905,6 +920,38 @@ const ItemSchema = strictObject({
   key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
   model: optional(Id),
+  /** A vehicle part: blueprints may fit it, and its model must export parts with baked collision. */
+  vehicle: optional(
+    strictObject({
+      capabilities: pipe(
+        array(picklist(VEHICLE_CAPABILITIES)),
+        check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
+      ),
+    }),
+  ),
+});
+
+const VehicleFittingSchema = strictObject({
+  id: Id,
+  /** An item with a `vehicle` block. */
+  part: Id,
+  /** Where the part's model origin sits, in vehicle metres: x forward, y up, z toward the near side. */
+  at: ModelPointSchema,
+  /** Reflected across z about `at`: the other side's placement of an unhanded part. */
+  mirror: optional(literal(true)),
+  /** Every fitting it rests on; an authored structural choice, not inferred from contact. */
+  supportedBy: array(Id),
+});
+
+/** A factory build, as a vehicle authoring export: parts by item id, placed and supported. */
+const VehicleBlueprintSchema = strictObject({
+  id: Id,
+  name: Name,
+  fittings: pipe(
+    array(VehicleFittingSchema),
+    nonEmpty('needs at least one fitting'),
+    check((list) => new Set(list.map(({ id }) => id)).size === list.length, 'fitting ids must be distinct'),
+  ),
 });
 
 // ---- models ----
@@ -3071,6 +3118,7 @@ const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
   doorMaterials: { schema: optional(array(DoorMaterialSchema)), label: 'door materials', order: 32 },
+  vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
@@ -3167,6 +3215,7 @@ export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type GunModelDef = InferOutput<typeof GunModelSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
+export type VehicleFittingDef = InferOutput<typeof VehicleBlueprintSchema>['fittings'][number];
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SoundRecipe = InferOutput<typeof SoundRecipeSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;

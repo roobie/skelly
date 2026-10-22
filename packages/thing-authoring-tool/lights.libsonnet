@@ -19,7 +19,7 @@ local port(id, gender, pos, normal, up=[1, 0, 0]) = { id: id, mount: 'assembly-j
     parts: [part('torch', 'torch', 0.350, { length: 0.42, shaftRadius: 0.014, headLength: 0.10, headRadius: 0.03 }, { shaft: 'wood-birch', head: 'cloth-charred' })],
     connections: [],
     handling: { part: 'torch', solid: 'shaft', fraction: [0.3, 0.5, 0.5], turn: [0, 0, 0], hold: 'upright', rest: 'upright', roll: 0 },
-    flame: { part: 'torch', solid: 'head', fraction: [1, 0.5, 0.5] },
+    anchors: { flame: { part: 'torch', solid: 'head', fraction: [1, 0.5, 0.5] } },
     glow: 'head',
   },
   {
@@ -28,7 +28,7 @@ local port(id, gender, pos, normal, up=[1, 0, 0]) = { id: id, mount: 'assembly-j
     parts: [part('candle', 'candle', 0.150, { radius: 0.023, height: 0.10, wickRadius: 0.0012, wickHeight: 0.012 }, { body: 'wax-ivory', wick: 'cloth-charred' })],
     connections: [],
     handling: { part: 'candle', solid: 'body', fraction: [0.4, 0.5, 0.5], turn: [0, 0, 0], hold: 'upright', rest: 'upright', roll: 0 },
-    flame: { part: 'candle', solid: 'wick', fraction: [1, 0.5, 0.5] },
+    anchors: { flame: { part: 'candle', solid: 'wick', fraction: [1, 0.5, 0.5] } },
   },
   // Broken in a fall: the arm is kinked and the shade hangs forward off its joint.
   {

@@ -1387,13 +1387,15 @@
       ]
     },
     {
+      "anchors": {
+        "flame": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "torch",
+          "solid": "head"
+        }
+      },
       "connections": [],
       "exportMass": "inventory-atom",
-      "flame": {
-        "fraction": [1, 0.5, 0.5],
-        "part": "torch",
-        "solid": "head"
-      },
       "glow": "head",
       "handling": {
         "fraction": [0.29999999999999999, 0.5, 0.5],
@@ -1425,13 +1427,15 @@
       ]
     },
     {
+      "anchors": {
+        "flame": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "candle",
+          "solid": "wick"
+        }
+      },
       "connections": [],
       "exportMass": "inventory-atom",
-      "flame": {
-        "fraction": [1, 0.5, 0.5],
-        "part": "candle",
-        "solid": "wick"
-      },
       "handling": {
         "fraction": [0.40000000000000002, 0.5, 0.5],
         "hold": "upright",
@@ -1795,6 +1799,137 @@
             "upper": "0.41999999999999998",
             "upperDepth": "0.14000000000000001",
             "upperWidth": "0.14000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "base": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "body",
+          "solid": "body"
+        },
+        "terminal_positive": {
+          "fraction": [0.80000000000000004, 1, 0.20000000000000001],
+          "part": "body",
+          "solid": "lid"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "car_battery",
+      "parts": [
+        {
+          "family": "carton",
+          "finish": {
+            "body": "plastic-black",
+            "cap": "plastic-black",
+            "label": "plastic-red"
+          },
+          "id": "body",
+          "massKg": 14,
+          "params": {
+            "bandHeight": "0.059999999999999998",
+            "bandInset": "0.00050000000000000001",
+            "depth": "0.17499999999999999",
+            "handleDepth": "0.040000000000000001",
+            "handleHeight": "0",
+            "handleWall": "0.0060000000000000001",
+            "handleWidth": "0.12",
+            "height": "0.17000000000000001",
+            "lidHeight": "0.02",
+            "width": "0.23999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "beam": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "body",
+          "solid": "body"
+        },
+        "mount": {
+          "fraction": [0, 0.5, 0.14999999999999999],
+          "part": "body",
+          "solid": "body"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "car_headlamp",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "glass-grey"
+          },
+          "id": "body",
+          "massKg": 1.2,
+          "params": {
+            "depth": "0.22",
+            "height": "0.16",
+            "width": "0.080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "seat": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "body",
+          "solid": "body"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_battery_tray",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 1.5,
+          "params": {
+            "depth": "0.20999999999999999",
+            "height": "0.02",
+            "width": "0.28000000000000003"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "seat": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "body",
+          "solid": "body"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "pickup_battery_tray",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 2.2000000000000002,
+          "params": {
+            "depth": "0.23999999999999999",
+            "height": "0.029999999999999999",
+            "width": "0.32000000000000001"
           },
           "ports": []
         }
