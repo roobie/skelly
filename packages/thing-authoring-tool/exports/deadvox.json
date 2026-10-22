@@ -412,6 +412,222 @@
     "source": "pickup_battery_tray"
   },
   {
+    "id": "wheel_205_55r16",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "wheel_205_55r16"
+  },
+  {
+    "id": "front_seat",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "front_seat"
+  },
+  {
+    "id": "door_mirror",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "door_mirror"
+  },
+  {
+    "id": "steering_wheel",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "steering_wheel"
+  },
+  {
+    "id": "gear_lever",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "gear_lever"
+  },
+  {
+    "id": "hatchback_shell",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_shell"
+  },
+  {
+    "id": "hatchback_front_door",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_front_door"
+  },
+  {
+    "id": "hatchback_rear_door",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_rear_door"
+  },
+  {
+    "id": "hatchback_tailgate",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_tailgate"
+  },
+  {
+    "id": "hatchback_windscreen",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_windscreen"
+  },
+  {
+    "id": "hatchback_bonnet",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_bonnet"
+  },
+  {
+    "id": "hatchback_front_wing",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_front_wing"
+  },
+  {
+    "id": "hatchback_front_bumper",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_front_bumper"
+  },
+  {
+    "id": "hatchback_rear_bumper",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_rear_bumper"
+  },
+  {
+    "id": "hatchback_tail_lamp",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_tail_lamp"
+  },
+  {
+    "id": "hatchback_front_strut",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_front_strut"
+  },
+  {
+    "id": "hatchback_rear_axle",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_rear_axle"
+  },
+  {
+    "id": "hatchback_engine",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_engine"
+  },
+  {
+    "id": "hatchback_gearbox",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_gearbox"
+  },
+  {
+    "id": "hatchback_radiator",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_radiator"
+  },
+  {
+    "id": "hatchback_fuel_tank",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_fuel_tank"
+  },
+  {
+    "id": "hatchback_exhaust",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_exhaust"
+  },
+  {
+    "id": "hatchback_dashboard",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_dashboard"
+  },
+  {
+    "id": "hatchback_rear_seat",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_rear_seat"
+  },
+  {
     "id": "jeans",
     "kind": "item",
     "options": {

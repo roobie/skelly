@@ -175,8 +175,8 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 
 /** Everything a piece's drawn look and blocking cells follow from, so a view can skip pieces that didn't change. */
-export const poseKey = (entity: BlockEntity): string =>
-  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}`;
+export const poseKey = (entity: BlockEntity, wear = 0): string =>
+  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}|${wear}`;
 
 export interface BlockingBox {
   readonly pos: Readonly<Vec3>;
@@ -785,6 +785,20 @@ export class BlockEntities {
   }
 
   /**
+   * How many of its door material's damage looks a leaf has reached, 0 when none; a view redraws a leaf when this
+   * changes, not on every blow (`FurnitureMeshes.doorLook`).
+   */
+  wearOf(entity: BlockEntity): number {
+    const { door } = this.defOf(entity);
+    const steps = door && this.registry.doorMaterials.get(door.material)?.damaged;
+    if (!(door?.breach && steps && entity.damage)) {
+      return 0;
+    }
+    const fraction = entity.damage / door.breach.toughness;
+    return steps.filter((step) => step.from <= fraction).length;
+  }
+
+  /**
    * One blow against a closed leaf, a zombie's bash or a player's strike alike. A blow below the leaf's minimum
    * strength leaves no mark, so waiting never lets a weak attacker through; stronger blows add their strength until
    * it reaches the toughness. A broken leaf stands open and its lock is gone, so the breach is one-way, as forcing is.
@@ -800,7 +814,11 @@ export class BlockEntities {
     const damage = (entity.damage ?? 0) + strength;
     this.version += 1;
     if (damage < breach.toughness) {
+      const worn = this.wearOf(entity);
       entity.damage = damage;
+      if (this.wearOf(entity) !== worn) {
+        this.standing += 1;
+      }
       return 'damaged';
     }
     entity.damage = undefined;

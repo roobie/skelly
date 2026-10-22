@@ -1,0 +1,17 @@
+{
+  "id": "hatchback_front_strut",
+  "file": "assets/models/hatchback_front_strut.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 14,
+      "centreOfMass": [1.2465705209919553, 0.3387752974981969, 0.524924561246406],
+      "collision": [
+        { "min": [1.1, 0.2, 0.35], "max": [1.4, 0.26, 0.6] },
+        { "min": [1.19, 0.26, 0.6000000000000001], "max": [1.29, 0.38, 0.645] },
+        { "min": [1.205, 0.38, 0.585], "max": [1.275, 0.85, 0.655] }
+      ]
+    }
+  },
+  "anchors": { "hub": [1.24, 0.32, 0.645] }
+}
