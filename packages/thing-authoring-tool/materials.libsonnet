@@ -59,6 +59,10 @@ local atom(id, family, exportMass, massKg, dimensions, finish, solid='body', fra
     axis: 'y', start: 0, end: 0.022,
     profile: [[-0.045, -0.40], [0.045, -0.395], [0.045, 0.395], [-0.04, 0.40]],
   }, { body: 'wood-birch' }),
+  atom('whetstone', 'cutStock', 'parts', 0.250, {
+    axis: 'y', start: 0, end: 0.025,
+    profile: [[-0.075, -0.024], [0.075, -0.024], [0.075, 0.024], [-0.075, 0.024]],
+  }, { body: 'stone-whet' }),
   atom('field_patch', 'foldedSheet', 'parts', 0.120, {
     thickness: 0.0015,
     vertices: [

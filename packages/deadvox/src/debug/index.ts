@@ -5,7 +5,7 @@ import { dominantSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
 import { requireDayCycle, type ZombieDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
+import { crosshairTarget } from '../core/crosshairTarget.ts';
 import {
   FIREARMS_SKILL_ZERO_RANGES,
   type FirearmsSkillShotKind,
@@ -16,6 +16,7 @@ import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import type { ShadowState } from '../core/mood.ts';
 import { raycast } from '../core/raycast.ts';
 import type { WeatheringDef } from '../core/schema.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { WEATHERING_RANGES } from '../core/weather.ts';
 import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
@@ -1421,6 +1422,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     nextShotTargetRangeUpdate = now + 400;
     const ray = crosshairRay;
     const { engine } = hooks;
+    const rangeBlocks = firearmsCombatTuning(engine.registry).shotTraceRangeBlocks;
     const target = ray?.active
       ? crosshairTarget(
           {
@@ -1432,7 +1434,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           },
           ray.eye,
           ray.dir,
-          SHOT_TRACE_RANGE_BLOCKS,
+          rangeBlocks,
         )
       : undefined;
     const zombies = hooks.zombies();
@@ -1444,6 +1446,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             surface: target,
             zombies,
             blockSize: engine.config.scale.blockSize,
+            rangeBlocks,
             weapon: unarmedMeleeWeapon(engine.registry.meleeClasses),
           })
         : undefined;

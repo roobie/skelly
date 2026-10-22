@@ -2,7 +2,7 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { HANDLING, type Inventory, type Location } from '../core/inventory.ts';
+import { handlingWeights, type Inventory, type Location } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
@@ -25,7 +25,7 @@ const whereText = (inv: Inventory, item: Item, at: Location | undefined, text: Q
     case 'pocket':
       return fillText(text.pocket, {
         container: inv.name(at.owner).toLowerCase(),
-        seconds: (inv.pocketHandling(at.owner, at.pocket) + HANDLING.perCell * cells).toFixed(1),
+        seconds: (inv.pocketHandling(at.owner, at.pocket) + handlingWeights(inv.registry).perCell * cells).toFixed(1),
       });
     default:
       return '';

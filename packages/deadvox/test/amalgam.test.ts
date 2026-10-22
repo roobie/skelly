@@ -46,6 +46,7 @@ const player = (): PlayerSense => ({
   movement: 'still',
   lit: false,
   lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
 });
 const system = (
   sense: () => PlayerSense = player,

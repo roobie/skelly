@@ -7,6 +7,7 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
 import type { Inventory, Location, Pile, Target } from './inventory.ts';
@@ -18,8 +19,6 @@ import type { NightVision, SenseDef, WearSlot } from './schema.ts';
 import { sunDirection } from './sky.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
-/** Lift ground-light emitters so the near-field falloff reaches nearby surfaces, rather than only grazing the floor. */
-export const WORLD_LIGHT_HEIGHT_METRES = 0.4;
 export type LightExposure = 'carried' | 'world';
 
 export interface LightSenseSource {
@@ -91,9 +90,9 @@ export const lightSenseSourceFor = ({
   if (location.kind === 'pile') {
     const [x, y, z] = location.pile.pos;
     return {
-      pos: [x + 0.5, y + 0.15, z + 0.5],
+      pos: [x + 0.5, y, z + 0.5],
       seenFrom: light.seenFrom,
-      heightMetres: 0,
+      heightMetres: registry.senses.get(CORE_CONTENT_IDS.player)!.light.groundLight.senseHeightMetres,
       carried: false,
     };
   }

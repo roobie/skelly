@@ -16,8 +16,8 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
+import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
 import {
-  CASE_LANDING_LIFT,
   FirearmMechanics,
   type FirearmShotEffect,
   firearmHandlingFor,
@@ -29,6 +29,7 @@ import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const { registry } = BUNDLED_CONTENT;
+const CASE_LANDING_LIFT = firearmsCombatTuning(registry).caseEjection.landingLiftMetres;
 const scale = makeScale(0.5);
 const pitch = (-20 * Math.PI) / 180;
 

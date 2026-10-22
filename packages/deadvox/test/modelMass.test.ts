@@ -63,7 +63,7 @@ it('excludes baked replaceable geometry so fitted child items own that mass', ()
           node: suppressor.node,
           mountedAt: 'fixture_muzzle',
           mountFrame: { normal: [1, 0, 0], up: [0, 1, 0] },
-          properties: {},
+          properties: { noiseFactor: 0.5 },
         },
       ],
     },

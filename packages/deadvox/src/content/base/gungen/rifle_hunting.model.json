@@ -191,19 +191,30 @@
     ],
     "compatibility": {
       "barrel.muzzle.0": ["real-suppressor", "improvised-suppressor"],
-      "receiver.rail.0": [],
-      "receiver.rail.1": [],
+      "receiver.rail.0": ["rail-front-sight"],
+      "receiver.rail.1": ["rail-front-sight"],
       "receiver.rail.2": [],
-      "receiver.rail.3": ["optic-lpvo-1-6x", "optic-hunting-3-9x"],
+      "receiver.rail.3": ["optic-fixed-prism-4x", "optic-lpvo-1-6x", "optic-hunting-3-9x"],
       "receiver.rail.4": [],
       "receiver.rail.5": [],
-      "receiver.rail.6": []
+      "receiver.rail.6": ["rail-front-sight"]
     },
     "compatibilityPairs": [
+      [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.0", "rail-front-sight"]],
+      [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.1", "rail-front-sight"]],
+      [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
       [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-hunting-3-9x"]],
       [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+      [["barrel.muzzle.0", "improvised-suppressor"], ["receiver.rail.6", "rail-front-sight"]],
+      [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.0", "rail-front-sight"]],
+      [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.1", "rail-front-sight"]],
+      [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-fixed-prism-4x"]],
       [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-hunting-3-9x"]],
-      [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]]
+      [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.3", "optic-lpvo-1-6x"]],
+      [["barrel.muzzle.0", "real-suppressor"], ["receiver.rail.6", "rail-front-sight"]],
+      [["receiver.rail.0", "rail-front-sight"], ["receiver.rail.1", "rail-front-sight"]],
+      [["receiver.rail.0", "rail-front-sight"], ["receiver.rail.6", "rail-front-sight"]],
+      [["receiver.rail.1", "rail-front-sight"], ["receiver.rail.6", "rail-front-sight"]]
     ]
   }
 }

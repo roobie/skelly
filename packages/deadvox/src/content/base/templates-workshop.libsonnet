@@ -17,6 +17,7 @@
         "P": { "furniture": "workshop_service_pit" },
         "B": { "furniture": "crate", "loot": "workshop_filler" },
         "W": { "furniture": "workbench" },
+        "G": { "furniture": "grinding_wheel" },
         "z": { "spawn": "shambler" },
         "r": { "spawn": "runner" }
       },
@@ -61,8 +62,8 @@
           "#.SSSS...LLLL..PPPPPP..#",
           "#........LLLL....BB....#",
           "#....z...LLLL....BB....#",
-          "#........LLLL...WWW....#",
-          "#...............WWW....#",
+          "#........LLLL...WWW.GG.#",
+          "#...............WWW.GG.#",
           "##DD####################"
         ],
         [
@@ -83,8 +84,8 @@
           "#.SSSS...LLLL..........#",
           "#........LLLL....BB....#",
           "#........LLLL....BB....#",
-          "#........LLLL...WWW....#",
-          "#...............WWW....#",
+          "#........LLLL...WWW.GG.#",
+          "#...............WWW.GG.#",
           "##DD####################"
         ],
         [

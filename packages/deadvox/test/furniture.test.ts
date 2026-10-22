@@ -5,7 +5,7 @@ import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import { handlingWeights, Inventory } from '../src/core/inventory.ts';
 import { couldFit, ItemFactory } from '../src/core/items.ts';
 import type { Body } from '../src/core/physics.ts';
 import { reachTuning } from '../src/core/reach.ts';
@@ -106,7 +106,9 @@ describe('furniture', () => {
     const [w, h] = registry.items.get('canned_beans')!.size;
     const cells = w * h;
     const expected =
-      def.container!.pockets[0]!.handlingSimSeconds + inv.pocketHandling(hoodie, 0) + 2 * HANDLING.perCell * cells;
+      def.container!.pockets[0]!.handlingSimSeconds +
+      inv.pocketHandling(hoodie, 0) +
+      2 * handlingWeights(registry).perCell * cells;
     expect(plan.ok && plan.time).toBeCloseTo(expected);
   });
 
