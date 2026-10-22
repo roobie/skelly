@@ -2380,26 +2380,26 @@
           "weight": 1
         },
         {
-          "count": [5, 20],
+          "count": [10, 30],
           "item": "cartridge_5_d_56x45",
-          "weight": 2
+          "weight": 3
         },
         {
           "item": "cartridge_box_5_d_56x45",
-          "weight": 1
+          "weight": 2
         },
         {
-          "count": [5, 20],
+          "count": [10, 30],
           "item": "cartridge_7_d_62x39",
-          "weight": 2
+          "weight": 3
         },
         {
           "item": "cartridge_box_7_d_62x39",
-          "weight": 1
+          "weight": 2
         },
         {
           "nothing": true,
-          "weight": 2
+          "weight": 1
         }
       ],
       "id": "armoury_ammunition",
@@ -36579,12 +36579,12 @@
         "A": {
           "facing": "e",
           "furniture": "hq_weapon_cabinet",
-          "loot": "armoury_arms"
+          "loot": "armoury_cabinet"
         },
         "C": {
           "facing": "e",
           "furniture": "hq_weapon_cabinet",
-          "loot": "armoury_arms"
+          "loot": "armoury_cabinet"
         },
         "V": {
           "facing": "s",
