@@ -77,17 +77,24 @@ reading as one body. A part turned by a quarter turn shares the lattice too; one
 any other angle keeps its own. See `src/glb.ts`, `latticeOrigin`, and `src/voxelize.ts`,
 `voxelize`.
 
-An iron sight line runs between the voxel tops the file draws, and the muzzle sits on the
-drawn front of the barrel, not on the smooth design, because voxels move the points the
-player lines up and the shot leaves from. The up vector is made perpendicular to that
-line, since the game aligns the model's up to the camera's. An optic keeps its optical
-axis, which no drawn top defines. See `gungen/src/gun/exportGlb.ts`, `sightMetadata` and
-`drawnMuzzle`.
+A datum lies on the drawn voxels. Grips and other anchors, a candle's flame, magazine round
+poses, collision boxes and centres of mass all read off the voxels the file draws, not off
+the smooth design. What the player sees and what the game computes must agree with the
+drawn model, so a flame sits on its wick and a vehicle collides where it is drawn. One rule
+covers every model, with no list of exceptions. Each solid is measured alone on its part's
+lattice, as the file draws it: a collision box bounds its voxels, a centre of mass is their
+centroid, and a point keeps its fraction of the smallest solid or part around it, so a
+point on a face lands on the drawn face. See `src/drawn.ts`, `drawnGeometry`.
 
-Grip, flame and other anchors, collision boxes and centres of mass stay on the authored
-solids. They feed simulation rather than the eye, and a box snapped outward to the
-lattice no longer fits the cargo spaces it was authored to fill, so a drawn surface may
-stand up to one voxel off them.
+An iron sight line runs between the voxel tops the file draws, and the muzzle sits on the
+drawn front of the barrel. The up vector is made perpendicular to that line, since the game
+aligns the model's up to the camera's. An optic keeps its optical axis, which no drawn top
+defines. See `gungen/src/gun/exportGlb.ts`, `sightMetadata` and `drawnMuzzle`.
+
+A part with baked collision also names its grain, so a consumer's own datums can snap to
+the same lattice. A cargo space does this to fit the drawn bed it fills; see
+`packages/thing-core/src/schema.ts`, `ModelPartSchema`, and `packages/deadvox/DESIGN.md`,
+"Vehicles".
 
 No solid or stretch of a solid vanishes. Any stretch thinner than the grain, such as a
 whole sheet, a guard's bar or a tube's wall, keeps one voxel of thickness, and a solid that
@@ -128,9 +135,9 @@ by authored mass, so a light part cannot pull the centre as much as a heavy one.
 `src/physical.ts`, `assemblyProperties`. Exported centres use the model-file frame in
 metres; authored masses use kilograms.
 
-Baked collision is one placed bounding box per solid, opted into per recipe row. Boxes
-are conservative, so a consumer may collide early but never passes through a solid, and
-they stay cheap for a solver to test. Only an export with part masses can carry them,
+Baked collision is one placed bounding box per drawn solid, opted into per recipe row.
+Boxes are conservative, so a consumer may collide early but never passes through a drawn
+solid, and they stay cheap for a solver to test. Only an export with part masses can carry them,
 because collision belongs to the parts whose mass it moves. See `src/physical.ts`,
 `collisionBoxes` and `modelParts`.
 

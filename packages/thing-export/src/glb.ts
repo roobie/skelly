@@ -90,7 +90,11 @@ const toMetres = (v: Vec3, metresPerUnit: number): Vec3 => [
  * at a fraction of a voxel, or turned by a quarter turn, would otherwise leave steps and gaps against its neighbours. A
  * part turned by any other angle has no matching lattice and keeps its own.
  */
-const latticeOrigin = (placed: { readonly r: Mat3; readonly t: Vec3 }, grain: number, metresPerUnit: number): Vec3 => {
+export const latticeOrigin = (
+  placed: { readonly r: Mat3; readonly t: Vec3 },
+  grain: number,
+  metresPerUnit: number,
+): Vec3 => {
   const { r, t } = placed;
   if (!r.every((x) => [-1, 0, 1].some((q) => Math.abs(x - q) < 1e-9))) {
     return [0, 0, 0];

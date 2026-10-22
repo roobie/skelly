@@ -972,7 +972,7 @@ const ItemSchema = strictObject({
       ratedLoadKg: optional(Positive),
       /**
        * A cargo space: a block whose footprint is its one pocket (`DESIGN.md`, "Vehicles", **Cargo space.**).
-       * Its model is one inventory cell, and a fitting's `cargo` scales it.
+       * Its block is a fitting's `cargo` cells, whatever voxels its model is drawn in.
        */
       cargoSpace: optional(
         strictObject({

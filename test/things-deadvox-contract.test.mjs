@@ -107,7 +107,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       'the slice must export a flame anchor',
     );
     await Promise.all(
-      lit.map(async ({ modelEntry, voxel }) => {
+      lit.map(async ({ modelEntry }) => {
         const bytes = readFileSync(join(base, modelEntry.file));
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
         const names = new Set();
@@ -120,8 +120,8 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
           assert.ok(names.has(modelEntry.emissiveMaterial), `${modelEntry.id}: missing glow material`);
         }
         if (modelEntry.anchors?.flame) {
-          // The anchor follows the authored solid, which the drawn voxels may fall short of by up to one voxel.
-          const bounds = new Box3().setFromObject(loaded.scene).expandByScalar(voxel.voxelGrain + 1e-6);
+          // A datum lies on the drawn voxels, so the flame stands within what the file draws.
+          const bounds = new Box3().setFromObject(loaded.scene).expandByScalar(1e-6);
           assert.ok(
             bounds.containsPoint(new Vector3(...modelEntry.anchors.flame)),
             `${modelEntry.id}: flame off model`,

@@ -12,7 +12,7 @@ export const exportItem = (
   voxel: VoxelGrains,
   { collision = false }: { readonly collision?: boolean } = {},
 ) => {
-  const { report, masses, handling, glow } = buildItem(item);
+  const { report, masses, handling, drawn, glow } = buildItem(item, voxel);
   const out = exportGlb({
     resolved: report.resolved,
     asset,
@@ -34,7 +34,7 @@ export const exportItem = (
       }
       return { part, massKg };
     },
-    { collision },
+    { collision, drawn },
   );
   if (collision && item.exportMass !== 'parts') {
     throw new Error(`${item.id}: baked collision travels with exported parts`);

@@ -523,6 +523,74 @@ const meshGrid = (grid: Grid, grain: number): Voxelized => {
 const shifted = (values: ArrayLike<number>, by: readonly number[], sign: 1 | -1): Float32Array =>
   Float32Array.from({ length: values.length }, (_, i) => values[i]! + sign * by[i % 3]!);
 
+const checkedGrain = (grain: number): void => {
+  if (!(Number.isFinite(grain) && grain > 0)) {
+    throw new Error(`Voxel grain must be a positive number of metres, got ${grain}`);
+  }
+};
+
+/** Fills `filled` with the sources' voxels and, with `met`, records the cells their surfaces touch. */
+const sample = (
+  solids: readonly VoxelSource[],
+  lattice: { readonly grain: number; readonly origin: readonly number[] },
+  filled: Grid,
+  met?: Grid,
+): void => {
+  const { grain, origin } = lattice;
+  for (const source of solids) {
+    const local = { ...source, positions: shifted(source.positions, origin, -1) };
+    let surface: Grid | undefined;
+    const surfaceOf = (): Grid => {
+      surface ??= surfaceCells(local, grain);
+      return surface;
+    };
+    fillSource(filled, local, grain, surfaceOf);
+    for (const [key, group] of met ? surfaceOf() : []) {
+      met!.set(key, group);
+    }
+  }
+};
+
+export interface VoxelMeasure {
+  /** Corners of the voxels' bounds, in the sources' metres. */
+  readonly min: readonly [number, number, number];
+  readonly max: readonly [number, number, number];
+  /** Mean of the voxel centres. */
+  readonly centroid: readonly [number, number, number];
+  readonly voxels: number;
+}
+
+/**
+ * Measures the voxels `voxelize` fills for the sources on the same lattice, before bridging joins them to anything, so
+ * a datum read off one solid follows the voxels that solid draws. No voxels gives undefined.
+ */
+export const measureVoxels = (
+  sources: readonly VoxelSource[],
+  grain: number,
+  origin: readonly number[] = [0, 0, 0],
+): VoxelMeasure | undefined => {
+  checkedGrain(grain);
+  const grid: Grid = new Map();
+  sample(sources, { grain, origin }, grid);
+  if (grid.size === 0) {
+    return undefined;
+  }
+  const [low, high] = boundsOf(grid);
+  const sum = [0, 0, 0];
+  for (const key of grid.keys()) {
+    voxelOf(key).forEach((index, axis) => {
+      sum[axis] = sum[axis]! + index;
+    });
+  }
+  const at = (axis: number, cells: number): number => cells * grain + origin[axis]!;
+  return {
+    min: [at(0, low[0]!), at(1, low[1]!), at(2, low[2]!)],
+    max: [at(0, high[0]! + 1), at(1, high[1]! + 1), at(2, high[2]! + 1)],
+    centroid: [at(0, sum[0]! / grid.size + 0.5), at(1, sum[1]! / grid.size + 0.5), at(2, sum[2]! / grid.size + 0.5)],
+    voxels: grid.size,
+  };
+};
+
 /**
  * Voxelizes the sources at `grain` metres, on a lattice anchored at `origin` (part-local metres, the part origin by
  * default) so a caller can put the voxels of parts placed at fractions of a voxel on one shared lattice. `neighbours`
@@ -536,28 +604,13 @@ export const voxelize = (
   origin: readonly number[] = [0, 0, 0],
   neighbours: readonly VoxelSource[] = [],
 ): Voxelized => {
-  if (!(Number.isFinite(grain) && grain > 0)) {
-    throw new Error(`Voxel grain must be a positive number of metres, got ${grain}`);
-  }
-  const sample = (solids: readonly VoxelSource[], filled: Grid, met?: Grid): void => {
-    for (const source of solids) {
-      const local = { ...source, positions: shifted(source.positions, origin, -1) };
-      let surface: Grid | undefined;
-      const surfaceOf = (): Grid => {
-        surface ??= surfaceCells(local, grain);
-        return surface;
-      };
-      fillSource(filled, local, grain, surfaceOf);
-      for (const [key, group] of met ? surfaceOf() : []) {
-        met!.set(key, group);
-      }
-    }
-  };
+  checkedGrain(grain);
+  const lattice = { grain, origin };
   const grid: Grid = new Map();
   const reach: Grid = new Map();
-  sample(sources, grid, reach);
+  sample(sources, lattice, grid, reach);
   const anchor: Grid = new Map();
-  sample(neighbours, anchor);
+  sample(neighbours, lattice, anchor);
   bridge(grid, reach, anchor);
   if (grid.size === 0) {
     return { groups: new Map(), stats: { voxels: 0, faces: 0, quads: 0 } };

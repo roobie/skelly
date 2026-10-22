@@ -3,6 +3,7 @@ import type { Assembly, PartDef, Resolved } from '@skelly/engine/assembly/schema
 import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import type { ModelParts, NeutralModel } from '@skelly/thing-core/schema';
+import { type DrawnGeometry, drawnGeometry } from '@skelly/thing-export/drawn.ts';
 import type {
   AppearanceContext,
   GlbAssetIdentity,
@@ -566,6 +567,7 @@ export const createGunModelEntry = ({
   metresPerUnit,
   options = {},
   sight,
+  drawn,
 }: {
   asset: GunAssetIdentity;
   parts: ModelParts;
@@ -573,25 +575,31 @@ export const createGunModelEntry = ({
   metresPerUnit: number;
   options?: GunModelEntryOptions;
   sight?: GunModelFields['sight'];
+  /** Moves a point onto the drawn model; the muzzle is left for `drawnMuzzle`, which reads it off the file. */
+  drawn?: DrawnGeometry;
 }): GunDeadvoxModelEntry => {
   const { handling } = options;
   const calibre = options.cartridge?.id;
   if (calibre !== undefined) {
     calibreSlug(calibre);
   }
+  const onModel = (point: Vec3): Vec3 => modelPoint(drawn ? drawn.point(point) : point, metresPerUnit);
   const others = Object.entries(anchors.others)
     .filter(([name]) => name !== 'magwell')
-    .map(([name, frame]): [string, Vec3] => [name, modelPoint(frame.position, metresPerUnit)]);
+    .map(([name, frame]): [string, Vec3] => [
+      name,
+      name === 'muzzle' ? modelPoint(frame.position, metresPerUnit) : onModel(frame.position),
+    ]);
   return {
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
     parts,
-    grip: { at: modelPoint(anchors.hold.position, metresPerUnit), turn: gripTurn() },
+    grip: { at: onModel(anchors.hold.position), turn: gripTurn() },
     ...(others.length > 0 || handling
       ? {
           anchors: {
             ...Object.fromEntries(others),
-            ...(handling ? { ejection: modelPoint(handling.ejection, metresPerUnit) } : {}),
+            ...(handling ? { ejection: onModel(handling.ejection) } : {}),
           },
         }
       : {}),
@@ -621,10 +629,11 @@ const bodyPhysicalData = (
   resolved: Resolved,
   fitted: readonly { readonly node: string }[],
   magazine: { readonly node: string } | undefined,
+  drawn: DrawnGeometry,
 ) => {
   const replaceableNodes = new Set([...fitted.map(({ node }) => node), ...(magazine ? [magazine.node] : [])]);
   try {
-    return { ok: true as const, parts: gunModelParts(resolved, replaceableNodes) };
+    return { ok: true as const, parts: gunModelParts(resolved, replaceableNodes, undefined, drawn) };
   } catch (error) {
     if (!(error instanceof PartMassError)) {
       throw error;
@@ -695,7 +704,8 @@ export const exportGunGlb = (
   } = resolved.domain;
   const fittedAttachments = attachmentData(resolved);
   const magazine = magazineSlotData(resolved);
-  const physical = bodyPhysicalData(resolved, fittedAttachments, magazine);
+  const drawn = drawnGeometry(resolved, voxelGrainsOf({ voxelGrain, voxelDetailGrain }));
+  const physical = bodyPhysicalData(resolved, fittedAttachments, magazine, drawn);
   if (!physical.ok) {
     return physical;
   }
@@ -704,6 +714,7 @@ export const exportGunGlb = (
     parts: physical.parts,
     anchors,
     metresPerUnit,
+    drawn,
     options: {
       ...metadata,
       ...(handling ? { handling } : {}),
