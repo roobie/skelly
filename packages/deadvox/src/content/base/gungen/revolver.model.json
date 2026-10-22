@@ -44,11 +44,11 @@
     }
   },
   "grip": { "at": [-0.12075, -0.094875, 0], "turn": [0, 0, 0] },
-  "anchors": { "muzzle": [0.12075, 0, 0] },
+  "anchors": { "muzzle": [0.12, 0, 0] },
   "gun": {
     "sight": {
       "kind": "iron",
-      "eye": [-0.069, 0.020125, 0],
+      "eye": [-0.069, 0.02, 0],
       "direction": [1, 0, 0],
       "up": [0, 1, 0],
       "eyeReliefMetres": 0.046

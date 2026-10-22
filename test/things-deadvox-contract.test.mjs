@@ -10,7 +10,7 @@ import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { catalogue } from '../packages/thing-authoring-tool/src/catalogue.ts';
 import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
 import { modelMassKg } from '../packages/thing-core/src/mass.ts';
-import { assertExportSynced, assertRecipeCredits, exportDifference } from './model-export-sync.mjs';
+import { assertExportSynced, assertRecipeCredits, assertVoxelized, exportDifference } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
@@ -18,7 +18,7 @@ const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
 const base = new URL('../packages/deadvox/src/content/base/', import.meta.url).pathname;
 const recipe = loadThingRecipe();
-const exported = recipe.map((row) => ({ id: row.id, source: row.source, ...row.generate() }));
+const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const { registry, issues } = buildRegistry(
   readdirSync(base)
     .filter((file) => file.endsWith('.json'))
@@ -47,6 +47,9 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
         `${file}: orphaned thing export`,
       );
     }
+  });
+  it('voxelizes every recipe model on its row class', () => {
+    exported.forEach(assertVoxelized);
   });
   it('credits every consumed thing export', () => {
     assertRecipeCredits(recipe, JSON.parse(readFileSync(join(base, 'assets/manifest.json'), 'utf8')));
@@ -104,7 +107,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       'the slice must export a flame anchor',
     );
     await Promise.all(
-      lit.map(async ({ modelEntry }) => {
+      lit.map(async ({ modelEntry, voxel }) => {
         const bytes = readFileSync(join(base, modelEntry.file));
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
         const names = new Set();
@@ -117,7 +120,8 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
           assert.ok(names.has(modelEntry.emissiveMaterial), `${modelEntry.id}: missing glow material`);
         }
         if (modelEntry.anchors?.flame) {
-          const bounds = new Box3().setFromObject(loaded.scene).expandByScalar(1e-6);
+          // The anchor follows the authored solid, which the drawn voxels may fall short of by up to one voxel.
+          const bounds = new Box3().setFromObject(loaded.scene).expandByScalar(voxel.voxelGrain + 1e-6);
           assert.ok(
             bounds.containsPoint(new Vector3(...modelEntry.anchors.flame)),
             `${modelEntry.id}: flame off model`,
