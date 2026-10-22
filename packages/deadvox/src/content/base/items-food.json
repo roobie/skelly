@@ -179,14 +179,31 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "id": "soda_can",
+      "model": "soda_can",
+      "name": "Can of soda",
+      "size": [1, 2],
+      "unpack": {
+        "count": 1,
+        "inPlace": true,
+        "item": "opened_soda",
+        "simSeconds": 2
+      }
+    },
+    {
+      "category": "drink",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "food": {
         "calories": 140,
         "consumeSimSeconds": 2,
         "water": 300
       },
-      "id": "soda_can",
+      "id": "opened_soda",
       "model": "soda_can",
-      "name": "Can of soda",
+      "name": "Opened can of soda",
       "size": [1, 2]
     },
     {

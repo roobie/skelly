@@ -1191,7 +1191,9 @@ action. Continue preserves the physical fist sequence. See
 `selectPrimaryAction` in `src/game/primaryAction.ts` and `PlayerCombat` in
 `src/core/playerCombat.ts`.
 
-Can opening requires a prepared held pair because tools in storage are not in
+Every sealed can is opened before it is consumed, but a pull-tab needs no tool,
+so a pull-tab can's opening takes time and no tool quality. A can that needs a
+tool requires a prepared held pair because tools in storage are not in
 use. Either member can initiate opening, and opening quality determines work
 rate so improvised tools need not be as effective as a dedicated opener. The
 player chooses when opening competes with the tool's ordinary action, avoiding

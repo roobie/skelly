@@ -87,6 +87,14 @@ local soupGrams = 330;
       category: 'drink',
       model: 'soda_can',
       size: [1, 2],
+      unpack: { item: 'opened_soda', count: 1, simSeconds: 2, inPlace: true },
+    },
+    {
+      id: 'opened_soda',
+      name: 'Opened can of soda',
+      category: 'drink',
+      model: 'soda_can',
+      size: [1, 2],
       food: drinks(140, 300),
     },
     {
