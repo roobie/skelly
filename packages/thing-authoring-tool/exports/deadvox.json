@@ -1776,6 +1776,18 @@
     }
   },
   {
+    "id": "player_bust",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "player_bust",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "tape_roll",
     "kind": "item",
     "options": {

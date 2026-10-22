@@ -17,6 +17,7 @@ const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders
 const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
 const base = new URL('../packages/deadvox/src/content/base/', import.meta.url).pathname;
+const AVATAR_SOURCE = 'player_bust';
 const recipe = loadThingRecipe();
 const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const { registry, issues } = buildRegistry(
@@ -57,6 +58,12 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
   it('builds the registry with one authoritative mass source for each item', () => {
     assert.deepEqual(issues, []);
     for (const row of recipe) {
+      if (row.source === AVATAR_SOURCE) {
+        // The player figure is a model rows only; the avatar study draws it, no item holds it.
+        assert.equal(registry.items.has(row.source), false);
+        assert.ok(registry.models.get(row.id));
+        continue;
+      }
       const item = registry.items.get(row.source);
       assert.ok(item, `${row.source}: missing consumer`);
       assert.equal(item.model, row.id);

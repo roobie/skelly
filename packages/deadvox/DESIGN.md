@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change worn head gear seen from inside or on the player figure
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity or startup admission
@@ -1365,11 +1366,24 @@ books and schematics teach recipes beyond the simple recipes known at the start.
 
 ## Character
 
-The avatar reflects equipped gear. Long-term character customization may go
-deeper, including augmentations, armour and clothing; reflecting equipped gear
-is only its presentation direction. Third person remains a debug inspection
-aid, not a player-facing camera. See `PlayerMeshes` in
-`src/render/playerFigure.ts`.
+The player is one fixed, curated figure. One hand-authored look suits parts made
+in the authoring tool and the existing review loop, where customisation would
+multiply every part and every review.
+
+The figure is seen whole, not only as arms in first person: a visible body when
+looking down, and mirrors that show the player themselves. So the full body must
+hold up from every side, and a body built only for first person is not enough.
+
+Worn items carry their own part model that covers or replaces the body part
+under it, so gear shows on the body without the body knowing about gear.
+
+The first-person arms are rebuilt from the same authored hand and sleeve parts
+as the body, so both views share one look.
+
+Third person remains a debug inspection aid, not a player-facing camera. The
+box figure is `PlayerMeshes` in `src/render/playerFigure.ts`; the authored body
+is the `player_bust` item in `packages/thing-authoring-tool/avatar.libsonnet`,
+shown beside the boxes by the debug query in `src/render/avatarStudy.ts`.
 
 Needs are calories, hydration, fatigue, stamina, and body temperature; rates use
 game time. Body temperature is not simulated; #366 is the trigger for deciding
@@ -2275,6 +2289,20 @@ or wandering along the wall. See `src/core/zombies.ts`, `ZombieSystem.bashObstac
 
 Blocky figures with rigid limbs and keyframed animation. This is where skelly's
 skeleton roots come in: a zombie's body is a small assembly of connected parts.
+
+The player figure is a cleaner low-poly human, distinct from the zombies. A
+designer agent shapes its parts in the authoring tool and exports them like
+items; BR reviews renders and in-game views. The figure is voxelized on the item
+grain: the face reads crisper there than on the vehicle grain, which loses it,
+and no extra class is left to maintain. Retuning the item grain moves the figure
+with the tools, which is accepted.
+
+Each part model names its joints as anchors (neck, head, shoulders, hips), and
+code poses the parts about those pivots. The figure is a content row. Many
+animations are expected over time, so a pose is data that names a joint and an
+angle, and code-posed motion such as arm swing and idle breath is one clip among
+many. A pose is never a formula buried in the renderer: a formula in code
+cannot be authored, blended or added to without a code change per animation.
 
 ## Base building and electricity
 
