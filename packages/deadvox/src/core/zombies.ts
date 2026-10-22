@@ -66,7 +66,7 @@ export const ACTIVE_ZOMBIE_RADIUS_METRES = 40;
 export const BACKGROUND_ZOMBIE_RATE = 2;
 export const BACKGROUND_ZOMBIE_SLICE_COUNT = 30;
 export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_ZOMBIE_SLICE_COUNT;
-export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
+export type ZombieMode = 'idle' | 'stroll' | 'hesitate' | 'search' | 'chase' | 'investigate' | 'return';
 export const zombieBodyDimensions = measureZombieBody;
 
 const requiredFigureSeeds = (type: ZombieDef): readonly number[] => {
@@ -311,6 +311,9 @@ export interface Zombie {
   idleSoundTimer: number;
   lastVocalNoiseId?: number | undefined;
   modeTimer: number;
+  hesitationFrom?: 'idle' | 'stroll' | undefined;
+  refusedAt?: number | undefined;
+  leanTarget?: Vec3 | undefined;
   searchAnchor?: Vec3 | undefined;
   searchTimer: number;
   searchStrolling: boolean;
@@ -450,6 +453,12 @@ const validShamblerFootstepClock = (clock: ShamblerFootstepClock): boolean =>
   clock.distanceUntilStep > 0 &&
   typeof clock.nextLongStep === 'boolean';
 const validZombieEventState = (zombie: ZombieState): boolean =>
+  (zombie.hesitationFrom === undefined || zombie.hesitationFrom === 'idle' || zombie.hesitationFrom === 'stroll') &&
+  (zombie.mode !== 'hesitate' ||
+    (zombie.hesitationFrom !== undefined && Number.isFinite(zombie.modeTimer) && zombie.modeTimer >= 0 &&
+      validVec3State(zombie.lastPerceived!))) &&
+  (zombie.refusedAt === undefined || (Number.isFinite(zombie.refusedAt) && zombie.refusedAt >= 0)) &&
+  (zombie.leanTarget === undefined || validVec3State(zombie.leanTarget)) &&
   (zombie.lastVocalNoiseId === null ||
     (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
   (zombie.stimulusAt === undefined || (Number.isFinite(zombie.stimulusAt) && zombie.stimulusAt >= 0)) &&
@@ -1398,6 +1407,9 @@ const zombieSnapshotFields = [
   'idleSoundTimer',
   'lastVocalNoiseId',
   'modeTimer',
+  'hesitationFrom',
+  'refusedAt',
+  'leanTarget',
   'searchAnchor',
   'searchTimer',
   'searchStrolling',
@@ -1502,6 +1514,9 @@ const zombieSnapshotProjectors = {
   idleSoundTimer: (zombie) => zombie.idleSoundTimer,
   lastVocalNoiseId: (zombie) => zombie.lastVocalNoiseId ?? null,
   modeTimer: (zombie) => zombie.modeTimer,
+  hesitationFrom: (zombie) => zombie.hesitationFrom,
+  refusedAt: (zombie) => zombie.refusedAt,
+  leanTarget: (zombie) => zombie.leanTarget === undefined ? undefined : copy(zombie.leanTarget),
   searchAnchor: (zombie) => (zombie.searchAnchor === undefined ? undefined : [...zombie.searchAnchor]),
   searchTimer: (zombie) => zombie.searchTimer,
   searchStrolling: (zombie) => zombie.searchStrolling,
@@ -2024,6 +2039,13 @@ export class ZombieSystem {
     const { type, body, home, behaviorRng } = zombie;
     const duration = inRange(behaviorRng, type.wander.strollSimSeconds);
     let heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
+    if (zombie.leanTarget) {
+      const toward = unit(sub(zombie.leanTarget, body.pos));
+      const weight = type.hearingModel.refusalLean;
+      heading = unit([heading[0] * (1 - weight) + toward[0] * weight, 0,
+        heading[2] * (1 - weight) + toward[2] * weight]);
+      zombie.leanTarget = undefined;
+    }
     const endpoint: Vec3 = [
       body.pos[0] + (heading[0] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
       body.pos[1],
@@ -2426,7 +2448,7 @@ export class ZombieSystem {
       this.updatePerception();
       this.updateAttention();
       this.forgetIndividualStimulus(zombie, time);
-      let target = this.hordeTarget(zombie) ?? zombie.lastPerceived;
+      let target = zombie.mode === 'hesitate' ? undefined : this.hordeTarget(zombie) ?? zombie.lastPerceived;
       if (scratch.sees) {
         target = player.pos;
       }
@@ -2559,13 +2581,54 @@ export class ZombieSystem {
     }
     scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));
     scratch.wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
-    if ((scratch.sees || scratch.tier || scratch.lightTarget) && !scratch.wasAware) {
-      this.options.onSound?.(type.sounds.alert, copy(pos), zombie);
+  }
+
+  private updateAttention(): void {
+    const { zombie, time, sees, tier, player, lightTarget, dt } = this.tickScratch;
+    const previous = zombie.mode;
+    if (previous === 'hesitate') {
+      zombie.modeTimer = Math.max(0, zombie.modeTimer - dt);
+      const loud = this.tickScratch.vocal && player.vocalNoise!.radiusMetres >= zombie.type.hearingModel.loudNoiseRadiusMetres;
+      if (!sees && !loud && !lightTarget && zombie.hordeId === undefined) {
+        if (zombie.modeTimer > 0) return;
+        if (zombie.hesitationFrom === 'stroll') {
+          zombie.mode = 'investigate';
+          zombie.stimulusAt = time;
+        } else {
+          zombie.leanTarget = copy(zombie.lastPerceived!);
+          zombie.refusedAt = time;
+          zombie.lastPerceived = undefined;
+          zombie.stimulusAt = undefined;
+          this.beginIdle(zombie);
+        }
+        zombie.hesitationFrom = undefined;
+        this.announcePursuit(previous);
+        return;
+      }
+    }
+    this.resolveAttention();
+    const suspicious = zombie.refusedAt !== undefined &&
+      time - zombie.refusedAt < zombie.type.hearingModel.refusalSuspicionSimSeconds;
+    if ((previous === 'idle' || previous === 'stroll') && zombie.mode === 'investigate' &&
+      tier && this.tickScratch.vocal && !sees && !lightTarget && zombie.hordeId === undefined && !suspicious &&
+      (!this.tickScratch.vocal || player.vocalNoise!.radiusMetres < zombie.type.hearingModel.loudNoiseRadiusMetres)) {
+      zombie.hesitationFrom = previous;
+      zombie.mode = 'hesitate';
+      zombie.modeTimer = inRange(zombie.behaviorRng, zombie.type.hearingModel.hesitationSimSeconds);
+    }
+    if (zombie.mode !== 'hesitate') zombie.hesitationFrom = undefined;
+    this.announcePursuit(previous);
+  }
+
+  private announcePursuit(previous: ZombieMode): void {
+    const { zombie, pos } = this.tickScratch;
+    if ((zombie.mode === 'chase' || zombie.mode === 'investigate') && previous !== 'chase' && previous !== 'investigate') {
+      this.options.onSound?.(zombie.type.sounds.alert, copy(pos), zombie);
     }
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Preserve precedence between sight, near/far noise, prior chase, and horde attention.
-  private updateAttention(): void {
+  private resolveAttention(): void {
     const scratch = this.tickScratch;
     const { zombie, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
     if (sees) {
@@ -2692,6 +2755,13 @@ export class ZombieSystem {
     scratch.wanderingAtTickStart = zombie.obstacleWanderRemaining > 0;
     this.updateIdleSound();
     switch (zombie.mode) {
+      case 'hesitate': {
+        const bearing = angleOf(sub(zombie.lastPerceived!, zombie.body.pos));
+        zombie.headYawTarget = bearing - angleOf(zombie.facing);
+        zombie.headYaw = approachAngle(zombie.headYaw, zombie.headYawTarget,
+          (zombie.type.wander.headTurnDegreesPerSimSecond * Math.PI * scratch.dt) / 180);
+        return;
+      }
       case 'idle':
         this.selectIdleIntent();
         return;

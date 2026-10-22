@@ -2608,10 +2608,17 @@ const ZombieSchema = strictObject({
       bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
       investigationDistanceMetres: Positive,
       loudNoiseRadiusMetres: Positive,
+      hesitationSimSeconds: SimDurationRange,
+      refusalSuspicionSimSeconds: PositiveSimSeconds,
+      refusalLean: Fraction,
       searchSimSeconds: SimDurationRange,
       searchRadiusMetres: Positive,
       searchStrollSimSeconds: SimDurationRange,
     }),
+    check(
+      (model) => model.hesitationSimSeconds.min <= model.hesitationSimSeconds.max,
+      'minimum hesitation must not exceed maximum',
+    ),
     check(
       (model) => model.searchSimSeconds.min <= model.searchSimSeconds.max,
       'minimum search duration must not exceed maximum',
