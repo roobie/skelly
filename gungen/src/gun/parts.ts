@@ -2892,31 +2892,31 @@ const ak74Brake = (): Solid[] => {
 };
 
 /**
- * A muzzle device threaded on an AK barrel's end. It carries the muzzle port on to its own front, so the
- * gun's muzzle anchor and muzzle mount move to the front of whichever device it has.
+ * A muzzle device threaded on an AK barrel's end, removable like a suppressor. It offers no muzzle port of its own:
+ * a suppressor threaded on it would cross the barrel's keep-out, so the barrel's port stays the gun's one muzzle host.
+ * Its base declares the AK barrel section as its size so it threads only on AK muzzles; suppressors declare none.
  */
 const akMuzzleDevice: PartFamily = {
   name: 'ak-muzzle-device',
   params: { style: choice('slant', 'ak74') },
   build(params): PartDef {
     const ak74 = params.style === 'ak74';
-    const { slant, ak74: brake74 } = AK_PROPORTIONS.muzzleDevice;
-    const frontX = ak74 ? brake74.bodyLengthU + brake74.nose.lengthU : slant.lengthU;
     return {
       family: 'ak-muzzle-device',
+      tags: ['attachment', 'muzzle-device'],
       solids: ak74 ? ak74Brake() : akSlantBrake(),
       ports: [
         {
           id: 'base',
           mount: 'muzzle',
           standard: 'rifled',
+          size: 'ak',
           gender: 'male',
           pos: [0, 0, 0],
           normal: NEG_X,
           up: Y,
           required: true,
         },
-        { id: 'muzzle', mount: 'muzzle', standard: 'rifled', gender: 'female', pos: [frontX, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
@@ -3070,7 +3070,16 @@ const barrel: PartFamily = {
               },
             ]
           : []),
-        { id: 'muzzle', mount: 'muzzle', standard: muzzleBore, gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
+        {
+          id: 'muzzle',
+          mount: 'muzzle',
+          standard: muzzleBore,
+          size: params.section ?? 'standard',
+          gender: 'female',
+          pos: [len, 0, 0],
+          normal: X,
+          up: Y,
+        },
       ],
       keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5], 'muzzle')],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
