@@ -34,6 +34,7 @@ import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
 import { CATALOGUE } from '../vehicles/catalogue.ts';
 import { HATCHBACK, HATCHBACK_ADD_ONS } from '../vehicles/hatchback.ts';
+import { HOIST } from '../vehicles/hoist.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
 import {
   addFitting,
@@ -148,6 +149,13 @@ const BUILDS = {
     removed: [],
     viewScale: 1.06,
     views: { interior: { position: [0.45, 1.7, 1.9], target: [0.85, 0.95, -0.35] } },
+  },
+  hoist: {
+    label: 'Canter-type crane truck',
+    button: 'Crane truck',
+    blueprint: HOIST,
+    removed: [],
+    viewScale: 1.3,
   },
   motorbike: {
     label: 'CG125-type motorbike',

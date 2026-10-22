@@ -12,7 +12,7 @@ The spike is a debug page for judging vehicle appearance and disassembly before 
 
 ## Decided
 
-- Keep the 4×4, pickup and motorbike in the part model.
+- Keep the 4×4, pickup, crane truck and motorbike in the part model.
 - Vehicle noise comes mainly from the engine; chassis and hull may contribute.
 - Use vehicle-owned fittings, one catalogue id per part type and positions stored on mirrored fittings.
 - Keep sand paint with seeded wear and scratches where rendering cost allows.
@@ -31,9 +31,9 @@ Vehicle noise is expressed as hearing radius so it can join Deadvox sound admiss
 
 ## Proportions
 
-The 4×4 follows a Range Rover Classic four-door; the pickup follows a Toyota Hilux N80 regular-cab long-bed 4WD; the motorbike follows an early Honda CG125. The hatchback remains a comparison port so other vehicle profiles can be judged against a common reference. The chosen references keep prototypes recognizable without claiming manufacturer-exact geometry. Measurements live in `src/vehicles/rangeRover.ts`, `src/vehicles/pickup.ts` and `src/vehicles/motorbike.ts`.
+The 4×4 follows a Range Rover Classic four-door; the pickup follows a Toyota Hilux N80 regular-cab long-bed 4WD; the crane truck, the heavy-part hoist, follows a light cab-over truck of the Mitsubishi Fuso Canter class with a deck-mounted stiff boom; the motorbike follows an early Honda CG125. The hatchback remains a comparison port so other vehicle profiles can be judged against a common reference. The chosen references keep prototypes recognizable without claiming manufacturer-exact geometry. Measurements live in `src/vehicles/rangeRover.ts`, `src/vehicles/pickup.ts`, `src/vehicles/hoist.ts` and `src/vehicles/motorbike.ts`.
 
-The pickup's regular-cab split is not published: its front clip follows the double-cab elevation and its door follows a period two-door, leaving bed length an estimate. The bike has no cabin, so its seat carries the rider viewpoint. References: [Range Rover Classic](https://en.wikipedia.org/wiki/Range_Rover_Classic), [1981 four-door elevation](https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints), [Hilux model range](https://www.pakwheels.com/new-cars/toyota/hilux/1988-1997), [1989 Hilux](https://www.carsales.com.au/research/toyota/hilux/1989/no-badge), [Hilux 4×4 specifications](https://itstillruns.com/1989-toyota-4x4-truck-specs-7657039.html), [N80 elevations](https://getoutlines.com/requests/3395/1992-toyota-hilux-v-4wd-drawings), [Honda CG125](https://en.wikipedia.org/wiki/Honda_CG125), [CG125 specifications](https://motodealers.co.uk/bikes/atlas-honda/cg125/2012/specs), and [scaled side view](https://the-blueprints.com/vectordrawings/show/25351/honda_cg_125_ml_today).
+The pickup's regular-cab split is not published: its front clip follows the double-cab elevation and its door follows a period two-door, leaving bed length an estimate. The crane truck runs single rear wheels so it reuses the 4×4's wheel part instead of adding a twinned wheel part. The bike has no cabin, so its seat carries the rider viewpoint. References: [Mitsubishi Fuso Canter](https://en.wikipedia.org/wiki/Mitsubishi_Fuso_Canter), [Range Rover Classic](https://en.wikipedia.org/wiki/Range_Rover_Classic), [1981 four-door elevation](https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints), [Hilux model range](https://www.pakwheels.com/new-cars/toyota/hilux/1988-1997), [1989 Hilux](https://www.carsales.com.au/research/toyota/hilux/1989/no-badge), [Hilux 4×4 specifications](https://itstillruns.com/1989-toyota-4x4-truck-specs-7657039.html), [N80 elevations](https://getoutlines.com/requests/3395/1992-toyota-hilux-v-4wd-drawings), [Honda CG125](https://en.wikipedia.org/wiki/Honda_CG125), [CG125 specifications](https://motodealers.co.uk/bikes/atlas-honda/cg125/2012/specs), and [scaled side view](https://the-blueprints.com/vectordrawings/show/25351/honda_cg_125_ml_today).
 
 ## Grain and shape
 

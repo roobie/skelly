@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { pairAcross } from '../src/vehicles/authoring.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
+import { HOIST } from '../src/vehicles/hoist.ts';
 import {
   addFitting,
   type Blueprint,
@@ -49,6 +50,7 @@ const library = new PartLibrary(CATALOGUE);
 const BLUEPRINTS: readonly { readonly blueprint: Blueprint; readonly builds: readonly (readonly string[])[] }[] = [
   { blueprint: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
   { blueprint: PICKUP, builds: [[]] },
+  { blueprint: HOIST, builds: [[]] },
   { blueprint: MOTORBIKE, builds: [[]] },
 ];
 
