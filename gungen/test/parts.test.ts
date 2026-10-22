@@ -585,15 +585,18 @@ describe('part library', () => {
 
   it('scales the SMG magazine section by 0.6 in X and 0.8 in Z', () => {
     const body = FAMILIES.magazine!.build({ length: 'L', profile: 'smg' }).solids[0]!;
+    const standard = FAMILIES.magazine!.build({ length: 'L', profile: 'standard' }).solids[0]!;
     expect(body.kind).toBe('box');
-    if (body.kind === 'box') {
-      expect(body.box.half[0] * 2).toBeCloseTo(5.5 * 0.6);
-      expect(body.box.half[2] * 2).toBeCloseTo(2.5 * 0.8);
+    expect(standard.kind).toBe('box');
+    if (body.kind === 'box' && standard.kind === 'box') {
+      expect(body.box.half[0] / standard.box.half[0]).toBeCloseTo(0.6);
+      expect(body.box.half[2] / standard.box.half[2]).toBeCloseTo(0.8);
     }
   });
 
   // Each case checks only the PartDef that `build(params)` returns: grid alignment, orthonormal
   // ports, unique port ids and positive box sizes. No rules or geometry checks run.
+  const BatchCaseTimeoutMs = 40;
   const definePartChecks = (family: PartFamily, cases: Record<string, string>[], batchSize = 1): void => {
     let gridStep = GRID;
     if (family.name === 'forend' || family.name === 'ar-charging-handle') {
@@ -666,12 +669,16 @@ describe('part library', () => {
 
     for (let start = 0; start < cases.length; start += batchSize) {
       const batch = cases.slice(start, start + batchSize);
-      // 256 builds take under 1 s on the reference host; 10 s is ~10x measured and bounds the full sweep.
-      it(`cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
-        for (const params of batch) {
-          expect(check(params), JSON.stringify(params)).toEqual(expected);
-        }
-      }, 10_000);
+      // The timeout scales with the batch's case count, never a flat number.
+      it(
+        `cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`,
+        () => {
+          for (const params of batch) {
+            expect(check(params), JSON.stringify(params)).toEqual(expected);
+          }
+        },
+        batch.length * BatchCaseTimeoutMs,
+      );
     }
   };
 
@@ -862,7 +869,10 @@ describe('pump shotgun tube and barrel contact', () => {
     expect(topSlitFacets.length).toBeGreaterThanOrEqual(2);
     const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });
     expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([9, 0, 0]);
-    expect(tube.keepOuts.find(({ id }) => id === 'forend-travel')?.box.half[0]).toBe(2.75);
+    const forendPort = tube.ports.find((port) => port.id === 'forend')!;
+    const forendTravel = tube.keepOuts.find(({ id }) => id === 'forend-travel')!.box;
+    expect(forendTravel.half[0]).toBeGreaterThan(0);
+    expect(forendTravel.center[0] + forendTravel.half[0]).toBeCloseTo(forendPort.pos[0]);
     expect(forend.motion).toMatchObject({ axis: [-1, 0, 0], end: [0, 0, 0] });
   });
 
