@@ -130,7 +130,7 @@ export class Streamer {
   onColumnUnload: (cx: number, cz: number) => void = () => undefined;
   /** Every added/unloaded data chunk, including all-air chunks that never get meshed. */
   onDataChange?: (origin: Vec3) => void;
-  /** Handles a deterministic generation failure such as an unreadable restored chunk diff. */
+  /** Handles a deterministic generation failure, so a restored save is refused instead of overwritten. */
   onGenerationError: ((error: unknown) => void) | undefined;
 
   constructor(opts: StreamerOptions) {
@@ -218,10 +218,11 @@ export class Streamer {
     const { world, scale, meshes } = this.opts;
     this.completeColumns.delete(col);
     this.dirtyReplayNeighbours(cx, cz);
+    const pinned = world.isTouched(cx, cz);
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
       const key = chunkKey(cx, cy, cz);
       meshes.remove(key);
-      if (!world.getChunk(cx, cy, cz)?.edited) {
+      if (!pinned) {
         world.removeChunk(cx, cy, cz);
         this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
         this.dirty.delete(key);
@@ -369,16 +370,17 @@ export class Streamer {
   }
 
   /**
-   * Drops chunk data far out of range. Unedited chunks regenerate from the seed when
-   * the player returns; edited ones stay in memory (until saves exist, milestone 1.9).
+   * Drops chunk data far out of range. Untouched columns regenerate from the seed when
+   * the player returns; touched ones stay in memory for the session (`DESIGN.md`, "Edits persist").
    */
   private unloadFar(): void {
     const { world, scale, radius } = this.opts;
     for (const col of farColumns(this.generated, this.center, radius + 1 + UNLOAD_MARGIN)) {
       const [cx, cz] = col.split(',').map(Number) as [number, number];
+      const pinned = world.isTouched(cx, cz);
       for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
         const key = chunkKey(cx, cy, cz);
-        if (!world.getChunk(cx, cy, cz)?.edited) {
+        if (!pinned) {
           world.removeChunk(cx, cy, cz);
           this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
           this.dirty.delete(key);
@@ -406,7 +408,7 @@ export class Streamer {
     return true;
   }
 
-  /** Generates a column if it doesn't exist yet. Returns true if it did work. */
+  /** Generates a column, or installs its saved chunks, if it isn't streamed in yet. Returns true if it did work. */
   private generate(cx: number, cz: number, notify = true): boolean {
     if (this.generationFailed) {
       return false;
@@ -415,16 +417,11 @@ export class Streamer {
     if (this.generated.has(col)) {
       return false;
     }
-    const { world, seed, terrain, shape, scale, structures, surface, stamp, stats } = this.opts;
     const start = performance.now();
     try {
-      const column = generateColumn({ seed, blocks: terrain, shape, scale, surface, stamp }, cx, cz, structures);
-      stats?.genMs.push(performance.now() - start);
-      for (const chunk of column) {
-        if (world.getChunk(chunk.cx, chunk.cy, chunk.cz)) {
-          continue; // already edited; keep it
-        }
-        world.addChunk(chunk);
+      const arrived = this.residentTouchedColumn(cx, cz) ?? this.addGenerated(cx, cz);
+      this.opts.stats?.genMs.push(performance.now() - start);
+      for (const chunk of arrived) {
         this.onDataChange?.([chunk.cx * CHUNK, chunk.cy * CHUNK, chunk.cz * CHUNK]);
         if (!chunk.isEmpty()) {
           this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
@@ -444,6 +441,35 @@ export class Streamer {
       this.onGenerationError(error);
       return true;
     }
+  }
+
+  /** Generates a column and adds the chunks the world doesn't hold yet; returns those. */
+  private addGenerated(cx: number, cz: number): Chunk[] {
+    const { world, seed, terrain, shape, scale, structures, surface, stamp } = this.opts;
+    const column = generateColumn({ seed, blocks: terrain, shape, scale, surface, stamp }, cx, cz, structures);
+    // A chunk edited before its column generated is kept.
+    const added = column.filter((chunk) => !world.getChunk(chunk.cx, chunk.cy, chunk.cz));
+    for (const chunk of added) {
+      world.addChunk(chunk);
+    }
+    return added;
+  }
+
+  /** A touched column's chunks when every one is resident, so it is installed instead of generated. */
+  private residentTouchedColumn(cx: number, cz: number): Chunk[] | undefined {
+    const { world, scale } = this.opts;
+    if (!world.isTouched(cx, cz)) {
+      return undefined;
+    }
+    const chunks: Chunk[] = [];
+    for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+      const chunk = world.getChunk(cx, cy, cz);
+      if (!chunk) {
+        return undefined;
+      }
+      chunks.push(chunk);
+    }
+    return chunks;
   }
 
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {

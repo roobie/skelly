@@ -7,6 +7,7 @@ import {
   contentPackDifferences,
   currentSaveVersionIdentity,
   decodeSave,
+  readSaveVersionMetadata,
   type SaveContentKind,
   type SaveVersionIdentity,
   type SaveWorldIdentity,
@@ -87,18 +88,10 @@ const saveEnvironmentProblem = (): string | undefined => {
   return undefined;
 };
 
-const versionLabel = (payload: Uint8Array): string => {
-  try {
-    const envelope = JSON.parse(new TextDecoder().decode(payload)) as {
-      versionIdentity?: { digest?: string; buildRevision?: string };
-    };
-    const revision = envelope.versionIdentity?.buildRevision;
-    const digest = envelope.versionIdentity?.digest;
-    return `${revision ?? 'unknown build'} · ${digest?.slice(0, 12) ?? 'unknown version'}`;
-  } catch {
-    return 'unreadable version metadata';
-  }
-};
+const versionLabel = (saved: Partial<SaveVersionIdentity> | undefined | null): string =>
+  saved === null
+    ? 'unreadable version metadata'
+    : `${saved?.buildRevision ?? 'unknown build'} · ${saved?.digest?.slice(0, 12) ?? 'unknown version'}`;
 
 /** Title-screen discovery, checkpoint scheduling and lifecycle save triggers. */
 export class SaveController {
@@ -313,7 +306,7 @@ export class SaveController {
         this.clearDeadWorldMarker();
       }
       this.restoreWorldOptions = decoded.worldOptions;
-      this.statusText = `Saved world available · ${versionLabel(this.currentRecord.payload)}${this.currentRecord.corruptSlots.length > 0 ? ` · inactive slot(s) ${this.currentRecord.corruptSlots.join(', ')} are corrupt but retained` : ''}`;
+      this.statusText = `Saved world available · ${versionLabel(decoded.versionIdentity)}${this.currentRecord.corruptSlots.length > 0 ? ` · inactive slot(s) ${this.currentRecord.corruptSlots.join(', ')} are corrupt but retained` : ''}`;
     } catch (error) {
       this.protectedCurrent = true;
       this.statusText = `Saved world cannot be loaded and was left untouched: ${errorMessage(error)}`;
@@ -351,13 +344,11 @@ export class SaveController {
     try {
       const record = await this.storage.load(namespace);
       if (record) {
-        this.oldVersionLabel = `An older or different-version save is preserved · ${namespace.slice(0, 12)} · ${versionLabel(record.payload)}`;
+        const saved = await readSaveVersionMetadata(record.payload).catch(() => null);
+        this.oldVersionLabel = `An older or different-version save is preserved · ${namespace.slice(0, 12)} · ${versionLabel(saved)}`;
         try {
-          const envelope = JSON.parse(new TextDecoder().decode(record.payload)) as {
-            versionIdentity: SaveVersionIdentity;
-          };
           const differences = contentPackDifferences(
-            envelope.versionIdentity.components.contentPacks,
+            saved!.components!.contentPacks,
             this.identityValue!.components.contentPacks,
           ).map((difference) => difference.replace(BROWSER_MOD_DIFFERENCE_PREFIX, '$1 mod: '));
           if (differences.length > 0) {
@@ -472,7 +463,7 @@ export class SaveController {
     render(html`${label}`, $('go'));
   }
 
-  /** Protects a decoded save when lazy chunk-diff restoration finds a different generated base. */
+  /** Protects a decoded save when generating the restored world fails, so autosave cannot overwrite it. */
   refuseRestore(error: unknown): boolean {
     if (!(this.isRestored && this.namespace)) {
       return false;
