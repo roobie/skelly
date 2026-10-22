@@ -1355,12 +1355,23 @@ export const ModelSchema = pipe(
 
 // ---- furniture ----
 
-const DoorMaterialSchema = strictObject({
-  id: Id,
-  methods: array(Id),
-  /** How a broken leaf of this material is painted: its colour moves `strength` of the way to `tint`. */
-  broken: optional(strictObject({ tint: Color, strength: Fraction })),
-});
+const DoorMaterialSchema = pipe(
+  strictObject({
+    id: Id,
+    methods: array(Id),
+    /** How a broken leaf of this material is painted: its colour moves `strength` of the way to `tint`. */
+    broken: optional(strictObject({ tint: Color, strength: Fraction })),
+    /**
+     * How a leaf is painted as its damage grows toward breaking, so the player sees how close it is to giving way.
+     * Each step applies once the damage reaches `from`, a fraction of the leaf's toughness; the last step reached wins.
+     */
+    damaged: optional(array(strictObject({ from: Fraction, tint: Color, strength: Fraction }))),
+  }),
+  check(
+    ({ damaged }) => (damaged ?? []).every((step, at) => at === 0 || step.from > damaged![at - 1]!.from),
+    'damage looks need strictly rising thresholds',
+  ),
+);
 
 const DoorForcingSchema = pipe(
   strictObject({
