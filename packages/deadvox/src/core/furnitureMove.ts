@@ -154,11 +154,23 @@ const settle = (mover: FurnitureMover, shadow: Shadow, lifted: BlockEntity): Fal
   const messages = messagesOf(mover.inventory);
   const vacated = new Set(boxCells(lifted.pos, lifted.size).map(key));
   shadow.fill(lifted, lifted.pos, false);
-  const candidates = [...mover.inventory.entities.all]
-    .filter((entity) => entity !== lifted && !fastened(mover.inventory, entity))
-    .sort((a, b) => a.pos[1] - b.pos[1]);
+  // Only a piece over a vacated cell can fall, and it shares that cell's column, so candidates come from the columns
+  // of what moved. A fall adds its own columns; the pieces that brings in stand above it, so the lowest-first order holds.
+  const seen = new Set<BlockEntity>([lifted]);
+  const candidates: BlockEntity[] = [];
+  const gather = (pos: Readonly<Vec3>, size: Readonly<Vec3>) => {
+    const fresh = mover.inventory.entities
+      .near(pos, [pos[0] + size[0] - 1, pos[1], pos[2] + size[2] - 1])
+      .filter((entity) => !(seen.has(entity) || fastened(mover.inventory, entity)));
+    for (const entity of fresh) {
+      seen.add(entity);
+    }
+    candidates.push(...fresh);
+    candidates.sort((a, b) => a.pos[1] - b.pos[1] || a.uid - b.uid);
+  };
+  gather(lifted.pos, lifted.size);
   const falls: Fall[] = [];
-  for (const entity of candidates) {
+  for (let entity = candidates.shift(); entity; entity = candidates.shift()) {
     const onVacated = footprint(entity.pos, entity.size).some((cell) => vacated.has(key(below(cell))));
     if (!onVacated || shadow.rests(entity.pos, entity.size)) {
       continue;
@@ -180,6 +192,7 @@ const settle = (mover: FurnitureMover, shadow: Shadow, lifted: BlockEntity): Fal
     for (const cell of boxCells(entity.pos, entity.size)) {
       vacated.add(key(cell));
     }
+    gather(entity.pos, entity.size);
     falls.push({ entity, y });
   }
   return falls;
@@ -394,7 +407,9 @@ const standRefusal = (mover: FurnitureMover, shadow: Shadow, pos: Vec3, piece: B
   }
   const cells = new Set(boxCells(pos, size).map(key));
   const onLadder = under.some((entity) => entity && entities.defOf(entity).climbable);
-  return onLadder || [...entities.all].some((entity) => blocksApproach(mover.inventory, entity, cells))
+  // A ladder's approach is the cell beside it, so a ladder it could block stands within a cell of the box.
+  const ladders = entities.near([pos[0] - 1, pos[1], pos[2] - 1], [pos[0] + size[0], pos[1], pos[2] + size[2]]);
+  return onLadder || ladders.some((entity) => blocksApproach(mover.inventory, entity, cells))
     ? messages.blocksLadder
     : undefined;
 };
