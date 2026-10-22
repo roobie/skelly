@@ -1832,6 +1832,12 @@ fog, not baked into chunks. See `src/core/lights.ts`, `lightSenseSourceFor`;
 `src/render/lightPool.ts`, `LightPool.update`; and `src/core/dayPhase.ts`,
 `dayPhaseAt`.
 
+A burning torch or candle set down keeps burning and spending its fuel, standing
+upright with its flame and light where the flame is: standing one up is how a player
+sets it down to light a room. Whether a model rests upright is content, so any such
+light stands the same way. See `src/render/models.ts`, `prepareModel`, and
+`src/render/modelFlame.ts`, `ModelFlames.onModel`.
+
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
 through doors and windows can make a building a beacon; covering or boarding
