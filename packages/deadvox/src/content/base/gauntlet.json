@@ -8923,7 +8923,7 @@
       "joins": [],
       "lootContext": {
         "lowerTiers": true,
-        "tier": "Tier3",
+        "tier": "Tier4",
         "usage": ["Industrial", "Medical"]
       },
       "ports": [],
@@ -10032,7 +10032,7 @@
       "joins": [],
       "lootContext": {
         "lowerTiers": true,
-        "tier": "Tier3",
+        "tier": "Tier4",
         "usage": ["Industrial", "Medical"]
       },
       "ports": [],
@@ -29590,8 +29590,7 @@
         },
         "F": {
           "furniture": "hq_weapon_cabinet",
-          "loot": "gauntlet_lab_entry_margin",
-          "lootUsage": ["Military"]
+          "loot": "gauntlet_lab_entry_margin"
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -30067,13 +30066,11 @@
         },
         "A": {
           "furniture": "police_file_cabinet",
-          "loot": "hq_field_supplies",
-          "lootUsage": ["Military"]
+          "loot": "d41_empty"
         },
         "B": {
           "furniture": "police_file_cabinet",
-          "loot": "hq_field_supplies",
-          "lootUsage": ["Military"]
+          "loot": "d41_empty"
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"

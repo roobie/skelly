@@ -7,7 +7,7 @@ local context = { usage: ['Industrial', 'Medical'], tier: 'Tier1' };
 local slot = function(id, kind, ref, at, size) { id: id, at: at, size: size, turn: 0, choices: [{ ref: { kind: kind, id: ref }, weight: 1 }] };
 local room = function(id, shell, first, second) equipment.room('gauntlet_lab_' + id, 'gauntlet_lab_shell' + shell, first, second);
 local placedRoom = function(id, ref, at) slot(id, 'assembly', 'gauntlet_lab_' + ref, at, [18, 8, 14]);
-// A level rolls every tier up to its depth; the entry level is the first, and the deepest tier that exists caps the rest.
+// A level rolls every tier up to its depth; the entry level is the first, and the last two levels share the deepest tier.
 local storey = function(id, tier, rooms) {
   id: 'gauntlet_lab_storey_' + id, size: [72, 8, 64], lootContext: context + { tier: tier, lowerTiers: true },
   slots: circulation.slots + rooms + threat.slots(id, [r for r in rooms if r.choices[0].ref.id != 'gauntlet_lab_culture_stair_join']),
@@ -93,12 +93,12 @@ local cabinetShape = [
       placedRoom('middle_west', 'observation', [4, 0, 23]), placedRoom('middle_middle', 'culture', [27, 0, 23]), placedRoom('middle_east', 'decon', [50, 0, 23]),
       placedRoom('south_west', 'breach_incoming', [4, 0, 42]), placedRoom('south_middle', 'security_outgoing', [27, 0, 42]), placedRoom('south_east', 'containment', [50, 0, 42]),
     ]),
-    storey('failure', 'Tier3', [
+    storey('failure', 'Tier4', [
       placedRoom('north_west', 'breach', [4, 0, 4]), placedRoom('north_middle', 'quarantine_incoming', [27, 0, 4]), placedRoom('north_east', 'containment', [50, 0, 4]),
       placedRoom('middle_west', 'decon_outgoing', [4, 0, 23]), placedRoom('middle_middle', 'assay', [27, 0, 23]), placedRoom('middle_east', 'breach_outgoing_east', [50, 0, 23]),
       placedRoom('south_middle', 'utilities_incoming', [27, 0, 42]), placedRoom('south_east', 'observation', [50, 0, 42]),
     ]),
-    storey('bottom', 'Tier3', [
+    storey('bottom', 'Tier4', [
       placedRoom('north_west', 'quarantine', [4, 0, 4]), placedRoom('north_middle', 'breach', [27, 0, 4]), placedRoom('north_east', 'quarantine', [50, 0, 4]),
       placedRoom('middle_west', 'breach_incoming', [4, 0, 23]), placedRoom('middle_middle', 'objective', [27, 0, 23]), placedRoom('middle_east', 'quarantine_incoming_east', [50, 0, 23]),
       placedRoom('south_west', 'holding', [4, 0, 42]), placedRoom('south_middle', 'decon', [27, 0, 42]), placedRoom('south_east', 'quarantine', [50, 0, 42]),

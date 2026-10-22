@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GauntletSite } from '../src/core/gauntlet.ts';
-import { economyEligible, type LootContext, withLootDepth } from '../src/core/loot.ts';
+import { economyEligible, LOOT_TIERS, type LootContext, withLootDepth } from '../src/core/loot.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileAssembly, placedGroundLoot, placedPieces } from '../src/core/templates.ts';
@@ -9,7 +9,7 @@ import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
-const TIERS = ['Tier1', 'Tier2', 'Tier3'] as const;
+const TIERS = LOOT_TIERS;
 
 /** The tiers a source in this context can roll, found by asking whether an item of each tier alone would be admitted. */
 const rollableTiers = (context: LootContext): string[] =>
@@ -86,7 +86,9 @@ describe('nested tier ranges reach the loot sources', () => {
       const innerSources = at(...innerSpan, channel);
       expect(innerSources.length, `inner ${channel} source exists`).toBeGreaterThan(0);
       for (const source of innerSources) {
-        expect(rollableTiers(source.context), `inner ${channel} rolls the deeper range`).toEqual([...TIERS]);
+        expect(rollableTiers(source.context), `inner ${channel} rolls the deeper range`).toEqual(
+          TIERS.slice(0, TIERS.indexOf('Tier3') + 1),
+        );
       }
     }
     const outerSources = at(...outerSpan, 'container');
@@ -120,6 +122,7 @@ describe('gauntlet lab loot tiers by depth', () => {
       const bottom = sources.at(-1)!;
       expect(top.tiers, 'the top level rolls the lowest tier alone').toEqual([TIERS[0]]);
       expect(bottom.tiers.length, 'a deeper level rolls a higher tier').toBeGreaterThan(top.tiers.length);
+      expect(bottom.tiers, 'the deepest level rolls the highest tier').toContain(TIERS.at(-1));
       for (const tier of top.tiers) {
         expect(bottom.tiers, 'a deeper level keeps the lower tiers').toContain(tier);
       }

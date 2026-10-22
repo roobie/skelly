@@ -79,7 +79,7 @@ local rooms = {
     finish: { floor: 'floor', wall: 'concrete', base: 'metal' }, ceilingDrop: 1, floorRise: 0,
     openings: [{ token: 'q', at: [13, 24], axis: 'z', width: 2 }, { token: 'u', at: [13, 26], axis: 'z', width: 2 }],
     dressing: [
-      { id: 'equipment_stock', at: [10, 23], kit: 'locker', fixture: null, loot: 'gauntlet_lab_entry_margin', lootUsage: ['Military'] },
+      { id: 'equipment_stock', at: [10, 23], kit: 'locker', fixture: null, loot: 'gauntlet_lab_entry_margin' },
       { id: 'equipment_cabinets_west', at: [3, 24], kit: 'cabinets', fixture: 'working' },
       { id: 'equipment_cabinets_east', at: [7, 24], kit: 'cabinets', fixture: null },
     ],
@@ -90,7 +90,7 @@ local rooms = {
     openings: [{ token: 'h', at: [19, 12], axis: 'z', width: 2 }, { token: 'j', at: [24, 13], axis: 'x', width: 3 }],
     dressing: [
       { id: 'technical_pump', at: [26, 6], kit: 'pump', fixture: 'broken' },
-      { id: 'technical_spares', at: [22, 9], kit: 'cabinets', fixture: null, loot: 'hq_field_supplies', lootUsage: ['Military'] },
+      { id: 'technical_spares', at: [22, 9], kit: 'cabinets', fixture: null },
     ],
   },
   freight_lift: {
@@ -212,7 +212,6 @@ local bay = function(d)
       L: { furniture: if d.fixture == 'broken' then 'gauntlet_lab_fixture_broken' else 'gauntlet_lab_fixture' },
     } + { [glyph]: { furniture: if std.type(kit.furniture[glyph]) == 'object' then kit.furniture[glyph].id else kit.furniture[glyph],
                  loot: std.get(d, 'loot', 'd41_empty') }
-                 + (if std.objectHas(d, 'lootUsage') then { lootUsage: d.lootUsage } else {})
                  + (if std.type(kit.furniture[glyph]) == 'object' then { tip: kit.furniture[glyph].tip } else {}) for glyph in std.objectFields(kit.furniture) },
     layers: layers,
     ownership: { layers: [[std.join('', [if c == '.' then 'A' else 'S' for c in std.stringChars(row)]) for row in layer] for layer in layers] },
