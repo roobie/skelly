@@ -682,11 +682,14 @@ try {
     assert.equal(schedule.measuredDurations.length, 4);
     assert.ok(schedule.measuredDurations.every((duration) => Number.isFinite(duration) && duration >= 0));
 
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const { controller } = deadvoxSaveTest;
       controller.storage.save = () => Promise.reject(new DOMException('quota regression', 'QuotaExceededError'));
       controller.beforeSleep();
-      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    // The rejection settles within a few event-loop turns; a missing recovery UI fails here, not later.
+    await page.waitForFunction(() => document.querySelector('#save-recovery')?.checkVisibility(), undefined, {
+      timeout: 1000,
     });
     const failure = await page.evaluate(() => ({
       text: document.querySelector('#save-recovery-message').textContent,

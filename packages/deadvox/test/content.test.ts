@@ -2785,13 +2785,37 @@ describe('content', () => {
     ).toHaveLength(2);
   });
 
-  it('gives every base block a known pattern and patterns the stone work', () => {
-    const registry = baseRegistry;
+  it('gives every base block a known pattern', () => {
+    const patterns = blockPatterns(baseRegistry);
+    expect(patterns).toHaveLength(baseRegistry.blocks.length);
+    for (const [index, block] of baseRegistry.blocks.entries()) {
+      expect(BLOCK_PATTERNS[patterns[index]!], block.id).toBeDefined();
+    }
+  });
+
+  it('maps each authored pattern to its own pattern id, and none for a block that authors none', () => {
+    const plain = baseRegistry.blocks.find(({ pattern }) => pattern === undefined)!;
+    const { pattern: _pattern, patternPalette: _palette, patternWashout: _washout, ...template } = plain;
+    // Camo also needs shader settings, which the camo tests above cover.
+    const authored = BLOCK_PATTERNS.filter((pattern) => pattern !== 'camo');
+    const { registry, issues } = buildRegistry([
+      base.find(({ source }) => source === 'blocks.json')!,
+      baseSounds,
+      {
+        source: 'pattern-fixture.json',
+        data: {
+          blocks: [
+            { ...template, id: 'fixture_unpatterned' },
+            ...authored.map((pattern) => ({ ...template, id: `fixture_${pattern}`, pattern })),
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
     const patternOf = (id: string) => BLOCK_PATTERNS[blockPatterns(registry)[registry.blockIds.get(id)!]!];
-    expect(patternOf('brick')).toBe('brick');
-    expect(patternOf('stone')).toBe('rough');
-    expect(patternOf('dressed_stone')).toBe('dressed');
-    expect(patternOf('cobblestone_mossy')).toBe('cobble');
-    expect(patternOf('hazard_yellow')).toBe('none');
+    expect(patternOf('fixture_unpatterned')).toBe('none');
+    for (const pattern of authored) {
+      expect(patternOf(`fixture_${pattern}`)).toBe(pattern);
+    }
   });
 });
