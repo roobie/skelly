@@ -40,6 +40,7 @@ const senseTuning = {
   wall: soundTuning,
   footsteps: registry.senses.get('player')!.footsteps,
   vocalNoiseLifetimeSimSeconds: registry.senses.get('player')!.vocalNoiseLifetimeSimSeconds,
+  shamblerVoice: registry.senses.get('player')!.shamblerVoice,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,

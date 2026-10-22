@@ -1,8 +1,10 @@
 import type { Registry } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { MoveStart } from '../core/handling.ts';
 import type { Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import type { BodyTuningDef } from '../core/schema.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 
 export interface HandlingSoundCue {
@@ -76,18 +78,11 @@ export const firearmShotEmission = (registry: Registry, item: Item, noiseRadiusS
   noiseRadiusScale,
 });
 
-export const HEARTBEAT_FILES = {
-  slow: 'assets/audio/heartbeat-slow-beat.ogg',
-  fast: 'assets/audio/heartbeat-fast-beat.ogg',
-} as const;
-/** Heartbeat anchors; gain values are provisional loudness tuning. */
-export const HEARTBEAT_TUNING = {
-  startStamina: 85,
-  startHz: 1,
-  exhaustedHz: 3,
-  normalGain: 0.12,
-  veryHighGain: 0.8,
-} as const;
+export type HeartbeatTuning = BodyTuningDef['heartbeat'];
+
+/** The player body's heartbeat; content validation makes the player body required. */
+export const playerHeartbeat = (registry: Registry): HeartbeatTuning =>
+  registry.body.get(CORE_CONTENT_IDS.player)!.heartbeat;
 
 export interface HeartbeatTarget {
   readonly bpm: number;
@@ -95,14 +90,15 @@ export interface HeartbeatTarget {
 }
 
 /** Presentation only: silent above the ruled stamina start, then linear in rate and loudness. */
-export const heartbeatForStamina = (stamina: number): HeartbeatTarget => {
-  if (stamina > HEARTBEAT_TUNING.startStamina) {
-    return { bpm: HEARTBEAT_TUNING.startHz * 60, gain: 0 };
+export const heartbeatForStamina = (tuning: HeartbeatTuning, stamina: number): HeartbeatTarget => {
+  const { startStamina, startHz, exhaustedHz, startGain, exhaustedGain } = tuning;
+  if (stamina > startStamina) {
+    return { bpm: startHz * 60, gain: 0 };
   }
-  const fraction = Math.max(0, Math.min(1, (HEARTBEAT_TUNING.startStamina - stamina) / HEARTBEAT_TUNING.startStamina));
+  const fraction = Math.max(0, Math.min(1, (startStamina - stamina) / startStamina));
   return {
-    bpm: (HEARTBEAT_TUNING.startHz + (HEARTBEAT_TUNING.exhaustedHz - HEARTBEAT_TUNING.startHz) * fraction) * 60,
-    gain: HEARTBEAT_TUNING.normalGain + (HEARTBEAT_TUNING.veryHighGain - HEARTBEAT_TUNING.normalGain) * fraction,
+    bpm: (startHz + (exhaustedHz - startHz) * fraction) * 60,
+    gain: startGain + (exhaustedGain - startGain) * fraction,
   };
 };
 

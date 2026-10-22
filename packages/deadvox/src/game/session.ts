@@ -605,7 +605,10 @@ const observeScenarioMovement = (
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const dayCycle = requireDayCycle(registry);
-  const shamblerVoice = shamblerVoiceLaw(figureSeedPool(registry.zombies));
+  const shamblerVoice = shamblerVoiceLaw(
+    figureSeedPool(registry.zombies),
+    registry.senses.get(CORE_CONTENT_IDS.player)!.shamblerVoice,
+  );
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const physics = physicsFor(scale);
