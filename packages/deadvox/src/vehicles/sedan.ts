@@ -1,8 +1,7 @@
 /**
- * A mid-size four-door family sedan, built from parts on a welded monocoque: 4.72 m long, 1.81 m wide,
- * 1.43 m tall, 2.75 m wheelbase, 1.52 m track, 205/55R16 tyres, front-wheel drive with a transverse
- * four-cylinder engine. Proportions follow the class's period side elevation (see `docs/vehicle-spike.md`,
- * "Proportions"); the name stays generic.
+ * A mid-size four-door family sedan, built from parts on a welded monocoque, with front-wheel drive from a
+ * transverse four-cylinder engine. Proportions follow the class's period side elevation (see
+ * `docs/vehicle-spike.md`, "Proportions"); the name stays generic.
  */
 import {
   type Authored,
@@ -46,17 +45,17 @@ const COWL_X = 106;
 const B_REAR = 70;
 const B_FRONT = 73;
 const REAR_DOOR = 45;
-/** The windscreen and A-pillars lean back 22 voxels over 13, about 59° from vertical. */
+/** The windscreen and A-pillars lean back at the class's steep, fast rake. */
 const aLine = (x0: number, y: number): number => x0 - ((y - WAIST) * 22) / 13;
-/** The rear window leans forward 2 voxels per voxel of rise, from the boot deck to the roof. */
+/** The rear window leans forward from the boot deck to the roof. */
 const bLine = (y: number): number => 22 + (y - WAIST) * 2;
 /** The rear door's window frame, and the C-pillar's leading edge, lean forward going up. */
 const cLine = (y: number): number => 44 + ((y - WAIST) * 10) / 13;
 /** The bonnet and wing top line, falling from the scuttle to the nose. */
 const hood = (x: number): number => 30 - ((x - 110) * 4) / 38;
 
-/** 205/55R16 on a steel rim under a plastic trim: a road car's size, shared by any that run it. */
-export const wheel = local({
+/** A road car's size rather than the 4×4's: any other road car that runs it shares this type. */
+const wheel = local({
   ...meta('wheel-205-55r16', 'Wheel (205/55R16, steel rim and trim)', 'under', 19),
   pivot: [10, 10, 3],
   shape: [
@@ -337,7 +336,7 @@ const dashboard = authored(own('dashboard', 'Dashboard and heater', 'interior', 
   paintBox([86, 26, 28], [87, 29, 36], 'trim'),
 ]);
 /** A five-speed's stick on the tunnel; a road car has no transfer lever. */
-export const gearStick = authored(meta('gear-stick', 'Gear lever', 'interior', 1), [
+const gearStick = authored(meta('gear-stick', 'Gear lever', 'interior', 1), [
   box([80, 12, 30], [84, 13, 34], 'trim'),
   box([81, 13, 31], [83, 19, 33], 'trim'),
   box([80, 19, 30], [83, 21, 34], 'trim'),
@@ -419,7 +418,7 @@ const PARTS: readonly Authored[] = [
 
 const QUARTERS = ['rear-quarter-near', 'rear-quarter-far'];
 const INNER_WINGS = ['inner-wing-near', 'inner-wing-far'];
-/** The 4×4's steering column fits this lower, shorter dash 4 voxels further back and 6 lower. */
+/** The 4×4's steering column, moved back and down to meet this lower, shorter dash. */
 const inDash = (part: Authored): readonly [number, number, number] => [part.at[0] - 4, part.at[1] - 6, part.at[2]];
 
 const FITTINGS: readonly Fitting[] = [

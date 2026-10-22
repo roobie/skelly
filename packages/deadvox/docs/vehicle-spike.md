@@ -12,7 +12,7 @@ The spike is a debug page for judging vehicle appearance and disassembly before 
 
 ## Decided
 
-- Keep the 4×4, pickup, sedan and motorbike in the part model. The sedan is the everyday baseline the rarer vehicles are judged against, because a mid-size family car is what a survivor most often finds.
+- Keep the 4×4, pickup, sedan and motorbike in the part model. The sedan is the everyday car, because a mid-size family car is what a survivor most often finds.
 - Vehicle noise comes mainly from the engine; chassis and hull may contribute.
 - Use vehicle-owned fittings, one catalogue id per part type and positions stored on mirrored fittings.
 - Keep sand paint with seeded wear and scratches where rendering cost allows.
@@ -35,7 +35,7 @@ The 4×4 follows a Range Rover Classic four-door; the pickup follows a Toyota Hi
 
 The sedan's content name stays generic: a class reference guides shape, while a manufacturer or model name in game content would claim a specific car. It has no separate frame, so its welded shell components are the roots its other parts rest on. Its door mirrors rest on the A-pillars, because a fitting does not follow the pose of a hinged fitting it rests on; see `src/vehicles/sedan.ts`, `mirror`.
 
-The pickup's regular-cab split is not published: its front clip follows the double-cab elevation and its door follows a period two-door, leaving bed length an estimate. The bike has no cabin, so its seat carries the rider viewpoint. References: [Range Rover Classic](https://en.wikipedia.org/wiki/Range_Rover_Classic), [1981 four-door elevation](https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints), [Hilux model range](https://www.pakwheels.com/new-cars/toyota/hilux/1988-1997), [1989 Hilux](https://www.carsales.com.au/research/toyota/hilux/1989/no-badge), [Hilux 4×4 specifications](https://itstillruns.com/1989-toyota-4x4-truck-specs-7657039.html), [N80 elevations](https://getoutlines.com/requests/3395/1992-toyota-hilux-v-4wd-drawings), [Honda CG125](https://en.wikipedia.org/wiki/Honda_CG125), [CG125 specifications](https://motodealers.co.uk/bikes/atlas-honda/cg125/2012/specs), and [scaled side view](https://the-blueprints.com/vectordrawings/show/25351/honda_cg_125_ml_today).
+The pickup's regular-cab split is not published: its front clip follows the double-cab elevation and its door follows a period two-door, leaving bed length an estimate. The bike has no cabin, so its seat carries the rider viewpoint. References: [Range Rover Classic](https://en.wikipedia.org/wiki/Range_Rover_Classic), [1981 four-door elevation](https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints), [Hilux model range](https://www.pakwheels.com/new-cars/toyota/hilux/1988-1997), [1989 Hilux](https://www.carsales.com.au/research/toyota/hilux/1989/no-badge), [Hilux 4×4 specifications](https://itstillruns.com/1989-toyota-4x4-truck-specs-7657039.html), [N80 elevations](https://getoutlines.com/requests/3395/1992-toyota-hilux-v-4wd-drawings), [Mondeo Mk3](https://en.wikipedia.org/wiki/Ford_Mondeo_(second_generation)), [Honda CG125](https://en.wikipedia.org/wiki/Honda_CG125), [CG125 specifications](https://motodealers.co.uk/bikes/atlas-honda/cg125/2012/specs), and [scaled side view](https://the-blueprints.com/vectordrawings/show/25351/honda_cg_125_ml_today).
 
 ## Grain and shape
 
