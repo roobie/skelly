@@ -147,8 +147,7 @@
           "wearPerHit": 0.01,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 4500
+      }
     },
     {
       "category": "tool",

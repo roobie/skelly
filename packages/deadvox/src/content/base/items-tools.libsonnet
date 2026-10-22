@@ -110,7 +110,6 @@ local items = [
     id: 'sledgehammer',
     name: 'Sledgehammer',
     category: 'tool',
-    weight: 4500,
     size: [2, 7],
     description: 'Breaks a locked door open in a few loud blows. Also a heavy weapon.',
     model: 'sledgehammer',

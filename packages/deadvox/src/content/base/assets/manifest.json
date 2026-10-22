@@ -186,6 +186,7 @@
         "assets/models/portable_radio.glb",
         "assets/models/crowbar.glb",
         "assets/models/hammer.glb",
+        "assets/models/sledgehammer.glb",
         "assets/models/baseball_bat.glb",
         "assets/models/kabar.glb",
         "assets/models/kitchen_knife.glb",
@@ -546,15 +547,6 @@
       "licence": "CC0-1.0",
       "title": "Thwack Sounds",
       "url": "https://opengameart.org/content/thwack-sounds"
-    },
-    {
-      "author": "Pichuliru",
-      "changes": "Converted the source OBJ mesh with its MTL palette material and shared T_PCL_Palette_c.png in Blender to a self-contained GLB; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented the long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root.",
-      "download": "flatshadedmelee.zip",
-      "files": ["assets/models/sledgehammer.glb"],
-      "licence": "CC0-1.0",
-      "title": "CC0 Flat Shaded Melee Weapons",
-      "url": "https://opengameart.org/content/cc0-flat-shaded-melee-weapons"
     },
     {
       "author": "rubberduck",

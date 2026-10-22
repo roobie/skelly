@@ -4937,6 +4937,31 @@
     {
       "connections": [],
       "exportMass": "parts",
+      "id": "sledgehammer",
+      "parts": [
+        {
+          "family": "sledgehammer",
+          "finish": {
+            "handle": "wood-walnut",
+            "head": "steel-grey"
+          },
+          "id": "sledgehammer",
+          "massKg": 4.5,
+          "params": {
+            "faceReach": "0.095000000000000001",
+            "handleBack": "0.83999999999999997",
+            "handleRadius": "0.016",
+            "headBottom": "0.0050000000000000001",
+            "headDepth": "0.057000000000000002",
+            "headTop": "0.062"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
       "id": "baseball_bat",
       "parts": [
         {
