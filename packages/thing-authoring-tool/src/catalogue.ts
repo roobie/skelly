@@ -1,6 +1,6 @@
 import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
-import { applyPoint, scale, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { applyDir, applyPoint, scale, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
@@ -39,6 +39,7 @@ import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts
 import { fuse } from './families/fuse.ts';
 import { foldedGarment } from './families/garment.ts';
 import { grenade } from './families/grenade.ts';
+import { compass, keycard, key as keyFamily, lighter, matchbox } from './families/handheld.ts';
 import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
 import { candle, torch } from './families/lights.ts';
@@ -99,6 +100,8 @@ const ItemSchema = strictObject({
   ),
   /** Named datums on solids, exported as the model's anchors. */
   anchors: optional(record(pipe(string(), regex(/^[a-z0-9_]+$/)), strictObject(SolidPointSchema))),
+  /** The screen's centre on a solid, and the way it faces and its top points in that part's frame. */
+  display: optional(strictObject({ ...SolidPointSchema, normal: ModelPointSchema, up: ModelPointSchema })),
   /** The finish slot that glows while lit; its material must be the only one that slot's finish names in the item. */
   glow: optional(name),
   /** The item's own voxel grain in metres, in place of its class grain; the export recipe resolves it. */
@@ -124,6 +127,11 @@ const builders = {
   coil,
   compound,
   fuse,
+  compass,
+  lighter,
+  matchbox,
+  key: keyFamily,
+  keycard,
   cylinder: base,
   arm,
   shade,
@@ -254,7 +262,11 @@ export const buildItem = (item: ToolItem) => {
     const point = min.map((value, axis) => value + datum.fraction[axis]! * (max[axis]! - value)) as unknown as Vec3;
     return scale(applyPoint(placed, point), catalogue.units.metresPerUnit);
   };
-  let handling: Pick<NeutralModel, 'grip' | 'hold' | 'rest' | 'roll' | 'anchors'> = {};
+  const directionIn = (part: string, direction: Vec3): Vec3 => {
+    const turned = applyDir(report.resolved.placed.get(part)!, direction);
+    return scale(turned, 1 / Math.hypot(...turned));
+  };
+  let handling: Pick<NeutralModel, 'grip' | 'hold' | 'rest' | 'roll' | 'anchors' | 'display'> = {};
   if (item.handling) {
     const datum = item.handling;
     handling = {
@@ -268,6 +280,31 @@ export const buildItem = (item: ToolItem) => {
     handling = {
       ...handling,
       anchors: Object.fromEntries(Object.entries(item.anchors).map(([id, datum]) => [id, datumAt(datum)])),
+    };
+  }
+  if (item.display) {
+    const { part, solid: solidId, normal, up } = item.display;
+    const at = datumAt(item.display);
+    const [min, max] = localSolidBounds(report.resolved.defs.get(part)!.solids.find(({ id }) => id === solidId)!);
+    // The screen solid's extent along a part-frame direction.
+    const extentAlong = (direction: Vec3) => {
+      const unit = scale(direction, 1 / Math.hypot(...direction));
+      const across = unit.reduce((sum, value, axis) => sum + Math.abs(value) * (max[axis]! - min[axis]!), 0);
+      return across * catalogue.units.metresPerUnit;
+    };
+    const side: Vec3 = [
+      up[1] * normal[2] - up[2] * normal[1],
+      up[2] * normal[0] - up[0] * normal[2],
+      up[0] * normal[1] - up[1] * normal[0],
+    ];
+    handling = {
+      ...handling,
+      display: {
+        at,
+        normal: directionIn(part, normal),
+        up: directionIn(part, up),
+        size: [extentAlong(side), extentAlong(up)],
+      },
     };
   }
   return { report, masses, handling, glow: item.glow && glowMaterial(item, item.glow) };

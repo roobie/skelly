@@ -1,0 +1,14 @@
+{
+  "id": "shed_key",
+  "file": "assets/models/shed_key.glb",
+  "parts": {
+    "shed_key": {
+      "node": "shed_key:key",
+      "massKg": 0.01,
+      "centreOfMass": [0.01858019090239605, 0.0021287794087121647, 0.0007393638027988529]
+    }
+  },
+  "grip": { "at": [0.031000000000000003, 0.0015, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1795,6 +1795,49 @@ describe('content references', () => {
     expect(issues.some((issue) => issue.message === 'an emissive light model needs an emissive material')).toBe(true);
   });
 
+  it('requires a held compass’s model to say where its display is, which way it faces and how its dial looks', () => {
+    const displayIssues = (model: Record<string, unknown>) =>
+      buildRegistry([
+        {
+          source: 'held-display.json',
+          data: {
+            items: [
+              {
+                id: 'fixture_compass',
+                name: 'Fixture compass',
+                category: 'tool',
+                weight: 1,
+                size: [1, 1],
+                model: 'fixture_compass',
+                heldDisplay: 'compass',
+              },
+            ],
+            models: [{ id: 'fixture_compass', file: 'assets/models/compass.glb', ...model }],
+          },
+        },
+      ]).issues.filter((issue) => issue.source === 'held-display.json');
+    // biome-ignore lint/style/useNamingConvention: model anchors use content Ids.
+    const needle = { anchors: { needle_mount: [0, 0.01, 0] } };
+    const display = { at: [0, 0.01, 0], normal: [0, 1, 0], up: [0, 0, -1], size: [0.04, 0.04] };
+    const dial = {
+      face: 'plastic-white',
+      ink: 'plastic-black',
+      north: 'plastic-red',
+      south: 'plastic-black',
+      marks: ['N'],
+      markHeight: 0.3,
+      needleLength: 0.6,
+      needleWidth: 0.2,
+    };
+    expect(displayIssues({ ...needle, dial }).map(({ message }) => message)).toEqual([
+      'a held display needs a model with a display',
+    ]);
+    expect(displayIssues({ ...needle, display }).map(({ message }) => message)).toEqual([
+      'a held compass needs a model with a dial',
+    ]);
+    expect(displayIssues({ ...needle, display, dial })).toEqual([]);
+  });
+
   it('requires an explicit disassembly yield for a recipe result', () => {
     const missingYield = {
       ...structuredClone(recipePack),

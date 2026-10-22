@@ -2,25 +2,41 @@ import { readdirSync, readFileSync } from 'node:fs';
 import {
   Box3,
   BoxGeometry,
+  type CircleGeometry,
+  Group,
   InstancedMesh,
   type Loader,
   LoadingManager,
   Mesh,
   type MeshBasicMaterial,
   type MeshStandardMaterial,
+  PerspectiveCamera,
+  Quaternion,
+  Raycaster,
   Vector3,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ContentSource } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory, type Pile } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
+import { createCompass } from '../src/render/compass.ts';
+import { HeldItems } from '../src/render/hands.ts';
+import { presentHeldDisplay } from '../src/render/heldDisplay.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import { fittedPartFrame, groundModelFrame, heldModelFrame, prepareModel } from '../src/render/models.ts';
+import {
+  fittedPartFrame,
+  groundModelFrame,
+  heldModelFrame,
+  type ModelLibrary,
+  prepareModel,
+} from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { FIRST_PERSON_PALM } from '../src/render/playerFigure.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const BASE = 'src/content/base';
@@ -78,6 +94,94 @@ it('prepares every thing recipe export for ground and held drawing with its grip
       }
     }),
   );
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
+it.each<[string, Vec3]>([
+  ['right', [0.14, -0.13, -0.3]],
+  ['left', [-0.14, -0.13, -0.3]],
+])(
+  'turns a %s-held compass screen to the eye, upright, with the whole model in front of the palm',
+  async (_side, heldAt) => {
+    const definition = registry.models.get('compass')!;
+    const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+    const { held } = prepareModel(definition, scene);
+    // Every canvas call is a no-op: the test observes Three transforms, not painted pixels.
+    const context = new Proxy({}, { get: () => vi.fn() });
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
+    const compass = createCompass({
+      root: held,
+      display: definition.display!,
+      needleMount: definition.anchors!.needle_mount!,
+      dial: definition.dial!,
+    });
+    const hand = new Group().add(held);
+    hand.position.set(...heldAt);
+    const palm = presentHeldDisplay(held, definition.display!, heldAt);
+    hand.add(palm);
+    hand.updateMatrixWorld(true);
+    const toEye = new Vector3(...heldAt).negate().normalize();
+    const card = compass.group.getObjectByName('compass-live-dial')!;
+    expect(card.getWorldDirection(new Vector3()).dot(toEye)).toBeGreaterThan(0.99);
+    // The card's top is north, so at its default bearing it stands upright.
+    const top = new Vector3(0, 1, 0).applyQuaternion(card.getWorldQuaternion(new Quaternion()));
+    expect(top.y).toBeGreaterThan(0.9);
+    const palmFront = FIRST_PERSON_PALM[2] / 2;
+    const palmForward = new Vector3(0, 0, 1).applyQuaternion(palm.getWorldQuaternion(new Quaternion()));
+    expect(palmForward.dot(toEye)).toBeGreaterThan(0.99);
+    const handAt = new Vector3(...heldAt);
+    let nearestToPalm = Number.POSITIVE_INFINITY;
+    held.traverse((child) => {
+      if (child instanceof Mesh) {
+        const position = child.geometry.getAttribute('position');
+        for (let index = 0; index < position.count; index += 1) {
+          const vertex = new Vector3().fromBufferAttribute(position, index).applyMatrix4(child.matrixWorld);
+          nearestToPalm = Math.min(nearestToPalm, vertex.sub(handAt).dot(toEye));
+        }
+      }
+    });
+    expect(nearestToPalm).toBeGreaterThanOrEqual(palmFront - 1e-6);
+    compass.dispose();
+  },
+);
+
+it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to a held compass card', async (side) => {
+  const definition = registry.models.get('compass')!;
+  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => new Proxy({}, { get: () => vi.fn() }) }) });
+  const inventory = new Inventory(registry);
+  expect(inventory.add(inventory.create('compass'), { kind: 'hand', side })).toBeTruthy();
+  const models = {
+    version: 0,
+    has: () => true,
+    heldLook: () => ({ root: prepareModel(definition, scene.clone()).held, parts: [], slots: {} }),
+  } as unknown as ModelLibrary;
+  const held = new HeldItems(inventory, models, { skin: '#bbaa99', shirt: '#556677', trousers: '#334455' });
+  held.update(new PerspectiveCamera(), undefined, 0, { firearms: [] });
+  const { scene: view } = held.warmUpTarget;
+  view.updateMatrixWorld(true);
+  const card = view.getObjectByName('compass-live-dial') as Mesh<CircleGeometry>;
+  const arm = view.getObjectByName(`first-person-arm-${side}`)!;
+  const eye = new Vector3();
+  const raycaster = new Raycaster();
+  // Sight lines from the eye to the card's rim and rings inside it.
+  const blocked: string[] = [];
+  for (const ring of [1, 0.66, 0.33]) {
+    for (let step = 0; step < 24; step += 1) {
+      const angle = (step / 24) * Math.PI * 2;
+      const radius = card.geometry.parameters.radius * ring;
+      const target = card.localToWorld(new Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0));
+      raycaster.set(eye, target.clone().sub(eye).normalize());
+      raycaster.far = target.distanceTo(eye);
+      const [hit] = raycaster.intersectObject(arm, true);
+      if (hit) {
+        blocked.push(`${ring}@${step}: arm part ${arm.children.indexOf(hit.object)}`);
+      }
+    }
+  }
+  expect(blocked).toEqual([]);
+  held.dispose();
 });
 
 describe('piles with models', () => {

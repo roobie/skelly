@@ -1656,6 +1656,86 @@
     }
   },
   {
+    "id": "compass",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "compass"
+  },
+  {
+    "id": "lighter",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "lighter"
+  },
+  {
+    "id": "matches",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "matches"
+  },
+  {
+    "id": "dad_cabin_key",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "dad_cabin_key"
+  },
+  {
+    "id": "pharmacy_key",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "pharmacy_key"
+  },
+  {
+    "id": "camp_armoury_key",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "camp_armoury_key"
+  },
+  {
+    "id": "camp_hq_safe_key",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "camp_hq_safe_key"
+  },
+  {
+    "id": "shed_key",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "shed_key"
+  },
+  {
+    "id": "gauntlet_police_armoury_key",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "gauntlet_police_armoury_key"
+  },
+  {
+    "id": "gauntlet_lab_entry_card",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "gauntlet_lab_entry_card"
+  },
+  {
     "id": "tape_roll",
     "kind": "item",
     "options": {

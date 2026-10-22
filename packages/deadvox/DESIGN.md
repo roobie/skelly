@@ -1170,6 +1170,20 @@ a two-handed item occupies both hands. What is held appears in first person,
 what is dropped appears in a pile, and furniture shows its contained items. A
 held light needs both its world illumination and a self-lit held presentation.
 
+**Held screens.** An item with a screen is held at a raised spot with the screen
+facing the eye and the palm on the item's back, the way a person holds a compass
+or a phone, so the hand can never sit between the eye and the screen. Content
+states facts about the object: where its screen is, how big it is, which way it
+faces and which way its top points. The engine turns the item from those facts, so content holds
+no numbers tuned to the arm and later changes to arm size, pose or animation keep
+screens visible; arm animation must keep the screen's line of sight free. Radios
+and GPS units reuse the rule unchanged, a watch is the same rule with the wrist as
+the back, and handedness stays mirroring of placement only. The forearm meets a
+screen-holding palm at the palm's back face rather than its centre, so no part of
+the arm reaches past the palm into the item or its screen. Validation rejects a
+held-display item whose model has no screen. See `src/render/heldDisplay.ts`,
+`presentHeldDisplay`, and `packages/thing-core/src/schema.ts`, `NeutralModelSchema`.
+
 Primary action activates the capability of the held item. A held item must not
 become an unarmed attack, and a reserved support hand must not redirect an
 action. Continue preserves the physical fist sequence. See

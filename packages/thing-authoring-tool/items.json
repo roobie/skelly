@@ -4883,6 +4883,334 @@
       ]
     },
     {
+      "anchors": {
+        "needle_mount": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "compass",
+          "solid": "dial"
+        }
+      },
+      "connections": [],
+      "display": {
+        "fraction": [0.5, 1, 0.5],
+        "normal": [0, 1, 0],
+        "part": "compass",
+        "solid": "dial",
+        "up": [0, 0, -1]
+      },
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "compass",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "compass",
+      "parts": [
+        {
+          "family": "compass",
+          "finish": {
+            "bezel": "steel-grey",
+            "body": "plastic-black",
+            "dial": "paint-cream",
+            "lubber": "plastic-white"
+          },
+          "id": "compass",
+          "massKg": 0.12,
+          "params": {
+            "bezelHeight": "0.0040000000000000001",
+            "dialHeight": "0.001",
+            "height": "0.0089999999999999993",
+            "radius": "0.029999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "lighter",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "lighter",
+      "parts": [
+        {
+          "family": "lighter",
+          "finish": {
+            "body": "plastic-red",
+            "cap": "steel-grey",
+            "wheel": "steel-grey"
+          },
+          "id": "lighter",
+          "massKg": 0.02,
+          "params": {
+            "capHeight": "0.0089999999999999993",
+            "depth": "0.012",
+            "height": "0.055",
+            "width": "0.024"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "matches",
+        "roll": 0,
+        "solid": "tray",
+        "turn": [0, 0, -90]
+      },
+      "id": "matches",
+      "parts": [
+        {
+          "family": "matchbox",
+          "finish": {
+            "sleeve": "paint-terracotta",
+            "striker": "paperboard-brown",
+            "tray": "paperboard-tan"
+          },
+          "id": "matches",
+          "massKg": 0.02,
+          "params": {
+            "depth": "0.035000000000000003",
+            "height": "0.014999999999999999",
+            "sleeve": "0.0040000000000000001",
+            "width": "0.055"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "dad_cabin_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "dad_cabin_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "steel-grey"
+          },
+          "id": "dad_cabin_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.012",
+            "shaftLength": "0.037999999999999999",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "pharmacy_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "pharmacy_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "brass"
+          },
+          "id": "pharmacy_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.010999999999999999",
+            "shaftLength": "0.039",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "camp_armoury_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "camp_armoury_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "steel-parkerized"
+          },
+          "id": "camp_armoury_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.014",
+            "shaftLength": "0.042999999999999997",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "camp_hq_safe_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "camp_hq_safe_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "brass"
+          },
+          "id": "camp_hq_safe_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.01",
+            "shaftLength": "0.040000000000000001",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "shed_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "shed_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "steel-grey"
+          },
+          "id": "shed_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.012",
+            "shaftLength": "0.037999999999999999",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "gauntlet_police_armoury_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "gauntlet_police_armoury_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "steel-blued"
+          },
+          "id": "gauntlet_police_armoury_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.014",
+            "shaftLength": "0.042999999999999997",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "gauntlet_lab_entry_card",
+        "roll": 0,
+        "solid": "card",
+        "turn": [0, 0, -90]
+      },
+      "id": "gauntlet_lab_entry_card",
+      "parts": [
+        {
+          "family": "keycard",
+          "finish": {
+            "card": "plastic-white",
+            "stripe": "plastic-blue"
+          },
+          "id": "gauntlet_lab_entry_card",
+          "massKg": 0.0050000000000000001,
+          "params": {
+            "height": "0.055",
+            "stripeHeight": "0.012",
+            "thickness": "0.001",
+            "width": "0.085000000000000006"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
       "connections": [],
       "exportMass": "parts",
       "id": "electrical_tape",

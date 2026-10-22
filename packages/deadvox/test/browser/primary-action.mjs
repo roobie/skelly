@@ -22,6 +22,7 @@ const reloadInputModule = '/src/game/reloadInput.ts';
 const magazineModule = '/src/core/magazine.ts';
 const optionsModule = '/src/core/options.ts';
 const itemLookModule = '/src/render/itemLook.ts';
+const pileLayoutModule = '/src/core/pileLayout.ts';
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
@@ -971,7 +972,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         document.querySelector('#world-loading')?.dataset.state === 'ready' &&
         document.querySelector('#world-loading').hidden,
     );
-    const fixture = await page.evaluate(() => {
+    const placed = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const wornContainers = [...r.inventory.items()].filter(
         ({ item, location }) => location.kind === 'worn' && item.pockets?.length,
@@ -980,7 +981,6 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         (def) =>
           def.size[0] === 1 &&
           def.size[1] === 1 &&
-          !def.model &&
           !def.twoHanded &&
           def.pileDisplay !== 'scatter' &&
           wornContainers.some(({ item }) => {
@@ -993,37 +993,51 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         return container?.container?.pockets?.some(({ grid }) => grid[0] >= 1 && grid[1] >= 1);
       })?.item;
       if (!(itemDef && pocketOwner)) {
-        throw new Error('Ground pickup fixture lacks an available worn pocket or small bundled item');
+        throw new Error('Ground pickup fixture lacks an available worn pocket or small item');
       }
       const floor = r.feet();
       const first = r.inventory.create(itemDef.id);
       if (!r.inventory.add(first, { kind: 'pile', pos: floor })) {
         throw new Error('Could not place tap-pickup fixture');
       }
-      const aimAtPile = () => {
+      return { ownerUid: pocketOwner.uid, itemUid: first.uid, itemType: itemDef.id, model: itemDef.model, floor };
+    });
+    // A pile lays out a loaded model where its model sits, so aim only once that layout is final.
+    await page.waitForFunction((model) => !model || globalThis.primaryActionTest.view.models.has(model), placed.model);
+    const fixture = await page.evaluate(
+      async ({ pileLayoutModuleUrl, ground }) => {
+        const r = globalThis.primaryActionTest;
+        const { pileItemPosition } = await import(pileLayoutModuleUrl);
+        const { itemUid } = ground;
+        const pile = [...r.inventory.piles.values()].find(({ items }) =>
+          items.some(({ item }) => item.uid === itemUid),
+        );
+        const target = pileItemPosition(r.inventory.registry, pile, itemUid, {
+          blockSize: r.scale.blockSize,
+          hasModel: (id) => r.view.models.has(id),
+        }).map((metres) => metres / r.scale.blockSize);
         const eye = [
           r.session.body.pos[0],
           r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
           r.session.body.pos[2],
         ];
-        const target = [floor[0] + 0.5, floor[1] + 0.1, floor[2] + 0.5];
         const dx = target[0] - eye[0];
         const dy = target[1] - eye[1];
         const dz = target[2] - eye[2];
         r.input.yaw = Math.atan2(-dx, -dz);
         r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-      };
-      aimAtPile();
-      r.grabProgress = [];
-      const updateHeld = r.view.updateHeld.bind(r.view);
-      r.view.updateHeld = (dt, pose, light, handling) => {
-        if (handling?.grab) {
-          r.grabProgress.push(handling.grab.progress);
-        }
-        return updateHeld(dt, pose, light, handling);
-      };
-      return { ownerUid: pocketOwner.uid, itemUid: first.uid, itemType: itemDef.id, floor };
-    });
+        r.grabProgress = [];
+        const updateHeld = r.view.updateHeld.bind(r.view);
+        r.view.updateHeld = (dt, pose, light, handling) => {
+          if (handling?.grab) {
+            r.grabProgress.push(handling.grab.progress);
+          }
+          return updateHeld(dt, pose, light, handling);
+        };
+        return ground;
+      },
+      { pileLayoutModuleUrl: pileLayoutModule, ground: placed },
+    );
     await pressAction(page, 'world.interact');
     await page.waitForFunction(
       (uid) =>

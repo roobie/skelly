@@ -1,0 +1,14 @@
+{
+  "id": "gauntlet_lab_entry_card",
+  "file": "assets/models/gauntlet_lab_entry_card.glb",
+  "parts": {
+    "gauntlet_lab_entry_card": {
+      "node": "gauntlet_lab_entry_card:keycard",
+      "massKg": 0.005,
+      "centreOfMass": [0, 0.0005071964895173086, 0]
+    }
+  },
+  "grip": { "at": [0, 0.0005, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}
