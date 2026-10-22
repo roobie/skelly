@@ -619,7 +619,8 @@ interface LegResult {
 // (and so its params object) across many members with different speeds and different current stepIndex
 // (a cache keyed on params alone, with one speed/window slot, thrashed on almost every call once more
 // than one member referenced it; how much slower that was is not recorded — 6fdc40c cached the whole
-// posing path for about 2x, 1da3048 then gave each stress actor its own cache). GaitCache below lives on the actor (WalkActor.cache), so each member gets its own
+// posing path for about 2x, 1da3048 then gave each stress actor its own cache). GaitCache below lives on the actor (WalkActor.cache, or
+// the walkActorCacheFallback WeakMap for a caller that doesn't set one), so each member gets its own
 // entries and never evicts another member's. It's still a pure memoization — a hit is bit-identical to
 // recomputing (test/poseEquivalence.test.ts covers this through walkPose) — and the stored geom
 // signatures guard the "same cache, different body" case.
@@ -647,6 +648,23 @@ const stepPlansOf = (cache: GaitCache, seed: number): StepPlanMemo => {
     cache.stepPlans = createStepPlanMemo(seed);
   }
   return cache.stepPlans;
+};
+
+/** For a WalkActor built without its own `cache` (older call sites, ad-hoc test fixtures): still correct
+ * (each distinct WalkActor object gets its own entries here), just only as warm as that object's own
+ * lifetime — callers that pose the same actor every frame from a stable WalkActor still benefit fully. */
+const walkActorCacheFallback = new WeakMap<WalkActor, GaitCache>();
+
+const cacheFor = (actor: WalkActor): GaitCache => {
+  if (actor.cache) {
+    return actor.cache;
+  }
+  let cache = walkActorCacheFallback.get(actor);
+  if (!cache) {
+    cache = createGaitCache();
+    walkActorCacheFallback.set(actor, cache);
+  }
+  return cache;
 };
 
 /** Grouped (see GaitBasis's own comment on the same pattern) since they always travel together and
@@ -1007,8 +1025,10 @@ export interface WalkActor {
    * actor's lifetime; never share one between actors that differ in params (step plans are checked
    * against the seed only, footfallPeak against speed and leg geometry). Give each crowd member its own
    * (e.g. `{ ...poolEntry.walkActor, cache: createGaitCache() }`) when several actors share one pool
-   * entry's WalkActor/params. The identity of `params` itself does not matter. */
-  readonly cache: GaitCache;
+   * entry's WalkActor/params. Omitted, walkPose falls back to a WeakMap keyed on this WalkActor object,
+   * so a one-off actor stays warm only while the caller passes the same object every frame (a fresh
+   * object literal per frame recomputes everything). The identity of `params` itself does not matter. */
+  readonly cache?: GaitCache;
 }
 
 /** Below this speed (m/s), walkPose's own idle-blend weight ramps from 1 (speed 0: exactly `idle`) to 0. */
@@ -1043,7 +1063,7 @@ export const walkPose = (
 ): Pose => {
   const { recordAngles = false, idle } = typeof options === 'boolean' ? { recordAngles: options } : options;
   const { bones, extents, params, seed } = actor;
-  const { cache } = actor;
+  const cache = cacheFor(actor);
   const byId = boneMap(bones);
   const pelvis = byId.get('pelvis')!;
   // Opt-in: the angle record costs an allocation per bone per call, on a path that is measured in µs.
