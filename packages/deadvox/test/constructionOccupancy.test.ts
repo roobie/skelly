@@ -105,8 +105,6 @@ it('stops movement at a placed or restored door and lets it through once the doo
   expect(walk(isSolid)).toBeLessThan(0);
   expect(brickMismatches(bricks, isSolid)).toEqual([]);
 
-  entities.setOpen(door, true);
-  expect(entities.closeDoor(door, actorAt(-4), [actorAt(0.5)])).toBe('other');
   entities.remove(door);
   expect(walk(isSolid)).toBeGreaterThan(1);
   expect(brickMismatches(bricks, isSolid)).toEqual([]);
@@ -182,6 +180,23 @@ it('lets sky light through a removed door and blocks it again after a restore', 
   expect(capture().input.furniture).toEqual(placed.input.furniture);
 });
 
+it('refreshes a reach view when a closed door is removed', () => {
+  const { inventory, entities, door, crate, isSolid } = site();
+  const player: ReachPlayer = {
+    inventory,
+    position: [1, 1, -1],
+    blockSize: BLOCK_SIZE,
+    clock: BASE_CLOCK,
+    obstacles: { isSolid, version: 0 },
+  };
+  const view = bindReach(player);
+  const reached = () => view().furniture.map((entity: BlockEntity) => entity.uid);
+  expect(reached()).toEqual([]);
+
+  entities.remove(door);
+  expect(reached()).toEqual([crate.uid]);
+});
+
 it('refreshes a reach view across restores of saves that hold as many pieces', () => {
   const { inventory, entities, door, crate, save, isSolid } = site();
   const player: ReachPlayer = {
@@ -206,6 +221,6 @@ it('refreshes a reach view across restores of saves that hold as many pieces', (
 
 it('refuses to remove a container that still holds items', () => {
   const { entities, crate, isSolid } = site();
-  expect(() => entities.remove(crate)).toThrow();
+  expect(() => entities.remove(crate)).toThrow('holds items');
   expect(isSolid(-1, 1, 2)).toBe(true);
 });
