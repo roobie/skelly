@@ -455,14 +455,19 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   if (light?.power && light.burnTimeGameHours !== undefined) {
     report('items', item.id, '.light.burnTimeGameHours', 'battery lights cannot also have a burn time');
   }
-  if (light?.fuelPerGameHour !== undefined && !igniter) {
-    report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights need an igniter fuel component');
+  if (light?.fuelPerGameHour !== undefined && !igniter && !item.tool?.fuel) {
+    report(
+      'items',
+      item.id,
+      '.light.fuelPerGameHour',
+      'self-fuelled lights need an igniter or a swappable fuel canister',
+    );
   }
   if (light?.fuelPerGameHour !== undefined && light.burnTimeGameHours !== undefined) {
     report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights cannot also have a burn time');
   }
-  if (light?.burning && light.burnTimeGameHours === undefined) {
-    report('items', item.id, '.light.burning', 'burning rules need a burn time');
+  if (light?.burning && light.burnTimeGameHours === undefined && light.fuelPerGameHour === undefined) {
+    report('items', item.id, '.light.burning', 'burning rules need a burn time or a fuel rate');
   }
   if (light?.burning?.ignition === 'firestarter' && !hasIgniter) {
     report('items', item.id, '.light.burning.ignition', 'needs at least one item with an igniter component');
@@ -483,7 +488,7 @@ const acceptsSuppressor = (registry: Registry, model: ModelDef | undefined): boo
 /** Authored shot selections must resolve, and a gun that can mount a suppressor must author the quiet event. */
 const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry: Registry, report: Report): void => {
   const firearm = item.firearm!;
-  for (const field of ['shotSound', 'dryFireSound', 'boltOpenSound', 'boltCloseSound'] as const) {
+  for (const field of ['shotSound', 'shotBodySound', 'dryFireSound', 'boltOpenSound', 'boltCloseSound'] as const) {
     const sound = firearm[field];
     if (sound !== undefined && !registry.sounds.has(sound)) {
       report('items', item.id, `.firearm.${field}`, `no sound event "${sound}"`);
@@ -1513,6 +1518,20 @@ const checkSkillAndUiReferences = (registry: Registry, report: Report): void => 
   }
 };
 
+// A heartbeat plays one recording per beat, so each of its sounds has exactly one variant.
+const checkHeartbeatSounds = (registry: Registry, report: Report): void => {
+  for (const tuning of registry.body.values()) {
+    for (const [pace, event] of Object.entries(tuning.heartbeat.sounds)) {
+      const sound = registry.sounds.get(event);
+      if (!sound) {
+        report('body', tuning.id, `.heartbeat.sounds.${pace}`, `no sound event "${event}"`);
+      } else if (sound.variants.length !== 1) {
+        report('body', tuning.id, `.heartbeat.sounds.${pace}`, `heartbeat sound "${event}" needs exactly one variant`);
+      }
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1546,6 +1565,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkZombies(registry, report);
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);
+  checkHeartbeatSounds(registry, report);
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }

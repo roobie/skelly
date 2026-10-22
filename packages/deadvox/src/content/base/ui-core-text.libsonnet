@@ -14,6 +14,7 @@
     noLightToFit: "I'm not holding a light it fits",
     noToolToFit: "I'm not holding a tool it fits",
     outOfFuel: "It's out of fuel",
+    outOfFuelNoSpare: "It's out of fuel, and you have no spare",
     batteryDead: 'The battery is dead',
     batteryDeadNoSpare: 'The battery is dead, and I have no spare',
     headlampOnHead: "I can't change its battery on my head",

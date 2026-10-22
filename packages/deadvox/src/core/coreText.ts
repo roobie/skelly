@@ -20,6 +20,7 @@ export const CORE_MESSAGE_SLOTS = {
   noLightToFit: [],
   noToolToFit: [],
   outOfFuel: [],
+  outOfFuelNoSpare: [],
   batteryDead: [],
   batteryDeadNoSpare: [],
   headlampOnHead: [],

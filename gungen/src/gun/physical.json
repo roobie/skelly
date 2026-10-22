@@ -497,22 +497,6 @@
       }
     },
     {
-      "family": "ak-muzzle-device",
-      "id": "muzzle-ak-slant",
-      "massKg": 0.080000000000000002,
-      "match": {
-        "style": "slant"
-      }
-    },
-    {
-      "family": "ak-muzzle-device",
-      "id": "muzzle-ak74",
-      "massKg": 0.12,
-      "match": {
-        "style": "ak74"
-      }
-    },
-    {
       "family": "handguard",
       "id": "handguard-ak",
       "massKg": 0.25,

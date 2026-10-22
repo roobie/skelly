@@ -282,6 +282,13 @@ const canisterOption = (canister: Item, inv: Inventory): UseOption => {
 const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
   if (!item.on && chargeOf(inv.registry, item) === 0) {
+    if (defOf(inv.registry, item.type).tool?.fuel) {
+      const [fuel] = view.entries
+        .map((entry) => entry.item)
+        .filter((candidate) => fitsFuelledTool(inv, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)
+        .sort((a, b) => (chargeOf(inv.registry, b) ?? 0) - (chargeOf(inv.registry, a) ?? 0));
+      return fuel ? canisterOption(fuel, inv) : refuseUse(inv, coreMessage(inv.registry, 'outOfFuelNoSpare'));
+    }
     if (!defOf(inv.registry, item.type).light?.power) {
       return refuseUse(inv, coreMessage(inv.registry, 'outOfFuel'));
     }

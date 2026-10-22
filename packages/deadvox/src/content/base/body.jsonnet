@@ -137,6 +137,15 @@ local normalSleep = 100 / normalSleepGameHours;
       ],
       badlyHurt: { below: 25, message: "You're badly hurt" },
     },
+    // Gains are provisional loudness tuning.
+    heartbeat: {
+      sounds: { slow: 'player_heartbeat_slow', fast: 'player_heartbeat_fast' },
+      startStamina: 85,
+      startHz: 1,
+      exhaustedHz: 3,
+      startGain: 0.12,
+      exhaustedGain: 0.8,
+    },
     fatigueRisePerGameHour: 4,
     // Resting clears a fixed share of a normal sleep, so sitting never beats sleeping.
     restFatigueRecoveryPerGameHour: normalSleep * 0.3,

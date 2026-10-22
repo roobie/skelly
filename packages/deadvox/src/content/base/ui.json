@@ -1,6 +1,12 @@
 {
   "ui": [
     {
+      "audioVolumes": {
+        "body": 0.80000000000000004,
+        "master": 0.80000000000000004,
+        "ui": 0.80000000000000004,
+        "world": 0.80000000000000004
+      },
       "coreActionLabels": {
         "batteryIn": "Put a battery in the {item}",
         "cartridgeIn": "Put a gas cartridge in the {item}",
@@ -115,6 +121,7 @@
         "otherCraft": "I'm working on something else",
         "otherNeedsBothHands": "The {item} needs both hands",
         "outOfFuel": "It's out of fuel",
+        "outOfFuelNoSpare": "It's out of fuel, and you have no spare",
         "outOfReach": "It's out of reach",
         "partCount": "I can't move {count} of {total}",
         "pocketsFull": "My pockets are full",

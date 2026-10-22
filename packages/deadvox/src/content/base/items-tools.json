@@ -552,6 +552,44 @@
     },
     {
       "category": "light",
+      "description": "A table lamp that burns lamp oil. It keeps burning where it is set down.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "oil_lamp",
+      "light": {
+        "burning": {
+          "douse": true,
+          "drop": "stay",
+          "ignition": "firestarter",
+          "relight": true,
+          "sprint": "douse",
+          "stow": "douse"
+        },
+        "color": "#ffc477",
+        "flame": {
+          "heightMetres": 0.050000000000000003,
+          "radiusMetres": 0.02
+        },
+        "fuelPerGameHour": 1,
+        "intensity": 3,
+        "radius": 8,
+        "seenFrom": 80
+      },
+      "model": "oil_lamp",
+      "name": "Oil lamp",
+      "size": [2, 3],
+      "tool": {
+        "fuel": {
+          "canister": "lamp_oil",
+          "swapSimSeconds": 3
+        },
+        "qualities": {}
+      }
+    },
+    {
+      "category": "light",
       "description": "A sealed chemical light.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],

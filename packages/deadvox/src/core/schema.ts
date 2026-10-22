@@ -385,6 +385,8 @@ const UiTuningSchema = strictObject({
   hudScale: Positive,
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: picklist(SOUND_EVENT_IDS),
+  /** The audio options' volumes before the player saves any. */
+  audioVolumes: strictObject({ master: Fraction, world: Fraction, body: Fraction, ui: Fraction }),
   /** What the rest card calls each kind of rest. */
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
@@ -636,6 +638,8 @@ const FirearmSchema = strictObject({
   shotSound: Id,
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
   suppressedShotSound: optional(Id),
+  /** Low-frequency layer played with the shot, for a gun whose report needs more body than one recording has; skipped while suppressed. */
+  shotBodySound: optional(Id),
   /** Trigger pulled on an empty chamber; absent stays silent. */
   dryFireSound: optional(Id),
   /** The trigger pull cocks the hammer itself (double action), so every empty pull clicks; otherwise only working the action re-cocks it. */
@@ -1295,7 +1299,7 @@ const AttachmentSightSchema = strictObject({
 });
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
-  kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
+  kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip', 'muzzle-device']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
   mountFrame: strictObject({ normal: UnitVector, up: UnitVector }),
   properties: AttachmentPropertiesSchema,
@@ -3013,6 +3017,18 @@ const SenseSchema = strictObject({
   }),
   /** How long a player vocal noise stays audible to shamblers after it is emitted. */
   vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
+  /**
+   * The shambler voice-pitch law (`DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
+   * height) at the smallest pooled body. One law covers the whole figure pool, so it lives here, not on a zombie type.
+   */
+  shamblerVoice: strictObject({
+    oldLawReferenceHeightMetres: Positive,
+    smallestAnchorMultiplier: Positive,
+    clampMultiplier: pipe(
+      strictObject({ min: Positive, max: Positive }),
+      check(({ min, max }) => min <= max, 'min must not exceed max'),
+    ),
+  }),
   light: strictObject({
     playerDaySightScale: Fraction,
     /** Reduce how far shamblers investigate non-player light sources. */
@@ -3300,6 +3316,17 @@ const BodyTuningSchema = pipe(
     /** Health lost per Sim second while infection is advanced. */
     advancedInfectionHealthLossPerSimSecond: SimRate,
     needs: NeedsTuningSchema,
+    /** The stamina heartbeat, a presentation cue only (`DESIGN.md`, "Audio"). */
+    heartbeat: strictObject({
+      /** One beat each: the slow recording, and the shorter one used once a beat is too quick for the slow one. */
+      sounds: strictObject({ slow: Id, fast: Id }),
+      /** Silent above this stamina; rate and loudness rise linearly from here to exhaustion. */
+      startStamina: NeedPercent,
+      startHz: Positive,
+      exhaustedHz: Positive,
+      startGain: Fraction,
+      exhaustedGain: Fraction,
+    }),
     /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
     fatigueRisePerGameHour: GamePerHour,
     /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */

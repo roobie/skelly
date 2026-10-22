@@ -4,7 +4,7 @@ local militaryItems = [
   'rifle_assault', 'rifle_ak',
   'cartridge_5_d_56x45', 'cartridge_7_d_62x39',
   'cartridge_box_5_d_56x45', 'cartridge_box_7_d_62x39',
-  'magazine_stanag_30', 'magazine_stanag_20', 'magazine_akm_30',
+  'magazine_stanag_30', 'magazine_stanag_20', 'magazine_akm_30', 'ak_slant_compensator',
   'night_vision_goggles',
 ];
 local medicalItems = ['codeine', 'morphine'];
@@ -30,7 +30,7 @@ local commonItems = [
   'ammo_can', 'shell_12_gauge_00_buck', 'shotshell_box', 'dad_cabin_key', 'baseball_cap', 'evacuation_note', 'hunter_logbook',
   'pharmacy_key', 'medical_research_log', 'lamp_oil', 'glass_shards', 'electrical_tape', 'fastener_pack',
   'wood_offcut', 'rubber_strip', 'circuit_board', 'glass_lens', 'small_spring', 'cloth_strip', 'sewing_thread',
-  'fuse', 'nylon_cord', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp',
+  'fuse', 'nylon_cord', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp', 'oil_lamp',
   'broken_table_fan', 'cracked_phone', 'broken_clock', 'sewing_repair_kit', 'electrical_repair_kit',
   'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'screwdriver', 'wrench',
   'improvised_suppressor', 'compass', 'crowbar', 'blowtorch', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone',

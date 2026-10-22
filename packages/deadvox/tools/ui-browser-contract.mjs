@@ -581,13 +581,18 @@ try {
     savedWorldVolume,
     'world volume is persisted to localStorage',
   );
-  const restoredVolumes = await evaluate(`import('/src/game/audio.ts').then(({ GameAudio }) => new GameAudio({
-    registry: { sounds: new Map(), soundOrigins: new Map() },
-    seed: 1,
-    blockSize: 1,
-    isSolid: () => false,
-    report: () => {},
-  }).settings)`);
+  const restoredVolumes = await evaluate(`Promise.all([
+    import('/src/game/audio.ts'), import('/src/game/bundledContent.ts')
+  ]).then(([{ GameAudio }, { buildBundledContent }]) => {
+    const { ui, body } = buildBundledContent().registry;
+    return new GameAudio({
+      registry: { sounds: new Map(), soundOrigins: new Map(), ui, body },
+      seed: 1,
+      blockSize: 1,
+      isSolid: () => false,
+      report: () => {},
+    }).settings;
+  })`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
   await evaluate("document.querySelector('#graphics-fastCamo').scrollIntoView({ block: 'center' })");
   const initialCamo = await evaluate("document.querySelector('#graphics-fastCamo').checked");

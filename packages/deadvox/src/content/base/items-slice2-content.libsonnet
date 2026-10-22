@@ -7,7 +7,9 @@
       "weight": 500,
       "size": [1, 2],
       "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
-      "model": "lamp_oil_bottle"
+      "model": "lamp_oil_bottle",
+      "stack": 2,
+      "canister": { "capacity": 8 }
     },
     {
       "id": "glass_shards",
