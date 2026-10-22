@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { Mesh, PerspectiveCamera } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { describe, expect, it, vi } from 'vitest';
 import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { fragmentDirections } from '../src/core/explosive.ts';
@@ -21,10 +24,13 @@ import type { Detonation } from '../src/core/zombies.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { HeldItems } from '../src/render/hands.ts';
 import { itemLook } from '../src/render/itemLook.ts';
+import { ModelLibrary } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
+const MODEL_ROOT = 'src/content/base';
 const BLOCK = 0.5;
 const GRENADE = 'frag_grenade';
 const FUSE = registry.items.get(GRENADE)!.explosive!.fuseSimSeconds;
@@ -205,22 +211,49 @@ describe('hand grenade', () => {
     expect(lit).toEqual([grenade]);
   });
 
-  it('is drawn without its pin while the pin is out, and with it again once the pin goes back in', () => {
+  it('is redrawn in the hand without its pin while the pin is out, and with it once the pin goes back in', async () => {
     const session = runtime();
-    const { solids } = registry.models.get(registry.items.get(GRENADE)!.model!)!.pin!;
-    const pinHidden = (item: Item) => solids.every((solid) => itemLook(registry, item)!.hidden.includes(solid));
+    const model = registry.items.get(GRENADE)!.model!;
+    const def = registry.models.get(model)!;
+    const { solids } = def.pin!;
+    const loads: Promise<void>[] = [];
+    const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad, _onProgress, onError) => {
+      loads.push(new GLTFLoader().parseAsync(Uint8Array.from(readFileSync(path)).buffer, '').then(onLoad, onError));
+    });
+    const models = new ModelLibrary(
+      { ...registry, models: new Map([[model, def]]) },
+      (message) => {
+        throw new Error(message);
+      },
+      { [def.file]: `${MODEL_ROOT}/${def.file}` },
+    );
+    spy.mockRestore();
+    await Promise.all(loads);
+    const held = new HeldItems(session.inventory, models, registry.figures.get('player')!.palette);
+    const camera = new PerspectiveCamera();
+    const pinMeshesDrawn = () => {
+      held.update(camera);
+      let drawn = 0;
+      held.warmUpTarget.scene.traverseVisible((child) => {
+        if (child instanceof Mesh && solids.includes(child.geometry.userData.solid)) {
+          drawn += 1;
+        }
+      });
+      return drawn;
+    };
     const grenade = session.inventory.create(GRENADE);
     expect(session.inventory.add(grenade, { kind: 'hand', side: 'right' })).toBe(true);
-    const hidden = [pinHidden(grenade)];
+    const drawn = [pinMeshesDrawn()];
     session.fuses.togglePin(grenade);
-    hidden.push(pinHidden(grenade));
+    drawn.push(pinMeshesDrawn());
     session.fuses.togglePin(grenade);
-    hidden.push(pinHidden(grenade));
+    drawn.push(pinMeshesDrawn());
+    held.dispose();
+    expect(drawn).toEqual([solids.length, 0, solids.length]);
     session.fuses.togglePin(grenade);
     expect(session.inventory.move(grenade, { kind: 'pile', pos: [1, 0, 0] }).ok).toBe(true);
     session.sim.scheduler.advance(FUSE / 4);
-    hidden.push(pinHidden(grenade));
-    expect(hidden).toEqual([false, true, false, true]);
+    expect(solids.every((solid) => itemLook(registry, grenade)!.hidden.includes(solid))).toBe(true);
   });
 
   it('goes off in the hand of whoever picks it up while its fuse burns', () => {

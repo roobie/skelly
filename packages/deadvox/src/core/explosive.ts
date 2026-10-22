@@ -23,9 +23,12 @@ export class Fuses {
   /** Pin pulled, fuse waiting for the item to leave the hand. */
   private readonly live = new Set<Item>();
   private readonly registry: Registry;
+  private readonly pinMoved: () => void;
 
-  constructor(registry: Registry, items: Iterable<Item>) {
+  /** `pinMoved` hears each pull or push of a pin, which changes how the item draws. */
+  constructor(registry: Registry, items: Iterable<Item>, pinMoved: () => void) {
     this.registry = registry;
+    this.pinMoved = pinMoved;
     for (const item of items) {
       if (item.fuseRemainingSimSeconds !== undefined) {
         this.burning.add(item);
@@ -52,11 +55,13 @@ export class Fuses {
     if (state === 'in') {
       item.pinPulled = true;
       this.live.add(item);
+      this.pinMoved();
       return 'pulled';
     }
     if (state === 'pulled') {
       item.pinPulled = undefined;
       this.live.delete(item);
+      this.pinMoved();
       return 'in';
     }
     return state;

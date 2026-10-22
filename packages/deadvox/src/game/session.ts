@@ -660,6 +660,9 @@ export const createSession = (options: SessionOptions) => {
   const fuses = new Fuses(
     registry,
     Array.from(inventory.items(), ({ item }) => item),
+    () => {
+      inventory.version += 1; // The item now draws with or without its pin.
+    },
   );
   const aim = createSessionAim({
     tuning: currentFirearmsCombatTuning(),

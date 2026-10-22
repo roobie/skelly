@@ -19,13 +19,7 @@ import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import {
-  fittedPartFrame,
-  groundModelFrame,
-  heldModelFrame,
-  ModelLibrary,
-  prepareModel,
-} from '../src/render/models.ts';
+import { fittedPartFrame, groundModelFrame, heldModelFrame, ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
