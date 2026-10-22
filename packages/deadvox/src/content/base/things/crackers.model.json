@@ -1,7 +1,7 @@
 {
   "id": "crackers",
   "file": "assets/models/crackers.glb",
-  "parts": { "package": { "node": "package:carton", "massKg": 0.25, "centreOfMass": [0, 0.10068854621041944, 0] } },
+  "parts": { "package": { "node": "package:carton", "massKg": 0.25, "centreOfMass": [0, 0.102, 0] } },
   "grip": { "at": [0, 0.1, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0

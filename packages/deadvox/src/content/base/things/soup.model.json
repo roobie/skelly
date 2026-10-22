@@ -1,7 +1,7 @@
 {
   "id": "soup",
   "file": "assets/models/soup.glb",
-  "grip": { "at": [0, 0.0045, 0], "turn": [0, 0, -90] },
+  "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0
 }

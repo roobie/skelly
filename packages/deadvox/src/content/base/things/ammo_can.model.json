@@ -1,8 +1,14 @@
 {
   "id": "ammo_can",
   "file": "assets/models/ammo_can.glb",
-  "parts": { "package": { "node": "package:carton", "massKg": 1.6, "centreOfMass": [0, 0.09033956247777805, 0] } },
-  "grip": { "at": [0, 0.21100000000000002, 0], "turn": [0, 0, -90] },
+  "parts": {
+    "package": {
+      "node": "package:carton",
+      "massKg": 1.6,
+      "centreOfMass": [-0.000013307524800387127, 0.08977377207839343, 0]
+    }
+  },
+  "grip": { "at": [-0.0049999999999999975, 0.215, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0
 }
