@@ -98,6 +98,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -115,6 +116,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -132,6 +134,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -149,6 +152,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -175,6 +179,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -199,6 +204,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -236,6 +242,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -253,6 +260,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -270,6 +278,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -287,6 +296,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -313,6 +323,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -337,6 +348,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -374,6 +386,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -391,6 +404,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -408,6 +422,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -425,6 +440,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -451,6 +467,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -475,6 +492,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -512,6 +530,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -529,6 +548,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -546,6 +566,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -563,6 +584,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -589,6 +611,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -613,6 +636,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -650,6 +674,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -667,6 +692,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -684,6 +710,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -701,6 +728,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -727,6 +755,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -751,6 +780,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -788,6 +818,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -805,6 +836,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -822,6 +854,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -839,6 +872,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -865,6 +899,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -889,6 +924,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -926,6 +962,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -943,6 +980,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -960,6 +998,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -977,6 +1016,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1003,6 +1043,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1027,6 +1068,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1064,6 +1106,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1081,6 +1124,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1098,6 +1142,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1115,6 +1160,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1141,6 +1187,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1165,6 +1212,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1202,6 +1250,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1219,6 +1268,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1236,6 +1286,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1253,6 +1304,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1279,6 +1331,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1303,6 +1356,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1340,6 +1394,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1357,6 +1412,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1374,6 +1430,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1391,6 +1448,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1417,6 +1475,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1441,6 +1500,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1478,6 +1538,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1495,6 +1556,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1512,6 +1574,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1529,6 +1592,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1555,6 +1619,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1579,6 +1644,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1616,6 +1682,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1633,6 +1700,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1650,6 +1718,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1667,6 +1736,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1693,6 +1763,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1717,6 +1788,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1754,6 +1826,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1771,6 +1844,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1788,6 +1862,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1805,6 +1880,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1831,6 +1907,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1855,6 +1932,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1892,6 +1970,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1909,6 +1988,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1926,6 +2006,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1943,6 +2024,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1969,6 +2051,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1993,6 +2076,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2030,6 +2114,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_intact",
+      "material": "steel",
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2047,6 +2132,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_doors",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2064,6 +2150,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_wheels",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2081,6 +2168,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_front",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2107,6 +2195,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_rear",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2131,6 +2220,7 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_shell",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2170,7 +2260,6 @@
       "door": {
         "barredFrom": "front",
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "wood",
         "methods": {
           "pry": {
             "fastestTimeSimSeconds": 7.5,
@@ -2184,6 +2273,7 @@
         }
       },
       "id": "gauntlet_door_boarded",
+      "material": "wood",
       "name": "Boarded wooden door",
       "shape": [
         {
@@ -2212,6 +2302,7 @@
       },
       "color": "#8d8f8a",
       "id": "gauntlet_roof_parapet",
+      "material": "wood",
       "name": "Parapet wall",
       "shape": [
         {
@@ -2229,6 +2320,7 @@
       },
       "color": "#a7aa9f",
       "id": "gauntlet_roof_ac",
+      "material": "wood",
       "name": "Air conditioner",
       "shape": [
         {
@@ -2266,6 +2358,7 @@
       },
       "color": "#747c79",
       "id": "gauntlet_roof_vent",
+      "material": "wood",
       "name": "Roof vent",
       "shape": [
         {
@@ -2291,6 +2384,7 @@
       },
       "color": "#526a38",
       "id": "gauntlet_yard_shrub",
+      "material": "wood",
       "name": "Shrub",
       "shape": [
         {
@@ -2320,6 +2414,7 @@
       },
       "color": "#74664d",
       "id": "gauntlet_yard_fence",
+      "material": "wood",
       "name": "Wooden fence",
       "shape": [
         {
@@ -2350,7 +2445,6 @@
       "color": "#626d70",
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "wood",
         "methods": {
           "pry": {
             "fastestTimeSimSeconds": 7.5,
@@ -2364,6 +2458,7 @@
         }
       },
       "id": "gauntlet_cell_door",
+      "material": "wood",
       "name": "Cell door",
       "shape": [
         {
@@ -2412,6 +2507,7 @@
         ]
       },
       "id": "gauntlet_dead_scavenger",
+      "material": "wood",
       "name": "Dead scavenger",
       "shape": [
         {
@@ -2441,6 +2537,7 @@
       },
       "color": "#c94b3d",
       "id": "gauntlet_button",
+      "material": "wood",
       "name": "Nuclear objective button",
       "scenarioGoal": true,
       "shape": [
@@ -2467,6 +2564,7 @@
         ]
       },
       "id": "gauntlet_dead_special_ops",
+      "material": "wood",
       "name": "Dead special operations soldier",
       "shape": [
         {
@@ -2496,6 +2594,7 @@
       },
       "color": "#dfd6b9",
       "id": "gauntlet_perimeter_notice",
+      "material": "wood",
       "name": "Notice",
       "readable": {
         "text": "QUARANTINE ZONE",
@@ -2517,6 +2616,7 @@
       },
       "color": "#dfd6b9",
       "id": "gauntlet_perimeter_gate_notice",
+      "material": "wood",
       "name": "Notice",
       "readable": {
         "text": "NO ENTRY",
@@ -2538,6 +2638,7 @@
       },
       "color": "#707b7e",
       "id": "gauntlet_water_tank",
+      "material": "wood",
       "name": "Square raised water tank",
       "shape": [
         {
@@ -2575,6 +2676,7 @@
       },
       "color": "#c7b16d",
       "id": "gauntlet_loading_frame",
+      "material": "wood",
       "name": "Yellow loading frame",
       "shape": [
         {

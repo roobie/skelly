@@ -16,6 +16,7 @@
         ]
       },
       "id": "tutorial_cabinet",
+      "material": "wood",
       "name": "Supply cabinet",
       "shape": [
         {

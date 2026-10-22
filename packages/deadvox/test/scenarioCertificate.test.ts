@@ -26,7 +26,7 @@ import {
 } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
@@ -475,8 +475,16 @@ describe('final composed body-route certificate', () => {
       {
         source: 'owned-boundary.json',
         data: {
+          furnitureMaterials: fixtureMaterials(),
           furniture: [
-            { id: 'boundary_box', name: 'Boundary box', size: [3, 4, 2], color: '#aaaaaa', breach: fixtureBreach() },
+            {
+              id: 'boundary_box',
+              name: 'Boundary box',
+              size: [3, 4, 2],
+              color: '#aaaaaa',
+              breach: fixtureBreach(),
+              material: FIXTURE_MATERIAL,
+            },
           ],
           templates: [
             {

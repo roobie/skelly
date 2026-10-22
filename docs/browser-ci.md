@@ -2,9 +2,12 @@
 read_if:
   - you change Deadvox browser CI partition, aggregate requirements, or browser launch source
   - you investigate or reinstate a quarantined browser case
+  - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
 ---
 
 # Browser CI ownership and evidence
+
+The Deadvox unit suite is sharded because one step over the whole suite outgrew its flat bound with no failing test (#1140), and a bound must follow the work it covers. Each shard's step bound is about twice the slowest shard's measured time, which includes per-shard costs (compile, global setup, imports) that more shards do not shrink. When files grow, add shards rather than raise the bound. See `.github/workflows/deadvox.yml`, `unit`, and `AGENTS.md`, "Zero drift".
 
 GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestration in `.github/workflows/deadvox-browser.yml` avoids a second runner that could change what the measurements mean.
 

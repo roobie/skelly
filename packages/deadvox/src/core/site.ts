@@ -19,6 +19,7 @@ import {
   rollLootParts,
   withLootDepth,
 } from './loot.ts';
+import { Rng } from './random.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
 import type { Surface } from './worldgen.ts';
@@ -47,7 +48,15 @@ export interface FurnitureSpawn {
   fixedCount?: number;
   /** Fixed items laid out as a visible pile on the furniture's top surface. */
   surfaceLoot?: Rolled[];
+  /** The share of its durability the piece is placed already worn by; absent places it intact. */
+  wear?: number;
 }
+
+/** The wear a piece is placed with, drawn from its content's range and the placement seed; undefined when intact. */
+const rollWear = (registry: Registry, seed: number, spec: EntitySpec): number | undefined => {
+  const range = registry.furniture.get(spec.type)?.wear;
+  return range && Rng.stream(seed, `wear:${spec.type}:${spec.pos.join(',')}`).range(range.from, range.to);
+};
 
 export type ZombieSpawn = {
   type: string;
@@ -214,8 +223,10 @@ export const fillFurnitureLoot = (
         .map((point) => rollLootParts(registry, point, lootPointStream(seed, point)));
     const container = items('container');
     const fixed = container.flatMap((part) => part.fixed);
+    const wear = rollWear(registry, seed, spawn.spec);
     return {
       ...spawn,
+      ...(wear === undefined ? {} : { wear }),
       loot: [...fixed, ...container.flatMap((part) => part.rolled)],
       ...(fixed.length > 0 ? { fixedCount: fixed.length } : {}),
       surfaceLoot: items('surface').flatMap((part) => [...part.fixed, ...part.rolled]),

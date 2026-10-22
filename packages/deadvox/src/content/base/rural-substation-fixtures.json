@@ -7,6 +7,7 @@
       },
       "color": "#7f8d89",
       "id": "substation_switchgear",
+      "material": "wood",
       "name": "Switchgear cabinet",
       "shape": [
         {
@@ -44,6 +45,7 @@
       },
       "color": "#6f7d7a",
       "id": "substation_panel",
+      "material": "wood",
       "name": "Control panel",
       "shape": [
         {
@@ -96,6 +98,7 @@
       },
       "color": "#5d6c73",
       "id": "substation_transformer",
+      "material": "wood",
       "name": "Transformer",
       "shape": [
         {
@@ -168,6 +171,7 @@
       },
       "color": "#8c9488",
       "id": "substation_disconnector",
+      "material": "wood",
       "name": "Disconnector",
       "shape": [
         {
@@ -213,6 +217,7 @@
       },
       "color": "#6b5a47",
       "id": "substation_pole",
+      "material": "wood",
       "name": "Power line pole",
       "shape": [
         {

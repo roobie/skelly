@@ -7,6 +7,7 @@
       },
       "color": "#99794c",
       "id": "clinic_sign",
+      "material": "wood",
       "mount": "wall",
       "name": "Clinic direction sign",
       "readable": {
@@ -29,6 +30,7 @@
       },
       "color": "#99794c",
       "id": "gas_directions_sign",
+      "material": "wood",
       "mount": "wall",
       "name": "Hand-painted direction sign",
       "readable": {
@@ -51,6 +53,7 @@
       },
       "color": "#b8b5a5",
       "id": "medical_research_notice",
+      "material": "wood",
       "mount": "wall",
       "name": "Medical sampling notice board",
       "readable": {
@@ -81,6 +84,7 @@
         ]
       },
       "id": "medical_cabinet",
+      "material": "wood",
       "name": "Medical supply cabinet",
       "shape": [
         {
@@ -279,6 +283,7 @@
       },
       "color": "#7c8581",
       "id": "sample_rack",
+      "material": "wood",
       "name": "Specimen rack",
       "size": [2, 3, 1]
     },
@@ -289,6 +294,7 @@
       },
       "color": "#b6c1bc",
       "id": "sample_tray",
+      "material": "wood",
       "name": "Sample tray",
       "size": [2, 1, 1]
     },
@@ -300,13 +306,13 @@
       "color": "#666c70",
       "door": {
         "handlingSimSeconds": 1.2,
-        "material": "steel",
         "methods": {},
         "openNoise": {
           "sound": "door_roller_open"
         }
       },
       "id": "workshop_roller_door",
+      "material": "steel",
       "name": "Roller door",
       "size": [6, 5, 1]
     },
@@ -317,6 +323,7 @@
       },
       "color": "#373a3b",
       "id": "workshop_service_pit",
+      "material": "wood",
       "name": "Service pit",
       "size": [6, 1, 2],
       "solid": false
@@ -328,6 +335,7 @@
       },
       "color": "#dfb72f",
       "id": "workshop_lift",
+      "material": "wood",
       "name": "Vehicle lift",
       "size": [4, 2, 9],
       "solid": false
@@ -339,6 +347,7 @@
       },
       "color": "#5b605c",
       "id": "workshop_stripped_car",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -376,6 +385,7 @@
       },
       "color": "#8a97a3",
       "id": "workshop_sedan",
+      "material": "steel",
       "name": "Car",
       "size": [4, 3, 10],
       "vehicle": {
@@ -401,6 +411,7 @@
         ]
       },
       "id": "workshop_scrap_pile",
+      "material": "wood",
       "name": "Scrap pile",
       "searchNoise": {
         "sound": "player_strain"
@@ -482,6 +493,7 @@
       },
       "color": "#9f9675",
       "id": "workshop_map_board",
+      "material": "wood",
       "mount": "wall",
       "name": "Workshop wall map",
       "readable": {

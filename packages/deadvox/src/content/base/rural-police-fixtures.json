@@ -7,6 +7,7 @@
       },
       "color": "#4c5950",
       "id": "police_desk_radio",
+      "material": "wood",
       "name": "Desk radio",
       "shape": [
         {
@@ -52,6 +53,7 @@
       },
       "color": "#d7d0b4",
       "id": "police_duty_notice",
+      "material": "wood",
       "mount": "wall",
       "name": "Duty notice",
       "readable": {
@@ -86,6 +88,7 @@
         ]
       },
       "id": "police_file_cabinet",
+      "material": "steel",
       "name": "File cabinet",
       "size": [2, 4, 1]
     },
@@ -108,6 +111,7 @@
         ]
       },
       "id": "police_evidence_locker",
+      "material": "steel",
       "name": "Evidence locker",
       "size": [2, 4, 1]
     },
@@ -118,6 +122,7 @@
       },
       "color": "#deddd3",
       "id": "station_toilet",
+      "material": "wood",
       "name": "Toilet",
       "shape": [
         {
@@ -163,6 +168,7 @@
       },
       "color": "#8b9494",
       "id": "station_cell_toilet",
+      "material": "wood",
       "name": "Cell toilet",
       "shape": [
         {
@@ -208,6 +214,7 @@
       },
       "color": "#deddd3",
       "id": "station_washbasin",
+      "material": "wood",
       "name": "Washbasin",
       "shape": [
         {
@@ -257,6 +264,7 @@
       },
       "color": "#8b9494",
       "id": "station_cleaning_sink",
+      "material": "wood",
       "name": "Cleaning sink",
       "shape": [
         {
@@ -306,6 +314,7 @@
       },
       "color": "#b0b7b3",
       "id": "station_kitchen_sink",
+      "material": "wood",
       "name": "Kitchen sink",
       "shape": [
         {
@@ -355,6 +364,7 @@
       },
       "color": "#535b58",
       "id": "station_solid_fuel_boiler",
+      "material": "wood",
       "name": "Solid-fuel boiler",
       "shape": [
         {
@@ -400,6 +410,7 @@
       },
       "color": "#383d3b",
       "id": "station_coal_bin",
+      "material": "wood",
       "name": "Coal bin",
       "shape": [
         {
@@ -450,10 +461,10 @@
       "color": "#596562",
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "steel",
         "methods": {}
       },
       "id": "station_coal_hatch",
+      "material": "steel",
       "name": "Coal delivery hatch",
       "size": [2, 2, 1]
     },
@@ -464,6 +475,7 @@
       },
       "color": "#b7b9ae",
       "id": "station_cooker",
+      "material": "wood",
       "name": "Cooker",
       "shape": [
         {
@@ -522,10 +534,10 @@
       "color": "#8c9b91",
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "steel",
         "methods": {}
       },
       "id": "station_emergency_door",
+      "material": "steel",
       "name": "Emergency exit door",
       "size": [2, 4, 1]
     }

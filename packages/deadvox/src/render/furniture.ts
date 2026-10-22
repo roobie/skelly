@@ -168,12 +168,12 @@ export class FurnitureMeshes {
       return this.door(entity, material, def);
     }
     if (def.appearance || def.shape?.some((box) => box.color)) {
-      return this.shaped(entity, def, this.material('#ffffff', true));
+      return this.shaped(entity, def, this.damageLook(entity, this.material('#ffffff', true), def));
     }
     if (def.shape) {
-      return this.shaped(entity, def, material);
+      return this.shaped(entity, def, this.damageLook(entity, material, def));
     }
-    return this.box(entity, material);
+    return this.box(entity, this.damageLook(entity, material, def));
   }
 
   private material(color: string, vertexColors = false): MeshLambertMaterial {
@@ -257,25 +257,28 @@ export class FurnitureMeshes {
   }
 
   /**
-   * `plain` moved toward its door material's broken tint once the leaf is broken, or toward the damage look it has
+   * `plain` moved toward its material's broken tint once a leaf is broken, or toward the damage look the piece has
    * reached before that; no look authored leaves it.
    */
-  private doorLook(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): MeshLambertMaterial {
-    const material = this.entities?.registry.doorMaterials.get(body.door!.material);
+  private damageLook(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): MeshLambertMaterial {
+    const material = this.entities?.registry.furnitureMaterials.get(body.material);
     const wear = this.entities?.wearOf(entity) ?? 0;
     const worn = wear > 0 ? material?.damaged?.[wear - 1] : undefined;
     const look = entity.broken ? material?.broken : worn;
     if (!look) {
       return plain;
     }
-    return this.material(`#${plain.color.clone().lerp(new Color(look.tint), look.strength).getHexString()}`);
+    return this.material(
+      `#${plain.color.clone().lerp(new Color(look.tint), look.strength).getHexString()}`,
+      plain.vertexColors,
+    );
   }
 
   /** A panel across the doorway, hinged at its low end along the wall, or a hatch's panel. */
   private door(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): Group {
     const box = panelFor(entity, body, this.blockSize);
     const bodyDoor = isBodyDoor(body);
-    const material = this.doorLook(entity, plain, body);
+    const material = this.damageLook(entity, plain, body);
     const panelMaterial = bodyDoor
       ? this.material(`#${new Color(material.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
       : material;
