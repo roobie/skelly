@@ -37,7 +37,8 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
-const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024; // ~17× headroom over the current synthetic fixture; catches meaningful growth.
+// Bounds the decompressed envelope, which tracks saved-state growth; compression would hide it.
+const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024;
 // biome-ignore lint/style/noProcessEnv: distinguish local measurements from the named CI runner.
 const measurementRunner = process.env.GITHUB_ACTIONS === 'true' ? 'ubuntu-latest' : 'local';
 
@@ -633,7 +634,8 @@ describe('canonical save format', () => {
     const encodeStarted = performance.now();
     const bytes = await encodeSave(snapshot, { generation: 1, worldOptions: formatWorldOptions });
     const encodeMs = performance.now() - encodeStarted;
-    expect(bytes.byteLength).toBeLessThan(TEN_HOUR_SAVE_BUDGET_BYTES);
+    const inflatedBytes = gunzipSync(bytes).byteLength;
+    expect(inflatedBytes).toBeLessThan(TEN_HOUR_SAVE_BUDGET_BYTES);
 
     const decodeStarted = performance.now();
     const decoded = await decodeSave(bytes, { contentLookup });
@@ -644,7 +646,7 @@ describe('canonical save format', () => {
     const loadMs = decodeMs + restoreMs;
     expect(capture(loaded)).toEqual(decoded.snapshot);
     process.stdout.write(
-      `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawnedKeys=${population.spawned} alive=${population.alive} size=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
+      `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawnedKeys=${population.spawned} alive=${population.alive} size=${inflatedBytes} compressedSize=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
     );
   });
 
