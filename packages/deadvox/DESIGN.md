@@ -1821,7 +1821,10 @@ application rather than weapon-class special cases. See `ZombieSchema` in
   instead breaks and stays as an open leaf. Like a destroyed block, a ruined piece
   is gone for good; unlike blocks, which do not collapse (next bullet), furniture
   left unsupported settles, and a piece that cannot come down clear is destroyed in
-  turn. See `src/core/furnitureMove.ts`, `ruinFurniture`.
+  turn. A blow that would ruin a piece whose contents and debris have no room to
+  fall still adds its damage and is heard, but the piece stays standing at full
+  damage until a blow finds room, so nothing is lost. See
+  `src/core/furnitureMove.ts`, `ruinFurniture`.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
 - **Shamblers have body regions and die only when the head is destroyed.**
@@ -2243,12 +2246,14 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
   collision authority, so the current design does not persist navigation fields.
 
 A chasing or investigating zombie held up at an obstacle bashes it once per attack
-cooldown with its type's content strength; the door decides what the blow does
+cooldown with its type's content strength; the piece decides what the blow does
 (`DESIGN.md`, "Base building and electricity"). Bashing comes from strength, not
 from movement or a silhouette, so a type of strength 0 never bashes. A zombie
-whose blow lands on a leaf stays at it instead of sliding or wandering along the
-wall, so it keeps working at the one way through. See `src/core/zombies.ts`,
-`ZombieSystem.bashObstacle`.
+keeps working at a piece only when the piece is its one way through, within a
+reach its type names in content; the same reason holds it at a door leaf, so one
+rule covers doors and furniture, and a zombie walks around clutter it can pass
+instead of wrecking it. While it bashes it stays at the piece instead of sliding
+or wandering along the wall. See `src/core/zombies.ts`, `ZombieSystem.bashObstacle`.
 
 ### Models
 
@@ -2261,7 +2266,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
 - **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The leaf's material in the shared furniture material table authors both, so a mod retunes them; the steps and redraws work as for any piece (`DESIGN.md`, "Block entities").
-- **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the closed leaf in its reach. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashLeaf` and `strikeLeaf`, and `src/core/schema.ts`, `FurnitureSchema`.
+- **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the standing piece, leaf or furniture, in its reach, and the blow is heard in the sound its material names. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashPiece` and `strikePiece`, and `src/core/schema.ts`, `FurnitureSchema`.
 - **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `FurnitureMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** keeps topology separate from energy balance so rate changes
   do not rebuild networks. Resource settlement and timestamped power transitions
