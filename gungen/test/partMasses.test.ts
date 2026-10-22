@@ -8,15 +8,6 @@ import { gunModelParts, type PartMassRow } from '../src/gun/physical.ts';
 
 const MASS_CONTEXT = /mass-fixture.*body.*fixture.*plain.*matched/;
 const AMBIGUOUS_ROWS = /plain-body, second-body/;
-// Body choices with no mass row, waiting on a ruling: masses, removal, or a deferred-assertions row.
-// The test also fails when an entry gains a row, so a stale entry cannot linger; delete this set when the last one goes.
-const AWAITING_BR = new Set([
-  'receiver.section=ak',
-  'lower.layout=bullpup',
-  'lower.layout=trigger',
-  'stock.style=dropped',
-  'stock.style=tapered-sawed',
-]);
 
 it('refuses export with no matching authored mass row or several matching rows', () => {
   const part: PartDef = { family: 'fixture', solids: [], ports: [], axes: [], keepOuts: [] };
@@ -60,5 +51,5 @@ it('gives every choice of every body family param a mass row that admits it', ()
       }
     }
   }
-  expect(new Set(unmassed)).toEqual(AWAITING_BR);
+  expect(unmassed).toEqual([]);
 });
