@@ -1,10 +1,9 @@
 // @vitest-environment happy-dom
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
 import type { Manifest } from '../src/core/assets.ts';
 import type { SoundDef } from '../src/core/content.ts';
+import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
 import { soundVariantKey } from '../src/core/soundSynth.ts';
 import { HEARTBEAT_FILES } from '../src/game/audioPresentation.ts';
 import {
@@ -12,13 +11,7 @@ import {
   buildSoundGuide,
   HEARTBEAT_PREVIEW_LEVELS,
   renderHeartbeatSoundGuide,
-  SOUND_TRIGGER_GUIDE,
 } from '../src/ui/soundGuide.ts';
-
-const sounds = readdirSync('src/content/base')
-  .filter((file) => file.startsWith('sounds') && file.endsWith('.json'))
-  .flatMap((file) => JSON.parse(readFileSync(join('src/content/base', file), 'utf8')).sounds as SoundDef[]);
-const manifest = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as Manifest;
 
 const heartbeatFixtureManifest = {
   sources: [
@@ -34,21 +27,24 @@ const heartbeatFixtureManifest = {
   ],
 } as Manifest;
 
-const [recordingId, recipeId] = Object.keys(SOUND_TRIGGER_GUIDE);
+const [recordingId, recipeId] = SOUND_EVENT_IDS;
 if (!(recordingId && recipeId)) {
-  throw new Error('Sound trigger guide fixture needs two entries');
+  throw new Error('Sound guide fixture needs two sound event ids');
 }
 
 const fixtureRecipe = { recipe: 'fixture-recipe', jfxr: {} };
 const fixtureSounds = [
   {
     id: recordingId,
+    description: 'fixture recording trigger',
+    debugHint: 'fixture shortcut',
     category: 'world',
     variants: ['fixture.ogg'],
     noise: { enabled: false, radiusMetres: 0 },
   },
   {
     id: recipeId,
+    description: 'fixture recipe trigger',
     category: 'ui',
     variants: [fixtureRecipe],
     noise: { enabled: false, radiusMetres: 0 },
@@ -69,9 +65,13 @@ const fixtureManifest = {
 } as Manifest;
 
 describe('audio listening guide', () => {
-  it('maps fixture events and variants to guide entries', () => {
+  it('maps fixture events, their content triggers and shortcuts, and variants to guide entries', () => {
     const guide = buildSoundGuide(fixtureSounds, fixtureManifest);
     expect(guide.map(({ id }) => id)).toEqual(fixtureSounds.map(({ id }) => id));
+    expect(guide.map(({ trigger, debugHint }) => [trigger, debugHint])).toEqual([
+      ['fixture recording trigger', 'fixture shortcut'],
+      ['fixture recipe trigger', null],
+    ]);
     expect(guide.flatMap((entry) => entry.variants.map(({ file }) => `${entry.id}\0${file}`))).toEqual([
       `${recordingId}\0${soundVariantKey(recordingId, 'fixture.ogg')}`,
       `${recipeId}\0${soundVariantKey(recipeId, fixtureRecipe)}`,
@@ -85,12 +85,6 @@ describe('audio listening guide', () => {
     expect(recording).toMatchObject({ author: 'Fixture author', licence: 'CC0-1.0', sourcePack: 'Fixture source' });
     expect(recipe.synthesised).toBe(true);
     expect(recipe.sourceUrl).toBeNull();
-  });
-
-  it('keeps every production sound event in the guide with a nonempty note', () => {
-    const guide = buildSoundGuide(sounds, manifest);
-    expect(guide.map(({ id }) => id).sort()).toEqual(sounds.map(({ id }) => id).sort());
-    expect(guide.every(({ note }) => note !== null && note.trim() !== '')).toBe(true);
   });
 
   it('marks a recorded fixture variant missing from manifest provenance', () => {

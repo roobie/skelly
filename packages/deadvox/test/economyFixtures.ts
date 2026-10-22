@@ -18,6 +18,7 @@ export const FIXTURE_BLOW_SOUND = 'fixture_blow';
 export const fixtureSounds = () => [
   {
     id: FIXTURE_BLOW_SOUND,
+    description: 'fixture blow',
     variants: ['assets/audio/fixture-blow.ogg'],
     gain: 1,
     pitchJitter: [1, 1] as [number, number],

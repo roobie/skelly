@@ -1074,6 +1074,10 @@ const SoundRecipeSchema = strictObject({
 
 const SoundSchema = strictObject({
   id: Id,
+  /** What makes the sound play, as the listening sheet tells a tester how to hear it. */
+  description: Name,
+  /** A `?debug=1` shortcut that makes the sound easier to reach on the listening sheet. */
+  debugHint: optional(Name),
   variants: pipe(
     array(
       union([

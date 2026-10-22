@@ -1059,6 +1059,7 @@ describe('content', () => {
   it('validates optional per-sound wall tuning', () => {
     const sound = {
       id: 'fixture_wall_tuning',
+      description: 'fixture wall tuning',
       variants: ['assets/audio/fixture.ogg'],
       gain: 0.7,
       pitchJitter: [1, 1],

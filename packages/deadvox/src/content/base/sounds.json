@@ -1,163 +1,232 @@
 {
   "sounds": [
     {
+      "category": "body",
+      "description": "Rack the held pump shotgun: its backward hand stroke.",
+      "gain": 0.65000000000000002,
+      "gainJitter": [0.94999999999999996, 1.05],
       "id": "shotgun_rack_back",
-      "variants": ["assets/audio/shotgun-rack-back.ogg"],
-      "gain": 0.65,
-      "pitchJitter": [1, 1],
-      "gainJitter": [0.95, 1.05],
       "minIntervalSimSeconds": 0,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/shotgun-rack-back.ogg"]
     },
     {
+      "category": "body",
+      "description": "A pump shotgun rack reaches its forward stroke.",
+      "gain": 0.65000000000000002,
+      "gainJitter": [0.94999999999999996, 1.05],
       "id": "shotgun_rack_forward",
-      "variants": ["assets/audio/shotgun-rack-forward.ogg"],
-      "gain": 0.65,
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
       "pitchJitter": [1, 1],
-      "gainJitter": [0.95, 1.05],
-      "minIntervalSimSeconds": 0,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "variants": ["assets/audio/shotgun-rack-forward.ogg"]
     },
     {
+      "category": "body",
+      "description": "Load a loose shell into the held pump shotgun; each shell is its own handling job.",
+      "gain": 0.5,
+      "gainJitter": [0.94999999999999996, 1.05],
       "id": "shotgun_insert",
-      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"],
-      "gain": 0.5,
-      "pitchJitter": [0.98, 1.02],
-      "gainJitter": [0.95, 1.05],
       "minIntervalSimSeconds": 0,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.97999999999999998, 1.02],
+      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"]
     },
     {
+      "category": "body",
+      "description": "Load a loose matching cartridge into the magazine in hand; each round is its own handling job.",
+      "gain": 0.34999999999999998,
+      "gainJitter": [0.94999999999999996, 1.05],
       "id": "magazine_round_insert",
-      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"],
-      "gain": 0.35,
-      "pitchJitter": [1.12, 1.2],
-      "gainJitter": [0.95, 1.05],
       "minIntervalSimSeconds": 0,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1200000000000001, 1.2],
+      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"]
     },
     {
+      "category": "body",
+      "description": "Strip the top round from a loaded magazine in hand.",
+      "gain": 0.29999999999999999,
+      "gainJitter": [0.94999999999999996, 1.05],
       "id": "magazine_round_strip",
-      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"],
-      "gain": 0.3,
-      "pitchJitter": [1.25, 1.35],
-      "gainJitter": [0.95, 1.05],
       "minIntervalSimSeconds": 0,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.25, 1.3500000000000001],
+      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"]
     },
     {
+      "category": "body",
+      "description": "Change, insert or remove the magazine of the AR or AK in hand.",
+      "gain": 0.45000000000000001,
+      "gainJitter": [0.94999999999999996, 1.05],
       "id": "magazine_change",
-      "variants": ["assets/audio/magazine-clipload-01.ogg", "assets/audio/magazine-clipload-02.ogg"],
-      "gain": 0.45,
-      "pitchJitter": [0.97, 1.03],
-      "gainJitter": [0.95, 1.05],
       "minIntervalSimSeconds": 0,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.96999999999999997, 1.03],
+      "variants": ["assets/audio/magazine-clipload-01.ogg", "assets/audio/magazine-clipload-02.ogg"]
     },
     {
-      "id": "rifle_charge",
-      "variants": ["assets/audio/shotgun-rack-back.ogg"],
+      "category": "body",
+      "description": "Work the charging handle of the AR or AK in hand.",
       "gain": 0.5,
-      "pitchJitter": [1.15, 1.2],
-      "gainJitter": [0.95, 1.05],
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "rifle_charge",
       "minIntervalSimSeconds": 0,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1499999999999999, 1.2],
+      "variants": ["assets/audio/shotgun-rack-back.ogg"]
     },
     {
+      "category": "world",
+      "description": "A fired pump shotgun hull lands after it is ejected.",
+      "gain": 0.34999999999999998,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shotgun_hull_drop",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.96999999999999997, 1.03],
       "variants": [
         "assets/audio/shotgun-hull-01.ogg",
         "assets/audio/shotgun-hull-02.ogg",
         "assets/audio/shotgun-hull-03.ogg"
-      ],
-      "gain": 0.35,
-      "pitchJitter": [0.97, 1.03],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
-      "id": "grenade_blast",
-      "variants": ["assets/audio/grenade-blast-01.ogg", "assets/audio/grenade-blast-02.ogg"],
+      "category": "world",
+      "debugHint": "?debug=1&loadout=grenade: pull the pin, take the throwing stance, hold then release to throw, and step back.",
+      "description": "A thrown hand grenade goes off when its fuse runs out.",
       "gain": 1,
-      "pitchJitter": [0.95, 1.05],
       "gainJitter": [1, 1],
+      "id": "grenade_blast",
       "minIntervalSimSeconds": 0,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 300 }
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 300
+      },
+      "pitchJitter": [0.94999999999999996, 1.05],
+      "variants": ["assets/audio/grenade-blast-01.ogg", "assets/audio/grenade-blast-02.ogg"]
     },
     {
+      "category": "body",
+      "description": "Take light damage.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.88, 1.1200000000000001],
       "id": "player_hurt_light",
+      "minIntervalSimSeconds": 0.20000000000000001,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 6
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
       "variants": [
         "assets/audio/player-hurt-light-01.ogg",
         "assets/audio/player-hurt-light-03.ogg",
         "assets/audio/player-hurt-light-06.ogg"
-      ],
-      "gain": 0.72,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.88, 1.12],
-      "minIntervalSimSeconds": 0.2,
-      "category": "body",
-      "noise": { "enabled": true, "radiusMetres": 6 }
+      ]
     },
     {
-      "id": "player_nope",
-      "variants": ["assets/audio/player-nope-01.ogg"],
+      "category": "body",
+      "description": "Try an action the character cannot complete.",
       "gain": 0.5,
-      "pitchJitter": [1, 1],
       "gainJitter": [1, 1],
+      "id": "player_nope",
       "minIntervalSimSeconds": 0.75,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/player-nope-01.ogg"]
     },
     {
+      "category": "body",
+      "debugHint": "?debug=1: Use the debug panel's damage action to apply damage.",
+      "description": "Take heavy damage.",
+      "gain": 0.90000000000000002,
+      "gainJitter": [0.88, 1.1200000000000001],
       "id": "player_hurt_heavy",
+      "minIntervalSimSeconds": 0.34999999999999998,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 6
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
       "variants": [
         "assets/audio/player-hurt-heavy-02.ogg",
         "assets/audio/player-hurt-heavy-05.ogg",
         "assets/audio/player-hurt-heavy-08.ogg"
-      ],
-      "gain": 0.9,
-      "pitchJitter": [0.94, 1.06],
-      "gainJitter": [0.88, 1.12],
-      "minIntervalSimSeconds": 0.35,
-      "category": "body",
-      "noise": { "enabled": true, "radiusMetres": 6 }
+      ]
     },
     {
+      "category": "body",
+      "description": "Jump from the ground.",
+      "gain": 0.5,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "player_strain",
+      "minIntervalSimSeconds": 0.59999999999999998,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 5
+      },
+      "pitchJitter": [0.95999999999999996, 1.05],
       "variants": [
         "assets/audio/player-strain-09.ogg",
         "assets/audio/player-strain-12.ogg",
         "assets/audio/player-strain-14.ogg"
-      ],
-      "gain": 0.5,
-      "pitchJitter": [0.96, 1.05],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.6,
-      "category": "body",
-      "noise": { "enabled": true, "radiusMetres": 5 }
+      ]
     },
     {
+      "category": "body",
+      "debugHint": "?debug=1: Use the debug panel's Noclip action to reach a ledge.",
+      "description": "Land after a long drop.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.88, 1.1200000000000001],
       "id": "player_landing_hard",
-      "variants": ["assets/audio/player-landing-hard-01.ogg"],
-      "gain": 0.72,
-      "pitchJitter": [0.94, 1.04],
-      "gainJitter": [0.88, 1.12],
-      "minIntervalSimSeconds": 0.6,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "minIntervalSimSeconds": 0.59999999999999998,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.04],
+      "variants": ["assets/audio/player-landing-hard-01.ogg"]
     },
     {
+      "category": "body",
+      "description": "Walk, jog or sprint over grass.",
+      "gain": 0.20000000000000001,
+      "gainJitter": [0.85999999999999999, 1.1200000000000001],
       "id": "footstep_grass",
+      "minIntervalSimSeconds": 0.20000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
       "variants": [
         "assets/audio/footstep-grass-sand-01.ogg",
         "assets/audio/footstep-grass-sand-02.ogg",
@@ -165,16 +234,20 @@
         "assets/audio/footstep-grass-sand-04.ogg",
         "assets/audio/footstep-grass-sand-05.ogg",
         "assets/audio/footstep-grass-sand-06.ogg"
-      ],
-      "gain": 0.2,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.86, 1.12],
-      "minIntervalSimSeconds": 0.2,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "body",
+      "description": "Walk, jog or sprint over sand.",
+      "gain": 0.22,
+      "gainJitter": [0.85999999999999999, 1.1200000000000001],
       "id": "footstep_sand",
+      "minIntervalSimSeconds": 0.20000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
       "variants": [
         "assets/audio/footstep-grass-sand-01.ogg",
         "assets/audio/footstep-grass-sand-02.ogg",
@@ -182,31 +255,39 @@
         "assets/audio/footstep-grass-sand-04.ogg",
         "assets/audio/footstep-grass-sand-05.ogg",
         "assets/audio/footstep-grass-sand-06.ogg"
-      ],
-      "gain": 0.22,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.86, 1.12],
-      "minIntervalSimSeconds": 0.2,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "body",
+      "description": "Walk, jog or sprint over dirt or mud.",
+      "gain": 0.23999999999999999,
+      "gainJitter": [0.85999999999999999, 1.1200000000000001],
       "id": "footstep_mud",
+      "minIntervalSimSeconds": 0.20000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.05],
       "variants": [
         "assets/audio/footstep-mud-01.ogg",
         "assets/audio/footstep-mud-02.ogg",
         "assets/audio/footstep-mud-03.ogg",
         "assets/audio/footstep-mud-04.ogg"
-      ],
-      "gain": 0.24,
-      "pitchJitter": [0.94, 1.05],
-      "gainJitter": [0.86, 1.12],
-      "minIntervalSimSeconds": 0.2,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "body",
+      "description": "Walk, jog or sprint over a hard surface such as stone, concrete, brick or tile.",
+      "gain": 0.23999999999999999,
+      "gainJitter": [0.85999999999999999, 1.1200000000000001],
       "id": "footstep_stone",
+      "minIntervalSimSeconds": 0.20000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
       "variants": [
         "assets/audio/footstep-stone-01.ogg",
         "assets/audio/footstep-stone-02.ogg",
@@ -214,40 +295,53 @@
         "assets/audio/footstep-stone-04.ogg",
         "assets/audio/footstep-stone-05.ogg",
         "assets/audio/footstep-stone-06.ogg"
-      ],
-      "gain": 0.24,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.86, 1.12],
-      "minIntervalSimSeconds": 0.2,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "body",
+      "description": "Walk, jog or sprint over planks.",
+      "gain": 0.22,
+      "gainJitter": [0.85999999999999999, 1.1200000000000001],
       "id": "footstep_wood",
+      "minIntervalSimSeconds": 0.20000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
       "variants": [
         "assets/audio/footstep-wood-01.ogg",
         "assets/audio/footstep-wood-02.ogg",
         "assets/audio/footstep-wood-03.ogg"
-      ],
-      "gain": 0.22,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.86, 1.12],
-      "minIntervalSimSeconds": 0.2,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "body",
+      "description": "Walk, jog or sprint over fabric or carpet.",
+      "gain": 0.17999999999999999,
+      "gainJitter": [0.85999999999999999, 1.1200000000000001],
       "id": "footstep_leaves",
-      "variants": ["assets/audio/footstep-leaves-01.ogg"],
-      "gain": 0.18,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.86, 1.12],
-      "minIntervalSimSeconds": 0.2,
-      "category": "body",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "minIntervalSimSeconds": 0.20000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/footstep-leaves-01.ogg"]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over grass; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shambler_step_grass",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
       "variants": [
         "assets/audio/footstep-grass-sand-01.ogg",
         "assets/audio/footstep-grass-sand-02.ogg",
@@ -255,31 +349,41 @@
         "assets/audio/footstep-grass-sand-04.ogg",
         "assets/audio/footstep-grass-sand-05.ogg",
         "assets/audio/footstep-grass-sand-06.ogg"
-      ],
-      "gain": 0.34,
-      "pitchJitter": [0.68, 0.82],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.12,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over dirt or mud; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shambler_step_mud",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
       "variants": [
         "assets/audio/footstep-mud-01.ogg",
         "assets/audio/footstep-mud-02.ogg",
         "assets/audio/footstep-mud-03.ogg",
         "assets/audio/footstep-mud-04.ogg"
-      ],
-      "gain": 0.34,
-      "pitchJitter": [0.68, 0.82],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.12,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over sand; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shambler_step_sand",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
       "variants": [
         "assets/audio/footstep-grass-sand-01.ogg",
         "assets/audio/footstep-grass-sand-02.ogg",
@@ -287,16 +391,21 @@
         "assets/audio/footstep-grass-sand-04.ogg",
         "assets/audio/footstep-grass-sand-05.ogg",
         "assets/audio/footstep-grass-sand-06.ogg"
-      ],
-      "gain": 0.34,
-      "pitchJitter": [0.68, 0.82],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.12,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over hard ground; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shambler_step_stone",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
       "variants": [
         "assets/audio/footstep-stone-01.ogg",
         "assets/audio/footstep-stone-02.ogg",
@@ -304,414 +413,554 @@
         "assets/audio/footstep-stone-04.ogg",
         "assets/audio/footstep-stone-05.ogg",
         "assets/audio/footstep-stone-06.ogg"
-      ],
-      "gain": 0.34,
-      "pitchJitter": [0.68, 0.82],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.12,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over planks; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shambler_step_wood",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
       "variants": [
         "assets/audio/footstep-wood-01.ogg",
         "assets/audio/footstep-wood-02.ogg",
         "assets/audio/footstep-wood-03.ogg"
-      ],
-      "gain": 0.34,
-      "pitchJitter": [0.68, 0.82],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.12,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over fabric or carpet; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shambler_step_leaves",
-      "variants": ["assets/audio/footstep-leaves-01.ogg"],
-      "gain": 0.34,
-      "pitchJitter": [0.68, 0.82],
-      "gainJitter": [0.9, 1.1],
       "minIntervalSimSeconds": 0.12,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
+      "variants": ["assets/audio/footstep-leaves-01.ogg"]
     },
     {
+      "category": "world",
+      "description": "Swing a melee weapon that has no swing sound of its own.",
+      "gain": 0.55000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "melee_swing",
-      "variants": ["assets/audio/melee_swing-01.ogg"],
-      "gain": 0.55,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
       "minIntervalSimSeconds": 0.5,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/melee_swing-01.ogg"]
     },
     {
+      "category": "world",
+      "description": "Land a weapon melee swing on a shambler.",
+      "gain": 0.84999999999999998,
+      "gainJitter": [0.88, 1.1200000000000001],
       "id": "melee_hit",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
       "variants": [
         "assets/audio/melee-hit-01.ogg",
         "assets/audio/melee-hit-02.ogg",
         "assets/audio/melee-hit-03.ogg",
         "assets/audio/melee-hit-04.ogg"
-      ],
-      "gain": 0.85,
-      "pitchJitter": [0.94, 1.06],
-      "gainJitter": [0.88, 1.12],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "description": "Land a fist swing on a shambler.",
+      "gain": 0.84999999999999998,
+      "gainJitter": [0.88, 1.1200000000000001],
       "id": "melee_hit_fist",
-      "variants": ["assets/audio/melee_hit_fist-01.ogg"],
-      "gain": 0.85,
-      "pitchJitter": [0.94, 1.06],
-      "gainJitter": [0.88, 1.12],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
+      "variants": ["assets/audio/melee_hit_fist-01.ogg"]
     },
     {
+      "category": "world",
+      "description": "Fire the AK-pattern rifle, or a firearm without a shot sound of its own. A fitted suppressor shortens how far it is heard, and wear lengthens it again.",
+      "gain": 1,
+      "gainJitter": [1, 1],
       "id": "gunshot",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 100
+      },
+      "pitchJitter": [1, 1],
       "variants": ["assets/audio/gunshot-akm-01.ogg", "assets/audio/gunshot-akm-02.ogg"],
-      "gain": 1,
-      "pitchJitter": [1, 1],
-      "gainJitter": [1, 1],
-      "minIntervalSimSeconds": 0,
-      "voiceCap": 32,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 100 }
+      "voiceCap": 32
     },
     {
+      "category": "world",
+      "description": "Preview only: suppressed AKM alternatives no game event plays.",
+      "gain": 1,
+      "gainJitter": [1, 1],
       "id": "gunshot_pbs1_reference",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 50
+      },
+      "pitchJitter": [1, 1],
       "variants": ["assets/audio/gunshot-akm-pbs1-01.ogg", "assets/audio/gunshot-akm-pbs1-02.ogg"],
-      "gain": 1,
-      "pitchJitter": [1, 1],
-      "gainJitter": [1, 1],
-      "minIntervalSimSeconds": 0,
-      "voiceCap": 32,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 50 }
+      "voiceCap": 32
     },
     {
+      "category": "world",
+      "description": "Fire the AR-pattern rifle without a suppressor fitted.",
+      "gain": 1,
+      "gainJitter": [1, 1],
       "id": "gunshot_m4",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 100
+      },
+      "pitchJitter": [0.97999999999999998, 1.02],
       "variants": ["assets/audio/gunshot-ar15-01.ogg", "assets/audio/gunshot-ar15-02.ogg"],
-      "gain": 1,
-      "pitchJitter": [0.98, 1.02],
-      "gainJitter": [1, 1],
-      "minIntervalSimSeconds": 0,
-      "voiceCap": 32,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 100 }
+      "voiceCap": 32
     },
     {
+      "category": "world",
+      "description": "Fire the AR-pattern rifle with a real suppressor fitted.",
+      "gain": 1,
+      "gainJitter": [1, 1],
       "id": "gunshot_m4_suppressed",
-      "variants": ["assets/audio/gunshot-m4-suppressed-01.ogg"],
-      "gain": 1,
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 100
+      },
       "pitchJitter": [1, 1],
-      "gainJitter": [1, 1],
-      "minIntervalSimSeconds": 0,
-      "voiceCap": 32,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 100 }
+      "variants": ["assets/audio/gunshot-m4-suppressed-01.ogg"],
+      "voiceCap": 32
     },
     {
+      "category": "world",
+      "description": "Drop an item into a pile, or spill it onto the ground.",
+      "gain": 0.55000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "item_drop_wood",
-      "variants": ["assets/audio/item_drop_wood-01.ogg", "assets/audio/item_drop_wood-02.ogg"],
-      "gain": 0.55,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/item_drop_wood-01.ogg", "assets/audio/item_drop_wood-02.ogg"]
     },
     {
+      "category": "world",
+      "description": "Take an item out of a pocket on a worn item.",
+      "gain": 0.29999999999999999,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "pouch_take",
-      "variants": ["assets/audio/pouch_take-01.ogg"],
-      "gain": 0.3,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.1,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/pouch_take-01.ogg"]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A shambler idles or strolls within hearing range and groans now and then.",
+      "gain": 0.45000000000000001,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shambler_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.94999999999999996, 1.05],
       "variants": [
         "assets/audio/shambler-idle-01.ogg",
         "assets/audio/shambler-idle-02.ogg",
         "assets/audio/shambler-idle-03.ogg"
-      ],
-      "gain": 0.45,
-      "pitchJitter": [0.95, 1.05],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.1,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A shambler notices you and starts investigating.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
       "id": "shambler_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
       "variants": [
         "assets/audio/shambler-alert-04.ogg",
         "assets/audio/shambler-alert-05.ogg",
         "assets/audio/shambler-alert-06.ogg"
-      ],
-      "gain": 0.72,
-      "pitchJitter": [0.94, 1.06],
-      "gainJitter": [0.9, 1.12],
-      "minIntervalSimSeconds": 0.25,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A shambler reaches you and attacks.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shambler_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
       "variants": [
         "assets/audio/shambler-attack-07.ogg",
         "assets/audio/shambler-attack-08.ogg",
         "assets/audio/shambler-attack-09.ogg"
-      ],
-      "gain": 0.8,
-      "pitchJitter": [0.94, 1.06],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.25,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A melee attack hits a shambler.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "shambler_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
       "variants": [
         "assets/audio/shambler-hurt-01.ogg",
         "assets/audio/shambler-hit-05.ogg",
         "assets/audio/shambler-hit-06.ogg",
         "assets/audio/shambler-hit-07.ogg"
-      ],
-      "gain": 0.8,
-      "pitchJitter": [0.94, 1.06],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "description": "An amalgam idles nearby.",
+      "gain": 0.45000000000000001,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "amalgam_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.94999999999999996, 1.05],
       "variants": [
         "assets/audio/shambler-idle-01.ogg",
         "assets/audio/shambler-idle-02.ogg",
         "assets/audio/shambler-idle-03.ogg"
-      ],
-      "gain": 0.45,
-      "pitchJitter": [0.95, 1.05],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.1,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "description": "An amalgam notices you.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
       "id": "amalgam_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
       "variants": [
         "assets/audio/shambler-alert-04.ogg",
         "assets/audio/shambler-alert-05.ogg",
         "assets/audio/shambler-alert-06.ogg"
-      ],
-      "gain": 0.72,
-      "pitchJitter": [0.94, 1.06],
-      "gainJitter": [0.9, 1.12],
-      "minIntervalSimSeconds": 0.25,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "description": "An amalgam reaches you and attacks.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "amalgam_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
       "variants": [
         "assets/audio/shambler-attack-07.ogg",
         "assets/audio/shambler-attack-08.ogg",
         "assets/audio/shambler-attack-09.ogg"
-      ],
-      "gain": 0.8,
-      "pitchJitter": [0.94, 1.06],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.25,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "description": "An amalgam is hit by a melee attack.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "amalgam_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
       "variants": [
         "assets/audio/shambler-hurt-01.ogg",
         "assets/audio/shambler-hit-05.ogg",
         "assets/audio/shambler-hit-06.ogg",
         "assets/audio/shambler-hit-07.ogg"
-      ],
-      "gain": 0.8,
-      "pitchJitter": [0.94, 1.06],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's runner action to spawn runners nearby.",
+      "description": "A runner idles nearby.",
+      "gain": 0.41999999999999998,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "runner_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1799999999999999, 1.3],
       "variants": [
         "assets/audio/shambler-idle-01.ogg",
         "assets/audio/shambler-idle-02.ogg",
         "assets/audio/shambler-idle-03.ogg"
-      ],
-      "gain": 0.42,
-      "pitchJitter": [1.18, 1.3],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.1,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's runner action to spawn runners nearby.",
+      "description": "A runner notices you.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
       "id": "runner_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1499999999999999, 1.25],
       "variants": [
         "assets/audio/shambler-alert-04.ogg",
         "assets/audio/shambler-alert-05.ogg",
         "assets/audio/shambler-alert-06.ogg"
-      ],
-      "gain": 0.72,
-      "pitchJitter": [1.15, 1.25],
-      "gainJitter": [0.9, 1.12],
-      "minIntervalSimSeconds": 0.25,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's runner action to spawn runners nearby.",
+      "description": "A runner reaches you and attacks.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
       "id": "runner_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1200000000000001, 1.22],
       "variants": [
         "assets/audio/shambler-attack-07.ogg",
         "assets/audio/shambler-attack-08.ogg",
         "assets/audio/shambler-attack-09.ogg"
-      ],
-      "gain": 0.8,
-      "pitchJitter": [1.12, 1.22],
-      "gainJitter": [0.9, 1.12],
-      "minIntervalSimSeconds": 0.25,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's runner action to spawn runners nearby.",
+      "description": "A runner is hit by a melee attack.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
       "id": "runner_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1499999999999999, 1.25],
       "variants": [
         "assets/audio/shambler-hurt-01.ogg",
         "assets/audio/shambler-hit-05.ogg",
         "assets/audio/shambler-hit-06.ogg",
         "assets/audio/shambler-hit-07.ogg"
-      ],
-      "gain": 0.8,
-      "pitchJitter": [1.15, 1.25],
-      "gainJitter": [0.9, 1.12],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "description": "A crawler idles nearby.",
+      "gain": 0.52000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "crawler_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.78000000000000003],
       "variants": [
         "assets/audio/shambler-idle-01.ogg",
         "assets/audio/shambler-idle-02.ogg",
         "assets/audio/shambler-idle-03.ogg"
-      ],
-      "gain": 0.52,
-      "pitchJitter": [0.68, 0.78],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.1,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "description": "A crawler notices you.",
+      "gain": 0.62,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
       "id": "crawler_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.69999999999999996, 0.80000000000000004],
       "variants": [
         "assets/audio/shambler-alert-04.ogg",
         "assets/audio/shambler-alert-05.ogg",
         "assets/audio/shambler-alert-06.ogg"
-      ],
-      "gain": 0.62,
-      "pitchJitter": [0.7, 0.8],
-      "gainJitter": [0.9, 1.12],
-      "minIntervalSimSeconds": 0.25,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "description": "A crawler reaches you and attacks.",
+      "gain": 0.69999999999999996,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
       "id": "crawler_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.65000000000000002, 0.75],
       "variants": [
         "assets/audio/shambler-attack-07.ogg",
         "assets/audio/shambler-attack-08.ogg",
         "assets/audio/shambler-attack-09.ogg"
-      ],
-      "gain": 0.7,
-      "pitchJitter": [0.65, 0.75],
-      "gainJitter": [0.9, 1.12],
-      "minIntervalSimSeconds": 0.25,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "description": "A crawler is hit by a melee attack.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
       "id": "crawler_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.65000000000000002, 0.75],
       "variants": [
         "assets/audio/shambler-hurt-01.ogg",
         "assets/audio/shambler-hit-05.ogg",
         "assets/audio/shambler-hit-06.ogg",
         "assets/audio/shambler-hit-07.ogg"
-      ],
-      "gain": 0.72,
-      "pitchJitter": [0.65, 0.75],
-      "gainJitter": [0.9, 1.12],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      ]
     },
     {
+      "category": "world",
+      "description": "Strike a locked door with a crowbar to force its padlock.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "lock_pry",
-      "variants": ["assets/audio/door_blocked_close-01.ogg"],
-      "gain": 0.8,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
       "minIntervalSimSeconds": 0,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 60 }
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 60
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/door_blocked_close-01.ogg"]
     },
     {
+      "category": "world",
+      "description": "Open a closed door within reach.",
+      "gain": 0.65000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "door_open",
-      "variants": ["assets/audio/door-open-03.ogg"],
-      "gain": 0.65,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/door-open-03.ogg"]
     },
     {
+      "category": "world",
+      "description": "Open a closed workshop roller door.",
+      "gain": 0.65000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "door_roller_open",
-      "variants": ["assets/audio/door-open-03.ogg"],
-      "gain": 0.65,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 60 }
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 60
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/door-open-03.ogg"]
     },
     {
-      "id": "door_close",
-      "variants": ["assets/audio/door_blocked_close-01.ogg"],
+      "category": "world",
+      "description": "Close an open door within reach.",
       "gain": 0.75,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.08,
-      "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "door_close",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/door_blocked_close-01.ogg"]
     },
     {
-      "id": "door_blocked_close",
-      "variants": ["assets/audio/door_blocked_close-01.ogg"],
-      "gain": 0.5,
-      "pitchJitter": [0.96, 1.04],
-      "gainJitter": [0.9, 1.1],
-      "minIntervalSimSeconds": 0.2,
       "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "description": "Try to close a door while something blocks it.",
+      "gain": 0.5,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "door_blocked_close",
+      "minIntervalSimSeconds": 0.20000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": ["assets/audio/door_blocked_close-01.ogg"]
     }
   ]
 }

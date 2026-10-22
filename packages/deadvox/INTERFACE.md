@@ -34,6 +34,8 @@ Hover and focus details use one or two sentences of plain fact. No wordplay, con
 
 The interface affords actions rather than writing procedures. Control labels come from bindings so rebinding cannot leave stale labels. Numbers stay available on surfaces the player opens rather than being pushed during play, keeping simulation facts accessible without undermining diegesis. Gungen and mobgen viewers are development tools, outside this rule.
 
+The labels and messages a screen draws are content, like the rest of the game's text, so a pack can reword or translate them without a code edit. Code names a key and validation rejects content that lacks it, so a missing line is an error rather than a silent default. See `src/core/schema.ts`, `UiScreenTextSchema`.
+
 ## Class 3: the character's voice
 
 Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `src/game/tierNotice.ts`, `TierNotice`.

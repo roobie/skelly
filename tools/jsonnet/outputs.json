@@ -297,6 +297,10 @@
       "output": "packages/deadvox/src/content/base/sounds-weapons.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/sounds.jsonnet",
+      "output": "packages/deadvox/src/content/base/sounds.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/templates-cabins.jsonnet",
       "output": "packages/deadvox/src/content/base/templates-cabins.json"
     },

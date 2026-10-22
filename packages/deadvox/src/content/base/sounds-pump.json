@@ -2,6 +2,8 @@
   "sounds": [
     {
       "category": "world",
+      "debugHint": "?debug=1&loadout=pump: unpack the sealed box, then load loose shells into the pump and rack it.",
+      "description": "Fire a chambered pump shotgun; it needs racking before the next shot.",
       "gain": 0.84999999999999998,
       "gainJitter": [1, 1],
       "id": "shotgun_blast",

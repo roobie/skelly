@@ -92,6 +92,7 @@ const fixture = (suppressed = false): Registry => {
   for (const id of ['fixture_report', 'fixture_quiet_report']) {
     const sound: SoundDef = {
       id,
+      description: 'fixture report',
       variants: ['assets/audio/fixture-report.ogg'],
       gain: 1,
       pitchJitter: [1, 1],
