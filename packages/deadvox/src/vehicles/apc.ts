@@ -1,8 +1,8 @@
 /**
- * An eight-wheeled armoured personnel carrier, built from parts: 7.0 m long, 2.75 m wide, 2.2 m to
+ * An eight-wheeled armoured personnel carrier, built from parts: 7.0 m long, 2.75 m wide, 2.4 m to
  * the hull roof, on four axles 1.2 m, 2.0 m and 1.2 m apart with 1.06 m wheels. The front two axles
- * steer; the driver sits front left beside the engine; the squad boards by a rear ramp and sits on
- * benches over the wheels. See `docs/vehicle-spike.md`, "Proportions".
+ * steer; the driver sits front left beside the engine; the squad boards by a rear ramp, with room to
+ * walk in crouched, and sits on benches over the wheels. See `docs/vehicle-spike.md`, "Proportions".
  */
 import {
   type Authored,
@@ -23,7 +23,7 @@ import { type Blueprint, type Fitting, type PartType, VOXELS_PER_CELL } from './
 import { steering } from './rangeRover.ts';
 import type { Vec3i } from './voxels.ts';
 
-const LATTICE = [56, 19, 22] as const;
+const LATTICE = [56, 20, 22] as const;
 const own = metaFor('apc');
 const pair = pairAcross(LATTICE[2] * VOXELS_PER_CELL);
 
@@ -37,19 +37,20 @@ const WHEEL_Y = 17;
 const WHEEL_Z = 76;
 const BELLY = 17;
 const SPONSON_Y = 38;
-const ROOF_Y = 67;
-const ROOF_TOP = 70;
+const ROOF_Y = 74;
+const ROOF_TOP = 77;
 /** The welded skin's full width; bolt-on armour hangs outside it. */
 const SIDE = 86;
 const HULL_FRONT = 202;
 /** The upper glacis lies at 45°: hull at and in front of `x + y = GLACIS` is the nose's. */
-const GLACIS = 260;
+const GLACIS = 267;
 /** The far side of the glacis line, carved from parts that stop at the nose. */
+const NOSE_TOP = 47;
 const AHEAD_OF_GLACIS = prism(
   'z',
   [
-    [GLACIS - 40 + 1, 40],
-    [GLACIS, 40],
+    [GLACIS - NOSE_TOP + 1, NOSE_TOP],
+    [GLACIS, NOSE_TOP],
     [GLACIS, ROOF_TOP + 2],
     [GLACIS - ROOF_TOP - 2 + 1, ROOF_TOP + 2],
   ],
@@ -114,7 +115,7 @@ const hullNose = authored(own('hull-nose', 'Nose and glacis', 'frame', 1100), [
       [HULL_FRONT, BELLY],
       [208, BELLY],
       [224, 31],
-      [224, 40],
+      [224, NOSE_TOP],
       [GLACIS + 4 - ROOF_TOP, ROOF_TOP],
       [GLACIS + 1 - ROOF_TOP, ROOF_TOP],
       [HULL_FRONT, GLACIS + 1 - HULL_FRONT],
@@ -128,9 +129,9 @@ const hullNose = authored(own('hull-nose', 'Nose and glacis', 'frame', 1100), [
       [HULL_FRONT, 20],
       [207, 20],
       [220, 31],
-      [220, 40],
-      [204, 56],
-      [HULL_FRONT, 56],
+      [220, NOSE_TOP],
+      [204, NOSE_TOP + 16],
+      [HULL_FRONT, NOSE_TOP + 16],
     ],
     [5, SIDE - 3],
     'air',
@@ -163,9 +164,11 @@ const hullRoof = authored({ ...own('hull-roof', 'Hull roof', 'roof', 1300), pane
   disc('y', [...CUPOLA, CUPOLA_HOLE], [ROOF_Y, ROOF_TOP], 'air'),
 ]);
 
+/** The opening is taller than a crouched player (`test/vehicleParts.test.ts`, "troop compartment"). */
+const RAMP_TOP = 70;
 const RAMP: readonly [Vec3i, Vec3i] = [
   [4, 26, 24],
-  [8, 62, 64],
+  [8, RAMP_TOP, 64],
 ];
 const hullRear = authored({ ...own('hull-rear', 'Rear wall', 'frame', 450), panel: 'x' }, [
   prism(
@@ -190,10 +193,10 @@ const hullRear = authored({ ...own('hull-rear', 'Rear wall', 'frame', 450), pane
 const ramp = authored({ ...own('ramp', 'Rear ramp with crew door', 'body', 520), panel: 'x' }, [
   box(...RAMP, 'paint'),
   paintBox([4, 29, 46], [5, 30, 60], 'seam'),
-  paintBox([4, 57, 46], [5, 58, 60], 'seam'),
-  paintBox([4, 29, 46], [5, 58, 47], 'seam'),
-  paintBox([4, 29, 59], [5, 58, 60], 'seam'),
-  box([3, 42, 55], [4, 44, 58], 'trim'),
+  paintBox([4, 65, 46], [5, 66, 60], 'seam'),
+  paintBox([4, 29, 46], [5, 66, 47], 'seam'),
+  paintBox([4, 29, 59], [5, 66, 60], 'seam'),
+  box([3, 46, 55], [4, 48, 58], 'trim'),
 ]);
 
 const axle = (part: PartMeta, x: number, steered: boolean): Authored =>
