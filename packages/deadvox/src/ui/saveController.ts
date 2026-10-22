@@ -14,6 +14,7 @@ import {
   type SaveWorldOptions,
 } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import { KNOWN_SCHEDULER_IDS } from '../core/schedulerIds.ts';
 import { type RealTimestamp, realTimestamp } from '../core/time.ts';
 import {
   type SaveBackendPreference,
@@ -46,9 +47,7 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
     case 'sound':
       return registry.sounds.has(id);
     case 'scheduler':
-      // The registry holds no systems; `Scheduler.restoreState` checks the ids against the registered set, and a
-      // hand-kept list here would drop a new system's cursor silently.
-      return true;
+      return KNOWN_SCHEDULER_IDS.has(id);
     case 'skill':
       return registry.skills.has(id);
     case 'recipe':
