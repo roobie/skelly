@@ -124,12 +124,27 @@ export interface GunExportMetadata {
   readonly cartridge?: Cartridge;
 }
 
-interface GunExportOptions extends GunExportMetadata {
+export interface VoxelGrains {
+  /** Metres; voxelizes the GLB's meshes at this grain. See `packages/thing-export/src/glb.ts`, `voxelPrimitivesFor`. */
+  readonly voxelGrain?: number;
+  /** Metres; the grain of the parts tagged `VOXEL_DETAIL`. See `packages/thing-export/src/glb.ts`, `checkNesting`. */
+  readonly voxelDetailGrain?: number;
+}
+
+const voxelGrainsOf = ({
+  voxelGrain,
+  voxelDetailGrain,
+}: {
+  [Key in keyof VoxelGrains]: VoxelGrains[Key] | undefined;
+}): VoxelGrains => ({
+  ...(voxelGrain === undefined ? {} : { voxelGrain }),
+  ...(voxelDetailGrain === undefined ? {} : { voxelDetailGrain }),
+});
+
+interface GunExportOptions extends GunExportMetadata, VoxelGrains {
   /** Geometry-only callers skip the slot solver; CLI model exports explicitly request its certificate. */
   readonly includeAttachmentCompatibility?: boolean;
   readonly excludedAttachments?: readonly string[];
-  /** Metres; voxelizes the GLB's meshes at this grain. See `packages/thing-export/src/glb.ts`, `voxelPrimitivesFor`. */
-  readonly voxelGrain?: number;
 }
 
 interface GunModelEntryOptions extends GunExportMetadata {
@@ -501,7 +516,13 @@ export const exportGunGlb = (
   appearance: AppearanceContext,
   options: GunExportOptions = {},
 ): GunExportResult => {
-  const { includeAttachmentCompatibility = false, excludedAttachments = [], voxelGrain, ...metadata } = options;
+  const {
+    includeAttachmentCompatibility = false,
+    excludedAttachments = [],
+    voxelGrain,
+    voxelDetailGrain,
+    ...metadata
+  } = options;
   const message = boltMetadataIssue(assembly, metadata.cartridge);
   if (message) {
     return { ok: false, error: { code: 'structure-issues', issues: [{ rule: 'structure', message, parts: [] }] } };
@@ -525,7 +546,7 @@ export const exportGunGlb = (
     palette: GUN_PALETTE,
     appearance,
     asset,
-    ...(voxelGrain === undefined ? {} : { voxelGrain }),
+    ...voxelGrainsOf({ voxelGrain, voxelDetailGrain }),
   });
   if (!result.ok) {
     return result;

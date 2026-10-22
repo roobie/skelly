@@ -42,6 +42,47 @@ it('writes the design row grain into the exported GLB', () => {
   expect(extras.every((entry) => entry.voxelGrain === grain)).toBe(true);
 });
 
+const detailExport = (voxelGrain: number, voxelDetailGrain: number) => {
+  const [exported] = loadExportRecipe([
+    {
+      id: 'fixture',
+      kind: 'design',
+      source: 'gungen/designs/archetype-ak-akm.json',
+      options: { voxelGrain, voxelDetailGrain },
+    },
+  ]);
+  return readGlb(exported!.generate().glb);
+};
+
+it('puts every unrotated part, coarse or fine, on the fine lattice so the two grains nest', () => {
+  const coarse = 0.004;
+  const fine = 0.002;
+  const { json, floats } = detailExport(coarse, fine);
+  const seen = new Set<number>();
+  for (const node of json.nodes) {
+    const translation = node.translation ?? [0, 0, 0];
+    if (node.mesh === undefined || node.rotation !== undefined) {
+      continue;
+    }
+    for (const primitive of json.meshes[node.mesh]!.primitives) {
+      const grain = (primitive.extras as { voxelGrain: number }).voxelGrain;
+      seen.add(grain);
+      const positions = floats(primitive.attributes.POSITION);
+      for (let i = 0; i < positions.length; i += 1) {
+        const world = positions[i]! + translation[i % 3]!;
+        for (const step of [grain, fine]) {
+          expect(Math.abs(world / step - Math.round(world / step))).toBeLessThan(1e-3);
+        }
+      }
+    }
+  }
+  expect([...seen].sort()).toEqual([fine, coarse]);
+});
+
+it('refuses a detail grain the gun grain is not a whole multiple of', () => {
+  expect(() => detailExport(0.005, 0.002)).toThrow('nest');
+});
+
 it('writes the magazine row grain into the exported GLB', () => {
   const grain = 0.05;
   const [exported] = loadExportRecipe([

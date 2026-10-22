@@ -2,7 +2,7 @@ import { parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import type { Assembly } from '@skelly/engine/assembly/schema.ts';
 import type { AppearanceContext, GlbAssetIdentity } from '@skelly/thing-export/exportTypes.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
-import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';
+import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata, type VoxelGrains } from '../gun/exportGlb.ts';
 import { GUN_APPEARANCE } from '../gun/palette.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { readCartridge } from './readCartridge.ts';
@@ -137,7 +137,7 @@ export const exportFileText = (
   text: string,
   asset: GlbAssetIdentity,
   metadata: GunExportMetadata = {},
-  voxelGrain?: number,
+  voxel: VoxelGrains = {},
 ): ExportFileResult => {
   const read = readAssembly(text);
   if ('message' in read) {
@@ -158,7 +158,7 @@ export const exportFileText = (
   const result = exportGunGlb(read.assembly, asset, read.appearance, {
     ...exportMetadata,
     includeAttachmentCompatibility: true,
-    ...(voxelGrain === undefined ? {} : { voxelGrain }),
+    ...voxel,
     ...(read.excludedAttachments === undefined ? {} : { excludedAttachments: read.excludedAttachments }),
   });
   if (!result.ok) {

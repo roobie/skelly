@@ -94,6 +94,11 @@ export interface GlbExportInput {
    * leaves the export unchanged.
    */
   readonly voxelGrain?: number;
+  /**
+   * Voxel edge in metres for the parts whose definition carries the `VOXEL_DETAIL` tag (see `glb.ts`); every other part
+   * keeps `voxelGrain`. Must divide `voxelGrain` a whole number of times so the two lattices nest. Needs `voxelGrain`.
+   */
+  readonly voxelDetailGrain?: number;
 }
 
 export type GlbExportError =

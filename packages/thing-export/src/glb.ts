@@ -18,6 +18,7 @@ import type {
   ExportGlb,
   ExportPortMetadata,
   GlbExportError,
+  GlbExportInput,
   GlbExportResult,
   Palette,
   PartPortId,
@@ -97,6 +98,26 @@ const latticeOrigin = (placed: { readonly r: Mat3; readonly t: Vec3 }, grain: nu
   // The inverse rotation of a rotation matrix is its transpose.
   const local = [0, 1, 2].map((i) => -[0, 1, 2].reduce((sum, j) => sum + r[j * 3 + i]! * t[j]! * metresPerUnit, 0));
   return local.map((v) => v - Math.floor(v / grain) * grain) as unknown as Vec3;
+};
+
+/** Part-definition tag that asks a voxelized export for the finer `voxelDetailGrain`. */
+export const VOXEL_DETAIL = 'voxel-detail';
+
+/**
+ * Every part's lattice is anchored at the world origin, so two grains nest exactly when the coarse one is a whole
+ * multiple of the fine one: each coarse voxel face then lies on a fine voxel face and the parts meet without steps.
+ */
+const checkNesting = ({ voxelGrain, voxelDetailGrain }: GlbExportInput): void => {
+  if (voxelDetailGrain === undefined) {
+    return;
+  }
+  if (voxelGrain === undefined) {
+    throw new Error('voxelDetailGrain needs voxelGrain');
+  }
+  const ratio = voxelGrain / voxelDetailGrain;
+  if (!(ratio >= 1 && Math.abs(ratio - Math.round(ratio)) < 1e-9)) {
+    throw new Error('voxelGrain must be a whole multiple of voxelDetailGrain so the lattices nest');
+  }
 };
 
 const isIdentity = (m: Mat3): boolean => m.every((x, i) => Math.abs(x - (i % 4 === 0 ? 1 : 0)) < 1e-12);
@@ -266,6 +287,7 @@ const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined =>
  * and an asset file outside `assets/models/<name>.glb`.
  */
 export const exportGlb: ExportGlb = (input) => {
+  checkNesting(input);
   const error = refusal(input);
   if (error) {
     return fail(error);
@@ -427,7 +449,11 @@ export const exportGlb: ExportGlb = (input) => {
             const primitive = primitiveFor(part, item);
             return primitive ? [primitive] : [];
           })
-        : voxelPrimitivesFor(part, items, input.voxelGrain);
+        : voxelPrimitivesFor(
+            part,
+            items,
+            part.def.tags?.includes(VOXEL_DETAIL) ? (input.voxelDetailGrain ?? input.voxelGrain) : input.voxelGrain,
+          );
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };
     const rotation = quaternion(part.placed.r);

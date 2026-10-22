@@ -30,10 +30,24 @@ const cartridgeAt = (source: string, root: string) => {
 
 const exporters = {
   design: (row: Row, root: string) => {
-    const { voxelGrain } = parse(strictObject({ voxelGrain: optional(pipe(number(), gtValue(0))) }), optionsFor(row));
+    const { voxelGrain, voxelDetailGrain } = parse(
+      strictObject({
+        voxelGrain: optional(pipe(number(), gtValue(0))),
+        voxelDetailGrain: optional(pipe(number(), gtValue(0))),
+      }),
+      optionsFor(row),
+    );
     const text = readFileSync(resolve(root, row.source), 'utf8');
     return () => {
-      const result = exportFileText(text, assetFor(row), {}, voxelGrain);
+      const result = exportFileText(
+        text,
+        assetFor(row),
+        {},
+        {
+          ...(voxelGrain === undefined ? {} : { voxelGrain }),
+          ...(voxelDetailGrain === undefined ? {} : { voxelDetailGrain }),
+        },
+      );
       if (!result.ok) {
         throw new Error(result.message);
       }

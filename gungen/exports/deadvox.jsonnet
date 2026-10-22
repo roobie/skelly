@@ -1,7 +1,8 @@
 local grains = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
 local design(id, source) = { id: id, kind: 'design', source: 'gungen/designs/' + source + '.json' };
-// A gun is not a vehicle or furniture part and needs finer detail than an item, so it takes the gun grain.
-local voxelDesign(id, source) = design(id, source) { options: { voxelGrain: grains.gun } };
+// A gun is not a vehicle or furniture part and needs finer detail than an item, so it takes the gun grain; the parts
+// its design tags as fine detail, such as sights, take the detail grain.
+local voxelDesign(id, source) = design(id, source) { options: { voxelGrain: grains.gun, voxelDetailGrain: grains.detail } };
 local cartridge(id, source, component) = {
   id: id, kind: 'cartridge', source: 'gungen/cartridges/' + source + '.json', options: { component: component },
 };
