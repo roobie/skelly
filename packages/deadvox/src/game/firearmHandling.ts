@@ -757,7 +757,14 @@ export class FirearmMechanics {
       state.hammerDown = true;
     }
     const pellets = this.isPump(item)
-      ? pelletShotFromBasis({ ammo, origin: shotOrigin, basis: shotBasis, seed: input.seed, key: shotKey })
+      ? pelletShotFromBasis({
+          ammo,
+          firearm: defOf(this.inventory.registry, item.type).firearm!,
+          origin: shotOrigin,
+          basis: shotBasis,
+          seed: input.seed,
+          key: shotKey,
+        })
       : projectileShot(ammo, shotOrigin, [
           coneDirection(shotBasis, data.dispersionRadians, Rng.stream(input.seed, `firearm-dispersion:${shotKey}`)),
         ]);
