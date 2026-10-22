@@ -1226,7 +1226,7 @@ export class InventoryScreen {
       item,
       uid: String(item.uid),
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}`,
-      title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(item.condition)}`,
+      title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(this.inv.registry, item.condition)}`,
       name: workName(this.inv.registry, item),
       count: item.count > 1 ? `×${item.count}` : undefined,
       style:
@@ -1271,7 +1271,7 @@ export class InventoryScreen {
       empty: false,
       category: def.category,
       name: `${workName(this.inv.registry, item)}${item.count > 1 ? ` ×${item.count}` : ''}`,
-      condition: conditionWord(item.condition),
+      condition: conditionWord(this.inv.registry, item.condition),
       description: def.description,
       lines: this.inspect(item),
       ...(attachmentSlots.length > 0 ? { attachmentSlots } : {}),

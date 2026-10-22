@@ -3,6 +3,7 @@
 // items stack up to their type's limit.
 
 import type { ItemDef, ModelDef, Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
@@ -505,18 +506,10 @@ export const isEmpty = (item: Item): boolean =>
   Object.values(item.slots ?? {}).every((child) => child === undefined) &&
   (item.pockets ?? []).every((grid) => grid.length === 0);
 
-/** Condition as a word (`DESIGN.md`, "The item model"). */
-export const conditionWord = (condition: number): string => {
-  if (condition >= 0.9) {
-    return 'pristine';
-  }
-  if (condition >= 0.6) {
-    return 'worn';
-  }
-  if (condition >= 0.3) {
-    return 'damaged';
-  }
-  return condition >= 0.1 ? 'badly damaged' : 'ruined';
+/** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
+export const conditionWord = (registry: Registry, condition: number): string => {
+  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;
 };
 
 /** How many of `item` could join the `onto` stack. */

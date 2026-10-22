@@ -1406,6 +1406,46 @@ describe('content', () => {
   });
 });
 
+describe('condition bands', () => {
+  const baseRow = (base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory![0]!;
+  const withBands = (conditionBands: { from: number; word: string }[]) =>
+    buildRegistry([{ source: 'bands.json', data: { inventory: [{ ...baseRow, conditionBands }] } }]).issues.map(
+      ({ path }) => path,
+    );
+
+  it('accepts bands that start at 0 and rise', () => {
+    expect(
+      withBands([
+        { from: 0, word: 'a' },
+        { from: 0.5, word: 'b' },
+      ]),
+    ).toEqual([]);
+  });
+
+  it.each([
+    ['a gap below the first bound', [{ from: 0.2, word: 'a' }]],
+    [
+      'an overlap',
+      [
+        { from: 0, word: 'a' },
+        { from: 0.5, word: 'b' },
+        { from: 0.5, word: 'c' },
+      ],
+    ],
+    [
+      'unordered bounds',
+      [
+        { from: 0, word: 'a' },
+        { from: 0.6, word: 'b' },
+        { from: 0.3, word: 'c' },
+      ],
+    ],
+    ['no bands', []],
+  ])('rejects %s', (_label, bands) => {
+    expect(withBands(bands)).not.toEqual([]);
+  });
+});
+
 describe('content references', () => {
   it('uses the content container-width limit and requires a reason for wider pockets', () => {
     const content = {
