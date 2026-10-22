@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { chargeShare } from '../src/core/lights.ts';
 import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
 import { gamePerHour, simSeconds } from '../src/core/time.ts';
@@ -149,5 +150,18 @@ describe('central loot selection', () => {
     const stacks = [...inventory.items()].map(({ item }) => item);
     expect(stacks).toHaveLength(1);
     expect(stacks[0]!.count).toBe(2);
+  });
+
+  it('spawns authored fixed batteries at their authored share of full charge', () => {
+    const registry = fixture();
+    const host = registry.items.get('stock')!;
+    registry.items.set(host.id, { ...host, battery: { capacity: 2 } });
+    const inventory = new Inventory(registry);
+    const source: LootSpawnPoint = {
+      ...point(),
+      supply: { kind: 'fixed', items: [{ item: 'stock', charge: 0.25 }] },
+    };
+    const [rolled] = rollLoot(registry, source, Rng.stream(1, 'charge'));
+    expect(chargeShare(registry, inventory.createRolled(rolled!))).toBe(0.25);
   });
 });

@@ -229,6 +229,23 @@
     },
     {
       "category": "tool",
+      "description": "A small stone for honing a blade by hand.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "whetstone",
+      "model": "whetstone",
+      "name": "Whetstone",
+      "size": [1, 2],
+      "tool": {
+        "qualities": {
+          "sharpening": 1
+        }
+      }
+    },
+    {
+      "category": "tool",
       "description": "Steel jaws on a spring. It shuts on whatever steps in it.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],

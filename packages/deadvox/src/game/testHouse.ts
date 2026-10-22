@@ -275,8 +275,9 @@ export const populateTestHouseRepairCorner = ({
   if (site !== 'testHouse') {
     return;
   }
+  // The corner is piles only, so a repair that needs a workstation cannot be served there.
   const recipes = [...registry.recipes.values()]
-    .filter((recipe) => recipe.kind === 'repair')
+    .filter((recipe) => recipe.kind === 'repair' && !recipe.workstation)
     .sort((a, b) => a.id.localeCompare(b.id));
   if (recipes.length === 0) {
     return;

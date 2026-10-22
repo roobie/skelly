@@ -559,6 +559,65 @@ describe('content', () => {
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
   });
 
+  it('rejects firearms tuning without case ejection or shot trace range', () => {
+    const source = base.find((file) => file.source === 'recipes.json')!;
+    const data = structuredClone(source.data) as {
+      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+    };
+    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
+    Reflect.deleteProperty(firearms, 'caseEjection');
+    Reflect.deleteProperty(firearms, 'shotTraceRangeBlocks');
+    const { issues } = buildRegistry([{ source: source.source, data }]);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.caseEjection'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.shotTraceRangeBlocks'))).toBe(true);
+  });
+
+  it('rejects firearm attachment effects without a per-shot wear', () => {
+    const files = (
+      structuredClone(base) as { source: string; data: { items?: { firearmAttachmentEffects?: object }[] } }[]
+    ).filter(({ data }) => data.items);
+    const attachment = files
+      .flatMap((file) => file.data.items ?? [])
+      .find((item) => item.firearmAttachmentEffects !== undefined);
+    expect(attachment).toBeDefined();
+    Reflect.deleteProperty(attachment!.firearmAttachmentEffects!, 'wearPerShot');
+    const { issues } = buildRegistry(files);
+    expect(issues.some(({ path }) => path.endsWith('.firearmAttachmentEffects.wearPerShot'))).toBe(true);
+  });
+
+  it('rejects an attachment whose model kind has effects but whose item authors none', () => {
+    const data = {
+      items: [
+        {
+          id: 'fixture_suppressor',
+          economy: { usage: [], tiers: [] },
+          name: 'Fixture suppressor',
+          category: 'misc',
+          weight: 1,
+          size: [1, 2],
+          model: 'fixture_suppressor',
+        },
+      ],
+      models: [
+        {
+          id: 'fixture_suppressor',
+          file: 'assets/models/fixture_suppressor.glb',
+          gun: {
+            attachment: {
+              id: 'fixture-suppressor',
+              kind: 'suppressor',
+              mount: 'muzzle',
+              mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
+              properties: { noiseFactor: 0.25 },
+            },
+          },
+        },
+      ],
+    };
+    const { issues } = buildRegistry([{ source: 'effects-fixture.json', data }]);
+    expect(issues.map(({ path }) => path)).toEqual(['items[0].firearmAttachmentEffects']);
+  });
+
   it('rejects an item that lacks the handling time its kind needs', () => {
     type Raw = Record<string, unknown>;
     const at = (root: unknown, keys: string[]): unknown =>
@@ -710,6 +769,7 @@ describe('content', () => {
           weight: 1,
           size: [1, 2],
           model: 'fixture_suppressor',
+          firearmAttachmentEffects: { kind: 'suppressor', recoilReduction: 0.1, wearPerShot: 0.01 },
         },
       ],
       models: [

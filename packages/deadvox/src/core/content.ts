@@ -664,6 +664,18 @@ const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlyS
   checkOpticZoom(item, variable, obtainable.has(item.id), report);
 };
 
+const EFFECT_ATTACHMENT_KINDS: ReadonlySet<string> = new Set(['suppressor', 'foregrip']);
+
+const checkItemAttachmentEffects = (item: ItemDef, registry: Registry, report: Report): void => {
+  const kind = item.model === undefined ? undefined : registry.models.get(item.model)?.gun?.attachment?.kind;
+  const effects = item.firearmAttachmentEffects;
+  if (effects === undefined && kind !== undefined && EFFECT_ATTACHMENT_KINDS.has(kind)) {
+    report('items', item.id, '.firearmAttachmentEffects', `a ${kind} model needs ${kind} attachment effects`);
+  } else if (effects !== undefined && effects.kind !== kind) {
+    report('items', item.id, '.firearmAttachmentEffects.kind', `${effects.kind} effects need a ${effects.kind} model`);
+  }
+};
+
 const checkOpticZoom = (item: ItemDef, variable: boolean, obtainable: boolean, report: Report): void => {
   if (item.opticZoom !== undefined && !variable) {
     report('items', item.id, '.opticZoom', 'zoom tuning needs a variable-power optic model');
@@ -773,6 +785,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkItemFirearm(item, registry, report);
     checkMeleeSounds(item, registry, report);
     checkItemOptic(item, registry, obtainable, report);
+    checkItemAttachmentEffects(item, registry, report);
     checkUnpacking(item, registry, qualities, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
@@ -1379,6 +1392,10 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
   }
   for (const [path, message] of authoredLayoutIssues(layout, registry)) {
     report('layouts', layout.id, path, message);
+  }
+  const light = layout.practice?.light;
+  if (light && registry.items.get(light.light)?.light?.power?.battery !== light.battery) {
+    report('layouts', layout.id, '.practice.light', `"${light.light}" is not a light that takes "${light.battery}"`);
   }
 };
 

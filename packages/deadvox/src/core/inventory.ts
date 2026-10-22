@@ -342,10 +342,18 @@ export class Inventory {
     return entity;
   }
 
-  createRolled({ type, count, condition, fitted }: Rolled): Item {
+  createRolled({ type, count, condition, fitted, charge }: Rolled): Item {
     const item = this.create(type, count, condition);
     for (const [slot, child] of Object.entries(fitted ?? {})) {
       this.fitSlot(item, slot, this.create(child));
+    }
+    if (charge !== undefined) {
+      for (const battery of [item, ...Object.values(item.slots ?? {})]) {
+        const capacity = defOf(this.registry, battery.type).battery?.capacity;
+        if (capacity !== undefined) {
+          battery.charges = charge * capacity;
+        }
+      }
     }
     return item;
   }

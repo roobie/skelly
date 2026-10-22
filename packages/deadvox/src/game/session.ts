@@ -348,6 +348,7 @@ export interface SessionOptions {
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   onConsumed?: ((type: string) => void) | undefined;
+  onBatterySwapped?: ((lightType: string) => void) | undefined;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Output only, after the simulation inserts an ejected item into its landing pile. */
@@ -949,6 +950,7 @@ export const createSession = (options: SessionOptions) => {
     notice: options.notice,
     read: options.onRead,
     consumed: options.onConsumed,
+    batterySwapped: options.onBatterySwapped,
     bookRead: (bookUid) => {
       const item = inventory.itemByUid(bookUid);
       const book = item && registry.items.get(item.type)?.book;
