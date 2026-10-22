@@ -1,12 +1,12 @@
 import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { applyDir, applyPoint, scale, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import { ModelPointSchema, type NeutralModel, NeutralModelSchema } from '@skelly/thing-core/schema';
 import { singlePart } from '@skelly/thing-core/single-part';
-import type { Palette } from '@skelly/thing-export/exportTypes.ts';
+import { drawnGeometry } from '@skelly/thing-export/drawn.ts';
+import type { Palette, VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
 import { hex } from '@skelly/thing-export/glb.ts';
 import {
   array,
@@ -31,6 +31,7 @@ import content from '../items.json' with { type: 'json' };
 import { bearTrap } from './families/bearTrap.ts';
 import { block } from './families/block.ts';
 import { head, limb, torso } from './families/body.ts';
+import { bust } from './families/bust.ts';
 import { bag, boots, cap } from './families/carried.ts';
 import { coil } from './families/coil.ts';
 import { compound } from './families/compound.ts';
@@ -105,6 +106,8 @@ const ItemSchema = strictObject({
   display: optional(strictObject({ ...SolidPointSchema, normal: ModelPointSchema, up: ModelPointSchema })),
   /** The finish slot that glows while lit; its material must be the only one that slot's finish names in the item. */
   glow: optional(name),
+  /** The item's own voxel grain in metres, in place of its class grain; the export recipe resolves it. */
+  voxelGrain: optional(positive),
 });
 const CatalogueSchema = strictObject({
   units: strictObject({ metresPerUnit: positive, grid: positive, bevel: pipe(number(), finite(), minValue(0)) }),
@@ -149,6 +152,7 @@ const builders = {
   limb,
   torso,
   head,
+  bust,
   openTin,
   handOpener,
   grenade,
@@ -213,7 +217,8 @@ const glowMaterial = (item: ToolItem, slot: string): string => {
   return hex(MATERIALS[id]!.colour);
 };
 
-export const buildItem = (item: ToolItem) => {
+/** Builds an item; with a model export's grains its datums read off the drawn voxels (see `drawn.ts`). */
+export const buildItem = (item: ToolItem, voxel?: VoxelGrains) => {
   const first = item.parts[0]!;
   let assembly: Assembly;
   let domain: Domain;
@@ -258,15 +263,18 @@ export const buildItem = (item: ToolItem) => {
   if (report.issues.length > 0) {
     throw new Error(`${item.id}: ${JSON.stringify(report.issues)}`);
   }
-  const datumAt = (datum: Pick<ToolDatum, 'part' | 'solid' | 'fraction'>): Vec3 => {
-    const solid = report.resolved.defs.get(datum.part)?.solids.find(({ id }) => id === datum.solid);
-    const placed = report.resolved.placed.get(datum.part);
-    if (!(solid && placed)) {
-      throw new Error(`${item.id}: missing datum geometry ${datum.part}/${datum.solid}`);
+  const drawn = drawnGeometry(report.resolved, { ...voxel, revolveFacets: catalogue.facets });
+  const drawnSolid = (part: string, solidId: string) => {
+    const solid = report.resolved.defs.get(part)?.solids.find(({ id }) => id === solidId);
+    if (!(solid && report.resolved.placed.has(part))) {
+      throw new Error(`${item.id}: missing datum geometry ${part}/${solidId}`);
     }
-    const [min, max] = localSolidBounds(solid);
+    return drawn.measure(part, solid);
+  };
+  const datumAt = (datum: Pick<ToolDatum, 'part' | 'solid' | 'fraction'>): Vec3 => {
+    const { min, max } = drawnSolid(datum.part, datum.solid);
     const point = min.map((value, axis) => value + datum.fraction[axis]! * (max[axis]! - value)) as unknown as Vec3;
-    return scale(applyPoint(placed, point), catalogue.units.metresPerUnit);
+    return scale(applyPoint(report.resolved.placed.get(datum.part)!, point), catalogue.units.metresPerUnit);
   };
   const directionIn = (part: string, direction: Vec3): Vec3 => {
     const turned = applyDir(report.resolved.placed.get(part)!, direction);
@@ -291,7 +299,7 @@ export const buildItem = (item: ToolItem) => {
   if (item.display) {
     const { part, solid: solidId, normal, up } = item.display;
     const at = datumAt(item.display);
-    const [min, max] = localSolidBounds(report.resolved.defs.get(part)!.solids.find(({ id }) => id === solidId)!);
+    const { min, max } = drawnSolid(part, solidId);
     // The screen solid's extent along a part-frame direction.
     const extentAlong = (direction: Vec3) => {
       const unit = scale(direction, 1 / Math.hypot(...direction));
@@ -313,5 +321,5 @@ export const buildItem = (item: ToolItem) => {
       },
     };
   }
-  return { report, masses, handling, glow: item.glow && glowMaterial(item, item.glow) };
+  return { report, masses, handling, drawn, glow: item.glow && glowMaterial(item, item.glow) };
 };

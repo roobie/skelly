@@ -1,4 +1,4 @@
-// Writes a design's (or fixture's) .glb and the matching deadvox model entry.
+// Writes a design's (or fixture's) voxelized .glb, at the gun class, and the matching deadvox model entry.
 //
 //   npm run export:glb -- designs/archetype-ar.json --out "$XDG_RUNTIME_DIR/export" [--entry-out "$XDG_RUNTIME_DIR/entries"] [--id rifle_test]
 //
@@ -10,6 +10,7 @@ import { basename, join } from 'node:path';
 import process from 'node:process';
 import { modelEntryJson } from '@skelly/thing-export/files.ts';
 import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
+import gunVoxel from '../gun/gunVoxel.json' with { type: 'json' };
 import { exportFileText } from './exportFile.ts';
 import { readCartridge } from './readCartridge.ts';
 
@@ -43,6 +44,7 @@ const main = (): number => {
       file: `assets/models/${id}.glb` as DeadvoxModelFile,
     },
     cartridgeResult.cartridge === undefined ? {} : { cartridge: cartridgeResult.cartridge },
+    { voxelGrain: gunVoxel.grain, voxelDetailGrain: gunVoxel.detailGrain },
   );
   if (!result.ok) {
     console.error(`FAIL ${input}: ${result.message}`);

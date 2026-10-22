@@ -707,11 +707,17 @@ describe('base pack modeled ammunition and spent cases', () => {
     const def = registry.models.get(id)!;
     expect(def.gun?.calibre).toBe('12-gauge-00-buck');
     expect(def.grip).toBeUndefined();
-    const { scene } = await parseGlb(readFileSync(`${BASE}/${def.file}`));
+    const { scene, parser } = await parseGlb(readFileSync(`${BASE}/${def.file}`));
     const { ground, groundParts } = prepareModel(def, scene);
     const bounds = new Box3().setFromObject(ground);
-    expect(bounds.getSize(new Vector3()).x).toBeCloseTo(length, 7);
-    expect(bounds.getSize(new Vector3()).y).toBeCloseTo(0.0225, 7);
+    // The file draws whole voxels, so each side lands within one voxel of the sourced dimension.
+    const grain = Math.max(
+      ...parser.json.meshes.flatMap(({ primitives }: { primitives: { extras: { voxelGrain: number } }[] }) =>
+        primitives.map(({ extras }) => extras.voxelGrain),
+      ),
+    );
+    expect(Math.abs(bounds.getSize(new Vector3()).x - length)).toBeLessThanOrEqual(grain);
+    expect(Math.abs(bounds.getSize(new Vector3()).y - 0.0225)).toBeLessThanOrEqual(grain);
     expect(bounds.min.y).toBeCloseTo(0, 7);
     expect(bounds.getCenter(new Vector3()).x).toBeCloseTo(0, 7);
     expect(groundParts.length).toBeGreaterThan(0);

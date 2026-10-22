@@ -3,9 +3,12 @@ import { loadExportRecipe } from '../src/cli/exportRecipe.ts';
 import { readGlb } from './glbReader.ts';
 
 const SOURCE_CONTEXT = /Export fixture.*fixture-source/;
+const voxel = { grain: 0.004, detailGrain: 0.002 };
 
 it.each(['fixture-unsupported', 'toString'])('refuses unknown export kind %s at recipe load', (kind) => {
-  expect(() => loadExportRecipe([{ id: 'fixture', kind, source: 'fixture-source' }])).toThrow('unknown export kind');
+  expect(() => loadExportRecipe([{ id: 'fixture', kind, source: 'fixture-source', voxel }])).toThrow(
+    'unknown export kind',
+  );
 });
 
 it.each([
@@ -14,50 +17,25 @@ it.each([
   { kind: 'attachment' },
   { kind: 'magazine', options: { cartridge: 'fixture-cartridge.json', appearanceProfile: 'fixture' } },
 ])('refuses unresolved $kind sources at recipe load', (selection) => {
-  expect(() => loadExportRecipe([{ id: 'fixture', source: 'fixture-source', ...selection }])).toThrow(SOURCE_CONTEXT);
+  expect(() => loadExportRecipe([{ id: 'fixture', source: 'fixture-source', voxel, ...selection }])).toThrow(
+    SOURCE_CONTEXT,
+  );
 });
 
 it('rejects two rows owning the same output identity before resolving sources', () => {
-  const row = { id: 'fixture', kind: 'design', source: 'fixture-source' };
+  const row = { id: 'fixture', kind: 'design', source: 'fixture-source', voxel };
   expect(() => loadExportRecipe([row, row])).toThrow('duplicate export id');
 });
 
-it('takes a positive voxel grain on a design row and refuses one that is not', () => {
-  const row = (voxelGrain: number) => [
-    { id: 'fixture', kind: 'design', source: 'fixture-source', options: { voxelGrain } },
-  ];
-  expect(() => loadExportRecipe(row(0.05))).toThrow(SOURCE_CONTEXT);
-  expect(() => loadExportRecipe(row(0))).toThrow('Invalid');
-});
-
-it('writes the design row grain into the exported GLB', () => {
-  const grain = 0.05;
+const designExport = (grains: { grain: number; detailGrain?: number }) => {
   const [exported] = loadExportRecipe([
-    { id: 'fixture', kind: 'design', source: 'gungen/designs/archetype-ak-akm.json', options: { voxelGrain: grain } },
+    { id: 'fixture', kind: 'design', source: 'gungen/designs/archetype-ak-akm.json', voxel: grains },
   ]);
-  const extras = readGlb(exported!.generate().glb).json.meshes.flatMap(({ primitives }) =>
-    primitives.map((primitive) => (primitive.extras ?? {}) as Record<string, unknown>),
-  );
-  expect(extras.length).toBeGreaterThan(0);
-  expect(extras.every((entry) => entry.voxelGrain === grain)).toBe(true);
-});
-
-const detailExport = (voxelGrain: number, voxelDetailGrain: number) => {
-  const [exported] = loadExportRecipe([
-    {
-      id: 'fixture',
-      kind: 'design',
-      source: 'gungen/designs/archetype-ak-akm.json',
-      options: { voxelGrain, voxelDetailGrain },
-    },
-  ]);
-  return readGlb(exported!.generate().glb);
+  return exported!.generate();
 };
 
 it('puts every unrotated part, coarse or fine, on the fine lattice so the two grains nest', () => {
-  const coarse = 0.004;
-  const fine = 0.002;
-  const { json, floats } = detailExport(coarse, fine);
+  const { json, floats } = readGlb(designExport(voxel).glb);
   const seen = new Set<number>();
   for (const node of json.nodes) {
     const translation = node.translation ?? [0, 0, 0];
@@ -70,26 +48,18 @@ it('puts every unrotated part, coarse or fine, on the fine lattice so the two gr
       const positions = floats(primitive.attributes.POSITION);
       for (let i = 0; i < positions.length; i += 1) {
         const world = positions[i]! + translation[i % 3]!;
-        for (const step of [grain, fine]) {
+        for (const step of [grain, voxel.detailGrain]) {
           expect(Math.abs(world / step - Math.round(world / step))).toBeLessThan(1e-3);
         }
       }
     }
   }
-  expect([...seen].sort()).toEqual([fine, coarse]);
+  expect([...seen].sort()).toEqual([voxel.detailGrain, voxel.grain]);
 });
 
 it('exports a voxelized sight whose up is perpendicular to its direction', () => {
-  const [exported] = loadExportRecipe([
-    {
-      id: 'fixture',
-      kind: 'design',
-      source: 'gungen/designs/archetype-ak-akm.json',
-      options: { voxelGrain: 0.004, voxelDetailGrain: 0.002 },
-    },
-  ]);
   const { sight } = (
-    exported!.generate() as unknown as {
+    designExport(voxel) as unknown as {
       modelEntry: { gun: { sight: { direction: readonly number[]; up: readonly number[] } } };
     }
   ).modelEntry.gun;
@@ -97,29 +67,30 @@ it('exports a voxelized sight whose up is perpendicular to its direction', () =>
   expect(Math.abs(dot)).toBeLessThan(1e-9);
 });
 
-it('refuses a detail grain the gun grain is not a whole multiple of', () => {
-  expect(() => detailExport(0.005, 0.002)).toThrow('nest');
+it('puts every recipe iron sight eye on a drawn voxel top, which lies on its fine lattice', () => {
+  const sights = loadExportRecipe()
+    .filter(({ kind }) => kind === 'design')
+    .map((row) => ({
+      row,
+      sight: (row.generate().modelEntry as unknown as { gun: { sight: { kind: string; eye: readonly number[] } } }).gun
+        .sight,
+    }))
+    .filter(({ sight }) => sight.kind === 'iron');
+  expect(sights.length).toBeGreaterThan(0);
+  for (const { row, sight } of sights) {
+    const step = row.voxel.voxelDetailGrain ?? row.voxel.voxelGrain;
+    expect(Math.abs(sight.eye[1]! / step - Math.round(sight.eye[1]! / step)), row.id).toBeLessThan(1e-6);
+  }
 });
 
-it('writes the magazine row grain into the exported GLB', () => {
-  const grain = 0.05;
-  const [exported] = loadExportRecipe([
-    {
-      id: 'fixture',
-      kind: 'magazine',
-      source: 'akm-30',
-      options: { cartridge: 'gungen/cartridges/7.62x39.json', appearanceProfile: 'ak', voxelGrain: grain },
-    },
-  ]);
-  const extras = readGlb(exported!.generate().glb).json.meshes.flatMap(({ primitives }) =>
-    primitives.map((primitive) => (primitive.extras ?? {}) as Record<string, unknown>),
-  );
-  expect(extras.length).toBeGreaterThan(0);
-  expect(extras.every((entry) => entry.voxelGrain === grain)).toBe(true);
+it('refuses a detail grain the gun grain is not a whole multiple of', () => {
+  expect(() => designExport({ grain: 0.005, detailGrain: 0.002 })).toThrow('nest');
 });
 
 it('rejects options not taken by the selected exporter', () => {
   expect(() =>
-    loadExportRecipe([{ id: 'fixture', kind: 'design', source: 'fixture-source', options: { component: 'round' } }]),
+    loadExportRecipe([
+      { id: 'fixture', kind: 'design', source: 'fixture-source', voxel, options: { component: 'round' } },
+    ]),
   ).toThrow('Invalid key');
 });

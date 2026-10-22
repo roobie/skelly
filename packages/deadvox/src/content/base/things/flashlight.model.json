@@ -2,6 +2,10 @@
   "id": "flashlight",
   "file": "assets/models/flashlight.glb",
   "parts": {
-    "flashlight": { "node": "flashlight:flashlight", "massKg": 0.25, "centreOfMass": [0.11220335142013572, 0, 0] }
+    "flashlight": {
+      "node": "flashlight:flashlight",
+      "massKg": 0.25,
+      "centreOfMass": [0.11609390178089583, -0.00016945493793847795, -0.00013707501349163534]
+    }
   }
 }

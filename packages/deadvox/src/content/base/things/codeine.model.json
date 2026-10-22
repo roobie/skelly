@@ -1,7 +1,7 @@
 {
   "id": "codeine",
   "file": "assets/models/codeine.glb",
-  "grip": { "at": [0, 0.032, 0], "turn": [0, 0, -90] },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0
 }

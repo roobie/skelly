@@ -27,7 +27,7 @@ const outline = ({ halfX, halfZ, chamfer = 0.012, cx = 0, cz = 0 }: Footprint): 
     ] satisfies Vec2[]
   ).map(([z, x]) => [z! + cz, x! + cx]);
 };
-const slab = (
+export const slab = (
   id: string,
   slot: string,
   [bottom, top]: readonly [number, number],
@@ -41,7 +41,11 @@ const slab = (
   slot,
 });
 type Range = readonly [number, number];
-const block = (id: string, slot: string, ...[[x0, x1], [y0, y1], [z0, z1]]: [Range, Range, Range]): BoxSolid => ({
+export const block = (
+  id: string,
+  slot: string,
+  ...[[x0, x1], [y0, y1], [z0, z1]]: [Range, Range, Range]
+): BoxSolid => ({
   id,
   kind: 'box',
   box: {

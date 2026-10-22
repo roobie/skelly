@@ -88,8 +88,9 @@ export const attachmentInstanceForId = (
   if (!ATTACHMENT_IDS.includes(id as (typeof ATTACHMENT_IDS)[number])) {
     throw new Error(`Unknown attachment id: ${id}`);
   }
-  const defaults: Readonly<Record<string, PartAppearance>> = appearanceContent.attachmentAppearances;
-  const instanceAppearance = appearance ?? defaults[id] ?? {};
+  const looks: Readonly<Record<string, { readonly appearance?: PartAppearance; readonly voxelGrain?: number }>> =
+    appearanceContent.attachments;
+  const instanceAppearance = appearance ?? looks[id]?.appearance ?? {};
   if (id.startsWith('optic-')) {
     return { family: 'sight', params: { type: id.slice('optic-'.length) }, appearance: instanceAppearance };
   }
