@@ -442,6 +442,29 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
   });
 
+  it('dims the listed items a typed query misses, and Escape in the field clears it', () => {
+    const { screen, root, beans } = setup();
+    const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+    const tiles = () => [...root.querySelectorAll<HTMLElement>('.inv-item[data-uid]')];
+    const dimmed = (tile: HTMLElement) => tile.classList.contains('inv-item-unmatched');
+    expect(tiles().length).toBeGreaterThan(1);
+    expect(tiles().some(dimmed)).toBe(false);
+
+    expect(screen.onAction('inventory.find')).toBe(true);
+    expect(document.activeElement).toBe(field);
+
+    const held = tiles().find((tile) => tile.dataset.uid === String(beans.uid))!;
+    field.value = held.querySelector('.inv-item-name')!.textContent!.toUpperCase();
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(dimmed(tiles().find((tile) => tile.dataset.uid === String(beans.uid))!)).toBe(false);
+    expect(tiles().some(dimmed)).toBe(true);
+
+    field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    expect(field.value).toBe('');
+    expect(tiles().some(dimmed)).toBe(false);
+    expect(document.activeElement).not.toBe(field);
+  });
+
   it('shows Wait on the Actions tab and dispatches it through the screen owner', () => {
     const { screen, root, lastPayload } = setup();
     screen.selectTab('actions');

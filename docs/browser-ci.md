@@ -42,6 +42,15 @@ so destination activity cannot be mistaken for restored-world work. See
 `packages/deadvox/test/browser/save-storage.mjs`, `pollNavigation`, `navigationPhase` and
 `instrumentNavigationSave`.
 
+A stage timeout on a save step records the `#save-status` transitions and a Web Lock
+snapshot on both sides of the stalling step, because a bare timeout cannot tell a stalled
+discovery or write from a missing launcher. #749 (the gauntlet win checkpoint never reaches
+saved) reports this in the `save-other` shard. #670 (the second weathering page never
+enables `#go`) reports it only when the quarantined subflow runs with
+`DEADVOX_FIREFOX_UI_WEATHERING_TEST=1`, because no CI shard reaches it. Both issues stay
+open as the owners. See `packages/deadvox/test/browser/save-lock-diagnostics.mjs`,
+`saveLockSnapshot`.
+
 The required aggregate fails closed on unsuccessful or unobservable attempts in the same run: a later green rerun must not hide an earlier failure. See `tools/browser-ci-result.mjs`, `assertBrowserResult` and `checkBrowserWorkflow`, and `.github/workflows/deadvox.yml`.
 
 Diagnostic artifacts keep source, run, attempt and layout evidence distinct, so siblings and reruns cannot overwrite one another. Native-input, render-free, pixel and operator-review checks answer different questions and remain separate. The primary-action logic and pixel checks are separate because software rendering must not consume the logic contract's time bound; see `packages/deadvox/test/browser/primary-action.mjs` and `packages/deadvox/test/browser/primary-action-pixel.mjs`.

@@ -39,6 +39,7 @@ local content = {
     name: 'Key box',
     size: [1, 1, 1],
     color: '#666666',
+    appearance: { kind: 'door', surface: 'painted-metal' },
     container: { pockets: [{ name: 'Inside', grid: [2, 1], handlingSimSeconds: 0.2 }] },
   }],
   loot: [{

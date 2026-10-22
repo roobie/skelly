@@ -448,11 +448,75 @@ const frontSightPost = (resolved: Resolved) => {
 };
 
 /**
+ * The model-metre range along the file's z axis of the sight's authored solids that reach its sight axis's height.
+ * A rear sight's notch lies between them, so the top the eye lines up with is read over them, not over the notch.
+ */
+const leafSpan = (resolved: Resolved, sight: { readonly id: string }): readonly [number, number] => {
+  const def = resolved.defs.get(sight.id)!;
+  const transform = resolved.placed.get(sight.id)!;
+  const { metresPerUnit } = resolved.domain.units;
+  const [, top] = def.axes.find(({ kind }) => kind === 'sight')!.origin;
+  const zs = def.solids
+    .map((solid) => localSolidBounds(solid))
+    .filter(([, high]) => Math.abs(high[1] - top) < 1e-6)
+    .flatMap(([low, high]) =>
+      [low[0], high[0]].flatMap((px) =>
+        [low[1], high[1]].flatMap((py) =>
+          [low[2], high[2]].map((pz) => toFileAxes(applyPoint(transform, [px, py, pz]))[2] * metresPerUnit),
+        ),
+      ),
+    );
+  if (zs.length === 0) {
+    throw new Error(`Sight part ${sight.id} has no solid at its sight axis's height`);
+  }
+  return [Math.min(...zs), Math.max(...zs)];
+};
+
+/**
+ * How far apart the drawn faces are that bound a sight's line on each side, read in the top voxel row at the eye, or 0
+ * when the line runs through drawn material or has a face on one side only.
+ */
+const drawnNotchWidth = (file: VoxelFile, part: { readonly id: string; readonly grain: number }, eye: Vec3): number => {
+  const partId = part.id;
+  const row = eye[1] - part.grain / 2;
+  let left = Number.NEGATIVE_INFINITY;
+  let right = Number.POSITIVE_INFINITY;
+  for (const [a, b, c] of drawnTriangles(file.glb, partId)) {
+    const over = (axis: 0 | 1, at: number) =>
+      Math.min(a[axis], b[axis], c[axis]) < at && Math.max(a[axis], b[axis], c[axis]) > at;
+    if (!(a[2] === b[2] && b[2] === c[2] && over(0, eye[0]) && over(1, row))) {
+      continue;
+    }
+    const towardsPlusZ = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) > 0;
+    if (towardsPlusZ && a[2] <= eye[2]) {
+      left = Math.max(left, a[2]);
+    } else if (!towardsPlusZ && a[2] >= eye[2]) {
+      right = Math.min(right, a[2]);
+    }
+  }
+  return Number.isFinite(left) && Number.isFinite(right) ? right - left : 0;
+};
+
+/**
+ * A rear sight is aimed through its notch, so the voxels must leave it open: at least one voxel of the gun grain wide.
+ * A notch one voxel wide or narrower of its own grain can fill, and the player would line up the top of a solid block.
+ */
+const openNotchOrThrow = (file: VoxelFile, resolved: Resolved, partId: string, eye: Vec3): void => {
+  const grain = partVoxelGrain(resolved.defs.get(partId)!, file.grains);
+  const width = drawnNotchWidth(file, { id: partId, grain }, eye);
+  if (width < file.grains.voxelGrain - 1e-6) {
+    throw new Error(
+      `Sight part ${partId} draws its notch ${round6(width)} m wide on the sight line, under the ${file.grains.voxelGrain} m gun grain`,
+    );
+  }
+};
+
+/**
  * An iron sight's line as the voxelized file draws it, in model metres, because voxels move the tops the player lines
- * up. A rear sight aims from its own top to the front post's top; the post is read within twice its own width of the
- * bore plane, which holds its top voxel column wherever the sampler put it and leaves the guard ears out. A bead sets
- * the eye height to its top and keeps its level line. Any other iron datum, such as a revolver's frame, keeps its
- * direction and takes the top drawn within half a voxel of the eye.
+ * up. A rear sight aims from its own top to the front post's top, through its drawn notch; the post is read within
+ * twice its own width of the bore plane, which holds its top voxel column wherever the sampler put it and leaves the
+ * guard ears out. A bead sets the eye height to its top and keeps its level line. Any other iron datum, such as a
+ * revolver's frame, keeps its direction and takes the top of its leaves, which the line also runs between.
  */
 const drawnIronSightLine = (
   file: VoxelFile,
@@ -468,14 +532,17 @@ const drawnIronSightLine = (
     const band = 2 * front.postHalfWidthMetres;
     const eye: Vec3 = [x, drawnTopOrThrow(file, sight.id), z];
     const frontTop = drawnTopOrThrow(file, front.id, { 2: [tip[2] - band, tip[2] + band] });
+    openNotchOrThrow(file, resolved, sight.id, eye);
     return { eye, direction: normalize([tip[0] - eye[0], frontTop - eye[1], tip[2] - eye[2]]) };
   }
   if (family === 'front-sight-bead') {
     return { eye: [x, drawnTopOrThrow(file, sight.id), z], direction: sight.direction };
   }
   const half = partVoxelGrain(resolved.defs.get(sight.id)!, file.grains) / 2;
-  const top = drawnTopOrThrow(file, sight.id, { 0: [x - half, x + half], 2: [z - half, z + half] });
-  return { eye: [x, top, z], direction: sight.direction };
+  const top = drawnTopOrThrow(file, sight.id, { 0: [x - half, x + half], 2: leafSpan(resolved, sight) });
+  const eye: Vec3 = [x, top, z];
+  openNotchOrThrow(file, resolved, sight.id, eye);
+  return { eye, direction: sight.direction };
 };
 
 // Wider than any bore, so the muzzle's front ring lies over it, and narrower than the gap to the sights above it.

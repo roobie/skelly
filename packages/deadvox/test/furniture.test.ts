@@ -426,30 +426,25 @@ describe('furniture', () => {
     expect(second.colour).not.toBe(first.colour);
   });
 
-  it('picks the closed HQ safe only through its visible door', () => {
-    const definition = registry.furniture.get('camp_hq_safe')!;
-    const entities = new BlockEntities(registry);
-    const safe = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
-    const furniture = new FurnitureMeshes(BLOCK_SIZE);
-    furniture.sync(entities);
-    furniture.group.updateMatrixWorld(true);
-
-    const assembly = furniture.group.children[0] as Group;
-    expect(assembly.children).toHaveLength(2);
-    const body = assembly.children[0] as Mesh;
-    const door = assembly.children[1] as Group;
-    expect(door.children).toHaveLength(2);
-    const panel = door.children[0] as Mesh;
-    const handle = door.children[1] as Mesh;
-    const bodyBounds = new Box3().setFromObject(body);
-    const panelBounds = new Box3().setFromObject(panel);
-    const bodyMaterial = body.material as MeshLambertMaterial;
-    const panelMaterial = panel.material as MeshLambertMaterial;
-    const handleMaterial = handle.material as MeshLambertMaterial;
-    expect(panelMaterial.color.getHex()).not.toBe(bodyMaterial.color.getHex());
-    expect(handleMaterial.color.getHex()).not.toBe(panelMaterial.color.getHex());
-    expect(panelBounds.min.z).toBeLessThan(bodyBounds.min.z);
-    expect(panelBounds.max.z).toBeCloseTo(bodyBounds.min.z);
+  it('picks a closed body-door container only through its visible door, not its body', () => {
+    const fixture = {
+      id: 'fixture_safe',
+      name: 'Fixture safe',
+      size: [3, 2, 2],
+      color: '#59656a',
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
+      container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
+      door: { handlingSimSeconds: 0.5, methods: {} },
+      shape: [{ position: [0, 0, 0], size: [3, 2, 2] }],
+    };
+    const { registry: fixtureRegistry, issues } = buildRegistry([
+      fixtureMaterialSource(),
+      { source: 'safe-pick-fixture.json', data: { furniture: [fixture] } },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(fixtureRegistry);
+    const safe = entities.add({ type: fixture.id, pos: [4, 1, 8], size: [3, 2, 2], facing: 'n' })!;
     const pick = (origin: [number, number, number], direction: [number, number, number], maxDistance: number) =>
       pickFurniture({ entities, origin, direction, maxDistance, blockSize: BLOCK_SIZE, isSolid: () => false });
     expect(pick([5.5, 2.5, 7], [0, 0, 1], 3)).toBe(safe);

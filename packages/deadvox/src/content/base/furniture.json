@@ -255,6 +255,10 @@
       "size": [1, 4, 5]
     },
     {
+      "appearance": {
+        "kind": "rack",
+        "surface": "wood"
+      },
       "breach": {
         "durability": 60,
         "minimumStrength": 3.5
