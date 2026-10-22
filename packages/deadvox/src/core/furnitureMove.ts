@@ -289,7 +289,8 @@ const spreadFrom = (shadow: Shadow, cells: readonly Vec3[]): Iterable<Vec3> => {
     }
   };
   for (const cell of cells) {
-    add(columnTargets(shadow, cell));
+    // A piece that fell into the footprint fills its cell, so the drops go beside it.
+    add(shadow.occupied(cell) ? shadow.aside(cell) : columnTargets(shadow, cell));
   }
   let grown = 0;
   return {
