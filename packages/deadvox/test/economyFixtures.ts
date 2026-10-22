@@ -76,21 +76,23 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
   };
 };
 
+/** The fixture material file, then `sources` with the metadata content requires filled in. */
+export const fixtureSources = (sources: readonly ContentSource[]): ContentSource[] => [
+  fixtureMaterialSource(),
+  ...sources.map((source) => {
+    if (!object(source.data)) {
+      return source;
+    }
+    const data = { ...source.data };
+    for (const section of ['items', 'templates', 'layouts', 'furniture']) {
+      const entries = data[section];
+      if (Array.isArray(entries)) {
+        data[section] = entries.map((entry: unknown) => fixtureEntry(entry, section));
+      }
+    }
+    return { ...source, data };
+  }),
+];
+
 /** Admission tests bypass this builder so missing metadata cannot be concealed. */
-export const buildFixtureRegistry = (sources: readonly ContentSource[]) =>
-  buildRegistry([
-    fixtureMaterialSource(),
-    ...sources.map((source) => {
-      if (!object(source.data)) {
-        return source;
-      }
-      const data = { ...source.data };
-      for (const section of ['items', 'templates', 'layouts', 'furniture']) {
-        const entries = data[section];
-        if (Array.isArray(entries)) {
-          data[section] = entries.map((entry: unknown) => fixtureEntry(entry, section));
-        }
-      }
-      return { ...source, data };
-    }),
-  ]);
+export const buildFixtureRegistry = (sources: readonly ContentSource[]) => buildRegistry(fixtureSources(sources));
