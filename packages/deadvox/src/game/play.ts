@@ -536,6 +536,8 @@ interface HandlingPresentationOptions {
   readonly throwCharge?: HandlingPresentationSource['throwCharge'];
 }
 
+const screenTextOf = (registry: Engine['registry']) => registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+
 const handlingPresentationFor = ({
   job,
   queue,
@@ -560,7 +562,7 @@ const handlingPresentationFor = ({
     elapsed: elapsedForPresentation(job, simSeconds, clockRatio, compressionActive),
     stopped: job.stopped,
   };
-  return timedActionHandlingPresentation(action);
+  return timedActionHandlingPresentation(action, screenTextOf(inventory.registry).handling);
 };
 
 const createPlayRefusalPresenter = (
@@ -597,7 +599,7 @@ const playLoadingFor = (engine: Engine, options: StartPlayOptions) => {
     return options.loading;
   }
   const owner = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
-  return { owner, draw: mountWorldLoading(owner) };
+  return { owner, draw: mountWorldLoading(owner, screenTextOf(engine.registry).worldLoading) };
 };
 
 const configureReplayStreaming = (engine: Engine, replay: StartPlayOptions['replay']): void => {
@@ -646,7 +648,9 @@ const createPlayTutorial = (engine: Engine, enabled: boolean | undefined) => {
     exitBeat.area,
     leaveTutorial,
   );
-  const drawTutorial = mountTutorial(tutorial, leaveTutorial, () => location.reload());
+  const drawTutorial = mountTutorial(tutorial, screenTextOf(engine.registry).tutorial, leaveTutorial, () =>
+    location.reload(),
+  );
   return { tutorial, drawTutorial };
 };
 
@@ -1086,8 +1090,10 @@ export const startPlay = (
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
   let stopReadingOnClose: () => void = () => undefined;
+  const { screenText } = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
   const reading = mountReading(
     $('reading'),
+    screenText.reading,
     () => syncMenuState(),
     () => stopReadingOnClose(),
   );
@@ -1097,10 +1103,14 @@ export const startPlay = (
     return Boolean(definition?.book?.recipes.every((recipe) => session.character.knownRecipes.has(recipe)));
   };
   const hud = $('hud');
-  const { screenText } = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
   const hudOptions = readHudOptions();
+  const hudOptionsText = {
+    labels: screenText.hudOptionLabels,
+    heading: screenText.options.hudHeading,
+    showHud: screenText.options.showHud,
+  };
   const drawHudOptions = () =>
-    renderHudOptions($('hud-options'), screenText.hudOptionLabels, hudOptions, (key, value) => {
+    renderHudOptions($('hud-options'), hudOptionsText, hudOptions, (key, value) => {
       hudOptions[key] = value;
       writeHudOptions(hudOptions);
       drawHudOptions();
@@ -1112,10 +1122,17 @@ export const startPlay = (
   const handlingBox = $('handling');
   const restBox = $('rest');
   $('errors').textContent = [$('errors').textContent, engine.contentErrors].filter(Boolean).join('\n');
-  renderAudioOptions($('audio-options'), screenText.audioVolumeLabels, audio.settings, (category, value) =>
-    audio.setVolume(category, value),
+  renderAudioOptions(
+    $('audio-options'),
+    {
+      labels: screenText.audioVolumeLabels,
+      heading: screenText.options.audioHeading,
+      volume: screenText.options.volume,
+    },
+    audio.settings,
+    (category, value) => audio.setVolume(category, value),
   );
-  renderGraphicsOptions($('graphics-options'), engine.graphics);
+  renderGraphicsOptions($('graphics-options'), engine.graphics, screenText.options);
 
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
@@ -1573,6 +1590,7 @@ export const startPlay = (
       pointerLockChanged,
       resumeRequested,
       ...titleMenuOptions(),
+      goLabels: screenText.menu,
       titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
@@ -2442,21 +2460,24 @@ export const startPlay = (
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
     const doorReason = !prying && door?.plan.ok === false ? door.plan.reason : undefined;
-    return playInteractionText({
-      doorReason,
-      lock: keyLockHint(entity),
-      prying,
-      door: Boolean(entities.defOf(entity).door),
-      open: entity.open,
-      container: Boolean(entity.pockets),
-      readable: Boolean(entities.defOf(entity).readable),
-      climbable: Boolean(entities.defOf(entity).climbable),
-      restAction: restKindForFurniture(entities.defOf(entity)),
-      searched: entity.searched,
-      name: nameOf(entity),
-      fullName: entities.defOf(entity).name,
-      damage: damageWord(entities.registry, entities.conditionOf(entity)),
-    });
+    return playInteractionText(
+      {
+        doorReason,
+        lock: keyLockHint(entity),
+        prying,
+        door: Boolean(entities.defOf(entity).door),
+        open: entity.open,
+        container: Boolean(entity.pockets),
+        readable: Boolean(entities.defOf(entity).readable),
+        climbable: Boolean(entities.defOf(entity).climbable),
+        restAction: restKindForFurniture(entities.defOf(entity)),
+        searched: entity.searched,
+        name: nameOf(entity),
+        fullName: entities.defOf(entity).name,
+        damage: damageWord(entities.registry, entities.conditionOf(entity)),
+      },
+      screenText.interaction,
+    );
   };
 
   /**
@@ -3051,7 +3072,7 @@ export const startPlay = (
       lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
     };
   };
-  const needsText = (): string => playNeedsText(statusView());
+  const needsText = (): string => playNeedsText(statusView(), screenText.stats);
   const hudText = (looking: string, visible: Readonly<HudOptionsState>) =>
     playHudText(
       {
@@ -3074,6 +3095,7 @@ export const startPlay = (
           .join(' · '),
       },
       visible,
+      screenText.stats,
     );
   /** Where the carried piece would stand if set down now, for the ghost and the prompt. */
   const carryPreview = () => {
@@ -3108,6 +3130,7 @@ export const startPlay = (
     if (carry) {
       return playCarryText(
         'refusal' in carry.spot ? carry.spot.refusal : html`${key}: set down ${nameOf(carry.entity)}`,
+        screenText.interaction,
       );
     }
     switch (target?.kind) {
@@ -3143,6 +3166,7 @@ export const startPlay = (
         resting: rest.action !== undefined,
       },
       visible,
+      screenText.prompt,
     );
   };
 
@@ -3576,7 +3600,7 @@ export const startPlay = (
     if (job?.jobType !== 'wait' || (job.stopped && compression.interruption === undefined)) {
       return undefined;
     }
-    return { label: 'Waiting' };
+    return { label: screenText.rest.waiting };
   };
   const renderRestAndWait = (messagesVisible: boolean): void => {
     const waitAction = waitViewAction();
@@ -3588,6 +3612,7 @@ export const startPlay = (
       sim,
       messagesVisible,
       restLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.restLabels,
+      text: screenText,
     });
   };
 
@@ -3766,7 +3791,6 @@ export const startPlay = (
         session.throwCharge.startedAt === undefined
           ? undefined
           : {
-              label: screenText.handlingLabels.throwForce,
               elapsedSimSeconds: Math.max(0, sim.time - session.throwCharge.startedAt),
               chargeSimSeconds: throwChargeSimSeconds,
               minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
@@ -3777,7 +3801,7 @@ export const startPlay = (
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
-    renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling);
+    renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling, screenText.handling);
     const continuing = finishDraw(sky, now);
     frameWork.record(now, realNow() - workStart);
     return continuing;
@@ -3846,6 +3870,7 @@ export const startPlay = (
       run: session.scenarioRun!,
       checkpoint: options.saveController?.winCheckpointStatus ?? 'unavailable',
       checkpointMessages: screenText.winCheckpointMessages,
+      text: screenText.win,
       newWorld: () => location.assign(newWorldQuery(location.search, config.seed)),
       freshAttempt: () => location.assign(newWorldQuery(location.search, config.seed - 1)),
       exportRun: exportMetrics,

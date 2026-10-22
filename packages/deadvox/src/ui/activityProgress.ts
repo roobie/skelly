@@ -6,7 +6,8 @@ export interface ActivityProgressOptions {
   readonly label: string;
   readonly percent: number;
   readonly progressText: string;
-  readonly minimumPercent?: number;
+  /** A marked point on the ring, with the line that names it. */
+  readonly minimum?: { readonly percent: number; readonly label: string };
   readonly detail?: TemplateResult | typeof nothing;
   readonly controls?: TemplateResult | typeof nothing;
 }
@@ -15,11 +16,12 @@ export const activityProgress = ({
   label,
   percent,
   progressText,
-  minimumPercent,
+  minimum,
   detail = nothing,
   controls = nothing,
 }: ActivityProgressOptions): TemplateResult => {
   const progress = Math.max(0, Math.min(100, percent));
+  const minimumPercent = minimum?.percent;
   return html`<section class="activity-progress">
     <div
       class="activity-progress-gauge"
@@ -52,7 +54,7 @@ export const activityProgress = ({
     <div class="activity-progress-copy">
       <strong>${label}</strong>
       <span>${progressText}</span>
-      ${minimumPercent === undefined ? nothing : html`<span>Minimum release ${minimumPercent}%</span>`}
+      ${minimum === undefined ? nothing : html`<span>${minimum.label}</span>`}
       ${detail}
     </div>
     ${controls === nothing ? nothing : html`<div class="activity-progress-controls">${controls}</div>`}

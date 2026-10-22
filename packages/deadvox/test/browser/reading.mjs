@@ -411,6 +411,7 @@ try {
       const vm = restViewModel(session.rest.action, true, session.sim, {
         messagesVisible: true,
         restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
+        text: session.inventory.registry.ui.get('core').screenText,
       });
       if (
         !(gauge && session.rest.action?.sleepOnset) ||

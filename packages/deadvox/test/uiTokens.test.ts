@@ -119,12 +119,31 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     data: { ui: [{ ...tuning, wearSlotLabels: partialSlots }] },
   });
   expect(partial.map(({ path }) => path)).toEqual(['ui[0].wearSlotLabels.head']);
-  const { noRoom: _n, ...partialInventory } = tuning.screenText.inventoryMessages;
+  const { noRoom: _n, ...partialInventory } = tuning.screenText.inventory;
   const partialScreen = validateContent({
     source: 'partial-screen-text.json',
-    data: { ui: [{ ...tuning, screenText: { ...tuning.screenText, inventoryMessages: partialInventory } }] },
+    data: { ui: [{ ...tuning, screenText: { ...tuning.screenText, inventory: partialInventory } }] },
   });
-  expect(partialScreen.map(({ path }) => path)).toEqual(['ui[0].screenText.inventoryMessages.noRoom']);
+  expect(partialScreen.map(({ path }) => path)).toEqual(['ui[0].screenText.inventory.noRoom']);
+});
+
+it('rejects a screen text line that drops a slot its code fills, or names one its code never fills', () => {
+  const { options } = tuning.screenText;
+  const issues = validateContent({
+    source: 'slot-mismatch.json',
+    data: {
+      ui: [
+        {
+          ...tuning,
+          screenText: {
+            ...tuning.screenText,
+            options: { ...options, showHud: 'fixture without a key', on: 'fixture {key}' },
+          },
+        },
+      ],
+    },
+  });
+  expect(issues.map(({ path }) => path)).toEqual(['ui[0].screenText.options.showHud', 'ui[0].screenText.options.on']);
 });
 
 it('reports content without the core UI tuning at validation, not at startup', () => {

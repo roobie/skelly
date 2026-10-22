@@ -97,7 +97,7 @@ const title = (mods: readonly ActiveBrowserMod[] = []) => {
     throw new Error('Title fixture needs the actual body markup');
   }
   document.body.innerHTML = body.replace(SCRIPT_MARKUP, '');
-  return new SaveController(screenText.saveMessages, 'auto', [], mods);
+  return new SaveController(screenText, 'auto', [], mods);
 };
 
 const browserMods = [{ id: 'fixture-mod', version: '1', data: { items: [] } }];
@@ -493,6 +493,7 @@ it('acknowledges only the won checkpoint and keeps a failed completion visible f
     run: run.snapshot(),
     checkpoint: controller.winCheckpointStatus,
     checkpointMessages: screenText.winCheckpointMessages,
+    text: screenText.win,
     newWorld: () => undefined,
     freshAttempt: () => undefined,
     exportRun: () => undefined,

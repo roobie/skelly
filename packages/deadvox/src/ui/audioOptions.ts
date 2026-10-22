@@ -1,18 +1,24 @@
 import { html, render, type TemplateResult } from 'lit-html';
+import { fillText } from '../core/textTemplate.ts';
 
 const AUDIO_VOLUME_CATEGORIES = ['master', 'world', 'body', 'ui'] as const;
 export type AudioVolumeCategory = (typeof AUDIO_VOLUME_CATEGORIES)[number];
 export type AudioVolumes = Readonly<Record<AudioVolumeCategory, number>>;
 
-export type AudioVolumeLabels = Readonly<Record<AudioVolumeCategory, string>>;
+export interface AudioOptionsText {
+  readonly labels: Readonly<Record<AudioVolumeCategory, string>>;
+  readonly heading: string;
+  /** A slider's accessible name; `{category}` is its label. */
+  readonly volume: string;
+}
 
 const optionsTemplate = (
-  labels: AudioVolumeLabels,
+  { labels, heading, volume }: AudioOptionsText,
   volumes: AudioVolumes,
   change: (category: AudioVolumeCategory, value: number) => void,
 ): TemplateResult => html`
   <section class="audio-options">
-    <h2>Audio</h2>
+    <h2>${heading}</h2>
     ${AUDIO_VOLUME_CATEGORIES.map((category) => {
       const setFromPointer = (event: MouseEvent | PointerEvent): void => {
         if (event.clientX === 0) {
@@ -34,7 +40,7 @@ const optionsTemplate = (
             max="1"
             step="0.01"
             .value=${String(volumes[category])}
-            aria-label="${labels[category]} volume"
+            aria-label=${fillText(volume, { category: labels[category] })}
             @input=${(event: Event) => change(category, Number((event.currentTarget as HTMLInputElement).value))}
             @pointerdown=${setFromPointer}
             @click=${setFromPointer}
@@ -49,7 +55,7 @@ const optionsTemplate = (
 /** Renders persistent audio controls into the lit-html main menu. */
 export const renderAudioOptions = (
   root: HTMLElement,
-  labels: AudioVolumeLabels,
+  labels: AudioOptionsText,
   initial: AudioVolumes,
   setVolume: (category: AudioVolumeCategory, value: number) => void,
 ): void => {

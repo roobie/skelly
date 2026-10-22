@@ -6,7 +6,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import type { Session } from '../src/game/session.ts';
-import { craftRows, craftStatus } from '../src/ui/craftReadout.ts';
+import { craftingText, craftRows, craftStatus } from '../src/ui/craftReadout.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -76,7 +76,7 @@ describe('crafting read-only presentation', () => {
     expect(torch.reason).toBe('missing' in result ? result.missing.reason : undefined);
     const root = document.createElement('section');
     const start = vi.fn();
-    renderCrafting(root, rows, { start, prefer: vi.fn() }, { cheapestAvailable: 'fixture cheapest' });
+    renderCrafting(root, rows, { start, prefer: vi.fn() }, craftingText(registry));
     const button = root.querySelector<HTMLButtonElement>('[data-recipe="torch"] .craft-start');
     expect(button).toBeDefined();
     expect(button!.disabled).toBe(torch.reason !== undefined);
@@ -107,9 +107,9 @@ describe('crafting read-only presentation', () => {
     })!;
     const root = document.createElement('section');
     const actions = { continue: vi.fn(), stop: vi.fn() };
-    renderCraftStatus(root, hidden, actions);
+    renderCraftStatus(root, hidden, actions, craftingText(registry));
     expect(root.textContent).not.toContain(reason);
-    renderCraftStatus(root, visible, actions);
+    renderCraftStatus(root, visible, actions, craftingText(registry));
     expect(root.textContent).toContain(reason);
   });
 
@@ -131,7 +131,7 @@ describe('crafting read-only presentation', () => {
     const stop = vi.fn();
     expect(inputBindings.rebind('craft.continue', [{ code: 'KeyJ' }])).toBeUndefined();
     try {
-      renderCraftStatus(root, status, { continue: resume, stop });
+      renderCraftStatus(root, status, { continue: resume, stop }, craftingText(registry));
       expect(root.querySelector('button')?.textContent).toContain(labelForAction('craft.continue'));
       expect(root.querySelector('button')?.textContent).not.toContain('Continue (C)');
       (root.querySelector('button') as HTMLButtonElement).click();
@@ -145,7 +145,7 @@ describe('crafting read-only presentation', () => {
     expect(stop).toHaveBeenCalledOnce();
     expect(Number(root.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow'))).toBe(status.percent);
     expect(item.work!.elapsed).toBe(recipeSeconds);
-    renderCraftStatus(root, undefined, { continue: resume, stop });
+    renderCraftStatus(root, undefined, { continue: resume, stop }, craftingText(registry));
     expect(root.hidden).toBe(true);
   });
   it('hides held-work status while inventory is open and restores it when closed', () => {

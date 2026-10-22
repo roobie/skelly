@@ -1,5 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
-import { type HintText, keyCap } from './keyCap.ts';
+import { fillHint, type HintText, keyCap } from './keyCap.ts';
 
 export const HUD_OPTION_KEYS = [
   'stats',
@@ -77,21 +77,28 @@ const optionTemplate = (
   <label data-hud-option=${key}><input type="checkbox" .checked=${state[key]} @change=${(e: Event) => change(key, (e.target as HTMLInputElement).checked)} /> ${label}</label>
 `;
 
+export interface HudOptionsText {
+  readonly labels: HudOptionLabels;
+  readonly heading: string;
+  /** The master switch's label; `{key}` is the hold-to-toggle key cap. */
+  readonly showHud: string;
+}
+
 const optionsTemplate = (
-  labels: HudOptionLabels,
+  text: HudOptionsText,
   state: HudSettings,
   change: (key: HudSettingKey, value: boolean) => void,
 ): TemplateResult => html`
   <section class="hud-options">
-    <h2>HUD</h2>
-    ${optionTemplate('shown', html`Show the HUD (hold ${keyCap('hud.toggle')} in play)`, state, change)}
-    ${HUD_OPTION_KEYS.map((key) => optionTemplate(key, labels[key], state, change))}
+    <h2>${text.heading}</h2>
+    ${optionTemplate('shown', fillHint(text.showHud, { key: keyCap('hud.toggle') }), state, change)}
+    ${HUD_OPTION_KEYS.map((key) => optionTemplate(key, text.labels[key], state, change))}
   </section>
 `;
 
 export const renderHudOptions = (
   root: HTMLElement,
-  labels: HudOptionLabels,
+  labels: HudOptionsText,
   state: HudSettings,
   change: (key: HudSettingKey, value: boolean) => void,
 ): void => {

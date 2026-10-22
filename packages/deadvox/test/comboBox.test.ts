@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
 import { html, render } from 'lit-html';
 import { afterEach, expect, it, vi } from 'vitest';
+import { fillText } from '../src/core/textTemplate.ts';
 import { type ComboBoxOption, comboBox } from '../src/ui/comboBox.ts';
 import { renderCrafting } from '../src/ui/crafting.ts';
 import type { CraftRow } from '../src/ui/craftReadout.ts';
+import { baseScreenText } from './baseRegistry.ts';
 
 const OPTIONS: readonly ComboBoxOption[] = [
   { value: '', label: 'Cheapest available' },
@@ -31,7 +33,8 @@ const mount = (initial = '') => {
   const root = host();
   let value = initial;
   const choose = vi.fn<(next: string) => void>();
-  const draw = () => render(html`${comboBox({ label: 'Material', options: OPTIONS, value, choose })}`, root);
+  const draw = () =>
+    render(html`${comboBox({ label: 'Material', options: OPTIONS, value, emptyLabel: 'fixture none', choose })}`, root);
   choose.mockImplementation((next) => {
     value = next;
     draw();
@@ -142,6 +145,7 @@ it('sends a crafting material choice to the recipe preference', () => {
   const row: CraftRow = {
     id: 'bandage',
     name: 'Bandage',
+    itemName: 'Bandage',
     kind: 'craft',
     time: '5 min',
     reason: undefined,
@@ -160,9 +164,10 @@ it('sends a crafting material choice to the recipe preference', () => {
     workstation: null,
   };
   const prefer = vi.fn();
-  renderCrafting(root, [row], { start: vi.fn(), prefer }, { cheapestAvailable: 'fixture cheapest' });
+  const text = baseScreenText().crafting;
+  renderCrafting(root, [row], { start: vi.fn(), prefer }, text);
   const field = root.querySelector<HTMLInputElement>('[role="combobox"]')!;
-  expect(field.getAttribute('aria-label')).toBe('Bandage material group 1');
+  expect(field.getAttribute('aria-label')).toBe(fillText(text.group, { recipe: 'Bandage', group: 1 }));
 
   field.click();
   [...root.querySelectorAll<HTMLElement>('[role="option"]')]

@@ -1,10 +1,9 @@
 // UI preferences/control adapter; completed readouts and Lit views live on the F7 side.
 
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import type { Session } from '../game/session.ts';
 import { renderCrafting, renderCraftStatus } from './crafting.ts';
-import { craftRows, craftStatus } from './craftReadout.ts';
+import { craftingText, craftRows, craftStatus } from './craftReadout.ts';
 
 export const mountCraftPanel = (
   panel: HTMLElement,
@@ -55,7 +54,7 @@ export const mountCraftPanel = (
             startReason: session.crafting.startReason(),
           }),
           actions,
-          session.inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.craftingMessages,
+          craftingText(session.inventory.registry),
         );
       }
       // The inventory has its own Continue action; keep this fixed status box off its controls.
@@ -68,6 +67,7 @@ export const mountCraftPanel = (
               messagesVisible,
             }),
         statusActions,
+        craftingText(session.inventory.registry),
       );
     },
   };

@@ -48,7 +48,10 @@ if (showMods) {
   modsScreen.hidden = false;
 }
 const bundled = selectBundledMods(showMods ? [] : bundledModIdsFromUrl(params));
-const browserSelection = showMods ? await chooseMods(modsScreen) : undefined;
+// The mods screen is drawn before any mod is chosen, so it reads the bundled packs' text.
+const browserSelection = showMods
+  ? await chooseMods(modsScreen, bundled.content.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.mods)
+  : undefined;
 const content = browserSelection?.content ?? bundled.content;
 startupScreen.hidden = false;
 applyUiTokens(content.registry, document.documentElement);
@@ -114,6 +117,7 @@ if (bench === null) {
       show: document.getElementById('show-credits')!,
     },
     credits.manifest,
+    screenText.credits,
   );
   for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-view-distance]')) {
     const radius = link.dataset.viewDistance;
@@ -150,8 +154,8 @@ if (bench === 'report') {
   if (config.debug) {
     inputBindings.setDebugRun();
   }
-  mountFullscreenOptions(document.getElementById('fullscreen-options')!);
-  mountInputOptions(document.getElementById('input-options')!, config.debug);
+  mountFullscreenOptions(document.getElementById('fullscreen-options')!, screenText.options);
+  mountInputOptions(document.getElementById('input-options')!, screenText.inputOptions, config.debug);
   mountControlsCard(
     document.getElementById('controls')!,
     document.getElementById('controls-search') as HTMLInputElement,
@@ -207,12 +211,7 @@ if (bench === 'report') {
     });
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
-    const saveController = new SaveController(
-      screenText.saveMessages,
-      backend,
-      bundled.admitted,
-      browserSelection?.admitted,
-    );
+    const saveController = new SaveController(screenText, backend, bundled.admitted, browserSelection?.admitted);
     startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
       Object.assign(globalThis, {
@@ -259,7 +258,7 @@ if (bench === 'report') {
         const target = engine.renderer?.domElement ?? view;
         const locked = requestInputLock(target);
         const owner = new WorldLoading(engine);
-        const draw = mountWorldLoading(owner);
+        const draw = mountWorldLoading(owner, screenText.worldLoading);
         await locked;
         await new Promise<void>((done) => setTimeout(done, 0));
         let entry: ReturnType<typeof startPlay>;
@@ -285,7 +284,7 @@ if (bench === 'report') {
           },
         };
       });
-      saveController.setNewWorldGoLabel('New world');
+      saveController.setNewWorldGoLabel(screenText.save.newWorld);
       overlay.classList.add('startup-ready');
       hideStartupScreen();
     }

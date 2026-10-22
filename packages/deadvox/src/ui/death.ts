@@ -1,6 +1,9 @@
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { defOf } from '../core/items.ts';
+import type { ScreenText } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
 
 export interface DeathSummary {
   cause: string;
@@ -14,12 +17,16 @@ export interface DeathSummary {
   searched: number;
 }
 
-/** "17 h 26 min", "40 min". */
-const formatSpan = (seconds: number): string => {
+type DeathText = ScreenText['death'];
+
+const deathText = (registry: Registry): DeathText => registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.death;
+
+/** Hours and minutes, or minutes alone under an hour. */
+const formatSpan = (seconds: number, text: DeathText): string => {
   const minutes = Math.floor(seconds / 60);
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return h > 0 ? `${h} h ${m} min` : `${m} min`;
+  return h > 0 ? fillText(text.hoursMinutes, { hours: h, minutes: m }) : fillText(text.minutes, { minutes: m });
 };
 
 /** The page's query with the next seed, keeping the other settings but not the start time. */
@@ -30,11 +37,14 @@ export const newWorldQuery = (search: string, seed: number): string => {
   return `?${params.toString()}`;
 };
 
-/** "3 × can of beans, flashlight". */
+/** Looted item names, most taken first, with a count where more than one was taken. */
 export const lootedText = (registry: Registry, looted: ReadonlyMap<string, number>): string =>
   [...looted]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([type, count]) => `${count > 1 ? `${count} × ` : ''}${defOf(registry, type).name.toLowerCase()}`)
+    .map(([type, count]) => {
+      const item = defOf(registry, type).name.toLowerCase();
+      return count > 1 ? fillText(deathText(registry).lootCount, { count, item }) : item;
+    })
     .join(', ');
 
 export interface DeathViewModel {
@@ -47,22 +57,28 @@ export interface DeathViewModel {
 
 export const deathViewModel = (registry: Registry, summary: DeathSummary): DeathViewModel => {
   const looted = lootedText(registry, summary.looted);
+  const text = deathText(registry);
   return {
     cause: summary.cause,
     worldSeed: summary.worldSeed,
-    span: formatSpan(summary.survived),
-    summary: `Containers searched: ${summary.searched} · Loot: ${looted || 'none'}`,
+    span: formatSpan(summary.survived, text),
+    summary: fillText(text.summary, { searched: summary.searched, loot: looted || text.noLoot }),
   };
 };
 
-const deathTemplate = (vm: DeathViewModel, feedbackHref: string, newWorld: () => void): TemplateResult => html`
+const deathTemplate = (
+  vm: DeathViewModel,
+  text: DeathText,
+  feedbackHref: string,
+  newWorld: () => void,
+): TemplateResult => html`
   <div class="card">
-    <h1>You died</h1>
-    <p>Cause: ${vm.cause} · Survived: ${vm.span}</p>
-    <p>World seed: ${vm.worldSeed}</p>
+    <h1>${text.heading}</h1>
+    <p>${fillText(text.cause, { cause: vm.cause, span: vm.span })}</p>
+    <p>${fillText(text.seed, { seed: vm.worldSeed })}</p>
     <p>${vm.summary}</p>
-    <p><a href=${feedbackHref} target="_blank" rel="noopener">Send feedback</a></p>
-    <button type="button" @click=${newWorld}>New world</button>
+    <p><a href=${feedbackHref} target="_blank" rel="noopener">${text.feedback}</a></p>
+    <button type="button" @click=${newWorld}>${text.newWorld}</button>
   </div>
 `;
 
@@ -71,6 +87,6 @@ export const showDeath = (root: HTMLElement, registry: Registry, summary: DeathS
   if (!feedbackHref) {
     throw new Error('Missing #playtest-feedback link');
   }
-  render(deathTemplate(deathViewModel(registry, summary), feedbackHref, newWorld), root);
+  render(deathTemplate(deathViewModel(registry, summary), deathText(registry), feedbackHref, newWorld), root);
   root.hidden = false;
 };

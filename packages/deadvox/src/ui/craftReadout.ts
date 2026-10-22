@@ -7,20 +7,27 @@ import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import type { LongJob } from '../core/longAction.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
+import type { ScreenText } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
 
-export const craftTime = (seconds: number): string =>
-  seconds >= 60 ? `${(seconds / 60).toFixed(1)} min` : `${seconds.toFixed(1)} s`;
+export const craftingText = (registry: Registry): ScreenText['crafting'] =>
+  registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.crafting;
+export const craftTime = (seconds: number, text: ScreenText['crafting']): string =>
+  seconds >= 60
+    ? fillText(text.minutes, { value: (seconds / 60).toFixed(1) })
+    : fillText(text.seconds, { value: seconds.toFixed(1) });
 export const workName = (registry: Registry, item: Item): string => {
   const { work } = item;
+  const text = craftingText(registry);
   if (work?.kind === 'disassembly') {
-    return `${registry.items.get(work.source)!.name} disassembly`;
+    return fillText(text.disassembly, { item: registry.items.get(work.source)!.name });
   }
   const recipe = work?.kind === 'craft' ? registry.recipes.get(work.recipe) : undefined;
   if (!recipe) {
     return registry.items.get(item.type)!.name;
   }
   const { name } = registry.items.get(recipe.result.item)!;
-  return recipe.kind === 'repair' ? `Repairing ${name}` : `${name} in progress`;
+  return fillText(recipe.kind === 'repair' ? text.repairing : text.inProgress, { item: name });
 };
 export interface CraftStatus {
   uid: number;
@@ -50,13 +57,17 @@ export const craftStatus = (
       ? inventory.registry.recipes.get(itemWork.recipe)!.timeGameMinutes
       : duration - itemWork.gather;
   const gather = itemWork.kind === 'craft' ? duration - work : itemWork.gather;
+  const text = craftingText(inventory.registry);
   return {
     uid: item.uid,
     name: workName(inventory.registry, item),
     progress:
       elapsed < gather
-        ? `Gathering · ${craftTime(elapsed)} / ${craftTime(gather)}`
-        : `Work · ${craftTime(Math.max(0, elapsed - gather))} / ${craftTime(work)}`,
+        ? fillText(text.gathering, { elapsed: craftTime(elapsed, text), total: craftTime(gather, text) })
+        : fillText(text.work, {
+            elapsed: craftTime(Math.max(0, elapsed - gather), text),
+            total: craftTime(work, text),
+          }),
     percent: Math.round((elapsed / duration) * 100),
     stopped: job?.jobType !== 'craft' || job.stopped,
     reason: interruption.messagesVisible ? interruption.reason : undefined,
@@ -65,6 +76,8 @@ export const craftStatus = (
 export interface CraftRow {
   id: string;
   name: string;
+  /** The result's own name, for the start button. */
+  itemName: string;
   kind: 'craft' | 'repair';
   time: string;
   reason: string | undefined;
@@ -118,15 +131,15 @@ export const craftRows = ({
     const prefer = preferences[id];
     const result = planCraft(recipe, reach, character, prefer);
     const status = requirementStatus(recipe, reach, character);
+    const text = craftingText(registry);
+    const itemName = registry.items.get(recipe.result.item)!.name;
     return {
       id,
-      name: `${recipe.kind === 'repair' ? 'Repair: ' : ''}${registry.items.get(recipe.result.item)!.name}`,
+      name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
+      itemName,
       kind: recipe.kind === 'repair' ? 'repair' : 'craft',
-      time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes),
-      reason: recipeStartReason(recipe, result, reach, {
-        startReason,
-        noRepairTarget: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.craftingMessages.noRepairTarget,
-      }),
+      time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
+      reason: recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
       components: status.components.map(({ alternatives, group }) => ({
         group,
         preferred: prefer?.[group] ?? '',
